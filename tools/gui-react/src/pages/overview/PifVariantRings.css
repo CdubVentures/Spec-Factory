@@ -14,9 +14,9 @@
 .sf-pif-rings-chip {
   width: 18px;
   height: 18px;
-  border-radius: 3px;
-  border: 1px solid rgba(0, 0, 0, 0.12);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35);
+  border-radius: var(--sf-token-radius-sm);
+  border: 1px solid rgb(var(--sf-color-border-default-rgb) / 0.4);
+  box-shadow: inset 0 0 0 1px rgb(var(--sf-color-surface-elevated-rgb) / 0.35);
   display: inline-block;
 }
 
@@ -38,7 +38,7 @@
 
 .sf-pif-rings-track {
   fill: none;
-  stroke: rgba(130, 140, 150, 0.22);
+  stroke: rgb(var(--sf-color-border-subtle-rgb) / 0.4);
   stroke-width: 5;
 }
 

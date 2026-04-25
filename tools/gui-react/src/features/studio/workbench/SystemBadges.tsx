@@ -71,7 +71,7 @@ export function SystemBadges({ fieldPath }: Props) {
             </Tooltip.Trigger>
             <Tooltip.Portal>
               <Tooltip.Content
-                className="z-50 max-w-md px-3 py-2 text-xs leading-snug sf-text-primary bg-white border sf-border-default rounded shadow-lg sf-dk-fg-100 sf-dk-surface-900 dark:sf-border-default"
+                className="sf-tooltip-content z-50 max-w-md px-3 py-2 text-xs leading-snug rounded shadow-lg"
                 sideOffset={5}
               >
                 <div className="space-y-1.5">

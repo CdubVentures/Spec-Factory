@@ -16,9 +16,9 @@
  * Pattern: 4, 4, 3, 3, 2, 2 — minimum 2 for any budgeted view.
  */
 export const CATEGORY_VIEW_ATTEMPT_DEFAULTS = Object.freeze({
-  mouse:    Object.freeze({ top: 4, left: 4, angle: 3, sangle: 3, front: 2, bottom: 2 }),
-  keyboard: Object.freeze({ top: 4, left: 4, angle: 3, sangle: 3 }),
-  monitor:  Object.freeze({ front: 4, angle: 4, rear: 3, left: 3 }),
+  mouse:    Object.freeze({ top: 4, left: 4, sangle: 3, angle: 3, front: 2, bottom: 2 }),
+  keyboard: Object.freeze({ top: 4, left: 4, sangle: 3, angle: 3 }),
+  monitor:  Object.freeze({ front: 4, sangle: 4, angle: 3, rear: 3, left: 2 }),
   mousepad: Object.freeze({ top: 4, angle: 4 }),
 });
 

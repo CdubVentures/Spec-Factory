@@ -51,7 +51,7 @@
 .sf-olr-line-cef { color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb)); }
 .sf-olr-line-pif { color: var(--sf-token-state-success-fg, #2b8a3e); }
 .sf-olr-line-rdf { color: var(--sf-token-state-warning-fg, #e67700); }
-.sf-olr-line-skf { color: #9e5fe0; }
+.sf-olr-line-skf { color: var(--sf-token-state-sku-fg, #9e5fe0); }
 .sf-olr-line-kf  { color: var(--sf-token-accent, #4263eb); }
 
 /* Header chevron — same path geometry as the Links column for visual parity. */

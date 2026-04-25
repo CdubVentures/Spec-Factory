@@ -207,7 +207,31 @@
       "unit": ""
     },
     {
-      "aliases": [],
+      "aliases": [
+        "2.4 GHz",
+        "2.4GHz",
+        "BLE",
+        "Bluetooth",
+        "cable connection",
+        "dongle",
+        "dual-mode wireless",
+        "HyperSpeed",
+        "LIGHTSPEED",
+        "Logi Bolt",
+        "receiver extension cable",
+        "RF",
+        "SLIPSTREAM",
+        "tri-mode",
+        "Unifying",
+        "USB charging/data cable",
+        "USB data cable",
+        "USB receiver",
+        "USB-C charging cable",
+        "wired and wireless",
+        "wired USB",
+        "wireless",
+        "wireless/wired"
+      ],
       "array_handling": "none",
       "availability": "always",
       "canonical_key": "connection",
@@ -2276,6 +2300,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-25T20:11:24.270Z",
+  "generated_at": "2026-04-25T22:23:56.912Z",
   "version": 1
 }

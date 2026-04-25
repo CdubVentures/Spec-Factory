@@ -3,7 +3,7 @@
   align-items: center;
   gap: 8px;
   padding: 4px 12px 4px 4px;
-  border-radius: 999px;
+  border-radius: var(--sf-token-radius-pill);
   border: 1px solid color-mix(in srgb, var(--sf-scc-tone) 40%, var(--sf-token-border-default));
   background: transparent;
   cursor: help;
@@ -73,6 +73,5 @@
 .sf-scc-pill-a { --sf-scc-tone: var(--sf-token-state-success-fg); }
 .sf-scc-pill-b { --sf-scc-tone: var(--sf-token-accent); }
 .sf-scc-pill-c { --sf-scc-tone: var(--sf-token-state-warning-fg); }
-/* WHY: D-tier orange has no semantic token; literal kept (pre-existing condition). */
-.sf-scc-pill-d { --sf-scc-tone: #fd7e14; }
+.sf-scc-pill-d { --sf-scc-tone: var(--sf-token-state-grade-d-fg, #fd7e14); }
 .sf-scc-pill-f { --sf-scc-tone: var(--sf-token-state-error-fg); }

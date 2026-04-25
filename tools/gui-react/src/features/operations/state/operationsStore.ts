@@ -139,12 +139,14 @@ export interface Operation {
 
 export interface LlmCallRecord {
   readonly callIndex: number;
+  readonly callId?: string;
   readonly timestamp: string;
   readonly prompt: { readonly system: string; readonly user: string };
   readonly response: unknown;
   readonly model?: string;
   readonly variant?: string;
   readonly mode?: string;
+  readonly lane?: string;
   readonly label?: string;
   // WHY: Per-call model context — captured at the moment of call.
   //   `op.modelInfo` is overwrite-only (fallback replaces primary), so these
@@ -164,22 +166,84 @@ export interface LlmCallRecord {
   } | null;
 }
 
+export interface LlmCallStreamText {
+  readonly callId: string;
+  readonly text: string;
+  readonly reasoningText?: string;
+  readonly contentText?: string;
+  readonly lane?: string;
+  readonly label?: string;
+  readonly channel?: string;
+}
+
+export interface LlmCallStreamChunk {
+  readonly callId: string;
+  readonly text: string;
+  readonly lane?: string;
+  readonly label?: string;
+  readonly channel?: string;
+}
+
 interface OperationsState {
   readonly operations: ReadonlyMap<string, Operation>;
   /** WHY: Separated from operations so stream appends don't clone the operations Map. */
   readonly streamTexts: ReadonlyMap<string, string>;
+  readonly callStreamTexts: ReadonlyMap<string, ReadonlyMap<string, LlmCallStreamText>>;
   upsert: (op: Operation) => void;
   remove: (id: string) => void;
   clear: () => void;
   appendStreamText: (id: string, text: string) => void;
   batchAppendStreamText: (chunks: ReadonlyMap<string, string>) => void;
+  appendCallStreamText: (id: string, chunk: LlmCallStreamChunk) => void;
+  batchAppendCallStreamText: (chunks: ReadonlyMap<string, ReadonlyArray<LlmCallStreamChunk>>) => void;
   appendLlmCall: (id: string, call: LlmCallRecord) => void;
   updateLlmCall: (id: string, callIndex: number, call: LlmCallRecord) => void;
+}
+
+function mergeLlmCall(existing: LlmCallRecord, incoming: LlmCallRecord): LlmCallRecord {
+  return {
+    ...existing,
+    ...incoming,
+    callIndex: existing.callIndex,
+    timestamp: incoming.timestamp || existing.timestamp,
+    prompt: existing.prompt || incoming.prompt,
+    response: incoming.response === undefined ? existing.response : incoming.response,
+  };
+}
+
+function appendCallStream(
+  streams: ReadonlyMap<string, ReadonlyMap<string, LlmCallStreamText>>,
+  id: string,
+  chunk: LlmCallStreamChunk,
+): ReadonlyMap<string, ReadonlyMap<string, LlmCallStreamText>> {
+  if (!chunk.callId || !chunk.text) return streams;
+  const next = new Map(streams);
+  const existingByCall = streams.get(id) ?? new Map<string, LlmCallStreamText>();
+  const nextByCall = new Map(existingByCall);
+  const existing = existingByCall.get(chunk.callId);
+  const nextReasoningText = chunk.channel === 'reasoning'
+    ? `${existing?.reasoningText ?? ''}${chunk.text}`
+    : existing?.reasoningText;
+  const nextContentText = chunk.channel === 'content'
+    ? `${existing?.contentText ?? ''}${chunk.text}`
+    : existing?.contentText;
+  nextByCall.set(chunk.callId, {
+    callId: chunk.callId,
+    text: `${existing?.text ?? ''}${chunk.text}`,
+    reasoningText: nextReasoningText,
+    contentText: nextContentText,
+    lane: chunk.lane || existing?.lane,
+    label: chunk.label || existing?.label,
+    channel: chunk.channel || existing?.channel,
+  });
+  next.set(id, nextByCall);
+  return next;
 }
 
 export const useOperationsStore = create<OperationsState>((set) => ({
   operations: new Map<string, Operation>(),
   streamTexts: new Map<string, string>(),
+  callStreamTexts: new Map<string, ReadonlyMap<string, LlmCallStreamText>>(),
 
   upsert: (op: Operation) =>
     set((state) => {
@@ -196,7 +260,9 @@ export const useOperationsStore = create<OperationsState>((set) => ({
       if (op.status === 'done' || op.status === 'error' || op.status === 'cancelled') {
         const nextStreams = new Map(state.streamTexts);
         nextStreams.delete(op.id);
-        return { operations: next, streamTexts: nextStreams };
+        const nextCallStreams = new Map(state.callStreamTexts);
+        nextCallStreams.delete(op.id);
+        return { operations: next, streamTexts: nextStreams, callStreamTexts: nextCallStreams };
       }
       return { operations: next };
     }),
@@ -207,10 +273,12 @@ export const useOperationsStore = create<OperationsState>((set) => ({
       next.delete(id);
       const nextStreams = new Map(state.streamTexts);
       nextStreams.delete(id);
-      return { operations: next, streamTexts: nextStreams };
+      const nextCallStreams = new Map(state.callStreamTexts);
+      nextCallStreams.delete(id);
+      return { operations: next, streamTexts: nextStreams, callStreamTexts: nextCallStreams };
     }),
 
-  clear: () => set({ operations: new Map(), streamTexts: new Map() }),
+  clear: () => set({ operations: new Map(), streamTexts: new Map(), callStreamTexts: new Map() }),
 
   // WHY: Only mutates streamTexts, never touches operations — so (s) => s.operations
   // subscribers are NOT notified by stream text appends.
@@ -237,10 +305,40 @@ export const useOperationsStore = create<OperationsState>((set) => ({
       return changed ? { streamTexts: next } : state;
     }),
 
+  appendCallStreamText: (id: string, chunk: LlmCallStreamChunk) =>
+    set((state) => {
+      const existing = state.operations.get(id);
+      if (!existing || existing.status !== 'running') return state;
+      const next = appendCallStream(state.callStreamTexts, id, chunk);
+      return next === state.callStreamTexts ? state : { callStreamTexts: next };
+    }),
+
+  batchAppendCallStreamText: (chunks: ReadonlyMap<string, ReadonlyArray<LlmCallStreamChunk>>) =>
+    set((state) => {
+      if (chunks.size === 0) return state;
+      let next = state.callStreamTexts;
+      for (const [id, opChunks] of chunks) {
+        const existing = state.operations.get(id);
+        if (!existing || existing.status !== 'running') continue;
+        for (const chunk of opChunks) {
+          next = appendCallStream(next, id, chunk);
+        }
+      }
+      return next === state.callStreamTexts ? state : { callStreamTexts: next };
+    }),
+
   appendLlmCall: (id: string, call: LlmCallRecord) =>
     set((state) => {
       const existing = state.operations.get(id);
       if (!existing) return state;
+      const calls = [...existing.llmCalls];
+      const idx = call.callId ? calls.findIndex((c) => c.callId === call.callId) : -1;
+      if (idx >= 0) {
+        calls[idx] = mergeLlmCall(calls[idx], call);
+        const next = new Map(state.operations);
+        next.set(id, { ...existing, llmCalls: calls });
+        return { operations: next };
+      }
       const next = new Map(state.operations);
       next.set(id, { ...existing, llmCalls: [...existing.llmCalls, call] });
       return { operations: next };
@@ -253,7 +351,7 @@ export const useOperationsStore = create<OperationsState>((set) => ({
       const calls = [...existing.llmCalls];
       const idx = calls.findIndex((c) => c.callIndex === callIndex);
       if (idx === -1) return state;
-      calls[idx] = call;
+      calls[idx] = mergeLlmCall(calls[idx], call);
       const next = new Map(state.operations);
       next.set(id, { ...existing, llmCalls: calls });
       return { operations: next };

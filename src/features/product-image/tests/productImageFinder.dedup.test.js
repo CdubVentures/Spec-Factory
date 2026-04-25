@@ -298,4 +298,35 @@ describe('dedup: URL dedup self-heal + content hash gate', () => {
     assert.equal(typeof result.images[0].content_hash, 'string', 'new download should have content_hash');
     assert.equal(result.images[0].content_hash.length, 64, 'content_hash should be 64-char hex');
   });
+
+  it('onVariantPersisted fires once per variant after the per-variant store.upsert', async () => {
+    const pid = 'tick-multi-variant';
+    writeCefData(pid, { selected: { colors: ['black', 'white'], color_names: {}, editions: {} } });
+
+    const variants = [
+      { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color', color_atoms: ['black'] },
+      { variant_id: 'v_white', variant_key: 'color:white', variant_label: 'White', variant_type: 'color', color_atoms: ['white'] },
+    ];
+    const store = makeFinderStoreStub();
+    const ticks = [];
+
+    await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb: makeSpecDbStub(store, variants),
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmOverride([
+        { view: 'top', url: `http://127.0.0.1:${port}/img-a.png` },
+      ]),
+      onVariantPersisted: (event) => ticks.push(event),
+    });
+
+    // One tick per variant, in iteration order, fired AFTER store.upsert.
+    assert.equal(ticks.length, 2, `expected 2 ticks, got ${ticks.length}`);
+    assert.deepEqual(ticks.map((t) => t.variantKey), ['color:black', 'color:white']);
+    assert.deepEqual(ticks.map((t) => t.variantId), ['v_black', 'v_white']);
+    // Tick must trail the SQL upsert — same count of upserts as ticks.
+    assert.equal(store._upserts.length, 2, 'upsert count must match tick count');
+  });
 });

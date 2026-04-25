@@ -84,7 +84,7 @@
   gap: 6px;
   padding: 0 6px 0 4px;
   height: var(--sf-cc-btn-height);
-  border-radius: 999px;
+  border-radius: var(--sf-token-radius-pill);
   background: var(--sf-token-surface-alt, #f4f6f9);
   border: 1px solid var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
   font-size: 11px;
@@ -104,7 +104,7 @@
   min-width: 20px;
   height: 16px;
   padding: 0 5px;
-  border-radius: 999px;
+  border-radius: var(--sf-token-radius-pill);
   background: var(--sf-token-accent, #4263eb);
   color: #fff;
   font-weight: 700;
@@ -206,7 +206,7 @@
 .sf-cc-chip-cef .sf-cc-chip-icon { color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb)); }
 .sf-cc-chip-pif .sf-cc-chip-icon { color: var(--sf-token-state-success-fg, #2b8a3e); }
 .sf-cc-chip-rdf .sf-cc-chip-icon { color: var(--sf-token-state-warning-fg, #e67700); }
-.sf-cc-chip-sku .sf-cc-chip-icon { color: #9e5fe0; }
+.sf-cc-chip-sku .sf-cc-chip-icon { color: var(--sf-token-state-sku-fg, #9e5fe0); }
 .sf-cc-chip-kf  .sf-cc-chip-icon { color: var(--sf-token-accent, #4263eb); }
 
 .sf-cc-chip-actions {

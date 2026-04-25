@@ -136,6 +136,7 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
   const isDone = op.status === 'done';
   const isError = op.status === 'error';
   const isCancelled = op.status === 'cancelled';
+  const activeCalls = op.llmCalls.filter((call) => call.response === null || call.response === undefined);
 
   return (
     <div
@@ -226,6 +227,19 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
       ) : op.progressText ? (
         <span className="text-[9px] font-mono sf-text-subtle whitespace-pre-wrap leading-[1.4]">{op.progressText}</span>
       ) : null}
+
+      {activeCalls.length > 0 && (
+        <span className="flex flex-wrap gap-1">
+          {activeCalls.map((call) => (
+            <span
+              key={call.callId || call.callIndex}
+              className="inline-flex items-center px-1 text-[8px] font-bold font-mono uppercase rounded-[2px] border border-current leading-[1.5] text-[rgb(var(--sf-color-accent-strong-rgb))]"
+            >
+              {call.lane || call.mode || `call ${call.callIndex + 1}`}
+            </span>
+          ))}
+        </span>
+      )}
 
       {/* Model line + live stream preview */}
       {op.modelInfo && (

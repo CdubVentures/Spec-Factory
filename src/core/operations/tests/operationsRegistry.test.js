@@ -201,6 +201,31 @@ describe('appendLlmCall', () => {
     assert.deepEqual(listOperations()[0].llmCalls[0].response, { colors: ['red'] });
   });
 
+  it('updates pending calls by callId when parallel calls resolve out of order', () => {
+    const broadcasts = makeBroadcastSpy();
+    initOperationsRegistry({ broadcastWs: broadcasts });
+    const op = registerOperation(VALID_OP);
+
+    appendLlmCall({ id: op.id, call: { callId: 'view-top-1', prompt: { system: 'view sys', user: 'view usr' }, response: null, label: 'View Top' } });
+    appendLlmCall({ id: op.id, call: { callId: 'hero-1', prompt: { system: 'hero sys', user: 'hero usr' }, response: null, label: 'Hero' } });
+    appendLlmCall({ id: op.id, call: { callId: 'hero-1', prompt: { system: 'hero sys new', user: 'hero usr new' }, response: { lane: 'hero' }, label: 'Hero Done' } });
+    appendLlmCall({ id: op.id, call: { callId: 'view-top-1', prompt: { system: 'view sys new', user: 'view usr new' }, response: { lane: 'view' }, label: 'View Done' } });
+
+    const calls = listOperations()[0].llmCalls;
+    assert.equal(calls.length, 2, 'parallel completions update existing prompts instead of appending');
+    assert.equal(calls[0].callIndex, 0);
+    assert.equal(calls[0].callId, 'view-top-1');
+    assert.deepEqual(calls[0].prompt, { system: 'view sys', user: 'view usr' });
+    assert.deepEqual(calls[0].response, { lane: 'view' });
+    assert.equal(calls[1].callIndex, 1);
+    assert.equal(calls[1].callId, 'hero-1');
+    assert.deepEqual(calls[1].prompt, { system: 'hero sys', user: 'hero usr' });
+    assert.deepEqual(calls[1].response, { lane: 'hero' });
+
+    const updates = broadcasts.calls.filter((c) => c.data?.action === 'llm-call-update');
+    assert.deepEqual(updates.map((c) => c.data.callIndex), [1, 0]);
+  });
+
   it('appends new entry when last entry already has a response', () => {
     const op = registerOperation(VALID_OP);
     appendLlmCall({ id: op.id, call: { prompt: { system: 'a', user: 'b' }, response: { ok: true } } });

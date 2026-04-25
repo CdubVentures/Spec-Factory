@@ -29,7 +29,7 @@ export const SlotCard = memo(function SlotCard({ slot, img, source, category, pr
   return (
     <div
       className={`shrink-0 rounded-lg border overflow-hidden flex flex-col transition-colors w-40 ${
-        isOver ? 'border-blue-400 ring-2 ring-blue-200' :
+        isOver ? 'border-accent ring-2 ring-accent/30' :
         filename ? 'sf-border-soft sf-surface-elevated' : 'border-dashed sf-border-soft'
       } ${filename ? '' : 'opacity-50'}`}
       onDragOver={(e) => { e.preventDefault(); setIsOver(true); }}

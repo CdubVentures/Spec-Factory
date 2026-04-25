@@ -10,12 +10,12 @@ export function ProgressBar({ value, label, color = 'bg-accent', height = 'h-2' 
   return (
     <div>
       {label && (
-        <div className="flex justify-between text-xs text-gray-600 dark:text-gray-400 mb-1">
+        <div className="flex justify-between text-xs sf-status-text-muted mb-1">
           <span>{label}</span>
           <span>{pct.toFixed(1)}%</span>
         </div>
       )}
-      <div className={`w-full ${height} bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden`}>
+      <div className={`w-full ${height} sf-meter-track rounded-full overflow-hidden`}>
         <div
           className={`${height} ${color} rounded-full transition-all duration-500`}
           style={{ width: `${pct}%` }}

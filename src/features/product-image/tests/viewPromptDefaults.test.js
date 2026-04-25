@@ -8,7 +8,11 @@ import {
   viewPromptSettingKey,
   resolveViewPrompt,
 } from '../viewPromptDefaults.js';
-import { CATEGORY_VIEW_DEFAULTS, CANONICAL_VIEW_KEYS } from '../productImageLlmAdapter.js';
+import {
+  CATEGORY_VIEW_BUDGET_DEFAULTS,
+  CATEGORY_VIEW_DEFAULTS,
+  CANONICAL_VIEW_KEYS,
+} from '../productImageLlmAdapter.js';
 
 /* ── Registry invariants ────────────────────────────────────────── */
 
@@ -58,9 +62,27 @@ describe('VIEW_PROMPT_DEFAULTS', () => {
 
   it('mouse hard-view defaults disambiguate geometry instead of relying on labels', () => {
     assert.ok(VIEW_PROMPT_DEFAULTS.mouse.front.priority.includes('not a top-down shell shot'));
-    assert.ok(VIEW_PROMPT_DEFAULTS.mouse.sangle.priority.includes('front/nose/USB'));
-    assert.ok(VIEW_PROMPT_DEFAULTS.mouse.angle.priority.includes('not a pure top-down shot'));
+    assert.ok(VIEW_PROMPT_DEFAULTS.mouse.sangle.priority.includes('primary Dynamic View'));
+    assert.ok(VIEW_PROMPT_DEFAULTS.mouse.angle.priority.includes('secondary distinct angled'));
     assert.ok(VIEW_PROMPT_DEFAULTS.mouse.right.priority.includes('right side wall'));
+  });
+
+  it('sangle and angle defaults preserve carousel role consistency across categories', () => {
+    for (const category of ['mouse', 'monitor', 'keyboard']) {
+      const sangle = VIEW_PROMPT_DEFAULTS[category].sangle.priority;
+      const angle = VIEW_PROMPT_DEFAULTS[category].angle.priority;
+      assert.ok(sangle.includes('primary Dynamic View'), `${category}.sangle should target Dynamic View`);
+      assert.ok(angle.includes('secondary distinct angled'), `${category}.angle should target the second angled slot`);
+    }
+  });
+
+  it('category view budgets try Dynamic View before secondary angle when both are searched', () => {
+    for (const [category, budget] of Object.entries(CATEGORY_VIEW_BUDGET_DEFAULTS)) {
+      const sangleIndex = budget.indexOf('sangle');
+      const angleIndex = budget.indexOf('angle');
+      if (sangleIndex === -1 || angleIndex === -1) continue;
+      assert.ok(sangleIndex < angleIndex, `${category} should search sangle before angle`);
+    }
   });
 });
 

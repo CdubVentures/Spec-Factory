@@ -28,34 +28,34 @@ export const VIEW_PROMPT_ROLES = Object.freeze(['loop', 'priority', 'additional'
 const MOUSE = Object.freeze({
   top:    "Bird's-eye shot looking directly down at the mouse from above — camera directly overhead, showing full shape outline and button layout",
   left:   'Strict side profile from the left at eye level — camera level with the mouse, no tilt, showing the full side silhouette, button profile, and scroll wheel',
-  angle:  'Rear/top three-quarter mouse product shot: top shell plus one side with rear or palm-rest curvature dominant; not a pure top-down shot and not a front/nose-dominant sangle shot.',
+  sangle: 'primary Dynamic View mouse showcase shot: best clean angled product image for the site\'s Dynamic View slot. Prefer front/side, low side, or top-side 3/4 where the mouse shape, buttons, logo, lighting, or front/side detail is visible; exact 30-45 degree geometry is not required.',
+  angle:  'secondary distinct angled mouse product shot: second-best clean angled/technical perspective for carousel depth. Prefer a viewpoint different from sangle, such as opposite side, rear/top, side/top, or alternate 3/4; avoid near-duplicates of sangle and do not require exact rear/top geometry.',
   bottom: 'Underside/belly view showing the base, sensor, mouse feet/skates, and any bottom labels or DPI switch',
   right:  'True right-side profile mouse product shot: long horizontal side silhouette with the right side wall, grip, or side buttons dominant and only minimal top surface visible; not a top-down or three-quarter shot.',
   front:  'Nose/front-facing mouse product shot: camera faces the front edge of the mouse, with the front lip, USB/cable exit, scroll wheel/button-front shape, or nose profile visible; not a top-down shell shot.',
   rear:   'Head-on rear view showing the back/rear of the mouse, the palm rest curvature from behind',
-  sangle: 'Front-side three-quarter mouse product shot: side geometry plus the front/nose/USB/cable/front-lip area are visible; low wide showcase angles are acceptable when the front-side geometry is clear.',
 });
 
 const MONITOR = Object.freeze({
   front:  'Head-on front view of the monitor — camera faces the display straight on, showing the full screen, bezels, and stand',
-  angle:  'Rear/top 3/4 angle showing the monitor from behind and slightly above — showing the back panel design and stand',
+  sangle: 'primary Dynamic View monitor showcase shot: best clean angled product image for the site\'s Dynamic View slot. Prefer front/side 3/4 or low side perspective showing the screen, bezels, stand depth, and overall form; exact 30-45 degree geometry is not required.',
+  angle:  'secondary distinct angled monitor product shot: second-best clean angled/technical perspective for carousel depth. Prefer a viewpoint different from sangle, such as rear/side, stand/back design, or top/side form; avoid near-duplicates of sangle.',
   rear:   'Head-on rear view showing the back panel, ports, VESA mount area, and cable management',
   left:   'Strict side profile from the left at eye level — showing the monitor thickness, stand profile, and panel depth',
   right:  'Strict side profile from the right at eye level — mirror of left view',
   top:    "Bird's-eye shot looking down at the monitor from above — showing the top edge, thickness, and stand base",
   bottom: 'Underside view showing the bottom bezel and any bottom-mounted ports, buttons, or joystick',
-  sangle: 'Front/side 3/4 angle — showing the monitor from the front-left at roughly 30–45 degrees',
 });
 
 const KEYBOARD = Object.freeze({
   top:    "Bird's-eye shot looking directly down at the keyboard from above — camera directly overhead, showing the full key layout and keycap legends",
   left:   'Strict side profile from the left at eye level — showing the keyboard height profile, key travel, and wrist-rest if present',
-  angle:  'Front/top 3/4 angle showing the keyboard from above and slightly in front at roughly 30–45 degrees',
+  sangle: 'primary Dynamic View keyboard showcase shot: best clean angled product image for the site\'s Dynamic View slot. Prefer front/top or front/side 3/4 showing keycaps plus case depth; exact 30-45 degree geometry is not required.',
+  angle:  'secondary distinct angled keyboard product shot: second-best clean angled/technical perspective for carousel depth. Prefer a viewpoint different from sangle, such as opposite side, rear/top, side/top, or low profile angle; avoid near-duplicates of sangle.',
   bottom: 'Underside view showing the base, rubber feet, tilt legs, and any bottom labels',
   right:  'Strict side profile from the right at eye level — mirror of left view',
   front:  'Head-on front view — camera faces the front edge showing the spacebar and front bezel',
   rear:   'Head-on rear view showing the back edge, ports, cable routing, and any rear features',
-  sangle: 'Front/side 3/4 angle — showing the keyboard from the front-left at roughly 30–45 degrees',
 });
 
 const GENERIC = Object.freeze({
@@ -65,8 +65,8 @@ const GENERIC = Object.freeze({
   right:  'Strict side profile from the right at eye level — mirror of left view',
   front:  'Head-on front view — camera faces the front of the product straight on',
   rear:   'Head-on rear view showing the back panel, ports, and rear design',
-  sangle: 'Front/side 3/4 angle — product shot from the front-left at roughly 30–45 degrees, slightly above',
-  angle:  'Rear/top 3/4 angle — showing the product from above and behind at roughly 30–45 degrees',
+  sangle: 'primary Dynamic View product showcase shot: best clean angled image for the site\'s Dynamic View slot, usually front/side or low side 3/4; exact 30-45 degree geometry is not required.',
+  angle:  'secondary distinct angled product shot: second-best clean angled/technical perspective for carousel depth, different from sangle; use the next best unique angled product image.',
 });
 
 function expandRoles(descMap) {

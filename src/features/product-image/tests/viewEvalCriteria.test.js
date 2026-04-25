@@ -74,6 +74,28 @@ describe('resolveViewEvalCriteria', () => {
     const keyboardTop = resolveViewEvalCriteria('keyboard', 'top');
     assert.notEqual(mouseTop, keyboardTop, 'mouse/top should differ from keyboard/top');
   });
+
+  it('angle slots use carousel role semantics instead of strict geometry', () => {
+    for (const category of KNOWN_CATEGORIES) {
+      const sangle = resolveViewEvalCriteria(category, 'sangle');
+      const angle = resolveViewEvalCriteria(category, 'angle');
+
+      assert.ok(sangle.includes('primary Dynamic View'), `${category}.sangle should target Dynamic View`);
+      assert.ok(sangle.includes('first good angled'), `${category}.sangle should prefer the first usable angled shot`);
+      assert.ok(angle.includes('secondary distinct angled'), `${category}.angle should target the secondary angled slot`);
+      assert.ok(angle.includes('near-duplicate'), `${category}.angle should avoid duplicating sangle`);
+    }
+  });
+
+  it('unknown categories inherit generic carousel role semantics for angle slots', () => {
+    const sangle = resolveViewEvalCriteria('headset', 'sangle');
+    const angle = resolveViewEvalCriteria('headset', 'angle');
+
+    assert.ok(sangle.includes('primary Dynamic View'));
+    assert.ok(sangle.includes('first good angled'));
+    assert.ok(angle.includes('secondary distinct angled'));
+    assert.ok(angle.includes('near-duplicate'));
+  });
 });
 
 /* ── resolveHeroEvalCriteria ─────────────────────────────────────── */

@@ -30,7 +30,7 @@ export const GalleryCard = memo(function GalleryCard({
     <div
       draggable
       onDragStart={(e) => { e.dataTransfer.setData('text/plain', img.filename); e.dataTransfer.effectAllowed = 'copy'; }}
-      className={`sf-surface-elevated rounded-lg border overflow-hidden flex flex-col cursor-grab active:cursor-grabbing w-40 ${passesQuality ? 'sf-border-soft' : 'border-red-400/50'} ${isDimmed ? 'opacity-40' : ''}`}
+      className={`sf-surface-elevated rounded-lg border overflow-hidden flex flex-col cursor-grab active:cursor-grabbing w-40 ${passesQuality ? 'sf-border-soft' : 'sf-border-danger-soft'} ${isDimmed ? 'opacity-40' : ''}`}
     >
       <button
         onClick={() => onOpen(img)}

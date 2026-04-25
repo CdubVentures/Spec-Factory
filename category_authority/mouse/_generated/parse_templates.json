@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-25T20:11:24.270Z",
+  "generated_at": "2026-04-25T22:23:56.912Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -245,6 +245,31 @@
       "type": "string"
     },
     "connection": {
+      "context_keywords": [
+        "2.4 GHz",
+        "2.4GHz",
+        "BLE",
+        "Bluetooth",
+        "cable connection",
+        "dongle",
+        "dual-mode wireless",
+        "HyperSpeed",
+        "LIGHTSPEED",
+        "Logi Bolt",
+        "receiver extension cable",
+        "RF",
+        "SLIPSTREAM",
+        "tri-mode",
+        "Unifying",
+        "USB charging/data cable",
+        "USB data cable",
+        "USB receiver",
+        "USB-C charging cable",
+        "wired and wireless",
+        "wired USB",
+        "wireless",
+        "wireless/wired"
+      ],
       "patterns": [],
       "type": "string"
     },

@@ -675,7 +675,11 @@ export function registerProductImageFinderRoutes(ctx) {
             signal,
             onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
             onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
-            onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
+            onStreamChunk: (delta) => {
+              const meta = { callId: delta?.callId, lane: delta?.lane, label: delta?.label };
+              if (delta?.reasoning) batcher.push(delta.reasoning, { ...meta, channel: 'reasoning' });
+              if (delta?.content) batcher.push(delta.content, { ...meta, channel: 'content' });
+            },
             onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
             onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
             onLoopProgress: ({ callNumber, estimatedRemaining, variantLabel, focusView, mode, variantIndex, variantTotal, carouselProgress }) => {
@@ -700,6 +704,20 @@ export function registerProductImageFinderRoutes(ctx) {
                         attempts: carouselProgress.heroAttempts ?? 0, attemptBudget: carouselProgress.heroAttemptBudget ?? heroAttemptBudget }
                     : null,
                 },
+              });
+            },
+            // WHY: Fires after each loop iteration's per-variant store.upsert.
+            // Refreshes the pif_variant_progress projection + broadcasts the
+            // standard loop event so the Overview catalog query invalidates
+            // mid-loop, ticking the "img" counter live instead of at the end.
+            onVariantPersisted: ({ variantKey: vk }) => {
+              writePifVariantProgress({ specDb, category, productId });
+              emitDataChange({
+                broadcastWs,
+                event: 'product-image-finder-loop',
+                category,
+                entities: { productIds: [productId] },
+                meta: { productId, variantKey: vk },
               });
             },
             });
@@ -1155,6 +1173,21 @@ export function registerProductImageFinderRoutes(ctx) {
             onStreamChunk: (delta) => { if (delta.reasoning) batcher.push(delta.reasoning); if (delta.content) batcher.push(delta.content); },
             onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
             onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
+            // WHY: Fires after each variant's store.upsert in produceForVariant.
+            // Refreshes the pif_variant_progress projection + broadcasts the
+            // standard run event so the Overview catalog query invalidates
+            // per-variant, ticking the "img" counter live across multi-variant
+            // runs instead of jumping at the end.
+            onVariantPersisted: ({ variantKey: vk }) => {
+              writePifVariantProgress({ specDb, category, productId });
+              emitDataChange({
+                broadcastWs,
+                event: 'product-image-finder-run',
+                category,
+                entities: { productIds: [productId] },
+                meta: { productId, variantKey: vk },
+              });
+            },
             });
             writePifVariantProgress({ specDb, category, productId, carouselProgressByKey: result?.carouselProgress });
             return result;

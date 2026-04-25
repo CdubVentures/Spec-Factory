@@ -58,7 +58,7 @@
   min-width: 22px;
   height: 18px;
   padding: 0 6px;
-  border-radius: 999px;
+  border-radius: var(--sf-token-radius-pill);
   color: #fff;
   font-weight: 700;
   font-size: 11px;
@@ -117,7 +117,7 @@
   flex-shrink: 0;
   height: 26px;
   padding: 0 4px 0 10px;
-  border-radius: 999px;
+  border-radius: var(--sf-token-radius-pill);
   font-size: 11px;
   line-height: 1;
   transition: border-color 120ms ease, background 120ms ease;
@@ -189,7 +189,7 @@
 .sf-aas-mod-cef      { color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb)); }
 .sf-aas-mod-pif      { color: var(--sf-token-state-success-fg, #2b8a3e); }
 .sf-aas-mod-rdf      { color: var(--sf-token-state-warning-fg, #e67700); }
-.sf-aas-mod-skf      { color: #9e5fe0; }
+.sf-aas-mod-skf      { color: var(--sf-token-state-sku-fg, #9e5fe0); }
 .sf-aas-mod-kf       { color: var(--sf-token-accent, #4263eb); }
 .sf-aas-mod-pipeline { color: var(--sf-token-state-info-fg, #1c7ed6); }
 
@@ -205,7 +205,7 @@
   justify-content: center;
   width: 18px;
   height: 18px;
-  border-radius: 999px;
+  border-radius: var(--sf-token-radius-pill);
   background: transparent;
   border: none;
   color: rgb(var(--sf-color-text-subtle-rgb));

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { useOperationsStore } from '../state/operationsStore.ts';
-import type { Operation, LlmCallRecord } from '../state/operationsStore.ts';
+import type { Operation, LlmCallRecord, LlmCallStreamText } from '../state/operationsStore.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import { extractEffortFromModelName } from '../../llm-config/state/llmEffortFromModelName.ts';
@@ -47,6 +47,8 @@ function parseStreamSegments(raw: string): Array<{ type: 'think' | 'text'; text:
 function hasStreamContent(raw: string): boolean {
   return raw.replace(/<\/?think>/gi, '').trim().length > 0;
 }
+
+const EMPTY_CALL_STREAMS: ReadonlyMap<string, LlmCallStreamText> = new Map<string, LlmCallStreamText>();
 
 function formatElapsed(startedAt: string, endedAt: string | null): string {
   const end = endedAt ? parseBackendMs(endedAt) : Date.now();
@@ -160,10 +162,41 @@ function DiscoveryLogSection({ log }: { readonly log: Record<string, unknown> })
   );
 }
 
+function LiveCallStreamSection({ stream }: { readonly stream?: LlmCallStreamText }) {
+  const reasoningText = stream?.reasoningText ?? '';
+  const contentText = stream?.contentText ?? '';
+  const rawText = stream?.text ?? '';
+  const fallbackSegments = useMemo(() => parseStreamSegments(rawText), [rawText]);
+  if (!hasStreamContent(rawText)) return null;
+  return (
+    <div className="space-y-1.5">
+      <div className="text-[10px] font-semibold sf-text-subtle uppercase tracking-[0.04em]">
+        Live Stream
+      </div>
+      {reasoningText && (
+        <pre className="max-h-[18vh] overflow-y-auto whitespace-pre-wrap rounded-sm p-2 text-[10px] leading-relaxed font-mono sf-text-subtle bg-[rgb(var(--sf-color-surface-default-rgb)/0.6)] border border-[rgb(var(--sf-color-border-subtle-rgb)/0.2)]">
+          {reasoningText}
+        </pre>
+      )}
+      {contentText && (
+        <pre className="max-h-[18vh] overflow-y-auto whitespace-pre-wrap rounded-sm p-2 text-[10px] leading-relaxed font-mono sf-text-primary bg-[rgb(var(--sf-color-surface-default-rgb)/0.6)] border border-[rgb(var(--sf-color-border-subtle-rgb)/0.2)]">
+          {contentText}
+        </pre>
+      )}
+      {!reasoningText && !contentText && (
+        <pre className="max-h-[18vh] overflow-y-auto whitespace-pre-wrap rounded-sm p-2 text-[10px] leading-relaxed font-mono sf-text-primary bg-[rgb(var(--sf-color-surface-default-rgb)/0.6)] border border-[rgb(var(--sf-color-border-subtle-rgb)/0.2)]">
+          {fallbackSegments.map((seg) => seg.text).join('\n')}
+        </pre>
+      )}
+    </div>
+  );
+}
+
 /* ── Single LLM call row ───────────────────────────────────── */
 
 interface LlmCallRowProps {
   readonly call: LlmCallRecord;
+  readonly callStream?: LlmCallStreamText;
   /** 1-based index within calls sharing the same label. Omitted = label appears only once. */
   readonly labelIndex?: number;
   /** Total calls with this label. Shown only when > 1 so the "#N/M" tag
@@ -171,7 +204,7 @@ interface LlmCallRowProps {
   readonly labelTotal?: number;
 }
 
-function LlmCallRow({ call, labelIndex, labelTotal }: LlmCallRowProps) {
+function LlmCallRow({ call, callStream, labelIndex, labelTotal }: LlmCallRowProps) {
   const [expanded, setExpanded] = useState(false);
   const formatTime = useFormatTime();
   const isPending = call.response === null || call.response === undefined;
@@ -267,6 +300,7 @@ function LlmCallRow({ call, labelIndex, labelTotal }: LlmCallRowProps) {
         <div className="px-2.5 py-2 space-y-2 border-t border-[rgb(var(--sf-color-border-subtle-rgb)/0.15)]">
           <CollapsiblePre label="System Prompt" text={call.prompt.system} />
           <CollapsiblePre label="User Message" text={call.prompt.user} />
+          <LiveCallStreamSection stream={callStream} />
           {isPending
             ? <div className="text-[10px] sf-text-subtle italic">Response pending...</div>
             : <CollapsiblePre label="LLM Response" text={responseStr} />
@@ -280,7 +314,10 @@ function LlmCallRow({ call, labelIndex, labelTotal }: LlmCallRowProps) {
 
 /* ── LLM Calls section ─────────────────────────────────────── */
 
-function LlmCallsSection({ calls }: { readonly calls: ReadonlyArray<LlmCallRecord> }) {
+function LlmCallsSection({ calls, callStreams }: {
+  readonly calls: ReadonlyArray<LlmCallRecord>;
+  readonly callStreams: ReadonlyMap<string, LlmCallStreamText>;
+}) {
   const totals = useMemo(() => {
     let promptTokens = 0;
     let completionTokens = 0;
@@ -335,6 +372,7 @@ function LlmCallsSection({ calls }: { readonly calls: ReadonlyArray<LlmCallRecor
             <LlmCallRow
               key={call.callIndex}
               call={call}
+              callStream={call.callId ? callStreams.get(call.callId) : undefined}
               labelIndex={idx?.labelIndex}
               labelTotal={idx?.labelTotal}
             />
@@ -374,6 +412,7 @@ export function OperationDetailModal({ op, onClose }: Props) {
   /* ── Auto-scroll stream ───────────────────────────────────── */
   const streamRef = useRef<HTMLDivElement>(null);
   const streamText = useOperationsStore((s) => s.streamTexts.get(op.id) ?? '');
+  const callStreams = useOperationsStore((s) => s.callStreamTexts.get(op.id) ?? EMPTY_CALL_STREAMS);
   const streamSegments = useMemo(() => parseStreamSegments(streamText), [streamText]);
   const hasContent = useMemo(() => hasStreamContent(streamText), [streamText]);
   useEffect(() => {
@@ -407,7 +446,7 @@ export function OperationDetailModal({ op, onClose }: Props) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px]"
+      className="sf-overlay-muted fixed inset-0 z-50 flex items-center justify-center backdrop-blur-[2px]"
       onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
     >
       <div className="sf-surface-elevated rounded border sf-border-soft shadow-2xl w-full max-w-[52rem] max-h-[100vh] flex flex-col mx-4">
@@ -525,7 +564,7 @@ export function OperationDetailModal({ op, onClose }: Props) {
 
           {/* LLM Calls */}
           {op.llmCalls.length > 0 && (
-            <LlmCallsSection calls={op.llmCalls} />
+            <LlmCallsSection calls={op.llmCalls} callStreams={callStreams} />
           )}
 
           {/* Timestamps */}

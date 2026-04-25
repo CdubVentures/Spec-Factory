@@ -24,7 +24,7 @@ export function CandidateDeleteConfirm({
     : `This will remove this extraction for ${fieldLabel}. If this is the last candidate from this source, the backing run/artifacts will also be removed.`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="sf-overlay-muted fixed inset-0 z-50 flex items-center justify-center">
       <div className="sf-surface-panel rounded-lg shadow-xl p-6 max-w-sm w-full space-y-4">
         <h3 className="text-sm font-bold sf-text-primary">{title}</h3>
         <p className="sf-text-caption sf-text-muted">{description}</p>

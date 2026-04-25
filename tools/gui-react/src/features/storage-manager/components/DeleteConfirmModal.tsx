@@ -9,7 +9,7 @@ export function DeleteConfirmModal({ runIds, onConfirm, onCancel, isPending }: D
   const count = runIds.length;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="sf-overlay-muted fixed inset-0 z-50 flex items-center justify-center">
       <div className="sf-surface-elevated rounded-sm border sf-border-soft p-6 max-w-md w-full shadow-lg">
         <h3 className="text-sm font-bold mb-3">
           Delete {count} {count === 1 ? 'Run' : 'Runs'}?
@@ -33,7 +33,7 @@ export function DeleteConfirmModal({ runIds, onConfirm, onCancel, isPending }: D
           </button>
           <button
             type="button"
-            className="rounded bg-red-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
+            className="sf-danger-button-solid rounded px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
             onClick={onConfirm}
             disabled={isPending}
           >

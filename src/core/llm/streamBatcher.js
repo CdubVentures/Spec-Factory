@@ -4,12 +4,26 @@
 
 export function createStreamBatcher({ operationId, broadcastWs, intervalMs = 100 }) {
   let buffer = '';
+  const callBuffers = new Map();
   let disposed = false;
 
   function flush() {
-    if (!buffer) return;
-    broadcastWs('llm-stream', { operationId, text: buffer });
-    buffer = '';
+    if (buffer) {
+      broadcastWs('llm-stream', { operationId, text: buffer });
+      buffer = '';
+    }
+    for (const [key, entry] of callBuffers) {
+      if (!entry.text) continue;
+      broadcastWs('llm-stream', {
+        operationId,
+        callId: entry.callId,
+        lane: entry.lane,
+        label: entry.label,
+        channel: entry.channel,
+        text: entry.text,
+      });
+      callBuffers.delete(key);
+    }
   }
 
   const timer = setInterval(flush, intervalMs);
@@ -17,9 +31,29 @@ export function createStreamBatcher({ operationId, broadcastWs, intervalMs = 100
   if (timer.unref) timer.unref();
 
   return {
-    push(text) {
+    push(text, meta = null) {
       if (disposed) return;
-      buffer += text;
+      const chunk = typeof text === 'string' ? text : '';
+      if (!chunk) return;
+      const callId = typeof meta?.callId === 'string' ? meta.callId : '';
+      if (!callId) {
+        buffer += chunk;
+        return;
+      }
+      const channel = typeof meta?.channel === 'string' ? meta.channel : 'content';
+      const key = `${callId}\u0000${channel}`;
+      const existing = callBuffers.get(key);
+      if (existing) {
+        existing.text += chunk;
+        return;
+      }
+      callBuffers.set(key, {
+        callId,
+        lane: typeof meta?.lane === 'string' ? meta.lane : '',
+        label: typeof meta?.label === 'string' ? meta.label : '',
+        channel,
+        text: chunk,
+      });
     },
     flush() {
       if (disposed) return;

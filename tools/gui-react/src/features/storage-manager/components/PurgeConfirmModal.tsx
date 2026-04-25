@@ -12,9 +12,9 @@ export function PurgeConfirmModal({ totalRuns, onConfirm, onCancel, isPending }:
   const confirmed = typed === 'DELETE';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+    <div className="sf-overlay-muted fixed inset-0 z-50 flex items-center justify-center">
       <div className="sf-surface-elevated rounded-sm border sf-border-soft p-6 max-w-md w-full shadow-lg">
-        <h3 className="text-sm font-bold mb-3 text-red-500">
+        <h3 className="text-sm font-bold mb-3 sf-status-text-danger">
           Purge All Runs
         </h3>
         <p className="text-xs sf-text-muted mb-3">
@@ -42,7 +42,7 @@ export function PurgeConfirmModal({ totalRuns, onConfirm, onCancel, isPending }:
           </button>
           <button
             type="button"
-            className="rounded bg-red-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-red-700 disabled:opacity-50"
+            className="sf-danger-button-solid rounded px-3 py-1.5 text-xs font-semibold disabled:opacity-50"
             onClick={onConfirm}
             disabled={!confirmed || isPending}
           >

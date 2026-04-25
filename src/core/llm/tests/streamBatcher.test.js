@@ -72,4 +72,20 @@ describe('createStreamBatcher', () => {
     assert.equal(spy.calls[0].data.text, 'first');
     assert.equal(spy.calls[1].data.text, 'second');
   });
+
+  it('flushes call-scoped buffers independently for parallel LLM calls', () => {
+    const spy = makeBroadcastSpy();
+    const batcher = createStreamBatcher({ operationId: 'op-parallel', broadcastWs: spy });
+    batcher.push('view a', { callId: 'view-top-1', lane: 'view', label: 'View Top', channel: 'reasoning' });
+    batcher.push('hero a', { callId: 'hero-1', lane: 'hero', label: 'Hero', channel: 'reasoning' });
+    batcher.push(' view b', { callId: 'view-top-1', lane: 'view', label: 'View Top', channel: 'reasoning' });
+    batcher.flush();
+    batcher.dispose();
+
+    assert.equal(spy.calls.length, 2);
+    assert.deepEqual(spy.calls.map((c) => c.data), [
+      { operationId: 'op-parallel', callId: 'view-top-1', lane: 'view', label: 'View Top', channel: 'reasoning', text: 'view a view b' },
+      { operationId: 'op-parallel', callId: 'hero-1', lane: 'hero', label: 'Hero', channel: 'reasoning', text: 'hero a' },
+    ]);
+  });
 });

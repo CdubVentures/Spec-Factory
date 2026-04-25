@@ -9,13 +9,13 @@ import {
 
 // ── Badge colors ─────────────────────────────────────────────────────
 const reqBadge: Record<string, string> = {
-  identity: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300',
-  required: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-  critical: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
-  expected: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  optional: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300',
-  editorial: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
-  commerce: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
+  identity: 'sf-purple-bg-soft sf-status-text-info',
+  required: 'sf-chip-danger',
+  critical: 'sf-chip-danger',
+  expected: 'sf-chip-info',
+  optional: 'sf-chip-neutral',
+  editorial: 'sf-chip-success',
+  commerce: 'sf-chip-warning',
 };
 
 // ── Cell Renderers ───────────────────────────────────────────────────
@@ -25,9 +25,9 @@ function FieldNameCell({ row }: { row: WorkbenchRow }) {
     <div className="leading-tight">
       <div className="flex items-center gap-1">
         <span className="text-sm font-medium truncate">{row.displayName}</span>
-        {row.draftDirty && <span className="w-1.5 h-1.5 rounded-full bg-amber-400 flex-shrink-0" title="Modified" />}
+        {row.draftDirty && <span className="w-1.5 h-1.5 rounded-full sf-dot-warning flex-shrink-0" title="Modified" />}
       </div>
-      <div className="text-[10px] text-gray-400 font-mono truncate">{row.key}</div>
+      <div className="text-[10px] sf-status-text-muted font-mono truncate">{row.key}</div>
     </div>
   );
 }
@@ -35,23 +35,23 @@ function FieldNameCell({ row }: { row: WorkbenchRow }) {
 function CompileStatusDot({ row }: { row: WorkbenchRow }) {
   if (row.hasErrors) {
     return (
-      <span title={row.compileMessages.join('\n')} className="inline-block w-2.5 h-2.5 rounded-full bg-red-500" />
+      <span title={row.compileMessages.join('\n')} className="sf-dot-danger inline-block w-2.5 h-2.5 rounded-full" />
     );
   }
   if (row.hasWarnings) {
     return (
-      <span title={row.compileMessages.join('\n')} className="inline-block w-2.5 h-2.5 rounded-full bg-yellow-500" />
+      <span title={row.compileMessages.join('\n')} className="sf-dot-warning inline-block w-2.5 h-2.5 rounded-full" />
     );
   }
-  return <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" />;
+  return <span className="sf-dot-success inline-block w-2.5 h-2.5 rounded-full" />;
 }
 
 function BooleanBadge({ value }: { value: boolean }) {
   return (
     <span className={`px-1.5 py-0.5 text-[11px] rounded font-medium ${
       value
-        ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300'
-        : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'
+        ? 'sf-chip-success'
+        : 'sf-chip-neutral'
     }`}>
       {value ? 'Yes' : 'No'}
     </span>
@@ -89,7 +89,7 @@ export function InlineSelectCell({
     return (
       <select
         autoFocus
-        className="px-1 py-0.5 text-xs border border-accent rounded bg-white dark:bg-gray-700 w-full"
+        className="sf-primitive-input px-1 py-0.5 text-xs border border-accent rounded w-full"
         value={value}
         onChange={(e) => onCommit(e.target.value)}
         onBlur={() => onCommit(value)}
@@ -100,7 +100,7 @@ export function InlineSelectCell({
   }
   return (
     <button
-      className="text-left w-full hover:bg-gray-100 dark:hover:bg-gray-700 rounded px-1 py-0.5 text-xs cursor-pointer"
+      className="sf-row-hoverable text-left w-full rounded px-1 py-0.5 text-xs cursor-pointer"
       onClick={(e) => { e.stopPropagation(); onStartEdit(cellId); }}
     >
       {renderValue ? renderValue(value) : value || '\u2014'}
@@ -142,7 +142,7 @@ export function buildColumns(
           type="checkbox"
           checked={allSelected}
           onChange={onToggleAll}
-          className="rounded border-gray-300"
+          className="rounded sf-border-default"
         />
       ),
       cell: ({ row }) => (
@@ -151,7 +151,7 @@ export function buildColumns(
           checked={!!rowSelection[row.original.key]}
           onChange={() => onToggleRow(row.original.key)}
           onClick={(e) => e.stopPropagation()}
-          className="rounded border-gray-300"
+          className="rounded sf-border-default"
         />
       ),
     },
@@ -170,7 +170,7 @@ export function buildColumns(
       header: 'Group',
       size: 110,
       cell: ({ getValue }) => (
-        <span className="text-xs text-gray-500 truncate">{getValue() as string}</span>
+        <span className="text-xs sf-status-text-muted truncate">{getValue() as string}</span>
       ),
     },
 
@@ -232,7 +232,7 @@ export function buildColumns(
       size: 60,
       cell: ({ getValue }) => {
         const v = getValue() as string;
-        return v ? <span className="font-mono text-xs">{v}</span> : <span className="text-gray-300">\u2014</span>;
+        return v ? <span className="font-mono text-xs">{v}</span> : <span className="sf-status-text-muted">\u2014</span>;
       },
     },
 
@@ -263,7 +263,7 @@ export function buildColumns(
       size: 140,
       cell: ({ getValue }) => {
         const v = getValue() as string;
-        return v ? <span className="font-mono text-xs truncate">{v}</span> : <span className="text-gray-300">\u2014</span>;
+        return v ? <span className="font-mono text-xs truncate">{v}</span> : <span className="sf-status-text-muted">\u2014</span>;
       },
     },
 
@@ -275,8 +275,8 @@ export function buildColumns(
       cell: ({ getValue }) => {
         const n = getValue() as number;
         return n > 0
-          ? <span className="text-xs font-medium text-blue-600 dark:text-blue-400">{n}</span>
-          : <span className="text-gray-300">0</span>;
+          ? <span className="text-xs font-medium sf-status-text-info">{n}</span>
+          : <span className="sf-status-text-muted">0</span>;
       },
     },
 
@@ -290,7 +290,7 @@ export function buildColumns(
       size: 120,
       cell: ({ getValue }) => {
         const v = getValue() as string;
-        return v ? <span className="text-xs text-gray-500 truncate">{v}</span> : <span className="text-gray-300">\u2014</span>;
+        return v ? <span className="text-xs sf-status-text-muted truncate">{v}</span> : <span className="sf-status-text-muted">\u2014</span>;
       },
     },
 
@@ -314,8 +314,8 @@ export function buildColumns(
       cell: ({ getValue }) => {
         const n = getValue() as number;
         return n > 0
-          ? <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{n}</span>
-          : <span className="text-gray-300">0</span>;
+          ? <span className="text-xs font-medium sf-status-text-warning">{n}</span>
+          : <span className="sf-status-text-muted">0</span>;
       },
     },
 
@@ -326,7 +326,7 @@ export function buildColumns(
       size: 220,
       cell: ({ getValue }) => {
         const v = getValue() as string;
-        return v ? <span className="text-xs text-gray-500 truncate">{v}</span> : <span className="text-gray-300">—</span>;
+        return v ? <span className="text-xs sf-status-text-muted truncate">{v}</span> : <span className="sf-status-text-muted">—</span>;
       },
     },
 
@@ -338,10 +338,10 @@ export function buildColumns(
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? (
-          <span className="px-1.5 py-0.5 text-[11px] rounded font-medium bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">
+          <span className="sf-purple-bg-soft sf-status-text-info px-1.5 py-0.5 text-[11px] rounded font-medium">
             {v}
           </span>
-        ) : <span className="text-gray-300">\u2014</span>;
+        ) : <span className="sf-status-text-muted">\u2014</span>;
       },
     },
 
@@ -362,8 +362,8 @@ export function buildColumns(
       header: 'Dirty',
       size: 50,
       cell: ({ getValue }) => (getValue() as boolean)
-        ? <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" title="Modified" />
-        : <span className="text-gray-300">\u2014</span>,
+        ? <span className="w-2 h-2 rounded-full sf-dot-warning inline-block" title="Modified" />
+        : <span className="sf-status-text-muted">\u2014</span>,
     },
   ];
 }

@@ -89,14 +89,14 @@ export function TagPicker({
       </div>
 
       {open && (filtered.length > 0 || (allowCustom && input.trim())) ? (
-        <div className="absolute z-50 mt-1 w-full max-h-40 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded shadow-lg">
+        <div className="sf-custom-select-panel absolute z-50 mt-1 w-full max-h-40 overflow-y-auto rounded shadow-lg">
           {filtered.map((s) => (
             <button
               key={s}
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => add(s)}
-              className="block w-full text-left px-2 py-1 text-sm hover:bg-accent/10 hover:text-accent"
+              className="sf-custom-select-item block w-full text-left px-2 py-1 text-sm"
             >
               {s}
             </button>
@@ -106,7 +106,7 @@ export function TagPicker({
               type="button"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => add(input)}
-              className="block w-full text-left px-2 py-1 text-sm text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 italic"
+              className="sf-custom-select-item block w-full text-left px-2 py-1 text-sm sf-status-text-muted italic"
             >
               Add &ldquo;{input.trim()}&rdquo;
             </button>

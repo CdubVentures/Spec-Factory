@@ -196,7 +196,7 @@
 }
 .sf-fc-tier-chip {
   padding: 3px 8px;
-  border-radius: 999px;
+  border-radius: var(--sf-token-radius-pill);
   border: 1px solid var(--sf-token-border, #e5e9ef);
   background: transparent;
   font-size: 11px;

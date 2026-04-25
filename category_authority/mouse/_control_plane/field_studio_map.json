@@ -373,7 +373,7 @@
     },
     {
       "ai_assist": {
-        "reasoning_note": ""
+        "reasoning_note": "Keep closed. Protocol names and source phrases such as 2.4GHz, Bluetooth, BLE, RF, USB receiver, Logi Bolt, Unifying, LIGHTSPEED, HyperSpeed, SLIPSTREAM, dual-mode wireless, tri-mode, wireless/wired, wired + wireless, USB-C charging/data, USB-C charging cable, receiver extension cable, and hybrid switches normalize through connectivity or guidance, not this chip list. `hybrid` means wired-data + wireless connection, not hybrid switch/sensor technology."
       },
       "delimiter": "",
       "field": "connection",
@@ -2728,7 +2728,40 @@
       "value_form_sample": "scalar"
     },
     "connection": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Classify the exact mouse's computer connection mode, not its charging method, receiver extender, bundled cable, or switch technology. Return `wired` only when the exact product uses a cable for data/control and no wireless computer connection is supported. Return `wireless` when all usable computer connection modes are wireless protocols such as 2.4 GHz/RF dongle, Bluetooth/BLE, Logi Bolt/Unifying, LIGHTSPEED, HyperSpeed, or SLIPSTREAM; a USB port/cable listed only for charging or dongle extension is not wired mode. Return `hybrid` only when evidence explicitly supports both a wired USB data mode and at least one wireless computer connection mode; phrases like `tri-mode`, `wired + wireless`, `wireless/wired`, or a spec list containing both `Wired` and wireless protocols qualify. `Dual-mode wireless` (2.4 GHz + Bluetooth) is still `wireless`. Ignore `hybrid` when it describes switches, buttons, or sensor technology. Prefer detailed tech specs, manuals, or support setup guides over marketing titles and aggregator summaries. Reject sibling models/editions such as Pro, HyperSpeed, LIGHTSPEED, 35K, or wired-only variants unless the source matches the exact requested model/SKU.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
+      "aliases": [
+        "wired USB",
+        "USB data cable",
+        "USB charging/data cable",
+        "cable connection",
+        "wireless",
+        "2.4GHz",
+        "2.4 GHz",
+        "RF",
+        "USB receiver",
+        "dongle",
+        "Bluetooth",
+        "BLE",
+        "Logi Bolt",
+        "Unifying",
+        "LIGHTSPEED",
+        "HyperSpeed",
+        "SLIPSTREAM",
+        "dual-mode wireless",
+        "tri-mode",
+        "wireless/wired",
+        "wired and wireless",
+        "USB-C charging cable",
+        "receiver extension cable"
+      ],
       "availability": "always",
       "canonical_key": "connection",
       "component": null,
@@ -2809,9 +2842,11 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "manufacturer product tech specs",
+          "official support/setup guides",
+          "official quick-start/manual PDFs",
+          "authorized retailer spec tables",
+          "professional review lab connectivity notes"
         ],
         "domain_hints": [
           "eloshapes.com",
@@ -2822,12 +2857,19 @@
         ],
         "query_terms": [
           "connection",
+          "connectivity",
+          "connection type",
+          "connectivity technology",
           "wired",
           "wireless",
           "2.4GHz",
           "Bluetooth",
-          "dual-mode",
-          "connection type"
+          "USB receiver",
+          "USB-C data cable",
+          "charging cable",
+          "tri-mode",
+          "dual-mode wireless",
+          "wired wireless"
         ]
       },
       "selection_policy": {},
@@ -2852,6 +2894,7 @@
       },
       "value_form": "single",
       "value_form_sample": "scalar",
+      "variant_dependent": false,
       "vocab": {
         "allow_new": false,
         "known_values": [

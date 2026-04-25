@@ -37,8 +37,8 @@ export function KeyBulkPasteModal({
   onClose,
 }: KeyBulkPasteModalProps) {
   return (
-    <div className="fixed inset-0 z-40 bg-black/45 p-4 flex items-start md:items-center justify-center">
-      <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden bg-white sf-dk-surface-800 rounded border sf-border-default shadow-2xl flex flex-col">
+    <div className="sf-overlay-muted fixed inset-0 z-40 p-4 flex items-start md:items-center justify-center">
+      <div className="sf-surface-elevated w-full max-w-5xl max-h-[92vh] overflow-hidden rounded border sf-border-default shadow-2xl flex flex-col">
         <div className="px-4 py-3 border-b sf-border-default flex items-center justify-between">
           <div>
             <h4 className="text-sm font-semibold">

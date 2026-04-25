@@ -340,7 +340,7 @@ export function LlmConfigPage() {
         type="button"
         onClick={() => setResetScope('all')}
         disabled={!runtimeSettingsReady}
-        className="rounded border px-2.5 py-1 sf-text-caption disabled:opacity-40 hover:bg-black/5"
+        className="sf-icon-button rounded border px-2.5 py-1 sf-text-caption disabled:opacity-40"
         style={{ color: 'var(--sf-muted)', borderColor: 'var(--sf-surface-border)' }}
         title="Reset every LLM setting on this page to defaults. API keys are preserved."
       >

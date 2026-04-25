@@ -97,22 +97,22 @@ export default function BulkPasteGrid({
   }, [focusCell]);
 
   return (
-    <div ref={gridRef} className="border border-gray-200 dark:border-gray-700 rounded overflow-auto max-h-[40vh]">
+    <div ref={gridRef} className="border sf-border-default rounded overflow-auto max-h-[40vh]">
       <table className="w-full text-xs border-collapse">
         <thead className="sticky top-0 z-10">
-          <tr className="bg-gray-50 dark:bg-gray-900/70">
-            <th className="text-left px-2 py-1.5 w-10 text-gray-400 border-b border-r border-gray-200 dark:border-gray-700">#</th>
-            <th className="text-left px-2 py-1.5 font-medium text-gray-600 dark:text-gray-300 border-b border-r border-gray-200 dark:border-gray-700">{col1Header}</th>
-            <th className="text-left px-2 py-1.5 font-medium text-gray-600 dark:text-gray-300 border-b border-gray-200 dark:border-gray-700">{col2Header}</th>
+          <tr className="sf-table-head">
+            <th className="text-left px-2 py-1.5 w-10 sf-status-text-muted border-b border-r sf-border-default">#</th>
+            <th className="text-left px-2 py-1.5 font-medium sf-text-muted border-b border-r sf-border-default">{col1Header}</th>
+            <th className="text-left px-2 py-1.5 font-medium sf-text-muted border-b sf-border-default">{col2Header}</th>
           </tr>
         </thead>
         <tbody>
           {visibleRows.map((row, idx) => (
             <tr key={idx} className="group">
-              <td className="px-2 py-0 text-gray-300 dark:text-gray-600 border-r border-b border-gray-100 dark:border-gray-700/40 w-10 text-center select-none">
+              <td className="px-2 py-0 sf-status-text-muted border-r border-b sf-border-soft w-10 text-center select-none">
                 {idx + 1}
               </td>
-              <td className="p-0 border-r border-b border-gray-100 dark:border-gray-700/40">
+              <td className="p-0 border-r border-b sf-border-soft">
                 <input
                   data-row={idx}
                   data-col={0}
@@ -126,7 +126,7 @@ export default function BulkPasteGrid({
                   onFocus={() => setFocusCell({ row: idx, col: 0 })}
                 />
               </td>
-              <td className="p-0 border-b border-gray-100 dark:border-gray-700/40">
+              <td className="p-0 border-b sf-border-soft">
                 <input
                   data-row={idx}
                   data-col={1}

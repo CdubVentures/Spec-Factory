@@ -96,7 +96,7 @@ export function EditableDataList({
                 <button
                   type="button"
                   onClick={() => setConfirmingRemove(false)}
-                  className="px-2 py-1 text-[11px] rounded border sf-border-soft bg-white sf-dk-surface-800 sf-text-muted sf-hover-bg-surface-soft sf-dk-hover-surface-700"
+                  className="sf-icon-button px-2 py-1 text-[11px] rounded border sf-border-soft sf-text-muted"
                 >
                   Cancel
                 </button>
@@ -158,7 +158,7 @@ export function EditableDataList({
               <button
                 type="button"
                 onClick={() => setConfirmingRemove(false)}
-                className="px-2 py-1 text-[11px] rounded border sf-border-soft bg-white sf-dk-surface-800 sf-text-muted sf-hover-bg-surface-soft sf-dk-hover-surface-700"
+                className="sf-icon-button px-2 py-1 text-[11px] rounded border sf-border-soft sf-text-muted"
               >
                 Cancel
               </button>
@@ -252,7 +252,7 @@ export function EditableDataList({
         </span>
       </button>
       {showAiSections ? (
-        <div className="border sf-border-default dark:sf-border-soft rounded p-2.5 bg-white sf-dk-surface-800a40">
+        <div className="sf-surface-elevated border sf-border-default rounded p-2.5">
           <div className="grid grid-cols-3 gap-2">
             <div>
               <label className={labelCls}>
@@ -326,7 +326,7 @@ export function EditableDataList({
         ].join(" ");
         const hasExplicit = explicitNote.length > 0;
         return (
-          <div className="border sf-border-default dark:sf-border-soft rounded p-2.5 bg-white sf-dk-surface-800a40 mt-2">
+          <div className="sf-surface-elevated border sf-border-default rounded p-2.5 mt-2">
             <div className="flex items-center gap-2 mb-1">
               <span className={labelCls.replace(" mb-1", "")}>
                 Extraction Guidance (sent to LLM)

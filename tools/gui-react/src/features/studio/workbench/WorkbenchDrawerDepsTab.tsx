@@ -286,7 +286,7 @@ export function DepsTab({
                 <div key={`${expr}-${idx}`} className="flex items-center gap-1">
                   <code className="flex-1 text-[11px] px-2 py-1 rounded sf-bg-surface-soft sf-dk-surface-800 border sf-border-default dark:sf-border-default break-all">{expr}</code>
                   <button
-                    className="text-xs px-2 py-1 rounded border sf-border-default dark:sf-border-default sf-hover-bg-surface-soft dark:hover:bg-gray-800"
+                    className="text-xs px-2 py-1 rounded border sf-border-default dark:sf-border-default sf-hover-bg-surface-soft"
                     onClick={() => onUpdate('constraints', constraints.filter((_, i) => i !== idx))}
                     title="Remove constraint"
                   >
@@ -312,7 +312,7 @@ export function DepsTab({
               }}
             />
             <button
-              className="text-xs px-2 py-1 rounded border sf-border-default dark:sf-border-default sf-hover-bg-surface-soft dark:hover:bg-gray-800 disabled:opacity-50"
+              className="text-xs px-2 py-1 rounded border sf-border-default dark:sf-border-default sf-hover-bg-surface-soft disabled:opacity-50"
               onClick={addConstraint}
               disabled={!newConstraint.trim()}
             >

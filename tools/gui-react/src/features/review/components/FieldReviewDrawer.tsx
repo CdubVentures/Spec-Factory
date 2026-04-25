@@ -940,7 +940,7 @@ function OverrideAndClearSection({
             )}
           </div>
           {clearError && (
-            <p className="sf-text-nano text-red-500 mt-1">{clearError}</p>
+            <p className="sf-text-nano sf-status-text-danger mt-1">{clearError}</p>
           )}
         </div>
       )}
@@ -983,7 +983,7 @@ function OverrideInputRow({ onApply, isPending, errorMessage }: { onApply: (valu
         </button>
       </div>
       {errorMessage && (
-        <p className="sf-text-nano text-red-500">{errorMessage}</p>
+        <p className="sf-text-nano sf-status-text-danger">{errorMessage}</p>
       )}
     </div>
   );

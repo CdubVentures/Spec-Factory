@@ -10,9 +10,9 @@ import BulkPasteGrid, { type BulkGridRow } from '../../../shared/ui/forms/BulkPa
 import { invalidateFieldRulesQueries } from '../../studio/index.ts';
 
 import { btnPrimary, btnSecondary, btnDanger, sectionCls } from '../../../shared/ui/buttonClasses.ts';
-const inputCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded bg-white sf-bg-surface-soft-strong sf-text-subtle dark:placeholder:sf-text-muted placeholder:italic';
+const inputCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded sf-surface-elevated sf-text-subtle dark:placeholder:sf-text-muted placeholder:italic';
 const labelCls = 'text-xs font-medium sf-text-muted sf-text-subtle mb-1 block';
-const selectCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded bg-white sf-bg-surface-soft-strong';
+const selectCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded sf-surface-elevated';
 
 // ── Types ──────────────────────────────────────────────────────────
 import type { CatalogProduct, Brand } from '../../../types/product.ts';
@@ -632,7 +632,7 @@ export function ProductManager() {
                     Affected files
                   </button>
                   {affectedFilesOpen && (
-                  <div className="mt-1 font-mono text-[10px] rounded p-1.5 space-y-0.5 overflow-x-auto bg-white/60 sf-bg-surface-soft/60">
+                  <div className="mt-1 font-mono text-[10px] rounded p-1.5 space-y-0.5 overflow-x-auto sf-bg-surface-soft">
                     <div>specs/inputs/{category}/products/<span className="font-semibold">{editPid}</span>.json</div>
                     <div>*/latest/, */runs/, */review/ under <span className="font-semibold">{editPid}</span></div>
                     <div>*/published/<span className="font-semibold">{editPid}</span>/*</div>
@@ -689,14 +689,14 @@ export function ProductManager() {
                 value={confirmInput}
                 onChange={(e) => setConfirmInput(e.target.value)}
                 placeholder="Type the product ID to confirm"
-                className="w-full px-2 py-1.5 text-sm font-mono border-2 sf-border-soft sf-border-default rounded bg-white sf-bg-surface-soft sf-border-default focus:outline-none"
+                className="sf-input w-full px-2 py-1.5 text-sm font-mono border-2 rounded focus:outline-none"
                 autoFocus
               />
               <div className="flex gap-2 pt-1">
                 <button
                   onClick={() => { if (editPid) deleteMut.mutate(editPid); }}
                   disabled={confirmInput !== deleteConfirmPhrase || deleteMut.isPending}
-                  className="px-3 py-1.5 text-xs font-semibold sf-bg-surface-soft-strong text-white rounded sf-hover-bg-surface-soft-strong disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="sf-primary-button px-3 py-1.5 text-xs font-semibold rounded disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {deleteMut.isPending ? 'Deleting...' : 'I understand, delete this product'}
                 </button>
@@ -744,8 +744,8 @@ export function ProductManager() {
       )}
       </div>
       {bulkOpen && (
-        <div className="fixed inset-0 z-40 bg-black/45 p-4 flex items-start md:items-center justify-center">
-          <div className="w-full max-w-5xl max-h-[92vh] overflow-hidden bg-white sf-bg-surface-soft rounded border sf-border-default sf-border-default shadow-2xl flex flex-col">
+        <div className="sf-overlay-muted fixed inset-0 z-40 p-4 flex items-start md:items-center justify-center">
+          <div className="sf-surface-elevated w-full max-w-5xl max-h-[92vh] overflow-hidden rounded border sf-border-default shadow-2xl flex flex-col">
             <div className="px-4 py-3 border-b sf-border-default sf-border-default flex items-center justify-between">
               <div>
                 <h4 className="text-sm font-semibold">Bulk Paste Base Models + Variants</h4>

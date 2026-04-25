@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 import { useRuntimeStore } from '../../../stores/runtimeStore.ts';
 import { useEventsStore } from '../../../stores/eventsStore.ts';
-import { useOperationsStore, type Operation } from '../../../stores/operationsStore.ts';
+import { useOperationsStore, type Operation, type LlmCallStreamChunk } from '../../../stores/operationsStore.ts';
 import { useIndexLabStore, type IndexLabEvent } from '../../../stores/indexlabStore.ts';
 import type { ProcessStatus, RuntimeEvent } from '../../../types/events.ts';
 import { useWsSubscription } from '../../../hooks/useWsSubscription.ts';
@@ -36,12 +36,19 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
   // 150ms chosen: above server batch interval, below human perception threshold.
   const STREAM_FLUSH_MS = 150;
   const streamBufRef = useRef(new Map<string, string>());
+  const callStreamBufRef = useRef(new Map<string, LlmCallStreamChunk[]>());
   useEffect(() => {
     const timer = setInterval(() => {
       const buf = streamBufRef.current;
-      if (buf.size === 0) return;
-      useOperationsStore.getState().batchAppendStreamText(buf);
-      streamBufRef.current = new Map();
+      if (buf.size > 0) {
+        useOperationsStore.getState().batchAppendStreamText(buf);
+        streamBufRef.current = new Map();
+      }
+      const callBuf = callStreamBufRef.current;
+      if (callBuf.size > 0) {
+        useOperationsStore.getState().batchAppendCallStreamText(callBuf);
+        callStreamBufRef.current = new Map();
+      }
     }, STREAM_FLUSH_MS);
     return () => {
       clearInterval(timer);
@@ -49,6 +56,11 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
       if (buf.size > 0) {
         useOperationsStore.getState().batchAppendStreamText(buf);
         streamBufRef.current = new Map();
+      }
+      const callBuf = callStreamBufRef.current;
+      if (callBuf.size > 0) {
+        useOperationsStore.getState().batchAppendCallStreamText(callBuf);
+        callStreamBufRef.current = new Map();
       }
     };
   }, []);
@@ -104,10 +116,23 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
       }
     }
     if (channel === 'llm-stream' && data && typeof data === 'object') {
-      const msg = data as { operationId?: string; text?: string };
+      const msg = data as { operationId?: string; text?: string; callId?: string; lane?: string; label?: string; channel?: string };
       if (msg.operationId && msg.text) {
-        const buf = streamBufRef.current;
-        buf.set(msg.operationId, (buf.get(msg.operationId) ?? '') + msg.text);
+        if (msg.callId) {
+          const buf = callStreamBufRef.current;
+          const chunks = buf.get(msg.operationId) ?? [];
+          chunks.push({
+            callId: msg.callId,
+            text: msg.text,
+            lane: msg.lane,
+            label: msg.label,
+            channel: msg.channel,
+          });
+          buf.set(msg.operationId, chunks);
+        } else {
+          const buf = streamBufRef.current;
+          buf.set(msg.operationId, (buf.get(msg.operationId) ?? '') + msg.text);
+        }
       }
     }
     if (channel === 'data-change' && data && typeof data === 'object') {

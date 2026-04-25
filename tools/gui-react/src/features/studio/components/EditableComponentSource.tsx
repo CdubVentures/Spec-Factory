@@ -258,7 +258,7 @@ export function EditableComponentSource({
                 <button
                   type="button"
                   onClick={() => setConfirmingRemove(false)}
-                  className="px-2 py-1 text-[11px] rounded border sf-border-soft bg-white sf-dk-surface-800 sf-text-muted sf-hover-bg-surface-soft sf-dk-hover-surface-700"
+                  className="sf-icon-button px-2 py-1 text-[11px] rounded border sf-border-soft sf-text-muted"
                 >
                   Cancel
                 </button>
@@ -317,7 +317,7 @@ export function EditableComponentSource({
               <button
                 type="button"
                 onClick={() => setConfirmingRemove(false)}
-                className="px-2 py-1 text-[11px] rounded border sf-border-soft bg-white sf-dk-surface-800 sf-text-muted sf-hover-bg-surface-soft sf-dk-hover-surface-700"
+                className="sf-icon-button px-2 py-1 text-[11px] rounded border sf-border-soft sf-text-muted"
               >
                 Cancel
               </button>

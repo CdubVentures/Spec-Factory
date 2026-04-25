@@ -47,19 +47,19 @@ export function ActivityGauge({
   const pct = Math.max(0, Math.min(100, (currentPerMin / Math.max(1, peakPerMin)) * 100));
   const displayPct = active && pct <= 0 ? 2 : pct;
   return (
-    <div className="min-w-[12rem] rounded border border-gray-200 dark:border-gray-700 px-2 py-1">
-      <div className="flex items-center justify-between text-[10px] text-gray-500 dark:text-gray-400">
+    <div className="min-w-[12rem] rounded border sf-border-default px-2 py-1">
+      <div className="flex items-center justify-between text-[10px] sf-status-text-muted">
         <span className="inline-flex items-center">
           {label}
           {tooltip ? <Tip text={tooltip} /> : null}
         </span>
-        <span className={active ? 'text-emerald-600 dark:text-emerald-300' : ''}>
+        <span className={active ? 'sf-status-text-success' : ''}>
           {formatNumber(currentPerMin, 1)}/min
         </span>
       </div>
-      <div className="mt-1 h-1.5 rounded bg-gray-200 dark:bg-gray-700 overflow-hidden">
+      <div className="mt-1 h-1.5 rounded sf-meter-track overflow-hidden">
         <div
-          className={`h-full rounded ${active ? 'bg-emerald-500' : 'bg-gray-400'}`}
+          className={`h-full rounded ${active ? 'sf-meter-fill-success' : 'sf-meter-fill-neutral'}`}
           style={{ width: `${displayPct}%` }}
         />
       </div>

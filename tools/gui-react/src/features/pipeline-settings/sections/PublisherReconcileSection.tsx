@@ -95,7 +95,7 @@ export default function PublisherReconcileSection() {
       {/* Active Operation Progress */}
       {activeOp && (
         <div className="sf-surface-elevated border sf-border-soft rounded-lg p-4 flex items-center gap-3">
-          <div className="w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
+          <div className="w-3 h-3 rounded-full sf-dot-info animate-pulse" />
           <span className="sf-text-primary text-sm font-semibold">
             {activeOp.stages?.[activeOp.currentStageIndex] ?? 'Processing'}...
           </span>

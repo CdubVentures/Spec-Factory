@@ -9,7 +9,7 @@ import { Chip } from '../../shared/ui/feedback/Chip.tsx';
 import type { IndexingLlmConfigResponse } from '../../features/indexing/types.ts';
 
 const activeCls = 'border-accent text-accent';
-const inactiveCls = 'border-transparent text-slate-600 hover:text-slate-900 dark:text-slate-300/70 dark:hover:text-white';
+const inactiveCls = 'border-transparent sf-text-muted hover:sf-text-primary';
 const baseCls = 'inline-flex items-center px-4 py-2.5 text-sm font-medium whitespace-nowrap border-b-2 transition-colors';
 function TabGroup({ tabs }: { tabs: readonly TabDef[] }) {
   return (
@@ -18,7 +18,7 @@ function TabGroup({ tabs }: { tabs: readonly TabDef[] }) {
         return (
           <span key={tab.path} className="inline-flex items-center">
             {tab.dividerBefore && (
-                <span className="self-center mr-1 text-slate-300 dark:text-white/35 select-none">|</span>
+                <span className="self-center mr-1 sf-status-text-muted select-none">|</span>
             )}
             <NavLink
               to={tab.path}
@@ -28,7 +28,7 @@ function TabGroup({ tabs }: { tabs: readonly TabDef[] }) {
               {tab.label}
             </NavLink>
             {tab.dividerAfter && (
-                <span className="self-center ml-1 text-slate-300 dark:text-white/35 select-none">|</span>
+                <span className="self-center ml-1 sf-status-text-muted select-none">|</span>
             )}
           </span>
         );
@@ -79,7 +79,7 @@ export function TabNav() {
     <nav className={`sf-tab-nav flex items-center ${borderCls} px-4 overflow-x-auto`}>
       {/* Global group — far left */}
       <div className="flex items-center gap-0.5 pr-3 border-r sf-border-default mr-1">
-        <span className={`${sectionLabelCls} text-slate-400 dark:text-slate-500`} title="Cross-category surfaces">
+        <span className={`${sectionLabelCls} sf-status-text-muted`} title="Cross-category surfaces">
           {globalIcon}
         </span>
         <TabGroup tabs={GLOBAL_TABS} />
@@ -87,7 +87,7 @@ export function TabNav() {
 
       {/* Category group — center */}
       <div className="flex items-center gap-0.5">
-        <span className={`${sectionLabelCls} text-slate-400 dark:text-slate-500`} title="Scoped to selected category">
+        <span className={`${sectionLabelCls} sf-status-text-muted`} title="Scoped to selected category">
           {categoryIcon}
         </span>
         <TabGroup tabs={CATALOG_TABS} />
@@ -96,7 +96,7 @@ export function TabNav() {
 
       {/* Settings group — pushed to far right */}
       <div className="ml-auto flex items-center gap-0.5 pl-3 border-l sf-border-default">
-        <span className={`${sectionLabelCls} text-slate-400 dark:text-slate-500`}>
+        <span className={`${sectionLabelCls} sf-status-text-muted`}>
           {gearIcon}
         </span>
         <TabGroup tabs={SETTINGS_TABS} />

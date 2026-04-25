@@ -164,10 +164,82 @@ function createMockLlm(viewsPerCall = ['top']) {
   return { callLlm, calls };
 }
 
+function createDeferred() {
+  let resolve;
+  let reject;
+  const promise = new Promise((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+  return { promise, resolve, reject };
+}
+
+async function waitUntil(predicate, timeoutMs = 500) {
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    if (predicate()) return true;
+    await new Promise((resolve) => setTimeout(resolve, 10));
+  }
+  return false;
+}
+
 /* ── Tests ─────────────────────────────────────────────────────── */
 
 describe('runCarouselLoop', () => {
-  it('loops until complete: views then heroes', async () => {
+  it('starts the hero lane before the ordered view lane finishes', async () => {
+    const pid = 'loop-hero-parallel';
+    writeCefData(pid, SIMPLE_CEF);
+    const finderStore = makeFinderStoreStub({
+      satisfactionThreshold: '100',
+      heroEnabled: 'true',
+      heroCount: '1',
+      viewAttemptBudget: '1',
+      viewAttemptBudgets: '{"top":1}',
+      heroAttemptBudget: '1',
+      viewBudget: '["top"]',
+    });
+    const specDb = makeSpecDbStub(finderStore);
+    const blockedTop = createDeferred();
+    const calls = [];
+
+    const callLlm = async (args) => {
+      const focus = args.priorityViews?.[0]?.key || 'hero';
+      const mode = focus === 'hero' ? 'hero' : 'view';
+      calls.push({ mode, focus });
+      if (mode === 'view' && focus === 'top') {
+        return blockedTop.promise;
+      }
+      return { result: {
+        images: [{ view: 'hero', url: `http://localhost:${serverPort}/hero-parallel.png`, source_page: '', alt_text: '' }],
+        discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+      }, usage: null };
+    };
+
+    const runPromise = runCarouselLoop({
+      product: { ...PRODUCT, product_id: pid },
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: callLlm,
+      _modelDirOverride: path.join(TMP_ROOT, 'no-model'),
+    });
+
+    const viewStarted = await waitUntil(() => calls.some((c) => c.mode === 'view' && c.focus === 'top'));
+    assert.equal(viewStarted, true, 'top view should start first');
+    const heroStartedBeforeTopResolved = await waitUntil(() => calls.some((c) => c.mode === 'hero'), 250);
+
+    blockedTop.resolve({ result: {
+      images: [{ view: 'top', url: `http://localhost:${serverPort}/top-parallel.png`, source_page: '', alt_text: '' }],
+      discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+    }, usage: null });
+    const result = await runPromise;
+
+    assert.equal(heroStartedBeforeTopResolved, true, 'hero should run in parallel with the view lane');
+    assert.equal(result.rejected, false);
+    assert.deepEqual(calls.map((c) => `${c.mode}:${c.focus}`).sort(), ['hero:hero', 'view:top']);
+  });
+
+  it('loops until complete across ordered views and hero lane', async () => {
     const pid = 'loop-complete';
     writeCefData(pid, SIMPLE_CEF);
     const finderStore = makeFinderStoreStub({
@@ -178,16 +250,12 @@ describe('runCarouselLoop', () => {
     });
     const specDb = makeSpecDbStub(finderStore);
 
-    // Return one view per call, cycling through budget views + hero
-    let callIdx = 0;
-    const viewSequence = ['top', 'left', 'angle', 'sangle', 'front', 'bottom', 'hero'];
     const calls = [];
     const callLlm = async (args) => {
       calls.push(args);
-      const view = viewSequence[callIdx % viewSequence.length];
-      callIdx++;
+      const view = args.priorityViews?.[0]?.key || 'hero';
       return { result: {
-        images: [{ view, url: `http://localhost:${serverPort}/${view}-${callIdx}.png`, source_page: '', alt_text: '' }],
+        images: [{ view, url: `http://localhost:${serverPort}/${view}-${calls.length}.png`, source_page: '', alt_text: '' }],
         discovery_log: { urls_checked: [], queries_run: [], notes: [] },
       }, usage: null };
     };
@@ -204,6 +272,7 @@ describe('runCarouselLoop', () => {
     assert.equal(result.rejected, false);
     assert.ok(result.totalLlmCalls >= 7, `expected >= 7 calls, got ${result.totalLlmCalls}`);
     assert.ok(result.images.length >= 7, `expected >= 7 images, got ${result.images.length}`);
+    assert.ok(calls.some((args) => (args.priorityViews || []).length === 0), 'hero lane should issue a hero call');
   });
 
   it('stops early when satisfaction hit before budget', async () => {
@@ -324,6 +393,39 @@ describe('runCarouselLoop', () => {
 
     assert.equal(result.rejected, true);
     assert.equal(result.totalLlmCalls, 0);
+  });
+
+  it('aborts without persisting empty runs when the LLM provider circuit is open', async () => {
+    const pid = 'loop-provider-circuit-open';
+    writeCefData(pid, SIMPLE_CEF);
+    const finderStore = makeFinderStoreStub({
+      satisfactionThreshold: '3',
+      heroEnabled: 'true',
+      heroCount: '1',
+      viewAttemptBudget: '2',
+      viewAttemptBudgets: '{"top":2}',
+      heroAttemptBudget: '2',
+      viewBudget: '["top"]',
+    });
+    const specDb = makeSpecDbStub(finderStore);
+    const providerError = "Provider 'lab-openai' circuit open (24 consecutive failures). Retry after cooldown.";
+
+    await assert.rejects(
+      runCarouselLoop({
+        product: { ...PRODUCT, product_id: pid },
+        specDb,
+        config: {},
+        productRoot: PRODUCT_ROOT,
+        _callLlmOverride: async () => {
+          throw new Error(providerError);
+        },
+        _modelDirOverride: path.join(TMP_ROOT, 'no-model'),
+      }),
+      /PIF loop LLM unavailable/,
+    );
+
+    assert.equal(finderStore._runs.length, 0, 'provider outages must not persist normal zero-image runs');
+    assert.equal(finderStore._upserts.length, 0, 'provider outages must not update selected image state');
   });
 
   it('re-run budget: satisfied views get reRunBudget calls, not viewAttemptBudget', async () => {

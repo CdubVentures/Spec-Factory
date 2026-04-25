@@ -49,7 +49,7 @@
 
 /* Empty grid placeholder cells */
 .pif-empty-grid-cell {
-  border: 1.5px dashed var(--sf-color-border-subtle-rgb, rgba(0, 0, 0, 0.15));
+  border: 1.5px dashed rgb(var(--sf-color-border-subtle-rgb) / 0.6);
 }
 
 /* Gallery columns layout */

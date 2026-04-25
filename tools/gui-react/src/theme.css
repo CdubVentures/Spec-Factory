@@ -35,6 +35,8 @@
   --sf-token-state-key-fg: #4263eb;
   --sf-token-state-key-bg: rgba(66, 99, 235, 0.10);
   --sf-token-state-key-border: rgba(66, 99, 235, 0.28);
+  --sf-token-state-sku-fg: #9e5fe0;
+  --sf-token-state-grade-d-fg: #fd7e14;
   --sf-token-font-family-ui: "Segoe UI", "Inter", "Helvetica Neue", "Noto Sans", sans-serif;
   --sf-token-font-family-mono: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
   --sf-token-font-size-micro: 8px;
@@ -490,6 +492,10 @@ html[data-sf-theme='solarized'] {
   --sf-color-accent-rgb: 38 139 210;
   --sf-color-accent-strong-rgb: 42 161 152;
   --sf-color-run-ai-rgb: 108 113 196;
+  /* WHY: tooltips read --sf-color-surface-dark-rgb for their near-opaque background.
+     :root defaults to dark navy; on light-mid themes that stays jarringly off-palette.
+     Override to the theme's text-primary so tooltips render dark-on-light in palette. */
+  --sf-color-surface-dark-rgb: 7 54 66;
 }
 
 /* Snow Storm — Nord's frosty grey-blue light variant (nord4-6 palette) */
@@ -541,6 +547,7 @@ html[data-sf-theme='snowstorm'] {
   --sf-color-accent-rgb: 94 129 172;
   --sf-color-accent-strong-rgb: 129 161 193;
   --sf-color-run-ai-rgb: 180 142 173;
+  --sf-color-surface-dark-rgb: 46 52 64;
 }
 
 /* Dawn — Rosé Pine Dawn, soft warm rose-cream with deep teal/iris accents */
@@ -592,6 +599,11 @@ html[data-sf-theme='dawn'] {
   --sf-color-accent-rgb: 40 105 131;
   --sf-color-accent-strong-rgb: 86 148 159;
   --sf-color-run-ai-rgb: 144 122 169;
+  --sf-color-surface-dark-rgb: 87 82 121;
+  /* WHY: Dawn's editorial palette pairs with a serif UI. This proves per-theme
+     typography overrides — any theme can override --sf-token-font-family-ui
+     in its block to ship a custom font. */
+  --sf-token-font-family-ui: "Iowan Old Style", "Palatino Linotype", Palatino, "URW Palladio L", Georgia, serif;
 }
 
 /* Tokyo Day — Tokyo Night's cool grey-lavender light variant, deep indigo accents */
@@ -643,6 +655,42 @@ html[data-sf-theme='tokyoday'] {
   --sf-color-accent-rgb: 46 125 233;
   --sf-color-accent-strong-rgb: 36 89 170;
   --sf-color-run-ai-rgb: 120 71 189;
+  --sf-color-surface-dark-rgb: 55 96 191;
+}
+
+/* ── Mid-tone shared overrides ──────────────────────────────────────────
+   Properties that ALL 4 mid-tones need:
+   1. color-scheme: light — prevents OS dark-mode bleed for native widgets
+      (scrollbars, date pickers, form controls).
+   2. Component-level overrides for surfaces that fall through to the
+      :root light defaults but need explicit token-binding on the off-white
+      mid-tone surfaces (otherwise inputs render stark white on cream/grey). */
+html[data-sf-theme='solarized'],
+html[data-sf-theme='snowstorm'],
+html[data-sf-theme='dawn'],
+html[data-sf-theme='tokyoday'] {
+  color-scheme: light;
+}
+
+html[data-sf-theme='solarized'] .sf-input,
+html[data-sf-theme='solarized'] .sf-select,
+html[data-sf-theme='solarized'] .sf-primitive-input,
+html[data-sf-theme='solarized'] .sf-custom-select-trigger,
+html[data-sf-theme='snowstorm'] .sf-input,
+html[data-sf-theme='snowstorm'] .sf-select,
+html[data-sf-theme='snowstorm'] .sf-primitive-input,
+html[data-sf-theme='snowstorm'] .sf-custom-select-trigger,
+html[data-sf-theme='dawn'] .sf-input,
+html[data-sf-theme='dawn'] .sf-select,
+html[data-sf-theme='dawn'] .sf-primitive-input,
+html[data-sf-theme='dawn'] .sf-custom-select-trigger,
+html[data-sf-theme='tokyoday'] .sf-input,
+html[data-sf-theme='tokyoday'] .sf-select,
+html[data-sf-theme='tokyoday'] .sf-primitive-input,
+html[data-sf-theme='tokyoday'] .sf-custom-select-trigger {
+  background: var(--sf-token-surface-elevated);
+  border-color: var(--sf-token-border-default);
+  color: var(--sf-token-text-primary);
 }
 
 /* ══════════════════════════════════════════════════════════════════════
@@ -1175,6 +1223,10 @@ html[data-sf-radius] {
   --sf-panel: var(--sf-token-surface-panel);
   --sf-surface-border: var(--sf-token-border-default);
   --sf-border: var(--sf-token-border-default);
+  /* WHY: legacy consumers (Popover.css etc.) reference --sf-token-surface / --sf-token-border
+     without the "-base" / "-default" suffix. Alias both shapes so var() resolves correctly. */
+  --sf-token-surface: var(--sf-token-surface-base);
+  --sf-token-border: var(--sf-token-border-default);
   --sf-text: rgb(var(--sf-color-text-primary-rgb));
   --sf-muted: rgb(var(--sf-color-text-muted-rgb));
   --sf-state-confirm-fg: var(--sf-token-state-confirm-fg);
@@ -2001,23 +2053,23 @@ html[data-sf-theme-mode='dark'] .sf-action-tooltip {
 }
 
 .sf-llm-soft-button {
-  border: 1px solid rgba(147, 51, 234, 0.45);
+  border: 1px solid rgb(var(--sf-color-run-ai-rgb) / 0.45);
   border-radius: var(--sf-radius-sm);
-  color: #7e22ce;
-  background: rgba(147, 51, 234, 0.14);
+  color: var(--sf-state-run-ai-fg);
+  background: rgb(var(--sf-color-run-ai-rgb) / 0.14);
 }
 
 .sf-llm-soft-button:hover {
   color: rgb(var(--sf-color-text-inverse-rgb));
-  background: #9333ea;
+  background: var(--sf-state-run-ai-fg);
   border-color: transparent;
 }
 
 .sf-llm-soft-badge {
-  border: 1px solid rgba(147, 51, 234, 0.32);
+  border: 1px solid rgb(var(--sf-color-run-ai-rgb) / 0.32);
   border-radius: var(--sf-radius-sm);
-  color: #7e22ce;
-  background: rgba(147, 51, 234, 0.12);
+  color: var(--sf-state-run-ai-fg);
+  background: rgb(var(--sf-color-run-ai-rgb) / 0.12);
 }
 
 html[data-sf-theme-mode='dark'] .sf-llm-soft-button {
@@ -6806,7 +6858,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-purple {
 
 .sf-skel-kpi       { height: 4.5rem; border-radius: var(--sf-radius-lg); }
 .sf-skel-chart     { height: 16rem;  border-radius: var(--sf-radius-lg); flex: 1 1 0; }
-.sf-skel-donut     { height: 170px;  width: 170px; border-radius: 9999px; }
+.sf-skel-donut     { height: 170px;  width: 170px; border-radius: var(--sf-token-radius-pill); }
 .sf-skel-bar       { height: 0.5rem; border-radius: var(--sf-radius-sm); }
 .sf-skel-bar-label { height: 0.75rem; width: 40%; border-radius: var(--sf-radius-sm); }
 .sf-skel-row       { height: 2.25rem; border-radius: var(--sf-radius-sm); }

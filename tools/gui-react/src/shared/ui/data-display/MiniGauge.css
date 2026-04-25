@@ -3,7 +3,7 @@
   align-items: center;
   gap: 7px;
   padding: 2px 10px 2px 4px;
-  border-radius: 999px;
+  border-radius: var(--sf-token-radius-pill);
   background: transparent;
   border: 1px solid color-mix(in srgb, var(--sf-mini-gauge-tone) 28%, var(--sf-token-border-default));
   --sf-mini-gauge-tone: var(--sf-token-text-muted);

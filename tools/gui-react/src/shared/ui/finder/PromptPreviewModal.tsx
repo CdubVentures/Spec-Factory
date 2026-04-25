@@ -38,7 +38,7 @@ export function PromptPreviewModal({ open, onClose, query, title, subtitle, stor
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
+      className="sf-overlay-muted fixed inset-0 z-50 flex items-center justify-center"
       onClick={onClose}
       role="presentation"
     >

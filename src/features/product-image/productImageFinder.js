@@ -423,6 +423,16 @@ async function runSingleVariant({
       continue;
     }
 
+    if (mode === 'hero' && view !== 'hero') {
+      errors.push({ view, url: img.url, error: 'non-hero image skipped in hero mode' });
+      continue;
+    }
+
+    if (mode !== 'hero' && view === 'hero') {
+      errors.push({ view, url: img.url, error: 'hero image skipped in view mode' });
+      continue;
+    }
+
     // WHY: Hard URL dedup gate. The LLM ignores prompt hints to avoid
     // previously-downloaded URLs. This rejects at the download boundary
     // so the same image is never fetched twice for the same variant.
@@ -583,6 +593,11 @@ export async function runProductImageFinder({
   onQueueWait = null,
   onLlmCallComplete = null,
   onVariantProgress = null,
+  // WHY: Fires after the per-variant store.upsert in produceForVariant lands.
+  // Wired by the route handler to refresh pif_variant_progress + emit a
+  // data-change event so the Overview "img" counter ticks live mid-run
+  // instead of jumping at the end. Receives no args — it's a pure tick.
+  onVariantPersisted = null,
   signal,
 }) {
   productRoot = productRoot || defaultProductRoot();
@@ -885,6 +900,8 @@ export async function runProductImageFinder({
       run_count: merged.run_count,
     });
 
+    onVariantPersisted?.({ variantKey: variant.key, variantId: variant.variant_id || null });
+
     return { images: result.images, errors: result.errors };
   }
 
@@ -938,6 +955,18 @@ export async function runProductImageFinder({
 
 /* ── Carousel Loop Orchestrator ──────────────────────────────────── */
 
+function isLoopLlmInfrastructureFailureMessage(message) {
+  const text = String(message || '').toLowerCase();
+  return text.includes('circuit open') || text.includes('retry after cooldown');
+}
+
+function resolveLoopLlmInfrastructureFailure(result) {
+  if (Array.isArray(result?.images) && result.images.length > 0) return '';
+  const errors = Array.isArray(result?.errors) ? result.errors : [];
+  const failure = errors.find((err) => isLoopLlmInfrastructureFailureMessage(err?.error || err?.message));
+  return failure?.error || failure?.message || '';
+}
+
 /**
  * Run the carousel loop for a product: views (focused, one at a time) then
  * heroes, then done. Each LLM call targets one unsatisfied view as priority
@@ -963,6 +992,11 @@ export async function runCarouselLoop({
   onQueueWait = null,
   onLlmCallComplete = null,
   onLoopProgress = null,
+  // WHY: Fires after each iteration's store.upsert lands. Wired by the route
+  // handler to refresh pif_variant_progress + emit a data-change event so the
+  // Overview "img" counter ticks live across loop iterations instead of
+  // jumping at the end. Receives the variant key/id of the iteration.
+  onVariantPersisted = null,
   signal,
 }) {
   productRoot = productRoot || defaultProductRoot();
@@ -1066,18 +1100,76 @@ export async function runCarouselLoop({
   const allImages = [];
   const allErrors = [];
   let totalLlmCalls = 0;
+  let startedLlmCalls = 0;
+  let persistQueue = Promise.resolve();
+  let fatalLoopError = null;
+
+  function allocateCallContext({ variant, callMode, focusView }) {
+    startedLlmCalls++;
+    const target = callMode === 'hero' ? 'hero' : (focusView || 'view');
+    const label = callMode === 'hero'
+      ? `Discovery Hero ${startedLlmCalls}`
+      : `Discovery ${target.charAt(0).toUpperCase() + target.slice(1)} ${startedLlmCalls}`;
+    return {
+      callId: `${loopId}:${variant.variant_id || variant.key}:${callMode}:${target}:${startedLlmCalls}`,
+      callNumber: startedLlmCalls,
+      lane: callMode,
+      label,
+      target,
+    };
+  }
+
+  async function withPersistLock(work) {
+    const run = persistQueue.then(work, work);
+    persistQueue = run.catch(() => {});
+    return run;
+  }
+
+  function markFatalLoopError(error) {
+    if (!fatalLoopError) fatalLoopError = error;
+    return fatalLoopError;
+  }
+
+  function readCollectedImages() {
+    const pifDoc = readProductImages({ productId: product.product_id, productRoot });
+    return (pifDoc?.selected?.images || []).map((img) => ({
+      view: img.view, variant_key: img.variant_key, variant_id: img.variant_id, quality_pass: img.quality_pass !== false,
+    }));
+  }
+
+  function filterAlreadyPersistedImages({ images, variant }) {
+    if (!Array.isArray(images) || images.length === 0) return [];
+    const freshDoc = readProductImages({ productId: product.product_id, productRoot });
+    const existingImages = (freshDoc?.selected?.images || []).filter((img) =>
+      matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key })
+    );
+    const existingUrls = new Set(existingImages.map((img) => normalizeImageUrl(img.url)).filter(Boolean));
+    const existingHashes = new Set(existingImages.map((img) => img.content_hash || '').filter(Boolean));
+    return images.filter((img) => {
+      const normUrl = normalizeImageUrl(img.url);
+      if (normUrl && existingUrls.has(normUrl)) return false;
+      if (img.content_hash && existingHashes.has(img.content_hash)) return false;
+      return true;
+    });
+  }
 
   // Shared: execute one LLM call, persist, report progress
   async function executeOneCall({ variant, callMode, focusView, estimatedRemaining, variantIndex, variantTotal, viewAttemptCounts: vatCounts, heroAttemptCount: haCnt }) {
+    if (fatalLoopError) throw fatalLoopError;
+
+    const callContext = allocateCallContext({ variant, callMode, focusView });
+    const emitCallStream = (delta) => {
+      if (!delta) return;
+      onStreamChunk?.({ ...delta, callId: callContext.callId, lane: callContext.lane, label: callContext.label });
+    };
     // WHY: Cycle stage back to Discovery on each new call so the sidebar
     // pipeline animates Discovery → Download → Processing → (next call) Discovery → ...
     onStageAdvance?.('Discovery');
 
     // WHY: Inject a separator into the LLM stream so the live output panel
     // shows clear boundaries between calls (variant, mode, target view).
-    const target = callMode === 'hero' ? 'hero' : (focusView || '?');
-    const separator = totalLlmCalls > 0 ? '\n\n' : '';
-    onStreamChunk?.({ content: `${separator}── call ${totalLlmCalls + 1} · ${variant.label} · ${callMode}: ${target} ──\n` });
+    const separator = callContext.callNumber > 1 ? '\n\n' : '';
+    emitCallStream({ content: `${separator}── call ${callContext.callNumber} · ${variant.label} · ${callMode}: ${callContext.target} ──\n` });
 
     // Per-call pool key: loop view-mode iterations share 'loop-view',
     // loop hero-mode iterations share 'loop-hero'. Both are isolated from
@@ -1103,7 +1195,7 @@ export async function runCarouselLoop({
       config, logger,
       onPhaseChange: onStageAdvance ? (phase) => { if (phase === 'writer') onStageAdvance('Writer'); } : undefined,
       onModelResolved: wrappedOnModelResolved,
-      onStreamChunk,
+      onStreamChunk: emitCallStream,
       onQueueWait,
       signal,
       onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
@@ -1146,11 +1238,9 @@ export async function runCarouselLoop({
 
     const callStartedAt = new Date().toISOString();
     const callStartMs = Date.now();
-    const callLabel = callMode === 'hero'
-      ? `Discovery Hero ${totalLlmCalls + 1}`
-      : `Discovery ${(focusView || '').charAt(0).toUpperCase() + (focusView || '').slice(1)} ${totalLlmCalls + 1}`;
 
     onLlmCallComplete?.({
+      callId: callContext.callId,
       prompt: { system: systemPrompt, user: userMsg },
       response: null,
       model: _mtLoop.actualModel,
@@ -1161,7 +1251,8 @@ export async function runCarouselLoop({
       accessMode: _mtLoop.actualAccessMode,
       variant: variant.label,
       mode: callMode,
-      label: callLabel,
+      lane: callContext.lane,
+      label: callContext.label,
     });
 
     const result = await runSingleVariant({
@@ -1176,24 +1267,46 @@ export async function runCarouselLoop({
     });
 
     const callDurationMs = Date.now() - callStartMs;
+    const callFocusView = callMode === 'view' ? (focusView || null) : null;
+    const responsePayload = { mode: callMode, run_scope_key: runScopeKey, loop_id: loopId, focus_view: callFocusView, started_at: callStartedAt, duration_ms: callDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
+    const infrastructureFailure = resolveLoopLlmInfrastructureFailure(result);
 
-    allImages.push(...result.images);
+    if (infrastructureFailure) {
+      const error = markFatalLoopError(new Error(`PIF loop LLM unavailable: ${infrastructureFailure}`));
+      emitCallStream({ content: `\n-- LLM unavailable: ${infrastructureFailure} --\n` });
+      onLlmCallComplete?.({
+        callId: callContext.callId,
+        prompt: { system: systemPrompt, user: userMsg },
+        response: responsePayload,
+        model: _mtLoop.actualModel,
+        isFallback: _mtLoop.actualFallbackUsed,
+        thinking: _mtLoop.actualThinking,
+        webSearch: _mtLoop.actualWebSearch,
+        effortLevel: _mtLoop.actualEffortLevel,
+        accessMode: _mtLoop.actualAccessMode,
+        variant: variant.label,
+        mode: callMode,
+        lane: callContext.lane,
+        usage: result.usage,
+        label: callContext.label,
+      });
+      throw error;
+    }
+
+    if (fatalLoopError) throw fatalLoopError;
+
     allErrors.push(...result.errors);
-    totalLlmCalls++;
 
     // WHY: Inject call result summary into the stream so the live output
     // panel shows what images were found and any errors per call.
     const imgViews = result.images.map(i => i.view).join(', ');
     const errCount = result.errors.length;
     const summary = `\n── ${result.images.length} image${result.images.length !== 1 ? 's' : ''} found${imgViews ? ` (${imgViews})` : ''}${errCount ? ` · ${errCount} error${errCount !== 1 ? 's' : ''}` : ''} ──\n`;
-    onStreamChunk?.({ content: summary });
-
-    const selected = { images: result.images };
-    const callFocusView = callMode === 'view' ? (focusView || null) : null;
-    const responsePayload = { mode: callMode, run_scope_key: runScopeKey, loop_id: loopId, focus_view: callFocusView, started_at: callStartedAt, duration_ms: callDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
+    emitCallStream({ content: summary });
 
     // Smart update — fills response into the pending prompt entry
     onLlmCallComplete?.({
+      callId: callContext.callId,
       prompt: { system: systemPrompt, user: userMsg },
       response: responsePayload,
       model: _mtLoop.actualModel,
@@ -1204,20 +1317,46 @@ export async function runCarouselLoop({
       accessMode: _mtLoop.actualAccessMode,
       variant: variant.label,
       mode: callMode,
+      lane: callContext.lane,
       usage: result.usage,
-      label: callLabel,
+      label: callContext.label,
     });
 
-    const merged = mergeProductImageDiscovery({
-      productId: product.product_id,
-      productRoot,
-      newDiscovery: { category: product.category, last_ran_at: ranAt },
-      run: {
-        mode: callMode,
-        loop_id: loopId,
-        focus_view: callFocusView,
-        started_at: callStartedAt,
-        duration_ms: callDurationMs,
+    await withPersistLock(async () => {
+      const imagesToPersist = filterAlreadyPersistedImages({ images: result.images, variant });
+      allImages.push(...imagesToPersist);
+      totalLlmCalls++;
+      const selected = { images: imagesToPersist };
+
+      const merged = mergeProductImageDiscovery({
+        productId: product.product_id,
+        productRoot,
+        newDiscovery: { category: product.category, last_ran_at: ranAt },
+        run: {
+          mode: callMode,
+          loop_id: loopId,
+          focus_view: callFocusView,
+          started_at: callStartedAt,
+          duration_ms: callDurationMs,
+          model: _mtLoop.actualModel,
+          fallback_used: _mtLoop.actualFallbackUsed,
+          effort_level: _mtLoop.actualEffortLevel,
+          access_mode: _mtLoop.actualAccessMode,
+          thinking: _mtLoop.actualThinking,
+          web_search: _mtLoop.actualWebSearch,
+          selected,
+          prompt: { system: systemPrompt, user: userMsg },
+          response: responsePayload,
+        },
+      });
+
+      const store = specDb.getFinderStore('productImageFinder');
+      const latestRun = merged.runs[merged.runs.length - 1];
+      store.insertRun({
+        category: product.category,
+        product_id: product.product_id,
+        run_number: latestRun.run_number,
+        ran_at: ranAt,
         model: _mtLoop.actualModel,
         fallback_used: _mtLoop.actualFallbackUsed,
         effort_level: _mtLoop.actualEffortLevel,
@@ -1225,59 +1364,43 @@ export async function runCarouselLoop({
         thinking: _mtLoop.actualThinking,
         web_search: _mtLoop.actualWebSearch,
         selected,
-        prompt: { system: systemPrompt, user: userMsg },
-        response: responsePayload,
-      },
-    });
+        prompt: latestRun.prompt,
+        response: latestRun.response,
+      });
 
-    const store = specDb.getFinderStore('productImageFinder');
-    const latestRun = merged.runs[merged.runs.length - 1];
-    store.insertRun({
-      category: product.category,
-      product_id: product.product_id,
-      run_number: latestRun.run_number,
-      ran_at: ranAt,
-      model: _mtLoop.actualModel,
-      fallback_used: _mtLoop.actualFallbackUsed,
-      effort_level: _mtLoop.actualEffortLevel,
-      access_mode: _mtLoop.actualAccessMode,
-      thinking: _mtLoop.actualThinking,
-      web_search: _mtLoop.actualWebSearch,
-      selected,
-      prompt: latestRun.prompt,
-      response: latestRun.response,
-    });
+      store.upsert({
+        category: product.category,
+        product_id: product.product_id,
+        images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
+        image_count: merged.selected.images.length,
+        latest_ran_at: ranAt,
+        run_count: merged.run_count,
+      });
 
-    store.upsert({
-      category: product.category,
-      product_id: product.product_id,
-      images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
-      image_count: merged.selected.images.length,
-      latest_ran_at: ranAt,
-      run_count: merged.run_count,
-    });
+      onVariantPersisted?.({ variantKey: variant.key, variantId: variant.variant_id || null });
 
-    // WHY: Re-evaluate carousel AFTER persist to get accurate post-call progress
-    const postCallImages = merged.selected.images.map(img => ({
-      view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
-    }));
-    const postCallStrategy = evaluateCarousel({
-      collectedImages: postCallImages, viewBudget, satisfactionThreshold,
-      heroEnabled, heroCount, variantKey: variant.key, variantId: variant.variant_id,
-      viewAttemptBudget, viewAttemptBudgets, viewAttemptCounts: vatCounts,
-      heroAttemptBudget, heroAttemptCount: haCnt,
-      reRunBudget,
-    });
-    onLoopProgress?.({
-      callNumber: totalLlmCalls,
-      estimatedRemaining: Math.max(0, estimatedRemaining - 1),
-      variant: variant.key,
-      variantLabel: variant.label,
-      focusView,
-      mode: callMode,
-      variantIndex: variantIndex ?? 0,
-      variantTotal: variantTotal ?? 1,
-      carouselProgress: postCallStrategy.carouselProgress,
+      // WHY: Re-evaluate carousel AFTER persist to get accurate post-call progress
+      const postCallImages = merged.selected.images.map(img => ({
+        view: img.view, variant_key: img.variant_key, variant_id: img.variant_id, quality_pass: img.quality_pass !== false,
+      }));
+      const postCallStrategy = evaluateCarousel({
+        collectedImages: postCallImages, viewBudget, satisfactionThreshold,
+        heroEnabled, heroCount, variantKey: variant.key, variantId: variant.variant_id,
+        viewAttemptBudget, viewAttemptBudgets, viewAttemptCounts: vatCounts,
+        heroAttemptBudget, heroAttemptCount: haCnt,
+        reRunBudget,
+      });
+      onLoopProgress?.({
+        callNumber: totalLlmCalls,
+        estimatedRemaining: Math.max(0, estimatedRemaining - 1),
+        variant: variant.key,
+        variantLabel: variant.label,
+        focusView,
+        mode: callMode,
+        variantIndex: variantIndex ?? 0,
+        variantTotal: variantTotal ?? 1,
+        carouselProgress: postCallStrategy.carouselProgress,
+      });
     });
   }
 
@@ -1285,27 +1408,21 @@ export async function runCarouselLoop({
   // WHY: try/catch around the loop catches AbortError from cancellation.
   // Completed iterations already persisted — we keep that data and exit gracefully.
   try {
-  for (let vi = 0; vi < variants.length; vi++) {
+    for (let vi = 0; vi < variants.length; vi++) {
     if (signal?.aborted) break;
     const variant = variants[vi];
-
-    // Unified loop: evaluateCarousel handles per-view budgets via reRunBudget.
-    // Unsatisfied views get viewAttemptBudget; satisfied views get reRunBudget.
-    const initialDoc = readProductImages({ productId: product.product_id, productRoot });
-    const initialImages = (initialDoc?.selected?.images || []).map((img) => ({
-      view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
-    }));
-
     const viewAttemptCounts = {};
     let heroAttemptCount = 0;
 
-    const initialStrategy = evaluateCarousel({
-      collectedImages: initialImages, viewBudget, satisfactionThreshold,
+    const evaluateCombined = () => evaluateCarousel({
+      collectedImages: readCollectedImages(), viewBudget, satisfactionThreshold,
       heroEnabled, heroCount, variantKey: variant.key, variantId: variant.variant_id,
       viewAttemptBudget, viewAttemptBudgets, viewAttemptCounts,
       heroAttemptBudget, heroAttemptCount,
       reRunBudget,
     });
+
+    const initialStrategy = evaluateCombined();
 
     // WHY: Emit initial progress before first call so the sidebar shows
     // carousel state immediately, not only after call 1 finishes.
@@ -1321,37 +1438,62 @@ export async function runCarouselLoop({
       carouselProgress: initialStrategy.carouselProgress,
     });
 
-    while (true) {
-      if (signal?.aborted) break;
-      const pifDoc = readProductImages({ productId: product.product_id, productRoot });
-      const collectedImages = (pifDoc?.selected?.images || []).map((img) => ({
-        view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
-      }));
+    const runViewLane = async () => {
+      while (!signal?.aborted && !fatalLoopError) {
+        const strategy = evaluateCarousel({
+          collectedImages: readCollectedImages(), viewBudget, satisfactionThreshold,
+          heroEnabled: false, heroCount, variantKey: variant.key, variantId: variant.variant_id,
+          viewAttemptBudget, viewAttemptBudgets, viewAttemptCounts,
+          heroAttemptBudget, heroAttemptCount: 0,
+          reRunBudget,
+        });
+        if (strategy.isComplete || strategy.mode !== 'view' || !strategy.focusView) break;
 
-      const strategy = evaluateCarousel({
-        collectedImages, viewBudget, satisfactionThreshold,
-        heroEnabled, heroCount, variantKey: variant.key, variantId: variant.variant_id,
-        viewAttemptBudget, viewAttemptBudgets, viewAttemptCounts,
-        heroAttemptBudget, heroAttemptCount,
-        reRunBudget,
-      });
-
-      if (strategy.isComplete) break;
-
-      const focusView = strategy.focusView;
-      const callMode = strategy.mode;
-
-      // WHY: Increment BEFORE the call so the progress emission inside
-      // executeOneCall reflects this call as counted.
-      if (callMode === 'view' && focusView) {
+        const focusView = strategy.focusView;
+        const combinedBeforeCall = evaluateCombined();
         viewAttemptCounts[focusView] = (viewAttemptCounts[focusView] || 0) + 1;
-      } else if (callMode === 'hero') {
-        heroAttemptCount++;
+        await executeOneCall({
+          variant,
+          callMode: 'view',
+          focusView,
+          estimatedRemaining: combinedBeforeCall.estimatedCallsRemaining,
+          variantIndex: vi,
+          variantTotal: variants.length,
+          viewAttemptCounts,
+          heroAttemptCount,
+        });
       }
+    };
 
-      await executeOneCall({ variant, callMode, focusView, estimatedRemaining: strategy.estimatedCallsRemaining, variantIndex: vi, variantTotal: variants.length, viewAttemptCounts, heroAttemptCount });
+    const runHeroLane = async () => {
+      if (!heroEnabled) return;
+      while (!signal?.aborted && !fatalLoopError) {
+        const strategy = evaluateCarousel({
+          collectedImages: readCollectedImages(), viewBudget: [], satisfactionThreshold,
+          heroEnabled, heroCount, variantKey: variant.key, variantId: variant.variant_id,
+          viewAttemptBudget, viewAttemptBudgets: {}, viewAttemptCounts: {},
+          heroAttemptBudget, heroAttemptCount,
+          reRunBudget,
+        });
+        if (strategy.isComplete || strategy.mode !== 'hero') break;
+
+        const combinedBeforeCall = evaluateCombined();
+        heroAttemptCount++;
+        await executeOneCall({
+          variant,
+          callMode: 'hero',
+          focusView: null,
+          estimatedRemaining: combinedBeforeCall.estimatedCallsRemaining,
+          variantIndex: vi,
+          variantTotal: variants.length,
+          viewAttemptCounts,
+          heroAttemptCount,
+        });
+      }
+    };
+
+    await Promise.all([runViewLane(), runHeroLane()]);
     }
-  }
   } catch (err) {
     // WHY: AbortError from in-flight LLM call during cancellation. Completed iterations
     // already persisted — fall through to return accumulated results.
@@ -1361,10 +1503,7 @@ export async function runCarouselLoop({
   onStageAdvance?.('Complete');
 
   // Final carousel progress
-  const finalDoc = readProductImages({ productId: product.product_id, productRoot });
-  const finalImages = (finalDoc?.selected?.images || []).map((img) => ({
-    view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
-  }));
+  const finalImages = readCollectedImages();
   const carouselProgress = {};
   for (const v of variants) {
     carouselProgress[v.key] = evaluateCarousel({

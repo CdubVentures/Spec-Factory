@@ -83,7 +83,7 @@ export function KeyStickyHeader({
   }
 
   return (
-    <div className="sticky top-0 bg-white sf-dk-surface-900 z-10 border-b sf-border-default mb-1">
+    <div className="sticky top-0 sf-surface-elevated z-10 border-b sf-border-default mb-1">
       {editingLabel ? (
         (() => {
           const trimmedLabel = editLabelValue.trim();
@@ -194,7 +194,7 @@ export function KeyStickyHeader({
           {/* Identity: label + key */}
           <div className="flex items-center gap-2 min-w-0">
             <span
-              className="text-lg font-semibold sf-text-primary dark:text-white truncate cursor-pointer hover:text-accent transition-colors leading-snug"
+              className="text-lg font-semibold sf-text-primary truncate cursor-pointer hover:text-accent transition-colors leading-snug"
               onClick={() => {
                 setEditingLabel(true);
                 setEditLabelValue(

@@ -47,25 +47,25 @@ export function LinkedProductsList({ products, headerLabel, catalog, maxHeight =
     <div className="mt-2">
       <button
         onClick={toggleExpanded}
-        className="w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded hover:bg-gray-100 dark:hover:bg-gray-750 transition-colors"
+        className="sf-icon-button w-full flex items-center justify-between px-2 py-1.5 text-[11px] font-medium sf-text-muted border sf-border-default rounded transition-colors"
       >
         <span className="truncate">
           Linked Products{headerLabel ? ` by ${headerLabel}` : ''}{' '}
-          <span className="text-gray-400">({products.length})</span>
+          <span className="sf-status-text-muted">({products.length})</span>
         </span>
-        <span className="flex-shrink-0 ml-1 text-[10px] text-gray-400">
+        <span className="flex-shrink-0 ml-1 text-[10px] sf-status-text-muted">
           {expanded ? '▲' : '▼'}
         </span>
       </button>
 
       {expanded && (
         <div
-          className="mt-1 border border-gray-200 dark:border-gray-700 rounded overflow-y-auto"
+          className="mt-1 border sf-border-default rounded overflow-y-auto"
           style={{ maxHeight }}
         >
           <table className="w-full text-[10px]">
-            <thead className="sticky top-0 bg-gray-50 dark:bg-gray-800">
-              <tr className="text-left text-gray-500 dark:text-gray-400">
+            <thead className="sf-table-head sticky top-0">
+              <tr className="text-left sf-status-text-muted">
                 <th className="px-2 py-1 font-medium">Brand</th>
                 <th className="px-2 py-1 font-medium">Model</th>
                 {products.some(p => p.match_type) && (
@@ -73,18 +73,18 @@ export function LinkedProductsList({ products, headerLabel, catalog, maxHeight =
                 )}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
+            <tbody>
               {products.map((p, i) => {
                 const { brand, model } = resolveDisplay(p.product_id, catalogMap);
                 return (
                   <tr
                     key={`${p.product_id}-${i}`}
-                    className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                    className="sf-row-hoverable"
                   >
-                    <td className="px-2 py-1 font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
-                      {brand || <span className="text-gray-400 italic">—</span>}
+                    <td className="px-2 py-1 font-medium sf-text-primary whitespace-nowrap">
+                      {brand || <span className="sf-status-text-muted italic">—</span>}
                     </td>
-                    <td className="px-2 py-1 text-gray-600 dark:text-gray-400 truncate max-w-[160px]" title={model}>
+                    <td className="px-2 py-1 sf-text-muted truncate max-w-[160px]" title={model}>
                       {model}
                     </td>
                     {products.some(pp => pp.match_type) && (
@@ -92,10 +92,10 @@ export function LinkedProductsList({ products, headerLabel, catalog, maxHeight =
                         {p.match_type && (
                           <span className={`inline-block px-1 py-0.5 rounded text-[9px] font-medium ${
                             p.match_type === 'exact'
-                              ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-300'
+                              ? 'sf-chip-success'
                               : p.match_type === 'alias'
-                                ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300'
-                                : 'bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-300'
+                                ? 'sf-chip-info'
+                                : 'sf-chip-warning'
                           }`}>
                             {p.match_type}
                             {p.match_score != null ? ` ${Math.round(p.match_score * 100)}%` : ''}

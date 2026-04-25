@@ -366,7 +366,7 @@ export function PipelineSettingsPage() {
         type="button"
         onClick={() => setResetScope('all')}
         disabled={!runtimeSettingsReady || runtimeSettingsSaving}
-        className="rounded border px-2.5 py-1 sf-text-caption disabled:opacity-40 hover:bg-black/5"
+        className="sf-icon-button rounded border px-2.5 py-1 sf-text-caption disabled:opacity-40"
         style={{ color: 'var(--sf-muted)', borderColor: 'var(--sf-surface-border)' }}
         title="Reset every runtime setting and every finder module panel (for the current category) to defaults. Custom source-strategy rules and spec-seed templates are preserved."
       >

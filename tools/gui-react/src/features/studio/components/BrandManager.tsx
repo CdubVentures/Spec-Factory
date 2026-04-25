@@ -1203,7 +1203,7 @@ export function BrandManager() {
         )}{" "}
       </div>{" "}
       {bulkOpen && (
-        <div className="fixed inset-0 z-40 bg-black/45 p-4 flex items-start md:items-center justify-center">
+        <div className="sf-overlay-muted fixed inset-0 z-40 p-4 flex items-start md:items-center justify-center">
           {" "}
           <div
             className={`w-full max-w-4xl max-h-[92vh] overflow-hidden sf-surface-card rounded border ${borderPanelCls} shadow-2xl flex flex-col`}

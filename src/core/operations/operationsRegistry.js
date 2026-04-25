@@ -225,6 +225,27 @@ export function appendLlmCall({ id, call }) {
   if (!op || op.status !== 'running') return;
   if (!op.llmCalls) op.llmCalls = [];
 
+  const callId = typeof call?.callId === 'string' ? call.callId : '';
+  if (callId) {
+    const existingIndex = op.llmCalls.findIndex((c) => c.callId === callId);
+    if (existingIndex >= 0) {
+      const existing = op.llmCalls[existingIndex];
+      const updated = {
+        ...existing,
+        ...call,
+        prompt: existing.prompt || call.prompt,
+        response: Object.hasOwn(call, 'response') ? call.response : existing.response,
+        callIndex: existing.callIndex,
+        timestamp: new Date().toISOString(),
+      };
+      op.llmCalls[existingIndex] = updated;
+      if (_broadcastWs) {
+        _broadcastWs('operations', { action: 'llm-call-update', id, callIndex: updated.callIndex, call: updated });
+      }
+      return;
+    }
+  }
+
   // Update last entry if it's a pending prompt awaiting response
   const last = op.llmCalls[op.llmCalls.length - 1];
   if (last && last.response === null && call.response != null) {

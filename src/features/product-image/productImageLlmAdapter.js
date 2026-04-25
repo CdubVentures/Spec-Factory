@@ -58,32 +58,32 @@ export const CATEGORY_VIEW_DEFAULTS = Object.freeze({
   mouse: [
     { key: 'top',    priority: true,  description: 'Bird\'s-eye shot looking directly down at the mouse from above — camera directly overhead, showing full shape outline and button layout' },
     { key: 'left',   priority: true,  description: 'Strict side profile from the left at eye level — camera level with the mouse, no tilt, showing the full side silhouette, button profile, and scroll wheel' },
-    { key: 'angle',  priority: true,  description: 'Rear/top three-quarter mouse product shot: top shell plus one side with rear or palm-rest curvature dominant; not a pure top-down shot and not a front/nose-dominant sangle shot.' },
+    { key: 'sangle', priority: true,  description: 'primary Dynamic View mouse showcase shot: best clean angled product image for the site\'s Dynamic View slot. Prefer front/side, low side, or top-side 3/4 where the mouse shape, buttons, logo, lighting, or front/side detail is visible; exact 30-45 degree geometry is not required.' },
+    { key: 'angle',  priority: true,  description: 'secondary distinct angled mouse product shot: second-best clean angled/technical perspective for carousel depth. Prefer a viewpoint different from sangle, such as opposite side, rear/top, side/top, or alternate 3/4; avoid near-duplicates of sangle and do not require exact rear/top geometry.' },
     { key: 'bottom', priority: false, description: 'Underside/belly view showing the base, sensor, mouse feet/skates, and any bottom labels or DPI switch' },
     { key: 'right',  priority: false, description: 'True right-side profile mouse product shot: long horizontal side silhouette with the right side wall, grip, or side buttons dominant and only minimal top surface visible; not a top-down or three-quarter shot.' },
     { key: 'front',  priority: false, description: 'Nose/front-facing mouse product shot: camera faces the front edge of the mouse, with the front lip, USB/cable exit, scroll wheel/button-front shape, or nose profile visible; not a top-down shell shot.' },
     { key: 'rear',   priority: false, description: 'Head-on rear view showing the back/rear of the mouse, the palm rest curvature from behind' },
-    { key: 'sangle', priority: false, description: 'Front-side three-quarter mouse product shot: side geometry plus the front/nose/USB/cable/front-lip area are visible; low wide showcase angles are acceptable when the front-side geometry is clear.' },
   ],
   monitor: [
     { key: 'front',  priority: true,  description: 'Head-on front view of the monitor — camera faces the display straight on, showing the full screen, bezels, and stand' },
-    { key: 'angle',  priority: true,  description: 'Rear/top 3/4 angle showing the monitor from behind and slightly above — showing the back panel design and stand' },
+    { key: 'sangle', priority: true,  description: 'primary Dynamic View monitor showcase shot: best clean angled product image for the site\'s Dynamic View slot. Prefer front/side 3/4 or low side perspective showing the screen, bezels, stand depth, and overall form; exact 30-45 degree geometry is not required.' },
+    { key: 'angle',  priority: true,  description: 'secondary distinct angled monitor product shot: second-best clean angled/technical perspective for carousel depth. Prefer a viewpoint different from sangle, such as rear/side, stand/back design, or top/side form; avoid near-duplicates of sangle.' },
     { key: 'rear',   priority: true,  description: 'Head-on rear view showing the back panel, ports, VESA mount area, and cable management' },
     { key: 'left',   priority: false, description: 'Strict side profile from the left at eye level — showing the monitor thickness, stand profile, and panel depth' },
     { key: 'right',  priority: false, description: 'Strict side profile from the right at eye level — mirror of left view' },
     { key: 'top',    priority: false, description: 'Bird\'s-eye shot looking down at the monitor from above — showing the top edge, thickness, and stand base' },
     { key: 'bottom', priority: false, description: 'Underside view showing the bottom bezel and any bottom-mounted ports, buttons, or joystick' },
-    { key: 'sangle', priority: false, description: 'Front/side 3/4 angle — showing the monitor from the front-left at roughly 30–45 degrees' },
   ],
   keyboard: [
     { key: 'top',    priority: true,  description: 'Bird\'s-eye shot looking directly down at the keyboard from above — camera directly overhead, showing the full key layout and keycap legends' },
     { key: 'left',   priority: true,  description: 'Strict side profile from the left at eye level — showing the keyboard height profile, key travel, and wrist-rest if present' },
-    { key: 'angle',  priority: true,  description: 'Front/top 3/4 angle showing the keyboard from above and slightly in front at roughly 30–45 degrees' },
+    { key: 'sangle', priority: true,  description: 'primary Dynamic View keyboard showcase shot: best clean angled product image for the site\'s Dynamic View slot. Prefer front/top or front/side 3/4 showing keycaps plus case depth; exact 30-45 degree geometry is not required.' },
+    { key: 'angle',  priority: true,  description: 'secondary distinct angled keyboard product shot: second-best clean angled/technical perspective for carousel depth. Prefer a viewpoint different from sangle, such as opposite side, rear/top, side/top, or low profile angle; avoid near-duplicates of sangle.' },
     { key: 'bottom', priority: false, description: 'Underside view showing the base, rubber feet, tilt legs, and any bottom labels' },
     { key: 'right',  priority: false, description: 'Strict side profile from the right at eye level — mirror of left view' },
     { key: 'front',  priority: false, description: 'Head-on front view — camera faces the front edge showing the spacebar and front bezel' },
     { key: 'rear',   priority: false, description: 'Head-on rear view showing the back edge, ports, cable routing, and any rear features' },
-    { key: 'sangle', priority: false, description: 'Front/side 3/4 angle — showing the keyboard from the front-left at roughly 30–45 degrees' },
   ],
 });
 
@@ -96,9 +96,9 @@ export const CATEGORY_VIEW_DEFAULTS = Object.freeze({
  * a valid canonical view not in the budget, we keep it.
  */
 export const CATEGORY_VIEW_BUDGET_DEFAULTS = Object.freeze({
-  mouse:    ['top', 'left', 'angle', 'sangle', 'front', 'bottom'],  // 6 — sangle real, right extremely rare
-  keyboard: ['top', 'left', 'angle', 'sangle'],                      // 4
-  monitor:  ['front', 'angle', 'rear', 'left'],                      // 4
+  mouse:    ['top', 'left', 'sangle', 'angle', 'front', 'bottom'],  // 6 — sangle real, right extremely rare
+  keyboard: ['top', 'left', 'sangle', 'angle'],                      // 4
+  monitor:  ['front', 'sangle', 'angle', 'rear', 'left'],            // 5
   mousepad: ['top', 'angle'],                                         // 2
 });
 
@@ -133,8 +133,8 @@ export const GENERIC_VIEW_DESCRIPTIONS = Object.freeze({
   right:  'Strict side profile from the right at eye level — mirror of left view',
   front:  'Head-on front view — camera faces the front of the product straight on',
   rear:   'Head-on rear view showing the back panel, ports, and rear design',
-  sangle: 'Front/side 3/4 angle — product shot from the front-left at roughly 30–45 degrees, slightly above',
-  angle:  'Rear/top 3/4 angle — showing the product from above and behind at roughly 30–45 degrees',
+  sangle: 'primary Dynamic View product showcase shot: best clean angled image for the site\'s Dynamic View slot, usually front/side or low side 3/4; exact 30-45 degree geometry is not required.',
+  angle:  'secondary distinct angled product shot: second-best clean angled/technical perspective for carousel depth, different from sangle; use the next best unique angled product image.',
 });
 
 /* ── Category-specific view eval criteria ─────────────────────────── */
@@ -154,6 +154,37 @@ export const GENERIC_VIEW_EVAL_CRITERIA = `Evaluation criteria — pick the BEST
 - Wrong product: Different model, wrong color, accessory instead of product → disqualify (flag: "wrong_product")
 - Sharpness: Blur, compression artifacts, noise → prefer the better candidate
 - Composition: View angle matches the requested view, product centered, clean background → prefer the better candidate`;
+
+const GENERIC_SANGLE_VIEW_EVAL_CRITERIA = `Evaluation criteria — pick the BEST candidate for SANGLE (primary Dynamic View):
+- Resolution: Each image label includes original dimensions and file size. Higher resolution originals are preferred — the thumbnails shown are downscaled so you cannot judge resolution visually.
+- Expected role: primary Dynamic View for the site. Pick the first good angled/showcase product shot. Prefer a clean front/side, low side, top-side, or elevated 3/4 product image; exact 30-45 degree geometry is not required.
+- Slot priority: If this is the only good angled shot, it belongs in sangle before angle.
+- Background removal: Product alpha must be solid throughout — no transparent holes in the product body, no halo or fringing at edges, no remnant background pixels.
+- Single product: Image must contain exactly one product — not two color variants side-by-side, not product + accessories combo.
+- Identity: Must be the correct model and correct color/edition variant.
+- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → disqualify (flag: "watermark")
+- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → disqualify (flag: "badge")
+- Cropping: Product cut off at edges, missing parts, too tight framing → penalty (flag: "cropped")
+- Wrong product: Different model, wrong color, accessory instead of product → disqualify (flag: "wrong_product")
+- Sharpness and composition → prefer the better candidate`;
+
+const GENERIC_ANGLE_VIEW_EVAL_CRITERIA = `Evaluation criteria — pick the BEST candidate for ANGLE (secondary distinct angled):
+- Resolution: Each image label includes original dimensions and file size. Higher resolution originals are preferred — the thumbnails shown are downscaled so you cannot judge resolution visually.
+- Expected role: secondary distinct angled/technical carousel slot. Pick the best angled product shot that is visually different from the existing sangle/context shot. Prefer opposite side, rear/top, side/top, alternate 3/4, or another unique angled perspective; exact geometry is not required.
+- Duplicate control: reject or down-rank near-duplicate composition of the current sangle/context winner.
+- Background removal: Product alpha must be solid throughout — no transparent holes in the product body, no halo or fringing at edges, no remnant background pixels.
+- Single product: Image must contain exactly one product — not two color variants side-by-side, not product + accessories combo.
+- Identity: Must be the correct model and correct color/edition variant.
+- Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → disqualify (flag: "watermark")
+- Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → disqualify (flag: "badge")
+- Cropping: Product cut off at edges, missing parts, too tight framing → penalty (flag: "cropped")
+- Wrong product: Different model, wrong color, accessory instead of product → disqualify (flag: "wrong_product")
+- Sharpness and composition → prefer the better candidate`;
+
+const GENERIC_VIEW_EVAL_CRITERIA_BY_VIEW = Object.freeze({
+  sangle: GENERIC_SANGLE_VIEW_EVAL_CRITERIA,
+  angle: GENERIC_ANGLE_VIEW_EVAL_CRITERIA,
+});
 
 // WHY: Uncommon views get a lighter criteria block — fewer candidates expected,
 // so we want basic quality gates without over-filtering.
@@ -201,9 +232,10 @@ export const CATEGORY_VIEW_EVAL_CRITERIA = Object.freeze({
 - Sharpness: Side button detail, scroll wheel profile, grip texture visible → prefer the better candidate
 - Composition: Full side profile at eye level, no tilt → prefer the better candidate`,
 
-    sangle: `Evaluation criteria — pick the BEST candidate for MOUSE — S-ANGLE (front/side 3/4):
+    sangle: `Evaluation criteria — pick the BEST candidate for MOUSE — SANGLE (primary Dynamic View):
 - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
-- Expected geometry: Front/side 3/4 angle at roughly 30–45 degrees, camera slightly elevated. This is the primary showcase angle — mouse should fill the frame with logo/branding visible.
+- Expected role: primary Dynamic View for the site. Pick the first good angled/showcase mouse product shot. Prefer front/side, low side, or top-side 3/4 where shape, buttons, logo, lighting, or front-side detail are visible; exact 30-45 degree geometry is not required.
+- Slot priority: If this is the only good angled shot, it belongs in sangle before angle.
 - Background removal: Product alpha must be solid. Shadow remnants under the product must be fully removed. Edge between mouse body and removed background must be clean.
 - Single product: Exactly one mouse.
 - Identity: Correct model and color/edition variant.
@@ -213,9 +245,10 @@ export const CATEGORY_VIEW_EVAL_CRITERIA = Object.freeze({
 - Sharpness: Surface detail, logo, RGB lighting crisp → prefer the better candidate
 - Composition: Product fills frame, attractive angle showing design → prefer the better candidate`,
 
-    angle: `Evaluation criteria — pick the BEST candidate for MOUSE — ANGLE (rear/top 3/4):
+    angle: `Evaluation criteria — pick the BEST candidate for MOUSE — ANGLE (secondary distinct angled):
 - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
-- Expected geometry: Rear/top 3/4 angle showing the mouse from above and behind at roughly 30–45 degrees. Shows the palm rest curvature and rear design.
+- Expected role: secondary distinct angled/technical carousel slot. Pick the best angled mouse product shot that is visually different from the existing sangle/context shot. Prefer opposite side, rear/top, side/top, or alternate 3/4; exact rear/top geometry is not required.
+- Duplicate control: reject or down-rank near-duplicate composition of the current sangle/context winner.
 - Background removal: Product alpha must be solid. Shadow remnants and edge artifacts must be clean.
 - Single product: Exactly one mouse.
 - Identity: Correct model and color/edition variant.
@@ -275,10 +308,11 @@ export const CATEGORY_VIEW_EVAL_CRITERIA = Object.freeze({
 - Cropping: Full side visible → penalty (flag: "cropped")
 - Sharpness and composition → prefer the better candidate`,
 
-    angle: `Evaluation criteria — pick the BEST candidate for KEYBOARD — ANGLE (elevated front 3/4):
+    sangle: `Evaluation criteria — pick the BEST candidate for KEYBOARD — SANGLE (primary Dynamic View):
 - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
-- Expected geometry: Front/top 3/4 angle showing the keyboard from above and slightly in front at roughly 30–45 degrees. Shows keycaps with depth perspective.
-- Background removal: Product alpha must be solid. Thin profile edges must not be eaten by BG removal.
+- Expected role: primary Dynamic View for the site. Pick the first good angled/showcase keyboard product shot. Prefer front/top or front/side 3/4 showing keycaps plus case depth; exact 30-45 degree geometry is not required.
+- Slot priority: If this is the only good angled shot, it belongs in sangle before angle.
+- Background removal: Product alpha must be solid. Edge artifacts at thin profile sections must be clean.
 - Single product: Exactly one keyboard.
 - Identity: Correct model and color/edition variant.
 - Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
@@ -286,10 +320,11 @@ export const CATEGORY_VIEW_EVAL_CRITERIA = Object.freeze({
 - Cropping: Full keyboard visible → penalty (flag: "cropped")
 - Sharpness and composition → prefer the better candidate`,
 
-    sangle: `Evaluation criteria — pick the BEST candidate for KEYBOARD — S-ANGLE (front/side 3/4):
+    angle: `Evaluation criteria — pick the BEST candidate for KEYBOARD — ANGLE (secondary distinct angled):
 - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
-- Expected geometry: Front/side 3/4 angle showing the keyboard from the front-left at roughly 30–45 degrees, slightly above. Shows keycaps and side profile together.
-- Background removal: Product alpha must be solid. Edge artifacts at thin profile sections must be clean.
+- Expected role: secondary distinct angled/technical carousel slot. Pick the best angled keyboard product shot that is visually different from the existing sangle/context shot. Prefer opposite side, rear/top, side/top, or low profile angle; exact 30-45 degree geometry is not required.
+- Duplicate control: reject or down-rank near-duplicate composition of the current sangle/context winner.
+- Background removal: Product alpha must be solid. Thin profile edges must not be eaten by BG removal.
 - Single product: Exactly one keyboard.
 - Identity: Correct model and color/edition variant.
 - Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
@@ -317,9 +352,22 @@ export const CATEGORY_VIEW_EVAL_CRITERIA = Object.freeze({
 - Sharpness: Bezel detail, stand design visible → prefer the better candidate
 - Composition: Monitor centered, fills frame → prefer the better candidate`,
 
-    angle: `Evaluation criteria — pick the BEST candidate for MONITOR — ANGLE (rear/top 3/4):
+    sangle: `Evaluation criteria — pick the BEST candidate for MONITOR — SANGLE (primary Dynamic View):
 - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
-- Expected geometry: Rear/top 3/4 angle showing the back panel design, stand mount, and overall form factor from behind and slightly above.
+- Expected role: primary Dynamic View for the site. Pick the first good angled/showcase monitor product shot. Prefer front/side 3/4 or low side perspective showing the screen, bezels, stand depth, and overall form; exact 30-45 degree geometry is not required.
+- Slot priority: If this is the only good angled shot, it belongs in sangle before angle.
+- Background removal: Product alpha must be solid. Stand joint/hinge area must be cleanly preserved. Thin profile sections must not be partially eaten.
+- Single product: Exactly one monitor.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full monitor and stand visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    angle: `Evaluation criteria — pick the BEST candidate for MONITOR — ANGLE (secondary distinct angled):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected role: secondary distinct angled/technical carousel slot. Pick the best angled monitor product shot that is visually different from the existing sangle/context shot. Prefer rear/side, stand/back design, or top/side form; exact rear/top geometry is not required.
+- Duplicate control: reject or down-rank near-duplicate composition of the current sangle/context winner.
 - Background removal: Product alpha must be solid. Stand joint/hinge area must be cleanly preserved. Thin profile sections must not be partially eaten.
 - Single product: Exactly one monitor.
 - Identity: Correct model and color/edition variant.
@@ -353,7 +401,6 @@ export const CATEGORY_VIEW_EVAL_CRITERIA = Object.freeze({
     right: UNCOMMON_VIEW_CRITERIA,
     top: UNCOMMON_VIEW_CRITERIA,
     bottom: UNCOMMON_VIEW_CRITERIA,
-    sangle: UNCOMMON_VIEW_CRITERIA,
   }),
 
   /* ── Mousepad ───────────────────────────────────────────────────── */
@@ -369,9 +416,22 @@ export const CATEGORY_VIEW_EVAL_CRITERIA = Object.freeze({
 - Cropping: Full pad visible → penalty (flag: "cropped")
 - Sharpness and composition → prefer the better candidate`,
 
-    angle: `Evaluation criteria — pick the BEST candidate for MOUSEPAD — ANGLE (elevated perspective):
+    sangle: `Evaluation criteria — pick the BEST candidate for MOUSEPAD — SANGLE (primary Dynamic View):
 - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
-- Expected geometry: Elevated 3/4 angle showing the pad surface and slight thickness/edge profile.
+- Expected role: primary Dynamic View for the site. Pick the first good angled/showcase mousepad product shot. Prefer an elevated 3/4 or low side view that shows pad surface plus edge thickness; exact 30-45 degree geometry is not required.
+- Slot priority: If this is the only good angled shot, it belongs in sangle before angle.
+- Background removal: Product alpha must be solid. Thin edges must be preserved.
+- Single product: Exactly one mousepad.
+- Identity: Correct model and color/edition variant.
+- Watermarks / badges / overlays → disqualify (flag: "watermark" or "badge")
+- Wrong product → disqualify (flag: "wrong_product")
+- Cropping: Full pad visible → penalty (flag: "cropped")
+- Sharpness and composition → prefer the better candidate`,
+
+    angle: `Evaluation criteria — pick the BEST candidate for MOUSEPAD — ANGLE (secondary distinct angled):
+- Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
+- Expected role: secondary distinct angled/technical carousel slot. Pick the best angled mousepad product shot that is visually different from the existing sangle/context shot. Prefer alternate elevated, side-edge, rolled-edge, or thickness perspective; exact 30-45 degree geometry is not required.
+- Duplicate control: reject or down-rank near-duplicate composition of the current sangle/context winner.
 - Background removal: Product alpha must be solid. Thin edges must be preserved.
 - Single product: Exactly one mousepad.
 - Identity: Correct model and color/edition variant.
@@ -385,7 +445,6 @@ export const CATEGORY_VIEW_EVAL_CRITERIA = Object.freeze({
     right: UNCOMMON_VIEW_CRITERIA,
     front: UNCOMMON_VIEW_CRITERIA,
     rear: UNCOMMON_VIEW_CRITERIA,
-    sangle: UNCOMMON_VIEW_CRITERIA,
   }),
 });
 
@@ -491,7 +550,9 @@ When picking multiple heroes, prefer different shots over near-duplicates of the
  * @returns {string} — criteria text (category-specific or generic fallback)
  */
 export function resolveViewEvalCriteria(category, view) {
-  return CATEGORY_VIEW_EVAL_CRITERIA[category]?.[view] || GENERIC_VIEW_EVAL_CRITERIA;
+  return CATEGORY_VIEW_EVAL_CRITERIA[category]?.[view] ||
+    GENERIC_VIEW_EVAL_CRITERIA_BY_VIEW[view] ||
+    GENERIC_VIEW_EVAL_CRITERIA;
 }
 
 /**

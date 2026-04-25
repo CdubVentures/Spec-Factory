@@ -48,23 +48,23 @@ describe('resolveViewAttemptBudgets', () => {
 
   it('empty setting + mouse → category defaults', () => {
     const result = resolveViewAttemptBudgets(
-      '', 'mouse', ['top', 'left', 'angle', 'sangle', 'front', 'bottom'], 5,
+      '', 'mouse', ['top', 'left', 'sangle', 'angle', 'front', 'bottom'], 5,
     );
-    assert.deepEqual(result, { top: 4, left: 4, angle: 3, sangle: 3, front: 2, bottom: 2 });
+    assert.deepEqual(result, { top: 4, left: 4, sangle: 3, angle: 3, front: 2, bottom: 2 });
   });
 
   it('empty setting + keyboard → category defaults', () => {
     const result = resolveViewAttemptBudgets(
-      '', 'keyboard', ['top', 'left', 'angle', 'sangle'], 5,
+      '', 'keyboard', ['top', 'left', 'sangle', 'angle'], 5,
     );
-    assert.deepEqual(result, { top: 4, left: 4, angle: 3, sangle: 3 });
+    assert.deepEqual(result, { top: 4, left: 4, sangle: 3, angle: 3 });
   });
 
   it('empty setting + monitor → category defaults', () => {
     const result = resolveViewAttemptBudgets(
-      '', 'monitor', ['front', 'angle', 'rear', 'left'], 5,
+      '', 'monitor', ['front', 'sangle', 'angle', 'rear', 'left'], 5,
     );
-    assert.deepEqual(result, { front: 4, angle: 4, rear: 3, left: 3 });
+    assert.deepEqual(result, { front: 4, sangle: 4, angle: 3, rear: 3, left: 2 });
   });
 
   it('empty setting + mousepad → category defaults', () => {

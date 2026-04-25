@@ -10,7 +10,7 @@ interface InlineCellEditorProps {
 }
 
 const DEFAULT_CLASS =
-  'w-full h-full px-1 text-[11px] bg-white dark:bg-gray-800 border-0 outline-none ring-2 ring-accent';
+  'sf-primitive-input w-full h-full px-1 text-[11px] border-0 outline-none ring-2 ring-accent';
 
 export function InlineCellEditor({
   value,

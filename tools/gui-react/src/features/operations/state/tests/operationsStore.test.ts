@@ -38,6 +38,10 @@ function getStreamTexts() {
   return useOperationsStore.getState().streamTexts;
 }
 
+function getCallStreamTexts() {
+  return useOperationsStore.getState().callStreamTexts;
+}
+
 /* ── Characterization tests — lock current behavior ─────────────── */
 
 describe('operationsStore (characterization)', () => {
@@ -152,6 +156,54 @@ describe('operationsStore (characterization)', () => {
       useOperationsStore.getState().appendLlmCall('op-1', call);
       assert.equal(getOps().get('op-1')?.llmCalls.length, 1);
       assert.equal(getOps().get('op-1')?.llmCalls[0]?.prompt.system, 's');
+    });
+
+    it('updates pending calls by callId when parallel calls resolve out of order', () => {
+      useOperationsStore.getState().upsert(makeOp());
+
+      useOperationsStore.getState().appendLlmCall('op-1', {
+        callIndex: 0,
+        callId: 'view-top-1',
+        timestamp: '',
+        prompt: { system: 'view sys', user: 'view usr' },
+        response: null,
+        label: 'View Top',
+      });
+      useOperationsStore.getState().appendLlmCall('op-1', {
+        callIndex: 1,
+        callId: 'hero-1',
+        timestamp: '',
+        prompt: { system: 'hero sys', user: 'hero usr' },
+        response: null,
+        label: 'Hero',
+      });
+      useOperationsStore.getState().appendLlmCall('op-1', {
+        callIndex: 999,
+        callId: 'hero-1',
+        timestamp: '',
+        prompt: { system: 'hero sys new', user: 'hero usr new' },
+        response: { lane: 'hero' },
+        label: 'Hero Done',
+      });
+      useOperationsStore.getState().appendLlmCall('op-1', {
+        callIndex: 999,
+        callId: 'view-top-1',
+        timestamp: '',
+        prompt: { system: 'view sys new', user: 'view usr new' },
+        response: { lane: 'view' },
+        label: 'View Done',
+      });
+
+      const calls = getOps().get('op-1')?.llmCalls ?? [];
+      assert.equal(calls.length, 2);
+      assert.equal(calls[0]?.callIndex, 0);
+      assert.equal(calls[0]?.callId, 'view-top-1');
+      assert.deepEqual(calls[0]?.prompt, { system: 'view sys', user: 'view usr' });
+      assert.deepEqual(calls[0]?.response, { lane: 'view' });
+      assert.equal(calls[1]?.callIndex, 1);
+      assert.equal(calls[1]?.callId, 'hero-1');
+      assert.deepEqual(calls[1]?.prompt, { system: 'hero sys', user: 'hero usr' });
+      assert.deepEqual(calls[1]?.response, { lane: 'hero' });
     });
   });
 
@@ -278,6 +330,58 @@ describe('operationsStore (streamTexts isolation)', () => {
       useOperationsStore.getState().batchAppendStreamText(chunks);
       assert.equal(getStreamTexts().has('a'), false);
       assert.equal(getStreamTexts().get('b'), 'keep');
+    });
+  });
+
+  describe('call-scoped stream text', () => {
+    it('isolates live output by callId for parallel calls', () => {
+      useOperationsStore.getState().upsert(makeOp());
+
+      useOperationsStore.getState().appendCallStreamText('op-1', {
+        callId: 'view-top-1',
+        lane: 'view',
+        label: 'View Top',
+        channel: 'reasoning',
+        text: 'view thinking',
+      });
+      useOperationsStore.getState().appendCallStreamText('op-1', {
+        callId: 'hero-1',
+        lane: 'hero',
+        label: 'Hero',
+        channel: 'reasoning',
+        text: 'hero thinking',
+      });
+      useOperationsStore.getState().appendCallStreamText('op-1', {
+        callId: 'view-top-1',
+        lane: 'view',
+        label: 'View Top',
+        channel: 'content',
+        text: ' view answer',
+      });
+
+      const callStreams = getCallStreamTexts().get('op-1');
+      assert.equal(callStreams?.get('view-top-1')?.text, 'view thinking view answer');
+      assert.equal(callStreams?.get('view-top-1')?.lane, 'view');
+      assert.equal(callStreams?.get('hero-1')?.text, 'hero thinking');
+      assert.equal(callStreams?.get('hero-1')?.lane, 'hero');
+      assert.equal(getStreamTexts().has('op-1'), false, 'call-scoped chunks do not pollute legacy operation stream');
+    });
+
+    it('batch-appends call-scoped chunks and clears them on terminal upsert', () => {
+      useOperationsStore.getState().upsert(makeOp());
+      useOperationsStore.getState().batchAppendCallStreamText(new Map([
+        ['op-1', [
+          { callId: 'view-top-1', text: 'a', lane: 'view' },
+          { callId: 'view-top-1', text: 'b', lane: 'view' },
+          { callId: 'hero-1', text: 'h', lane: 'hero' },
+        ]],
+      ]));
+
+      assert.equal(getCallStreamTexts().get('op-1')?.get('view-top-1')?.text, 'ab');
+      assert.equal(getCallStreamTexts().get('op-1')?.get('hero-1')?.text, 'h');
+
+      useOperationsStore.getState().upsert(makeOp({ status: 'done', endedAt: '2025-01-01T00:01:00Z' }));
+      assert.equal(getCallStreamTexts().has('op-1'), false);
     });
   });
 
