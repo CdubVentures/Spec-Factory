@@ -435,6 +435,215 @@ html[data-sf-theme='slate'] {
 }
 
 /* ══════════════════════════════════════════════════════════════════════
+   MID-TONE THEMES — industry-standard palettes that sit between light
+   and dark (Solarized, Gruvbox, Nord, Catppuccin Frappé)
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Solarized — Ethan Schoonover's iconic deep-teal mid-tone, cyan/blue accents */
+html[data-sf-theme='solarized'] {
+  --sf-token-surface-canvas-start: #002b36;
+  --sf-token-surface-canvas-end: #073642;
+  --sf-token-surface-base: #002b36;
+  --sf-token-surface-elevated: #073642;
+  --sf-token-surface-panel: #073642;
+  --sf-token-border-default: #0e4250;
+  --sf-token-border-subtle: #586e75;
+  --sf-token-text-primary: #93a1a1;
+  --sf-token-text-muted: #839496;
+  --sf-token-text-subtle: #657b83;
+  --sf-token-text-inverse: #fdf6e3;
+  --sf-token-accent: #268bd2;
+  --sf-token-accent-strong: #2aa198;
+  --sf-token-state-run-ai-fg: #6c71c4;
+  --sf-token-state-item-accept-fg: #268bd2;
+  --sf-token-state-shared-confirm-fg: #cb4b16;
+  --sf-token-state-shared-accept-fg: #268bd2;
+  --sf-token-state-confirm-fg: #cb4b16;
+  --sf-token-state-confirm-bg: rgba(203, 75, 22, 0.14);
+  --sf-token-state-confirm-border: rgba(203, 75, 22, 0.34);
+  --sf-token-state-warning-fg: #b58900;
+  --sf-token-state-warning-bg: rgba(181, 137, 0, 0.16);
+  --sf-token-state-warning-border: rgba(181, 137, 0, 0.36);
+  --sf-token-state-success-fg: #859900;
+  --sf-token-state-success-bg: rgba(133, 153, 0, 0.16);
+  --sf-token-state-success-border: rgba(133, 153, 0, 0.34);
+  --sf-token-state-info-fg: #2aa198;
+  --sf-token-state-info-bg: rgba(42, 161, 152, 0.14);
+  --sf-token-state-info-border: rgba(42, 161, 152, 0.30);
+  --sf-token-state-error-fg: #dc322f;
+  --sf-token-state-error-bg: rgba(220, 50, 47, 0.14);
+  --sf-token-state-error-border: rgba(220, 50, 47, 0.34);
+  --sf-token-state-key-fg: #6c71c4;
+  --sf-token-state-key-bg: rgba(108, 113, 196, 0.14);
+  --sf-token-state-key-border: rgba(108, 113, 196, 0.30);
+  --sf-color-surface-rgb: 0 43 54;
+  --sf-color-surface-elevated-rgb: 7 54 66;
+  --sf-color-panel-rgb: 7 54 66;
+  --sf-color-border-default-rgb: 14 66 80;
+  --sf-color-border-subtle-rgb: 88 110 117;
+  --sf-color-text-primary-rgb: 147 161 161;
+  --sf-color-text-muted-rgb: 131 148 150;
+  --sf-color-text-subtle-rgb: 101 123 131;
+  --sf-color-text-inverse-rgb: 253 246 227;
+  --sf-color-accent-rgb: 38 139 210;
+  --sf-color-accent-strong-rgb: 42 161 152;
+  --sf-color-run-ai-rgb: 108 113 196;
+}
+
+/* Gruvbox — warm earthy mid-tones, retro-terminal yellow/orange accents */
+html[data-sf-theme='gruvbox'] {
+  --sf-token-surface-canvas-start: #282828;
+  --sf-token-surface-canvas-end: #32302f;
+  --sf-token-surface-base: #282828;
+  --sf-token-surface-elevated: #3c3836;
+  --sf-token-surface-panel: #32302f;
+  --sf-token-border-default: #504945;
+  --sf-token-border-subtle: #7c6f64;
+  --sf-token-text-primary: #ebdbb2;
+  --sf-token-text-muted: #bdae93;
+  --sf-token-text-subtle: #928374;
+  --sf-token-text-inverse: #1d2021;
+  --sf-token-accent: #fabd2f;
+  --sf-token-accent-strong: #fe8019;
+  --sf-token-state-run-ai-fg: #d3869b;
+  --sf-token-state-item-accept-fg: #fabd2f;
+  --sf-token-state-shared-confirm-fg: #fe8019;
+  --sf-token-state-shared-accept-fg: #fabd2f;
+  --sf-token-state-confirm-fg: #fe8019;
+  --sf-token-state-confirm-bg: rgba(254, 128, 25, 0.14);
+  --sf-token-state-confirm-border: rgba(254, 128, 25, 0.34);
+  --sf-token-state-warning-fg: #fabd2f;
+  --sf-token-state-warning-bg: rgba(250, 189, 47, 0.14);
+  --sf-token-state-warning-border: rgba(250, 189, 47, 0.32);
+  --sf-token-state-success-fg: #b8bb26;
+  --sf-token-state-success-bg: rgba(184, 187, 38, 0.14);
+  --sf-token-state-success-border: rgba(184, 187, 38, 0.32);
+  --sf-token-state-info-fg: #83a598;
+  --sf-token-state-info-bg: rgba(131, 165, 152, 0.14);
+  --sf-token-state-info-border: rgba(131, 165, 152, 0.30);
+  --sf-token-state-error-fg: #fb4934;
+  --sf-token-state-error-bg: rgba(251, 73, 52, 0.14);
+  --sf-token-state-error-border: rgba(251, 73, 52, 0.34);
+  --sf-token-state-key-fg: #d3869b;
+  --sf-token-state-key-bg: rgba(211, 134, 155, 0.14);
+  --sf-token-state-key-border: rgba(211, 134, 155, 0.30);
+  --sf-color-surface-rgb: 40 40 40;
+  --sf-color-surface-elevated-rgb: 60 56 54;
+  --sf-color-panel-rgb: 50 48 47;
+  --sf-color-border-default-rgb: 80 73 69;
+  --sf-color-border-subtle-rgb: 124 111 100;
+  --sf-color-text-primary-rgb: 235 219 178;
+  --sf-color-text-muted-rgb: 189 174 147;
+  --sf-color-text-subtle-rgb: 146 131 116;
+  --sf-color-text-inverse-rgb: 29 32 33;
+  --sf-color-accent-rgb: 250 189 47;
+  --sf-color-accent-strong-rgb: 254 128 25;
+  --sf-color-run-ai-rgb: 211 134 155;
+}
+
+/* Nord — Arctic Ice Studio's frosty mid-tone, cool blue/cyan accents */
+html[data-sf-theme='nord'] {
+  --sf-token-surface-canvas-start: #2e3440;
+  --sf-token-surface-canvas-end: #3b4252;
+  --sf-token-surface-base: #2e3440;
+  --sf-token-surface-elevated: #3b4252;
+  --sf-token-surface-panel: #353b48;
+  --sf-token-border-default: #434c5e;
+  --sf-token-border-subtle: #4c566a;
+  --sf-token-text-primary: #eceff4;
+  --sf-token-text-muted: #d8dee9;
+  --sf-token-text-subtle: #81899b;
+  --sf-token-text-inverse: #2e3440;
+  --sf-token-accent: #88c0d0;
+  --sf-token-accent-strong: #8fbcbb;
+  --sf-token-state-run-ai-fg: #b48ead;
+  --sf-token-state-item-accept-fg: #88c0d0;
+  --sf-token-state-shared-confirm-fg: #d08770;
+  --sf-token-state-shared-accept-fg: #88c0d0;
+  --sf-token-state-confirm-fg: #d08770;
+  --sf-token-state-confirm-bg: rgba(208, 135, 112, 0.14);
+  --sf-token-state-confirm-border: rgba(208, 135, 112, 0.32);
+  --sf-token-state-warning-fg: #ebcb8b;
+  --sf-token-state-warning-bg: rgba(235, 203, 139, 0.14);
+  --sf-token-state-warning-border: rgba(235, 203, 139, 0.32);
+  --sf-token-state-success-fg: #a3be8c;
+  --sf-token-state-success-bg: rgba(163, 190, 140, 0.14);
+  --sf-token-state-success-border: rgba(163, 190, 140, 0.32);
+  --sf-token-state-info-fg: #81a1c1;
+  --sf-token-state-info-bg: rgba(129, 161, 193, 0.14);
+  --sf-token-state-info-border: rgba(129, 161, 193, 0.30);
+  --sf-token-state-error-fg: #bf616a;
+  --sf-token-state-error-bg: rgba(191, 97, 106, 0.16);
+  --sf-token-state-error-border: rgba(191, 97, 106, 0.34);
+  --sf-token-state-key-fg: #b48ead;
+  --sf-token-state-key-bg: rgba(180, 142, 173, 0.14);
+  --sf-token-state-key-border: rgba(180, 142, 173, 0.30);
+  --sf-color-surface-rgb: 46 52 64;
+  --sf-color-surface-elevated-rgb: 59 66 82;
+  --sf-color-panel-rgb: 53 59 72;
+  --sf-color-border-default-rgb: 67 76 94;
+  --sf-color-border-subtle-rgb: 76 86 106;
+  --sf-color-text-primary-rgb: 236 239 244;
+  --sf-color-text-muted-rgb: 216 222 233;
+  --sf-color-text-subtle-rgb: 129 137 155;
+  --sf-color-text-inverse-rgb: 46 52 64;
+  --sf-color-accent-rgb: 136 192 208;
+  --sf-color-accent-strong-rgb: 143 188 187;
+  --sf-color-run-ai-rgb: 180 142 173;
+}
+
+/* Frappé — Catppuccin's mid-tone palette, soft pastel mauve/blue on warm slate */
+html[data-sf-theme='frappe'] {
+  --sf-token-surface-canvas-start: #303446;
+  --sf-token-surface-canvas-end: #292c3c;
+  --sf-token-surface-base: #303446;
+  --sf-token-surface-elevated: #414559;
+  --sf-token-surface-panel: #292c3c;
+  --sf-token-border-default: #51576d;
+  --sf-token-border-subtle: #737994;
+  --sf-token-text-primary: #c6d0f5;
+  --sf-token-text-muted: #a5adce;
+  --sf-token-text-subtle: #838ba7;
+  --sf-token-text-inverse: #232634;
+  --sf-token-accent: #ca9ee6;
+  --sf-token-accent-strong: #8caaee;
+  --sf-token-state-run-ai-fg: #ca9ee6;
+  --sf-token-state-item-accept-fg: #8caaee;
+  --sf-token-state-shared-confirm-fg: #ef9f76;
+  --sf-token-state-shared-accept-fg: #8caaee;
+  --sf-token-state-confirm-fg: #ef9f76;
+  --sf-token-state-confirm-bg: rgba(239, 159, 118, 0.14);
+  --sf-token-state-confirm-border: rgba(239, 159, 118, 0.32);
+  --sf-token-state-warning-fg: #e5c890;
+  --sf-token-state-warning-bg: rgba(229, 200, 144, 0.14);
+  --sf-token-state-warning-border: rgba(229, 200, 144, 0.32);
+  --sf-token-state-success-fg: #a6d189;
+  --sf-token-state-success-bg: rgba(166, 209, 137, 0.14);
+  --sf-token-state-success-border: rgba(166, 209, 137, 0.32);
+  --sf-token-state-info-fg: #99d1db;
+  --sf-token-state-info-bg: rgba(153, 209, 219, 0.14);
+  --sf-token-state-info-border: rgba(153, 209, 219, 0.30);
+  --sf-token-state-error-fg: #e78284;
+  --sf-token-state-error-bg: rgba(231, 130, 132, 0.16);
+  --sf-token-state-error-border: rgba(231, 130, 132, 0.34);
+  --sf-token-state-key-fg: #babbf1;
+  --sf-token-state-key-bg: rgba(186, 187, 241, 0.14);
+  --sf-token-state-key-border: rgba(186, 187, 241, 0.30);
+  --sf-color-surface-rgb: 48 52 70;
+  --sf-color-surface-elevated-rgb: 65 69 89;
+  --sf-color-panel-rgb: 41 44 60;
+  --sf-color-border-default-rgb: 81 87 109;
+  --sf-color-border-subtle-rgb: 115 121 148;
+  --sf-color-text-primary-rgb: 198 208 245;
+  --sf-color-text-muted-rgb: 165 173 206;
+  --sf-color-text-subtle-rgb: 131 139 167;
+  --sf-color-text-inverse-rgb: 35 38 52;
+  --sf-color-accent-rgb: 202 158 230;
+  --sf-color-accent-strong-rgb: 140 170 238;
+  --sf-color-run-ai-rgb: 202 158 230;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
    GAMING THEMES — 10 themes inspired by video game website aesthetics
    ══════════════════════════════════════════════════════════════════════ */
 

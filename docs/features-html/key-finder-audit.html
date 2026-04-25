@@ -132,6 +132,23 @@
     <div class="flow-box flow-pass">Compile and benchmark</div>
   </div>
 
+  <div class="card">
+    <div class="card-header"><span class="tag tag-orange">Operator Note</span> What "Update DB" Means In This Loop</div>
+    <div class="card-body">
+      <p>When the human points at Key Finder or a per-key Field Studio change file and says <strong>update DB</strong>, apply the requested authoring change to the existing category control-plane map: <code>category_authority/&lt;category&gt;/_control_plane/field_studio_map.json</code>. Do not edit generated artifacts or SQLite projection files for this task.</p>
+      <table>
+        <thead><tr><th>Change-file section</th><th>Control-plane target</th><th>Rule</th></tr></thead>
+        <tbody>
+          <tr><td>Mapping Studio - Enum Data Lists</td><td><code>data_lists[]</code></td><td>Edit canonical values, normalization, and enum guidance on the row whose <code>field</code> matches the key.</td></tr>
+          <tr><td>Mapping Studio - Component Source Mapping</td><td><code>component_sources[]</code></td><td>Edit component source/type, identity roles, aliases, links, properties, variance policy, and component-only behavior.</td></tr>
+          <tr><td>Key Navigator panels</td><td><code>field_overrides.&lt;field_key&gt;</code></td><td>Edit contract, priority, enum policy, component relation, constraints, evidence, tooltip, search hints, aliases, and <code>ai_assist</code>.</td></tr>
+          <tr><td>Key order / groups</td><td><code>field_key_order.json</code> and <code>field_overrides.*.ui.group</code></td><td>Only touch order/group data when the change file asks for navigation or grouping changes.</td></tr>
+        </tbody>
+      </table>
+      <p>The human normally compiles after the edit. Compile regenerates <code>category_authority/&lt;category&gt;/_generated/*</code> and refreshes runtime projections. If a setting does not project after compile, report that as an implementation gap instead of patching compiler, route, UI, or schema code during the settings edit.</p>
+    </div>
+  </div>
+
   <div class="section-title"><span class="num">2</span> Why The EG-HBS Site Matters</div>
 
   <div class="card">
@@ -638,7 +655,7 @@ Design means the way the product looks.</pre>
           <tr><td><code>src/features/category-audit/adapters/keyFinderAdapter.js</code></td><td>Builds Key Finder prompt previews for each key.</td></tr>
           <tr><td><code>src/features/category-audit/api/categoryAuditRoutes.js</code></td><td>HTTP routes for generating reports.</td></tr>
           <tr><td><code>src/core/llm/prompts/fieldRuleRenderers.js</code></td><td>Shared pure field-rule renderers used by Key Finder and the audit preview.</td></tr>
-          <tr><td><code>docs/implementation/key-finder-audits/HANDOFF.md</code></td><td>Implementation handoff for the generator itself.</td></tr>
+          <tr><td><code>docs/implementation/archive/key-finder-audits/HANDOFF.md</code></td><td>Implementation handoff for the generator itself.</td></tr>
           <tr><td><code>.workspace/reports/audits/</code></td><td>LLM-produced audit/change reports.</td></tr>
         </tbody>
       </table>
@@ -673,13 +690,14 @@ Design means the way the product looks.</pre>
     <div class="card-body">
       <ol>
         <li>Read this document once.</li>
-        <li>Open <code>docs/implementation/key-finder-audits/HANDOFF.md</code> if you need implementation details for the generator.</li>
+        <li>Open <code>docs/implementation/archive/key-finder-audits/HANDOFF.md</code> if you need implementation details for the generator.</li>
         <li>Generate all Key Finder Audit reports for the category from Studio.</li>
         <li>Use the category Markdown report as the LLM handoff. Use the per-key Markdown/HTML docs when reviewing a specific key.</li>
         <li>Require a downloadable text file first, ordered as Mapping Studio then Key Navigator.</li>
         <li>Review enum and component changes before guidance. Actual enum value changes go in Mapping Studio Enum Data Lists.</li>
-        <li>Apply approved edits in Field Studio.</li>
-        <li>Compile the category rules.</li>
+        <li>If the human says <strong>update DB</strong> for a Field Studio change file, edit <code>category_authority/&lt;category&gt;/_control_plane/field_studio_map.json</code> only. Do not edit <code>_generated/*</code>, SQLite files, compiler, runtime, schema, API, or UI source code unless explicitly asked.</li>
+        <li>Apply approved edits in Field Studio or the control-plane map.</li>
+        <li>Let the human compile the category rules unless they explicitly ask you to run compile.</li>
         <li>Regenerate the audit report and diff it against the previous run.</li>
         <li>Run extraction against benchmark products and compare output against the benchmark workbook/range.</li>
       </ol>

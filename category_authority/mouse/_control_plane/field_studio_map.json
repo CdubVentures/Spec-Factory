@@ -725,7 +725,7 @@
     },
     {
       "ai_assist": {
-        "reasoning_note": "Treat this as a closed design/edition taxonomy, not a free-text aesthetic description. Keep source phrases such as special edition, signature edition, creator edition, artist edition, anniversary edition, team edition, player edition, co-branded, collab, exclusive design, exclusive drop, limited release, limited run, one-time-only release, serialized, collector item, colorway, aesthetic, shape, and ergonomic design out of public chips unless they map to one of the canonical values."
+        "reasoning_note": "Treat this as a closed design/edition taxonomy, not a free-text aesthetic description. Keep source phrases such as special edition, signature edition, creator edition, artist edition, anniversary edition, team edition, player edition, co-branded, collab, partnered with, designed in collaboration with pros, pro-tested, exclusive design, exclusive drop, limited release, limited run, one-time-only release, serialized, collector item, limited-time colorway, colorway, aesthetic, shape, and ergonomic design out of public chips unless they map to one of the canonical values."
       },
       "delimiter": "",
       "field": "design",

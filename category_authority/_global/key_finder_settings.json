@@ -8,7 +8,7 @@
   "reloopRunBudget": "1",
   "budgetPreviewDisplay": "",
   "bundlingEnabled": "true",
-  "alwaysSoloRun": "false",
+  "alwaysSoloRun": "true",
   "groupBundlingOnly": "false",
   "bundlingPassengerCost": "{\"easy\":1,\"medium\":2,\"hard\":4,\"very_hard\":8}",
   "bundlingPassengerVariantCostPerExtra": "0.25",

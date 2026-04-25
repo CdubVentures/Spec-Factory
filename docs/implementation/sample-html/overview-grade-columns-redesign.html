@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Overview — Score / Coverage / Conf / Fields Redesign</title>
+<style>
+  :root {
+    --bg: #f4f6f9; --surface: #fff; --surface-alt: #f1f3f5; --surface-soft: #fafbfc;
+    --border: #e5e9ef; --border-light: #eef1f5;
+    --text: #1f2328; --text-muted: #5f6672; --text-dim: #7c8390; --text-faint: #a9afb9;
+
+    --accent: #4263eb; --accent-bg: #edf2ff; --accent-border: #bac8ff;
+
+    --green-strong:#2b8a3e; --green-mid:#40c057; --green-soft:#69db7c; --green-bg:#ebfbee;
+    --amber-strong:#e67700; --amber-mid:#fab005; --amber-soft:#ffd43b; --amber-bg:#fff4e6;
+    --orange-strong:#d9480f; --orange-mid:#fd7e14; --orange-soft:#ffa94d; --orange-bg:#fff4e6;
+    --red-strong:#c92a2a; --red-mid:#f03e3e; --red-soft:#ff8787; --red-bg:#fff5f5;
+    --gray-strong:#495057; --gray-mid:#868e96; --gray-soft:#ced4da; --gray-bg:#f1f3f5;
+    --purple-strong:#5f3dc4; --purple-mid:#7950f2; --purple-soft:#9775fa;
+
+    /* grade-tone semantic */
+    --grade-a: var(--green-strong);
+    --grade-b: var(--accent);
+    --grade-c: var(--amber-strong);
+    --grade-d: var(--orange-mid);
+    --grade-f: var(--red-strong);
+
+    --mono: 'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --font: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+    --shadow-md: 0 2px 4px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.07);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); color:var(--text); background:var(--bg); line-height:1.55; -webkit-font-smoothing:antialiased; padding: 0 0 80px; }
+
+  .page-header { background: linear-gradient(135deg, #3b4cca 0%, #4263eb 45%, #5f3dc4 100%); color:#fff; padding: 32px 0 26px; text-align:center; box-shadow: 0 4px 14px rgba(0,0,0,.10); }
+  .page-header h1 { font-size: 22px; font-weight: 700; }
+  .page-header p { font-size: 13.5px; opacity: .92; margin-top: 5px; max-width: 800px; margin-left: auto; margin-right: auto; }
+  .page-header .pill { display: inline-block; background: rgba(255,255,255,.2); padding: 3px 10px; border-radius: 99px; font-size: 11.5px; font-weight: 600; margin-top: 8px; }
+
+  .container { max-width: 1280px; margin: 28px auto 0; padding: 0 24px; }
+
+  .section { margin-bottom: 44px; }
+  .section-head { display:flex; align-items:baseline; justify-content:space-between; margin-bottom: 14px; gap: 16px; flex-wrap: wrap; }
+  .section-title { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+  .section-sub   { font-size: 12.5px; color: var(--text-dim); }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); padding: 20px 22px; }
+  .card + .card { margin-top: 14px; }
+  .card-title { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .card-sub   { font-size: 11.5px; color: var(--text-dim); margin-bottom: 16px; letter-spacing: .02em; }
+  .card-tag {
+    display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    text-transform: uppercase; padding: 2px 7px; border-radius: 99px; margin-left: 6px;
+    background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-border);
+  }
+  .card-tag.tag-pick { background:#fff4e6; color:#d9480f; border-color:#ffd8a8; }
+  .card-tag.tag-old  { background: var(--gray-bg); color: var(--text-muted); border-color: var(--border); }
+
+  .demo-row { display:flex; align-items:center; gap: 22px; flex-wrap:wrap; padding: 6px 2px; border-top: 1px dashed var(--border-light); }
+  .demo-row:first-of-type { border-top: none; padding-top: 0; }
+  .demo-row-label { min-width: 130px; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 600; }
+  .demo-cell { display:flex; align-items:center; justify-content:center; min-width: 100px; padding: 8px 6px; }
+  .demo-cell-wide { min-width: 180px; }
+
+  /* ========================================================
+     CURRENT — what production renders today
+  ======================================================== */
+  .now-grade {
+    display:inline-flex; align-items:center; justify-content:center;
+    min-width:36px; padding:3px 10px; border-radius:6px;
+    font-family: var(--mono); font-weight:800; font-size:12px; letter-spacing:.04em; line-height:1;
+    border:1px solid transparent;
+  }
+  .now-grade.a { background: color-mix(in srgb, var(--grade-a) 14%, transparent); color: var(--grade-a); border-color: color-mix(in srgb, var(--grade-a) 45%, transparent); }
+  .now-grade.b { background: color-mix(in srgb, var(--grade-b) 14%, transparent); color: var(--grade-b); border-color: color-mix(in srgb, var(--grade-b) 45%, transparent); }
+  .now-grade.c { background: color-mix(in srgb, var(--grade-c) 14%, transparent); color: var(--grade-c); border-color: color-mix(in srgb, var(--grade-c) 45%, transparent); }
+  .now-grade.d { background: color-mix(in srgb, var(--grade-d) 14%, transparent); color: var(--grade-d); border-color: color-mix(in srgb, var(--grade-d) 45%, transparent); }
+  .now-grade.f { background: color-mix(in srgb, var(--grade-f) 14%, transparent); color: var(--grade-f); border-color: color-mix(in srgb, var(--grade-f) 45%, transparent); }
+
+  .now-metric { display:inline-flex; align-items:center; gap: 6px; font-size: 12px; color: var(--text); }
+  .now-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+  .now-dot.green  { background: var(--green-mid); }
+  .now-dot.yellow { background: var(--amber-mid); }
+  .now-dot.red    { background: var(--red-mid); }
+  .now-dot.gray   { background: var(--gray-soft); }
+
+  /* ========================================================
+     SCORE — Variant A: "Report Card" badge
+     letter + numeric subscript + tonal pill, slight 3D
+  ======================================================== */
+  .scA {
+    --tone: var(--grade-a);
+    display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+    min-width: 56px; padding: 5px 8px 4px;
+    border-radius: 9px;
+    background: linear-gradient(180deg, color-mix(in srgb, var(--tone) 22%, #fff), color-mix(in srgb, var(--tone) 8%, #fff));
+    border: 1px solid color-mix(in srgb, var(--tone) 50%, transparent);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.7), 0 1px 2px color-mix(in srgb, var(--tone) 22%, transparent);
+    color: var(--tone);
+    font-family: var(--mono);
+    line-height: 1;
+  }
+  .scA-letter { font-size: 18px; font-weight: 800; letter-spacing: .03em; }
+  .scA-num    { font-size: 9.5px; font-weight: 700; opacity: .85; margin-top: 2px; letter-spacing: .04em; }
+  .scA.b { --tone: var(--grade-b); }
+  .scA.c { --tone: var(--grade-c); }
+  .scA.d { --tone: var(--grade-d); }
+  .scA.f { --tone: var(--grade-f); }
+
+  /* ========================================================
+     SCORE — Variant B: "Foil Stamp" with weighted-axis sparkline
+     Letter on left, 7 mini bars on right — playful & informative
+  ======================================================== */
+  .scB {
+    --tone: var(--grade-a);
+    display:inline-flex; align-items:center; gap: 7px;
+    padding: 4px 8px 4px 5px;
+    background: #fff;
+    border: 1px solid color-mix(in srgb, var(--tone) 35%, var(--border));
+    border-radius: 8px;
+    box-shadow: 0 1px 0 rgba(255,255,255,.8) inset, 0 1px 3px rgba(16,24,40,.06);
+  }
+  .scB-letter {
+    font-family: var(--mono); font-weight: 800; font-size: 16px; letter-spacing: .02em;
+    background: linear-gradient(135deg, var(--tone), color-mix(in srgb, var(--tone) 60%, #000));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+    line-height: 1; padding: 3px 6px 2px;
+    border-right: 1px dashed color-mix(in srgb, var(--tone) 28%, var(--border));
+  }
+  .scB-bars { display:flex; gap: 2px; align-items: flex-end; height: 18px; }
+  .scB-bar { width: 3px; background: color-mix(in srgb, var(--tone) 80%, transparent); border-radius: 1px; }
+  .scB-bar.dim { background: color-mix(in srgb, var(--gray-soft) 60%, transparent); }
+  .scB.b { --tone: var(--grade-b); }
+  .scB.c { --tone: var(--grade-c); }
+  .scB.d { --tone: var(--grade-d); }
+  .scB.f { --tone: var(--grade-f); }
+
+  /* ========================================================
+     SCORE — Variant C: "Full transcript" mini-card (loud option)
+     Letter + score number + arc gauge — most expressive
+  ======================================================== */
+  .scC {
+    --tone: var(--grade-a);
+    display:inline-flex; align-items:center; gap: 8px;
+    padding: 4px 10px 4px 4px;
+    background: linear-gradient(135deg, color-mix(in srgb, var(--tone) 14%, #fff) 0%, #fff 75%);
+    border: 1px solid color-mix(in srgb, var(--tone) 40%, var(--border));
+    border-radius: 999px;
+    box-shadow: var(--shadow-sm);
+  }
+  .scC-arc {
+    position: relative; width: 32px; height: 32px; flex-shrink: 0;
+  }
+  .scC-arc svg { transform: rotate(-90deg); }
+  .scC-arc .track { stroke: color-mix(in srgb, var(--tone) 14%, var(--border-light)); }
+  .scC-arc .fill  { stroke: var(--tone); }
+  .scC-arc-letter {
+    position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    font-family: var(--mono); font-weight: 800; font-size: 11.5px; color: var(--tone); letter-spacing: .02em;
+  }
+  .scC-meta { display:flex; flex-direction:column; line-height:1.15; }
+  .scC-num { font-family: var(--mono); font-weight: 700; font-size: 13px; color: var(--text); }
+  .scC-cap { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: color-mix(in srgb, var(--tone) 80%, var(--text-muted)); margin-top: 1px; }
+  .scC.b { --tone: var(--grade-b); }
+  .scC.c { --tone: var(--grade-c); }
+  .scC.d { --tone: var(--grade-d); }
+  .scC.f { --tone: var(--grade-f); }
+
+  /* ========================================================
+     COVERAGE / CONF / FIELDS — Variant A: "Mini Gauge"
+     Tiny radial dial + numeric — fun + dense
+  ======================================================== */
+  .mgA {
+    --tone: var(--green-strong);
+    display:inline-flex; align-items:center; gap: 7px;
+    padding: 2px 8px 2px 4px;
+    background: #fff;
+    border: 1px solid color-mix(in srgb, var(--tone) 30%, var(--border));
+    border-radius: 999px;
+  }
+  .mgA-ring { position: relative; width: 22px; height: 22px; flex-shrink: 0; }
+  .mgA-ring svg { transform: rotate(-90deg); }
+  .mgA-ring .track { stroke: color-mix(in srgb, var(--tone) 14%, var(--border-light)); }
+  .mgA-ring .fill  { stroke: var(--tone); transition: stroke-dashoffset .3s ease; }
+  .mgA-num { font-family: var(--mono); font-weight: 700; font-size: 11.5px; color: var(--text); letter-spacing: .02em; }
+  .mgA.green  { --tone: var(--green-strong); }
+  .mgA.yellow { --tone: var(--amber-strong); }
+  .mgA.red    { --tone: var(--red-strong); }
+  .mgA.gray   { --tone: var(--gray-mid); }
+
+  /* ========================================================
+     COVERAGE / CONF / FIELDS — Variant B: "Segmented Bar"
+     5-pip segmented strip + numeric — clean and structured
+  ======================================================== */
+  .mgB {
+    --tone: var(--green-strong);
+    display:inline-flex; align-items:center; gap: 8px;
+    padding: 3px 9px 3px 7px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+  }
+  .mgB-pips { display:flex; gap: 2px; }
+  .mgB-pip { width: 8px; height: 12px; border-radius: 2px; background: var(--gray-bg); border: 1px solid var(--border); }
+  .mgB-pip.on { background: var(--tone); border-color: color-mix(in srgb, var(--tone) 70%, transparent); box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
+  .mgB-num { font-family: var(--mono); font-weight: 700; font-size: 11.5px; color: var(--text); }
+  .mgB.green  { --tone: var(--green-mid); }
+  .mgB.yellow { --tone: var(--amber-mid); }
+  .mgB.red    { --tone: var(--red-mid); }
+  .mgB.gray   { --tone: var(--gray-mid); }
+
+  /* ========================================================
+     COVERAGE / CONF / FIELDS — Variant C: "Loud Liquid Bar"
+     Horizontal fill bar with gradient + glossy highlight
+  ======================================================== */
+  .mgC {
+    --tone-strong: var(--green-strong);
+    --tone-mid: var(--green-mid);
+    --tone-soft: var(--green-soft);
+    display:inline-flex; flex-direction: column; gap: 4px; align-items: stretch;
+    min-width: 88px;
+  }
+  .mgC-row { display:flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+  .mgC-num { font-family: var(--mono); font-weight: 800; font-size: 12.5px; color: var(--tone-strong); }
+  .mgC-cap { font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+  .mgC-bar {
+    height: 7px; border-radius: 4px; overflow: hidden; position: relative;
+    background: color-mix(in srgb, var(--tone-mid) 9%, var(--border-light));
+    border: 1px solid color-mix(in srgb, var(--tone-mid) 22%, var(--border-light));
+  }
+  .mgC-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--tone-mid), var(--tone-strong));
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 0 6px color-mix(in srgb, var(--tone-mid) 35%, transparent);
+    border-radius: 4px;
+    position: relative;
+  }
+  .mgC-fill::after {
+    content:''; position:absolute; inset: 0 0 50% 0;
+    background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0));
+    border-radius: 4px 4px 0 0;
+  }
+  .mgC.yellow { --tone-strong: var(--amber-strong); --tone-mid: var(--amber-mid); --tone-soft: var(--amber-soft); }
+  .mgC.red    { --tone-strong: var(--red-strong);   --tone-mid: var(--red-mid);   --tone-soft: var(--red-soft); }
+  .mgC.gray   { --tone-strong: var(--gray-strong);  --tone-mid: var(--gray-mid);  --tone-soft: var(--gray-soft); }
+
+  /* ========================================================
+     COMBINED ROW — assembled mockup picking the recommended winners
+  ======================================================== */
+  .table-mock {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden; box-shadow: var(--shadow-md);
+  }
+  .table-mock-head, .table-mock-row {
+    display: grid;
+    grid-template-columns: 110px 130px 110px 100px 100px 100px;
+    align-items: center;
+    padding: 10px 14px;
+  }
+  .table-mock-head {
+    background: var(--surface-soft); border-bottom: 1px solid var(--border);
+    font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted);
+  }
+  .table-mock-row { border-top: 1px solid var(--border-light); font-size: 12px; }
+  .table-mock-row:first-of-type { border-top: none; }
+  .table-mock-row .brand { font-weight: 600; color: var(--text); }
+  .table-mock-row .model { color: var(--text-muted); font-family: var(--mono); font-size: 11.5px; }
+
+  /* legend */
+  .legend { display:flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 11.5px; color: var(--text-dim); }
+  .legend-item { display:inline-flex; align-items:center; gap: 6px; }
+  .legend-swatch { width: 12px; height: 12px; border-radius: 3px; }
+
+  .note {
+    margin-top: 10px; padding: 10px 14px;
+    background: var(--accent-bg); border: 1px solid var(--accent-border); border-radius: 7px;
+    font-size: 12px; color: #364fc7;
+  }
+  .note b { color: #1c3aa1; }
+
+  .recos { margin-top: 14px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+  .reco {
+    padding: 10px 12px; background: var(--surface-soft); border: 1px solid var(--border-light); border-radius: 7px;
+    font-size: 12px; color: var(--text);
+  }
+  .reco b { color: var(--accent); }
+  .reco-pick { background: #fff8f1; border-color: #ffd8a8; }
+  .reco-pick b { color: #d9480f; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Overview Panel — Score / Coverage / Conf / Fields</h1>
+  <p>Redesign exploration for the four numeric grading columns at the right end of the catalog table. Goal: keep the table dense, but make the scoring feel deliberate, fun, and professional — not a flat traffic-light dot.</p>
+  <span class="pill">Sample · 2026-04-25</span>
+</div>
+
+<div class="container">
+
+  <!-- ========================================================
+       BASELINE — current production render
+  ======================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">0 · Baseline (today)</div>
+        <div class="section-sub">What production renders right now in <code>OverviewPage.tsx</code>.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Current <span class="card-tag tag-old">in production</span></div>
+      <div class="card-sub">Letter chip (mono-tone) for Score; tiny dot + percent for the other three. Information-dense but visually flat — the chips read like config values, not a grade.</div>
+
+      <div class="demo-row">
+        <div class="demo-row-label">A+ row</div>
+        <div class="demo-cell"><span class="now-grade a">A+</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot green"></span>96%</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot green"></span>92%</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot green"></span>23/24</span></div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">B row</div>
+        <div class="demo-cell"><span class="now-grade b">B</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot green"></span>87%</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot yellow"></span>74%</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot yellow"></span>17/24</span></div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">C- row</div>
+        <div class="demo-cell"><span class="now-grade c">C-</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot yellow"></span>71%</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot yellow"></span>64%</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot red"></span>11/24</span></div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">D row</div>
+        <div class="demo-cell"><span class="now-grade d">D</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot red"></span>52%</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot red"></span>48%</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot red"></span>6/24</span></div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">F row</div>
+        <div class="demo-cell"><span class="now-grade f">F</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot red"></span>22%</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot red"></span>18%</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot gray"></span>0/24</span></div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">Empty row</div>
+        <div class="demo-cell"><span class="now-grade f">F</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot gray"></span>0%</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot gray"></span>0%</span></div>
+        <div class="demo-cell"><span class="now-metric"><span class="now-dot gray"></span>0/24</span></div>
+      </div>
+
+      <div class="legend">
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--green-mid)"></span> ≥ 85%</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--amber-mid)"></span> 60–85%</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--red-mid)"></span> &lt; 60%</span>
+        <span class="legend-item"><span class="legend-swatch" style="background:var(--gray-soft)"></span> 0 / N/A</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       SCORE COLUMN — three redesign variants
+  ======================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">1 · Score column — letter grade</div>
+        <div class="section-sub">A+ → F (13 bands). Currently a mono-tone chip; below are three richer treatments. Each keeps the underlying tooltip with the 7-axis weighted breakdown.</div>
+      </div>
+    </div>
+
+    <!-- Variant A — Report Card -->
+    <div class="card">
+      <div class="card-title">Variant A — Report Card stack <span class="card-tag tag-pick">recommended</span></div>
+      <div class="card-sub">Letter on top, weighted score (0–100) micro-printed below. Subtle inset highlight + tinted gradient = "stamped" feel without leaving the existing 70px column width.</div>
+      <div class="demo-row">
+        <div class="demo-row-label">All grades</div>
+        <div class="demo-cell"><span class="scA"  ><span class="scA-letter">A+</span><span class="scA-num">98.4</span></span></div>
+        <div class="demo-cell"><span class="scA"  ><span class="scA-letter">A</span><span class="scA-num">94.0</span></span></div>
+        <div class="demo-cell"><span class="scA b"><span class="scA-letter">B+</span><span class="scA-num">88.2</span></span></div>
+        <div class="demo-cell"><span class="scA b"><span class="scA-letter">B</span><span class="scA-num">84.5</span></span></div>
+        <div class="demo-cell"><span class="scA c"><span class="scA-letter">C+</span><span class="scA-num">78.0</span></span></div>
+        <div class="demo-cell"><span class="scA c"><span class="scA-letter">C-</span><span class="scA-num">71.0</span></span></div>
+        <div class="demo-cell"><span class="scA d"><span class="scA-letter">D</span><span class="scA-num">63.5</span></span></div>
+        <div class="demo-cell"><span class="scA f"><span class="scA-letter">F</span><span class="scA-num">42.0</span></span></div>
+      </div>
+      <div class="note"><b>Why this one:</b> single-glance verdict (the letter) + a precise number for power users. Same column width as today (70px). Tooltip stays for the full 7-axis breakdown.</div>
+    </div>
+
+    <!-- Variant B — Foil stamp + sparkline -->
+    <div class="card">
+      <div class="card-title">Variant B — Foil-stamp letter + axis sparkline</div>
+      <div class="card-sub">Gradient-clipped letter, then 7 mini bars (one per weighted axis: Cov · Conf · Fields · PIF · CEF · SKU · RDF). At-a-glance you see <em>which</em> axis is dragging the grade down.</div>
+      <div class="demo-row">
+        <div class="demo-row-label">A+ — strong</div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="scB">
+            <span class="scB-letter">A+</span>
+            <span class="scB-bars">
+              <span class="scB-bar" style="height:17px"></span>
+              <span class="scB-bar" style="height:16px"></span>
+              <span class="scB-bar" style="height:18px"></span>
+              <span class="scB-bar" style="height:15px"></span>
+              <span class="scB-bar" style="height:18px"></span>
+              <span class="scB-bar" style="height:16px"></span>
+              <span class="scB-bar" style="height:17px"></span>
+            </span>
+          </span>
+        </div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">B — uneven</div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="scB b">
+            <span class="scB-letter">B</span>
+            <span class="scB-bars">
+              <span class="scB-bar" style="height:16px"></span>
+              <span class="scB-bar" style="height:14px"></span>
+              <span class="scB-bar" style="height:11px"></span>
+              <span class="scB-bar dim" style="height:6px"></span>
+              <span class="scB-bar" style="height:18px"></span>
+              <span class="scB-bar" style="height:15px"></span>
+              <span class="scB-bar dim" style="height:5px"></span>
+            </span>
+          </span>
+        </div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">C- — weak fields</div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="scB c">
+            <span class="scB-letter">C-</span>
+            <span class="scB-bars">
+              <span class="scB-bar" style="height:13px"></span>
+              <span class="scB-bar" style="height:11px"></span>
+              <span class="scB-bar dim" style="height:4px"></span>
+              <span class="scB-bar dim" style="height:5px"></span>
+              <span class="scB-bar" style="height:15px"></span>
+              <span class="scB-bar dim" style="height:6px"></span>
+              <span class="scB-bar dim" style="height:5px"></span>
+            </span>
+          </span>
+        </div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">F — almost empty</div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="scB f">
+            <span class="scB-letter">F</span>
+            <span class="scB-bars">
+              <span class="scB-bar dim" style="height:4px"></span>
+              <span class="scB-bar dim" style="height:3px"></span>
+              <span class="scB-bar dim" style="height:3px"></span>
+              <span class="scB-bar dim" style="height:3px"></span>
+              <span class="scB-bar" style="height:9px"></span>
+              <span class="scB-bar dim" style="height:3px"></span>
+              <span class="scB-bar dim" style="height:3px"></span>
+            </span>
+          </span>
+        </div>
+      </div>
+      <div class="note"><b>Tradeoff:</b> richer signal but doubles the cell width (~130px). Best if Score column gets a one-time bump. Tooltip can become "hover an axis bar to see the precise %".</div>
+    </div>
+
+    <!-- Variant C — Arc gauge transcript -->
+    <div class="card">
+      <div class="card-title">Variant C — Arc-gauge "transcript" pill (loud)</div>
+      <div class="card-sub">Mini arc gauge on the left (filled by absolute score), letter inside the ring, 0–100 number + "GRADE" caption on the right. The most expressive option — best when Score is the headline metric on the row.</div>
+      <div class="demo-row">
+        <div class="demo-row-label">A+ · 98</div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="scC">
+            <span class="scC-arc">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="13" fill="none" stroke-width="3.5" class="track"/>
+                <circle cx="16" cy="16" r="13" fill="none" stroke-width="3.5" class="fill" stroke-linecap="round" stroke-dasharray="81.7" stroke-dashoffset="1.6"/>
+              </svg>
+              <span class="scC-arc-letter">A+</span>
+            </span>
+            <span class="scC-meta"><span class="scC-num">98.4</span><span class="scC-cap">grade</span></span>
+          </span>
+        </div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">B · 84</div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="scC b">
+            <span class="scC-arc">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="13" fill="none" stroke-width="3.5" class="track"/>
+                <circle cx="16" cy="16" r="13" fill="none" stroke-width="3.5" class="fill" stroke-linecap="round" stroke-dasharray="81.7" stroke-dashoffset="13.1"/>
+              </svg>
+              <span class="scC-arc-letter">B</span>
+            </span>
+            <span class="scC-meta"><span class="scC-num">84.5</span><span class="scC-cap">grade</span></span>
+          </span>
+        </div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">C- · 71</div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="scC c">
+            <span class="scC-arc">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="13" fill="none" stroke-width="3.5" class="track"/>
+                <circle cx="16" cy="16" r="13" fill="none" stroke-width="3.5" class="fill" stroke-linecap="round" stroke-dasharray="81.7" stroke-dashoffset="23.7"/>
+              </svg>
+              <span class="scC-arc-letter">C-</span>
+            </span>
+            <span class="scC-meta"><span class="scC-num">71.0</span><span class="scC-cap">grade</span></span>
+          </span>
+        </div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">D · 63</div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="scC d">
+            <span class="scC-arc">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="13" fill="none" stroke-width="3.5" class="track"/>
+                <circle cx="16" cy="16" r="13" fill="none" stroke-width="3.5" class="fill" stroke-linecap="round" stroke-dasharray="81.7" stroke-dashoffset="30.2"/>
+              </svg>
+              <span class="scC-arc-letter">D</span>
+            </span>
+            <span class="scC-meta"><span class="scC-num">63.5</span><span class="scC-cap">grade</span></span>
+          </span>
+        </div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">F · 42</div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="scC f">
+            <span class="scC-arc">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <circle cx="16" cy="16" r="13" fill="none" stroke-width="3.5" class="track"/>
+                <circle cx="16" cy="16" r="13" fill="none" stroke-width="3.5" class="fill" stroke-linecap="round" stroke-dasharray="81.7" stroke-dashoffset="47.4"/>
+              </svg>
+              <span class="scC-arc-letter">F</span>
+            </span>
+            <span class="scC-meta"><span class="scC-num">42.0</span><span class="scC-cap">grade</span></span>
+          </span>
+        </div>
+      </div>
+      <div class="note"><b>Tradeoff:</b> widest of the three (~120px). Use this if you're OK promoting Score to a headline column to its own group like "Last Run".</div>
+    </div>
+
+    <div class="recos">
+      <div class="reco reco-pick"><b>Pick Variant A</b> if you want the smallest visual change with the biggest readability win — fits today's 70px slot and stays composed in a dense table.</div>
+      <div class="reco"><b>Pick Variant B</b> if you want the score chip to do double-duty as an at-a-glance "which axis is weak" diagnostic.</div>
+      <div class="reco"><b>Pick Variant C</b> if Score becomes a hero column (e.g., next to brand/model) and width is no longer constrained.</div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       COVERAGE / CONF / FIELDS — three variants
+       Each shown with a green/yellow/red/gray tier
+  ======================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">2 · Coverage / Conf / Fields — numeric metric trio</div>
+        <div class="section-sub">All three columns share the same shape today (dot + percent). Treat them as one component, three instances. Below are three richer renderings.</div>
+      </div>
+    </div>
+
+    <!-- Variant A — Mini gauge -->
+    <div class="card">
+      <div class="card-title">Mini Gauge <span class="card-tag tag-pick">recommended</span></div>
+      <div class="card-sub">22-px radial dial fills proportionally; tone follows the existing tier (≥85 green / ≥60 amber / &lt;60 red / 0 gray). Same height as the row, no width inflation. Conf reads "61%", Coverage "87%", Fields "23/24".</div>
+
+      <div class="demo-row">
+        <div class="demo-row-label">Coverage</div>
+        <div class="demo-cell">
+          <span class="mgA green">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="6.9"/>
+              </svg>
+            </span>
+            <span class="mgA-num">87%</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgA yellow">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="15.5"/>
+              </svg>
+            </span>
+            <span class="mgA-num">71%</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgA red">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="29.4"/>
+              </svg>
+            </span>
+            <span class="mgA-num">45%</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgA gray">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              </svg>
+            </span>
+            <span class="mgA-num">—</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="demo-row">
+        <div class="demo-row-label">Confidence</div>
+        <div class="demo-cell">
+          <span class="mgA green">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="4.3"/>
+              </svg>
+            </span>
+            <span class="mgA-num">92%</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgA yellow">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="19.2"/>
+              </svg>
+            </span>
+            <span class="mgA-num">64%</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgA red">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="32.0"/>
+              </svg>
+            </span>
+            <span class="mgA-num">40%</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgA gray">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              </svg>
+            </span>
+            <span class="mgA-num">—</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="demo-row">
+        <div class="demo-row-label">Fields</div>
+        <div class="demo-cell">
+          <span class="mgA green">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="2.2"/>
+              </svg>
+            </span>
+            <span class="mgA-num">23/24</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgA yellow">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="15.5"/>
+              </svg>
+            </span>
+            <span class="mgA-num">17/24</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgA red">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="40.0"/>
+              </svg>
+            </span>
+            <span class="mgA-num">6/24</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgA gray">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              </svg>
+            </span>
+            <span class="mgA-num">0/24</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="note"><b>Why this one:</b> the ring already exists in the codebase (Keys / PIF / Confidence Diamond) — this reuses the visual vocabulary instead of inventing a fourth one. Same column width as today (95px).</div>
+    </div>
+
+    <!-- Variant B — Segmented pips -->
+    <div class="card">
+      <div class="card-title">Variant B — Segmented pip-bar</div>
+      <div class="card-sub">Five discrete pips fill in 20% increments. Reads instantly as "4 out of 5", playful but tabular. Pairs nicely with mono numerics.</div>
+
+      <div class="demo-row">
+        <div class="demo-row-label">Coverage</div>
+        <div class="demo-cell">
+          <span class="mgB green">
+            <span class="mgB-pips"><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip"></span></span>
+            <span class="mgB-num">87%</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgB yellow">
+            <span class="mgB-pips"><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip"></span><span class="mgB-pip"></span></span>
+            <span class="mgB-num">71%</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgB red">
+            <span class="mgB-pips"><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span></span>
+            <span class="mgB-num">45%</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgB gray">
+            <span class="mgB-pips"><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span></span>
+            <span class="mgB-num">—</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="demo-row">
+        <div class="demo-row-label">Confidence</div>
+        <div class="demo-cell">
+          <span class="mgB green">
+            <span class="mgB-pips"><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip on"></span></span>
+            <span class="mgB-num">92%</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgB yellow">
+            <span class="mgB-pips"><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip"></span><span class="mgB-pip"></span></span>
+            <span class="mgB-num">64%</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgB red">
+            <span class="mgB-pips"><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span></span>
+            <span class="mgB-num">40%</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgB gray">
+            <span class="mgB-pips"><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span></span>
+            <span class="mgB-num">—</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="demo-row">
+        <div class="demo-row-label">Fields</div>
+        <div class="demo-cell">
+          <span class="mgB green">
+            <span class="mgB-pips"><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip on"></span></span>
+            <span class="mgB-num">23/24</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgB yellow">
+            <span class="mgB-pips"><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip on"></span><span class="mgB-pip"></span><span class="mgB-pip"></span></span>
+            <span class="mgB-num">17/24</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgB red">
+            <span class="mgB-pips"><span class="mgB-pip on"></span><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span></span>
+            <span class="mgB-num">6/24</span>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="mgB gray">
+            <span class="mgB-pips"><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span><span class="mgB-pip"></span></span>
+            <span class="mgB-num">0/24</span>
+          </span>
+        </div>
+      </div>
+
+      <div class="note"><b>Tradeoff:</b> very playful, very legible; loses precision (5 buckets instead of continuous fill). Works well if you're OK trading "is it 87 or 89" granularity for "4 out of 5" speed-reading.</div>
+    </div>
+
+    <!-- Variant C — Liquid bar -->
+    <div class="card">
+      <div class="card-title">Variant C — Liquid fill bar (loud)</div>
+      <div class="card-sub">Stacked layout: big mono number + tiny caption + glossy gradient bar with glow. Most "fun + loud", but takes vertical space — ~32px tall.</div>
+
+      <div class="demo-row">
+        <div class="demo-row-label">Coverage</div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="mgC">
+            <span class="mgC-row"><span class="mgC-num">87%</span><span class="mgC-cap">cov</span></span>
+            <span class="mgC-bar"><span class="mgC-fill" style="width:87%"></span></span>
+          </span>
+        </div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="mgC yellow">
+            <span class="mgC-row"><span class="mgC-num">71%</span><span class="mgC-cap">cov</span></span>
+            <span class="mgC-bar"><span class="mgC-fill" style="width:71%"></span></span>
+          </span>
+        </div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="mgC red">
+            <span class="mgC-row"><span class="mgC-num">45%</span><span class="mgC-cap">cov</span></span>
+            <span class="mgC-bar"><span class="mgC-fill" style="width:45%"></span></span>
+          </span>
+        </div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="mgC gray">
+            <span class="mgC-row"><span class="mgC-num">—</span><span class="mgC-cap">cov</span></span>
+            <span class="mgC-bar"></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="demo-row">
+        <div class="demo-row-label">Confidence</div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="mgC">
+            <span class="mgC-row"><span class="mgC-num">92%</span><span class="mgC-cap">conf</span></span>
+            <span class="mgC-bar"><span class="mgC-fill" style="width:92%"></span></span>
+          </span>
+        </div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="mgC yellow">
+            <span class="mgC-row"><span class="mgC-num">64%</span><span class="mgC-cap">conf</span></span>
+            <span class="mgC-bar"><span class="mgC-fill" style="width:64%"></span></span>
+          </span>
+        </div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="mgC red">
+            <span class="mgC-row"><span class="mgC-num">40%</span><span class="mgC-cap">conf</span></span>
+            <span class="mgC-bar"><span class="mgC-fill" style="width:40%"></span></span>
+          </span>
+        </div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="mgC gray">
+            <span class="mgC-row"><span class="mgC-num">—</span><span class="mgC-cap">conf</span></span>
+            <span class="mgC-bar"></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="demo-row">
+        <div class="demo-row-label">Fields</div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="mgC">
+            <span class="mgC-row"><span class="mgC-num">23/24</span><span class="mgC-cap">fields</span></span>
+            <span class="mgC-bar"><span class="mgC-fill" style="width:96%"></span></span>
+          </span>
+        </div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="mgC yellow">
+            <span class="mgC-row"><span class="mgC-num">17/24</span><span class="mgC-cap">fields</span></span>
+            <span class="mgC-bar"><span class="mgC-fill" style="width:71%"></span></span>
+          </span>
+        </div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="mgC red">
+            <span class="mgC-row"><span class="mgC-num">6/24</span><span class="mgC-cap">fields</span></span>
+            <span class="mgC-bar"><span class="mgC-fill" style="width:25%"></span></span>
+          </span>
+        </div>
+        <div class="demo-cell demo-cell-wide">
+          <span class="mgC gray">
+            <span class="mgC-row"><span class="mgC-num">0/24</span><span class="mgC-cap">fields</span></span>
+            <span class="mgC-bar"></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="note"><b>Tradeoff:</b> the most expressive — proportional bar gives instant magnitude reading. But row height grows; only adopt if Overview rows are already on the taller side.</div>
+    </div>
+
+    <div class="recos">
+      <div class="reco reco-pick"><b>Pick Mini Gauge</b> for the trio — same column width, reuses the ring vocabulary the codebase already speaks (PIF / Keys / ConfidenceDiamond).</div>
+      <div class="reco"><b>Pick Segmented Pips</b> for a more game-like feel — works if you're moving the panel toward a "dashboard" mood.</div>
+      <div class="reco"><b>Pick Liquid Bar</b> only if you grow row height; gives the loudest, most magnitude-aware reading.</div>
+    </div>
+  </section>
+
+  <!-- ========================================================
+       ASSEMBLED ROW — recommended winners side by side
+  ======================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">3 · Assembled row — recommended combo</div>
+        <div class="section-sub">Score = Variant A (Report Card stack) · Coverage / Conf / Fields = Mini Gauge. Same total column width as today, dramatically more legible at a glance.</div>
+      </div>
+    </div>
+
+    <div class="table-mock">
+      <div class="table-mock-head">
+        <span>Brand · Model</span>
+        <span>Keys</span>
+        <span style="text-align:center">Score</span>
+        <span style="text-align:center">Coverage</span>
+        <span style="text-align:center">Conf</span>
+        <span style="text-align:center">Fields</span>
+      </div>
+
+      <div class="table-mock-row">
+        <span><span class="brand">Logitech</span><br><span class="model">MX Master 3S</span></span>
+        <span class="model">22 / 24</span>
+        <span style="text-align:center"><span class="scA"><span class="scA-letter">A+</span><span class="scA-num">96.2</span></span></span>
+        <span style="text-align:center">
+          <span class="mgA green">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="3.7"/>
+              </svg>
+            </span>
+            <span class="mgA-num">93%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA green">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="5.3"/>
+              </svg>
+            </span>
+            <span class="mgA-num">90%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA green">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="4.4"/>
+              </svg>
+            </span>
+            <span class="mgA-num">22/24</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="table-mock-row">
+        <span><span class="brand">Razer</span><br><span class="model">DeathAdder V3</span></span>
+        <span class="model">18 / 24</span>
+        <span style="text-align:center"><span class="scA b"><span class="scA-letter">B+</span><span class="scA-num">87.1</span></span></span>
+        <span style="text-align:center">
+          <span class="mgA green">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="6.9"/>
+              </svg>
+            </span>
+            <span class="mgA-num">87%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA yellow">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="14.4"/>
+              </svg>
+            </span>
+            <span class="mgA-num">73%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA yellow">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="13.4"/>
+              </svg>
+            </span>
+            <span class="mgA-num">18/24</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="table-mock-row">
+        <span><span class="brand">SteelSeries</span><br><span class="model">Aerox 9</span></span>
+        <span class="model">14 / 24</span>
+        <span style="text-align:center"><span class="scA c"><span class="scA-letter">C</span><span class="scA-num">73.4</span></span></span>
+        <span style="text-align:center">
+          <span class="mgA yellow">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="16.6"/>
+              </svg>
+            </span>
+            <span class="mgA-num">69%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA yellow">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="20.3"/>
+              </svg>
+            </span>
+            <span class="mgA-num">62%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA yellow">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="22.3"/>
+              </svg>
+            </span>
+            <span class="mgA-num">14/24</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="table-mock-row">
+        <span><span class="brand">Glorious</span><br><span class="model">Model O 2</span></span>
+        <span class="model">8 / 24</span>
+        <span style="text-align:center"><span class="scA d"><span class="scA-letter">D</span><span class="scA-num">63.0</span></span></span>
+        <span style="text-align:center">
+          <span class="mgA red">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="27.8"/>
+              </svg>
+            </span>
+            <span class="mgA-num">48%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA red">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="29.4"/>
+              </svg>
+            </span>
+            <span class="mgA-num">45%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA red">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="35.6"/>
+              </svg>
+            </span>
+            <span class="mgA-num">8/24</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="table-mock-row">
+        <span><span class="brand">Generic</span><br><span class="model">Untouched product</span></span>
+        <span class="model">0 / 24</span>
+        <span style="text-align:center"><span class="scA f"><span class="scA-letter">F</span><span class="scA-num">0.0</span></span></span>
+        <span style="text-align:center">
+          <span class="mgA gray">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              </svg>
+            </span>
+            <span class="mgA-num">—</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA gray">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              </svg>
+            </span>
+            <span class="mgA-num">—</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA gray">
+            <span class="mgA-ring">
+              <svg width="22" height="22" viewBox="0 0 22 22">
+                <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              </svg>
+            </span>
+            <span class="mgA-num">0/24</span>
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <div class="note">
+      <b>Net result:</b> at-a-glance ranking is preserved by the existing tier colors, but every cell now shows magnitude (not just bucket). The grade chip becomes the verdict; the three trailing columns become the receipts. Same row height as today, same column widths as today (70 / 95 / 95 / 95).
+    </div>
+  </section>
+
+  <!-- ========================================================
+       NOTES — implementation pointers
+  ======================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div>
+        <div class="section-title">4 · Implementation notes (when you green-light this)</div>
+        <div class="section-sub">Just markers — no code is being changed by this sample.</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-sub" style="margin:0">
+        <ul style="padding-left: 18px; line-height: 1.7;">
+          <li><b>Score</b> — extend <code>ScoreCardCell.tsx</code> + <code>ScoreCardCell.css</code>. The numeric subscript already exists in <code>computeScoreCard().score</code> — just render it under the letter. <span class="card-tag tag-old">no new data</span></li>
+          <li><b>Coverage / Conf / Fields</b> — replace <code>MetricWithDot</code> in <code>OverviewPage.tsx:143</code> with a small shared <code>&lt;MiniGauge&gt;</code> primitive in <code>shared/ui/data-display/</code>. Three callers, one component. <span class="card-tag tag-old">O(1) scaling</span></li>
+          <li>Tier thresholds (≥85 / ≥60 / 0) stay in <code>metricTrafficColor()</code> — single source of truth for the gauge tone. <span class="card-tag tag-old">no contract change</span></li>
+          <li>Tooltip text on Score should still expose the 7-axis breakdown built in <code>buildTooltip()</code>.</li>
+          <li>For the gray "—" empty state, check <code>row.fieldsTotal === 0</code> the same way <code>scoreCard.ts</code> does.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

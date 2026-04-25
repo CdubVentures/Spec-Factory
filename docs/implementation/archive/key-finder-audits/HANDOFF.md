@@ -47,6 +47,21 @@ The report has been proven to work end-to-end: two independent LLM runs consumed
 
 Rolling filenames mean each regeneration OVERWRITES the prior pair. Git is the audit trail.
 
+### Operator rule: what "update DB" means here
+
+Current system in one paragraph: the Key Finder audit generator reads compiled category rules from `category_authority/<cat>/_generated/`, emits category and per-key handoff reports, the reviewer returns a Field Studio change file, and the approved authoring change belongs in the durable control-plane map. Compile is the projection step that regenerates `_generated/*` and refreshes runtime SQL.
+
+When the human points at Key Finder or a per-key Field Studio change file and says **update DB**, do this:
+
+| Change-file section | Edit target |
+|---|---|
+| Mapping Studio - Enum Data Lists | `category_authority/<category>/_control_plane/field_studio_map.json` -> `data_lists[]` |
+| Mapping Studio - Component Source Mapping | `category_authority/<category>/_control_plane/field_studio_map.json` -> `component_sources[]` |
+| Key Navigator panels | `category_authority/<category>/_control_plane/field_studio_map.json` -> `field_overrides.<field_key>` |
+| Key order / groups | `category_authority/<category>/_control_plane/field_key_order.json` and `field_overrides.*.ui.group`, only when explicitly requested |
+
+Do not edit `_generated/*`, SQLite files, compiler, runtime, schema, API, or UI source code for a settings change. The human normally compiles after the map edit. If a setting does not appear in generated artifacts after compile, report that as a separate implementation gap.
+
 ---
 
 ## 3. Architecture

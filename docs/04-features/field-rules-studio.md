@@ -31,6 +31,19 @@
 6. The route emits `field-studio-map-saved` data-change events and invalidates session/review caches.
 7. Compile or validate actions call `startProcess('src/app/cli/spec.js', ['compile-rules' ...])` or `['validate-rules' ...]`, which runs the CLI pipeline and refreshes generated artifacts. These are the only two field-rules CLI commands remaining (`commandCategoryCompile`, `commandCompileReport`, `commandRulesDiff`, `commandInitCategory`, `commandListFields`, `commandFieldReport`, and `commandFieldRulesVerify` have all been removed from `fieldRulesCommands.js`).
 
+## Operator Shortcut: "Update DB"
+
+When a human points at Key Finder, a per-key audit, or a Field Studio change file and says **update DB**, treat it as a user-authored Field Studio settings edit. Apply the approved change to `category_authority/{category}/_control_plane/field_studio_map.json`, not to generated files or SQLite projections.
+
+| Change-file section | Control-plane target |
+|---------------------|----------------------|
+| Mapping Studio - Enum Data Lists | `data_lists[]` |
+| Mapping Studio - Component Source Mapping | `component_sources[]` |
+| Key Navigator panels | `field_overrides.{field_key}` |
+| Key order / groups | `field_key_order.json` and `field_overrides.*.ui.group`, only when the request explicitly changes order or grouping |
+
+The normal loop is: edit the control-plane map, let the human compile or run the existing compile action when asked, then inspect generated artifacts if proof is needed. Do not patch `_generated/*`, SQLite files, compiler, runtime, schema, API, or UI source code while applying a settings change. If the requested setting does not project after compile, report that as an implementation gap.
+
 ## EG Default Keys (Registry-Driven)
 
 Default field keys (e.g. `colors`, `editions`) are managed by `EG_PRESET_REGISTRY` in `src/features/studio/contracts/egPresets.js`. Adding a new locked default = one builder + one registry entry. All propagation is automatic:

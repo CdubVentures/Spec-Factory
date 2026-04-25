@@ -407,22 +407,25 @@ async function fetchKfSummary(category: string, productId: string): Promise<read
   return api.get<readonly KeyFinderSummaryLike[]>(kfSummaryUrl(category, productId));
 }
 
-async function buildKfProductPlan(
-  category: string,
-  row: CatalogRow,
+/**
+ * Shared KF key eligibility + axis-order sort. Used by `buildKfProductPlan`
+ * (all-keys dispatch) and `buildKfPickedProductPlan` (per-key dispatch from
+ * the Command Console Keys ▼ dropdown). Keeping one filter-and-sort path
+ * prevents drift between the two dispatchers.
+ */
+function filterAndSortKfKeys(
+  summary: readonly KeyFinderSummaryLike[],
+  axisOrder: readonly string[],
   reservedKeys: ReadonlySet<string>,
   mode: 'run' | 'loop',
-): Promise<KfProductPlan> {
-  const [summary, bundlingConfig] = await Promise.all([
-    fetchKfSummary(category, row.productId),
-    api.get<KeyFinderBundlingConfigLike>(kfBundlingConfigUrl(category, row.productId)).catch(() => ({ sortAxisOrder: '' })),
-  ]);
-  const axisOrder = parseAxisOrder(bundlingConfig?.sortAxisOrder ?? '');
+  pickedFilter?: ReadonlySet<string>,
+): readonly string[] {
   const eligible = summary.filter((entry) => {
     if (!entry.field_key) return false;
     if (reservedKeys.has(entry.field_key)) return false;
     if (entry.variant_dependent === true) return false;
     if (mode === 'loop' && (entry.last_status === 'resolved' || entry.published)) return false;
+    if (pickedFilter && !pickedFilter.has(entry.field_key)) return false;
     return true;
   });
   const sortable = eligible.map((entry) => ({
@@ -431,10 +434,46 @@ async function buildKfProductPlan(
     required_level: entry.required_level ?? '',
     availability: entry.availability ?? '',
   }));
+  return sortKeysByPriority(sortable, axisOrder).map((entry) => entry.field_key);
+}
+
+async function fetchKfPlanInputs(
+  category: string,
+  productId: string,
+): Promise<{ summary: readonly KeyFinderSummaryLike[]; axisOrder: readonly string[] }> {
+  const [summary, bundlingConfig] = await Promise.all([
+    fetchKfSummary(category, productId),
+    api.get<KeyFinderBundlingConfigLike>(kfBundlingConfigUrl(category, productId)).catch(() => ({ sortAxisOrder: '' })),
+  ]);
+  return { summary, axisOrder: parseAxisOrder(bundlingConfig?.sortAxisOrder ?? '') };
+}
+
+async function buildKfProductPlan(
+  category: string,
+  row: CatalogRow,
+  reservedKeys: ReadonlySet<string>,
+  mode: 'run' | 'loop',
+): Promise<KfProductPlan> {
+  const { summary, axisOrder } = await fetchKfPlanInputs(category, row.productId);
   return {
     row,
     summary,
-    keys: sortKeysByPriority(sortable, axisOrder).map((entry) => entry.field_key),
+    keys: filterAndSortKfKeys(summary, axisOrder, reservedKeys, mode),
+  };
+}
+
+async function buildKfPickedProductPlan(
+  category: string,
+  row: CatalogRow,
+  reservedKeys: ReadonlySet<string>,
+  mode: 'run' | 'loop',
+  pickedKeys: ReadonlySet<string>,
+): Promise<KfProductPlan> {
+  const { summary, axisOrder } = await fetchKfPlanInputs(category, row.productId);
+  return {
+    row,
+    summary,
+    keys: filterAndSortKfKeys(summary, axisOrder, reservedKeys, mode, pickedKeys),
   };
 }
 
@@ -520,6 +559,60 @@ export async function dispatchKfAll(
   const plans = await Promise.all(eligibleProducts.map(async (row) => {
     try {
       return await buildKfProductPlan(category, row, reservedKeys, mode);
+    } catch {
+      return { row, summary: [], keys: [] };
+    }
+  }));
+
+  const results = await Promise.all(plans.map((plan) =>
+    runKfProductChain({ category, plan, mode, fire, options }),
+  ));
+
+  return {
+    scheduled: results.reduce((sum, result) => sum + result.scheduled, 0),
+    operationIds: results.flatMap((result) => result.operationIds),
+    failures: results.reduce((sum, result) => sum + result.failures, 0),
+    skipped: results.reduce((sum, result) => sum + result.skipped, 0),
+  };
+}
+
+/**
+ * Per-key Run / Loop fan-out across selected products. Mirrors `dispatchKfAll`
+ * but takes a curated `pickedKeys` set and intersects it with the standard
+ * eligibility filter (reserved + variant_dependent + mode-specific resolved
+ * skip). Used by the Command Console Keys ▼ dropdown so we can call one or
+ * a handful of specific keys across N selected products during prompt
+ * refinement, rather than fanning out every key per product.
+ *
+ * Short-circuits before any per-product fetch when `pickedKeys` is empty.
+ */
+export async function dispatchKfPickedKeys(
+  category: string,
+  products: readonly CatalogRow[],
+  reservedKeys: ReadonlySet<string>,
+  pickedKeys: ReadonlySet<string>,
+  mode: 'run' | 'loop',
+  fire: BulkFireFn,
+  optionsInput: KfBulkDispatchOptions | number = {},
+): Promise<BulkDispatchResult> {
+  if (pickedKeys.size === 0 || products.length === 0) {
+    return { scheduled: 0, operationIds: [], failures: 0, skipped: 0 };
+  }
+
+  const resolvedInput = typeof optionsInput === 'number' ? { staggerMs: optionsInput } : optionsInput;
+  const options = {
+    ...resolveOptions(resolvedInput),
+    awaitPassengersRegistered: resolvedInput.awaitPassengersRegistered ?? defaultAwaitPassengersRegistered,
+    awaitOperationTerminal: resolvedInput.awaitOperationTerminal ?? defaultAwaitOperationTerminal,
+  };
+
+  const eligibleProducts = mode === 'loop'
+    ? products.filter((row) => !isKfLoopActive(row.productId))
+    : products;
+
+  const plans = await Promise.all(eligibleProducts.map(async (row) => {
+    try {
+      return await buildKfPickedProductPlan(category, row, reservedKeys, mode, pickedKeys);
     } catch {
       return { row, summary: [], keys: [] };
     }

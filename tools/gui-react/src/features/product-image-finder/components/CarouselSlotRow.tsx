@@ -2,6 +2,7 @@ import { memo, useMemo, useCallback, useState } from 'react';
 import { SlotCard } from './SlotCard.tsx';
 import { CarouselPreviewCard } from './CarouselPreviewCard.tsx';
 import { CarouselPreviewPopup } from './CarouselPreviewPopup.tsx';
+import { SlotImageLightbox } from './SlotImageLightbox.tsx';
 import { resolveSlots } from '../selectors/pifSelectors.ts';
 import { imageServeUrl } from '../helpers/pifImageUrls.ts';
 import { useCarouselSlotMutation } from '../api/productImageFinderQueries.ts';
@@ -29,6 +30,7 @@ export const CarouselSlotRow = memo(function CarouselSlotRow({
   productId,
 }: CarouselSlotRowProps) {
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [openSlotFilename, setOpenSlotFilename] = useState<string | null>(null);
   const slotMutation = useCarouselSlotMutation(category, productId);
   const slots = resolveSlots(viewBudget, heroCount, variantKey, carouselSlots, images as ProductImageEntry[]);
   // WHY: Build filename→image lookup so SlotCard can show full meta (size, dims, source)
@@ -73,21 +75,32 @@ export const CarouselSlotRow = memo(function CarouselSlotRow({
       </div>
       <div className="flex gap-2 flex-wrap mb-2">
         <CarouselPreviewCard slides={slides} onClick={() => setPreviewOpen(true)} />
-        {slots.map((slot) => (
-          <SlotCard
-            key={slot.slot}
-            slot={slot}
-            img={slot.filename ? (imageByFilename.get(slot.filename) ?? null) : null}
-            source={slot.source}
-            category={category}
-            productId={productId}
-            onClear={() => handleClearSlot(slot.slot)}
-            onDrop={(fn) => handleDropOnSlot(slot.slot, fn)}
-          />
-        ))}
+        {slots.map((slot) => {
+          const slotFilename = slot.filename && slot.filename !== '__cleared__' ? slot.filename : null;
+          return (
+            <SlotCard
+              key={slot.slot}
+              slot={slot}
+              img={slot.filename ? (imageByFilename.get(slot.filename) ?? null) : null}
+              source={slot.source}
+              category={category}
+              productId={productId}
+              onClear={() => handleClearSlot(slot.slot)}
+              onDrop={(fn) => handleDropOnSlot(slot.slot, fn)}
+              onOpen={slotFilename ? () => setOpenSlotFilename(slotFilename) : undefined}
+            />
+          );
+        })}
       </div>
       {previewOpen && filledSlots.length > 0 && (
         <CarouselPreviewPopup slides={slides} onClose={() => setPreviewOpen(false)} />
+      )}
+      {openSlotFilename && (
+        <SlotImageLightbox
+          src={imageServeUrl(category, productId, openSlotFilename)}
+          alt={openSlotFilename}
+          onClose={() => setOpenSlotFilename(null)}
+        />
       )}
     </div>
   );

@@ -15,6 +15,7 @@ import {
   dispatchSkuRun,
   dispatchSkuLoop,
   dispatchKfAll,
+  dispatchKfPickedKeys,
 } from './bulkDispatch.ts';
 import { pickBottomQuartileSample, pickNextBatch } from './smartSelect.ts';
 import { useSmartSelectHistory } from './useSmartSelectHistory.ts';
@@ -26,6 +27,7 @@ import {
 import { useActiveModulesByProduct } from '../../features/operations/hooks/useFinderOperations.ts';
 import { selectActiveProductsForType, formatActiveWarnMessage } from './commandConsoleActiveCheck.ts';
 import { CommandConsoleModelStrip } from './CommandConsoleModelStrip.tsx';
+import { CommandConsoleKeysDropdown } from './CommandConsoleKeysDropdown.tsx';
 import './CommandConsole.css';
 
 export interface CommandConsoleProps {
@@ -102,7 +104,14 @@ function StopGlyph() {
 }
 
 // ── Finder chip (module icon + label + action buttons) ────────────────
-interface FinderChipAction { readonly label: string; readonly primary?: boolean; readonly onClick: () => void }
+// Two action shapes are supported:
+//  - { label, primary?, onClick } — standard button (CEF / PIF / RDF / SKU and the KF Run-all/Loop-all).
+//  - { kind: 'render', render } — escape hatch for chips that need a custom
+//    control such as a popover trigger. Used by the KF chip's Keys ▼ dropdown
+//    so we can mount it inline without forking FinderChip.
+type FinderChipAction =
+  | { readonly label: string; readonly primary?: boolean; readonly onClick: () => void }
+  | { readonly kind: 'render'; readonly key: string; readonly render: (disabled: boolean) => ReactNode };
 interface FinderChipProps {
   readonly moduleKey: 'cef' | 'pif' | 'rdf' | 'sku' | 'kf';
   readonly label: string;
@@ -119,17 +128,23 @@ function FinderChip({ moduleKey, label, icon, actions, disabled }: FinderChipPro
         <span className="sf-cc-chip-label">{label}</span>
       </span>
       <span className="sf-cc-chip-actions">
-        {actions.map((a) => (
-          <button
-            key={a.label}
-            type="button"
-            className={`sf-cc-btn ${a.primary ? 'sf-cc-btn-primary' : 'sf-cc-btn-secondary'}`}
-            disabled={disabled}
-            onClick={a.onClick}
-          >
-            {a.label}
-          </button>
-        ))}
+        {actions.map((a) => {
+          if ('kind' in a && a.kind === 'render') {
+            return <span key={a.key}>{a.render(disabled)}</span>;
+          }
+          const action = a as { label: string; primary?: boolean; onClick: () => void };
+          return (
+            <button
+              key={action.label}
+              type="button"
+              className={`sf-cc-btn ${action.primary ? 'sf-cc-btn-primary' : 'sf-cc-btn-secondary'}`}
+              disabled={disabled}
+              onClick={action.onClick}
+            >
+              {action.label}
+            </button>
+          );
+        })}
       </span>
     </span>
   );
@@ -338,6 +353,17 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
     void dispatchKfAll(category, selectedProducts, reservedSet, 'loop', fire);
   }, [category, selectedProducts, reservedSet, fire, confirmActiveDispatch]);
 
+  // Per-key Run picked-keys dispatch from the Keys ▼ dropdown. Confirmation
+  // policy (collision warn + large-batch confirm) lives here; the dropdown
+  // only collects state and fires the callback.
+  const handleKfRunPicked = useCallback((pickedKeys: ReadonlySet<string>) => {
+    if (pickedKeys.size === 0 || selectedProducts.length === 0) return;
+    if (!confirmActiveDispatch('kf', 'KF')) return;
+    const opCount = pickedKeys.size * selectedProducts.length;
+    if (!confirmLargeBatch(opCount, selectedProducts.length)) return;
+    void dispatchKfPickedKeys(category, selectedProducts, reservedSet, pickedKeys, 'run', fire);
+  }, [category, selectedProducts, reservedSet, fire, confirmActiveDispatch]);
+
   const handleStartPipeline = useCallback(() => {
     if (pipelineRunning || selectedProducts.length === 0) return;
     const variantOps = selectedProducts.reduce((n, r) => n + r.pifVariants.length, 0);
@@ -422,6 +448,18 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
           actions={[
             { label: 'Run all groups', primary: true, onClick: handleKfRunAll },
             { label: 'Loop all groups', onClick: handleKfLoopAll },
+            {
+              kind: 'render',
+              key: 'keys-dropdown',
+              render: (chipDisabled) => (
+                <CommandConsoleKeysDropdown
+                  category={category}
+                  selectedProducts={selectedProducts}
+                  disabled={chipDisabled}
+                  onRunPicked={handleKfRunPicked}
+                />
+              ),
+            },
           ]}
         />
       </div>

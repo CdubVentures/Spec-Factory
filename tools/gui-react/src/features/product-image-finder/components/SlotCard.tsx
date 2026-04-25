@@ -12,9 +12,10 @@ interface SlotCardProps {
   readonly productId: string;
   readonly onClear: () => void;
   readonly onDrop: (filename: string) => void;
+  readonly onOpen?: () => void;
 }
 
-export const SlotCard = memo(function SlotCard({ slot, img, source, category, productId, onClear, onDrop }: SlotCardProps) {
+export const SlotCard = memo(function SlotCard({ slot, img, source, category, productId, onClear, onDrop, onOpen }: SlotCardProps) {
   const [isOver, setIsOver] = useState(false);
   // WHY: '__cleared__' is a sentinel meaning "user intentionally emptied this slot" — treat as no image.
   const filename = (slot.filename && slot.filename !== '__cleared__') ? slot.filename : null;
@@ -40,20 +41,35 @@ export const SlotCard = memo(function SlotCard({ slot, img, source, category, pr
         if (droppedFilename) onDrop(droppedFilename);
       }}
     >
-      <div
-        className={`relative w-full h-32 flex items-center justify-center sf-surface-bg ${img?.bg_removed ? 'p-2' : ''}`}
-      >
-        {filename ? (
+      {filename && onOpen ? (
+        <button
+          type="button"
+          onClick={onOpen}
+          className={`relative w-full h-32 flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity sf-surface-bg ${img?.bg_removed ? 'p-2' : ''}`}
+        >
           <img
             src={src}
             alt={`${label} slot`}
             className={img?.bg_removed ? 'max-w-full max-h-full object-contain' : 'w-full h-full object-cover'}
             loading="lazy"
           />
-        ) : (
-          <span className="text-[11px] font-bold uppercase tracking-wider sf-text-muted">{label}</span>
-        )}
-      </div>
+        </button>
+      ) : (
+        <div
+          className={`relative w-full h-32 flex items-center justify-center sf-surface-bg ${img?.bg_removed ? 'p-2' : ''}`}
+        >
+          {filename ? (
+            <img
+              src={src}
+              alt={`${label} slot`}
+              className={img?.bg_removed ? 'max-w-full max-h-full object-contain' : 'w-full h-full object-cover'}
+              loading="lazy"
+            />
+          ) : (
+            <span className="text-[11px] font-bold uppercase tracking-wider sf-text-muted">{label}</span>
+          )}
+        </div>
+      )}
 
       <div className="px-2 py-1.5 flex flex-col gap-0.5 border-t sf-border-soft text-[8px]">
         <span className="text-[9px] font-bold uppercase tracking-wider sf-text-muted">{label}</span>

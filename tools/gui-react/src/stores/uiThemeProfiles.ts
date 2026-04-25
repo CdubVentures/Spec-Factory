@@ -1,4 +1,4 @@
-export const SF_THEME_COLOR_PROFILES = ['light', 'sand', 'rose', 'arctic', 'arcade', 'felt', 'hightech', 'redline', 'metallic', 'dark', 'ember', 'forest', 'obsidian', 'slate', 'funhaus', 'nightclub', 'cosmos', 'shooters', 'wasteland'] as const;
+export const SF_THEME_COLOR_PROFILES = ['light', 'sand', 'rose', 'arctic', 'arcade', 'felt', 'hightech', 'redline', 'metallic', 'dark', 'ember', 'forest', 'obsidian', 'slate', 'funhaus', 'nightclub', 'cosmos', 'shooters', 'wasteland', 'solarized', 'gruvbox', 'nord', 'frappe'] as const;
 export const SF_THEME_RADIUS_PROFILES = ['tight', 'standard', 'relaxed', 'pill-heavy'] as const;
 export const SF_THEME_DENSITY_PROFILES = ['standard'] as const;
 
@@ -22,7 +22,7 @@ const colorSet = new Set<string>(SF_THEME_COLOR_PROFILES);
 const radiusSet = new Set<string>(SF_THEME_RADIUS_PROFILES);
 const densitySet = new Set<string>(SF_THEME_DENSITY_PROFILES);
 
-const DARK_PROFILE_IDS: ReadonlySet<string> = new Set<string>(['dark', 'ember', 'forest', 'obsidian', 'slate', 'funhaus', 'nightclub', 'cosmos', 'shooters', 'wasteland']);
+const DARK_PROFILE_IDS: ReadonlySet<string> = new Set<string>(['dark', 'ember', 'forest', 'obsidian', 'slate', 'funhaus', 'nightclub', 'cosmos', 'shooters', 'wasteland', 'solarized', 'gruvbox', 'nord', 'frappe']);
 
 export const SF_LIGHT_THEME_PROFILES = SF_THEME_COLOR_PROFILES.filter(
   (id) => !DARK_PROFILE_IDS.has(id),
@@ -57,6 +57,10 @@ export const SF_THEME_COLOR_META: Record<SfThemeColorProfileId, SfThemeColorMeta
   shooters: { label: 'Shooters', swatchColors: ['#0c0c0c', '#121212', '#cc7832'] },
   metallic: { label: 'Metallic', swatchColors: ['#eff0f2', '#e8eaee', '#f39c12'] },
   wasteland:{ label: 'Wasteland',swatchColors: ['#0a0c06', '#10140a', '#a4c639'] },
+  solarized:{ label: 'Solarized',swatchColors: ['#002b36', '#073642', '#268bd2'] },
+  gruvbox:  { label: 'Gruvbox',  swatchColors: ['#282828', '#3c3836', '#fabd2f'] },
+  nord:     { label: 'Nord',     swatchColors: ['#2e3440', '#3b4252', '#88c0d0'] },
+  frappe:   { label: 'Frappé',   swatchColors: ['#303446', '#414559', '#ca9ee6'] },
 };
 
 function toNormalizedText(value: unknown): string {

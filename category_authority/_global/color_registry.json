@@ -3,303 +3,379 @@
   "_version": 1,
   "colors": {
     "amber": {
-      "hex": "#f59e0b",
+      "hex": "#ffbf00",
       "css_var": "--color-amber"
     },
     "beige": {
-      "hex": "#f5f5f4",
+      "hex": "#f5f5dc",
       "css_var": "--color-beige"
     },
     "black": {
-      "hex": "#3A3F41",
+      "hex": "#000000",
       "css_var": "--color-black"
     },
     "blue": {
-      "hex": "#3b82f6",
+      "hex": "#0000ff",
       "css_var": "--color-blue"
     },
+    "bronze": {
+      "hex": "#cd7f32",
+      "css_var": "--color-bronze"
+    },
     "brown": {
-      "hex": "#8b4513",
+      "hex": "#a52a2a",
       "css_var": "--color-brown"
     },
+    "burgundy": {
+      "hex": "#800020",
+      "css_var": "--color-burgundy"
+    },
+    "champagne": {
+      "hex": "#f7e7ce",
+      "css_var": "--color-champagne"
+    },
+    "charcoal": {
+      "hex": "#36454f",
+      "css_var": "--color-charcoal"
+    },
+    "clear": {
+      "hex": "#f8fafc",
+      "css_var": "--color-clear"
+    },
+    "copper": {
+      "hex": "#b87333",
+      "css_var": "--color-copper"
+    },
     "coral": {
-      "hex": "#fb7185",
+      "hex": "#ff7f50",
       "css_var": "--color-coral"
     },
+    "cream": {
+      "hex": "#fffdd0",
+      "css_var": "--color-cream"
+    },
+    "crimson": {
+      "hex": "#dc143c",
+      "css_var": "--color-crimson"
+    },
     "cyan": {
-      "hex": "#06b6d4",
+      "hex": "#00ffff",
       "css_var": "--color-cyan"
     },
     "dark-blue": {
-      "hex": "#1d4ed8",
+      "hex": "#00008b",
       "css_var": "--color-dark-blue"
     },
     "dark-brown": {
-      "hex": "#451a03",
+      "hex": "#5c4033",
       "css_var": "--color-dark-brown"
     },
     "dark-cyan": {
-      "hex": "#0e7490",
+      "hex": "#008b8b",
       "css_var": "--color-dark-cyan"
     },
     "dark-fuchsia": {
-      "hex": "#a21caf",
+      "hex": "#8b008b",
       "css_var": "--color-dark-fuchsia"
     },
     "dark-gray": {
-      "hex": "#374151",
+      "hex": "#404040",
       "css_var": "--color-dark-gray"
     },
     "dark-green": {
-      "hex": "#15803d",
+      "hex": "#006400",
       "css_var": "--color-dark-green"
     },
     "dark-indigo": {
-      "hex": "#4338ca",
+      "hex": "#2e0854",
       "css_var": "--color-dark-indigo"
     },
     "dark-lime": {
-      "hex": "#4d7c0f",
+      "hex": "#32cd32",
       "css_var": "--color-dark-lime"
     },
     "dark-orange": {
-      "hex": "#c2410c",
+      "hex": "#ff8c00",
       "css_var": "--color-dark-orange"
     },
     "dark-pink": {
-      "hex": "#be185d",
+      "hex": "#e75480",
       "css_var": "--color-dark-pink"
     },
     "dark-purple": {
-      "hex": "#7e22ce",
+      "hex": "#301934",
       "css_var": "--color-dark-purple"
     },
     "dark-red": {
-      "hex": "#b91c1c",
+      "hex": "#8b0000",
       "css_var": "--color-dark-red"
     },
     "dark-rose": {
-      "hex": "#be123c",
+      "hex": "#c21e56",
       "css_var": "--color-dark-rose"
     },
     "dark-sky": {
-      "hex": "#0369a1",
+      "hex": "#4a90b8",
       "css_var": "--color-dark-sky"
     },
     "dark-slate": {
-      "hex": "#334155",
+      "hex": "#2f4f4f",
       "css_var": "--color-dark-slate"
     },
     "dark-stone": {
-      "hex": "#44403c",
+      "hex": "#5c5855",
       "css_var": "--color-dark-stone"
     },
     "dark-teal": {
-      "hex": "#0f766e",
+      "hex": "#005757",
       "css_var": "--color-dark-teal"
     },
     "dark-violet": {
-      "hex": "#6d28d9",
+      "hex": "#9400d3",
       "css_var": "--color-dark-violet"
     },
     "dark-yellow": {
-      "hex": "#a16207",
+      "hex": "#cccc00",
       "css_var": "--color-dark-yellow"
     },
+    "electric-blue": {
+      "hex": "#7df9ff",
+      "css_var": "--color-electric-blue"
+    },
     "emerald": {
-      "hex": "#10b981",
+      "hex": "#50c878",
       "css_var": "--color-emerald"
     },
+    "frosted": {
+      "hex": "#eaf6f6",
+      "css_var": "--color-frosted"
+    },
     "fuchsia": {
-      "hex": "#c026d3",
+      "hex": "#ff00ff",
       "css_var": "--color-fuchsia"
     },
     "gold": {
-      "hex": "#eab308",
+      "hex": "#ffd700",
       "css_var": "--color-gold"
     },
+    "graphite": {
+      "hex": "#383838",
+      "css_var": "--color-graphite"
+    },
     "gray": {
-      "hex": "#586062",
+      "hex": "#808080",
       "css_var": "--color-gray"
     },
     "green": {
-      "hex": "#22c55e",
+      "hex": "#008000",
       "css_var": "--color-green"
     },
+    "gunmetal": {
+      "hex": "#2a3439",
+      "css_var": "--color-gunmetal"
+    },
     "indigo": {
-      "hex": "#6366f1",
+      "hex": "#4b0082",
       "css_var": "--color-indigo"
     },
     "ivory": {
-      "hex": "#fafaf9",
+      "hex": "#fffff0",
       "css_var": "--color-ivory"
     },
     "lavender": {
-      "hex": "#a78bfa",
+      "hex": "#e6e6fa",
       "css_var": "--color-lavender"
     },
     "light-amber": {
-      "hex": "#f59e0b",
+      "hex": "#ffcf40",
       "css_var": "--color-light-amber"
     },
     "light-blue": {
-      "hex": "#60a5fa",
+      "hex": "#add8e6",
       "css_var": "--color-light-blue"
     },
     "light-brown": {
-      "hex": "#a0522d",
+      "hex": "#c4a484",
       "css_var": "--color-light-brown"
     },
     "light-coral": {
-      "hex": "#fda4af",
+      "hex": "#f08080",
       "css_var": "--color-light-coral"
     },
     "light-cyan": {
-      "hex": "#06b6d4",
+      "hex": "#e0ffff",
       "css_var": "--color-light-cyan"
     },
     "light-emerald": {
-      "hex": "#10b981",
+      "hex": "#a8e6cf",
       "css_var": "--color-light-emerald"
     },
     "light-fuchsia": {
-      "hex": "#c026d3",
+      "hex": "#ff77ff",
       "css_var": "--color-light-fuchsia"
     },
     "light-gray": {
-      "hex": "#6b7280",
+      "hex": "#d3d3d3",
       "css_var": "--color-light-gray"
     },
     "light-green": {
-      "hex": "#22c55e",
+      "hex": "#90ee90",
       "css_var": "--color-light-green"
     },
     "light-indigo": {
-      "hex": "#6366f1",
+      "hex": "#6f5fcf",
       "css_var": "--color-light-indigo"
     },
     "light-lime": {
-      "hex": "#84cc16",
+      "hex": "#ccff00",
       "css_var": "--color-light-lime"
     },
     "light-olive": {
-      "hex": "#808000",
+      "hex": "#b5b35c",
       "css_var": "--color-light-olive"
     },
     "light-orange": {
-      "hex": "#fb923c",
+      "hex": "#ffd580",
       "css_var": "--color-light-orange"
     },
     "light-pink": {
-      "hex": "#ec4899",
+      "hex": "#ffb6c1",
       "css_var": "--color-light-pink"
     },
     "light-purple": {
-      "hex": "#a855f7",
+      "hex": "#cbc3e3",
       "css_var": "--color-light-purple"
     },
     "light-red": {
-      "hex": "#ef4444",
+      "hex": "#ff7f7f",
       "css_var": "--color-light-red"
     },
     "light-rose": {
-      "hex": "#f43f5e",
+      "hex": "#ffb7c5",
       "css_var": "--color-light-rose"
     },
     "light-sky": {
-      "hex": "#0ea5e9",
+      "hex": "#87cefa",
       "css_var": "--color-light-sky"
     },
     "light-slate": {
-      "hex": "#64748b",
+      "hex": "#778899",
       "css_var": "--color-light-slate"
     },
     "light-stone": {
-      "hex": "#78716c",
+      "hex": "#d8d0c4",
       "css_var": "--color-light-stone"
     },
     "light-teal": {
-      "hex": "#14b8a6",
+      "hex": "#66b2b2",
       "css_var": "--color-light-teal"
     },
     "light-violet": {
-      "hex": "#8b5cf6",
+      "hex": "#cf9fff",
       "css_var": "--color-light-violet"
     },
     "light-yellow": {
-      "hex": "#facc15",
+      "hex": "#ffffe0",
       "css_var": "--color-light-yellow"
     },
     "lime": {
-      "hex": "#84cc16",
+      "hex": "#00ff00",
       "css_var": "--color-lime"
     },
     "magenta": {
-      "hex": "#d946ef",
+      "hex": "#ff00ff",
       "css_var": "--color-magenta"
     },
     "maroon": {
-      "hex": "#7f1d1d",
+      "hex": "#800000",
       "css_var": "--color-maroon"
     },
+    "mint": {
+      "hex": "#98ff98",
+      "css_var": "--color-mint"
+    },
     "navy": {
-      "hex": "#1e3a8a",
+      "hex": "#000080",
       "css_var": "--color-navy"
     },
+    "neon-green": {
+      "hex": "#39ff14",
+      "css_var": "--color-neon-green"
+    },
+    "off-white": {
+      "hex": "#faf9f6",
+      "css_var": "--color-off-white"
+    },
     "olive": {
-      "hex": "#a16207",
+      "hex": "#808000",
       "css_var": "--color-olive"
     },
     "orange": {
-      "hex": "#f97316",
+      "hex": "#ffa500",
       "css_var": "--color-orange"
     },
     "pink": {
-      "hex": "#ec4899",
+      "hex": "#ffc0cb",
       "css_var": "--color-pink"
     },
+    "platinum": {
+      "hex": "#e5e4e2",
+      "css_var": "--color-platinum"
+    },
     "purple": {
-      "hex": "#a855f7",
+      "hex": "#800080",
       "css_var": "--color-purple"
     },
     "red": {
-      "hex": "#ef4444",
+      "hex": "#ff0000",
       "css_var": "--color-red"
     },
     "rose": {
-      "hex": "#f43f5e",
+      "hex": "#ff007f",
       "css_var": "--color-rose"
     },
     "salmon": {
-      "hex": "#fda4af",
+      "hex": "#fa8072",
       "css_var": "--color-salmon"
     },
     "silver": {
-      "hex": "#cbd5e1",
+      "hex": "#c0c0c0",
       "css_var": "--color-silver"
     },
     "sky": {
-      "hex": "#0ea5e9",
+      "hex": "#87ceeb",
       "css_var": "--color-sky"
     },
     "slate": {
-      "hex": "#64748b",
+      "hex": "#708090",
       "css_var": "--color-slate"
     },
+    "smoke": {
+      "hex": "#848884",
+      "css_var": "--color-smoke"
+    },
     "stone": {
-      "hex": "#78716c",
+      "hex": "#928e85",
       "css_var": "--color-stone"
     },
     "teal": {
-      "hex": "#14b8a6",
+      "hex": "#008080",
       "css_var": "--color-teal"
     },
+    "titanium": {
+      "hex": "#878681",
+      "css_var": "--color-titanium"
+    },
+    "transparent": {
+      "hex": "#f8fafc",
+      "css_var": "--color-transparent"
+    },
     "turquoise": {
-      "hex": "#2dd4bf",
+      "hex": "#40e0d0",
       "css_var": "--color-turquoise"
     },
     "violet": {
-      "hex": "#8b5cf6",
+      "hex": "#ee82ee",
       "css_var": "--color-violet"
     },
     "white": {
@@ -307,7 +383,7 @@
       "css_var": "--color-white"
     },
     "yellow": {
-      "hex": "#ffd83a",
+      "hex": "#ffff00",
       "css_var": "--color-yellow"
     }
   }
