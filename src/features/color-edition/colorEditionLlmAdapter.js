@@ -341,6 +341,7 @@ You are not just matching — you are judging quality. For each discovery:
 3. COMPARE: If matching an existing variant, compare the labels. More detail and accuracy always wins.
    - If the new name is more official/accurate, set "preferred_label" to the better name.
    - If the existing label is already correct or better, omit preferred_label.
+   - If the accepted variant's discovered atoms do not match the visible shell/body color or official wording, set "preferred_color_atoms" to the corrected registered atom array.
 4. DECIDE: match (same variant), new (genuinely new and verified), or reject (hallucinated/unverifiable).
 
 ─── MATCHING RULES ───
@@ -387,6 +388,7 @@ Respond with JSON:
   "mappings": [
     { "new_key": "color:black", "match": "v_existing_id", "action": "match", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com — same color", "verified": true, "confidence": 95, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/product", "tier": "tier1", "confidence": 95}] },
     { "new_key": "color:deep-ocean-blue", "match": "v_rename_target", "action": "match", "reason": "renamed from ocean-blue, official name per manufacturer", "verified": true, "preferred_label": "Deep Ocean Blue", "confidence": 92, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/product", "tier": "tier1", "confidence": 95}] },
+    { "new_key": "edition:wilderness-edition", "match": "v_existing_edition", "action": "match", "reason": "official image shows a dark metallic green visible shell, not olive-brown", "verified": true, "preferred_color_atoms": ["dark-green"], "confidence": 92, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/wilderness", "tier": "tier1", "confidence": 92}] },
     { "new_key": "color:crimson-red", "match": null, "action": "new", "reason": "confirmed on ${brand.toLowerCase() || 'manufacturer'}.com and bestbuy.com", "verified": true, "confidence": 85, "evidence_refs": [{"url": "https://${brand.toLowerCase() || 'manufacturer'}.com/crimson", "tier": "tier1", "confidence": 90}, {"url": "https://bestbuy.com/listing", "tier": "tier3", "confidence": 70}] },
     { "new_key": "color:rainbow-sparkle", "match": null, "action": "reject", "reason": "not found on official site or any retailer — likely hallucinated", "verified": true, "confidence": 80, "evidence_refs": [] }
   ],
@@ -418,6 +420,7 @@ Add your decisions to "orphan_remaps":
 - "reason" should be 1 sentence explaining the decision and what you checked.
 - "verified": true if you confirmed via web search, false if matched purely by structural identity.
 - "preferred_label": optional string — only for "match" actions where you found a better/more official name.
+- "preferred_color_atoms": optional array — use only when visual evidence or explicit wording proves the accepted variant's discovered atom string is wrong. Every value must be a registered atom.
 - "remove" is an array of variant_ids — empty if nothing removed. Only for wrong-product contamination, never for discontinued real products.
 - Each existing variant_id may appear at most ONCE across all mappings.
 - Edition slugs must NOT change. If matching an edition, use the EXISTING slug in new_key (e.g. if the registry has "edition:cod-bo6", your new_key must be "edition:cod-bo6", NOT "edition:cod-bo6-edition").

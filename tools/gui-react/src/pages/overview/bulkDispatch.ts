@@ -276,36 +276,29 @@ export async function dispatchPifEval(
         if (!variantViews.has(vk)) variantViews.set(vk, new Set());
         variantViews.get(vk)!.add(v);
       }
-      const tasks: Array<{ variant: PifVariantProgressGen; kind: 'view' | 'hero'; view?: string }> = [];
+      const tasks: PifVariantProgressGen[] = [];
       for (const variant of row.pifVariants) {
         if (isVariantActive('pif', row.productId, 'evaluate', variant.variant_key)) continue;
         const views = variantViews.get(variant.variant_key) ?? new Set<string>();
-        for (const view of views) {
-          if (view === 'hero') continue;
-          tasks.push({ variant, kind: 'view', view });
-        }
-        if (views.has('hero')) tasks.push({ variant, kind: 'hero' });
+        if (views.size > 0) tasks.push(variant);
       }
       return { row, tasks };
     } catch {
-      return { row, tasks: [] as Array<{ variant: PifVariantProgressGen; kind: 'view' | 'hero'; view?: string }> };
+      return { row, tasks: [] as PifVariantProgressGen[] };
     }
   }));
 
-  const flat: Array<{ row: CatalogRow; variant: PifVariantProgressGen; kind: 'view' | 'hero'; view?: string }> = [];
-  for (const { row, tasks } of results) for (const t of tasks) flat.push({ row, ...t });
+  const flat: Array<{ row: CatalogRow; variant: PifVariantProgressGen }> = [];
+  for (const { row, tasks } of results) for (const variant of tasks) flat.push({ row, variant });
 
-  return dispatchTasks(flat, options, ({ row, variant, kind, view }) => {
+  return dispatchTasks(flat, options, ({ row, variant }) => {
     const base = `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.productId)}`;
-    const url = kind === 'view' ? `${base}/evaluate-view` : `${base}/evaluate-hero`;
-    const body: Record<string, unknown> = { variant_key: variant.variant_key, variant_id: variant.variant_id };
-    if (kind === 'view' && view) body.view = view;
     return fire({
       type: 'pif',
       productId: row.productId,
       productLabel: productLabel(row),
-      url,
-      body,
+      url: `${base}/evaluate-carousel`,
+      body: { variant_key: variant.variant_key, variant_id: variant.variant_id },
       subType: 'evaluate',
       variantKey: variant.variant_key,
     });

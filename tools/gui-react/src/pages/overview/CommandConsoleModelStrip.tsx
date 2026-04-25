@@ -14,10 +14,9 @@
  *          keyFinderTierSettingsJson.
  */
 
-import { FinderRunModelBadge, useResolvedFinderModel } from '../../shared/ui/finder/index.ts';
+import { FinderEditablePhaseModelBadge, FinderModelPickerPopover, FinderRunModelBadge } from '../../shared/ui/finder/index.ts';
 import { useKeyDifficultyModelMap, type DifficultyTier } from '../../features/key-finder/hooks/useKeyDifficultyModelMap.ts';
 import type { LlmOverridePhaseId } from '../../features/llm-config/types/llmPhaseOverrideTypes.generated.ts';
-import { CommandConsoleModelPickerPopover } from './CommandConsoleModelPickerPopover.tsx';
 
 interface FinderPhaseSpec {
   readonly label: string;
@@ -41,24 +40,12 @@ const KF_TIERS: readonly { readonly tier: DifficultyTier; readonly label: string
 ];
 
 function FinderPhaseBadge({ spec }: { spec: FinderPhaseSpec }) {
-  const { modelDisplay, accessMode, effortLevel, model } = useResolvedFinderModel(spec.phaseId);
-  const badge = (
-    <FinderRunModelBadge
-      labelPrefix={spec.label}
-      model={modelDisplay}
-      accessMode={accessMode}
-      thinking={model?.thinking ?? false}
-      webSearch={model?.webSearch ?? false}
-      effortLevel={effortLevel}
-      showAccessModeText
-    />
-  );
   return (
-    <CommandConsoleModelPickerPopover
-      binding="phase"
+    <FinderEditablePhaseModelBadge
       phaseId={spec.phaseId}
+      labelPrefix={spec.label}
       title={spec.title}
-      trigger={badge}
+      showAccessModeText
     />
   );
 }
@@ -85,7 +72,7 @@ export function CommandConsoleModelStrip() {
           />
         );
         return (
-          <CommandConsoleModelPickerPopover
+          <FinderModelPickerPopover
             key={t.tier}
             binding="kfTier"
             tier={t.tier}

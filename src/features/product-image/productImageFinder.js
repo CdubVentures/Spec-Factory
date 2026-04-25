@@ -36,6 +36,7 @@ import {
 } from './productImageLlmAdapter.js';
 import { resolveViewPromptInputs, resolveHeroPromptInputs } from './productImagePreviewPrompt.js';
 import { accumulateDiscoveryLog } from '../../core/finder/discoveryLog.js';
+import { resolveRunScopeKey, scopeLabelFor } from './runScope.js';
 import { runPerVariant } from '../../core/finder/runPerVariant.js';
 import { evaluateCarousel } from './carouselStrategy.js';
 import { resolveViewQualityConfig } from './viewQualityDefaults.js';
@@ -328,6 +329,7 @@ async function runSingleVariant({
   logger, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
   rmbgSession = null,
   promptOverride = '',
+  scopeLabel = '',
   mode = 'view',
   onPhaseChange = null,
   alreadyDownloadedUrls = new Set(),
@@ -384,6 +386,7 @@ async function runSingleVariant({
       familyModelCount: familyModelCount || 1,
       ambiguityLevel: ambiguityLevel || 'easy',
       previousDiscovery: previousDiscovery || { urlsChecked: [], queriesRun: [] },
+      scopeLabel,
       promptOverride,
     }));
   } catch (err) {
@@ -717,17 +720,22 @@ export async function runProductImageFinder({
   const staggerOverride = Number(_staggerMsOverride);
   const STAGGER_MS = Number.isFinite(staggerOverride) && staggerOverride >= 0 ? staggerOverride : 1000;
 
+  // Per-run-type pool key — partitions discovery history so e.g. Priority View
+  // history doesn't leak into Individual View runs or standalone Hero runs.
+  const runScopeKey = resolveRunScopeKey({ orchestrator: 'single', mode, focusView });
+  const runScopeLabel = scopeLabelFor(runScopeKey);
+
   // Per-variant body: discovery + carousel strategy + LLM call + download/RMBG + persist.
   // Called by runPerVariant for each variant; return value is aggregated below.
   async function produceForVariant(variant) {
-    // Universal discovery-log history — scope: variant + mode (view vs hero).
-    // View-mode runs don't leak URLs to hero-mode runs and vice versa.
+    // Universal discovery-log history — scope: variant + run_scope_key.
+    // Pre-runScope runs without the key are skipped (no backfill heuristic).
     const previousDiscovery = accumulateDiscoveryLog(previousPifRuns, {
       runMatcher: (r) => {
         const rId = r.response?.variant_id;
         const rKey = r.response?.variant_key;
         const variantMatch = (variant.variant_id && rId) ? rId === variant.variant_id : rKey === variant.key;
-        return variantMatch && r.response?.mode === mode;
+        return variantMatch && r.response?.run_scope_key === runScopeKey;
       },
       includeUrls: urlHistoryEnabled,
       includeQueries: queryHistoryEnabled,
@@ -776,8 +784,8 @@ export async function runProductImageFinder({
 
     const promptBuilder = mode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
     const promptArgs = mode === 'hero'
-      ? resolveHeroPromptInputs({ product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, heroPromptOverride })
-      : resolveViewPromptInputs({ product, variant, allVariants, priorityViews, additionalViews, viewQualityMap, minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, viewPromptOverride });
+      ? resolveHeroPromptInputs({ product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, heroPromptOverride })
+      : resolveViewPromptInputs({ product, variant, allVariants, priorityViews, additionalViews, viewQualityMap, minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, viewPromptOverride });
     const systemPrompt = promptBuilder(promptArgs);
     const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
 
@@ -804,6 +812,7 @@ export async function runProductImageFinder({
       siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
       rmbgSession,
       promptOverride: mode === 'hero' ? heroPromptOverride : viewPromptOverride,
+      scopeLabel: runScopeLabel,
       mode,
       onPhaseChange: onStageAdvance,
       alreadyDownloadedUrls,
@@ -812,7 +821,7 @@ export async function runProductImageFinder({
     const variantDurationMs = Date.now() - variantStartMs;
 
     const selected = { images: result.images };
-    const responsePayload = { mode, started_at: variantStartedAt, duration_ms: variantDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
+    const responsePayload = { mode, run_scope_key: runScopeKey, started_at: variantStartedAt, duration_ms: variantDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
 
     onLlmCallComplete?.({
       prompt: { system: systemPrompt, user: userMsg },
@@ -1070,16 +1079,21 @@ export async function runCarouselLoop({
     const separator = totalLlmCalls > 0 ? '\n\n' : '';
     onStreamChunk?.({ content: `${separator}── call ${totalLlmCalls + 1} · ${variant.label} · ${callMode}: ${target} ──\n` });
 
+    // Per-call pool key: loop view-mode iterations share 'loop-view',
+    // loop hero-mode iterations share 'loop-hero'. Both are isolated from
+    // single-run pools (priority-view / view:<focus> / hero).
+    const runScopeKey = resolveRunScopeKey({ orchestrator: 'loop', mode: callMode });
+    const runScopeLabel = scopeLabelFor(runScopeKey);
+
     // Re-read fresh state from disk (discovery log accumulates across all calls)
     const pifDoc = readProductImages({ productId: product.product_id, productRoot });
     const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
-    // Scope matches the current call's mode so view/hero histories stay separate.
     const previousDiscovery = accumulateDiscoveryLog(previousPifRuns, {
       runMatcher: (r) => {
         const rId = r.response?.variant_id;
         const rKey = r.response?.variant_key;
         const variantMatch = (variant.variant_id && rId) ? rId === variant.variant_id : rKey === variant.key;
-        return variantMatch && r.response?.mode === callMode;
+        return variantMatch && r.response?.run_scope_key === runScopeKey;
       },
       includeUrls: urlHistoryEnabled,
       includeQueries: queryHistoryEnabled,
@@ -1125,8 +1139,8 @@ export async function runCarouselLoop({
     // Build prompt BEFORE call so operations modal shows it immediately
     const promptBuilder = callMode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
     const promptArgs = callMode === 'hero'
-      ? resolveHeroPromptInputs({ product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, heroPromptOverride })
-      : resolveViewPromptInputs({ product, variant, allVariants, priorityViews, additionalViews, viewQualityMap, minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, viewPromptOverride });
+      ? resolveHeroPromptInputs({ product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, heroPromptOverride })
+      : resolveViewPromptInputs({ product, variant, allVariants, priorityViews, additionalViews, viewQualityMap, minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, viewPromptOverride });
     const systemPrompt = promptBuilder(promptArgs);
     const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
 
@@ -1156,6 +1170,7 @@ export async function runCarouselLoop({
       siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
       rmbgSession,
       promptOverride: callMode === 'hero' ? heroPromptOverride : viewPromptOverride,
+      scopeLabel: runScopeLabel,
       mode: callMode,
       onPhaseChange: onStageAdvance,
     });
@@ -1175,7 +1190,7 @@ export async function runCarouselLoop({
 
     const selected = { images: result.images };
     const callFocusView = callMode === 'view' ? (focusView || null) : null;
-    const responsePayload = { mode: callMode, loop_id: loopId, focus_view: callFocusView, started_at: callStartedAt, duration_ms: callDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
+    const responsePayload = { mode: callMode, run_scope_key: runScopeKey, loop_id: loopId, focus_view: callFocusView, started_at: callStartedAt, duration_ms: callDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
 
     // Smart update — fills response into the pending prompt entry
     onLlmCallComplete?.({

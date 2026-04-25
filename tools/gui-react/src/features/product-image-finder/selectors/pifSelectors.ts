@@ -30,6 +30,8 @@ export const VIEW_PRIORITY_ORDER: Readonly<Record<string, readonly string[]>> = 
   mousepad: ['top', 'angle', 'left', 'front', 'bottom', 'right', 'rear', 'sangle', 'hero'],
 };
 export const GENERIC_VIEW_ORDER: readonly string[] = ['top', 'left', 'angle', 'sangle', 'front', 'bottom', 'right', 'rear', 'hero'];
+const CANONICAL_EXTRA_VIEWS = new Set(['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle']);
+const DISQUALIFYING_EXTRA_FLAGS = new Set(['watermark', 'badge', 'cropped', 'wrong_product', 'other']);
 
 /* ── Variant / Color Helpers ──────────────────────────────────────── */
 
@@ -139,6 +141,59 @@ export function groupImagesByVariant(images: GalleryImage[], variants: VariantIn
 /* ── Carousel Slot Resolution ─────────────────────────────────────── */
 
 /** Resolve carousel slot assignments: user override > eval winner > empty. */
+function imageArea(img: ProductImageEntry): number {
+  return (Number(img.width) || 0) * (Number(img.height) || 0);
+}
+
+function hasDisqualifyingFlags(img: ProductImageEntry): boolean {
+  return (img.eval_flags ?? []).some(flag => DISQUALIFYING_EXTRA_FLAGS.has(flag));
+}
+
+function actualViewForImage(img: ProductImageEntry): string {
+  if (img.eval_actual_view) return img.eval_actual_view;
+  return CANONICAL_EXTRA_VIEWS.has(img.view) ? img.view : '';
+}
+
+function isRequiredViewCandidate(img: ProductImageEntry, view: string): boolean {
+  if (img.quality_pass === false) return false;
+  const actualView = actualViewForImage(img);
+  if (actualView !== view) return false;
+  if (img.eval_duplicate === true) return false;
+  if (hasDisqualifyingFlags(img)) return false;
+  if (img.eval_usable_as_required_view === true) return true;
+  return img.eval_best === true && (!img.eval_actual_view || img.eval_matches_requested_view !== false);
+}
+
+function isExtraCandidate(img: ProductImageEntry): boolean {
+  if (img.quality_pass === false) return false;
+  if (img.view === 'hero' || img.hero === true) return false;
+  if (img.eval_usable_as_carousel_extra !== true) return false;
+  if (img.eval_duplicate === true) return false;
+  if (hasDisqualifyingFlags(img)) return false;
+  const actualView = actualViewForImage(img);
+  return actualView === 'generic' || CANONICAL_EXTRA_VIEWS.has(actualView);
+}
+
+function sortCandidatesByQuality(a: ProductImageEntry, b: ProductImageEntry): number {
+  const qualityRank: Record<string, number> = { pass: 0, borderline: 1, fail: 2 };
+  const qa = qualityRank[a.eval_quality ?? ''] ?? 1;
+  const qb = qualityRank[b.eval_quality ?? ''] ?? 1;
+  if (qa !== qb) return qa - qb;
+  if ((a.eval_best === true) !== (b.eval_best === true)) return a.eval_best === true ? -1 : 1;
+  return imageArea(b) - imageArea(a);
+}
+
+function nextExtraSlotKey(actualView: string, slotCounts: Map<string, number>): string {
+  if (actualView === 'generic') {
+    const count = (slotCounts.get('img') ?? 0) + 1;
+    slotCounts.set('img', count);
+    return `img${count}`;
+  }
+  const count = (slotCounts.get(actualView) ?? 0) + 1;
+  slotCounts.set(actualView, count);
+  return count === 1 ? actualView : `${actualView}${count}`;
+}
+
 export function resolveSlots(
   viewBudget: string[],
   heroCount: number,
@@ -148,16 +203,60 @@ export function resolveSlots(
 ): ResolvedSlot[] {
   const varSlots = carouselSlots[variantKey] ?? {};
   const result: ResolvedSlot[] = [];
+  const viewOrderIndex = new Map(viewBudget.map((view, index) => [view, index]));
+  const usedFilenames = new Set<string>();
+  const usedHashes = new Set<string>();
+  const slotCounts = new Map<string, number>();
+
+  for (const view of viewBudget) {
+    if (CANONICAL_EXTRA_VIEWS.has(view)) slotCounts.set(view, 1);
+  }
+
+  const markUsed = (filename: string | null): void => {
+    if (!filename || filename === '__cleared__') return;
+    usedFilenames.add(filename);
+    const img = images.find(item => item.filename === filename);
+    if (img?.content_hash) usedHashes.add(img.content_hash);
+  };
 
   for (const view of viewBudget) {
     const userOverride = varSlots[view];
     if (userOverride) {
       result.push({ slot: view, filename: userOverride, source: 'user' });
+      markUsed(userOverride);
     } else {
-      const evalWinner = images.find(img => img.view === view && img.eval_best === true);
+      const evalWinner = images
+        .filter(img => !usedFilenames.has(img.filename) && isRequiredViewCandidate(img, view))
+        .sort(sortCandidatesByQuality)[0];
       result.push(evalWinner
         ? { slot: view, filename: evalWinner.filename, source: 'eval' }
         : { slot: view, filename: null, source: 'empty' });
+      if (evalWinner) markUsed(evalWinner.filename);
+    }
+  }
+
+  const extraImages = images
+    .filter(img => !usedFilenames.has(img.filename))
+    .filter(img => !img.content_hash || !usedHashes.has(img.content_hash))
+    .filter(isExtraCandidate)
+    .sort((a, b) => {
+      const av = actualViewForImage(a);
+      const bv = actualViewForImage(b);
+      const ai = av === 'generic' ? 99 : viewOrderIndex.get(av) ?? 90;
+      const bi = bv === 'generic' ? 99 : viewOrderIndex.get(bv) ?? 90;
+      if (ai !== bi) return ai - bi;
+      return sortCandidatesByQuality(a, b);
+    });
+
+  for (const img of extraImages) {
+    const slotKey = nextExtraSlotKey(actualViewForImage(img), slotCounts);
+    const userOverride = varSlots[slotKey];
+    if (userOverride) {
+      result.push({ slot: slotKey, filename: userOverride, source: 'user' });
+      markUsed(userOverride);
+    } else {
+      result.push({ slot: slotKey, filename: img.filename, source: 'eval' });
+      markUsed(img.filename);
     }
   }
 

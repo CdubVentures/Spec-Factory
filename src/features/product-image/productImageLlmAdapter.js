@@ -625,6 +625,7 @@ export function buildProductImageFinderPrompt({
   familyModelCount = 1,
   ambiguityLevel = 'easy',
   previousDiscovery = { urlsChecked: [], queriesRun: [] },
+  scopeLabel = "this variant's view searches",
   promptOverride = '',
   templateOverride = '',
 }) {
@@ -669,6 +670,9 @@ export function buildProductImageFinderPrompt({
   const imageRequirements = `Image requirements:
 - Clean product shot — the product isolated on a white or plain background, or a clean studio/press shot
 - View slot rule: a clean product shot only satisfies a named view when the visible camera angle matches that view definition. If the pixels show another canonical view, label it as that actual view or omit it; do not let page labels, filenames, alt text, or gallery position override visible geometry.
+- Query intent is not view evidence. A top-down image found during a front-view search must be returned as "top", never "front".
+- Multiple unique clean images for the same actual view are useful. Return them under the same canonical view name; the carousel may use extras as numbered slots later.
+- If a clean image is the exact product but does not satisfy the requested priority view, still label it by its actual visible view when that view is one of the allowed view names.
 - NOT: lifestyle photos, styled banners, marketing collages, box art, screenshots, in-use/in-hand photos, group shots, images with decorative backgrounds
 - The image must show the EXACT product: ${brand} ${model} in ${variantDesc}
 - Minimum resolution per view is listed above in the view definitions — bigger is always better
@@ -680,7 +684,7 @@ export function buildProductImageFinderPrompt({
   const previousDiscoverySection = buildPreviousDiscoveryBlock({
     urlsChecked: previousDiscovery.urlsChecked,
     queriesRun: previousDiscovery.queriesRun,
-    scopeLabel: "this variant's view searches",
+    scopeLabel,
   });
 
   const template = templateOverride || promptOverride || PIF_VIEW_DEFAULT_TEMPLATE;
@@ -733,6 +737,7 @@ export const PRODUCT_IMAGE_FINDER_SPEC = {
     familyModelCount: domainArgs.familyModelCount || 1,
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
     previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
+    scopeLabel: domainArgs.scopeLabel,
     promptOverride: domainArgs.promptOverride || '',
     viewQualityMap: domainArgs.viewQualityMap || null,
   }),
@@ -795,6 +800,7 @@ export function buildHeroImageFinderPrompt({
   familyModelCount = 1,
   ambiguityLevel = 'easy',
   previousDiscovery = { urlsChecked: [], queriesRun: [] },
+  scopeLabel = "this variant's hero searches",
   promptOverride = '',
   templateOverride = '',
 }) {
@@ -818,7 +824,7 @@ export function buildHeroImageFinderPrompt({
   const discoverySection = buildPreviousDiscoveryBlock({
     urlsChecked: previousDiscovery.urlsChecked,
     queriesRun: previousDiscovery.queriesRun,
-    scopeLabel: "this variant's hero searches",
+    scopeLabel,
   });
 
   const heroInstructions = `Find high-quality lifestyle and contextual product images for: ${brand} ${model} — ${variantDesc}
@@ -888,6 +894,7 @@ export const HERO_IMAGE_FINDER_SPEC = {
     familyModelCount: domainArgs.familyModelCount || 1,
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
     previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
+    scopeLabel: domainArgs.scopeLabel,
     promptOverride: domainArgs.promptOverride || '',
   }),
   jsonSchema: zodToLlmSchema(productImageFinderResponseSchema),

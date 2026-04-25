@@ -53,14 +53,28 @@ export const VIEW_EVAL_DEFAULT_TEMPLATE = `{{IDENTITY}}
 Images are labeled Image 1, Image 2, etc. matching the order of image content parts.
 Each label includes the original dimensions and file size — use these to judge resolution quality since the thumbnails shown are downscaled.
 
-{{CRITERIA}}
+{{CAROUSEL_CONTEXT}}
 
+{{CRITERIA}}
 Respond with JSON matching this schema:
 {
   "winner": {
     "filename": "the best candidate filename",
     "reasoning": "1-2 sentences: why this image won and how it compares to the others"
   },
+  "candidates": [
+    {
+      "filename": "candidate.png",
+      "actual_view": "top|bottom|left|right|front|rear|sangle|angle|generic",
+      "matches_requested_view": true,
+      "usable_as_required_view": true,
+      "usable_as_carousel_extra": true,
+      "quality": "pass|borderline|fail",
+      "duplicate": false,
+      "flags": ["cropped"],
+      "reasoning": "1 sentence classification and quality explanation"
+    }
+  ],
   "rejected": [
     { "filename": "disqualified.png", "flags": ["watermark"], "reasoning": "1 sentence why" },
     { "filename": "outranked.png", "reasoning": "1 sentence why not picked" }
@@ -69,10 +83,30 @@ Respond with JSON matching this schema:
 
 Rules:
 - "winner": Pick exactly one best image for this view. Explain why it won over the others. Set to null if NO candidate is acceptable.
+- Existing carousel slot images are context only, not selectable candidates. The winner filename MUST be one of the candidate Image filenames.
+- Prefer "winner": null over selecting a wrong-view candidate, an off-angle candidate, or a near-duplicate of an existing carousel slot.
+- "candidates": Classify every candidate image by visible pixels, not by query intent, filename, alt text, page label, or the requested view.
+- Query intent is not view evidence. A top-down image found during a front-view search has "actual_view": "top" and "matches_requested_view": false.
+- Set "usable_as_required_view": true only when the image could fill the required slot for its actual_view.
+- Set "usable_as_carousel_extra": true for clean exact-product shots that are not the winner but could still be useful as numbered extras like top2, sangle2, or img1.
+- Use "actual_view": "generic" only for clean exact-product shots that are useful but do not match a named canonical view.
+- Set "duplicate": true for near-duplicates of a winner, another candidate, or an existing carousel slot.
 - "rejected": List ALL candidates that were not picked as winner. Include a brief "reasoning" (1 sentence) for each.
 - If a rejected candidate has a disqualifying defect, include "flags" with one or more of: "watermark", "badge", "cropped", "wrong_product", "other". Use "other" when the issue doesn't fit standard flags (explain in reasoning).
 - If the candidate was simply outranked (no defects, just lower quality), omit "flags" and explain why in "reasoning".
 - If ALL candidates are disqualified, set "winner" to null and list every candidate in "rejected" with their flags. Do NOT force-pick a bad image.`;
+
+function buildCarouselContextPromptBlock(carouselContext = []) {
+  const usableContext = (carouselContext || []).filter((item) => item?.filename);
+  if (usableContext.length === 0) {
+    return 'Existing carousel slots: none yet.';
+  }
+  return [
+    'Existing carousel slots (context only, not selectable):',
+    ...usableContext.map((item) => `- ${item.slot}: ${item.filename}`),
+    'Use these to avoid filling this slot with a near-duplicate composition.',
+  ].join('\n');
+}
 
 export function buildViewEvalPrompt({
   product = {},
@@ -84,6 +118,7 @@ export function buildViewEvalPrompt({
   promptOverride = '',
   evalCriteria = '',
   templateOverride = '',
+  carouselContext = [],
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
@@ -114,6 +149,7 @@ export function buildViewEvalPrompt({
     VIEW_LINE: viewLine,
     COUNT_LINE: countLine,
     CRITERIA: criteria,
+    CAROUSEL_CONTEXT: buildCarouselContextPromptBlock(carouselContext),
   });
 }
 
@@ -226,6 +262,7 @@ const VIEW_EVAL_SPEC = {
     candidateCount: domainArgs.candidateCount,
     promptOverride: domainArgs.promptOverride,
     evalCriteria: domainArgs.evalCriteria,
+    carouselContext: domainArgs.carouselContext,
   }),
   jsonSchema: zodToLlmSchema(viewEvalResponseSchema),
 };
@@ -302,6 +339,7 @@ export async function evaluateViewCandidates({
   size = 512,
   promptOverride = '',
   evalCriteria = '',
+  carouselContext = [],
   callLlm,
   createThumbnail = createThumbnailBase64,
 }) {
@@ -326,21 +364,50 @@ export async function evaluateViewCandidates({
     lines.push(`Image ${i + 1}: ${filenames[i]}${dimStr}`);
   }
 
-  const userText = lines.join('\n');
+  const contextLines = [];
+  for (let i = 0; i < carouselContext.length; i++) {
+    const context = carouselContext[i];
+    const filename = context?.filename || (context?.imagePath ? path.basename(context.imagePath) : '');
+    if (!filename) continue;
+    if (context?.imagePath) {
+      try {
+        const b64 = await createThumbnail({ imagePath: context.imagePath, size });
+        images.push({
+          id: `ctx-${i + 1}`,
+          file_uri: `data:image/png;base64,${b64}`,
+          mime_type: 'image/png',
+        });
+      } catch {
+        // Context helps duplicate detection; candidates remain the source of truth.
+      }
+    }
+    const dimStr = context?.width && context?.height ? ` (${context.width}Ã—${context.height}px` + (context.bytes ? `, ${Math.round(context.bytes / 1024)}KB` : '') + ')' : '';
+    contextLines.push(`Context ${contextLines.length + 1}: ${context.slot}: ${filename}${dimStr} (existing carousel slot; not selectable)`);
+  }
+
+  const userText = [
+    lines.join('\n'),
+    contextLines.length
+      ? `Existing carousel slots (context only, not selectable):\n${contextLines.join('\n')}`
+      : '',
+  ].filter(Boolean).join('\n\n');
   const knownFilenames = new Set(filenames);
 
   // WHY: Build system prompt text for eval history audit trail. Routed through
   // resolveViewEvalPromptInputs so any new field in buildViewEvalPrompt flows
   // through a single SSOT shared with the preview compiler.
-  const systemPrompt = buildViewEvalPrompt(resolveViewEvalPromptInputs({
-    product,
-    variant: { key: variantLabel, label: variantLabel, type: variantType },
-    view,
-    viewDescription: '',
-    candidates: filenames.map((filename) => ({ filename })),
-    evalPromptOverride: promptOverride,
-    evalCriteria,
-  }));
+  const systemPrompt = buildViewEvalPrompt({
+    ...resolveViewEvalPromptInputs({
+      product,
+      variant: { key: variantLabel, label: variantLabel, type: variantType },
+      view,
+      viewDescription: '',
+      candidates: filenames.map((filename) => ({ filename })),
+      evalPromptOverride: promptOverride,
+      evalCriteria,
+    }),
+    carouselContext,
+  });
 
   const { result: response, usage } = await callLlm({
     product,
@@ -350,6 +417,7 @@ export async function evaluateViewCandidates({
     candidateCount: imagePaths.length,
     promptOverride,
     evalCriteria,
+    carouselContext,
     userText,
     images,
   });
@@ -357,25 +425,64 @@ export async function evaluateViewCandidates({
   // WHY: Convert { winner, rejected } → internal rankings array for mergeEvaluation.
   // Winner gets eval_best=true + reasoning. Rejected entries get flags + reasoning.
   const rankings = [];
+  const seenRankingFilenames = new Set();
+  const winnerFilename = response.winner && knownFilenames.has(response.winner.filename)
+    ? response.winner.filename
+    : '';
 
-  if (response.winner && knownFilenames.has(response.winner.filename)) {
+  for (const candidate of (response.candidates || [])) {
+    if (!knownFilenames.has(candidate.filename)) continue;
+    const actualView = candidate.actual_view || '';
+    const matchesRequestedView = candidate.matches_requested_view === true;
+    const isWinner = candidate.filename === winnerFilename
+      && actualView === view
+      && matchesRequestedView;
     rankings.push({
-      filename: response.winner.filename,
+      filename: candidate.filename,
+      best: isWinner,
+      flags: candidate.flags || [],
+      reasoning: candidate.reasoning || (isWinner ? response.winner?.reasoning || '' : ''),
+      actualView,
+      matchesRequestedView,
+      usableAsRequiredView: candidate.usable_as_required_view === true,
+      usableAsCarouselExtra: candidate.usable_as_carousel_extra === true,
+      duplicate: candidate.duplicate === true,
+      quality: candidate.quality || '',
+    });
+    seenRankingFilenames.add(candidate.filename);
+  }
+
+  if (winnerFilename && !seenRankingFilenames.has(winnerFilename)) {
+    rankings.push({
+      filename: winnerFilename,
       best: true,
       flags: [],
       reasoning: response.winner.reasoning || '',
+      actualView: view,
+      matchesRequestedView: true,
+      usableAsRequiredView: true,
+      usableAsCarouselExtra: true,
+      duplicate: false,
+      quality: 'pass',
     });
+    seenRankingFilenames.add(winnerFilename);
   }
 
   for (const rej of (response.rejected || [])) {
-    if (knownFilenames.has(rej.filename)) {
-      rankings.push({
-        filename: rej.filename,
-        best: false,
-        flags: rej.flags || [],
-        reasoning: rej.reasoning || '',
-      });
-    }
+    if (!knownFilenames.has(rej.filename) || seenRankingFilenames.has(rej.filename)) continue;
+    rankings.push({
+      filename: rej.filename,
+      best: false,
+      flags: rej.flags || [],
+      reasoning: rej.reasoning || '',
+      actualView: '',
+      matchesRequestedView: false,
+      usableAsRequiredView: false,
+      usableAsCarouselExtra: false,
+      duplicate: false,
+      quality: '',
+    });
+    seenRankingFilenames.add(rej.filename);
   }
 
   return { rankings, _prompt: { system: systemPrompt, user: userText }, _response: response, usage };
@@ -385,7 +492,27 @@ export async function evaluateViewCandidates({
 
 // WHY: Eval fields to clear before applying fresh results.
 // This list must match the TypeScript ProductImageEntry eval fields.
-const EVAL_FIELDS = ['eval_best', 'eval_flags', 'eval_reasoning', 'eval_source', 'hero', 'hero_rank'];
+const EVAL_FIELDS = [
+  'eval_best',
+  'eval_flags',
+  'eval_reasoning',
+  'eval_source',
+  'eval_actual_view',
+  'eval_matches_requested_view',
+  'eval_usable_as_required_view',
+  'eval_usable_as_carousel_extra',
+  'eval_duplicate',
+  'eval_quality',
+  'hero',
+  'hero_rank',
+];
+
+function clearEvalFieldsForVariant(images = [], selector) {
+  for (const img of (images || [])) {
+    if (!matchVariant(img, selector)) continue;
+    for (const field of EVAL_FIELDS) delete img[field];
+  }
+}
 
 // WHY: Multiple eval operations fire simultaneously (one per view).
 // Each reads/modifies/writes the same JSON file. Without serialization,
@@ -463,6 +590,24 @@ export function mergeEvaluation({ productId, productRoot, variantKey, variantId,
     img.eval_flags = ranking.flags;
     img.eval_reasoning = ranking.reasoning;
     img.eval_source = img.url || '';
+    if (ranking.actualView !== undefined && ranking.actualView !== '') {
+      img.eval_actual_view = ranking.actualView;
+    }
+    if (ranking.matchesRequestedView !== undefined) {
+      img.eval_matches_requested_view = ranking.matchesRequestedView;
+    }
+    if (ranking.usableAsRequiredView !== undefined) {
+      img.eval_usable_as_required_view = ranking.usableAsRequiredView;
+    }
+    if (ranking.usableAsCarouselExtra !== undefined) {
+      img.eval_usable_as_carousel_extra = ranking.usableAsCarouselExtra;
+    }
+    if (ranking.duplicate !== undefined) {
+      img.eval_duplicate = ranking.duplicate;
+    }
+    if (ranking.quality !== undefined && ranking.quality !== '') {
+      img.eval_quality = ranking.quality;
+    }
   }
 
   // Step 4: Apply hero results if provided
@@ -543,6 +688,38 @@ export function writeCarouselSlot({ productId, productRoot, variantKey, slot, fi
 }
 
 /**
+ * Clear all carousel winners for one variant while preserving images, runs,
+ * and eval history. Removes both auto-fill eval fields and user slot overrides
+ * so a later Eval run can repopulate the carousel from fresh selections.
+ *
+ * @param {object} opts
+ * @param {string} opts.productId
+ * @param {string} opts.productRoot
+ * @param {string} opts.variantKey
+ * @param {string|null} [opts.variantId]
+ * @returns {object|null} updated product_images document, or null if missing
+ */
+export function clearCarouselWinners({ productId, productRoot, variantKey, variantId = null }) {
+  const doc = readProductImages({ productId, productRoot });
+  if (!doc) return null;
+
+  const selector = { variantId, variantKey };
+  clearEvalFieldsForVariant(doc.selected?.images, selector);
+
+  for (const run of (doc.runs || [])) {
+    clearEvalFieldsForVariant(run.selected?.images, selector);
+    clearEvalFieldsForVariant(run.response?.images, selector);
+  }
+
+  if (doc.carousel_slots?.[variantKey] !== undefined) {
+    delete doc.carousel_slots[variantKey];
+  }
+
+  writeProductImages({ productId, productRoot, data: doc });
+  return doc;
+}
+
+/**
  * Resolve carousel slot contents for one variant.
  *
  * Precedence: user override (carousel_slots) > eval_best/hero > empty.
@@ -555,28 +732,138 @@ export function writeCarouselSlot({ productId, productRoot, variantKey, slot, fi
  * @param {Array} opts.images — all images (with eval fields overlayed)
  * @returns {Array<{slot, filename, source}>} — resolved slots in order
  */
+const CANONICAL_EXTRA_VIEWS = new Set(['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle']);
+const DISQUALIFYING_EXTRA_FLAGS = new Set(['watermark', 'badge', 'cropped', 'wrong_product', 'other']);
+
+function imageArea(img) {
+  return (Number(img?.width) || 0) * (Number(img?.height) || 0);
+}
+
+function hasDisqualifyingFlags(img) {
+  return (img?.eval_flags || []).some((flag) => DISQUALIFYING_EXTRA_FLAGS.has(flag));
+}
+
+function actualViewForImage(img) {
+  if (img?.eval_actual_view) return img.eval_actual_view;
+  return CANONICAL_EXTRA_VIEWS.has(img?.view) ? img.view : '';
+}
+
+function isRequiredViewCandidate(img, view) {
+  if (!img || img.quality_pass === false) return false;
+  const actualView = actualViewForImage(img);
+  if (actualView !== view) return false;
+  if (img.eval_duplicate === true) return false;
+  if (hasDisqualifyingFlags(img)) return false;
+  if (img.eval_usable_as_required_view === true) return true;
+  return img.eval_best === true && (!img.eval_actual_view || img.eval_matches_requested_view !== false);
+}
+
+function isExtraCandidate(img) {
+  if (!img || img.quality_pass === false) return false;
+  if (img.view === 'hero' || img.hero === true) return false;
+  if (img.eval_usable_as_carousel_extra !== true) return false;
+  if (img.eval_duplicate === true) return false;
+  if (hasDisqualifyingFlags(img)) return false;
+  const actualView = actualViewForImage(img);
+  return actualView === 'generic' || CANONICAL_EXTRA_VIEWS.has(actualView);
+}
+
+function sortCandidatesByQuality(a, b) {
+  const qualityRank = { pass: 0, borderline: 1, fail: 2 };
+  const qa = qualityRank[a.eval_quality] ?? 1;
+  const qb = qualityRank[b.eval_quality] ?? 1;
+  if (qa !== qb) return qa - qb;
+  if ((a.eval_best === true) !== (b.eval_best === true)) return a.eval_best === true ? -1 : 1;
+  return imageArea(b) - imageArea(a);
+}
+
+function nextExtraSlotKey({ actualView, slotCounts }) {
+  if (actualView === 'generic') {
+    const count = (slotCounts.get('img') || 0) + 1;
+    slotCounts.set('img', count);
+    return `img${count}`;
+  }
+
+  const count = (slotCounts.get(actualView) || 0) + 1;
+  slotCounts.set(actualView, count);
+  return count === 1 ? actualView : `${actualView}${count}`;
+}
+
 export function resolveCarouselSlots({ viewBudget, heroCount, variantKey, variantId, carouselSlots, images }) {
   const variantSlots = carouselSlots?.[variantKey] || {};
   const variantImages = (images || []).filter(img => matchVariant(img, { variantId, variantKey }));
 
+  const viewOrder = viewBudget || [];
+  const viewOrderIndex = new Map(viewOrder.map((view, index) => [view, index]));
   const result = [];
+  const usedFilenames = new Set();
+  const usedHashes = new Set();
+  const slotCounts = new Map();
+
+  for (const view of viewOrder) {
+    if (CANONICAL_EXTRA_VIEWS.has(view)) slotCounts.set(view, 1);
+  }
+
+  const markUsed = (filename) => {
+    if (!filename || filename === '__cleared__') return;
+    usedFilenames.add(filename);
+    const img = variantImages.find((item) => item.filename === filename);
+    if (img?.content_hash) usedHashes.add(img.content_hash);
+  };
 
   // View slots — in category priority order
   // WHY: '__cleared__' means "user explicitly emptied this slot — don't auto-fill from eval"
-  for (const view of viewBudget) {
+  for (const view of viewOrder) {
     const override = variantSlots[view];
     if (override === '__cleared__') {
       result.push({ slot: view, filename: null, source: 'empty' });
-    } else if (override) {
-      result.push({ slot: view, filename: override, source: 'user' });
-    } else {
-      const evalWinner = variantImages.find(img => img.view === view && img.eval_best === true);
-      if (evalWinner) {
-        result.push({ slot: view, filename: evalWinner.filename, source: 'eval' });
-      } else {
-        result.push({ slot: view, filename: null, source: 'empty' });
-      }
+      continue;
     }
+    if (override) {
+      result.push({ slot: view, filename: override, source: 'user' });
+      markUsed(override);
+      continue;
+    }
+
+    const evalWinner = variantImages
+      .filter((img) => !usedFilenames.has(img.filename) && isRequiredViewCandidate(img, view))
+      .sort(sortCandidatesByQuality)[0];
+    if (evalWinner) {
+      result.push({ slot: view, filename: evalWinner.filename, source: 'eval' });
+      markUsed(evalWinner.filename);
+      continue;
+    }
+    result.push({ slot: view, filename: null, source: 'empty' });
+  }
+
+  const extraImages = variantImages
+    .filter((img) => !usedFilenames.has(img.filename))
+    .filter((img) => !img.content_hash || !usedHashes.has(img.content_hash))
+    .filter(isExtraCandidate)
+    .sort((a, b) => {
+      const av = actualViewForImage(a);
+      const bv = actualViewForImage(b);
+      const ai = av === 'generic' ? 99 : viewOrderIndex.get(av) ?? 90;
+      const bi = bv === 'generic' ? 99 : viewOrderIndex.get(bv) ?? 90;
+      if (ai !== bi) return ai - bi;
+      return sortCandidatesByQuality(a, b);
+    });
+
+  for (const img of extraImages) {
+    const actualView = actualViewForImage(img);
+    const slotKey = nextExtraSlotKey({ actualView, slotCounts });
+    const override = variantSlots[slotKey];
+    if (override === '__cleared__') {
+      result.push({ slot: slotKey, filename: null, source: 'empty' });
+      continue;
+    }
+    if (override) {
+      result.push({ slot: slotKey, filename: override, source: 'user' });
+      markUsed(override);
+      continue;
+    }
+    result.push({ slot: slotKey, filename: img.filename, source: 'eval' });
+    markUsed(img.filename);
   }
 
   // Hero slots
@@ -689,6 +976,12 @@ export function deleteEvalRecord({ productId, productRoot, evalNumber }) {
         delete img.eval_flags;
         delete img.eval_reasoning;
         delete img.eval_source;
+        delete img.eval_actual_view;
+        delete img.eval_matches_requested_view;
+        delete img.eval_usable_as_required_view;
+        delete img.eval_usable_as_carousel_extra;
+        delete img.eval_duplicate;
+        delete img.eval_quality;
       }
     }
   } else if (record.type === 'hero') {

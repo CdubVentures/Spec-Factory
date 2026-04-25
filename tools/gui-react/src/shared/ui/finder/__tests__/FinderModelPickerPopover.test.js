@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { loadBundledModule } from '../../../../../../src/shared/tests/helpers/loadBundledModule.js';
+import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 const STUBS = {
   react: `
@@ -14,31 +14,31 @@ const STUBS = {
     export const jsxs = jsx;
     export const Fragment = Symbol.for('fragment');
   `,
-  '../../shared/ui/overlay/Popover.tsx': `
+  '../overlay/Popover.tsx': `
     export function Popover(props) { return props.children; }
   `,
-  '../../shared/ui/overlay/FinderRunPopoverShell.tsx': `
+  '../overlay/FinderRunPopoverShell.tsx': `
     export function FinderRunPopoverShell(props) { return props.children; }
   `,
-  '../../shared/ui/finder/LlmCapabilityPickerCore.tsx': `
+  './LlmCapabilityPickerCore.tsx': `
     export function LlmCapabilityPickerCore(props) {
       return { type: 'LlmCapabilityPickerCore', props };
     }
   `,
-  '../../features/llm-config/state/useLlmPolicyAuthority.ts': `
+  '../../../features/llm-config/state/useLlmPolicyAuthority.ts': `
     export function useLlmPolicyAuthority() {
-      return globalThis.__overviewMirrorPolicyAuthority;
+      return globalThis.__finderModelPickerPolicyAuthority;
     }
   `,
-  '../../features/llm-config/state/llmPolicyDefaults.ts': `
+  '../../../features/llm-config/state/llmPolicyDefaults.ts': `
     export const DEFAULT_LLM_POLICY = {};
   `,
 };
 
 async function loadModule() {
   return loadBundledModule(
-    'tools/gui-react/src/pages/overview/CommandConsoleModelPickerPopover.tsx',
-    { prefix: 'command-console-model-picker-mirror-', stubs: STUBS },
+    'tools/gui-react/src/shared/ui/finder/FinderModelPickerPopover.tsx',
+    { prefix: 'finder-model-picker-popover-', stubs: STUBS },
   );
 }
 
@@ -94,9 +94,9 @@ const labOpenaiProvider = {
   models: [{ id: 'lab-gpt', modelId: 'gpt-5.4', role: 'primary' }],
 };
 
-test('Overview KF model picker mirrors LLM Config provider availability gate', async () => {
-  const { CommandConsoleModelPickerPopover } = await loadModule();
-  globalThis.__overviewMirrorPolicyAuthority = {
+test('FinderModelPickerPopover mirrors LLM Config provider availability gate for KF tiers', async () => {
+  const { FinderModelPickerPopover } = await loadModule();
+  globalThis.__finderModelPickerPolicyAuthority = {
     policy: {
       apiKeys: {
         gemini: 'AIza-gemini-key',
@@ -135,7 +135,7 @@ test('Overview KF model picker mirrors LLM Config provider availability gate', a
     updatePolicy() {},
   };
 
-  const tree = renderNode(CommandConsoleModelPickerPopover({
+  const tree = renderNode(FinderModelPickerPopover({
     binding: 'kfTier',
     tier: 'easy',
     title: 'Easy Tier',
@@ -148,3 +148,4 @@ test('Overview KF model picker mirrors LLM Config provider availability gate', a
   assert.equal(picker.props.apiKeyFilter(defaultGeminiProvider), true);
   assert.equal(picker.props.apiKeyFilter(labOpenaiProvider), true);
 });
+

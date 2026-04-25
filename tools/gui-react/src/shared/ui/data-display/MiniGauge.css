@@ -1,0 +1,44 @@
+.sf-mini-gauge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 2px 10px 2px 4px;
+  border-radius: 999px;
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--sf-mini-gauge-tone) 28%, var(--sf-token-border-default));
+  --sf-mini-gauge-tone: var(--sf-token-text-muted);
+}
+
+.sf-mini-gauge-ring {
+  position: relative;
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
+.sf-mini-gauge-ring svg {
+  transform: rotate(-90deg);
+}
+
+.sf-mini-gauge-track {
+  stroke: color-mix(in srgb, var(--sf-mini-gauge-tone) 14%, var(--sf-token-border-default));
+}
+
+.sf-mini-gauge-fill {
+  stroke: var(--sf-mini-gauge-tone);
+}
+
+.sf-mini-gauge-label {
+  font-family: var(--sf-token-font-family-mono);
+  font-weight: 700;
+  font-size: 11.5px;
+  line-height: 1;
+  color: var(--sf-token-text-primary);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.sf-mini-gauge-green  { --sf-mini-gauge-tone: var(--sf-token-state-success-fg); }
+.sf-mini-gauge-yellow { --sf-mini-gauge-tone: var(--sf-token-state-warning-fg); }
+.sf-mini-gauge-red    { --sf-mini-gauge-tone: var(--sf-token-state-error-fg); }
+.sf-mini-gauge-gray   { --sf-mini-gauge-tone: var(--sf-token-text-muted); }

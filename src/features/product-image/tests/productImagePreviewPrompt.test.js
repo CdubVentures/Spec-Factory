@@ -84,12 +84,24 @@ function ensureProductDir(productId) {
   fs.mkdirSync(dir, { recursive: true });
 }
 
-function writeProductImagesJson(productId, images) {
+function writeProductImagesJson(productId, images, runs = []) {
   ensureProductDir(productId);
   fs.writeFileSync(
     path.join(PRODUCT_ROOT, productId, 'product_images.json'),
-    JSON.stringify({ selected: { images }, runs: [] }),
+    JSON.stringify({ selected: { images }, runs }),
   );
+}
+
+function priorRun({ runScopeKey, urls = [], queries = [], variantKey = 'color:black', variantId = 'v_black' }) {
+  return {
+    ran_at: '2026-01-01T00:00:00Z',
+    response: {
+      variant_id: variantId, variant_key: variantKey,
+      mode: runScopeKey.startsWith('hero') || runScopeKey === 'loop-hero' ? 'hero' : 'view',
+      run_scope_key: runScopeKey,
+      discovery_log: { urls_checked: urls, queries_run: queries },
+    },
+  };
 }
 
 describe('compilePifPreviewPrompt', () => {
@@ -158,11 +170,13 @@ describe('compilePifPreviewPrompt', () => {
     });
 
     const system = envelope.prompts[0].system;
-    // ADDITIONAL section must list bottom/rear (from individual hints) and not front (single) or left (loop).
-    assert.match(system, /"bottom"/);
-    assert.match(system, /"rear"/);
-    assert.ok(!/ADDITIONAL[\s\S]*"front"/.test(system), 'single-run hint "front" must not appear in ADDITIONAL section');
-    assert.ok(!/ADDITIONAL[\s\S]*"left"/.test(system), 'loop hint "left" must not appear in ADDITIONAL section');
+    // Match the ADDITIONAL block only (up to the blank line that terminates it) so unrelated 'front'/'left'
+    // mentions further down in imageRequirements don't false-positive the assertion.
+    const additionalBlock = (system.match(/ADDITIONAL[\s\S]*?\n\n/) || [''])[0];
+    assert.match(additionalBlock, /"bottom"/);
+    assert.match(additionalBlock, /"rear"/);
+    assert.ok(!/"front"/.test(additionalBlock), 'single-run hint "front" must not appear in ADDITIONAL section');
+    assert.ok(!/"left"/.test(additionalBlock), 'loop hint "left" must not appear in ADDITIONAL section');
   });
 
   it('view mode WITHOUT explicit view still uses singleRunSecondaryHints (priority-view run)', async () => {
@@ -204,7 +218,33 @@ describe('compilePifPreviewPrompt', () => {
     assert.equal(envelope.prompts[0].label, 'hero');
   });
 
-  it('loop mode returns N prompts: one per view in budget plus hero when enabled', async () => {
+  it('loop-view mode returns one representative iteration prompt (default focus = first viewBudget)', async () => {
+    const finderStore = makeFinderStoreStub({
+      viewBudget: '["top","angle","left"]',
+      heroEnabled: 'true',
+      urlHistoryEnabled: 'true',
+    });
+    const specDb = makeSpecDbStub({ finderStore });
+    writeProductImagesJson(PRODUCT.product_id, [], [
+      priorRun({ runScopeKey: 'loop-view', urls: ['https://prior/loopview'] }),
+    ]);
+
+    const envelope = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'loop-view' },
+    });
+
+    assert.equal(envelope.mode, 'loop-view');
+    assert.equal(envelope.prompts.length, 1);
+    assert.equal(envelope.prompts[0].label, 'loop-view:top');
+    assert.ok(envelope.prompts[0].system.includes("this variant's loop view searches"));
+  });
+
+  it('loop-view mode honors body.view to pick the focus view', async () => {
     const finderStore = makeFinderStoreStub({
       viewBudget: '["top","angle","left"]',
       heroEnabled: 'true',
@@ -217,21 +257,22 @@ describe('compilePifPreviewPrompt', () => {
       specDb,
       config: {},
       productRoot: PRODUCT_ROOT,
-      body: { variant_key: 'color:black', mode: 'loop' },
+      body: { variant_key: 'color:black', mode: 'loop-view', view: 'angle' },
     });
 
-    assert.equal(envelope.mode, 'loop');
-    assert.equal(envelope.prompts.length, 4); // 3 views + hero
-    assert.deepEqual(envelope.prompts.map((p) => p.label), ['view:top', 'view:angle', 'view:left', 'hero']);
-    assert.ok(envelope.notes.some((n) => n.includes('Iteration 1')));
+    assert.equal(envelope.prompts[0].label, 'loop-view:angle');
   });
 
-  it('loop mode omits hero when heroEnabled=false', async () => {
+  it('loop-hero mode returns one hero-pool prompt', async () => {
     const finderStore = makeFinderStoreStub({
       viewBudget: '["top"]',
-      heroEnabled: 'false',
+      heroEnabled: 'true',
+      urlHistoryEnabled: 'true',
     });
     const specDb = makeSpecDbStub({ finderStore });
+    writeProductImagesJson(PRODUCT.product_id, [], [
+      priorRun({ runScopeKey: 'loop-hero', urls: ['https://prior/loophero'] }),
+    ]);
 
     const envelope = await compilePifPreviewPrompt({
       product: PRODUCT,
@@ -239,11 +280,111 @@ describe('compilePifPreviewPrompt', () => {
       specDb,
       config: {},
       productRoot: PRODUCT_ROOT,
-      body: { variant_key: 'color:black', mode: 'loop' },
+      body: { variant_key: 'color:black', mode: 'loop-hero' },
     });
 
+    assert.equal(envelope.mode, 'loop-hero');
     assert.equal(envelope.prompts.length, 1);
-    assert.equal(envelope.prompts[0].label, 'view:top');
+    assert.equal(envelope.prompts[0].label, 'loop-hero');
+    assert.ok(envelope.prompts[0].system.includes("this variant's loop hero searches"));
+  });
+
+  it('view mode (no body.view) uses priority-view pool — scope label + isolated history', async () => {
+    const finderStore = makeFinderStoreStub({ urlHistoryEnabled: 'true' });
+    const specDb = makeSpecDbStub({ finderStore });
+    writeProductImagesJson(PRODUCT.product_id, [], [
+      priorRun({ runScopeKey: 'priority-view', urls: ['https://prior/priority'] }),
+      priorRun({ runScopeKey: 'view:top', urls: ['https://prior/viewtop'] }),
+      priorRun({ runScopeKey: 'hero', urls: ['https://prior/hero'] }),
+    ]);
+
+    const envelope = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'view' },
+    });
+
+    const sys = envelope.prompts[0].system;
+    assert.ok(sys.includes("this variant's priority-view searches"));
+    assert.ok(sys.includes('https://prior/priority'));
+    assert.ok(!sys.includes('https://prior/viewtop'), 'view:top URL must not leak into priority-view pool');
+    assert.ok(!sys.includes('https://prior/hero'), 'hero URL must not leak into priority-view pool');
+  });
+
+  it('view mode (with body.view) uses view:<focus> pool — scope label + isolated history', async () => {
+    const finderStore = makeFinderStoreStub({ urlHistoryEnabled: 'true' });
+    const specDb = makeSpecDbStub({ finderStore });
+    writeProductImagesJson(PRODUCT.product_id, [], [
+      priorRun({ runScopeKey: 'priority-view', urls: ['https://prior/priority'] }),
+      priorRun({ runScopeKey: 'view:top', urls: ['https://prior/viewtop'] }),
+    ]);
+
+    const envelope = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'view', view: 'top' },
+    });
+
+    const sys = envelope.prompts[0].system;
+    assert.ok(sys.includes("this variant's top-view searches"));
+    assert.ok(sys.includes('https://prior/viewtop'));
+    assert.ok(!sys.includes('https://prior/priority'), 'priority-view URL must not leak into view:top pool');
+  });
+
+  it('hero mode uses standalone-hero pool — isolated from loop-hero', async () => {
+    const finderStore = makeFinderStoreStub({ urlHistoryEnabled: 'true' });
+    const specDb = makeSpecDbStub({ finderStore });
+    writeProductImagesJson(PRODUCT.product_id, [], [
+      priorRun({ runScopeKey: 'hero', urls: ['https://prior/hero'] }),
+      priorRun({ runScopeKey: 'loop-hero', urls: ['https://prior/loophero'] }),
+    ]);
+
+    const envelope = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'hero' },
+    });
+
+    const sys = envelope.prompts[0].system;
+    assert.ok(sys.includes("this variant's hero searches"));
+    assert.ok(sys.includes('https://prior/hero'));
+    assert.ok(!sys.includes('https://prior/loophero'), 'loop-hero URL must not leak into standalone hero pool');
+  });
+
+  it('loop-view pool isolates from priority-view + view:<focus>', async () => {
+    const finderStore = makeFinderStoreStub({
+      urlHistoryEnabled: 'true',
+      viewBudget: '["top","angle"]',
+    });
+    const specDb = makeSpecDbStub({ finderStore });
+    writeProductImagesJson(PRODUCT.product_id, [], [
+      priorRun({ runScopeKey: 'priority-view', urls: ['https://prior/priority'] }),
+      priorRun({ runScopeKey: 'view:top', urls: ['https://prior/viewtop'] }),
+      priorRun({ runScopeKey: 'loop-view', urls: ['https://prior/loopview'] }),
+    ]);
+
+    const envelope = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'loop-view' },
+    });
+
+    const sys = envelope.prompts[0].system;
+    assert.ok(sys.includes('https://prior/loopview'));
+    assert.ok(!sys.includes('https://prior/priority'));
+    assert.ok(!sys.includes('https://prior/viewtop'));
   });
 
   it('view-eval mode with no candidates returns empty-state envelope', async () => {

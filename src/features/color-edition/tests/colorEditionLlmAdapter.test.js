@@ -302,6 +302,13 @@ describe('buildVariantIdentityCheckPrompt', () => {
     assert.ok(result.includes('remove'));
   });
 
+  it('tells identity to correct accepted variant color atoms from visual evidence', () => {
+    const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['olive'], newColorNames: { olive: 'Wilderness / Olive Green' }, newEditions: {} });
+    assert.ok(result.includes('preferred_color_atoms'), 'atom correction field');
+    assert.ok(result.toLowerCase().includes('visible shell'), 'visual shell guidance');
+    assert.ok(result.toLowerCase().includes('registered atom'), 'registered atom guidance');
+  });
+
   it('does NOT contain old update/create actions in JSON examples', () => {
     const result = buildVariantIdentityCheckPrompt({ product, existingRegistry, newColors: ['black'], newColorNames: {}, newEditions: {} });
     assert.ok(!result.includes('"action": "update"'), 'no update action in JSON');

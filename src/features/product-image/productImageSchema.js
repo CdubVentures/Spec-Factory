@@ -28,4 +28,8 @@ export const productImageFinderResponseSchema = z.object({
     queries_run: [],
     notes: [],
   }),
+  // WHY: partitions previous-discovery history by run type so cross-pool URLs/queries
+  // don't mis-signal "exhausted" to the LLM. Optional + free-form so older runs without
+  // it remain valid and matchers naturally skip them.
+  run_scope_key: z.string().optional(),
 });

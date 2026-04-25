@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Score Grade — Modern / Tech Variants</title>
+<style>
+  :root {
+    --bg: #0b0d12; --bg-2: #11141b; --bg-3: #161a23;
+    --surface: #1a1f2b; --surface-2: #232938; --surface-soft: #1f2532;
+    --border: #2a3142; --border-soft: #232938;
+    --text: #e6e9ef; --text-muted: #8b93a7; --text-dim: #6c7589;
+
+    --grid-line: rgba(255,255,255,.04);
+
+    /* tier — neon-tuned */
+    --grade-a: #34d399;       /* emerald */
+    --grade-a-glow: #6ee7b7;
+    --grade-b: #60a5fa;       /* sky */
+    --grade-b-glow: #93c5fd;
+    --grade-c: #fbbf24;       /* amber */
+    --grade-c-glow: #fcd34d;
+    --grade-d: #fb923c;       /* orange */
+    --grade-d-glow: #fdba74;
+    --grade-f: #f87171;       /* coral */
+    --grade-f-glow: #fca5a5;
+
+    /* accent for tech ornaments */
+    --cyan: #22d3ee;
+    --magenta: #f472b6;
+    --violet: #a78bfa;
+
+    --mono: 'JetBrains Mono','SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --display: 'Inter','SF Pro Display',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+
+    --radius: 10px;
+    --shadow-md: 0 4px 14px rgba(0,0,0,.35), 0 1px 3px rgba(0,0,0,.4);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; }
+  body {
+    font-family: var(--display);
+    color: var(--text);
+    background:
+      radial-gradient(1200px 600px at 20% -10%, rgba(96,165,250,.08), transparent 60%),
+      radial-gradient(900px 500px at 90% 10%, rgba(167,139,250,.07), transparent 60%),
+      var(--bg);
+    background-attachment: fixed;
+    line-height: 1.55; -webkit-font-smoothing: antialiased; padding: 0 0 80px;
+  }
+
+  .page-header {
+    position: relative;
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.02), transparent 60%),
+      linear-gradient(120deg, #0e1320 0%, #1a1247 50%, #2c0e3a 100%);
+    color: #fff; padding: 38px 24px 30px; text-align:center;
+    border-bottom: 1px solid #2a1958;
+    overflow: hidden;
+  }
+  .page-header::before {
+    content:''; position:absolute; inset:0;
+    background:
+      repeating-linear-gradient(0deg,  transparent 0 30px, rgba(255,255,255,.03) 30px 31px),
+      repeating-linear-gradient(90deg, transparent 0 30px, rgba(255,255,255,.03) 30px 31px);
+    mask-image: radial-gradient(ellipse at 50% 50%, #000 30%, transparent 80%);
+    pointer-events:none;
+  }
+  .page-header h1 { font-size: 22px; font-weight:700; letter-spacing:-.01em; }
+  .page-header h1 b { background: linear-gradient(90deg, var(--cyan), var(--magenta)); -webkit-background-clip:text; background-clip:text; color:transparent; font-weight:800; }
+  .page-header p { font-size: 13.5px; opacity: .82; margin-top: 6px; max-width: 760px; margin-left:auto; margin-right:auto; }
+  .page-header .pill {
+    display:inline-flex; align-items:center; gap:6px;
+    background: rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1);
+    padding: 4px 12px; border-radius:99px;
+    font-family: var(--mono); font-size: 11px; font-weight:600; margin-top:10px; letter-spacing:.06em;
+  }
+  .page-header .pill::before {
+    content:''; width:6px; height:6px; border-radius:50%; background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan);
+  }
+
+  .container { max-width:1280px; margin: 28px auto 0; padding: 0 24px; }
+
+  .section { margin-bottom: 36px; }
+  .section-head { margin-bottom: 14px; }
+  .section-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.16em; color: var(--text-muted); }
+  .section-title b { color: var(--text); }
+  .section-sub { font-size:12.5px; color: var(--text-dim); margin-top:4px; max-width: 920px; }
+
+  .card {
+    background: linear-gradient(180deg, var(--surface) 0%, var(--surface-2) 100%);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content:''; position:absolute; inset:0;
+    background:
+      linear-gradient(0deg,  transparent 0 39px, var(--grid-line) 39px 40px),
+      linear-gradient(90deg, transparent 0 39px, var(--grid-line) 39px 40px);
+    background-size: 40px 40px;
+    pointer-events:none;
+  }
+  .card > * { position: relative; }
+  .card + .card { margin-top: 14px; }
+  .card-title {
+    font-size: 13.5px; font-weight: 700; margin-bottom: 4px; letter-spacing:-.005em;
+    display:flex; align-items:center; gap:10px;
+  }
+  .card-id { font-family: var(--mono); font-size: 10.5px; color: var(--cyan); padding: 2px 8px; border-radius:4px; background: rgba(34,211,238,.08); border:1px solid rgba(34,211,238,.2); }
+  .card-sub { font-size: 11.5px; color: var(--text-dim); margin-bottom: 18px; }
+  .card-tag { display:inline-block; font-family:var(--mono); font-size: 9.5px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; padding:2px 7px; border-radius:4px; margin-left:6px; background:rgba(244,114,182,.1); color: var(--magenta); border:1px solid rgba(244,114,182,.25); }
+
+  .demo-row { display:flex; align-items:center; gap:18px; flex-wrap:wrap; padding:12px 2px; border-top:1px solid var(--border-soft); }
+  .demo-row:first-of-type { border-top:none; padding-top: 4px; }
+  .demo-row-label { min-width:120px; font-family: var(--mono); font-size:10.5px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.1em; font-weight:600; }
+  .demo-cell { display:flex; align-items:center; justify-content:center; min-width:90px; padding:10px 6px; }
+
+  .note {
+    margin-top:12px; padding: 10px 14px;
+    background: rgba(96,165,250,.06); border:1px solid rgba(96,165,250,.2); border-radius:7px;
+    font-size:12px; color: #c7d2fe;
+  }
+  .note b { color: #fff; }
+
+  /* =====================================================
+     V1 — HOLO CHIP
+     hexagonal chip with holographic gradient sweep
+  ===================================================== */
+  .stHolo {
+    --tone: var(--grade-a);
+    --tone-glow: var(--grade-a-glow);
+    position: relative; display:inline-flex; align-items:center; justify-content:center;
+    width: 60px; height: 56px;
+    color: #fff;
+    font-family: var(--display); font-weight: 800; font-size: 18px; letter-spacing:.01em;
+    background:
+      linear-gradient(135deg, var(--tone) 0%, var(--tone-glow) 30%, #fff 50%, var(--tone-glow) 70%, var(--tone) 100%);
+    background-size: 220% 220%;
+    background-position: 0% 50%;
+    animation: holoSweep 4s linear infinite;
+    /* hex */
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    text-shadow: 0 1px 2px rgba(0,0,0,.35);
+    filter: drop-shadow(0 0 10px color-mix(in srgb, var(--tone-glow) 40%, transparent));
+  }
+  .stHolo::after {
+    content:''; position:absolute; inset:2px;
+    background: linear-gradient(180deg, rgba(0,0,0,.0), rgba(0,0,0,.2));
+    clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+    pointer-events:none;
+  }
+  @keyframes holoSweep {
+    0%   { background-position: 0% 50%; }
+    100% { background-position: 200% 50%; }
+  }
+  .stHolo.b { --tone: var(--grade-b); --tone-glow: var(--grade-b-glow); }
+  .stHolo.c { --tone: var(--grade-c); --tone-glow: var(--grade-c-glow); }
+  .stHolo.d { --tone: var(--grade-d); --tone-glow: var(--grade-d-glow); }
+  .stHolo.f { --tone: var(--grade-f); --tone-glow: var(--grade-f-glow); }
+
+  /* =====================================================
+     V2 — NEON HUD
+     dark inset with glowing letter + scanlines + corner brackets
+  ===================================================== */
+  .stNeon {
+    --tone: var(--grade-a);
+    --tone-glow: var(--grade-a-glow);
+    position: relative; display:inline-flex; align-items:center; justify-content:center; gap: 8px;
+    padding: 7px 14px 6px;
+    background: linear-gradient(180deg, rgba(0,0,0,.5), rgba(0,0,0,.25));
+    border: 1px solid color-mix(in srgb, var(--tone) 55%, transparent);
+    border-radius: 6px;
+    box-shadow:
+      inset 0 0 12px color-mix(in srgb, var(--tone) 25%, transparent),
+      0 0 14px color-mix(in srgb, var(--tone-glow) 28%, transparent);
+    font-family: var(--mono);
+    color: var(--tone-glow);
+    overflow: hidden;
+  }
+  .stNeon::before {
+    content:''; position:absolute; inset:0;
+    background: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,.18) 2px 3px);
+    pointer-events:none;
+  }
+  .stNeon-letter {
+    font-size: 18px; font-weight: 800; letter-spacing:.04em; line-height:1;
+    color: var(--tone-glow);
+    text-shadow:
+      0 0 4px var(--tone-glow),
+      0 0 10px color-mix(in srgb, var(--tone-glow) 70%, transparent),
+      0 0 20px color-mix(in srgb, var(--tone) 60%, transparent);
+  }
+  .stNeon-num {
+    font-family: var(--mono); font-size: 9.5px; font-weight:700; letter-spacing:.1em;
+    color: color-mix(in srgb, var(--tone-glow) 90%, var(--text-muted));
+    opacity: .9;
+  }
+  /* corner ticks */
+  .stNeon-corner { position:absolute; width:7px; height:7px; border:1.5px solid var(--tone); }
+  .stNeon-corner.tl { top:3px; left:3px; border-right:none; border-bottom:none; }
+  .stNeon-corner.tr { top:3px; right:3px; border-left:none; border-bottom:none; }
+  .stNeon-corner.bl { bottom:3px; left:3px; border-right:none; border-top:none; }
+  .stNeon-corner.br { bottom:3px; right:3px; border-left:none; border-top:none; }
+
+  .stNeon.b { --tone: var(--grade-b); --tone-glow: var(--grade-b-glow); }
+  .stNeon.c { --tone: var(--grade-c); --tone-glow: var(--grade-c-glow); }
+  .stNeon.d { --tone: var(--grade-d); --tone-glow: var(--grade-d-glow); }
+  .stNeon.f { --tone: var(--grade-f); --tone-glow: var(--grade-f-glow); }
+
+  /* =====================================================
+     V3 — GLASS / FROSTED CHIP
+     subtle gradient with backdrop blur, minimal & premium
+  ===================================================== */
+  .stGlass {
+    --tone: var(--grade-a);
+    display:inline-flex; align-items:center; gap: 9px;
+    padding: 4px 12px 4px 5px;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--tone) 22%, transparent) 0%, color-mix(in srgb, var(--tone) 6%, transparent) 100%),
+      rgba(255,255,255,.04);
+    border: 1px solid color-mix(in srgb, var(--tone) 35%, rgba(255,255,255,.08));
+    border-radius: 999px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.08),
+      0 1px 2px rgba(0,0,0,.3);
+  }
+  .stGlass-letter {
+    width: 28px; height: 28px; border-radius: 50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family: var(--display); font-weight: 800; font-size: 13px; color:#fff;
+    background: linear-gradient(135deg, var(--tone), color-mix(in srgb, var(--tone) 60%, #000));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.3),
+      0 0 12px color-mix(in srgb, var(--tone) 35%, transparent);
+    letter-spacing: .02em;
+  }
+  .stGlass-num {
+    font-family: var(--mono); font-weight: 700; font-size: 12px;
+    color: var(--text);
+  }
+  .stGlass-cap {
+    font-family: var(--mono); font-size: 9px; letter-spacing:.16em; text-transform:uppercase; color: var(--text-dim); margin-left:-4px;
+  }
+  .stGlass.b { --tone: var(--grade-b); }
+  .stGlass.c { --tone: var(--grade-c); }
+  .stGlass.d { --tone: var(--grade-d); }
+  .stGlass.f { --tone: var(--grade-f); }
+
+  /* =====================================================
+     V4 — ESPORTS TIER BADGE
+     shield/diamond shape, gradient + sheen + tier name
+  ===================================================== */
+  .stEsport {
+    --tone: var(--grade-a);
+    --tone-glow: var(--grade-a-glow);
+    position:relative;
+    display:inline-flex; flex-direction:column; align-items:center; gap:4px;
+    padding-top: 2px;
+  }
+  .stEsport-badge {
+    position: relative;
+    width: 46px; height: 52px;
+    background:
+      radial-gradient(circle at 30% 25%, color-mix(in srgb, #fff 50%, var(--tone-glow)) 0%, var(--tone) 45%, color-mix(in srgb, var(--tone) 55%, #000) 100%);
+    /* shield-ish */
+    clip-path: polygon(50% 0, 100% 20%, 100% 60%, 50% 100%, 0 60%, 0 20%);
+    box-shadow:
+      0 0 14px color-mix(in srgb, var(--tone-glow) 28%, transparent),
+      0 4px 8px rgba(0,0,0,.35);
+    display:flex; align-items:center; justify-content:center;
+    color: #fff;
+    font-family: var(--display); font-weight: 800; font-size: 16px; letter-spacing:.02em;
+    text-shadow: 0 1px 2px rgba(0,0,0,.4);
+  }
+  /* glossy sheen sweep */
+  .stEsport-badge::before {
+    content:''; position:absolute; inset:0;
+    background: linear-gradient(135deg, rgba(255,255,255,.3) 0%, rgba(255,255,255,0) 35%, rgba(255,255,255,0) 65%, rgba(255,255,255,.12) 100%);
+    clip-path: polygon(50% 0, 100% 20%, 100% 60%, 50% 100%, 0 60%, 0 20%);
+    pointer-events:none;
+  }
+  .stEsport-badge::after {
+    content:''; position:absolute; inset: 2px;
+    border: 1px solid color-mix(in srgb, #fff 18%, transparent);
+    clip-path: polygon(50% 0, 100% 20%, 100% 60%, 50% 100%, 0 60%, 0 20%);
+    pointer-events:none;
+  }
+  .stEsport-tier {
+    font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: .18em;
+    text-transform: uppercase; color: var(--tone-glow);
+    line-height: 1;
+  }
+  .stEsport.b { --tone: var(--grade-b); --tone-glow: var(--grade-b-glow); }
+  .stEsport.c { --tone: var(--grade-c); --tone-glow: var(--grade-c-glow); }
+  .stEsport.d { --tone: var(--grade-d); --tone-glow: var(--grade-d-glow); }
+  .stEsport.f { --tone: var(--grade-f); --tone-glow: var(--grade-f-glow); }
+
+  /* =====================================================
+     V5 — TERMINAL READOUT
+     monospace bracketed data line, blinking cursor optional
+  ===================================================== */
+  .stTerminal {
+    --tone: var(--grade-a);
+    --tone-glow: var(--grade-a-glow);
+    display:inline-flex; align-items:center; gap: 6px;
+    padding: 5px 10px;
+    background: rgba(0,0,0,.45);
+    border: 1px solid color-mix(in srgb, var(--tone) 38%, transparent);
+    border-radius: 4px;
+    font-family: var(--mono);
+    box-shadow: inset 0 0 10px rgba(0,0,0,.5);
+  }
+  .stTerminal-prompt { color: var(--tone-glow); font-size: 11px; opacity:.85; font-weight:700; }
+  .stTerminal-letter { color: var(--tone-glow); font-size: 14px; font-weight: 800; letter-spacing:.04em; text-shadow: 0 0 6px color-mix(in srgb, var(--tone-glow) 60%, transparent); }
+  .stTerminal-sep { color: var(--text-dim); font-size: 11px; }
+  .stTerminal-num { color: var(--text); font-size: 12px; font-weight: 700; }
+  .stTerminal-cursor {
+    display:inline-block; width: 7px; height: 12px; background: var(--tone-glow);
+    margin-left: 2px; animation: blink 1s step-start infinite;
+    box-shadow: 0 0 6px color-mix(in srgb, var(--tone-glow) 60%, transparent);
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .stTerminal.b { --tone: var(--grade-b); --tone-glow: var(--grade-b-glow); }
+  .stTerminal.c { --tone: var(--grade-c); --tone-glow: var(--grade-c-glow); }
+  .stTerminal.d { --tone: var(--grade-d); --tone-glow: var(--grade-d-glow); }
+  .stTerminal.f { --tone: var(--grade-f); --tone-glow: var(--grade-f-glow); }
+
+  /* =====================================================
+     V6 — SILICON CHIP
+     CPU-style with pin lines on edges, letter centered
+  ===================================================== */
+  .stChip {
+    --tone: var(--grade-a);
+    --tone-glow: var(--grade-a-glow);
+    position: relative;
+    display:inline-flex; align-items:center; justify-content:center;
+    width: 58px; height: 50px;
+    background:
+      linear-gradient(135deg, color-mix(in srgb, var(--tone) 22%, var(--surface-2)) 0%, var(--surface-2) 100%);
+    border: 1.5px solid color-mix(in srgb, var(--tone) 50%, var(--border));
+    border-radius: 6px;
+    color: var(--tone-glow);
+    font-family: var(--mono); font-weight: 800; font-size: 16px; letter-spacing: .02em;
+    text-shadow: 0 0 8px color-mix(in srgb, var(--tone-glow) 50%, transparent);
+    margin: 0 4px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.06),
+      0 0 12px color-mix(in srgb, var(--tone) 18%, transparent);
+  }
+  /* CPU pins on left/right via repeating gradient */
+  .stChip::before, .stChip::after {
+    content:''; position:absolute; top:8px; bottom:8px; width:3px;
+    background: repeating-linear-gradient(0deg, color-mix(in srgb, var(--tone) 60%, var(--text-dim)) 0 3px, transparent 3px 6px);
+  }
+  .stChip::before { left: -4px; }
+  .stChip::after  { right: -4px; }
+  /* tiny LED dot top-left */
+  .stChip-led {
+    position: absolute; top: 4px; left: 5px; width: 4px; height: 4px;
+    border-radius: 50%; background: var(--tone-glow);
+    box-shadow: 0 0 6px var(--tone-glow);
+  }
+  .stChip.b { --tone: var(--grade-b); --tone-glow: var(--grade-b-glow); }
+  .stChip.c { --tone: var(--grade-c); --tone-glow: var(--grade-c-glow); }
+  .stChip.d { --tone: var(--grade-d); --tone-glow: var(--grade-d-glow); }
+  .stChip.f { --tone: var(--grade-f); --tone-glow: var(--grade-f-glow); }
+
+  /* =====================================================
+     V7 — DATA PILL
+     gradient pill, mini progress wave, ultra-modern
+  ===================================================== */
+  .stData {
+    --tone: var(--grade-a);
+    --tone-glow: var(--grade-a-glow);
+    display:inline-flex; align-items:center; gap: 8px;
+    padding: 4px 12px 4px 4px;
+    border-radius: 999px;
+    background: linear-gradient(90deg, color-mix(in srgb, var(--tone) 18%, var(--surface-2)) 0%, var(--surface-2) 100%);
+    border: 1px solid color-mix(in srgb, var(--tone) 40%, var(--border));
+  }
+  .stData-disc {
+    width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+    background: conic-gradient(from 0deg, var(--tone) 0%, var(--tone-glow) 50%, var(--tone) 100%);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 0 10px color-mix(in srgb, var(--tone-glow) 35%, transparent);
+    position:relative;
+  }
+  .stData-disc::before {
+    content:''; position:absolute; inset: 3px; border-radius:50%;
+    background: var(--surface-2);
+  }
+  .stData-disc-letter {
+    position:relative;
+    font-family: var(--display); font-weight:800; font-size:11.5px;
+    color: var(--tone-glow);
+    text-shadow: 0 0 6px color-mix(in srgb, var(--tone-glow) 60%, transparent);
+    letter-spacing: .02em;
+  }
+  .stData-meta { display:inline-flex; flex-direction:column; line-height:1.1; }
+  .stData-num { font-family: var(--mono); font-weight: 700; font-size: 12px; color: var(--text); letter-spacing:.02em; }
+  .stData-cap { font-family: var(--mono); font-size: 9px; letter-spacing:.18em; text-transform:uppercase; color: var(--text-dim); margin-top: 1px; }
+  .stData.b { --tone: var(--grade-b); --tone-glow: var(--grade-b-glow); }
+  .stData.c { --tone: var(--grade-c); --tone-glow: var(--grade-c-glow); }
+  .stData.d { --tone: var(--grade-d); --tone-glow: var(--grade-d-glow); }
+  .stData.f { --tone: var(--grade-f); --tone-glow: var(--grade-f-glow); }
+
+  /* =====================================================
+     ASSEMBLED ROW — table mock with V7 (data pill) winner
+  ===================================================== */
+  .table-mock {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .table-mock-head, .table-mock-row {
+    display:grid;
+    grid-template-columns: 200px 90px 130px 110px 110px 110px;
+    align-items:center;
+    padding: 12px 16px;
+    gap: 6px;
+  }
+  .table-mock-head {
+    background: var(--bg-3); border-bottom: 1px solid var(--border);
+    font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .14em; color: var(--text-muted);
+  }
+  .table-mock-row { border-top: 1px solid var(--border-soft); font-size: 12px; min-height: 60px; }
+  .table-mock-row:first-of-type { border-top:none; }
+  .table-mock-row .brand { font-weight: 600; color: var(--text); font-size: 13px; }
+  .table-mock-row .model { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+
+  /* dark-tuned mini gauge for the trio */
+  .mgD {
+    --tone: var(--grade-a);
+    display:inline-flex; align-items:center; gap:7px;
+    padding: 2px 10px 2px 4px;
+    background: rgba(255,255,255,.03);
+    border: 1px solid color-mix(in srgb, var(--tone) 28%, var(--border));
+    border-radius: 999px;
+  }
+  .mgD-ring { position:relative; width:22px; height:22px; flex-shrink:0; }
+  .mgD-ring svg { transform: rotate(-90deg); }
+  .mgD-ring .track { stroke: rgba(255,255,255,.08); }
+  .mgD-ring .fill  { stroke: var(--tone); filter: drop-shadow(0 0 3px color-mix(in srgb, var(--tone) 60%, transparent)); }
+  .mgD-num { font-family: var(--mono); font-weight: 700; font-size: 11.5px; color: var(--text); letter-spacing:.02em; }
+  .mgD.green  { --tone: var(--grade-a); }
+  .mgD.yellow { --tone: var(--grade-c); }
+  .mgD.red    { --tone: var(--grade-f); }
+  .mgD.gray   { --tone: var(--text-dim); }
+
+  .legend { display:flex; gap:18px; flex-wrap:wrap; margin-top:14px; font-family:var(--mono); font-size:10.5px; color:var(--text-dim); letter-spacing:.06em; }
+  .legend-item { display:inline-flex; align-items:center; gap:6px; }
+  .legend-swatch { width:10px; height:10px; border-radius:50%; box-shadow: 0 0 6px currentColor; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Score Grade — <b>modern · tech</b></h1>
+  <p>Round 3: dark UI, neon accents, esports/HUD vibes. Same five tonal tiers as before, but rendered as data — not stamps. Each variant ships across all grades.</p>
+  <span class="pill">SAMPLE · 2026-04-25 · iter 3</span>
+</div>
+
+<div class="container">
+
+  <!-- V1 — HOLO CHIP -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V1 · <b>Holo Chip</b></div>
+      <div class="section-sub">Hexagonal chip with an animated holographic gradient sweep. Strong product-stamp feel without being a school stamp — closer to a Pokémon-card-style foil. The sweep loops every 4s.</div>
+    </div>
+    <div class="card">
+      <div class="demo-row">
+        <div class="demo-row-label">tier</div>
+        <div class="demo-cell"><span class="stHolo"  >A+</span></div>
+        <div class="demo-cell"><span class="stHolo b">B+</span></div>
+        <div class="demo-cell"><span class="stHolo c">C</span></div>
+        <div class="demo-cell"><span class="stHolo d">D</span></div>
+        <div class="demo-cell"><span class="stHolo f">F</span></div>
+      </div>
+      <div class="note">Foil sweep is CSS-only (background-position animation). Animation can be killed with <code>prefers-reduced-motion</code> — leaves a static gradient chip.</div>
+    </div>
+  </section>
+
+  <!-- V2 — NEON HUD -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V2 · <b>Neon HUD</b></div>
+      <div class="section-sub">Game-HUD aesthetic: dark panel, glowing letter, scan-line overlay, four corner brackets. Reads like a status box from a sci-fi game UI.</div>
+    </div>
+    <div class="card">
+      <div class="demo-row">
+        <div class="demo-row-label">tier</div>
+        <div class="demo-cell"><span class="stNeon"  ><span class="stNeon-corner tl"></span><span class="stNeon-corner tr"></span><span class="stNeon-corner bl"></span><span class="stNeon-corner br"></span><span class="stNeon-letter">A+</span><span class="stNeon-num">98.4</span></span></div>
+        <div class="demo-cell"><span class="stNeon b"><span class="stNeon-corner tl"></span><span class="stNeon-corner tr"></span><span class="stNeon-corner bl"></span><span class="stNeon-corner br"></span><span class="stNeon-letter">B+</span><span class="stNeon-num">88.2</span></span></div>
+        <div class="demo-cell"><span class="stNeon c"><span class="stNeon-corner tl"></span><span class="stNeon-corner tr"></span><span class="stNeon-corner bl"></span><span class="stNeon-corner br"></span><span class="stNeon-letter">C</span><span class="stNeon-num">73.4</span></span></div>
+        <div class="demo-cell"><span class="stNeon d"><span class="stNeon-corner tl"></span><span class="stNeon-corner tr"></span><span class="stNeon-corner bl"></span><span class="stNeon-corner br"></span><span class="stNeon-letter">D</span><span class="stNeon-num">63.0</span></span></div>
+        <div class="demo-cell"><span class="stNeon f"><span class="stNeon-corner tl"></span><span class="stNeon-corner tr"></span><span class="stNeon-corner bl"></span><span class="stNeon-corner br"></span><span class="stNeon-letter">F</span><span class="stNeon-num">42.0</span></span></div>
+      </div>
+      <div class="note">Loud and tactical. Two-line layout fits both letter + number; tooltip carries the 7-axis breakdown as before.</div>
+    </div>
+  </section>
+
+  <!-- V3 — GLASS / FROSTED -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V3 · <b>Glass Pill</b> <span class="card-tag">most premium</span></div>
+      <div class="section-sub">Frosted glassmorphism with backdrop blur. Round disc carries the letter, mono number sits beside it, ALL-CAPS "GRADE" caption. Calm but unmistakably modern.</div>
+    </div>
+    <div class="card">
+      <div class="demo-row">
+        <div class="demo-row-label">tier</div>
+        <div class="demo-cell"><span class="stGlass"  ><span class="stGlass-letter">A+</span><span class="stGlass-num">98.4</span><span class="stGlass-cap">grade</span></span></div>
+        <div class="demo-cell"><span class="stGlass b"><span class="stGlass-letter">B+</span><span class="stGlass-num">88.2</span><span class="stGlass-cap">grade</span></span></div>
+        <div class="demo-cell"><span class="stGlass c"><span class="stGlass-letter">C</span><span class="stGlass-num">73.4</span><span class="stGlass-cap">grade</span></span></div>
+        <div class="demo-cell"><span class="stGlass d"><span class="stGlass-letter">D</span><span class="stGlass-num">63.0</span><span class="stGlass-cap">grade</span></span></div>
+        <div class="demo-cell"><span class="stGlass f"><span class="stGlass-letter">F</span><span class="stGlass-num">42.0</span><span class="stGlass-cap">grade</span></span></div>
+      </div>
+      <div class="note">Reads "Apple Vision Pro / Linear" — minimal, premium, doesn't fight the rest of the table. Best when the table also adopts a dark mode.</div>
+    </div>
+  </section>
+
+  <!-- V4 — ESPORTS TIER BADGE -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V4 · <b>Esports Tier Badge</b></div>
+      <div class="section-sub">Shield-shaped badge with sheen + outer glow + tier name underneath. Reads like Valorant / Apex / Halo Infinite rank icons.</div>
+    </div>
+    <div class="card">
+      <div class="demo-row">
+        <div class="demo-row-label">tier</div>
+        <div class="demo-cell"><span class="stEsport"  ><span class="stEsport-badge">A+</span><span class="stEsport-tier">apex</span></span></div>
+        <div class="demo-cell"><span class="stEsport b"><span class="stEsport-badge">B+</span><span class="stEsport-tier">elite</span></span></div>
+        <div class="demo-cell"><span class="stEsport c"><span class="stEsport-badge">C</span><span class="stEsport-tier">gold</span></span></div>
+        <div class="demo-cell"><span class="stEsport d"><span class="stEsport-badge">D</span><span class="stEsport-tier">silver</span></span></div>
+        <div class="demo-cell"><span class="stEsport f"><span class="stEsport-badge">F</span><span class="stEsport-tier">bronze</span></span></div>
+      </div>
+      <div class="note">Tier names map per grade-band (Apex / Elite / Gold / Silver / Bronze). Tallest of the variants (~64px). Best if Score becomes a hero column.</div>
+    </div>
+  </section>
+
+  <!-- V5 — TERMINAL READOUT -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V5 · <b>Terminal Readout</b></div>
+      <div class="section-sub">Mono-font data line with a glowing letter and an optional blinking cursor. Most "developer / power user" of the bunch. Densest signal-per-pixel.</div>
+    </div>
+    <div class="card">
+      <div class="demo-row">
+        <div class="demo-row-label">tier</div>
+        <div class="demo-cell"><span class="stTerminal"  ><span class="stTerminal-prompt">»</span><span class="stTerminal-letter">A+</span><span class="stTerminal-sep">/</span><span class="stTerminal-num">98.4</span><span class="stTerminal-cursor"></span></span></div>
+        <div class="demo-cell"><span class="stTerminal b"><span class="stTerminal-prompt">»</span><span class="stTerminal-letter">B+</span><span class="stTerminal-sep">/</span><span class="stTerminal-num">88.2</span></span></div>
+        <div class="demo-cell"><span class="stTerminal c"><span class="stTerminal-prompt">»</span><span class="stTerminal-letter">C</span><span class="stTerminal-sep">/</span><span class="stTerminal-num">73.4</span></span></div>
+        <div class="demo-cell"><span class="stTerminal d"><span class="stTerminal-prompt">»</span><span class="stTerminal-letter">D</span><span class="stTerminal-sep">/</span><span class="stTerminal-num">63.0</span></span></div>
+        <div class="demo-cell"><span class="stTerminal f"><span class="stTerminal-prompt">»</span><span class="stTerminal-letter">F</span><span class="stTerminal-sep">/</span><span class="stTerminal-num">42.0</span></span></div>
+      </div>
+      <div class="note">Wider but flatter (~32px tall). Cursor only on the active/most-recent row to avoid 50 cursors blinking in the table.</div>
+    </div>
+  </section>
+
+  <!-- V6 — SILICON CHIP -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V6 · <b>Silicon Chip</b></div>
+      <div class="section-sub">CPU-style: pin lines on the left/right edges, status LED in the corner, glowing letter in the center. Most literal "tech" reading.</div>
+    </div>
+    <div class="card">
+      <div class="demo-row">
+        <div class="demo-row-label">tier</div>
+        <div class="demo-cell"><span class="stChip"  ><span class="stChip-led"></span>A+</span></div>
+        <div class="demo-cell"><span class="stChip b"><span class="stChip-led"></span>B+</span></div>
+        <div class="demo-cell"><span class="stChip c"><span class="stChip-led"></span>C</span></div>
+        <div class="demo-cell"><span class="stChip d"><span class="stChip-led"></span>D</span></div>
+        <div class="demo-cell"><span class="stChip f"><span class="stChip-led"></span>F</span></div>
+      </div>
+      <div class="note">Strong identity but the CPU pins poking out of the cell mean it needs ~10px horizontal padding. Use only if Score gets ~75–80px width.</div>
+    </div>
+  </section>
+
+  <!-- V7 — DATA PILL -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V7 · <b>Data Pill</b> <span class="card-tag">recommended</span></div>
+      <div class="section-sub">Conic-gradient ring around the letter (reads as "score arc filled"), mono number + caption beside it. Mirrors the existing Mini Gauge language used by Coverage / Conf / Fields → consistent vocabulary across the row.</div>
+    </div>
+    <div class="card">
+      <div class="demo-row">
+        <div class="demo-row-label">tier</div>
+        <div class="demo-cell"><span class="stData"  ><span class="stData-disc"><span class="stData-disc-letter">A+</span></span><span class="stData-meta"><span class="stData-num">98.4</span><span class="stData-cap">grade</span></span></span></div>
+        <div class="demo-cell"><span class="stData b"><span class="stData-disc"><span class="stData-disc-letter">B+</span></span><span class="stData-meta"><span class="stData-num">88.2</span><span class="stData-cap">grade</span></span></span></div>
+        <div class="demo-cell"><span class="stData c"><span class="stData-disc"><span class="stData-disc-letter">C</span></span><span class="stData-meta"><span class="stData-num">73.4</span><span class="stData-cap">grade</span></span></span></div>
+        <div class="demo-cell"><span class="stData d"><span class="stData-disc"><span class="stData-disc-letter">D</span></span><span class="stData-meta"><span class="stData-num">63.0</span><span class="stData-cap">grade</span></span></span></div>
+        <div class="demo-cell"><span class="stData f"><span class="stData-disc"><span class="stData-disc-letter">F</span></span><span class="stData-meta"><span class="stData-num">42.0</span><span class="stData-cap">grade</span></span></span></div>
+      </div>
+      <div class="note">Why this one: <b>vocabulary match</b> with the trio. The conic-gradient disc on the left mirrors the Mini Gauge ring, so Score / Coverage / Conf / Fields all "rhyme" visually as one numeric grading unit.</div>
+    </div>
+  </section>
+
+  <!-- ASSEMBLED ROW — V7 + dark-tuned mini gauges -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">Assembled row · <b>V7 Data Pill + dark mini gauges</b></div>
+      <div class="section-sub">Full table mock in dark mode. Same row of products as the previous samples, so you can A/B against the report-card and the stamp versions directly.</div>
+    </div>
+
+    <div class="table-mock">
+      <div class="table-mock-head">
+        <span>brand · model</span>
+        <span>keys</span>
+        <span style="text-align:center">score</span>
+        <span style="text-align:center">coverage</span>
+        <span style="text-align:center">conf</span>
+        <span style="text-align:center">fields</span>
+      </div>
+
+      <!-- Logitech A+ -->
+      <div class="table-mock-row">
+        <span><span class="brand">Logitech</span><br><span class="model">MX Master 3S</span></span>
+        <span class="model">22 / 24</span>
+        <span style="text-align:center">
+          <span class="stData"><span class="stData-disc"><span class="stData-disc-letter">A+</span></span><span class="stData-meta"><span class="stData-num">96.2</span><span class="stData-cap">grade</span></span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD green"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="3.7"/></svg></span><span class="mgD-num">93%</span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD green"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="5.3"/></svg></span><span class="mgD-num">90%</span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD green"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="4.4"/></svg></span><span class="mgD-num">22/24</span></span>
+        </span>
+      </div>
+
+      <!-- Razer B+ -->
+      <div class="table-mock-row">
+        <span><span class="brand">Razer</span><br><span class="model">DeathAdder V3</span></span>
+        <span class="model">18 / 24</span>
+        <span style="text-align:center">
+          <span class="stData b"><span class="stData-disc"><span class="stData-disc-letter">B+</span></span><span class="stData-meta"><span class="stData-num">87.1</span><span class="stData-cap">grade</span></span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD green"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="6.9"/></svg></span><span class="mgD-num">87%</span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD yellow"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="14.4"/></svg></span><span class="mgD-num">73%</span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD yellow"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="13.4"/></svg></span><span class="mgD-num">18/24</span></span>
+        </span>
+      </div>
+
+      <!-- SteelSeries C -->
+      <div class="table-mock-row">
+        <span><span class="brand">SteelSeries</span><br><span class="model">Aerox 9</span></span>
+        <span class="model">14 / 24</span>
+        <span style="text-align:center">
+          <span class="stData c"><span class="stData-disc"><span class="stData-disc-letter">C</span></span><span class="stData-meta"><span class="stData-num">73.4</span><span class="stData-cap">grade</span></span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD yellow"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="16.6"/></svg></span><span class="mgD-num">69%</span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD yellow"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="20.3"/></svg></span><span class="mgD-num">62%</span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD yellow"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="22.3"/></svg></span><span class="mgD-num">14/24</span></span>
+        </span>
+      </div>
+
+      <!-- Glorious D -->
+      <div class="table-mock-row">
+        <span><span class="brand">Glorious</span><br><span class="model">Model O 2</span></span>
+        <span class="model">8 / 24</span>
+        <span style="text-align:center">
+          <span class="stData d"><span class="stData-disc"><span class="stData-disc-letter">D</span></span><span class="stData-meta"><span class="stData-num">63.0</span><span class="stData-cap">grade</span></span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD red"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="27.8"/></svg></span><span class="mgD-num">48%</span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD red"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="29.4"/></svg></span><span class="mgD-num">45%</span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD red"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="35.6"/></svg></span><span class="mgD-num">8/24</span></span>
+        </span>
+      </div>
+
+      <!-- Generic F -->
+      <div class="table-mock-row">
+        <span><span class="brand">Generic</span><br><span class="model">Untouched product</span></span>
+        <span class="model">0 / 24</span>
+        <span style="text-align:center">
+          <span class="stData f"><span class="stData-disc"><span class="stData-disc-letter">F</span></span><span class="stData-meta"><span class="stData-num">0.0</span><span class="stData-cap">grade</span></span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD gray"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/></svg></span><span class="mgD-num">—</span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD gray"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/></svg></span><span class="mgD-num">—</span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgD gray"><span class="mgD-ring"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/></svg></span><span class="mgD-num">0/24</span></span>
+        </span>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="legend-item" style="color: var(--grade-a)"><span class="legend-swatch" style="background: var(--grade-a)"></span> A · ≥ 90</span>
+      <span class="legend-item" style="color: var(--grade-b)"><span class="legend-swatch" style="background: var(--grade-b)"></span> B · 80–89</span>
+      <span class="legend-item" style="color: var(--grade-c)"><span class="legend-swatch" style="background: var(--grade-c)"></span> C · 70–79</span>
+      <span class="legend-item" style="color: var(--grade-d)"><span class="legend-swatch" style="background: var(--grade-d)"></span> D · 60–69</span>
+      <span class="legend-item" style="color: var(--grade-f)"><span class="legend-swatch" style="background: var(--grade-f)"></span> F · &lt; 60</span>
+    </div>
+  </section>
+
+  <!-- SIDE-BY-SIDE -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">Side-by-side · same A+ and same F across all 7 styles</div>
+      <div class="section-sub">Quick visual A/B without scrolling.</div>
+    </div>
+    <div class="card">
+      <div class="demo-row">
+        <div class="demo-row-label">A+ · 98.4</div>
+        <div class="demo-cell"><span class="stHolo">A+</span></div>
+        <div class="demo-cell"><span class="stNeon"><span class="stNeon-corner tl"></span><span class="stNeon-corner tr"></span><span class="stNeon-corner bl"></span><span class="stNeon-corner br"></span><span class="stNeon-letter">A+</span><span class="stNeon-num">98</span></span></div>
+        <div class="demo-cell"><span class="stGlass"><span class="stGlass-letter">A+</span><span class="stGlass-num">98.4</span></span></div>
+        <div class="demo-cell"><span class="stEsport"><span class="stEsport-badge">A+</span><span class="stEsport-tier">apex</span></span></div>
+        <div class="demo-cell"><span class="stTerminal"><span class="stTerminal-prompt">»</span><span class="stTerminal-letter">A+</span><span class="stTerminal-sep">/</span><span class="stTerminal-num">98.4</span></span></div>
+        <div class="demo-cell"><span class="stChip"><span class="stChip-led"></span>A+</span></div>
+        <div class="demo-cell"><span class="stData"><span class="stData-disc"><span class="stData-disc-letter">A+</span></span><span class="stData-meta"><span class="stData-num">98.4</span><span class="stData-cap">grade</span></span></span></div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">F · 42.0</div>
+        <div class="demo-cell"><span class="stHolo f">F</span></div>
+        <div class="demo-cell"><span class="stNeon f"><span class="stNeon-corner tl"></span><span class="stNeon-corner tr"></span><span class="stNeon-corner bl"></span><span class="stNeon-corner br"></span><span class="stNeon-letter">F</span><span class="stNeon-num">42</span></span></div>
+        <div class="demo-cell"><span class="stGlass f"><span class="stGlass-letter">F</span><span class="stGlass-num">42.0</span></span></div>
+        <div class="demo-cell"><span class="stEsport f"><span class="stEsport-badge">F</span><span class="stEsport-tier">bronze</span></span></div>
+        <div class="demo-cell"><span class="stTerminal f"><span class="stTerminal-prompt">»</span><span class="stTerminal-letter">F</span><span class="stTerminal-sep">/</span><span class="stTerminal-num">42.0</span></span></div>
+        <div class="demo-cell"><span class="stChip f"><span class="stChip-led"></span>F</span></div>
+        <div class="demo-cell"><span class="stData f"><span class="stData-disc"><span class="stData-disc-letter">F</span></span><span class="stData-meta"><span class="stData-num">42.0</span><span class="stData-cap">grade</span></span></span></div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label" style="color: var(--text-dim); font-style: italic">style</div>
+        <div class="demo-cell" style="font-family: var(--mono); font-size:10px; color: var(--text-muted); letter-spacing:.1em">V1 HOLO</div>
+        <div class="demo-cell" style="font-family: var(--mono); font-size:10px; color: var(--text-muted); letter-spacing:.1em">V2 NEON</div>
+        <div class="demo-cell" style="font-family: var(--mono); font-size:10px; color: var(--text-muted); letter-spacing:.1em">V3 GLASS</div>
+        <div class="demo-cell" style="font-family: var(--mono); font-size:10px; color: var(--text-muted); letter-spacing:.1em">V4 ESPORT</div>
+        <div class="demo-cell" style="font-family: var(--mono); font-size:10px; color: var(--text-muted); letter-spacing:.1em">V5 TERM</div>
+        <div class="demo-cell" style="font-family: var(--mono); font-size:10px; color: var(--text-muted); letter-spacing:.1em">V6 CHIP</div>
+        <div class="demo-cell" style="font-family: var(--mono); font-size:10px; color: var(--text-muted); letter-spacing:.1em">V7 DATA</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

@@ -158,7 +158,29 @@
       "unit": ""
     },
     {
-      "aliases": [],
+      "aliases": [
+        "16.8 million colors",
+        "16.8M colors",
+        "Brilliant Prism",
+        "Chroma RGB",
+        "customizable lighting",
+        "customizable RGB",
+        "full-spectrum lighting",
+        "full-spectrum RGB",
+        "Light Effects",
+        "lighting zones",
+        "LIGHTSYNC RGB",
+        "Mouse Backlighting",
+        "no lighting",
+        "no RGB",
+        "per-LED RGB",
+        "Prism",
+        "PrismSync",
+        "Razer Chroma",
+        "RGB backlighting",
+        "RGB illumination",
+        "RGB lighting"
+      ],
       "array_handling": "none",
       "availability": "sometimes",
       "canonical_key": "rgb",
@@ -2254,6 +2276,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-25T08:57:59.144Z",
+  "generated_at": "2026-04-25T20:11:24.270Z",
   "version": 1
 }

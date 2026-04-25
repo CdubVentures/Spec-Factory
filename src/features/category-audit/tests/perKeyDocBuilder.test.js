@@ -323,6 +323,111 @@ test('rejects missing category / outputRoot', async () => {
   );
 });
 
+test('fieldKeyOrder writes a sorted/ folder of numbered .md files in navigator order', async () => {
+  const outputRoot = await mkTmpDir();
+  try {
+    const result = await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesFixture(),
+      fieldGroups: fieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot,
+      now: new Date('2026-04-23T00:00:00Z'),
+      fieldKeyOrder: [
+        '__grp::Identity',
+        'sku',                  // reserved, not in rules
+        '__grp::Sensor',
+        'dpi',
+        'ips',
+        '__grp::General',
+        'colors',               // reserved, in rules
+        'form_factor',
+      ],
+    });
+
+    assert.ok(result.sorted, 'sorted summary returned');
+    assert.equal(result.sorted.basePath, path.join(outputRoot, 'per-key', 'mouse', 'sorted'));
+    assert.equal(result.sorted.count, 5, 'five entries: 2 reserved + 3 fields');
+
+    const sortedDir = result.sorted.basePath;
+    const expected = [
+      '01-sku.reserved.md',
+      '02-dpi.md',
+      '03-ips.md',
+      '04-colors.reserved.md',
+      '05-form_factor.md',
+    ].sort();
+    assert.deepEqual((await fs.readdir(sortedDir)).sort(), expected);
+
+    // Reserved stub points back at _reserved-keys.md and names the owner
+    const skuStub = await fs.readFile(path.join(sortedDir, '01-sku.reserved.md'), 'utf8');
+    assert.match(skuStub, /reserved/i);
+    assert.match(skuStub, /_reserved-keys\.md/);
+    assert.match(skuStub, /SKF|skuFinder/i);
+
+    // Non-reserved sorted file is byte-identical to the canonical group-folder .md
+    const dpiCanonical = await fs.readFile(
+      path.join(outputRoot, 'per-key', 'mouse', 'sensor_performance', 'dpi.md'),
+      'utf8',
+    );
+    const dpiSorted = await fs.readFile(path.join(sortedDir, '02-dpi.md'), 'utf8');
+    assert.equal(dpiSorted, dpiCanonical);
+  } finally {
+    await cleanupDir(outputRoot);
+  }
+});
+
+test('zero-padding width matches total non-separator entries', async () => {
+  const outputRoot = await mkTmpDir();
+  try {
+    // Build a fieldKeyOrder with 12 entries → width 2
+    const order = [];
+    for (let i = 0; i < 10; i += 1) order.push('extra' + i); // not in rules → silently skipped
+    order.push('dpi');
+    order.push('ips');
+
+    const result = await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesFixture(),
+      fieldGroups: fieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot,
+      now: new Date('2026-04-23T00:00:00Z'),
+      fieldKeyOrder: order,
+    });
+
+    assert.ok(result.sorted);
+    const listing = await fs.readdir(result.sorted.basePath);
+    // dpi is at position 11 → "11-dpi.md", ips at position 12 → "12-ips.md"
+    assert.ok(listing.includes('11-dpi.md'), 'dpi at zero-padded position 11');
+    assert.ok(listing.includes('12-ips.md'), 'ips at zero-padded position 12');
+  } finally {
+    await cleanupDir(outputRoot);
+  }
+});
+
+test('omitting fieldKeyOrder leaves no sorted/ folder', async () => {
+  const outputRoot = await mkTmpDir();
+  try {
+    const result = await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesFixture(),
+      fieldGroups: fieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot,
+      now: new Date('2026-04-23T00:00:00Z'),
+    });
+    assert.equal(result.sorted, null, 'sorted is null when fieldKeyOrder absent');
+    const sortedDir = path.join(outputRoot, 'per-key', 'mouse', 'sorted');
+    await assert.rejects(() => fs.access(sortedDir), /ENOENT/);
+  } finally {
+    await cleanupDir(outputRoot);
+  }
+});
+
 test('creates output directories if absent', async () => {
   const outputRoot = await mkTmpDir();
   try {

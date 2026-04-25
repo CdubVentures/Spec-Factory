@@ -1,39 +1,30 @@
-/**
- * CommandConsoleModelPickerPopover — wraps a finder-row badge in a popover
- * that opens an inline model picker mirroring the LLM Config phase / KF tier
- * controls. Two bindings:
- *   - `phase`  — reads/writes phaseOverrides[overrideKey] (CEF / PIF / EVAL / RDF / SKU)
- *   - `kfTier` — reads/writes a slot in keyFinderTierSettingsJson (easy / medium / hard / very_hard)
- *
- * No backend / resolution changes — the same flat keys the LLM Config panel
- * already writes are written here, so runtime LLM dispatch picks up the new
- * values on the next call.
- */
-
 import { useCallback, useMemo, type ReactNode } from 'react';
-import { Popover } from '../../shared/ui/overlay/Popover.tsx';
-import { FinderRunPopoverShell } from '../../shared/ui/overlay/FinderRunPopoverShell.tsx';
+import { Popover } from '../overlay/Popover.tsx';
+import { FinderRunPopoverShell } from '../overlay/FinderRunPopoverShell.tsx';
 import {
   LlmCapabilityPickerCore,
   type LlmCapabilityBundle,
   type LlmCapabilityEffort,
-} from '../../shared/ui/finder/LlmCapabilityPickerCore.tsx';
-import { useLlmPolicyAuthority } from '../../features/llm-config/state/useLlmPolicyAuthority.ts';
-import { DEFAULT_LLM_POLICY } from '../../features/llm-config/state/llmPolicyDefaults.ts';
-import { RUNTIME_SETTING_DEFAULTS } from '../../stores/settingsManifest.ts';
-import { mergeDefaultsIntoRegistry } from '../../features/llm-config/state/llmDefaultProviderRegistry.ts';
-import { parseProviderRegistry } from '../../features/llm-config/state/llmProviderRegistryBridge.ts';
+} from './LlmCapabilityPickerCore.tsx';
+import { useLlmPolicyAuthority } from '../../../features/llm-config/state/useLlmPolicyAuthority.ts';
+import { DEFAULT_LLM_POLICY } from '../../../features/llm-config/state/llmPolicyDefaults.ts';
+import { RUNTIME_SETTING_DEFAULTS } from '../../../stores/settingsManifest.ts';
+import { mergeDefaultsIntoRegistry } from '../../../features/llm-config/state/llmDefaultProviderRegistry.ts';
+import { parseProviderRegistry } from '../../../features/llm-config/state/llmProviderRegistryBridge.ts';
 import {
   PROVIDER_API_KEY_MAP,
   providerHasApiKey,
   type RuntimeApiKeySlice,
-} from '../../features/llm-config/state/llmProviderApiKeyGate.ts';
-import type { LlmOverridePhaseId, LlmPhaseOverride, LlmPhaseOverrides } from '../../features/llm-config/types/llmPhaseOverrideTypes.generated.ts';
-import type { LlmProviderEntry } from '../../features/llm-config/types/llmProviderRegistryTypes.ts';
-import type { DifficultyTier } from '../../features/key-finder/hooks/useKeyDifficultyModelMap.ts';
-import './CommandConsoleModelPickerPopover.css';
+} from '../../../features/llm-config/state/llmProviderApiKeyGate.ts';
+import type {
+  LlmOverridePhaseId,
+  LlmPhaseOverride,
+  LlmPhaseOverrides,
+} from '../../../features/llm-config/types/llmPhaseOverrideTypes.generated.ts';
+import type { LlmProviderEntry } from '../../../features/llm-config/types/llmProviderRegistryTypes.ts';
+import './FinderModelPickerPopover.css';
 
-type KfTierSlot = DifficultyTier | 'fallback';
+export type KfTierModelPickerSlot = 'easy' | 'medium' | 'hard' | 'very_hard' | 'fallback';
 
 interface SharedBindingResult {
   readonly value: LlmCapabilityBundle;
@@ -64,7 +55,7 @@ interface PickerTierSettings {
   fallback?: PickerTierBundle;
 }
 
-const EMPTY_BUNDLE: LlmCapabilityBundle = {
+export const EMPTY_LLM_CAPABILITY_BUNDLE: LlmCapabilityBundle = {
   model: '',
   useReasoning: false,
   reasoningModel: '',
@@ -75,7 +66,7 @@ const EMPTY_BUNDLE: LlmCapabilityBundle = {
 
 const DEFAULT_REGISTRY = parseProviderRegistry(RUNTIME_SETTING_DEFAULTS.llmProviderRegistryJson);
 
-function runtimeApiKeysFromPolicy(policy: ReturnType<typeof useLlmPolicyAuthority>['policy']): RuntimeApiKeySlice {
+export function runtimeApiKeysFromPolicy(policy: ReturnType<typeof useLlmPolicyAuthority>['policy']): RuntimeApiKeySlice {
   return {
     geminiApiKey: policy.apiKeys.gemini ?? '',
     deepseekApiKey: policy.apiKeys.deepseek ?? '',
@@ -84,7 +75,7 @@ function runtimeApiKeysFromPolicy(policy: ReturnType<typeof useLlmPolicyAuthorit
   };
 }
 
-function buildOverviewPickerRegistry(
+export function buildFinderModelPickerRegistry(
   policy: ReturnType<typeof useLlmPolicyAuthority>['policy'],
   runtimeApiKeys: RuntimeApiKeySlice,
 ): LlmProviderEntry[] {
@@ -100,11 +91,11 @@ function buildOverviewPickerRegistry(
   });
 }
 
-function createOverviewApiKeyFilter(runtimeApiKeys: RuntimeApiKeySlice): (provider: LlmProviderEntry) => boolean {
+export function createFinderModelPickerApiKeyFilter(runtimeApiKeys: RuntimeApiKeySlice): (provider: LlmProviderEntry) => boolean {
   return (provider: LlmProviderEntry) => providerHasApiKey(provider, runtimeApiKeys);
 }
 
-function bundleFromPhaseSlot(slot: Partial<LlmPhaseOverride> | undefined): LlmCapabilityBundle {
+export function bundleFromPhaseSlot(slot: Partial<LlmPhaseOverride> | undefined): LlmCapabilityBundle {
   return {
     model: slot?.baseModel ?? '',
     useReasoning: slot?.useReasoning ?? false,
@@ -115,7 +106,7 @@ function bundleFromPhaseSlot(slot: Partial<LlmPhaseOverride> | undefined): LlmCa
   };
 }
 
-function bundleFromTierSlot(slot: PickerTierBundle | undefined): LlmCapabilityBundle {
+export function bundleFromTierSlot(slot: PickerTierBundle | undefined): LlmCapabilityBundle {
   return {
     model: slot?.model ?? '',
     useReasoning: slot?.useReasoning ?? false,
@@ -126,7 +117,7 @@ function bundleFromTierSlot(slot: PickerTierBundle | undefined): LlmCapabilityBu
   };
 }
 
-function useFinderPhaseBundleBinding(phaseId: LlmOverridePhaseId): SharedBindingResult {
+export function useFinderPhaseModelPickerBinding(phaseId: LlmOverridePhaseId): SharedBindingResult {
   const llmAuthority = useLlmPolicyAuthority({ defaultPolicy: DEFAULT_LLM_POLICY });
   const overrides = (llmAuthority.policy.phaseOverrides ?? {}) as LlmPhaseOverrides;
   const slot = overrides[phaseId];
@@ -136,11 +127,11 @@ function useFinderPhaseBundleBinding(phaseId: LlmOverridePhaseId): SharedBinding
     [llmAuthority.policy],
   );
   const registry = useMemo(
-    () => buildOverviewPickerRegistry(llmAuthority.policy, runtimeApiKeys),
+    () => buildFinderModelPickerRegistry(llmAuthority.policy, runtimeApiKeys),
     [llmAuthority.policy, runtimeApiKeys],
   );
   const apiKeyFilter = useMemo(
-    () => createOverviewApiKeyFilter(runtimeApiKeys),
+    () => createFinderModelPickerApiKeyFilter(runtimeApiKeys),
     [runtimeApiKeys],
   );
 
@@ -170,13 +161,12 @@ function useFinderPhaseBundleBinding(phaseId: LlmOverridePhaseId): SharedBinding
     globalDefaultReasoningModel: llmAuthority.policy.models.reasoning,
     inheritedModelId: llmAuthority.policy.models.plan,
     allowModelNone: true,
-    // WHY: writer phase blocks web search; CEF/PIF/EVAL/RDF/SKU all permit it.
     allowWebSearch: phaseId !== 'writer',
     apiKeyFilter,
   };
 }
 
-function useKeyFinderTierBundleBinding(tier: KfTierSlot): SharedBindingResult {
+export function useKeyFinderTierModelPickerBinding(tier: KfTierModelPickerSlot): SharedBindingResult {
   const llmAuthority = useLlmPolicyAuthority({ defaultPolicy: DEFAULT_LLM_POLICY });
   const tiers = ((llmAuthority.policy as unknown as { keyFinderTiers?: PickerTierSettings }).keyFinderTiers ?? {}) as PickerTierSettings;
   const slot = tiers[tier];
@@ -187,11 +177,11 @@ function useKeyFinderTierBundleBinding(tier: KfTierSlot): SharedBindingResult {
     [llmAuthority.policy],
   );
   const registry = useMemo(
-    () => buildOverviewPickerRegistry(llmAuthority.policy, runtimeApiKeys),
+    () => buildFinderModelPickerRegistry(llmAuthority.policy, runtimeApiKeys),
     [llmAuthority.policy, runtimeApiKeys],
   );
   const apiKeyFilter = useMemo(
-    () => createOverviewApiKeyFilter(runtimeApiKeys),
+    () => createFinderModelPickerApiKeyFilter(runtimeApiKeys),
     [runtimeApiKeys],
   );
 
@@ -218,26 +208,26 @@ function useKeyFinderTierBundleBinding(tier: KfTierSlot): SharedBindingResult {
   };
 }
 
-interface CommandConsolePhaseBindingProps {
+interface FinderPhaseBindingProps {
   readonly binding: 'phase';
   readonly phaseId: LlmOverridePhaseId;
 }
 
-interface CommandConsoleKfTierBindingProps {
+interface FinderKfTierBindingProps {
   readonly binding: 'kfTier';
-  readonly tier: KfTierSlot;
+  readonly tier: KfTierModelPickerSlot;
 }
 
-type CommandConsoleModelPickerBinding = CommandConsolePhaseBindingProps | CommandConsoleKfTierBindingProps;
+type FinderModelPickerBinding = FinderPhaseBindingProps | FinderKfTierBindingProps;
 
-export type CommandConsoleModelPickerPopoverProps = {
+export type FinderModelPickerPopoverProps = {
   readonly trigger: ReactNode;
   readonly title: string;
   readonly triggerLabel?: string;
-} & CommandConsoleModelPickerBinding;
+} & FinderModelPickerBinding;
 
-function PhasePickerBody({ phaseId, title }: { phaseId: LlmOverridePhaseId; title: string }) {
-  const binding = useFinderPhaseBundleBinding(phaseId);
+function PhasePickerBody({ phaseId, title }: { readonly phaseId: LlmOverridePhaseId; readonly title: string }) {
+  const binding = useFinderPhaseModelPickerBinding(phaseId);
   return (
     <FinderRunPopoverShell title={title}>
       <LlmCapabilityPickerCore
@@ -257,8 +247,8 @@ function PhasePickerBody({ phaseId, title }: { phaseId: LlmOverridePhaseId; titl
   );
 }
 
-function KfTierPickerBody({ tier, title }: { tier: KfTierSlot; title: string }) {
-  const binding = useKeyFinderTierBundleBinding(tier);
+function KfTierPickerBody({ tier, title }: { readonly tier: KfTierModelPickerSlot; readonly title: string }) {
+  const binding = useKeyFinderTierModelPickerBinding(tier);
   return (
     <FinderRunPopoverShell title={title}>
       <LlmCapabilityPickerCore
@@ -278,7 +268,7 @@ function KfTierPickerBody({ tier, title }: { tier: KfTierSlot; title: string }) 
   );
 }
 
-export function CommandConsoleModelPickerPopover(props: CommandConsoleModelPickerPopoverProps) {
+export function FinderModelPickerPopover(props: FinderModelPickerPopoverProps) {
   const body = props.binding === 'phase'
     ? <PhasePickerBody phaseId={props.phaseId} title={props.title} />
     : <KfTierPickerBody tier={props.tier} title={props.title} />;
@@ -287,21 +277,10 @@ export function CommandConsoleModelPickerPopover(props: CommandConsoleModelPicke
     <Popover
       trigger={props.trigger}
       triggerLabel={props.triggerLabel ?? `${props.title} model picker`}
-      contentClassName="sf-cc-model-picker-panel"
+      contentClassName="sf-finder-model-picker-panel"
     >
       {body}
     </Popover>
   );
 }
 
-// Re-export for tests + downstream consumers.
-export {
-  useFinderPhaseBundleBinding,
-  useKeyFinderTierBundleBinding,
-  bundleFromPhaseSlot,
-  bundleFromTierSlot,
-  EMPTY_BUNDLE,
-  runtimeApiKeysFromPolicy,
-  buildOverviewPickerRegistry,
-  createOverviewApiKeyFilter,
-};

@@ -22,6 +22,7 @@ export interface DeleteTarget {
     | 'run' | 'loop' | 'all'
     | 'image' | 'images-all' | 'images-variant'
     | 'eval' | 'eval-all' | 'eval-variant'
+    | 'carousel-clear-variant'
     | 'variant' | 'variant-all'
     | 'key-unpublish' | 'key-delete'
     | 'key-unpublish-group' | 'key-delete-group'
@@ -37,6 +38,7 @@ export interface DeleteTarget {
   readonly filename?: string;
   readonly filenames?: readonly string[];
   readonly variantId?: string;
+  readonly variantKey?: string;
   /** field_key for single-key operations (key-unresolve, key-delete). */
   readonly fieldKey?: string;
   /** field_keys for bulk key operations (group / all variants). */

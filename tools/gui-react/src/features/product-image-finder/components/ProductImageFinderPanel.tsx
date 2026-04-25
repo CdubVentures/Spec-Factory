@@ -14,7 +14,7 @@ import {
   PromptPreviewTriggerButton,
   FinderKpiCard,
   FinderPanelFooter,
-  FinderRunModelBadge,
+  FinderEditablePhaseModelBadge,
   FinderDeleteConfirmModal,
   FinderSectionCard,
   FinderHowItWorks,
@@ -46,6 +46,7 @@ import {
   useDeleteProductImageMutation,
   useProcessProductImageMutation,
   useProcessAllProductImagesMutation,
+  useClearCarouselWinnersMutation,
   useDeleteEvalRecordMutation,
 } from '../api/productImageFinderQueries.ts';
 import type { ProductImageEntry, GalleryImage } from '../types.ts';
@@ -97,7 +98,6 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
 
   // LLM model for imageFinder phase (shared hook, parameterized by phase ID)
   const { model: resolvedModel, accessMode: resolvedAccessMode, modelDisplay, effortLevel } = useResolvedFinderModel('imageFinder');
-  const { model: evalModel, accessMode: evalAccessMode, modelDisplay: evalModelDisplay, effortLevel: evalEffortLevel } = useResolvedFinderModel('imageEvaluator');
 
   // Color registry for hex lookup in run history badges
   const { data: colorRegistry = [] } = useQuery<ColorRegistryEntry[]>({
@@ -136,6 +136,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const deleteRunsBatchMut = useDeleteProductImageFinderRunsBatchMutation(category, productId);
   const deleteAllMut = useDeleteProductImageFinderAllMutation(category, productId);
   const deleteImageMut = useDeleteProductImageMutation(category, productId);
+  const clearCarouselWinnersMut = useClearCarouselWinnersMutation(category, productId);
   const deleteEvalMut = useDeleteEvalRecordMutation(category, productId);
   const processImageMut = useProcessProductImageMutation(category, productId);
   const processAllMut = useProcessAllProductImagesMutation(category, productId);
@@ -162,6 +163,9 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   }, []);
   const handleDeleteVariantImages = useCallback((filenames: readonly string[], label: string) => {
     setDeleteTarget({ kind: 'images-variant', filenames, count: filenames.length, label });
+  }, []);
+  const handleClearVariantCarousel = useCallback((variantKey: string, variantId: string | null, label: string) => {
+    setDeleteTarget({ kind: 'carousel-clear-variant', variantKey, variantId: variantId ?? undefined, label });
   }, []);
 
   // Operations tracker — focused selectors only re-render when PIF-specific state changes
@@ -229,8 +233,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const fire = useFireAndForget({ type: 'pif', category, productId });
   const pifRunUrl = `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
   const pifLoopUrl = `${pifRunUrl}/loop`;
-  const pifEvalViewUrl = `${pifRunUrl}/evaluate-view`;
-  const pifEvalHeroUrl = `${pifRunUrl}/evaluate-hero`;
+  const pifEvalCarouselUrl = `${pifRunUrl}/evaluate-carousel`;
 
   const findVariantId = useCallback((variantKey: string) =>
     variants.find((v) => v.key === variantKey)?.variant_id, [variants]);
@@ -261,11 +264,6 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     }
   }, [fire, pifLoopUrl, loopingVariants, findVariantId]);
 
-  // WHY: Stagger eval calls 500ms apart to avoid overwhelming the server.
-  // Each view eval + hero eval fires as its own operation tracker entry.
-  // Returns the number of calls scheduled so callers can chain delays.
-  const EVAL_STAGGER_MS = 500;
-
   // WHY: Build a PIF-native variant→views map from accumulated images.
   // This is keyed by the actual variant_key stored on PIF images, not the
   // CEF-derived variant key. If CEF re-runs and variant keys shift, eval
@@ -280,7 +278,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     return map;
   }, [pifData]);
 
-  const fireEvalForVariant = useCallback((variantKey: string, startDelay = 0): number => {
+  const fireEvalForVariant = useCallback((variantKey: string): number => {
     // WHY: Look up views from PIF's own image data, not by filtering on the
     // CEF-derived variant key. This decouples eval from CEF state — eval works
     // even if CEF is mid-run or variant keys have drifted.
@@ -290,29 +288,17 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     const hasHeroes = viewSet.has('hero');
     const vid = findVariantId(variantKey);
 
-    canonicalViews.forEach((view, i) => {
-      setTimeout(() => {
-        fire(pifEvalViewUrl, { variant_key: variantKey, variant_id: vid, view }, { subType: 'evaluate', variantKey });
-      }, startDelay + i * EVAL_STAGGER_MS);
-    });
+    if (canonicalViews.length === 0 && !hasHeroes) return 0;
+    fire(pifEvalCarouselUrl, { variant_key: variantKey, variant_id: vid }, { subType: 'evaluate', variantKey });
 
-    // Hero eval fires after canonical views — evaluates view='hero' candidates with vision
-    if (hasHeroes) {
-      setTimeout(() => {
-        fire(pifEvalHeroUrl, { variant_key: variantKey, variant_id: vid }, { subType: 'evaluate', variantKey });
-      }, startDelay + canonicalViews.length * EVAL_STAGGER_MS);
-    }
-
-    return canonicalViews.length + (hasHeroes ? 1 : 0);
-  }, [fire, pifEvalViewUrl, pifEvalHeroUrl, pifData, findVariantId]);
+    return 1;
+  }, [fire, pifEvalCarouselUrl, pifVariantViewMap, findVariantId]);
 
   const handleEvalAll = useCallback(() => {
-    let totalDelay = 0;
     for (const v of variants) {
-      const callCount = fireEvalForVariant(v.key, totalDelay);
-      totalDelay += callCount * EVAL_STAGGER_MS;
+      fireEvalForVariant(v.key);
     }
-  }, [fireEvalForVariant, variants, EVAL_STAGGER_MS]);
+  }, [fireEvalForVariant, variants]);
 
   const handleEvalVariant = useCallback((variantKey: string) => {
     if (!evaluatingVariants.has(variantKey)) {
@@ -345,6 +331,14 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           dismiss();
         }
         break;
+      case 'carousel-clear-variant':
+        if (deleteTarget.variantKey) {
+          clearCarouselWinnersMut.mutate({
+            variant_key: deleteTarget.variantKey,
+            variant_id: deleteTarget.variantId,
+          }, { onSuccess: dismiss });
+        }
+        break;
       case 'images-all':
       case 'images-variant':
         if (deleteTarget.filenames?.length) {
@@ -355,7 +349,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
       default:
         deleteAllMut.mutate(undefined, { onSuccess: dismiss });
     }
-  }, [deleteTarget, deleteRunMut, deleteRunsBatchMut, deleteAllMut, deleteImageMut, deleteEvalMut]);
+  }, [deleteTarget, deleteRunMut, deleteRunsBatchMut, deleteAllMut, deleteImageMut, deleteEvalMut, clearCarouselWinnersMut]);
 
   const hasCefData = Boolean(variants.length);
   const effectiveResult = isError ? null : pifData;
@@ -364,9 +358,11 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const runs = effectiveResult?.runs || [];
 
   // Per-variant URL/query counts for the in-row Hist button label. PIF's
-  // discovery scope is 'variant+mode' (view vs hero kept separate), so we
-  // union URLs/queries across modes per variant_id to surface a single
-  // total — matches what the drawer renders when opened for that variant.
+  // discovery scope is 'variant+mode'; the inner buckets are now run-scope
+  // pools (priority-view / view:<focus> / loop-view / loop-hero / hero), not
+  // just coarse modes — but we still union URLs/queries across all pools per
+  // variant_id to surface a single total, matching what the drawer renders
+  // when opened for that variant.
   const histCountsByVariantId = useMemo(() => {
     const grouped = groupHistory(runs as readonly FinderRun[], 'variant+mode');
     const map = new Map<string, { urls: number; queries: number }>();
@@ -384,24 +380,25 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
 
   // Aggregate carousel progress across all variants
   const carouselProgressMap = effectiveResult?.carouselProgress ?? {};
-  // Slots per variant = viewBudget views + hero slots
-  const slotsPerVariant = (pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle']).length
+  // Configured target slots stay as the fallback; resolved slots may grow with extras.
+  const configuredSlotsPerVariant = (pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle']).length
     + (pifData?.carouselSettings?.heroEnabled ? 3 : 0);
 
   const carouselAgg = useMemo(() => {
-    if (variants.length === 0 || slotsPerVariant === 0) return { filled: 0, total: 0, allComplete: false };
+    if (variants.length === 0 || configuredSlotsPerVariant === 0) return { filled: 0, total: 0, allComplete: false };
     // Count filled slots across all variant groups
     const vb = pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle'];
     const hc = pifData?.carouselSettings?.heroEnabled ? 3 : 0;
     const cSlots = pifData?.carousel_slots ?? {};
     let filled = 0;
+    let total = 0;
     for (const group of imageGroups) {
       const slots = resolveSlots(vb, hc, group.key, cSlots, group.images as ProductImageEntry[]);
       filled += slots.filter(s => s.filename && s.filename !== '__cleared__').length;
+      total += Math.max(slots.length, configuredSlotsPerVariant);
     }
-    const total = variants.length * slotsPerVariant;
     return { filled, total, allComplete: filled >= total };
-  }, [imageGroups, variants, slotsPerVariant, pifData]);
+  }, [imageGroups, variants, configuredSlotsPerVariant, pifData]);
 
   const kpiCards: KpiCard[] = [
     { label: 'Images', value: String(imageCount), tone: 'accent' },
@@ -419,12 +416,6 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     role: (resolvedModel?.useReasoning ? 'reasoning' : 'primary') as 'reasoning' | 'primary',
     thinking: resolvedModel?.thinking ?? false,
     webSearch: resolvedModel?.webSearch ?? false,
-  };
-  const evalBadgeProps = {
-    accessMode: evalAccessMode,
-    role: (evalModel?.useReasoning ? 'reasoning' : 'primary') as 'reasoning' | 'primary',
-    thinking: evalModel?.thinking ?? false,
-    webSearch: evalModel?.webSearch ?? false,
   };
 
   // Memoize grouped lists for pagination (previously computed inline in JSX)
@@ -466,22 +457,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
         isRunning={isRunning}
         modelStrip={
           <>
-            <FinderRunModelBadge
-              labelPrefix="PIF"
-              model={modelDisplay}
-              accessMode={resolvedAccessMode}
-              thinking={resolvedModel?.thinking ?? false}
-              webSearch={resolvedModel?.webSearch ?? false}
-              effortLevel={effortLevel}
-            />
-            <FinderRunModelBadge
-              labelPrefix="EVAL"
-              model={evalModelDisplay}
-              accessMode={evalAccessMode}
-              thinking={evalModel?.thinking ?? false}
-              webSearch={evalModel?.webSearch ?? false}
-              effortLevel={evalEffortLevel}
-            />
+            <FinderEditablePhaseModelBadge phaseId="imageFinder" labelPrefix="PIF" title="PIF - Product Image Finder" />
+            <FinderEditablePhaseModelBadge phaseId="imageEvaluator" labelPrefix="EVAL" title="EVAL - Image Evaluator" />
           </>
         }
         historySlot={<DiscoveryHistoryButton finderId="productImageFinder" productId={productId} category={category} width={ACTION_BUTTON_WIDTH.standardHeader} />}
@@ -602,6 +579,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                     onRunHero={handleRunVariantHero}
                     onLoopVariant={handleLoopVariant}
                     onEvalVariant={handleEvalVariant}
+                    onClearCarouselWinners={handleClearVariantCarousel}
                     onOpenPromptModal={(variantKey, mode, view) => setActivePromptModal({ variantKey, mode, ...(view ? { view } : {}) })}
                     onOpenLightbox={handleOpenLightbox}
                     onDeleteImage={handleDeleteImage}
@@ -753,8 +731,10 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           target={deleteTarget}
           onConfirm={handleConfirmDelete}
           onCancel={() => setDeleteTarget(null)}
-          isPending={deleteRunMut.isPending || deleteRunsBatchMut.isPending || deleteAllMut.isPending || deleteImageMut.isPending || deleteEvalMut.isPending}
+          isPending={deleteRunMut.isPending || deleteRunsBatchMut.isPending || deleteAllMut.isPending || deleteImageMut.isPending || deleteEvalMut.isPending || clearCarouselWinnersMut.isPending}
           moduleLabel="PIF"
+          confirmLabel={deleteTarget.kind === 'carousel-clear-variant' ? 'Clear' : undefined}
+          pendingLabel={deleteTarget.kind === 'carousel-clear-variant' ? 'Clearing...' : undefined}
         />
       )}
 

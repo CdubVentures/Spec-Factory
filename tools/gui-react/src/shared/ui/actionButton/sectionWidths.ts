@@ -10,10 +10,12 @@
 export const ACTION_BUTTON_WIDTH = {
   /** Pipeline header: Run + Stop (short labels). */
   pipelineHeader: 'w-32',
-  /** CEF / PIF / Scalar panel headers: Run/Loop/Eval All + History + Prompt. */
-  standardHeader: 'w-40',
+  /** CEF / PIF / Scalar panel headers: Run/Loop/Eval All + History + Prompt.
+   *  Wide enough for the History label "HISTORY (NNNNqu)(NNNNurl)" (uppercase
+   *  bold tracking-wide) to fit inside the px-3 gutter without overflowing. */
+  standardHeader: 'w-52',
   /** Key panel header: Run all groups + Loop all groups + History (long labels). */
-  keyHeader: 'w-44',
+  keyHeader: 'w-56',
   /** Key group header: History + Run group + Loop group. */
   keyGroup: 'w-36',
   /** PIF / Scalar variant rows + PromptDrawerChevron actions (short labels). */

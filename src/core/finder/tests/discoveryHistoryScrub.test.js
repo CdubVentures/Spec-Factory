@@ -212,6 +212,143 @@ describe('scrubFinderDiscoveryHistory', () => {
     assert.deepEqual(sqlStore.calls.map((c) => c.runNumber), [1]);
   });
 
+  it('scrubs PIF by pool key (run_scope_key) without touching other pools on the same variant', () => {
+    const productId = 'pif-pool-isolation';
+    const module = {
+      id: 'productImageFinder',
+      filePrefix: 'product_images',
+      moduleClass: 'variantArtifactProducer',
+    };
+    const doc = {
+      product_id: productId,
+      category: 'mouse',
+      run_count: 3,
+      next_run_number: 4,
+      runs: [
+        run({
+          runNumber: 1,
+          urls: ['https://prio.example'],
+          queries: ['prio query'],
+          response: { variant_id: 'v_black', mode: 'view', run_scope_key: 'priority-view' },
+        }),
+        run({
+          runNumber: 2,
+          urls: ['https://top.example'],
+          queries: ['top query'],
+          response: { variant_id: 'v_black', mode: 'view', run_scope_key: 'view:top' },
+        }),
+        run({
+          runNumber: 3,
+          urls: ['https://loop.example'],
+          queries: ['loop query'],
+          response: { variant_id: 'v_black', mode: 'view', run_scope_key: 'loop-view' },
+        }),
+      ],
+    };
+    writeDoc({ productId, filePrefix: module.filePrefix, doc });
+
+    const result = scrubFinderDiscoveryHistory({
+      productId,
+      productRoot: TMP_ROOT,
+      module,
+      specDb: makeSpecDb(makeSqlStore()),
+      request: { kind: 'all', scope: 'variant_mode', variantId: 'v_black', mode: 'view:top' },
+    });
+
+    assert.deepEqual(result.affectedRunNumbers, [2]);
+    const afterDoc = readDoc(productId, module.filePrefix);
+    assert.deepEqual(afterDoc.runs[0].response.discovery_log.urls_checked, ['https://prio.example']);
+    assert.deepEqual(afterDoc.runs[1].response.discovery_log.urls_checked, []);
+    assert.deepEqual(afterDoc.runs[1].response.discovery_log.queries_run, []);
+    assert.deepEqual(afterDoc.runs[2].response.discovery_log.urls_checked, ['https://loop.example']);
+  });
+
+  it('scrubs legacy PIF runs (no run_scope_key) by mode using the same wire format', () => {
+    const productId = 'pif-legacy-mode';
+    const module = {
+      id: 'productImageFinder',
+      filePrefix: 'product_images',
+      moduleClass: 'variantArtifactProducer',
+    };
+    const doc = {
+      product_id: productId,
+      category: 'mouse',
+      run_count: 2,
+      next_run_number: 3,
+      runs: [
+        run({
+          runNumber: 1,
+          urls: ['https://legacy-view.example'],
+          queries: ['legacy view query'],
+          response: { variant_id: 'v_black', mode: 'view' },
+        }),
+        run({
+          runNumber: 2,
+          urls: ['https://legacy-hero.example'],
+          queries: ['legacy hero query'],
+          response: { variant_id: 'v_black', mode: 'hero' },
+        }),
+      ],
+    };
+    writeDoc({ productId, filePrefix: module.filePrefix, doc });
+
+    const result = scrubFinderDiscoveryHistory({
+      productId,
+      productRoot: TMP_ROOT,
+      module,
+      specDb: makeSpecDb(makeSqlStore()),
+      request: { kind: 'all', scope: 'variant_mode', variantId: 'v_black', mode: 'view' },
+    });
+
+    assert.deepEqual(result.affectedRunNumbers, [1]);
+    const afterDoc = readDoc(productId, module.filePrefix);
+    assert.deepEqual(afterDoc.runs[0].response.discovery_log.urls_checked, []);
+    assert.deepEqual(afterDoc.runs[1].response.discovery_log.urls_checked, ['https://legacy-hero.example']);
+  });
+
+  it('does not cross-match coarse mode (hero) and pool key (loop-hero) for variant_mode scrubs', () => {
+    const productId = 'pif-loop-hero-isolation';
+    const module = {
+      id: 'productImageFinder',
+      filePrefix: 'product_images',
+      moduleClass: 'variantArtifactProducer',
+    };
+    const doc = {
+      product_id: productId,
+      category: 'mouse',
+      run_count: 2,
+      next_run_number: 3,
+      runs: [
+        run({
+          runNumber: 1,
+          urls: ['https://standalone-hero.example'],
+          queries: ['standalone hero'],
+          response: { variant_id: 'v_black', mode: 'hero', run_scope_key: 'hero' },
+        }),
+        run({
+          runNumber: 2,
+          urls: ['https://loop-hero.example'],
+          queries: ['loop hero'],
+          response: { variant_id: 'v_black', mode: 'hero', run_scope_key: 'loop-hero' },
+        }),
+      ],
+    };
+    writeDoc({ productId, filePrefix: module.filePrefix, doc });
+
+    const result = scrubFinderDiscoveryHistory({
+      productId,
+      productRoot: TMP_ROOT,
+      module,
+      specDb: makeSpecDb(makeSqlStore()),
+      request: { kind: 'all', scope: 'variant_mode', variantId: 'v_black', mode: 'loop-hero' },
+    });
+
+    assert.deepEqual(result.affectedRunNumbers, [2]);
+    const afterDoc = readDoc(productId, module.filePrefix);
+    assert.deepEqual(afterDoc.runs[0].response.discovery_log.urls_checked, ['https://standalone-hero.example']);
+    assert.deepEqual(afterDoc.runs[1].response.discovery_log.urls_checked, []);
+  });
+
   it('scrubs variant-scoped scalar finder queries by variant id with variant_key fallback support', () => {
     const productId = 'rdf-variant';
     const module = {

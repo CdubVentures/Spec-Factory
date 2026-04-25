@@ -107,7 +107,7 @@ test('Overview RDF cells route release dates through the user date formatter', a
       `,
       '../../shared/ui/data-display/MetricCard.tsx': componentStub('MetricCard'),
       '../../shared/ui/data-display/DataTable.tsx': componentStub('DataTable'),
-      '../../shared/ui/feedback/TrafficLight.tsx': componentStub('TrafficLight'),
+      '../../shared/ui/data-display/MiniGauge.tsx': componentStub('MiniGauge'),
       '../../shared/ui/feedback/Spinner.tsx': componentStub('Spinner'),
       '../../utils/formatting.ts': `
         export function pct(value) { return String(value); }

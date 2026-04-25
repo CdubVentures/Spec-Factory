@@ -16,6 +16,16 @@ describe('viewEvalResponseSchema', () => {
     filename: 'top-black.png',
     reasoning: 'Clean cutout, sharp edges, product centered.',
   };
+  const validCandidate = {
+    filename: 'top-black.png',
+    actual_view: 'top',
+    matches_requested_view: true,
+    usable_as_required_view: true,
+    usable_as_carousel_extra: true,
+    quality: 'pass',
+    duplicate: false,
+    reasoning: 'Clean top view of the exact product.',
+  };
 
   it('accepts a valid winner with no rejected', () => {
     const input = { winner: validWinner };
@@ -90,6 +100,50 @@ describe('viewEvalResponseSchema', () => {
     const result = viewEvalResponseSchema.safeParse(input);
     assert.equal(result.success, true);
     assert.equal(result.data.rejected[0].reasoning, undefined);
+  });
+
+  it('accepts per-candidate visual classification metadata', () => {
+    const input = {
+      winner: validWinner,
+      candidates: [
+        validCandidate,
+        {
+          filename: 'front-search-top.png',
+          actual_view: 'top',
+          matches_requested_view: false,
+          usable_as_required_view: true,
+          usable_as_carousel_extra: true,
+          quality: 'pass',
+          duplicate: false,
+          reasoning: 'Found during front search but pixels show a top-down view.',
+        },
+        {
+          filename: 'generic-product.png',
+          actual_view: 'generic',
+          matches_requested_view: false,
+          usable_as_required_view: false,
+          usable_as_carousel_extra: true,
+          quality: 'borderline',
+          duplicate: false,
+          flags: ['cropped'],
+          reasoning: 'Useful generic product shot but not a named view.',
+        },
+      ],
+    };
+    const result = viewEvalResponseSchema.safeParse(input);
+    assert.equal(result.success, true);
+    assert.equal(result.data.candidates.length, 3);
+    assert.equal(result.data.candidates[1].actual_view, 'top');
+    assert.equal(result.data.candidates[1].matches_requested_view, false);
+    assert.equal(result.data.candidates[2].actual_view, 'generic');
+  });
+
+  it('rejects unknown actual_view in candidate classification', () => {
+    const result = viewEvalResponseSchema.safeParse({
+      winner: validWinner,
+      candidates: [{ ...validCandidate, actual_view: 'three-quarter-left' }],
+    });
+    assert.equal(result.success, false);
   });
 
   it('accepts multiple rejected entries', () => {

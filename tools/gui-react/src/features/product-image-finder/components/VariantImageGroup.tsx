@@ -21,6 +21,7 @@ import { CarouselSlotRow } from './CarouselSlotRow.tsx';
 import { PifRunStackDrawer } from './PifRunStackDrawer.tsx';
 import { useFinderDiscoveryHistoryStore } from '../../../stores/finderDiscoveryHistoryStore.ts';
 import type { ImageGroup, GalleryImage, ProductImageEntry, CarouselProgress } from '../types.ts';
+import type { PifPromptPreviewMode } from '../state/pifPromptPreviewState.ts';
 
 interface VariantImageGroupProps {
   readonly group: ImageGroup;
@@ -43,7 +44,8 @@ interface VariantImageGroupProps {
   readonly onRunHero: (variantKey: string) => void;
   readonly onLoopVariant: (variantKey: string) => void;
   readonly onEvalVariant: (variantKey: string) => void;
-  readonly onOpenPromptModal: (variantKey: string, mode: 'view' | 'hero' | 'loop' | 'view-eval', view?: string) => void;
+  readonly onClearCarouselWinners: (variantKey: string, variantId: string | null, label: string) => void;
+  readonly onOpenPromptModal: (variantKey: string, mode: PifPromptPreviewMode, view?: string) => void;
   readonly onOpenLightbox: (img: GalleryImage) => void;
   readonly onDeleteImage: (filename: string) => void;
   readonly onDeleteVariantImages: (filenames: readonly string[], label: string) => void;
@@ -83,6 +85,7 @@ export const VariantImageGroup = memo(function VariantImageGroup({
   onRunHero,
   onLoopVariant,
   onEvalVariant,
+  onClearCarouselWinners,
   onOpenPromptModal,
   onOpenLightbox,
   onDeleteImage,
@@ -115,7 +118,8 @@ export const VariantImageGroup = memo(function VariantImageGroup({
   // computed groupSlots (same source the CarouselPreviewPopup uses).
   // Totals fall back to configured viewBudget/heroCount when carouselProgress
   // is missing for a never-run variant so dots still render.
-  const viewsTotal = progress?.viewsTotal ?? viewBudget.length;
+  const dynamicViewsTotal = groupSlots.filter((s) => !s.slot.startsWith('hero_')).length;
+  const viewsTotal = Math.max(progress?.viewsTotal ?? 0, dynamicViewsTotal || viewBudget.length);
   const heroTotal = progress?.heroTarget ?? heroCount;
   const viewsFilled = useMemo(() =>
     groupSlots.filter((s) =>
@@ -237,6 +241,14 @@ export const VariantImageGroup = memo(function VariantImageGroup({
               title="Carousel Builder: evaluate images and pick best per view"
               width={ACTION_BUTTON_WIDTH.standardRow}
             />
+            <RowActionButton
+              intent="delete"
+              label="Clear"
+              onClick={() => onClearCarouselWinners(group.key, group.variant_id ?? null, group.label)}
+              disabled={(viewsFilled + heroFilled) === 0}
+              title="Clear all current carousel winners for this variant"
+              width={ACTION_BUTTON_WIDTH.standardRow}
+            />
             {group.images.length > 0 && (
               <RowActionButton
                 intent="delete"
@@ -249,15 +261,52 @@ export const VariantImageGroup = memo(function VariantImageGroup({
             <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
             <PromptDrawerChevron
               storageKey={`indexing:pif:prompt-drawer:${productId}:${group.key}`}
-              openWidthClass="w-[28rem]"
+              openWidthClass="w-[30rem]"
               ariaLabel={`Prompt previews + history for ${group.label}`}
               openTitle="Prompts:"
-              actions={[
-                { label: 'View', onClick: () => onOpenPromptModal(group.key, 'view') },
-                { label: 'Hero', onClick: () => onOpenPromptModal(group.key, 'hero'), disabled: !heroEnabled },
-                { label: 'Loop', onClick: () => onOpenPromptModal(group.key, 'loop') },
-                { label: 'Eval', onClick: () => onOpenPromptModal(group.key, 'view-eval') },
-              ]}
+              primaryCustom={
+                // WHY: Compact 2x2 grid of half-height buttons (h-[13px] × 2 +
+                // gap-0.5 = 28px = h-7) so the drawer keeps the standard row
+                // height. Inline styling intentionally bypasses RowActionButton's
+                // fixed h-7 — sizing is locked in the primitive, but this
+                // sub-cluster is a one-off compact variant.
+                <div className="grid grid-cols-2 grid-rows-2 gap-0.5 self-center">
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onOpenPromptModal(group.key, 'loop-view'); }}
+                    title="Preview the Loop view-iteration prompt — uses this variant's loop-view search history"
+                    className="inline-flex items-center justify-center h-[13px] w-20 px-1.5 text-[8px] font-bold uppercase tracking-wide rounded whitespace-nowrap sf-prompt-preview-button"
+                  >
+                    Loop View
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onOpenPromptModal(group.key, 'view-eval'); }}
+                    title="Preview the per-view Eval prompt"
+                    className="inline-flex items-center justify-center h-[13px] w-20 px-1.5 text-[8px] font-bold uppercase tracking-wide rounded whitespace-nowrap sf-prompt-preview-button"
+                  >
+                    View Eval
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onOpenPromptModal(group.key, 'loop-hero'); }}
+                    disabled={!heroEnabled}
+                    title="Preview the Loop hero-iteration prompt — uses this variant's loop-hero search history"
+                    className="inline-flex items-center justify-center h-[13px] w-20 px-1.5 text-[8px] font-bold uppercase tracking-wide rounded whitespace-nowrap sf-prompt-preview-button disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Loop Hero
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); onOpenPromptModal(group.key, 'hero-eval'); }}
+                    disabled={!heroEnabled}
+                    title="Preview the Hero Eval prompt"
+                    className="inline-flex items-center justify-center h-[13px] w-20 px-1.5 text-[8px] font-bold uppercase tracking-wide rounded whitespace-nowrap sf-prompt-preview-button disabled:opacity-40 disabled:cursor-not-allowed"
+                  >
+                    Hero Eval
+                  </button>
+                </div>
+              }
               secondaryTitle="Hist:"
               secondaryLabelClass="sf-history-label"
               secondaryActions={[{
@@ -266,7 +315,7 @@ export const VariantImageGroup = memo(function VariantImageGroup({
                 onClick: handleOpenHistory,
                 disabled: !group.variant_id,
                 intent: group.variant_id ? 'history' : 'locked',
-                width: 'w-28',
+                width: 'w-36',
                 title: !group.variant_id
                   ? 'Variant has no variant_id — open the panel-level history.'
                   : `Open Discovery History filtered to "${group.label}".`,

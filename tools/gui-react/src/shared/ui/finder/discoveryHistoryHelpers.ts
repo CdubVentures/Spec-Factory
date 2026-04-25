@@ -9,6 +9,11 @@ export interface FinderRunResponse {
   variant_id?: string | null;
   variant_key?: string;
   mode?: string;
+  // PIF — fine-grained pool key (priority-view / view:<focus> / loop-view /
+  // loop-hero / hero). When present, takes precedence over `mode` for the
+  // 'variant+mode' bucket axis so the drawer mirrors the same pool isolation
+  // the orchestrator uses to filter previous-discovery URLs/queries.
+  run_scope_key?: string;
   // keyFinder — the key this run was dispatched for. Also appears as a top-
   // level group key when scopeLevel='field_key'.
   primary_field_key?: string;
@@ -64,7 +69,10 @@ export function groupHistory(
       for (const q of queries) bucket.queries.add(q);
     } else if (scopeLevel === 'variant+mode') {
       const vid = run.response?.variant_id || run.response?.variant_key || '';
-      const mode = run.response?.mode || '';
+      // WHY: PIF reinterprets this axis as the pool key (run_scope_key) for
+      // new runs, falling back to mode for legacy runs without run_scope_key.
+      // Other finders don't reach this branch (only PIF uses 'variant+mode').
+      const mode = run.response?.run_scope_key || run.response?.mode || '';
       if (!vid || !mode) continue;
       let modes = byVariantMode.get(vid);
       if (!modes) { modes = new Map(); byVariantMode.set(vid, modes); }

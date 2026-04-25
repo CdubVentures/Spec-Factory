@@ -163,6 +163,9 @@ export function registerCategoryAuditRoutes(ctx) {
       const fieldGroups = (await readJsonIfExists(fieldGroupsPath)) || { group_index: {} };
       const compileReportPath = path.join(helperRoot, category, '_generated', '_compile_report.json');
       const compileSummary = await readJsonIfExists(compileReportPath);
+      const fieldKeyOrderPath = path.join(helperRoot, category, '_control_plane', 'field_key_order.json');
+      const fieldKeyOrderDoc = await readJsonIfExists(fieldKeyOrderPath);
+      const fieldKeyOrder = Array.isArray(fieldKeyOrderDoc?.order) ? fieldKeyOrderDoc.order : null;
 
       const globalFragments = resolveAllFragments();
       const tierBundles = parseTierBundles(config?.keyFinderTierSettingsJson);
@@ -176,6 +179,7 @@ export function registerCategoryAuditRoutes(ctx) {
         compileSummary,
         outputRoot,
         templateOverride: body?.templateOverride || '',
+        fieldKeyOrder,
       });
       return jsonRes(res, 200, {
         category,
@@ -183,6 +187,9 @@ export function registerCategoryAuditRoutes(ctx) {
         counts: result.counts,
         reservedKeysPath: result.reservedKeysPath,
         generatedAt: result.generatedAt,
+        sorted: result.sorted
+          ? { basePath: result.sorted.basePath, count: result.sorted.count }
+          : null,
       });
     }
 
@@ -212,6 +219,9 @@ export function registerCategoryAuditRoutes(ctx) {
       const fieldGroups = (await readJsonIfExists(fieldGroupsPath)) || { group_index: {} };
       const compileReportPath = path.join(helperRoot, category, '_generated', '_compile_report.json');
       const compileSummary = await readJsonIfExists(compileReportPath);
+      const fieldKeyOrderPath = path.join(helperRoot, category, '_control_plane', 'field_key_order.json');
+      const fieldKeyOrderDoc = await readJsonIfExists(fieldKeyOrderPath);
+      const fieldKeyOrder = Array.isArray(fieldKeyOrderDoc?.order) ? fieldKeyOrderDoc.order : null;
       const globalFragments = resolveAllFragments();
       const tierBundles = parseTierBundles(config?.keyFinderTierSettingsJson);
 
@@ -235,6 +245,7 @@ export function registerCategoryAuditRoutes(ctx) {
           compileSummary,
           outputRoot,
           templateOverride: body?.templateOverride || '',
+          fieldKeyOrder,
         });
         return jsonRes(res, 200, {
           category,
@@ -251,6 +262,9 @@ export function registerCategoryAuditRoutes(ctx) {
             counts: perKeyDocs.counts,
             reservedKeysPath: perKeyDocs.reservedKeysPath,
             generatedAt: perKeyDocs.generatedAt,
+            sorted: perKeyDocs.sorted
+              ? { basePath: perKeyDocs.sorted.basePath, count: perKeyDocs.sorted.count }
+              : null,
           },
         });
       } catch (err) {

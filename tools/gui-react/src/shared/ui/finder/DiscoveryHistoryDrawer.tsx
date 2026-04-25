@@ -48,6 +48,35 @@ interface DiscoveryHistoryScrubResponse {
 
 type KindFilter = 'all' | 'url' | 'query';
 
+// WHY: Canonical PIF pool order — matches the order pools are created across
+// a product's run history (priority-view first, then per-view focuses, then
+// loop pools, then standalone hero variants). Unknown keys (legacy 'view' /
+// 'hero' from pre-run_scope_key runs, or future additions) sort after the
+// known pools, alphabetically.
+const PIF_POOL_ORDER: readonly string[] = [
+  'priority-view',
+  'view:top',
+  'view:bottom',
+  'view:left',
+  'view:right',
+  'view:front',
+  'view:rear',
+  'view:sangle',
+  'view:angle',
+  'loop-view',
+  'hero',
+  'loop-hero',
+];
+
+function comparePoolKeys(a: string, b: string): number {
+  const ai = PIF_POOL_ORDER.indexOf(a);
+  const bi = PIF_POOL_ORDER.indexOf(b);
+  if (ai !== -1 && bi !== -1) return ai - bi;
+  if (ai !== -1) return -1;
+  if (bi !== -1) return 1;
+  return a.localeCompare(b);
+}
+
 interface FilteredBucket {
   urls: string[];
   queries: string[];
@@ -283,7 +312,7 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
     for (const modes of grouped.byVariantMode.values()) {
       for (const m of modes.keys()) ms.add(m);
     }
-    return [...ms].sort();
+    return [...ms].sort(comparePoolKeys);
   }, [grouped]);
 
   const runsUsed = useMemo(() => {
@@ -589,7 +618,7 @@ function FilterBar({
               onChange={(e) => onModeChange(e.target.value)}
               className="h-7 px-2 text-[11px] rounded sf-surface-elevated border sf-border-soft sf-text-primary"
             >
-              <option value="">All modes</option>
+              <option value="">All pools</option>
               {modeOptions.map((m) => (
                 <option key={m} value={m}>{m}</option>
               ))}
@@ -888,7 +917,7 @@ function VariantModeBody({
             )}
           >
             <div className="flex flex-col gap-2">
-              {[...modes.entries()].map(([m, bucket]) => (
+              {[...modes.entries()].sort(([a], [b]) => comparePoolKeys(a, b)).map(([m, bucket]) => (
                 <FinderSectionCard
                   key={m}
                   title={m}

@@ -27,9 +27,16 @@ function buildTooltip(r: ScoreCardResult): string {
 
 export function ScoreCardCell({ row }: { row: CatalogRow }) {
   const result = computeScoreCard(row);
+  const tone = GRADE_TONE[result.letter];
   return (
-    <span className={`sf-scc-badge sf-scc-badge-${GRADE_TONE[result.letter]}`} title={buildTooltip(result)}>
-      {result.letter}
+    <span className={`sf-scc-pill sf-scc-pill-${tone}`} title={buildTooltip(result)}>
+      <span className="sf-scc-disc">
+        <span className="sf-scc-disc-letter">{result.letter}</span>
+      </span>
+      <span className="sf-scc-meta">
+        <span className="sf-scc-num">{result.score.toFixed(1)}</span>
+        <span className="sf-scc-cap">GRADE</span>
+      </span>
     </span>
   );
 }

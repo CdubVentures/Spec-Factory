@@ -9,6 +9,7 @@ import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import {
   SF_THEME_RADIUS_PROFILES,
   SF_LIGHT_THEME_PROFILES,
+  SF_MID_THEME_PROFILES,
   SF_DARK_THEME_PROFILES,
   SF_THEME_COLOR_META,
   type SfThemeColorProfileId,
@@ -25,6 +26,7 @@ import { useSettingsHydration } from './hooks/useSettingsHydration.ts';
 import { useCategorySync } from './hooks/useCategorySync.ts';
 import { useWsEventBridge } from './hooks/useWsEventBridge.ts';
 import { useOperationsHydration } from '../../features/operations/index.ts';
+import { DiscoveryHistoryDrawer } from '../../shared/ui/finder/index.ts';
 
 function ThemeSwatchCard({
   themeId,
@@ -190,6 +192,19 @@ export function AppShell() {
                         </div>
                       </div>
                       <div>
+                        <p className="sf-text-caption sf-status-text-muted mb-1">Mid</p>
+                        <div className="sf-shell-settings-grid grid grid-cols-5 gap-1.5">
+                          {SF_MID_THEME_PROFILES.map((themeId) => (
+                            <ThemeSwatchCard
+                              key={themeId}
+                              themeId={themeId}
+                              isSelected={themeColorProfile === themeId}
+                              onClick={() => setThemeColorProfile(themeId)}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <div>
                         <p className="sf-text-caption sf-status-text-muted mb-1">Dark</p>
                         <div className="sf-shell-settings-grid grid grid-cols-5 gap-1.5">
                           {SF_DARK_THEME_PROFILES.map((themeId) => (
@@ -317,6 +332,11 @@ export function AppShell() {
           )}
         </main>
       </div>
+      {/* WHY: Mounted once at the shell so the global Discovery History store
+          (zustand-driven openDrawer) renders the slide-in regardless of route.
+          Overview popovers (PIF/SKU/RDF/Keys) call openDrawer; without a
+          shell-level subscriber the drawer never renders outside Indexing. */}
+      <DiscoveryHistoryDrawer />
     </div>
   );
 }

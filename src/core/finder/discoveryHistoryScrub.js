@@ -103,7 +103,13 @@ function runMatchesScope(run, scope, request) {
   const response = run?.response || {};
   if (scope === 'variant') return variantMatches(response, request);
   if (scope === 'variant_mode') {
-    return variantMatches(response, request) && response.mode === request.mode;
+    // WHY: PIF now partitions discovery history by run_scope_key (pools like
+    // priority-view / view:top / loop-view / loop-hero / hero), but the scrub
+    // wire format keeps `request.mode` as the discriminator field. New runs
+    // carry run_scope_key; legacy runs only have `response.mode` (e.g. 'view'
+    // / 'hero'). Prefer the finer pool key when present.
+    const bucketKey = response.run_scope_key || response.mode;
+    return variantMatches(response, request) && bucketKey === request.mode;
   }
   if (scope === 'field_key') return fieldKeyMatches(response, request);
   return false;

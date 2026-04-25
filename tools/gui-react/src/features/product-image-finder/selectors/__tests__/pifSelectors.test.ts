@@ -376,6 +376,62 @@ describe('resolveSlots', () => {
     assert.equal(slots[0].source, 'user');
     assert.equal(slots[0].filename, 'user-hero.png');
   });
+
+  it('fills required slots from actual-view classification before adding extras', () => {
+    const images = [
+      makeImage({
+        view: 'front',
+        filename: 'front-search-top.png',
+        eval_best: false,
+        eval_actual_view: 'top',
+        eval_matches_requested_view: false,
+        eval_usable_as_required_view: true,
+        eval_usable_as_carousel_extra: true,
+        eval_duplicate: false,
+        eval_flags: [],
+        width: 1200,
+        height: 800,
+      }),
+    ];
+    const slots = resolveSlots(['top', 'front'], 0, 'color:black', {}, images);
+    assert.deepEqual(slots.map(s => [s.slot, s.filename, s.source]), [
+      ['top', 'front-search-top.png', 'eval'],
+      ['front', null, 'empty'],
+    ]);
+  });
+
+  it('adds numbered extra slots from unused classified product shots', () => {
+    const images = [
+      makeImage({ view: 'top', filename: 'top-black.png', eval_best: true, eval_actual_view: 'top', eval_usable_as_required_view: true, eval_usable_as_carousel_extra: true }),
+      makeImage({
+        view: 'front',
+        filename: 'front-search-top.png',
+        eval_best: false,
+        eval_actual_view: 'top',
+        eval_matches_requested_view: false,
+        eval_usable_as_required_view: true,
+        eval_usable_as_carousel_extra: true,
+        eval_duplicate: false,
+        eval_flags: [],
+      }),
+      makeImage({
+        view: 'angle',
+        filename: 'generic-product.png',
+        eval_actual_view: 'generic',
+        eval_usable_as_required_view: false,
+        eval_usable_as_carousel_extra: true,
+        eval_duplicate: false,
+        eval_flags: [],
+      }),
+    ];
+    const slots = resolveSlots(['top', 'front'], 0, 'color:black', {}, images);
+    assert.deepEqual(slots.map(s => [s.slot, s.filename, s.source]), [
+      ['top', 'top-black.png', 'eval'],
+      ['front', null, 'empty'],
+      ['top2', 'front-search-top.png', 'eval'],
+      ['img1', 'generic-product.png', 'eval'],
+    ]);
+  });
 });
 
 /* ── resolveRunMode ───────────────────────────────────────────────── */

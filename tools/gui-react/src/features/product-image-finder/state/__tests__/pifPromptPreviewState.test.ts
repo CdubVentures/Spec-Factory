@@ -2,7 +2,11 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   createPifHeaderPromptPreviewState,
-  createPifLoopPromptPreviewState,
+  createPifPriorityViewPreviewState,
+  createPifIndividualViewPreviewState,
+  createPifStandaloneHeroPreviewState,
+  createPifLoopViewPreviewState,
+  createPifLoopHeroPreviewState,
   createPifPromptPreviewBody,
 } from '../pifPromptPreviewState.ts';
 import type { VariantInfo } from '../../types.ts';
@@ -33,12 +37,48 @@ describe('PIF prompt preview request state', () => {
     assert.equal(createPifHeaderPromptPreviewState([]), null);
   });
 
-  it('builds overview loop preview requests with mode loop', () => {
-    const state = createPifLoopPromptPreviewState('color:black');
-
+  it('priority-view preview body has mode=view, no view focus', () => {
+    const state = createPifPriorityViewPreviewState('color:black');
     assert.deepEqual(createPifPromptPreviewBody(state), {
       variant_key: 'color:black',
-      mode: 'loop',
+      mode: 'view',
     });
+  });
+
+  it('individual-view preview body carries the view focus', () => {
+    const state = createPifIndividualViewPreviewState('color:black', 'top');
+    assert.deepEqual(createPifPromptPreviewBody(state), {
+      variant_key: 'color:black',
+      mode: 'view',
+      view: 'top',
+    });
+  });
+
+  it('standalone hero preview body has mode=hero', () => {
+    const state = createPifStandaloneHeroPreviewState('color:black');
+    assert.deepEqual(createPifPromptPreviewBody(state), {
+      variant_key: 'color:black',
+      mode: 'hero',
+    });
+  });
+
+  it('loop-view preview body has mode=loop-view', () => {
+    const state = createPifLoopViewPreviewState('color:black');
+    assert.deepEqual(createPifPromptPreviewBody(state), {
+      variant_key: 'color:black',
+      mode: 'loop-view',
+    });
+  });
+
+  it('loop-hero preview body has mode=loop-hero', () => {
+    const state = createPifLoopHeroPreviewState('color:black');
+    assert.deepEqual(createPifPromptPreviewBody(state), {
+      variant_key: 'color:black',
+      mode: 'loop-hero',
+    });
+  });
+
+  it('returns empty body when state is null', () => {
+    assert.deepEqual(createPifPromptPreviewBody(null), {});
   });
 });

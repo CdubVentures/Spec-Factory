@@ -34,6 +34,7 @@ import { resolveViewPrompt, viewPromptSettingKey } from './viewPromptDefaults.js
 import { readProductImages } from './productImageStore.js';
 import { matchVariant } from './variantMatch.js';
 import { accumulateDiscoveryLog } from '../../core/finder/discoveryLog.js';
+import { resolveRunScopeKey, scopeLabelFor } from './runScope.js';
 import { resolveAmbiguityContext } from '../../core/finder/finderOrchestrationHelpers.js';
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
 import { resolvePhaseModel } from '../../core/llm/client/routing.js';
@@ -62,6 +63,7 @@ export function resolveViewPromptInputs({
   familyModelCount,
   ambiguityLevel,
   previousDiscovery,
+  scopeLabel,
   viewPromptOverride = '',
 }) {
   return {
@@ -79,6 +81,7 @@ export function resolveViewPromptInputs({
     familyModelCount,
     ambiguityLevel,
     previousDiscovery,
+    scopeLabel,
     promptOverride: viewPromptOverride,
   };
 }
@@ -94,6 +97,7 @@ export function resolveHeroPromptInputs({
   familyModelCount,
   ambiguityLevel,
   previousDiscovery,
+  scopeLabel,
   heroPromptOverride = '',
 }) {
   const heroQuality = (viewQualityMap && viewQualityMap.hero) || {};
@@ -107,6 +111,7 @@ export function resolveHeroPromptInputs({
     familyModelCount,
     ambiguityLevel,
     previousDiscovery,
+    scopeLabel,
     promptOverride: heroPromptOverride,
   };
 }
@@ -262,13 +267,15 @@ export async function resolvePifPromptContext({
   const pifDoc = readProductImages({ productId: product.product_id, productRoot });
   const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
 
-  function buildPreviousDiscoveryFor(mode) {
+  // WHY: Match the orchestrator's per-pool partitioning so preview history
+  // is byte-identical to what the matching real run would receive.
+  function buildPreviousDiscoveryByPool(runScopeKey) {
     return accumulateDiscoveryLog(previousPifRuns, {
       runMatcher: (r) => {
         const rId = r.response?.variant_id;
         const rKey = r.response?.variant_key;
         const variantMatch = (variantShape.variant_id && rId) ? rId === variantShape.variant_id : rKey === variantShape.key;
-        return variantMatch && r.response?.mode === mode;
+        return variantMatch && r.response?.run_scope_key === runScopeKey;
       },
       includeUrls: urlHistoryEnabled,
       includeQueries: queryHistoryEnabled,
@@ -291,7 +298,7 @@ export async function resolvePifPromptContext({
     heroEnabled, heroCount,
     viewPromptOverride, heroPromptOverride,
     evalPromptOverride, heroEvalPromptOverride, heroEvalCriteria,
-    previousPifRuns, buildPreviousDiscoveryFor, pifDoc,
+    previousPifRuns, buildPreviousDiscoveryByPool, pifDoc,
     productRoot, modelInfo, finderStore,
   };
 }
@@ -318,7 +325,7 @@ function userMsgFor(product, variantKey) {
   });
 }
 
-function buildViewPromptEntry(baseCtx, focusView, additionalViews, label) {
+function buildViewPromptEntry(baseCtx, focusView, additionalViews, label, runScopeKey) {
   const priorityForFocus = focusView
     ? [{
         key: focusView,
@@ -341,7 +348,8 @@ function buildViewPromptEntry(baseCtx, focusView, additionalViews, label) {
     siblingsExcluded: baseCtx.siblingsExcluded,
     familyModelCount: baseCtx.familyModelCount,
     ambiguityLevel: baseCtx.ambiguityLevel,
-    previousDiscovery: baseCtx.buildPreviousDiscoveryFor('view'),
+    previousDiscovery: baseCtx.buildPreviousDiscoveryByPool(runScopeKey),
+    scopeLabel: scopeLabelFor(runScopeKey),
     viewPromptOverride: baseCtx.viewPromptOverride,
   });
   return {
@@ -354,7 +362,7 @@ function buildViewPromptEntry(baseCtx, focusView, additionalViews, label) {
   };
 }
 
-function buildHeroPromptEntry(baseCtx, label = 'hero') {
+function buildHeroPromptEntry(baseCtx, runScopeKey, label = 'hero') {
   const promptInputs = resolveHeroPromptInputs({
     product: baseCtx.product,
     variant: baseCtx.variant,
@@ -362,7 +370,8 @@ function buildHeroPromptEntry(baseCtx, label = 'hero') {
     siblingsExcluded: baseCtx.siblingsExcluded,
     familyModelCount: baseCtx.familyModelCount,
     ambiguityLevel: baseCtx.ambiguityLevel,
-    previousDiscovery: baseCtx.buildPreviousDiscoveryFor('hero'),
+    previousDiscovery: baseCtx.buildPreviousDiscoveryByPool(runScopeKey),
+    scopeLabel: scopeLabelFor(runScopeKey),
     heroPromptOverride: baseCtx.heroPromptOverride,
   });
   return {
@@ -433,6 +442,7 @@ export async function compilePifPreviewPrompt(ctx) {
 
   if (mode === 'view') {
     const focus = body.view || null;
+    const runScopeKey = resolveRunScopeKey({ orchestrator: 'single', mode: 'view', focusView: focus });
     const additionalViews = focus
       ? baseCtx.individualViewRunHintKeys
           .filter((k) => k !== focus)
@@ -444,35 +454,57 @@ export async function compilePifPreviewPrompt(ctx) {
             }),
           }))
       : baseCtx.singleAdditionalViews;
-    const entry = buildViewPromptEntry(baseCtx, focus, additionalViews, focus ? `view:${focus}` : 'view');
+    const entry = buildViewPromptEntry(baseCtx, focus, additionalViews, focus ? `view:${focus}` : 'view', runScopeKey);
     return envelope({ mode, prompts: [entry], inputsResolved });
   }
 
   if (mode === 'hero') {
-    const entry = buildHeroPromptEntry(baseCtx);
+    const runScopeKey = resolveRunScopeKey({ orchestrator: 'single', mode: 'hero' });
+    const entry = buildHeroPromptEntry(baseCtx, runScopeKey);
     return envelope({ mode, prompts: [entry], inputsResolved });
   }
 
-  if (mode === 'loop') {
-    const prompts = baseCtx.viewBudget.map((viewKey) => {
-      const loopAdditional = baseCtx.loopRunHintKeys
-        .filter((k) => k !== viewKey)
-        .map((k) => ({
-          key: k,
-          description: resolveViewPrompt({
-            role: 'additional', category: baseCtx.product.category, view: k,
-            dbOverride: baseCtx.finderStore.getSetting(viewPromptSettingKey('additional', k)) || '',
-          }),
-        }));
-      return buildViewPromptEntry(baseCtx, viewKey, loopAdditional, `view:${viewKey}`);
+  if (mode === 'loop-view') {
+    // WHY: Single representative iteration — picks the body.view focus if provided,
+    // else the first viewBudget entry. Iteration prompt structure (PRIORITY = focus,
+    // ADDITIONAL = loop hints minus focus, role='loop' for focus description) mirrors
+    // executeOneCall in the orchestrator.
+    const focus = body.view || baseCtx.viewBudget[0] || null;
+    const runScopeKey = resolveRunScopeKey({ orchestrator: 'loop', mode: 'view', focusView: focus });
+    if (!focus) {
+      return envelope({ mode, prompts: [], inputsResolved, notes: ['No views configured in viewBudget — loop has nothing to iterate.'] });
+    }
+    const loopAdditional = baseCtx.loopRunHintKeys
+      .filter((k) => k !== focus)
+      .map((k) => ({
+        key: k,
+        description: resolveViewPrompt({
+          role: 'additional', category: baseCtx.product.category, view: k,
+          dbOverride: baseCtx.finderStore.getSetting(viewPromptSettingKey('additional', k)) || '',
+        }),
+      }));
+    // Loop iterations use role='loop' for the priority description (not 'priority').
+    const priorityDescription = resolveViewPrompt({
+      role: 'loop', category: baseCtx.product.category, view: focus,
+      dbOverride: baseCtx.finderStore.getSetting(viewPromptSettingKey('loop', focus)) || '',
     });
-    if (baseCtx.heroEnabled) prompts.push(buildHeroPromptEntry(baseCtx, 'hero'));
+    const tweakedCtx = {
+      ...baseCtx,
+      priorityViews: [{ key: focus, description: priorityDescription }],
+    };
+    const entry = buildViewPromptEntry(tweakedCtx, focus, loopAdditional, `loop-view:${focus}`, runScopeKey);
     return envelope({
       mode,
-      prompts,
+      prompts: [entry],
       inputsResolved,
-      notes: ['Iteration 1 of N — subsequent prompts depend on LLM responses at runtime.'],
+      notes: [`Representative iteration for "${focus}" — actual loop iterates over all viewBudget entries.`],
     });
+  }
+
+  if (mode === 'loop-hero') {
+    const runScopeKey = resolveRunScopeKey({ orchestrator: 'loop', mode: 'hero' });
+    const entry = buildHeroPromptEntry(baseCtx, runScopeKey, 'loop-hero');
+    return envelope({ mode, prompts: [entry], inputsResolved });
   }
 
   if (mode === 'view-eval') {

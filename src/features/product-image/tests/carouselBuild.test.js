@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { runEvalView, runEvalHero } from '../carouselBuild.js';
+import { runEvalView, runEvalHero, runEvalCarouselLoop } from '../carouselBuild.js';
 
 const TMP = path.join(os.tmpdir(), `eval-build-test-${Date.now()}`);
 const PRODUCT_ID = 'p1';
@@ -326,5 +326,183 @@ describe('runEvalHero', () => {
     });
     assert.ok(stages.includes('Heroes'));
     assert.ok(stages.includes('Complete'));
+  });
+});
+
+/* runEvalCarouselLoop */
+
+describe('runEvalCarouselLoop', () => {
+  it('evaluates slots sequentially and passes prior winners as carousel context', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'top-black.png', view: 'top' }),
+      makeImage({ filename: 'front-black.png', view: 'front' }),
+      makeImage({ filename: 'sangle-black.png', view: 'sangle' }),
+      makeImage({ filename: 'hero-black.png', view: 'hero' }),
+    ]);
+
+    const calls = [];
+    const heroCalls = [];
+    const progress = [];
+    const slotCompletions = [];
+    const result = await runEvalCarouselLoop({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb({
+        viewBudget: '["top","front","sangle"]',
+        heroEnabled: 'true',
+        evalHeroCount: '1',
+      }),
+      config: {},
+      variantKey: 'color:black',
+      productRoot: TMP,
+      onProgress: (message) => progress.push(message),
+      onSlotComplete: (event) => slotCompletions.push({
+        type: event.type,
+        view: event.view,
+        callNumber: event.callNumber,
+        totalCalls: event.totalCalls,
+      }),
+      _evalViewFn: async ({ view, imagePaths, carouselContext }) => {
+        calls.push({
+          view,
+          context: (carouselContext || []).map((item) => `${item.slot}:${item.filename}`),
+        });
+        return {
+          rankings: [{
+            filename: path.basename(imagePaths[0]),
+            rank: 1,
+            best: true,
+            flags: [],
+            reasoning: `${view} winner`,
+          }],
+        };
+      },
+      _heroCallFn: async ({ candidates }) => {
+        heroCalls.push(candidates.map((candidate) => candidate.filename));
+        return {
+          result: {
+            heroes: [{ filename: candidates[0].filename, hero_rank: 1, reasoning: 'hero winner' }],
+            rejected: [],
+          },
+          usage: null,
+        };
+      },
+    });
+
+    assert.deepEqual(calls.map((call) => call.view), ['top', 'sangle', 'front']);
+    assert.deepEqual(calls[0].context, []);
+    assert.deepEqual(calls[1].context, ['top:top-black.png']);
+    assert.deepEqual(calls[2].context, ['top:top-black.png', 'sangle:sangle-black.png']);
+    assert.deepEqual(heroCalls, [['hero-black.png']]);
+    assert.deepEqual(progress, [
+      'Evaluating top — call 1/4, 3 remaining',
+      'Evaluating sangle — call 2/4, 2 remaining',
+      'Evaluating front — call 3/4, 1 remaining',
+      'Evaluating hero — call 4/4, 0 remaining',
+      'Complete',
+    ]);
+    assert.deepEqual(slotCompletions, [
+      { type: 'view', view: 'top', callNumber: 1, totalCalls: 4 },
+      { type: 'view', view: 'sangle', callNumber: 2, totalCalls: 4 },
+      { type: 'view', view: 'front', callNumber: 3, totalCalls: 4 },
+      { type: 'hero', view: 'hero', callNumber: 4, totalCalls: 4 },
+    ]);
+    assert.equal(result.views.length, 3);
+    assert.equal(result.hero.heroes[0].filename, 'hero-black.png');
+  });
+
+  it('allows a slot eval to return null without blocking later slots', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'top-black.png', view: 'top' }),
+      makeImage({ filename: 'front-black.png', view: 'front' }),
+    ]);
+
+    const calls = [];
+    const result = await runEvalCarouselLoop({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb({
+        viewBudget: '["top","front"]',
+        heroEnabled: 'false',
+      }),
+      config: {},
+      variantKey: 'color:black',
+      productRoot: TMP,
+      _evalViewFn: async ({ view, imagePaths }) => {
+        calls.push(view);
+        if (view === 'top') {
+          return {
+            rankings: [{
+              filename: path.basename(imagePaths[0]),
+              best: false,
+              flags: ['wrong_product'],
+              reasoning: 'bad',
+            }],
+          };
+        }
+        return {
+          rankings: [{
+            filename: path.basename(imagePaths[0]),
+            best: true,
+            flags: [],
+            reasoning: 'ok',
+          }],
+        };
+      },
+      _heroCallFn: async () => { throw new Error('hero disabled'); },
+    });
+
+    assert.deepEqual(calls, ['top', 'front']);
+    assert.equal(result.views.length, 2);
+    assert.ok(!result.views[0].rankings.some((ranking) => ranking.best));
+    assert.equal(result.views[1].rankings[0].best, true);
+  });
+
+  it('evaluates collected non-budget canonical views after required budget views', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'top-black.png', view: 'top' }),
+      makeImage({ filename: 'front-black.png', view: 'front' }),
+      makeImage({ filename: 'rear-black.png', view: 'rear' }),
+      makeImage({ filename: 'hero-black.png', view: 'hero' }),
+    ]);
+
+    const calls = [];
+    const heroCalls = [];
+    const result = await runEvalCarouselLoop({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb({
+        viewBudget: '["top","left"]',
+        heroEnabled: 'true',
+        evalHeroCount: '1',
+      }),
+      config: {},
+      variantKey: 'color:black',
+      productRoot: TMP,
+      _evalViewFn: async ({ view, imagePaths }) => {
+        calls.push(view);
+        return {
+          rankings: [{
+            filename: path.basename(imagePaths[0]),
+            best: true,
+            flags: [],
+            reasoning: `${view} winner`,
+          }],
+        };
+      },
+      _heroCallFn: async ({ candidates }) => {
+        heroCalls.push(candidates.map((candidate) => candidate.filename));
+        return {
+          result: {
+            heroes: [{ filename: candidates[0].filename, hero_rank: 1, reasoning: 'hero winner' }],
+            rejected: [],
+          },
+          usage: null,
+        };
+      },
+      _mergeFn: () => ({}),
+    });
+
+    assert.deepEqual(calls, ['top', 'front', 'rear']);
+    assert.deepEqual(result.skipped, [{ view: 'left', reason: 'no_candidates' }]);
+    assert.deepEqual(result.views.map((viewResult) => viewResult.view), ['top', 'front', 'rear']);
+    assert.deepEqual(heroCalls, [['hero-black.png']]);
   });
 });

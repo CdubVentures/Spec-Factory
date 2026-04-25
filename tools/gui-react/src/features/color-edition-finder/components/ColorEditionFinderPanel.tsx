@@ -8,7 +8,7 @@ import {
   PromptPreviewTriggerButton,
   FinderKpiCard,
   FinderPanelFooter,
-  FinderRunModelBadge,
+  FinderEditablePhaseModelBadge,
   FinderDeleteConfirmModal,
   FinderSectionCard,
   FinderHowItWorks,
@@ -281,16 +281,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
         tip="Discovers color variants and edition slugs for this product via LLM analysis."
         isRunning={isRunningCef}
         onRun={() => fire(cefRunUrl, {})}
-        modelStrip={
-          <FinderRunModelBadge
-            labelPrefix="CEF"
-            model={modelDisplay}
-            accessMode={resolvedAccessMode}
-            thinking={resolvedModel?.thinking ?? false}
-            webSearch={resolvedModel?.webSearch ?? false}
-            effortLevel={effortLevel}
-          />
-        }
+        modelStrip={<FinderEditablePhaseModelBadge phaseId="colorFinder" labelPrefix="CEF" title="CEF - Color & Edition Finder" />}
         historySlot={<DiscoveryHistoryButton finderId="colorEditionFinder" productId={productId} category={category} width={ACTION_BUTTON_WIDTH.standardHeader} />}
         promptSlot={<PromptPreviewTriggerButton onClick={() => setPromptModalOpen(true)} disabled={!productId} width={ACTION_BUTTON_WIDTH.standardHeader} />}
         defaultButtonWidth={ACTION_BUTTON_WIDTH.standardHeader}

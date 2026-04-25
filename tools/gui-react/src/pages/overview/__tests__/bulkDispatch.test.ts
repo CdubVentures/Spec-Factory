@@ -5,13 +5,14 @@ import { useOperationsStore, type Operation } from '../../../features/operations
 import {
   dispatchKfAll,
   dispatchKfPickedKeys,
+  dispatchPifEval,
   dispatchRdfLoop,
   dispatchRdfRun,
   type BulkFireFn,
   type BulkFireParams,
 } from '../bulkDispatch.ts';
 import type { CatalogRow } from '../../../types/product.ts';
-import type { ScalarVariantProgressGen } from '../../../types/product.generated.ts';
+import type { PifVariantProgressGen, ScalarVariantProgressGen } from '../../../types/product.generated.ts';
 
 const originalGet = api.get;
 
@@ -28,6 +29,22 @@ function scalarVariant(key: string): ScalarVariantProgressGen {
     color_atoms: [],
     value: '',
     confidence: 0,
+  };
+}
+
+function pifVariant(key: string): PifVariantProgressGen {
+  return {
+    variant_id: `id-${key}`,
+    variant_key: key,
+    variant_label: key,
+    color_atoms: [],
+    priority_filled: 0,
+    priority_total: 0,
+    loop_filled: 0,
+    loop_total: 0,
+    hero_filled: 0,
+    hero_target: 0,
+    image_count: 0,
   };
 }
 
@@ -101,6 +118,40 @@ describe('Overview bulk dispatch contracts', () => {
     assert.deepEqual(runResult.operationIds, ['rdf:p1:run:red', 'rdf:p1:run:blue']);
     assert.deepEqual(loopCalls.map((call) => call.variantKey), ['blue']);
     assert.deepEqual(loopResult.operationIds, ['rdf:p1:loop:blue']);
+  });
+
+  it('dispatchPifEval fires one carousel eval operation per variant with collected images', async () => {
+    (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
+      if (path === '/product-image-finder/mouse/p1') {
+        return {
+          images: [
+            { variant_key: 'color:red', view: 'top' },
+            { variant_key: 'color:red', view: 'front' },
+            { variant_key: 'color:red', view: 'hero' },
+            { variant_key: 'color:blue', view: 'top' },
+          ],
+        } as never;
+      }
+      throw new Error(`unexpected GET ${path}`);
+    };
+
+    const row: CatalogRow = {
+      ...product('p1'),
+      pifVariants: [pifVariant('color:red'), pifVariant('color:blue'), pifVariant('color:empty')],
+    };
+    const calls: BulkFireParams[] = [];
+    const result = await dispatchPifEval('mouse', [row], fireRecorder(calls), { staggerMs: 0 });
+
+    assert.deepEqual(calls.map((call) => call.variantKey), ['color:red', 'color:blue']);
+    assert.deepEqual(calls.map((call) => call.url), [
+      '/product-image-finder/mouse/p1/evaluate-carousel',
+      '/product-image-finder/mouse/p1/evaluate-carousel',
+    ]);
+    assert.deepEqual(calls.map((call) => call.body), [
+      { variant_key: 'color:red', variant_id: 'id-color:red' },
+      { variant_key: 'color:blue', variant_id: 'id-color:blue' },
+    ]);
+    assert.equal(result.scheduled, 2);
   });
 
   it('chains KeyFinder Loop per product with filtering, priority sort, and terminal waits', async () => {

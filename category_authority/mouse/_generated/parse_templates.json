@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-24T23:07:14.007Z",
+  "generated_at": "2026-04-25T20:11:24.270Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -469,6 +469,29 @@
       "type": "date"
     },
     "rgb": {
+      "context_keywords": [
+        "16.8 million colors",
+        "16.8M colors",
+        "Brilliant Prism",
+        "Chroma RGB",
+        "customizable lighting",
+        "customizable RGB",
+        "full-spectrum lighting",
+        "full-spectrum RGB",
+        "Light Effects",
+        "lighting zones",
+        "LIGHTSYNC RGB",
+        "Mouse Backlighting",
+        "no lighting",
+        "no RGB",
+        "per-LED RGB",
+        "Prism",
+        "PrismSync",
+        "Razer Chroma",
+        "RGB backlighting",
+        "RGB illumination",
+        "RGB lighting"
+      ],
       "patterns": [],
       "type": "boolean"
     },

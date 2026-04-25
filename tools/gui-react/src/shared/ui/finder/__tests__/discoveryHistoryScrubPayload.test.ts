@@ -29,6 +29,18 @@ describe('buildDiscoveryHistoryScrubRequest', () => {
     );
   });
 
+  it('round-trips fine-grained PIF pool keys through the variant_mode scope', () => {
+    deepStrictEqual(
+      buildDiscoveryHistoryScrubRequest({
+        scopeLevel: 'variant+mode',
+        kind: 'url',
+        variantId: 'v_black',
+        mode: 'view:top',
+      }),
+      { scope: 'variant_mode', kind: 'url', variantId: 'v_black', mode: 'view:top' },
+    );
+  });
+
   it('allows PIF variant-wide actions when mode is not supplied', () => {
     deepStrictEqual(
       buildDiscoveryHistoryScrubRequest({

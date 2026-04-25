@@ -176,6 +176,17 @@ export function validateIdentityMappings({ mappings = [], existingRegistry = [],
   const matchTargets = new Set();
 
   for (const m of mappings) {
+    if (Array.isArray(m.preferred_color_atoms)) {
+      if (m.preferred_color_atoms.length === 0) {
+        return { valid: false, reason: `preferred_color_atoms cannot be empty for "${m.new_key}"` };
+      }
+      for (const atom of m.preferred_color_atoms) {
+        if (!paletteSet.has(atom.toLowerCase())) {
+          return { valid: false, reason: `Unknown color atom "${atom}" in preferred_color_atoms for "${m.new_key}"` };
+        }
+      }
+    }
+
     // WHY: match action must have a non-null match field (variant_id reference)
     if (m.action === 'match') {
       if (!m.match) {
@@ -324,7 +335,9 @@ export function applyIdentityMappings({ existingRegistry, mappings, remove, prod
           const combo = (ed?.colors || [])[0] || '';
           let newLabel = ed?.display_name || slug;
           if (mapping.preferred_label) newLabel = mapping.preferred_label;
-          const newAtoms = combo ? combo.split('+').filter(Boolean) : [];
+          const newAtoms = Array.isArray(mapping.preferred_color_atoms)
+            ? mapping.preferred_color_atoms
+            : combo ? combo.split('+').filter(Boolean) : [];
           const labelChanged = newLabel !== entry.variant_label;
           const atomsChanged = JSON.stringify(newAtoms) !== JSON.stringify(entry.color_atoms);
 
@@ -367,12 +380,15 @@ export function applyIdentityMappings({ existingRegistry, mappings, remove, prod
         const slug = newKey.replace('edition:', '');
         const ed = editions[slug];
         const combo = (ed?.colors || [])[0] || '';
+        const colorAtoms = Array.isArray(mapping.preferred_color_atoms)
+          ? mapping.preferred_color_atoms
+          : combo ? combo.split('+').filter(Boolean) : [];
         registry.push({
           variant_id: variantId,
           variant_key: newKey,
           variant_type: 'edition',
           variant_label: ed?.display_name || slug,
-          color_atoms: combo ? combo.split('+').filter(Boolean) : [],
+          color_atoms: colorAtoms,
           edition_slug: slug,
           edition_display_name: ed?.display_name || slug,
           created_at: now,

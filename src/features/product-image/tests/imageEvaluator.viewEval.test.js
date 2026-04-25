@@ -161,6 +161,30 @@ describe('buildViewEvalPrompt', () => {
     assert.equal(typeof result, 'string');
     assert.ok(result.length > 0);
   });
+
+  it('includes carousel context and duplicate-to-null guidance when previous slots exist', () => {
+    const result = buildViewEvalPrompt({
+      ...defaults,
+      carouselContext: [
+        { slot: 'front', filename: 'front-black.png' },
+      ],
+    });
+    const lower = result.toLowerCase();
+    assert.ok(result.includes('Existing carousel slots'));
+    assert.ok(result.includes('front: front-black.png'));
+    assert.ok(lower.includes('not selectable'));
+    assert.ok(lower.includes('near-duplicate'));
+    assert.ok(lower.includes('null'));
+  });
+
+  it('requires per-candidate classification for carousel extras', () => {
+    const result = buildViewEvalPrompt(defaults);
+    const lower = result.toLowerCase();
+    assert.ok(lower.includes('classify every candidate'));
+    assert.ok(lower.includes('actual_view'));
+    assert.ok(lower.includes('usable_as_carousel_extra'));
+    assert.ok(lower.includes('query intent'));
+  });
 });
 
 /* ── buildHeroSelectionPrompt ───────────────────────────────────── */
@@ -532,6 +556,132 @@ describe('evaluateViewCandidates', () => {
     assert.deepStrictEqual(result.rankings[1].flags, ['wrong_product']);
     assert.equal(result.rankings[1].reasoning, 'Shows different mouse model');
   });
+
+  it('passes existing carousel slots as non-selectable context after candidate images', async () => {
+    let capturedArgs = null;
+    const result = await evaluateViewCandidates({
+      ...baseOpts,
+      imagePaths: ['/images/sangle-black.png', '/images/sangle-black-2.png'],
+      imageMetadata: [
+        { width: 800, height: 600, bytes: 50000 },
+        { width: 700, height: 500, bytes: 45000 },
+      ],
+      carouselContext: [
+        {
+          slot: 'front',
+          filename: 'front-black.png',
+          imagePath: '/images/front-black.png',
+          width: 900,
+          height: 650,
+          bytes: 60000,
+        },
+      ],
+      callLlm: async (args) => {
+        capturedArgs = args;
+        return {
+          result: { winner: { filename: 'sangle-black.png', reasoning: 'distinct from front slot' } },
+          usage: {},
+        };
+      },
+    });
+
+    assert.ok(capturedArgs, 'callLlm must receive args');
+    assert.equal(capturedArgs.images.length, 3, 'two candidates plus one context thumbnail');
+    assert.ok(capturedArgs.userText.includes('Image 1: sangle-black.png'));
+    assert.ok(capturedArgs.userText.includes('Existing carousel slots'));
+    assert.ok(capturedArgs.userText.includes('Context 1: front: front-black.png'));
+    assert.ok(capturedArgs.userText.toLowerCase().includes('not selectable'));
+    assert.equal(result.rankings[0].filename, 'sangle-black.png');
+    assert.equal(result.rankings[0].best, true);
+  });
+
+  it('maps candidate visual classification metadata into rankings', async () => {
+    const mockResponse = {
+      winner: { filename: 'top-black.png', reasoning: 'Best true top view' },
+      candidates: [
+        {
+          filename: 'top-black.png',
+          actual_view: 'top',
+          matches_requested_view: true,
+          usable_as_required_view: true,
+          usable_as_carousel_extra: true,
+          quality: 'pass',
+          duplicate: false,
+          reasoning: 'Clean top view.',
+        },
+        {
+          filename: 'front-search-top.png',
+          actual_view: 'top',
+          matches_requested_view: false,
+          usable_as_required_view: true,
+          usable_as_carousel_extra: true,
+          quality: 'pass',
+          duplicate: false,
+          reasoning: 'Found by front query but pixels show top view.',
+        },
+        {
+          filename: 'generic-product.png',
+          actual_view: 'generic',
+          matches_requested_view: false,
+          usable_as_required_view: false,
+          usable_as_carousel_extra: true,
+          quality: 'borderline',
+          duplicate: false,
+          reasoning: 'Useful generic product cutout.',
+        },
+      ],
+    };
+    const result = await evaluateViewCandidates({
+      ...baseOpts,
+      imagePaths: [
+        '/images/top-black.png',
+        '/images/front-search-top.png',
+        '/images/generic-product.png',
+      ],
+      callLlm: async () => ({ result: mockResponse, usage: {} }),
+    });
+    const top = result.rankings.find(r => r.filename === 'top-black.png');
+    const reclassified = result.rankings.find(r => r.filename === 'front-search-top.png');
+    const generic = result.rankings.find(r => r.filename === 'generic-product.png');
+    assert.equal(top.best, true);
+    assert.equal(top.actualView, 'top');
+    assert.equal(top.matchesRequestedView, true);
+    assert.equal(reclassified.best, false);
+    assert.equal(reclassified.actualView, 'top');
+    assert.equal(reclassified.matchesRequestedView, false);
+    assert.equal(reclassified.usableAsRequiredView, true);
+    assert.equal(reclassified.usableAsCarouselExtra, true);
+    assert.equal(generic.actualView, 'generic');
+    assert.equal(generic.quality, 'borderline');
+  });
+
+  it('does not mark a winner best when candidate classification says it is the wrong view', async () => {
+    const mockResponse = {
+      winner: { filename: 'front-search-top.png', reasoning: 'Looks clean' },
+      candidates: [
+        {
+          filename: 'front-search-top.png',
+          actual_view: 'top',
+          matches_requested_view: false,
+          usable_as_required_view: true,
+          usable_as_carousel_extra: true,
+          quality: 'pass',
+          duplicate: false,
+          reasoning: 'Clean image, but it is not the requested front view.',
+        },
+      ],
+    };
+    const result = await evaluateViewCandidates({
+      ...baseOpts,
+      view: 'front',
+      imagePaths: ['/images/front-search-top.png'],
+      callLlm: async () => ({ result: mockResponse, usage: {} }),
+    });
+    assert.equal(result.rankings.length, 1);
+    assert.equal(result.rankings[0].best, false);
+    assert.equal(result.rankings[0].actualView, 'top');
+    assert.equal(result.rankings[0].usableAsCarouselExtra, true);
+  });
 });
 
 /* ── createImageEvaluatorCallLlm ────────────────────────────────── */
@@ -628,6 +778,45 @@ describe('mergeEvaluation', () => {
     assert.equal(img1.eval_reasoning, 'Sharp and clean');
     assert.equal(img2.eval_best, false);
     assert.deepStrictEqual(img2.eval_flags, ['cropped']);
+  });
+
+  it('persists candidate classification fields by filename match', () => {
+    writeTestDoc([
+      makeImage({ filename: 'front-search-top.png', view: 'front' }),
+    ]);
+    const viewResults = new Map([
+      ['front', {
+        rankings: [
+          {
+            filename: 'front-search-top.png',
+            best: false,
+            flags: [],
+            reasoning: 'Found during front eval but actual pixels show top.',
+            actualView: 'top',
+            matchesRequestedView: false,
+            usableAsRequiredView: true,
+            usableAsCarouselExtra: true,
+            duplicate: false,
+            quality: 'pass',
+          },
+        ],
+      }],
+    ]);
+    const result = mergeEvaluation({
+      productId: PRODUCT_ID,
+      productRoot: PRODUCT_ROOT,
+      variantKey: 'color:black',
+      viewResults,
+      heroResults: null,
+    });
+    const img = result.selected.images[0];
+    assert.equal(img.eval_best, false);
+    assert.equal(img.eval_actual_view, 'top');
+    assert.equal(img.eval_matches_requested_view, false);
+    assert.equal(img.eval_usable_as_required_view, true);
+    assert.equal(img.eval_usable_as_carousel_extra, true);
+    assert.equal(img.eval_duplicate, false);
+    assert.equal(img.eval_quality, 'pass');
   });
 
   it('does not touch images from other variants', () => {

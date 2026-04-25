@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Score Grade — School Stamp Variants</title>
+<style>
+  :root {
+    --bg: #f4f6f9; --surface: #fff; --surface-soft: #fafbfc; --surface-alt: #f1f3f5;
+    --border: #e5e9ef; --border-light: #eef1f5;
+    --text: #1f2328; --text-muted: #5f6672; --text-dim: #7c8390;
+
+    --accent: #4263eb; --accent-bg: #edf2ff; --accent-border: #bac8ff;
+
+    --green-strong:#2b8a3e; --green-mid:#40c057; --green-soft:#69db7c;
+    --amber-strong:#e67700; --amber-mid:#fab005; --amber-soft:#ffd43b;
+    --orange-strong:#d9480f; --orange-mid:#fd7e14; --orange-soft:#ffa94d;
+    --red-strong:#c92a2a; --red-mid:#f03e3e; --red-soft:#ff8787;
+    --gray-strong:#495057; --gray-mid:#868e96; --gray-soft:#ced4da;
+    --purple-strong:#5f3dc4; --purple-mid:#7950f2;
+
+    --grade-a: var(--green-strong);
+    --grade-b: var(--accent);
+    --grade-c: var(--amber-strong);
+    --grade-d: var(--orange-mid);
+    --grade-f: var(--red-strong);
+
+    --mono: 'SF Mono','Cascadia Code','Fira Code',Consolas,monospace;
+    --font: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --hand: 'Marker Felt','Comic Sans MS','Chalkduster',cursive;
+    --serif: Georgia,'Times New Roman',serif;
+    --slab: 'Rockwell','Roboto Slab','Courier New',serif;
+
+    --radius: 8px;
+    --shadow-sm: 0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06);
+    --shadow-md: 0 2px 4px rgba(16,24,40,.04), 0 4px 12px rgba(16,24,40,.07);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:var(--font); color:var(--text); background:var(--bg); line-height:1.55; -webkit-font-smoothing:antialiased; padding:0 0 80px; }
+
+  .page-header { background: linear-gradient(135deg, #b91d47 0%, #d9480f 50%, #f59f00 100%); color:#fff; padding:32px 0 26px; text-align:center; box-shadow: 0 4px 14px rgba(0,0,0,.10); }
+  .page-header h1 { font-size:22px; font-weight:700; letter-spacing:.01em; }
+  .page-header p { font-size:13.5px; opacity:.95; margin-top:5px; max-width:760px; margin-left:auto; margin-right:auto; }
+  .page-header .pill { display:inline-block; background:rgba(255,255,255,.22); padding:3px 10px; border-radius:99px; font-size:11.5px; font-weight:600; margin-top:8px; }
+
+  .container { max-width:1280px; margin:28px auto 0; padding:0 24px; }
+
+  .section { margin-bottom: 36px; }
+  .section-head { margin-bottom: 14px; }
+  .section-title { font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color: var(--text-muted); }
+  .section-sub   { font-size:12.5px; color: var(--text-dim); margin-top:2px; }
+
+  .card { background: var(--surface); border:1px solid var(--border); border-radius:var(--radius); box-shadow: var(--shadow-sm); padding:22px 24px; }
+  .card + .card { margin-top:14px; }
+  .card-title { font-size:14px; font-weight:700; margin-bottom:4px; }
+  .card-sub { font-size:11.5px; color: var(--text-dim); margin-bottom:18px; letter-spacing:.02em; }
+  .card-tag { display:inline-block; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:2px 7px; border-radius:99px; margin-left:6px; background:#fff4e6; color:#d9480f; border:1px solid #ffd8a8; }
+
+  .demo-row { display:flex; align-items:center; gap:18px; flex-wrap:wrap; padding:10px 2px; border-top:1px dashed var(--border-light); }
+  .demo-row:first-of-type { border-top:none; padding-top:0; }
+  .demo-row-label { min-width:120px; font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:.06em; font-weight:600; }
+  .demo-cell { display:flex; align-items:center; justify-content:center; min-width:90px; padding:10px 6px; }
+
+  .note {
+    margin-top:12px; padding:10px 14px;
+    background: var(--accent-bg); border:1px solid var(--accent-border); border-radius:7px;
+    font-size:12px; color:#364fc7;
+  }
+  .note b { color:#1c3aa1; }
+
+  /* paper texture wash for stamp playfulness — keeps it readable */
+  .paper { background:
+    repeating-linear-gradient(90deg, transparent 0 22px, rgba(0,0,0,.02) 22px 23px),
+    repeating-linear-gradient(0deg, transparent 0 22px, rgba(0,0,0,.018) 22px 23px),
+    var(--surface);
+  }
+
+  /* ===========================================================
+     V1 — RUBBER STAMP (rotated, double border, ink-bleed)
+     square stamp with grade letter inside
+  =========================================================== */
+  .stRubber {
+    --tone: var(--grade-a);
+    display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+    width: 56px; height: 48px; padding:3px 6px;
+    border: 2.5px solid var(--tone);
+    border-radius: 4px;
+    color: var(--tone);
+    font-family: var(--slab);
+    font-weight: 800;
+    background: transparent;
+    transform: rotate(-6deg);
+    position: relative;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 30%, transparent);
+    /* ink-bleed texture: subtle radial speckles */
+    filter: contrast(1.05);
+  }
+  .stRubber::before {
+    content:''; position:absolute; inset:1px;
+    border: 1px dashed color-mix(in srgb, var(--tone) 55%, transparent);
+    border-radius: 3px;
+    pointer-events:none;
+  }
+  .stRubber::after {
+    content:''; position:absolute; inset:-1px;
+    background:
+      radial-gradient(circle at 12% 22%, color-mix(in srgb, var(--tone) 40%, transparent) 0 1px, transparent 2px),
+      radial-gradient(circle at 86% 78%, color-mix(in srgb, var(--tone) 35%, transparent) 0 1px, transparent 2px),
+      radial-gradient(circle at 70% 18%, color-mix(in srgb, var(--tone) 30%, transparent) 0 .8px, transparent 1.5px),
+      radial-gradient(circle at 18% 80%, color-mix(in srgb, var(--tone) 30%, transparent) 0 .8px, transparent 1.5px);
+    border-radius: 4px;
+    mix-blend-mode: multiply;
+    pointer-events:none;
+  }
+  .stRubber-letter { font-size: 18px; line-height:1; letter-spacing:.02em; }
+  .stRubber-num    { font-size: 8.5px; line-height:1; margin-top:3px; letter-spacing:.12em; opacity:.85; font-family: var(--mono); }
+  .stRubber.b { --tone: var(--grade-b); transform: rotate(-3deg); }
+  .stRubber.c { --tone: var(--grade-c); transform: rotate(-7deg); }
+  .stRubber.d { --tone: var(--grade-d); transform: rotate(4deg); }
+  .stRubber.f { --tone: var(--grade-f); transform: rotate(-9deg); }
+
+  /* ===========================================================
+     V2 — WAX SEAL (circular, embossed, ribbon)
+  =========================================================== */
+  .stSeal {
+    --tone: var(--grade-a);
+    --tone-deep: color-mix(in srgb, var(--tone) 70%, #000);
+    position: relative;
+    display:inline-flex; align-items:center; justify-content:center;
+    width:46px; height:46px;
+    border-radius: 50%;
+    background:
+      radial-gradient(circle at 30% 28%, color-mix(in srgb, #fff 40%, var(--tone)) 0%, var(--tone) 35%, var(--tone-deep) 100%);
+    color: #fff;
+    font-family: var(--slab); font-weight:800; font-size:17px; letter-spacing:.02em;
+    text-shadow: 0 1px 0 rgba(0,0,0,.25), 0 -1px 0 rgba(255,255,255,.18);
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.35),
+      inset 0 -2px 4px rgba(0,0,0,.25),
+      0 2px 4px rgba(0,0,0,.15);
+    /* scalloped edge via clip-path */
+    clip-path: polygon(
+      50% 0%, 60% 5%, 70% 2%, 78% 9%, 88% 8%, 93% 18%, 99% 25%, 96% 35%, 100% 45%,
+      96% 55%, 99% 65%, 93% 75%, 88% 84%, 78% 86%, 70% 93%, 60% 90%, 50% 100%,
+      40% 90%, 30% 93%, 22% 86%, 12% 84%, 7% 75%, 1% 65%, 4% 55%, 0% 45%,
+      4% 35%, 1% 25%, 7% 18%, 12% 8%, 22% 9%, 30% 2%, 40% 5%
+    );
+  }
+  .stSealWrap { position: relative; display:inline-block; padding-bottom: 8px; }
+  .stSealWrap::before, .stSealWrap::after {
+    content:''; position:absolute; bottom:0; width:14px; height:18px;
+    background: var(--tone, var(--grade-a));
+    z-index: -1;
+  }
+  .stSealWrap::before { left: 4px;  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 65%, 0 100%); transform: rotate(-8deg); }
+  .stSealWrap::after  { right: 4px; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 65%, 0 100%); transform: rotate(8deg); }
+  .stSealWrap.b { --tone: var(--grade-b); }
+  .stSealWrap.c { --tone: var(--grade-c); }
+  .stSealWrap.d { --tone: var(--grade-d); }
+  .stSealWrap.f { --tone: var(--grade-f); }
+  .stSealWrap.b .stSeal { --tone: var(--grade-b); --tone-deep: color-mix(in srgb, var(--grade-b) 70%, #000); }
+  .stSealWrap.c .stSeal { --tone: var(--grade-c); --tone-deep: color-mix(in srgb, var(--grade-c) 70%, #000); }
+  .stSealWrap.d .stSeal { --tone: var(--grade-d); --tone-deep: color-mix(in srgb, var(--grade-d) 70%, #000); }
+  .stSealWrap.f .stSeal { --tone: var(--grade-f); --tone-deep: color-mix(in srgb, var(--grade-f) 70%, #000); }
+
+  /* ===========================================================
+     V3 — GOLD STAR STICKER (star clip, glossy, letter inside)
+  =========================================================== */
+  .stStar {
+    --tone-1: #ffd43b;
+    --tone-2: #f59f00;
+    --tone-3: #d9480f;
+    position:relative;
+    display:inline-flex; align-items:center; justify-content:center;
+    width:54px; height:52px;
+    background: radial-gradient(circle at 35% 30%, #fff8db 0%, var(--tone-1) 25%, var(--tone-2) 70%, var(--tone-3) 100%);
+    color: #5b3a00;
+    font-family: var(--slab); font-weight:800; font-size:14px; letter-spacing:.02em;
+    text-shadow: 0 1px 0 rgba(255,255,255,.6);
+    clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%);
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,.18));
+  }
+  /* tone variants change the star body to match grade */
+  .stStar.a { --tone-1:#a9e34b; --tone-2:#51cf66; --tone-3:#2b8a3e; color:#163d1a; }
+  .stStar.b { --tone-1:#a5d8ff; --tone-2:#4dabf7; --tone-3:#1c3aa1; color:#0b1f5c; }
+  .stStar.c { --tone-1:#ffe066; --tone-2:#fab005; --tone-3:#d9480f; color:#5b3300; }
+  .stStar.d { --tone-1:#ffc078; --tone-2:#fd7e14; --tone-3:#d9480f; color:#5b1f00; }
+  .stStar.f { --tone-1:#ffa8a8; --tone-2:#f03e3e; --tone-3:#a51111; color:#fff; text-shadow:0 1px 0 rgba(0,0,0,.35); }
+
+  /* ===========================================================
+     V4 — TEACHER'S MARGIN STAMP ("GRADED" pill + score)
+     two-line stamp with arc text, red ink feel
+  =========================================================== */
+  .stMargin {
+    --tone: var(--grade-a);
+    display:inline-flex; align-items:stretch;
+    border: 2px solid var(--tone);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--tone);
+    font-family: var(--slab); font-weight:800;
+    transform: rotate(-3deg);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--tone) 25%, transparent);
+    overflow:hidden;
+  }
+  .stMargin-tag {
+    display:inline-flex; align-items:center; justify-content:center;
+    background: var(--tone); color:#fff;
+    padding: 0 7px;
+    font-size: 9px; letter-spacing:.18em; text-transform:uppercase;
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    font-family: var(--mono); font-weight:700;
+  }
+  .stMargin-body {
+    display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+    padding: 4px 10px 3px;
+    background:
+      radial-gradient(circle at 30% 50%, color-mix(in srgb, var(--tone) 12%, transparent) 0 1px, transparent 2px),
+      radial-gradient(circle at 70% 80%, color-mix(in srgb, var(--tone) 14%, transparent) 0 1px, transparent 2px);
+  }
+  .stMargin-letter { font-size: 18px; line-height:1; letter-spacing:.03em; }
+  .stMargin-num    { font-family: var(--mono); font-size: 9px; letter-spacing:.08em; margin-top:2px; opacity:.9; font-weight:700; }
+  .stMargin.b { --tone: var(--grade-b); transform: rotate(-2deg); }
+  .stMargin.c { --tone: var(--grade-c); transform: rotate(-4deg); }
+  .stMargin.d { --tone: var(--grade-d); transform: rotate(3deg); }
+  .stMargin.f { --tone: var(--grade-f); transform: rotate(-6deg); }
+
+  /* ===========================================================
+     V5 — HONOR ROLL RIBBON (prize ribbon)
+     circle medal on top, two ribbon tails below
+  =========================================================== */
+  .stRibbon {
+    --tone: var(--grade-a);
+    --tone-deep: color-mix(in srgb, var(--tone) 70%, #000);
+    position: relative;
+    display:inline-block;
+    width: 48px; height: 56px;
+  }
+  .stRibbon-disc {
+    position:absolute; top:0; left:50%; transform: translateX(-50%);
+    width:40px; height:40px; border-radius:50%;
+    background: radial-gradient(circle at 32% 30%, color-mix(in srgb, #fff 35%, var(--tone)) 0%, var(--tone) 45%, var(--tone-deep) 100%);
+    color:#fff;
+    font-family: var(--slab); font-weight:800; font-size:15px;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.4), inset 0 -2px 3px rgba(0,0,0,.22), 0 1px 2px rgba(0,0,0,.18);
+    text-shadow: 0 1px 0 rgba(0,0,0,.25);
+    z-index: 2;
+    border: 2px solid color-mix(in srgb, var(--tone-deep) 80%, #000);
+  }
+  .stRibbon-tail-left, .stRibbon-tail-right {
+    position:absolute; bottom:0; width:14px; height:24px;
+    background: var(--tone);
+    z-index: 1;
+  }
+  .stRibbon-tail-left  { left:  10px; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 70%, 0 100%); transform: rotate(-6deg); transform-origin: top center; box-shadow: inset 1px 0 0 rgba(255,255,255,.18); }
+  .stRibbon-tail-right { right: 10px; clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 70%, 0 100%); transform: rotate(6deg);  transform-origin: top center; box-shadow: inset -1px 0 0 rgba(0,0,0,.12); }
+  .stRibbon.b { --tone: var(--grade-b); --tone-deep: color-mix(in srgb, var(--grade-b) 70%, #000); }
+  .stRibbon.c { --tone: var(--grade-c); --tone-deep: color-mix(in srgb, var(--grade-c) 70%, #000); }
+  .stRibbon.d { --tone: var(--grade-d); --tone-deep: color-mix(in srgb, var(--grade-d) 70%, #000); }
+  .stRibbon.f { --tone: var(--grade-f); --tone-deep: color-mix(in srgb, var(--grade-f) 70%, #000); }
+
+  /* ===========================================================
+     V6 — MARKER CIRCLE (red pen, hand-drawn)
+     letter scribbled in handwriting font, circled twice
+  =========================================================== */
+  .stMarker {
+    --tone: var(--grade-a);
+    position: relative;
+    display:inline-flex; align-items:center; justify-content:center;
+    width: 46px; height: 46px;
+    color: var(--tone);
+    font-family: var(--hand);
+    font-weight: 700; font-size: 22px; letter-spacing: .01em;
+    transform: rotate(-4deg);
+  }
+  .stMarker svg { position:absolute; inset:-2px; width: calc(100% + 4px); height: calc(100% + 4px); pointer-events:none; }
+  .stMarker svg circle, .stMarker svg path { fill:none; stroke: var(--tone); stroke-width: 2.4; stroke-linecap: round; }
+  .stMarker.b { --tone: var(--grade-b); transform: rotate(-2deg); }
+  .stMarker.c { --tone: var(--grade-c); transform: rotate(-5deg); }
+  .stMarker.d { --tone: var(--grade-d); transform: rotate(3deg); }
+  .stMarker.f { --tone: var(--grade-f); transform: rotate(-7deg); }
+
+  /* ===========================================================
+     V7 — APPROVED / DENIED OFFICIAL STAMP
+     octagon-clipped, double border, "APPROVED · A+ · 96"
+  =========================================================== */
+  .stOfficial {
+    --tone: var(--grade-a);
+    display:inline-flex; flex-direction:column; align-items:center; justify-content:center;
+    padding: 4px 12px;
+    border: 2.5px solid var(--tone);
+    color: var(--tone);
+    font-family: var(--slab); font-weight: 800;
+    background: transparent;
+    transform: rotate(-4deg);
+    position: relative;
+    /* octagon cut */
+    clip-path: polygon(8% 0, 92% 0, 100% 30%, 100% 70%, 92% 100%, 8% 100%, 0 70%, 0 30%);
+    /* re-add border via box-shadow because clip-path eats it */
+    box-shadow:
+      0 0 0 2px var(--tone) inset,
+      0 0 0 4px transparent,
+      0 0 0 5px color-mix(in srgb, var(--tone) 35%, transparent) inset;
+    min-width: 72px;
+  }
+  .stOfficial-tag { font-size: 8.5px; letter-spacing: .22em; line-height:1; opacity:.9; }
+  .stOfficial-letter { font-size: 17px; line-height:1; margin: 2px 0 1px; letter-spacing:.04em; }
+  .stOfficial-num { font-family: var(--mono); font-size: 8.5px; letter-spacing:.08em; opacity:.85; font-weight:700; }
+  .stOfficial.b { --tone: var(--grade-b); transform: rotate(-2deg); }
+  .stOfficial.c { --tone: var(--grade-c); transform: rotate(-5deg); }
+  .stOfficial.d { --tone: var(--grade-d); transform: rotate(3deg); }
+  .stOfficial.f { --tone: var(--grade-f); transform: rotate(-6deg); }
+
+  /* ===========================================================
+     ASSEMBLED ROW — winners across the table
+  =========================================================== */
+  .table-mock {
+    background: var(--surface); border:1px solid var(--border); border-radius:10px;
+    overflow:hidden; box-shadow: var(--shadow-md);
+  }
+  .table-mock-head, .table-mock-row {
+    display:grid;
+    grid-template-columns: 200px 90px 110px 100px 100px 100px;
+    align-items:center;
+    padding: 12px 14px;
+  }
+  .table-mock-head { background: var(--surface-soft); border-bottom: 1px solid var(--border); font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.08em; color: var(--text-muted); }
+  .table-mock-row { border-top: 1px solid var(--border-light); font-size: 12px; min-height: 64px; }
+  .table-mock-row:first-of-type { border-top:none; }
+  .brand { font-weight:600; color:var(--text); }
+  .model { color:var(--text-muted); font-family:var(--mono); font-size:11.5px; }
+
+  /* trio gauge (mini gauge from prior file) */
+  .mgA { --tone: var(--green-strong); display:inline-flex; align-items:center; gap:7px; padding:2px 8px 2px 4px; background:#fff; border:1px solid color-mix(in srgb, var(--tone) 30%, var(--border)); border-radius:999px; }
+  .mgA-ring { position:relative; width:22px; height:22px; flex-shrink:0; }
+  .mgA-ring svg { transform: rotate(-90deg); }
+  .mgA-ring .track { stroke: color-mix(in srgb, var(--tone) 14%, var(--border-light)); }
+  .mgA-ring .fill  { stroke: var(--tone); }
+  .mgA-num { font-family: var(--mono); font-weight:700; font-size:11.5px; color:var(--text); }
+  .mgA.green  { --tone: var(--green-strong); }
+  .mgA.yellow { --tone: var(--amber-strong); }
+  .mgA.red    { --tone: var(--red-strong); }
+  .mgA.gray   { --tone: var(--gray-mid); }
+
+  .legend { display:flex; gap:18px; flex-wrap:wrap; margin-top:12px; font-size:11.5px; color:var(--text-dim); }
+  .legend-item { display:inline-flex; align-items:center; gap:6px; }
+  .legend-swatch { width:12px; height:12px; border-radius:3px; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Score Grade — School Stamp Variants</h1>
+  <p>Round 2: louder, more playful grade treatments. Each option still fits the existing column slot or expands it modestly. Same five grade tones as today (A green, B blue, C amber, D orange, F red).</p>
+  <span class="pill">Sample · 2026-04-25 · iteration 2</span>
+</div>
+
+<div class="container">
+
+  <!-- ====================================================
+       V1 — RUBBER STAMP
+  ==================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V1 · Rubber Stamp</div>
+      <div class="section-sub">Tilted, double-bordered, ink-bleed speckle. Square stamp with letter on top + score number under it. Each row tilts a slightly different angle so consecutive rows don't read identically.</div>
+    </div>
+    <div class="card paper">
+      <div class="demo-row">
+        <div class="demo-row-label">Grades</div>
+        <div class="demo-cell"><span class="stRubber"  ><span class="stRubber-letter">A+</span><span class="stRubber-num">98</span></span></div>
+        <div class="demo-cell"><span class="stRubber b"><span class="stRubber-letter">B+</span><span class="stRubber-num">88</span></span></div>
+        <div class="demo-cell"><span class="stRubber c"><span class="stRubber-letter">C</span><span class="stRubber-num">73</span></span></div>
+        <div class="demo-cell"><span class="stRubber d"><span class="stRubber-letter">D</span><span class="stRubber-num">63</span></span></div>
+        <div class="demo-cell"><span class="stRubber f"><span class="stRubber-letter">F</span><span class="stRubber-num">42</span></span></div>
+      </div>
+      <div class="note">Reads instantly as a teacher's stamp. The dashed inner border + speckle texture sells the "ink hit paper" effect with zero raster assets — pure CSS.</div>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       V2 — WAX SEAL
+  ==================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V2 · Wax Seal</div>
+      <div class="section-sub">Scalloped, embossed, with a small ribbon underneath. Most "ceremonial" of the bunch — fits if Score is the headline cell on the row.</div>
+    </div>
+    <div class="card paper">
+      <div class="demo-row">
+        <div class="demo-row-label">Grades</div>
+        <div class="demo-cell"><span class="stSealWrap"  ><span class="stSeal">A+</span></span></div>
+        <div class="demo-cell"><span class="stSealWrap b"><span class="stSeal">B+</span></span></div>
+        <div class="demo-cell"><span class="stSealWrap c"><span class="stSeal">C</span></span></div>
+        <div class="demo-cell"><span class="stSealWrap d"><span class="stSeal">D</span></span></div>
+        <div class="demo-cell"><span class="stSealWrap f"><span class="stSeal">F</span></span></div>
+      </div>
+      <div class="note">No score number — the seal is a verdict, not a number. Tooltip can carry the precise score. Slightly bulkier (~50px tall with ribbon).</div>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       V3 — GOLD STAR STICKER
+  ==================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V3 · Sticker Star</div>
+      <div class="section-sub">5-point star clip, glossy radial gradient — reads as the classic teacher's reward sticker. Tone shifts per grade so even an "F" still looks like a sticker (red), not a flat chip.</div>
+    </div>
+    <div class="card paper">
+      <div class="demo-row">
+        <div class="demo-row-label">Grades</div>
+        <div class="demo-cell"><span class="stStar a">A+</span></div>
+        <div class="demo-cell"><span class="stStar b">B+</span></div>
+        <div class="demo-cell"><span class="stStar c">C</span></div>
+        <div class="demo-cell"><span class="stStar d">D</span></div>
+        <div class="demo-cell"><span class="stStar f">F</span></div>
+      </div>
+      <div class="note">Loudest of the set. Best when you want the table to feel like a leaderboard — products with A grades visibly "shine".</div>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       V4 — TEACHER'S MARGIN STAMP
+  ==================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V4 · Margin Stamp</div>
+      <div class="section-sub">Side label ("GRADED") + body with letter + numeric score. Slightly tilted. Combines stamp aesthetic with the precision of Variant A from the previous round.</div>
+    </div>
+    <div class="card paper">
+      <div class="demo-row">
+        <div class="demo-row-label">Grades</div>
+        <div class="demo-cell"><span class="stMargin"  ><span class="stMargin-tag">graded</span><span class="stMargin-body"><span class="stMargin-letter">A+</span><span class="stMargin-num">98.4</span></span></span></div>
+        <div class="demo-cell"><span class="stMargin b"><span class="stMargin-tag">graded</span><span class="stMargin-body"><span class="stMargin-letter">B+</span><span class="stMargin-num">88.2</span></span></span></div>
+        <div class="demo-cell"><span class="stMargin c"><span class="stMargin-tag">graded</span><span class="stMargin-body"><span class="stMargin-letter">C</span><span class="stMargin-num">73.4</span></span></span></div>
+        <div class="demo-cell"><span class="stMargin d"><span class="stMargin-tag">graded</span><span class="stMargin-body"><span class="stMargin-letter">D</span><span class="stMargin-num">63.0</span></span></span></div>
+        <div class="demo-cell"><span class="stMargin f"><span class="stMargin-tag">graded</span><span class="stMargin-body"><span class="stMargin-letter">F</span><span class="stMargin-num">42.0</span></span></span></div>
+      </div>
+      <div class="note">My personal favorite of the louder set — keeps the precise score visible (which power users will want), but the side tag and tilt give it personality.</div>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       V5 — HONOR ROLL RIBBON
+  ==================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V5 · Honor Roll Ribbon</div>
+      <div class="section-sub">Prize-medal disc with two ribbon tails. The tallest option (~56px). Best as a row-anchor; treat the ribbon almost like a status icon.</div>
+    </div>
+    <div class="card paper">
+      <div class="demo-row">
+        <div class="demo-row-label">Grades</div>
+        <div class="demo-cell"><span class="stRibbon"  ><span class="stRibbon-tail-left"></span><span class="stRibbon-tail-right"></span><span class="stRibbon-disc">A+</span></span></div>
+        <div class="demo-cell"><span class="stRibbon b"><span class="stRibbon-tail-left"></span><span class="stRibbon-tail-right"></span><span class="stRibbon-disc">B+</span></span></div>
+        <div class="demo-cell"><span class="stRibbon c"><span class="stRibbon-tail-left"></span><span class="stRibbon-tail-right"></span><span class="stRibbon-disc">C</span></span></div>
+        <div class="demo-cell"><span class="stRibbon d"><span class="stRibbon-tail-left"></span><span class="stRibbon-tail-right"></span><span class="stRibbon-disc">D</span></span></div>
+        <div class="demo-cell"><span class="stRibbon f"><span class="stRibbon-tail-left"></span><span class="stRibbon-tail-right"></span><span class="stRibbon-disc">F</span></span></div>
+      </div>
+      <div class="note">An F-tier ribbon feels a little ironic — but ribbons are the language of "you got a grade", and the red tone keeps it honest.</div>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       V6 — MARKER CIRCLE
+  ==================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V6 · Marker Circle</div>
+      <div class="section-sub">Hand-drawn red-pen feel: scribbled letter, double circle around it. Most casual / least formal. Works well in dense tables because each cell looks fresh and "live-graded".</div>
+    </div>
+    <div class="card paper">
+      <div class="demo-row">
+        <div class="demo-row-label">Grades</div>
+        <div class="demo-cell">
+          <span class="stMarker">A+
+            <svg viewBox="0 0 50 50">
+              <ellipse cx="25" cy="25" rx="21" ry="20" transform="rotate(-3 25 25)"/>
+              <ellipse cx="25" cy="25" rx="22" ry="21.5" transform="rotate(4 25 25)"/>
+            </svg>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="stMarker b">B+
+            <svg viewBox="0 0 50 50">
+              <ellipse cx="25" cy="25" rx="21" ry="20.5" transform="rotate(-5 25 25)"/>
+              <ellipse cx="25" cy="25" rx="22.5" ry="21" transform="rotate(2 25 25)"/>
+            </svg>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="stMarker c">C
+            <svg viewBox="0 0 50 50">
+              <ellipse cx="25" cy="25" rx="20.5" ry="20" transform="rotate(-2 25 25)"/>
+              <ellipse cx="25" cy="25" rx="22" ry="21" transform="rotate(5 25 25)"/>
+            </svg>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="stMarker d">D
+            <svg viewBox="0 0 50 50">
+              <ellipse cx="25" cy="25" rx="21" ry="20" transform="rotate(-4 25 25)"/>
+              <ellipse cx="25" cy="25" rx="22" ry="21.5" transform="rotate(3 25 25)"/>
+            </svg>
+          </span>
+        </div>
+        <div class="demo-cell">
+          <span class="stMarker f">F
+            <svg viewBox="0 0 50 50">
+              <ellipse cx="25" cy="25" rx="21" ry="20.5" transform="rotate(-6 25 25)"/>
+              <ellipse cx="25" cy="25" rx="22.5" ry="21" transform="rotate(2 25 25)"/>
+              <path d="M 7 18 Q 25 12, 44 22" stroke-width="1.6"/>
+            </svg>
+          </span>
+        </div>
+      </div>
+      <div class="note">Requires a hand/marker font — falls back to system cursive. No precise score visible (lives in the tooltip).</div>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       V7 — OFFICIAL STAMP (APPROVED)
+  ==================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">V7 · Official Stamp</div>
+      <div class="section-sub">Octagon-clipped "APPROVED"-style stamp with three lines: tag, letter, score. Most utilitarian of the loud options — feels like a passport stamp.</div>
+    </div>
+    <div class="card paper">
+      <div class="demo-row">
+        <div class="demo-row-label">Grades</div>
+        <div class="demo-cell"><span class="stOfficial"  ><span class="stOfficial-tag">approved</span><span class="stOfficial-letter">A+</span><span class="stOfficial-num">98.4</span></span></div>
+        <div class="demo-cell"><span class="stOfficial b"><span class="stOfficial-tag">passed</span><span class="stOfficial-letter">B+</span><span class="stOfficial-num">88.2</span></span></div>
+        <div class="demo-cell"><span class="stOfficial c"><span class="stOfficial-tag">graded</span><span class="stOfficial-letter">C</span><span class="stOfficial-num">73.4</span></span></div>
+        <div class="demo-cell"><span class="stOfficial d"><span class="stOfficial-tag">marginal</span><span class="stOfficial-letter">D</span><span class="stOfficial-num">63.0</span></span></div>
+        <div class="demo-cell"><span class="stOfficial f"><span class="stOfficial-tag">denied</span><span class="stOfficial-letter">F</span><span class="stOfficial-num">42.0</span></span></div>
+      </div>
+      <div class="note">Tag text varies by grade ("APPROVED" / "PASSED" / "GRADED" / "MARGINAL" / "DENIED") — most informative of the stamp variants. Wider though (~85px).</div>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       ASSEMBLED ROW — using V4 (margin stamp) as the pick
+  ==================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">Assembled row · winner = V4 Margin Stamp</div>
+      <div class="section-sub">Same recommended trio (Mini Gauge for Coverage / Conf / Fields), but the Score column now uses the Margin Stamp. Try opening this beside the previous file to compare moods.</div>
+    </div>
+
+    <div class="table-mock paper">
+      <div class="table-mock-head">
+        <span>Brand · Model</span>
+        <span>Keys</span>
+        <span style="text-align:center">Score</span>
+        <span style="text-align:center">Coverage</span>
+        <span style="text-align:center">Conf</span>
+        <span style="text-align:center">Fields</span>
+      </div>
+
+      <div class="table-mock-row">
+        <span><span class="brand">Logitech</span><br><span class="model">MX Master 3S</span></span>
+        <span class="model">22 / 24</span>
+        <span style="text-align:center">
+          <span class="stMargin"><span class="stMargin-tag">graded</span><span class="stMargin-body"><span class="stMargin-letter">A+</span><span class="stMargin-num">96.2</span></span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA green">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="3.7"/>
+            </svg></span>
+            <span class="mgA-num">93%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA green">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="5.3"/>
+            </svg></span>
+            <span class="mgA-num">90%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA green">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="4.4"/>
+            </svg></span>
+            <span class="mgA-num">22/24</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="table-mock-row">
+        <span><span class="brand">Razer</span><br><span class="model">DeathAdder V3</span></span>
+        <span class="model">18 / 24</span>
+        <span style="text-align:center">
+          <span class="stMargin b"><span class="stMargin-tag">graded</span><span class="stMargin-body"><span class="stMargin-letter">B+</span><span class="stMargin-num">87.1</span></span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA green">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="6.9"/>
+            </svg></span>
+            <span class="mgA-num">87%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA yellow">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="14.4"/>
+            </svg></span>
+            <span class="mgA-num">73%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA yellow">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="13.4"/>
+            </svg></span>
+            <span class="mgA-num">18/24</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="table-mock-row">
+        <span><span class="brand">SteelSeries</span><br><span class="model">Aerox 9</span></span>
+        <span class="model">14 / 24</span>
+        <span style="text-align:center">
+          <span class="stMargin c"><span class="stMargin-tag">graded</span><span class="stMargin-body"><span class="stMargin-letter">C</span><span class="stMargin-num">73.4</span></span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA yellow">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="16.6"/>
+            </svg></span>
+            <span class="mgA-num">69%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA yellow">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="20.3"/>
+            </svg></span>
+            <span class="mgA-num">62%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA yellow">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="22.3"/>
+            </svg></span>
+            <span class="mgA-num">14/24</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="table-mock-row">
+        <span><span class="brand">Glorious</span><br><span class="model">Model O 2</span></span>
+        <span class="model">8 / 24</span>
+        <span style="text-align:center">
+          <span class="stMargin d"><span class="stMargin-tag">graded</span><span class="stMargin-body"><span class="stMargin-letter">D</span><span class="stMargin-num">63.0</span></span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA red">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="27.8"/>
+            </svg></span>
+            <span class="mgA-num">48%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA red">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="29.4"/>
+            </svg></span>
+            <span class="mgA-num">45%</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA red">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="fill" stroke-linecap="round" stroke-dasharray="53.4" stroke-dashoffset="35.6"/>
+            </svg></span>
+            <span class="mgA-num">8/24</span>
+          </span>
+        </span>
+      </div>
+
+      <div class="table-mock-row">
+        <span><span class="brand">Generic</span><br><span class="model">Untouched product</span></span>
+        <span class="model">0 / 24</span>
+        <span style="text-align:center">
+          <span class="stMargin f"><span class="stMargin-tag">graded</span><span class="stMargin-body"><span class="stMargin-letter">F</span><span class="stMargin-num">0.0</span></span></span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA gray">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+            </svg></span>
+            <span class="mgA-num">—</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA gray">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+            </svg></span>
+            <span class="mgA-num">—</span>
+          </span>
+        </span>
+        <span style="text-align:center">
+          <span class="mgA gray">
+            <span class="mgA-ring"><svg width="22" height="22" viewBox="0 0 22 22">
+              <circle cx="11" cy="11" r="8.5" fill="none" stroke-width="2.5" class="track"/>
+            </svg></span>
+            <span class="mgA-num">0/24</span>
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <div class="legend">
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--green-strong)"></span> A · ≥ 90</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--accent)"></span> B · 80–89</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--amber-strong)"></span> C · 70–79</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--orange-mid)"></span> D · 60–69</span>
+      <span class="legend-item"><span class="legend-swatch" style="background:var(--red-strong)"></span> F · &lt; 60</span>
+    </div>
+  </section>
+
+  <!-- ====================================================
+       MIX & MATCH STRIP — quick comparison row
+  ==================================================== -->
+  <section class="section">
+    <div class="section-head">
+      <div class="section-title">Side-by-side · same A+ row, every variant</div>
+      <div class="section-sub">Quick visual A/B for picking the winner without scrolling.</div>
+    </div>
+    <div class="card paper">
+      <div class="demo-row">
+        <div class="demo-row-label">A+ in each style</div>
+        <div class="demo-cell"><span class="stRubber"><span class="stRubber-letter">A+</span><span class="stRubber-num">98</span></span></div>
+        <div class="demo-cell"><span class="stSealWrap"><span class="stSeal">A+</span></span></div>
+        <div class="demo-cell"><span class="stStar a">A+</span></div>
+        <div class="demo-cell"><span class="stMargin"><span class="stMargin-tag">graded</span><span class="stMargin-body"><span class="stMargin-letter">A+</span><span class="stMargin-num">98.4</span></span></span></div>
+        <div class="demo-cell"><span class="stRibbon"><span class="stRibbon-tail-left"></span><span class="stRibbon-tail-right"></span><span class="stRibbon-disc">A+</span></span></div>
+        <div class="demo-cell">
+          <span class="stMarker">A+
+            <svg viewBox="0 0 50 50">
+              <ellipse cx="25" cy="25" rx="21" ry="20" transform="rotate(-3 25 25)"/>
+              <ellipse cx="25" cy="25" rx="22" ry="21.5" transform="rotate(4 25 25)"/>
+            </svg>
+          </span>
+        </div>
+        <div class="demo-cell"><span class="stOfficial"><span class="stOfficial-tag">approved</span><span class="stOfficial-letter">A+</span><span class="stOfficial-num">98.4</span></span></div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label">F in each style</div>
+        <div class="demo-cell"><span class="stRubber f"><span class="stRubber-letter">F</span><span class="stRubber-num">42</span></span></div>
+        <div class="demo-cell"><span class="stSealWrap f"><span class="stSeal">F</span></span></div>
+        <div class="demo-cell"><span class="stStar f">F</span></div>
+        <div class="demo-cell"><span class="stMargin f"><span class="stMargin-tag">graded</span><span class="stMargin-body"><span class="stMargin-letter">F</span><span class="stMargin-num">42.0</span></span></span></div>
+        <div class="demo-cell"><span class="stRibbon f"><span class="stRibbon-tail-left"></span><span class="stRibbon-tail-right"></span><span class="stRibbon-disc">F</span></span></div>
+        <div class="demo-cell">
+          <span class="stMarker f">F
+            <svg viewBox="0 0 50 50">
+              <ellipse cx="25" cy="25" rx="21" ry="20.5" transform="rotate(-6 25 25)"/>
+              <ellipse cx="25" cy="25" rx="22.5" ry="21" transform="rotate(2 25 25)"/>
+              <path d="M 7 18 Q 25 12, 44 22" stroke-width="1.6"/>
+            </svg>
+          </span>
+        </div>
+        <div class="demo-cell"><span class="stOfficial f"><span class="stOfficial-tag">denied</span><span class="stOfficial-letter">F</span><span class="stOfficial-num">42.0</span></span></div>
+      </div>
+      <div class="demo-row">
+        <div class="demo-row-label" style="color:var(--text-faint); font-style:italic">style</div>
+        <div class="demo-cell" style="font-size:11px; color:var(--text-muted)">V1 Rubber</div>
+        <div class="demo-cell" style="font-size:11px; color:var(--text-muted)">V2 Wax</div>
+        <div class="demo-cell" style="font-size:11px; color:var(--text-muted)">V3 Star</div>
+        <div class="demo-cell" style="font-size:11px; color:var(--text-muted)">V4 Margin</div>
+        <div class="demo-cell" style="font-size:11px; color:var(--text-muted)">V5 Ribbon</div>
+        <div class="demo-cell" style="font-size:11px; color:var(--text-muted)">V6 Marker</div>
+        <div class="demo-cell" style="font-size:11px; color:var(--text-muted)">V7 Official</div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+</body>
+</html>

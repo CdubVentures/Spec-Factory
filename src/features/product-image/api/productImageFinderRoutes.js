@@ -23,8 +23,8 @@ import {
   deleteProductImageFinderRuns,
   deleteProductImageFinderAll,
 } from '../productImageStore.js';
-import { runEvalView, runEvalHero } from '../carouselBuild.js';
-import { writeCarouselSlot, resolveCarouselSlots, deleteEvalRecord, extractEvalState } from '../imageEvaluator.js';
+import { runEvalView, runEvalHero, runEvalCarouselLoop } from '../carouselBuild.js';
+import { writeCarouselSlot, clearCarouselWinners, resolveCarouselSlots, deleteEvalRecord, extractEvalState } from '../imageEvaluator.js';
 import { compilePifPreviewPrompt } from '../productImagePreviewPrompt.js';
 
 /**
@@ -718,10 +718,101 @@ export function registerProductImageFinderRoutes(ctx) {
       }
     }
 
-    // ── Carousel Builder: evaluate one view ───────────────────────
+    // ── Carousel Builder: evaluate one variant carousel ───────────
+    // POST /product-image-finder/:category/:productId/evaluate-carousel
+    // Body: { variant_key, variant_id }
+    if (method === 'POST' && category && productId && parts[3] === 'evaluate-carousel') {
+      let op = null;
+      let batcher = null;
+      try {
+        const specDb = getSpecDb(category);
+        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+        const productRow = specDb.getProduct(productId);
+        if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+
+        const body = await readJsonBody(req).catch(() => ({}));
+        const variantKey = body?.variant_key || '';
+        const variantId = body?.variant_id || null;
+
+        op = registerOperation({
+          type: 'pif',
+          subType: 'evaluate',
+          category,
+          productId,
+          productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+          variantKey,
+          stages: ['Evaluating', 'Heroes', 'Complete'],
+        });
+        updateProgressText({ id: op.id, text: 'carousel eval loop' });
+
+        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+        const signal = getOperationSignal(op.id);
+
+        return fireAndForget({
+          res,
+          jsonRes,
+          op,
+          batcher,
+          broadcastWs,
+          signal,
+          emitArgs: {
+            event: 'product-image-finder-evaluate',
+            category,
+            entities: { productIds: [productId] },
+            meta: { productId },
+          },
+          asyncWork: () => runEvalCarouselLoop({
+            product: {
+              product_id: productId,
+              category,
+              brand: productRow.brand || '',
+              model: productRow.model || '',
+              base_model: productRow.base_model || '',
+              variant: productRow.variant || '',
+            },
+            appDb,
+            specDb,
+            config,
+            logger: logger || null,
+            variantKey,
+            variantId,
+            signal,
+            onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
+            onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),
+            onStreamChunk: (delta) => {
+              if (delta?.reasoning) batcher?.push(delta.reasoning);
+              if (delta?.content) batcher?.push(delta.content);
+            },
+            onQueueWait: (ms) => updateQueueDelay({ id: op.id, queueDelayMs: ms }),
+            onLlmCallComplete: (call) => appendLlmCall({ id: op.id, call }),
+            onProgress: (text) => updateProgressText({ id: op.id, text }),
+            onSlotComplete: (event) => {
+              writePifVariantProgress({ specDb, category, productId });
+              emitDataChange({
+                broadcastWs,
+                event: 'product-image-finder-evaluate',
+                category,
+                entities: { productIds: [productId] },
+                meta: { productId, variantKey, slot: event?.view || null, callNumber: event?.callNumber || null, totalCalls: event?.totalCalls || null },
+              });
+            },
+          }),
+          completeOperation,
+          failOperation,
+          cancelOperation,
+          emitDataChange,
+        });
+      } catch (err) {
+        if (batcher) batcher.dispose();
+        if (op) failOperation({ id: op.id, error: err instanceof Error ? err.message : String(err) });
+        return jsonRes(res, 500, { error: 'evaluate-carousel failed', message: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
     // POST /product-image-finder/:category/:productId/evaluate-view
     // Body: { variant_key, view }
-    // GUI fires N of these in parallel — one per view group. LLM queue serializes.
+    // Legacy endpoint retained for focused one-view retries and existing callers.
     if (method === 'POST' && category && productId && parts[3] === 'evaluate-view') {
       let op = null;
       let batcher = null;
@@ -909,6 +1000,49 @@ export function registerProductImageFinderRoutes(ctx) {
         return jsonRes(res, 200, { ok: true, carousel_slots: updatedSlots });
       } catch (err) {
         return jsonRes(res, 500, { error: 'carousel-slot failed', message: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    // ── Carousel Builder: clear all current winners for one variant ─────────
+    // POST /product-image-finder/:category/:productId/carousel-winners/clear
+    if (method === 'POST' && category && productId && parts[3] === 'carousel-winners' && parts[4] === 'clear') {
+      try {
+        const specDb = getSpecDb(category);
+        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+        const body = await readJsonBody(req).catch(() => ({}));
+        const variantKey = body?.variant_key;
+        const variantId = body?.variant_id || null;
+        if (!variantKey) return jsonRes(res, 400, { error: 'variant_key is required' });
+
+        const productRoot = defaultProductRoot();
+        const result = clearCarouselWinners({ productId, productRoot, variantKey, variantId });
+        if (!result) return jsonRes(res, 404, { error: 'product image data not found' });
+
+        const finderStore = store(specDb);
+        const carouselSlots = result.carousel_slots || {};
+        const evalState = extractEvalState(result);
+        finderStore.updateSummaryField(productId, 'carousel_slots', JSON.stringify(carouselSlots));
+        finderStore.updateSummaryField(productId, 'eval_state', JSON.stringify(evalState));
+        for (const run of (result.runs || [])) {
+          if (run.run_number == null) continue;
+          finderStore.updateRunJson(productId, run.run_number, {
+            selected: run.selected || {},
+            response: run.response || {},
+          });
+        }
+        writePifVariantProgress({ specDb, category, productId });
+
+        emitDataChange({
+          event: 'product-image-finder-evaluate',
+          category,
+          entities: { productIds: [productId] },
+          meta: { productId, variantKey },
+        });
+
+        return jsonRes(res, 200, { ok: true, carousel_slots: carouselSlots, eval_state: evalState });
+      } catch (err) {
+        return jsonRes(res, 500, { error: 'clear carousel winners failed', message: err instanceof Error ? err.message : String(err) });
       }
     }
 

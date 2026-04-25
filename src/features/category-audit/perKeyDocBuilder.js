@@ -66,6 +66,65 @@ function buildReservedKeysSummary(reservedEntries, category, generatedAt) {
   ].join('\n');
 }
 
+function buildReservedStub({ category, fieldKey, ordinal, total, info }) {
+  return [
+    `# ${fieldKey} \u2014 reserved`,
+    '',
+    `Position ${ordinal} of ${total} in the \`${category}\` Key Navigator order.`,
+    '',
+    `This field is owned by **${info.ownerLabel || 'OTHER'}** (\`${info.owner || 'other_finder'}\`). keyFinder does not build a prompt for it; see [\`../_reserved-keys.md\`](../_reserved-keys.md).`,
+    '',
+  ].join('\n');
+}
+
+async function writeSortedFolder({ basePath, fieldKeyOrder, written, skipped, category }) {
+  if (!Array.isArray(fieldKeyOrder)) return null;
+  const fields = fieldKeyOrder.filter(
+    (entry) => typeof entry === 'string' && !entry.startsWith('__grp::'),
+  );
+  if (fields.length === 0) return null;
+
+  const writtenMap = new Map(written.map((w) => [w.fieldKey, w]));
+  const reservedInfo = new Map(skipped.map((s) => [s.fieldKey, s]));
+
+  const sortedDir = path.join(basePath, 'sorted');
+  await fs.mkdir(sortedDir, { recursive: true });
+
+  const total = fields.length;
+  const width = Math.max(2, String(total).length);
+  const entries = [];
+
+  for (let i = 0; i < fields.length; i += 1) {
+    const fieldKey = fields[i];
+    const ordinalNum = i + 1;
+    const ordinal = String(ordinalNum).padStart(width, '0');
+
+    const reserved = reservedInfo.get(fieldKey) || detectReservedKey(fieldKey);
+    if (reserved) {
+      const stubPath = path.join(sortedDir, `${ordinal}-${fieldKey}.reserved.md`);
+      const stubText = buildReservedStub({
+        category,
+        fieldKey,
+        ordinal: ordinalNum,
+        total,
+        info: reserved,
+      });
+      await fs.writeFile(stubPath, stubText, 'utf8');
+      entries.push({ fieldKey, ordinal, sortedPath: stubPath, reserved: true });
+      continue;
+    }
+
+    const w = writtenMap.get(fieldKey);
+    if (!w) continue; // navigator entry not in compiled rules — silent skip
+    const md = await fs.readFile(w.mdPath, 'utf8');
+    const dest = path.join(sortedDir, `${ordinal}-${fieldKey}.md`);
+    await fs.writeFile(dest, md, 'utf8');
+    entries.push({ fieldKey, ordinal, sortedPath: dest, reserved: false });
+  }
+
+  return { basePath: sortedDir, count: entries.length, entries };
+}
+
 function resolvePerKeyCategoryPath(outputRoot, category) {
   const perKeyRoot = path.resolve(outputRoot, 'per-key');
   const basePath = path.resolve(perKeyRoot, category);
@@ -87,6 +146,7 @@ function resolvePerKeyCategoryPath(outputRoot, category) {
  * @param {string} opts.outputRoot           — absolute; the root of .workspace/reports (per-key is appended)
  * @param {Date}   [opts.now]
  * @param {string} [opts.templateOverride]   — optional per-category discoveryPromptTemplate
+ * @param {string[]} [opts.fieldKeyOrder]    — Key Navigator order (mixed __grp:: separators + field keys). When provided, a sorted/ folder is emitted under the category root with NN-<fieldKey>.md entries duplicating the canonical group-folder Markdown brief, plus reserved-marker stubs for keys owned by other finder modules.
  */
 export async function generatePerKeyDocs({
   category,
@@ -98,6 +158,7 @@ export async function generatePerKeyDocs({
   outputRoot,
   now = new Date(),
   templateOverride = '',
+  fieldKeyOrder = null,
 }) {
   if (!category || typeof category !== 'string') {
     throw new Error('generatePerKeyDocs: category is required');
@@ -173,6 +234,14 @@ export async function generatePerKeyDocs({
   const reservedText = buildReservedKeysSummary(skipped, category, generatedAt);
   await fs.writeFile(reservedKeysPath, reservedText, 'utf8');
 
+  const sorted = await writeSortedFolder({
+    basePath,
+    fieldKeyOrder,
+    written,
+    skipped,
+    category,
+  });
+
   return {
     basePath,
     written,
@@ -180,5 +249,6 @@ export async function generatePerKeyDocs({
     reservedKeysPath,
     generatedAt,
     counts: { written: written.length, skipped: skipped.length },
+    sorted,
   };
 }

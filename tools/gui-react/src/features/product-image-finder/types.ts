@@ -31,6 +31,18 @@ export interface ProductImageEntry {
   eval_reasoning?: string;
   /** Source URL of the evaluated image. */
   eval_source?: string;
+  /** Vision evaluator's pixel-based view classification. */
+  eval_actual_view?: string;
+  /** True when eval_actual_view matches the requested eval slot. */
+  eval_matches_requested_view?: boolean;
+  /** True when this image can fill the required slot for eval_actual_view. */
+  eval_usable_as_required_view?: boolean;
+  /** True when this image can be used as a numbered carousel extra. */
+  eval_usable_as_carousel_extra?: boolean;
+  /** True when the evaluator marked this as a near-duplicate. */
+  eval_duplicate?: boolean;
+  /** Evaluator quality classification for carousel reuse. */
+  eval_quality?: 'pass' | 'borderline' | 'fail' | string;
   /** Selected as a hero shot by the carousel builder. */
   hero?: boolean;
   /** Order among hero shots (1 = primary). */
@@ -75,6 +87,12 @@ export interface ProductImageFinderRun {
     started_at?: string | null;
     /** Duration ms (duplicated from run level for SQL blob access). */
     duration_ms?: number | null;
+    /**
+     * Per-pool partition key used for discovery-history isolation.
+     * Pools: 'priority-view' | 'view:<focus>' | 'loop-view' | 'loop-hero' | 'hero'.
+     * Absent on runs created before run-scope partitioning shipped.
+     */
+    run_scope_key?: string;
   };
 }
 

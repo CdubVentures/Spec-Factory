@@ -43,4 +43,17 @@ describe('productImageFinderResponseSchema', () => {
       'PIF images must not carry evidence_refs — the URL itself is the evidence',
     );
   });
+
+  it('accepts an optional run_scope_key string and round-trips it', () => {
+    const result = productImageFinderResponseSchema.parse({
+      images: [baseImage],
+      run_scope_key: 'view:top',
+    });
+    assert.equal(result.run_scope_key, 'view:top');
+  });
+
+  it('omits run_scope_key when not provided (legacy compatibility)', () => {
+    const result = productImageFinderResponseSchema.parse({ images: [baseImage] });
+    assert.equal(result.run_scope_key, undefined);
+  });
 });

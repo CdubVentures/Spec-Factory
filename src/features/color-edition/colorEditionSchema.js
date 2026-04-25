@@ -78,6 +78,7 @@ const variantMappingSchema = z.object({
   reason: z.string(),
   verified: z.boolean().default(false),
   preferred_label: z.string().optional(),
+  preferred_color_atoms: z.array(z.string()).min(1).optional(),
   confidence: valueConfidenceSchema.default(0),
   evidence_refs: evidenceRefsSchema,
 });

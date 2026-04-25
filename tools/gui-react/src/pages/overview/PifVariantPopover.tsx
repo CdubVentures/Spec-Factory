@@ -7,7 +7,7 @@ import { FinderRunModelBadge, PromptPreviewModal, useResolvedFinderModel } from 
 import { Popover } from '../../shared/ui/overlay/Popover.tsx';
 import { FinderRunPopoverShell } from '../../shared/ui/overlay/FinderRunPopoverShell.tsx';
 import { useFireAndForget } from '../../features/operations/hooks/useFireAndForget.ts';
-import { useIsModuleRunning } from '../../features/operations/hooks/useFinderOperations.ts';
+import { useRunningVariantKeys } from '../../features/operations/hooks/useFinderOperations.ts';
 import { usePromptPreviewQuery } from '../../features/indexing/api/promptPreviewQueries.ts';
 import { useFinderDiscoveryHistoryStore } from '../../stores/finderDiscoveryHistoryStore.ts';
 import { groupHistory, type FinderRun } from '../../shared/ui/finder/discoveryHistoryHelpers.ts';
@@ -20,7 +20,7 @@ import {
 import { imageServeUrl } from '../../features/product-image-finder/helpers/pifImageUrls.ts';
 import { CarouselPreviewPopup } from '../../features/product-image-finder/components/CarouselPreviewPopup.tsx';
 import {
-  createPifLoopPromptPreviewState,
+  createPifLoopViewPreviewState,
   createPifPromptPreviewBody,
   type PifPromptPreviewState,
 } from '../../features/product-image-finder/state/pifPromptPreviewState.ts';
@@ -44,7 +44,6 @@ export interface PifVariantPopoverProps {
   readonly pulsing?: boolean;
 }
 
-const EVAL_STAGGER_MS = 500;
 const DEFAULT_VIEW_BUDGET: readonly string[] = ['top', 'left', 'angle'];
 
 const INDIVIDUAL_VIEWS: ReadonlyArray<{ readonly id: string; readonly label: string }> = [
@@ -76,12 +75,18 @@ export function PifVariantPopover({
   const totalTarget = variant.priority_total + variant.hero_target + variant.loop_total;
 
   const fire = useFireAndForget({ type: 'pif', category, productId });
-  const isRunning = useIsModuleRunning('pif', productId);
+  // WHY: Per-variant lock — match the IndexLab PIF panel (VariantImageGroup)
+  // so Loop/Evaluate only disable when THIS variant has the same op running,
+  // not when any other variant is running.
+  const loopingVariantKeys = useRunningVariantKeys('pif', productId, 'loop');
+  const evaluatingVariantKeys = useRunningVariantKeys('pif', productId, 'evaluate');
+  const variantKeyForLock = variant.variant_key || '';
+  const isLoopingThisVariant = loopingVariantKeys.has(variantKeyForLock);
+  const isEvaluatingThisVariant = evaluatingVariantKeys.has(variantKeyForLock);
 
   const runUrl = `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
   const loopUrl = `${runUrl}/loop`;
-  const evalViewUrl = `${runUrl}/evaluate-view`;
-  const evalHeroUrl = `${runUrl}/evaluate-hero`;
+  const evalCarouselUrl = `${runUrl}/evaluate-carousel`;
 
   const finderModel = useResolvedFinderModel('imageFinder');
   const evalModel = useResolvedFinderModel('imageEvaluator');
@@ -180,17 +185,9 @@ export function PifVariantPopover({
   }, [fire, loopUrl, variantKey, variantId]);
 
   const handleEval = useCallback(() => {
-    canonicalViews.forEach((view, i) => {
-      setTimeout(() => {
-        fire(evalViewUrl, { variant_key: variantKey, variant_id: variantId, view }, { subType: 'evaluate', variantKey });
-      }, i * EVAL_STAGGER_MS);
-    });
-    if (hasHeroes) {
-      setTimeout(() => {
-        fire(evalHeroUrl, { variant_key: variantKey, variant_id: variantId }, { subType: 'evaluate', variantKey });
-      }, canonicalViews.length * EVAL_STAGGER_MS);
-    }
-  }, [fire, evalViewUrl, evalHeroUrl, canonicalViews, hasHeroes, variantKey, variantId]);
+    if (!hasEvalTargets) return;
+    fire(evalCarouselUrl, { variant_key: variantKey, variant_id: variantId }, { subType: 'evaluate', variantKey });
+  }, [fire, evalCarouselUrl, hasEvalTargets, variantKey, variantId]);
 
   const promptPreviewBody = useMemo(
     () => createPifPromptPreviewBody(promptPreview),
@@ -307,14 +304,14 @@ export function PifVariantPopover({
                   runTitle="Loop: per-view focused calls until carousel complete"
                   previewTitle="Preview the Loop prompt sequence"
                   onRun={handleRunLoop}
-                  onPreview={() => setPromptPreview(createPifLoopPromptPreviewState(variantKey))}
-                  disabled={isRunning}
+                  onPreview={() => setPromptPreview(createPifLoopViewPreviewState(variantKey))}
+                  disabled={isLoopingThisVariant}
                 />
                 <button
                   type="button"
                   className="sf-frp-btn-secondary"
                   onClick={handleEval}
-                  disabled={!hasEvalTargets || isRunning}
+                  disabled={!hasEvalTargets || isEvaluatingThisVariant}
                   title="Carousel Builder: vision LLM picks winners"
                 >
                   Evaluate

@@ -540,6 +540,15 @@ describe('variantIdentityCheckResponseSchema', () => {
     assert.equal(result.data.mappings[0].preferred_label, 'Official Black');
   });
 
+  it('preferred_color_atoms accepts corrected registered atom arrays', () => {
+    const result = variantIdentityCheckResponseSchema.safeParse({
+      mappings: [{ ...validMapping, preferred_color_atoms: ['dark-green'] }],
+      remove: [],
+    });
+    assert.ok(result.success);
+    assert.deepEqual(result.data.mappings[0].preferred_color_atoms, ['dark-green']);
+  });
+
   it('orphan_remaps defaults to empty array when omitted', () => {
     const result = variantIdentityCheckResponseSchema.safeParse({
       mappings: [validMapping],

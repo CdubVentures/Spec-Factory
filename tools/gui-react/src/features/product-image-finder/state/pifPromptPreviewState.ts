@@ -1,7 +1,23 @@
 import type { PromptPreviewRequestBody } from '../../indexing/api/promptPreviewTypes.ts';
 import type { VariantInfo } from '../types.ts';
 
-export type PifPromptPreviewMode = 'view' | 'hero' | 'loop' | 'view-eval' | 'hero-eval';
+/**
+ * One mode per discovery pool. The backend derives `run_scope_key` from these
+ * (see src/features/product-image/runScope.js):
+ *   - 'view' (no body.view) → priority-view pool
+ *   - 'view' (with body.view) → view:<focus> pool
+ *   - 'hero' → standalone hero pool
+ *   - 'loop-view' → loop-view pool (representative iteration)
+ *   - 'loop-hero' → loop-hero pool
+ *   - 'view-eval' / 'hero-eval' → eval previews (orthogonal to discovery pools)
+ */
+export type PifPromptPreviewMode =
+  | 'view'
+  | 'hero'
+  | 'loop-view'
+  | 'loop-hero'
+  | 'view-eval'
+  | 'hero-eval';
 
 export interface PifPromptPreviewState {
   readonly variantKey: string;
@@ -33,13 +49,43 @@ export function createPifHeaderPromptPreviewState(
   };
 }
 
-export function createPifLoopPromptPreviewState(
+export function createPifPriorityViewPreviewState(
   variantKey: string,
-  label = 'Loop',
+  label = 'Priority View Run',
+): PifPromptPreviewState {
+  return { variantKey, mode: 'view', label };
+}
+
+export function createPifIndividualViewPreviewState(
+  variantKey: string,
+  view: string,
+  label?: string,
 ): PifPromptPreviewState {
   return {
     variantKey,
-    mode: 'loop',
-    label,
+    mode: 'view',
+    view,
+    label: label ?? `${view} Individual View Run`,
   };
+}
+
+export function createPifStandaloneHeroPreviewState(
+  variantKey: string,
+  label = 'Hero Run',
+): PifPromptPreviewState {
+  return { variantKey, mode: 'hero', label };
+}
+
+export function createPifLoopViewPreviewState(
+  variantKey: string,
+  label = 'Loop View iteration',
+): PifPromptPreviewState {
+  return { variantKey, mode: 'loop-view', label };
+}
+
+export function createPifLoopHeroPreviewState(
+  variantKey: string,
+  label = 'Loop Hero iteration',
+): PifPromptPreviewState {
+  return { variantKey, mode: 'loop-hero', label };
 }

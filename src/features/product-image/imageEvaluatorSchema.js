@@ -8,12 +8,27 @@ import { z } from 'zod';
  */
 
 const evalFlagEnum = z.enum(['watermark', 'badge', 'cropped', 'wrong_product', 'other']);
+const actualViewEnum = z.enum(['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle', 'generic']);
+const candidateQualityEnum = z.enum(['pass', 'borderline', 'fail']);
+
+const viewCandidateEvalSchema = z.object({
+  filename: z.string(),
+  actual_view: actualViewEnum,
+  matches_requested_view: z.boolean(),
+  usable_as_required_view: z.boolean(),
+  usable_as_carousel_extra: z.boolean(),
+  quality: candidateQualityEnum,
+  duplicate: z.boolean(),
+  flags: z.array(evalFlagEnum).optional(),
+  reasoning: z.string(),
+});
 
 export const viewEvalResponseSchema = z.object({
   winner: z.object({
     filename: z.string(),
     reasoning: z.string(),
   }).nullable(),
+  candidates: z.array(viewCandidateEvalSchema).optional(),
   rejected: z.array(z.object({
     filename: z.string(),
     flags: z.array(evalFlagEnum).optional(),

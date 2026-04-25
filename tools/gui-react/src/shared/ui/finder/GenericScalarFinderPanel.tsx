@@ -26,7 +26,7 @@ import { HeaderActionButton, RowActionButton, ACTION_BUTTON_WIDTH } from '../act
 // built-in spinner for the 'locked' intent.
 import { FinderKpiCard } from './FinderKpiCard.tsx';
 import { FinderPanelFooter } from './FinderPanelFooter.tsx';
-import { FinderRunModelBadge } from './FinderRunModelBadge.tsx';
+import { FinderEditablePhaseModelBadge } from './FinderEditablePhaseModelBadge.tsx';
 import { FinderDeleteConfirmModal } from './FinderDeleteConfirmModal.tsx';
 import { FinderSectionCard } from './FinderSectionCard.tsx';
 import { FinderHowItWorks, type HiwSection } from './FinderHowItWorks.tsx';
@@ -420,16 +420,7 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
         title={panelTitle}
         tip={panelTip}
         isRunning={isRunningModule}
-        modelStrip={
-          <FinderRunModelBadge
-            labelPrefix={moduleLabel}
-            model={modelDisplay}
-            accessMode={accessMode}
-            thinking={resolvedModel?.thinking ?? false}
-            webSearch={resolvedModel?.webSearch ?? false}
-            effortLevel={effortLevel}
-          />
-        }
+        modelStrip={<FinderEditablePhaseModelBadge phaseId={phase as LlmOverridePhaseId} labelPrefix={moduleLabel} title={`${moduleLabel} - Model`} />}
         actionSlot={
           <>
             <HeaderActionButton

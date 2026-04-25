@@ -52,7 +52,6 @@ import {
 } from '../panels/finderTabMeta.ts';
 import type { IndexingPanelId } from '../../../shared/ui/finder/IndexingPanelHeader.tsx';
 import { FINDER_PANELS } from '../state/finderPanelRegistry.generated.ts';
-import { DiscoveryHistoryDrawer } from '../../../shared/ui/finder/index.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 
 export function IndexingPage() {
@@ -350,8 +349,6 @@ export function IndexingPage() {
           action failed: {actionError}
         </div>
       )}
-
-      <DiscoveryHistoryDrawer />
     </div>
   );
 }

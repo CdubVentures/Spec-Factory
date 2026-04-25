@@ -7840,7 +7840,38 @@
       "variant_dependent": true
     },
     "rgb": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Boolean yes/no only; keep lighting-brand phrases such as Chroma, Razer Chroma, LIGHTSYNC, Prism, PrismSync, Brilliant Prism, Light Effects, Mouse Backlighting, and 16.8 million colors as aliases, not public chips. Return true only when the exact mouse is marketed or documented as having user-visible RGB lighting/backlighting/illumination, including source phrases such as RGB, Chroma RGB, LIGHTSYNC RGB, Prism/PrismSync, Brilliant Prism, per-LED RGB, full-spectrum lighting, customizable lighting, or 16.8M/16.8 million colors. Single-zone RGB still counts when the source calls it RGB or customizable color lighting. Return false when a credible source explicitly says no RGB/no lighting, or when official material clearly distinguishes this exact model from an RGB sibling and the RGB feature applies only to the sibling. Do not count DPI, battery, pairing, profile, or charging/status indicator LEDs as RGB lighting unless the product is also marketed as having RGB/backlighting. Product renders/photos can support true when lit zones are visible or captions/specs identify RGB; unlit photos alone are not negative evidence. Match exact edition/SKU/model suffix before copying an RGB claim, especially Plus/Pro/Ultimate/35K/Wired/Wireless/Gen 2 variants.",
+        "variant_inventory_usage": {
+          "mode": "default"
+        }
+      },
+      "aliases": [
+        "RGB lighting",
+        "RGB backlighting",
+        "RGB illumination",
+        "customizable RGB",
+        "customizable lighting",
+        "Chroma RGB",
+        "Razer Chroma",
+        "LIGHTSYNC RGB",
+        "PrismSync",
+        "Prism",
+        "Brilliant Prism",
+        "per-LED RGB",
+        "full-spectrum RGB",
+        "full-spectrum lighting",
+        "16.8 million colors",
+        "16.8M colors",
+        "lighting zones",
+        "Mouse Backlighting",
+        "Light Effects",
+        "no RGB",
+        "no lighting"
+      ],
       "availability": "sometimes",
       "canonical_key": "rgb",
       "component": null,
@@ -7942,21 +7973,34 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "review"
+          "manufacturer product page",
+          "manufacturer support/FAQ",
+          "official spec sheet",
+          "product manual",
+          "professional review/lab",
+          "authorized retailer product details"
         ],
         "domain_hints": [
           "rtings.com",
+          "bestbuy.com",
+          "support.steelseries.com",
           "eloshapes.com",
-          "mousespecs.org",
-          "bestbuy.com"
+          "mousespecs.org"
         ],
         "query_terms": [
           "RGB",
           "RGB lighting",
-          "Chroma",
-          "LIGHTSYNC",
-          "Prism"
+          "RGB backlighting",
+          "Chroma RGB",
+          "LIGHTSYNC RGB",
+          "PrismSync",
+          "Brilliant Prism",
+          "16.8 million colors",
+          "lighting zones",
+          "Mouse Backlighting",
+          "Light Effects",
+          "no RGB",
+          "no lighting"
         ]
       },
       "selection_policy": {},

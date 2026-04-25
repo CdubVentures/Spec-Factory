@@ -155,6 +155,22 @@ export function useCarouselSlotMutation(category: string, productId: string) {
   });
 }
 
+export function useClearCarouselWinnersMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+
+  const invalidate = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['product-image-finder', category, productId] });
+  }, [queryClient, category, productId]);
+
+  return useMutation<{ ok: boolean; carousel_slots: Record<string, Record<string, string | null>> }, Error, { variant_key: string; variant_id?: string }>({
+    mutationFn: (body) => api.post<{ ok: boolean; carousel_slots: Record<string, Record<string, string | null>> }>(
+      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/carousel-winners/clear`,
+      body,
+    ),
+    onSuccess: invalidate,
+  });
+}
+
 export function useDeleteEvalRecordMutation(category: string, productId: string) {
   const queryClient = useQueryClient();
 

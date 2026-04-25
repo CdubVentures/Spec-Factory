@@ -4,7 +4,7 @@ import { api } from '../../api/client.ts';
 import { useUiStore } from '../../stores/uiStore.ts';
 import { MetricCard } from '../../shared/ui/data-display/MetricCard.tsx';
 import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
-import { TrafficLight } from '../../shared/ui/feedback/TrafficLight.tsx';
+import { MiniGauge } from '../../shared/ui/data-display/MiniGauge.tsx';
 import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { pct } from '../../utils/formatting.ts';
 import { useFormatDateYMD } from '../../utils/dateTime.ts';
@@ -138,15 +138,6 @@ function metricTrafficColor(ratio: number): 'green' | 'yellow' | 'red' | 'gray' 
   if (ratio >= 0.85) return 'green';
   if (ratio >= 0.6) return 'yellow';
   return 'red';
-}
-
-function MetricWithDot({ value, text }: { value: number; text: string }) {
-  return (
-    <span className="flex items-center gap-1">
-      <TrafficLight color={metricTrafficColor(value)} />
-      {text}
-    </span>
-  );
 }
 
 function buildColumns(
@@ -331,7 +322,7 @@ function buildColumns(
       ),
       cell: ({ getValue }) => {
         const v = getValue() as number;
-        return <MetricWithDot value={v} text={pct(v)} />;
+        return <MiniGauge ratio={v} tone={metricTrafficColor(v)} label={pct(v)} />;
       },
       size: 95,
     },
@@ -344,7 +335,7 @@ function buildColumns(
       ),
       cell: ({ getValue }) => {
         const v = getValue() as number;
-        return <MetricWithDot value={v} text={pct(v)} />;
+        return <MiniGauge ratio={v} tone={metricTrafficColor(v)} label={pct(v)} />;
       },
       size: 95,
     },
@@ -359,7 +350,7 @@ function buildColumns(
         const filled = row.original.fieldsFilled;
         const total = row.original.fieldsTotal;
         const ratio = total > 0 ? filled / total : 0;
-        return <MetricWithDot value={ratio} text={`${filled}/${total}`} />;
+        return <MiniGauge ratio={ratio} tone={metricTrafficColor(ratio)} label={`${filled}/${total}`} />;
       },
       size: 95,
     },

@@ -72,6 +72,8 @@ describe('buildProductImageFinderPrompt — characterization', () => {
     assert.ok(result.includes('Image requirements:'));
     assert.ok(result.includes('Clean product shot'));
     assert.ok(result.includes('View slot rule'));
+    assert.ok(result.includes('Query intent is not view evidence'));
+    assert.ok(result.includes('Multiple unique clean images for the same actual view are useful'));
     assert.ok(result.includes('DIRECT link'));
     assert.ok(result.includes('NOT: lifestyle photos'));
   });

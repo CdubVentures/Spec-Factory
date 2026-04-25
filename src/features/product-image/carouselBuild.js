@@ -1,14 +1,13 @@
 /**
  * Carousel Builder — thin per-view and per-hero evaluation functions.
  *
- * Each function handles ONE LLM call: either evaluate candidates for a single
- * view, or pick heroes from the view winners. The GUI fires N+1 of these in
- * parallel — the LLM queue serializes them.
+ * Per-view and per-hero helpers still handle one LLM call. The carousel eval
+ * loop sequences those helpers for one variant operation.
  */
 
 import path from 'node:path';
 import { readProductImages } from './productImageStore.js';
-import { resolveViewConfig, resolveViewEvalCriteria, resolveHeroEvalCriteria } from './productImageLlmAdapter.js';
+import { resolveViewConfig, resolveViewBudget, resolveViewEvalCriteria, resolveHeroEvalCriteria, CANONICAL_VIEW_KEYS } from './productImageLlmAdapter.js';
 import {
   evaluateViewCandidates,
   mergeEvaluation,
@@ -20,6 +19,7 @@ import {
   createThumbnailBase64,
   buildViewEvalPrompt,
   buildHeroSelectionPrompt,
+  resolveCarouselSlots,
 } from './imageEvaluator.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
@@ -29,6 +29,93 @@ import {
   resolveViewEvalPromptInputs,
   resolveHeroEvalPromptInputs,
 } from './productImagePreviewPrompt.js';
+
+const MOUSE_EVAL_VIEW_ORDER = Object.freeze(['top', 'left', 'right', 'bottom', 'angle', 'sangle', 'front', 'rear']);
+
+function resolveCarouselEvalViewOrder({ viewBudget, category }) {
+  const budget = [...new Set(viewBudget || [])];
+  if (category !== 'mouse') return budget;
+  const ordered = MOUSE_EVAL_VIEW_ORDER.filter((view) => budget.includes(view));
+  const remaining = budget.filter((view) => !ordered.includes(view));
+  return [...ordered, ...remaining];
+}
+
+function resolveCollectedExtraEvalViewOrder({ category }) {
+  if (category === 'mouse') {
+    const ordered = MOUSE_EVAL_VIEW_ORDER.filter((view) => CANONICAL_VIEW_KEYS.includes(view));
+    const remaining = CANONICAL_VIEW_KEYS.filter((view) => !ordered.includes(view));
+    return [...ordered, ...remaining];
+  }
+
+  const categoryOrder = resolveViewConfig('', category)
+    .map((entry) => entry.key)
+    .filter((view) => CANONICAL_VIEW_KEYS.includes(view));
+  const remaining = CANONICAL_VIEW_KEYS.filter((view) => !categoryOrder.includes(view));
+  return [...categoryOrder, ...remaining];
+}
+
+function resolveSmartEvalViewPlan({ viewBudget, category, availableViews }) {
+  const requiredOrder = resolveCarouselEvalViewOrder({ viewBudget, category });
+  const availableCanonicalViews = new Set(
+    [...(availableViews || [])].filter((view) => CANONICAL_VIEW_KEYS.includes(view)),
+  );
+  const skipped = [];
+  const viewCalls = [];
+
+  for (const view of requiredOrder) {
+    if (availableCanonicalViews.has(view)) {
+      viewCalls.push(view);
+    } else {
+      skipped.push({ view, reason: 'no_candidates' });
+    }
+  }
+
+  const queued = new Set(viewCalls);
+  const required = new Set(requiredOrder);
+  for (const view of resolveCollectedExtraEvalViewOrder({ category })) {
+    if (!availableCanonicalViews.has(view)) continue;
+    if (required.has(view)) continue;
+    if (queued.has(view)) continue;
+    viewCalls.push(view);
+    queued.add(view);
+  }
+
+  return { viewCalls, skipped };
+}
+
+function resolveCarouselContextImages({ product, root, variantKey, variantId, viewBudget, currentView, allImages, carouselSlots }) {
+  const imagesDir = path.join(root, product.product_id, 'images');
+  const imageByFilename = new Map(
+    (allImages || [])
+      .filter((img) => matchVariant(img, { variantId, variantKey }))
+      .map((img) => [img.filename, img]),
+  );
+  return resolveCarouselSlots({
+    viewBudget,
+    heroCount: 0,
+    variantKey,
+    variantId,
+    carouselSlots,
+    images: allImages,
+  })
+    .filter((slot) => slot.slot !== currentView && slot.filename)
+    .map((slot) => {
+      const img = imageByFilename.get(slot.filename);
+      return {
+        slot: slot.slot,
+        filename: slot.filename,
+        imagePath: path.join(imagesDir, slot.filename),
+        width: img?.width,
+        height: img?.height,
+        bytes: img?.bytes,
+      };
+    });
+}
+
+function formatEvalLoopProgress({ label, current, total }) {
+  const remaining = Math.max(total - current, 0);
+  return `${label} — call ${current}/${total}, ${remaining} remaining`;
+}
 
 /**
  * Evaluate candidates for ONE view of ONE variant.
@@ -43,6 +130,7 @@ export async function runEvalView({
   variantKey,
   variantId,
   view,
+  carouselContext = [],
   productRoot,
   signal,
   onStageAdvance = null,
@@ -118,15 +206,18 @@ export async function runEvalView({
     label: viewImages[0]?.variant_label || variantKey,
     type: viewImages[0]?.variant_type || 'color',
   };
-  const preEvalPrompt = buildViewEvalPrompt(resolveViewEvalPromptInputs({
-    product,
-    variant: evalVariant,
-    view,
-    viewDescription,
-    candidates: viewImages,
-    evalPromptOverride,
-    evalCriteria,
-  }));
+  const preEvalPrompt = buildViewEvalPrompt({
+    ...resolveViewEvalPromptInputs({
+      product,
+      variant: evalVariant,
+      view,
+      viewDescription,
+      candidates: viewImages,
+      evalPromptOverride,
+      evalCriteria,
+    }),
+    carouselContext,
+  });
   onLlmCallComplete?.({ prompt: { system: preEvalPrompt, user: `${view} view — ${viewImages.length} candidates` }, response: null, model: resolvedModelName, variant: variantKey, mode: 'view-eval', label: viewLabel });
   const result = await evalFn({
     imagePaths,
@@ -139,6 +230,7 @@ export async function runEvalView({
     size: thumbSize,
     promptOverride: evalPromptOverride,
     evalCriteria,
+    carouselContext,
     callLlm,
   });
   onLlmCallComplete?.({ prompt: { system: result._prompt || '(view eval)', user: `${view} view — ${viewImages.length} candidates` }, response: result._response, model: resolvedModelName, variant: variantKey, mode: 'view-eval', usage: result.usage || null, label: viewLabel });
@@ -202,6 +294,146 @@ export async function runEvalView({
 
   onStageAdvance?.('Complete');
   return result;
+}
+
+/**
+ * Evaluate one variant's carousel as a single operational loop.
+ *
+ * The loop keeps each slot as its own LLM decision, but sequences those
+ * decisions so later slots can see the carousel winners already chosen.
+ */
+export async function runEvalCarouselLoop({
+  product,
+  appDb = null,
+  specDb,
+  config = {},
+  logger = null,
+  variantKey,
+  variantId,
+  productRoot,
+  signal,
+  onStageAdvance = null,
+  onModelResolved = null,
+  onStreamChunk = null,
+  onQueueWait = null,
+  onLlmCallComplete = null,
+  onProgress = null,
+  onSlotComplete = null,
+  // Test seams
+  _evalViewFn = null,
+  _heroCallFn = null,
+  _mergeFn = null,
+}) {
+  const root = productRoot || defaultProductRoot();
+  const finderStore = specDb?.getFinderStore?.('productImageFinder');
+  const viewBudget = resolveViewBudget(finderStore?.getSetting?.('viewBudget') || '', product.category);
+  const heroEnabled = finderStore?.getSetting?.('heroEnabled') !== 'false';
+  const pifDoc = readProductImages({ productId: product.product_id, productRoot: root });
+  const allImages = pifDoc?.selected?.images || [];
+  const variantImages = allImages.filter((img) => matchVariant(img, { variantId, variantKey }));
+  const availableViews = new Set(
+    variantImages
+      .filter((img) => img.view && img.view !== 'hero')
+      .map((img) => img.view),
+  );
+
+  const { viewCalls, skipped } = resolveSmartEvalViewPlan({
+    viewBudget,
+    category: product.category,
+    availableViews,
+  });
+
+  const hasHeroCandidates = variantImages.some((img) => img.view === 'hero');
+  const willEvalHero = heroEnabled && hasHeroCandidates;
+  const totalCalls = viewCalls.length + (willEvalHero ? 1 : 0);
+  const views = [];
+  let callNumber = 0;
+  onStageAdvance?.('Evaluating');
+
+  for (const view of viewCalls) {
+    callNumber += 1;
+    const freshDoc = readProductImages({ productId: product.product_id, productRoot: root });
+    const freshImages = freshDoc?.selected?.images || [];
+    const carouselContext = resolveCarouselContextImages({
+      product,
+      root,
+      variantKey,
+      variantId,
+      viewBudget,
+      currentView: view,
+      allImages: freshImages,
+      carouselSlots: freshDoc?.carousel_slots || {},
+    });
+    onProgress?.(formatEvalLoopProgress({ label: `Evaluating ${view}`, current: callNumber, total: totalCalls }));
+    const result = await runEvalView({
+      product,
+      appDb,
+      specDb,
+      config,
+      logger,
+      variantKey,
+      variantId,
+      view,
+      carouselContext,
+      productRoot: root,
+      signal,
+      onStageAdvance: (name) => {
+        if (name === 'Evaluating') onStageAdvance?.('Evaluating');
+      },
+      onModelResolved,
+      onStreamChunk,
+      onQueueWait,
+      onLlmCallComplete,
+      _evalViewFn,
+      _mergeFn,
+    });
+    views.push({ view, ...result });
+    onSlotComplete?.({
+      type: 'view',
+      view,
+      callNumber,
+      totalCalls,
+      result,
+    });
+  }
+
+  let hero = { heroes: [], skipped: true };
+  if (willEvalHero) {
+    callNumber += 1;
+    onProgress?.(formatEvalLoopProgress({ label: 'Evaluating hero', current: callNumber, total: totalCalls }));
+    onStageAdvance?.('Heroes');
+    hero = await runEvalHero({
+      product,
+      appDb,
+      specDb,
+      config,
+      logger,
+      variantKey,
+      variantId,
+      productRoot: root,
+      signal,
+      onStageAdvance: (name) => {
+        if (name === 'Heroes') onStageAdvance?.('Heroes');
+      },
+      onModelResolved,
+      onStreamChunk,
+      onQueueWait,
+      onLlmCallComplete,
+      _heroCallFn,
+      _mergeFn,
+    });
+    onSlotComplete?.({
+      type: 'hero',
+      view: 'hero',
+      callNumber,
+      totalCalls,
+      result: hero,
+    });
+  }
+
+  onStageAdvance?.('Complete');
+  onProgress?.('Complete');
+  return { ok: true, views, skipped, hero };
 }
 
 /**

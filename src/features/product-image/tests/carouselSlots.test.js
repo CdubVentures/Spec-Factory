@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { writeCarouselSlot, resolveCarouselSlots } from '../imageEvaluator.js';
+import { writeCarouselSlot, clearCarouselWinners, resolveCarouselSlots } from '../imageEvaluator.js';
 
 const TMP = path.join(os.tmpdir(), `carousel-slot-test-${Date.now()}`);
 const PRODUCT_ID = 'test-product';
@@ -28,7 +28,7 @@ function makeImage(overrides = {}) {
   };
 }
 
-function writeTestDoc(images, carouselSlots = {}) {
+function writeTestDoc(images, carouselSlots = {}, runs = []) {
   const doc = {
     product_id: PRODUCT_ID,
     category: 'mouse',
@@ -37,7 +37,7 @@ function writeTestDoc(images, carouselSlots = {}) {
     last_ran_at: '',
     run_count: 1,
     next_run_number: 2,
-    runs: [],
+    runs,
     carousel_slots: carouselSlots,
   };
   const dir = path.join(TMP, PRODUCT_ID);
@@ -140,6 +140,151 @@ describe('writeCarouselSlot', () => {
       filename: 'angle-black.png',
     });
     assert.equal(result['color:black'].angle, 'angle-black.png');
+  });
+});
+
+/* ── clearCarouselWinners ───────────────────────────────────────── */
+
+describe('clearCarouselWinners', () => {
+  it('empties resolved carousel slots for one variant without deleting images or other variants', () => {
+    const blackTop = makeImage({ view: 'top', filename: 'top-black.png', eval_best: true, eval_flags: [], eval_reasoning: 'best top', eval_source: 'https://example.com/top.png' });
+    const blackLeft = makeImage({ view: 'left', filename: 'left-black.png', eval_best: true, eval_flags: [], eval_reasoning: 'best left', eval_source: 'https://example.com/left.png' });
+    const blackHero = makeImage({ view: 'hero', filename: 'hero-black.png', hero: true, hero_rank: 1, eval_reasoning: 'best hero' });
+    const whiteTop = makeImage({ view: 'top', filename: 'top-white.png', variant_id: 'v_white123', variant_key: 'color:white', variant_label: 'White', eval_best: true });
+
+    writeTestDoc([
+      blackTop,
+      blackLeft,
+      blackHero,
+      whiteTop,
+    ], {
+      'color:black': { top: 'manual-top-black.png', hero_1: 'manual-hero-black.png' },
+      'color:white': { top: 'manual-top-white.png' },
+    }, [
+      {
+        run_number: 1,
+        selected: {
+          images: [
+            { ...blackTop },
+            { ...blackLeft },
+            { ...blackHero },
+            { ...whiteTop },
+          ],
+        },
+        response: {
+          images: [
+            { ...blackTop },
+            { ...blackLeft },
+            { ...blackHero },
+            { ...whiteTop },
+          ],
+        },
+      },
+    ]);
+
+    const result = clearCarouselWinners({
+      productId: PRODUCT_ID,
+      productRoot: TMP,
+      variantKey: 'color:black',
+      variantId: 'v_abc12345',
+    });
+
+    assert.ok(result);
+    const doc = readTestDoc();
+    assert.equal(doc.selected.images.length, 4);
+    assert.equal(doc.carousel_slots['color:black'], undefined);
+    assert.deepEqual(doc.carousel_slots['color:white'], { top: 'manual-top-white.png' });
+
+    const blackImages = doc.selected.images.filter((img) => img.variant_key === 'color:black');
+    for (const img of blackImages) {
+      assert.equal(img.eval_best, undefined);
+      assert.equal(img.eval_flags, undefined);
+      assert.equal(img.eval_reasoning, undefined);
+      assert.equal(img.eval_source, undefined);
+      assert.equal(img.hero, undefined);
+      assert.equal(img.hero_rank, undefined);
+    }
+
+    const blackRunImages = doc.runs[0].selected.images.filter((img) => img.variant_key === 'color:black');
+    for (const img of blackRunImages) {
+      assert.equal(img.eval_best, undefined);
+      assert.equal(img.eval_flags, undefined);
+      assert.equal(img.eval_reasoning, undefined);
+      assert.equal(img.eval_source, undefined);
+      assert.equal(img.hero, undefined);
+      assert.equal(img.hero_rank, undefined);
+    }
+
+    const blackResponseImages = doc.runs[0].response.images.filter((img) => img.variant_key === 'color:black');
+    for (const img of blackResponseImages) {
+      assert.equal(img.eval_best, undefined);
+      assert.equal(img.eval_flags, undefined);
+      assert.equal(img.eval_reasoning, undefined);
+      assert.equal(img.eval_source, undefined);
+      assert.equal(img.hero, undefined);
+      assert.equal(img.hero_rank, undefined);
+    }
+
+    const whiteImage = doc.selected.images.find((img) => img.variant_key === 'color:white');
+    assert.equal(whiteImage.eval_best, true);
+
+    const slots = resolveCarouselSlots({
+      viewBudget: ['top', 'left'],
+      heroCount: 1,
+      variantKey: 'color:black',
+      variantId: 'v_abc12345',
+      carouselSlots: doc.carousel_slots,
+      images: doc.runs[0].selected.images,
+    });
+    assert.deepEqual(slots.map((slot) => slot.filename), [null, null, null]);
+  });
+
+  it('clears current winners from legacy selected-only documents', () => {
+    writeTestDoc([
+      makeImage({ view: 'top', filename: 'top-black.png', eval_best: true, eval_flags: [], eval_reasoning: 'best top', eval_source: 'https://example.com/top.png' }),
+      makeImage({ view: 'left', filename: 'left-black.png', eval_best: true, eval_flags: [], eval_reasoning: 'best left', eval_source: 'https://example.com/left.png' }),
+      makeImage({ view: 'hero', filename: 'hero-black.png', hero: true, hero_rank: 1, eval_reasoning: 'best hero' }),
+      makeImage({ view: 'top', filename: 'top-white.png', variant_id: 'v_white123', variant_key: 'color:white', variant_label: 'White', eval_best: true }),
+    ], {
+      'color:black': { top: 'manual-top-black.png', hero_1: 'manual-hero-black.png' },
+      'color:white': { top: 'manual-top-white.png' },
+    });
+
+    const result = clearCarouselWinners({
+      productId: PRODUCT_ID,
+      productRoot: TMP,
+      variantKey: 'color:black',
+      variantId: 'v_abc12345',
+    });
+
+    assert.ok(result);
+    const doc = readTestDoc();
+    assert.equal(doc.selected.images.length, 4);
+    assert.equal(doc.carousel_slots['color:black'], undefined);
+    assert.deepEqual(doc.carousel_slots['color:white'], { top: 'manual-top-white.png' });
+
+    const blackImages = doc.selected.images.filter((img) => img.variant_key === 'color:black');
+    for (const img of blackImages) {
+      assert.equal(img.eval_best, undefined);
+      assert.equal(img.eval_flags, undefined);
+      assert.equal(img.eval_reasoning, undefined);
+      assert.equal(img.eval_source, undefined);
+      assert.equal(img.hero, undefined);
+      assert.equal(img.hero_rank, undefined);
+    }
+
+    const whiteImage = doc.selected.images.find((img) => img.variant_key === 'color:white');
+    assert.equal(whiteImage.eval_best, true);
+
+    const slots = resolveCarouselSlots({
+      viewBudget: ['top', 'left'],
+      heroCount: 1,
+      variantKey: 'color:black',
+      variantId: 'v_abc12345',
+      carouselSlots: doc.carousel_slots,
+      images: doc.selected.images,
+    });
+    assert.deepEqual(slots.map((slot) => slot.filename), [null, null, null]);
   });
 });
 
@@ -272,5 +417,105 @@ describe('resolveCarouselSlots', () => {
     const hero1 = result.find(s => s.slot === 'hero_1');
     assert.equal(hero1.filename, null);
     assert.equal(hero1.source, 'empty');
+  });
+
+  it('fills an empty required slot from a classified candidate found in another view search', () => {
+    const result = resolveCarouselSlots({
+      viewBudget: ['top', 'front'],
+      heroCount: 0,
+      variantKey: 'color:black',
+      carouselSlots: {},
+      images: [
+        makeImage({
+          view: 'front',
+          filename: 'front-search-top.png',
+          eval_best: false,
+          eval_actual_view: 'top',
+          eval_matches_requested_view: false,
+          eval_usable_as_required_view: true,
+          eval_usable_as_carousel_extra: true,
+          eval_duplicate: false,
+          eval_flags: [],
+          width: 1200,
+          height: 800,
+        }),
+      ],
+    });
+    assert.deepEqual(result.map(s => [s.slot, s.filename, s.source]), [
+      ['top', 'front-search-top.png', 'eval'],
+      ['front', null, 'empty'],
+    ]);
+  });
+
+  it('adds numbered extra slots from unused good classified images without filling the wrong required view', () => {
+    const result = resolveCarouselSlots({
+      viewBudget: ['top', 'front'],
+      heroCount: 0,
+      variantKey: 'color:black',
+      carouselSlots: {},
+      images: [
+        makeImage({ view: 'top', filename: 'top-black.png', eval_best: true, eval_actual_view: 'top', eval_usable_as_required_view: true, eval_usable_as_carousel_extra: true }),
+        makeImage({
+          view: 'front',
+          filename: 'front-search-top.png',
+          eval_best: false,
+          eval_actual_view: 'top',
+          eval_matches_requested_view: false,
+          eval_usable_as_required_view: true,
+          eval_usable_as_carousel_extra: true,
+          eval_duplicate: false,
+          eval_flags: [],
+        }),
+      ],
+    });
+    assert.deepEqual(result.map(s => [s.slot, s.filename, s.source]), [
+      ['top', 'top-black.png', 'eval'],
+      ['front', null, 'empty'],
+      ['top2', 'front-search-top.png', 'eval'],
+    ]);
+  });
+
+  it('adds generic product extras as img slots and skips duplicate or flagged candidates', () => {
+    const result = resolveCarouselSlots({
+      viewBudget: ['top'],
+      heroCount: 0,
+      variantKey: 'color:black',
+      carouselSlots: {},
+      images: [
+        makeImage({ view: 'top', filename: 'top-black.png', eval_best: true, eval_actual_view: 'top', eval_usable_as_required_view: true, eval_usable_as_carousel_extra: true }),
+        makeImage({
+          view: 'angle',
+          filename: 'generic-product.png',
+          eval_best: false,
+          eval_actual_view: 'generic',
+          eval_usable_as_required_view: false,
+          eval_usable_as_carousel_extra: true,
+          eval_duplicate: false,
+          eval_flags: [],
+          width: 1400,
+          height: 900,
+        }),
+        makeImage({
+          view: 'angle',
+          filename: 'duplicate-product.png',
+          eval_actual_view: 'generic',
+          eval_usable_as_carousel_extra: true,
+          eval_duplicate: true,
+          eval_flags: [],
+        }),
+        makeImage({
+          view: 'angle',
+          filename: 'cropped-product.png',
+          eval_actual_view: 'generic',
+          eval_usable_as_carousel_extra: true,
+          eval_duplicate: false,
+          eval_flags: ['cropped'],
+        }),
+      ],
+    });
+    assert.deepEqual(result.map(s => [s.slot, s.filename, s.source]), [
+      ['top', 'top-black.png', 'eval'],
+      ['img1', 'generic-product.png', 'eval'],
+    ]);
   });
 });

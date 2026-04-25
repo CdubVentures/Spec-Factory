@@ -348,7 +348,7 @@ describe('validateColorsAgainstPalette', () => {
 /* ── validateIdentityMappings (Gate 2) ─────────────────────────── */
 
 describe('validateIdentityMappings', () => {
-  const palette = ['black', 'white', 'red', 'blue', 'orange', 'gold', 'light-blue', 'deep-ocean-blue'];
+  const palette = ['black', 'white', 'red', 'blue', 'orange', 'gold', 'light-blue', 'dark-green', 'deep-ocean-blue'];
 
   it('valid: all matches unique, new/reject have null match', () => {
     const result = validateIdentityMappings({
@@ -453,6 +453,24 @@ describe('validateIdentityMappings', () => {
       palette,
     });
     assert.equal(result.valid, true);
+  });
+
+  it('invalid: preferred_color_atoms with unknown atom is rejected', () => {
+    const result = validateIdentityMappings({
+      mappings: [
+        {
+          new_key: 'edition:cod-bo6',
+          match: 'v_ccc33333',
+          action: 'match',
+          reason: 'visual atom correction',
+          preferred_color_atoms: ['forest-metallic'],
+        },
+      ],
+      existingRegistry: makeRegistry(),
+      palette,
+    });
+    assert.equal(result.valid, false);
+    assert.ok(result.reason.includes('forest-metallic'));
   });
 
   it('valid: match keeps same edition slug', () => {
@@ -563,6 +581,32 @@ describe('applyIdentityMappings', () => {
     assert.equal(edEntry.edition_slug, 'cod-bo6', 'slug must NOT change');
     assert.equal(edEntry.edition_display_name, 'Call of Duty Black Ops 6');
     assert.deepStrictEqual(edEntry.color_atoms, ['black', 'orange', 'gold']);
+  });
+
+  it('edition match uses preferred_color_atoms to repair visual atom mistakes', () => {
+    const { registry } = applyIdentityMappings({
+      existingRegistry: makeRegistry(),
+      mappings: [
+        {
+          new_key: 'edition:cod-bo6',
+          match: 'v_ccc33333',
+          action: 'match',
+          reason: 'official image is dark metallic green, not olive',
+          preferred_color_atoms: ['dark-green'],
+        },
+      ],
+      remove: [],
+      productId: 'mouse-001',
+      colors: ['black', 'olive'],
+      colorNames: {},
+      editions: { 'cod-bo6': { display_name: 'COD BO6', colors: ['olive'] } },
+    });
+    const edEntry = registry.find(e => e.variant_id === 'v_ccc33333');
+    assert.equal(edEntry.variant_id, 'v_ccc33333', 'hash must NOT change');
+    assert.equal(edEntry.variant_key, 'edition:cod-bo6', 'edition key must NOT change');
+    assert.equal(edEntry.edition_slug, 'cod-bo6', 'slug must NOT change');
+    assert.deepStrictEqual(edEntry.color_atoms, ['dark-green']);
+    assert.ok(edEntry.updated_at, 'updated_at must be set when atoms change');
   });
 
   // ── new action ──

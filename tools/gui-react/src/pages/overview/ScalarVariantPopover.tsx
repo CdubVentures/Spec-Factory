@@ -8,7 +8,7 @@ import { FinderRunModelBadge, PromptPreviewModal, useResolvedFinderModel } from 
 import { Popover } from '../../shared/ui/overlay/Popover.tsx';
 import { FinderRunPopoverShell } from '../../shared/ui/overlay/FinderRunPopoverShell.tsx';
 import { useFireAndForget } from '../../features/operations/hooks/useFireAndForget.ts';
-import { useIsModuleRunning } from '../../features/operations/hooks/useFinderOperations.ts';
+import { useRunningVariantKeys } from '../../features/operations/hooks/useFinderOperations.ts';
 import { usePromptPreviewQuery } from '../../features/indexing/api/promptPreviewQueries.ts';
 import { useFinderDiscoveryHistoryStore } from '../../stores/finderDiscoveryHistoryStore.ts';
 import { groupHistory, type FinderRun } from '../../shared/ui/finder/discoveryHistoryHelpers.ts';
@@ -83,12 +83,16 @@ export function ScalarVariantPopover({
   const hasValue = variant.value && variant.confidence > 0;
 
   const fire = useFireAndForget({ type: moduleType, category, productId });
-  const isRunning = useIsModuleRunning(moduleType, productId);
+  // WHY: Per-variant Loop lock — match the IndexLab scalar finder panel
+  // (GenericScalarFinderPanel) so Loop only disables when THIS variant has
+  // a running loop op, not when any other variant is running.
+  const loopingVariantKeys = useRunningVariantKeys(moduleType, productId, 'loop');
   const { model, accessMode, modelDisplay, effortLevel } = useResolvedFinderModel(phaseId);
 
   const loopUrl = `${runUrl}/loop`;
   const variantKey = variant.variant_key || '';
   const variantId = variant.variant_id;
+  const isLoopingThisVariant = loopingVariantKeys.has(variantKey);
   const displayValue = hasValue ? formatValue(variant.value) : '';
 
   // WHY: Action handlers below intentionally leave the popover open — users
@@ -191,7 +195,7 @@ export function ScalarVariantPopover({
               previewTitle={`Preview the ${labelPrefix} Loop prompt (iteration 1)`}
               onRun={handleLoop}
               onPreview={() => setPromptPreview('loop')}
-              disabled={isRunning}
+              disabled={isLoopingThisVariant}
             />
             <button
               type="button"
