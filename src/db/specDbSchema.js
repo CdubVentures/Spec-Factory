@@ -521,6 +521,7 @@ CREATE TABLE IF NOT EXISTS pif_variant_progress (
   loop_total        INTEGER NOT NULL DEFAULT 0,
   hero_filled       INTEGER NOT NULL DEFAULT 0,
   hero_target       INTEGER NOT NULL DEFAULT 0,
+  image_count       INTEGER NOT NULL DEFAULT 0,
   updated_at        TEXT DEFAULT (datetime('now')),
   PRIMARY KEY (category, product_id, variant_id)
 );

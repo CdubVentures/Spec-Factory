@@ -8,7 +8,6 @@
 export type KeyStatus =
   | 'resolved'
   | 'below_threshold'
-  | 'unk'
   | 'unresolved'
   | null;
 
@@ -130,7 +129,7 @@ export interface KeyFilterState {
   readonly difficulty: string;   // '' = all
   readonly availability: string;
   readonly required: string;     // 'mandatory' | 'non_mandatory' | ''
-  readonly status: string;       // 'resolved' | 'unresolved' | 'unk' | 'below_threshold' | ''
+  readonly status: string;       // 'resolved' | 'unresolved' | 'below_threshold' | ''
 }
 
 export const DEFAULT_FILTERS: KeyFilterState = Object.freeze({

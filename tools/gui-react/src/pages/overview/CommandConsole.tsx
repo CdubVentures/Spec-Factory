@@ -23,6 +23,7 @@ import {
   PIPELINE_STAGES,
   type PipelineState,
 } from './usePipelineController.ts';
+import { CommandConsoleModelStrip } from './CommandConsoleModelStrip.tsx';
 import './CommandConsole.css';
 
 export interface CommandConsoleProps {
@@ -402,7 +403,15 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
         />
       </div>
 
-      {/* Row 3 — pipeline stepper + run/stop */}
+      {/* Row 3 — model strip (read-only) ─────────────────────────────── */}
+      <div className="sf-cc-models-row">
+        <span className="sf-cc-eyebrow">Models</span>
+        <div className="sf-cc-models-track" role="group" aria-label="Configured models per finder">
+          <CommandConsoleModelStrip />
+        </div>
+      </div>
+
+      {/* Row 4 — pipeline stepper + run/stop */}
       <div className="sf-cc-pipeline-row">
         <span className="sf-cc-eyebrow">Pipeline</span>
         <div className="sf-cc-pipeline-mid">

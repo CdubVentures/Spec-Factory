@@ -7,7 +7,7 @@
  *
  * Usage:
  *   const fire = useFireAndForget({ type: 'pif', category, productId });
- *   fire('/product-image-finder/cat/p1', { variant_key: 'black' }, { subType: 'view', variantKey: 'black' });
+ *   fire('/product-image-finder/cat/p1', { variant_key: 'black' }, { subType: 'priority-view', variantKey: 'black' });
  */
 
 import { useCallback } from 'react';

@@ -23,7 +23,7 @@ Exports from `src/features/key/index.js`:
   - `POST /key-finder/:category/:productId/preview-prompt` body `{ field_key, passenger_field_keys_snapshot? }` → Phase 5 compiled prompt preview (no LLM, no persistence). When present, the passenger snapshot is authoritative for preview parity with the visible Next bundle row.
   - `GET /key-finder/:category` → list summaries
   - `GET /key-finder/:category/:productId/bundling-config` → live settings snapshot for the BundlingStatusStrip
-  - `GET /key-finder/:category/:productId/summary` → per-key rollup rows including `bundle_preview` and stripped-unknown audit fields (`last_status: "unk"`, `last_unknown_reason`)
+  - `GET /key-finder/:category/:productId/summary` → per-key rollup rows including `bundle_preview`; honest `unk` values are normalized to blank output and shown as unresolved here.
   - `GET /key-finder/:category/:productId?field_key=X&scope=key|group|product` → scoped detail (legacy; partial consumers)
   - `DELETE /key-finder/:category/:productId/runs/:runNumber?field_key=X` → single-run delete (cascades primary + all passengers)
   - `DELETE /key-finder/:category/:productId` → delete-all
@@ -61,7 +61,7 @@ Prompt contract note:
 - **Passenger attribution**: `run.selected.keys[fk].rode_with` is `null` for primary, `primaryFieldKey` for each passenger. Load-bearing for (a) delete-run cascade expanding `fieldKeys` from `run.selected.keys` and (b) Phase 5 Group Loop skip logic.
 - **History broadening**: `filterRunsByFieldKey` matches runs where the key appears as primary OR in `response.results`. `accumulateDiscoveryLog.runMatcher` mirrors this so passenger-resolved keys see the primary's URLs/queries as their own (passengers inherit the primary's search session by contract).
 - **Tier routing is whole-bundle**: `resolvePhaseModelByTier` returns `{ model, useReasoning, reasoningModel, thinking, thinkingEffort, webSearch }`. Empty `tier.model` inherits the fallback bundle.
-- **Honest "unk" is a protocol signal, not field data**: the LLM may emit `value === 'unk'` with `unknown_reason`; `submitCandidate` is skipped, persisted run/summary/detail values normalize to `null`, and status/unknown_reason carry the diagnostic.
+- **Honest "unk" is a protocol signal, not field data**: the LLM may emit `value === 'unk'` with `unknown_reason`; `submitCandidate` is skipped, persisted run/summary/detail values normalize to `null`, Key Finder summary remains unresolved, and Publisher exposes the stripped-unknown audit row.
 - **Publisher failures never abort the run**: errors land on `publisher_error` (primary) or `passenger_candidates[i].publisher_error`; run record writes either way.
 - **Dual-state CQRS**: JSON (`.workspace/products/{pid}/key_finder.json`) is durable memory. SQL `key_finder` + `key_finder_runs` are projections. Both rebuildable from JSON via `rebuildKeyFinderFromJson`.
 

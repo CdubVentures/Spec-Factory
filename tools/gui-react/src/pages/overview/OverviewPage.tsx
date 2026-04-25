@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import { useUiStore } from '../../stores/uiStore.ts';
@@ -7,6 +7,7 @@ import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
 import { TrafficLight } from '../../shared/ui/feedback/TrafficLight.tsx';
 import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { pct } from '../../utils/formatting.ts';
+import { useFormatDateYMD } from '../../utils/dateTime.ts';
 import type { CatalogRow } from '../../types/product.ts';
 import { parseCatalogRows } from '../../features/catalog/api/catalogParsers.ts';
 import type { ColumnDef } from '@tanstack/react-table';
@@ -77,13 +78,6 @@ function SelectCell({ category, productId }: { category: string; productId: stri
   );
 }
 
-// RDF values are ISO dates (e.g. "2024-03-15"); keep YYYY-MM in the label —
-// enough context at a glance, full date in the tooltip.
-function formatRdfLabel(value: string): string {
-  if (!value) return '';
-  return value.length >= 7 ? value.slice(0, 7) : value;
-}
-
 // WHY: CEF mandatory-run bar — 2 runs required before the downstream header-control
 // module will let a product advance. Visual today, enforcement later.
 const CEF_REQUIRED_RUNS = 2;
@@ -141,7 +135,11 @@ function MetricWithDot({ value, text }: { value: number; text: string }) {
   );
 }
 
-function buildColumns(hexMap: ReadonlyMap<string, string>, category: string): ColumnDef<CatalogRow, unknown>[] {
+function buildColumns(
+  hexMap: ReadonlyMap<string, string>,
+  category: string,
+  formatRdfValue: (value: string) => string,
+): ColumnDef<CatalogRow, unknown>[] {
   return [
     {
       accessorKey: 'brand',
@@ -238,7 +236,8 @@ function buildColumns(hexMap: ReadonlyMap<string, string>, category: string): Co
           labelPrefix="RDF"
           runUrl={`/release-date-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.original.productId)}`}
           valueLabel="Release Date"
-          formatLabel={formatRdfLabel}
+          formatLabel={formatRdfValue}
+          formatValue={formatRdfValue}
         />
       ),
     },
@@ -294,6 +293,11 @@ function buildColumns(hexMap: ReadonlyMap<string, string>, category: string): Co
 
 export function OverviewPage() {
   const category = useUiStore((s) => s.category);
+  const formatDateYMD = useFormatDateYMD();
+  const formatRdfValue = useCallback(
+    (value: string) => formatDateYMD(value) || value,
+    [formatDateYMD],
+  );
 
   const { data: catalog = [], isLoading } = useQuery({
     queryKey: ['catalog', category],
@@ -349,9 +353,9 @@ export function OverviewPage() {
           </div>
         ),
       },
-      ...buildColumns(hexMap, category),
+      ...buildColumns(hexMap, category, formatRdfValue),
     ],
-    [hexMap, category, visibleIds],
+    [hexMap, category, visibleIds, formatRdfValue],
   );
 
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;

@@ -33,7 +33,8 @@ interface VariantImageGroupProps {
   readonly heroEnabled: boolean;
   readonly loopingVariant: boolean;
   readonly evaluatingVariant: boolean;
-  readonly onRunView: (variantKey: string) => void;
+  readonly onRunPriorityView: (variantKey: string) => void;
+  readonly onRunIndividualView: (variantKey: string, view: string) => void;
   readonly onRunHero: (variantKey: string) => void;
   readonly onLoopVariant: (variantKey: string) => void;
   readonly onEvalVariant: (variantKey: string) => void;
@@ -46,6 +47,17 @@ interface VariantImageGroupProps {
   readonly category: string;
   readonly productId: string;
 }
+
+const INDIVIDUAL_VIEW_BUTTONS: ReadonlyArray<{ readonly id: string; readonly label: string }> = [
+  { id: 'top',    label: 'Top' },
+  { id: 'bottom', label: 'Bottom' },
+  { id: 'left',   label: 'Left' },
+  { id: 'right',  label: 'Right' },
+  { id: 'front',  label: 'Front' },
+  { id: 'rear',   label: 'Rear' },
+  { id: 'sangle', label: 'S-Angle' },
+  { id: 'angle',  label: 'Angle' },
+];
 
 export const VariantImageGroup = memo(function VariantImageGroup({
   group,
@@ -60,7 +72,8 @@ export const VariantImageGroup = memo(function VariantImageGroup({
   heroEnabled,
   loopingVariant,
   evaluatingVariant,
-  onRunView,
+  onRunPriorityView,
+  onRunIndividualView,
   onRunHero,
   onLoopVariant,
   onEvalVariant,
@@ -90,13 +103,28 @@ export const VariantImageGroup = memo(function VariantImageGroup({
   }, [groupSlots]);
 
   const progress = carouselProgressMap[group.key];
-  // WHY: backend only writes carouselProgress after a variant runs. Unrun
-  // variants have no entry — fall back to configured viewBudget/heroCount so
-  // dots always render (empty for never-run, filled as runs complete).
+  // WHY: Dot fills must reflect carousel *slot occupancy* (user-override OR
+  // eval winner / ranked hero), not "N images collected for this view" —
+  // those are different things. Count non-empty slots from the already-
+  // computed groupSlots (same source the CarouselPreviewPopup uses).
+  // Totals fall back to configured viewBudget/heroCount when carouselProgress
+  // is missing for a never-run variant so dots still render.
   const viewsTotal = progress?.viewsTotal ?? viewBudget.length;
   const heroTotal = progress?.heroTarget ?? heroCount;
-  const viewsFilled = progress?.viewsFilled ?? 0;
-  const heroFilled = progress?.heroCount ?? 0;
+  const viewsFilled = useMemo(() =>
+    groupSlots.filter((s) =>
+      !s.slot.startsWith('hero_')
+      && s.filename
+      && s.filename !== '__cleared__',
+    ).length,
+  [groupSlots]);
+  const heroFilled = useMemo(() =>
+    groupSlots.filter((s) =>
+      s.slot.startsWith('hero_')
+      && s.filename
+      && s.filename !== '__cleared__',
+    ).length,
+  [groupSlots]);
 
   const variantAdapter = {
     variant_id: group.variant_id ?? null,
@@ -128,22 +156,29 @@ export const VariantImageGroup = memo(function VariantImageGroup({
         <>
           <ImageCountBadge count={group.images.length} />
           <div className="shrink-0 flex items-center gap-1">
-            <RowActionButton
-              intent="spammable"
-              label="View"
-              onClick={() => onRunView(group.key)}
-              title="Single view run"
-              width={ACTION_BUTTON_WIDTH.standardRow}
+            <PromptDrawerChevron
+              storageKey={`indexing:pif:run-drawer:${productId}:${group.key}`}
+              openWidthClass="w-[34rem]"
+              ariaLabel={`Run actions for ${group.label}`}
+              openTitle="Run:"
+              actions={[
+                { id: 'priority-view', label: 'Priority View', intent: 'spammable', onClick: () => onRunPriorityView(group.key), title: 'Priority View Run — one LLM call across all viewConfig priority views' },
+                ...INDIVIDUAL_VIEW_BUTTONS.map((v) => ({
+                  id: v.id,
+                  label: v.label,
+                  intent: 'spammable' as const,
+                  onClick: () => onRunIndividualView(group.key, v.id),
+                  title: `Individual View Run — ${v.label}`,
+                })),
+                ...(heroEnabled ? [{
+                  id: 'hero',
+                  label: 'Hero',
+                  intent: 'spammable' as const,
+                  onClick: () => onRunHero(group.key),
+                  title: 'Hero Run — lifestyle/contextual images',
+                }] : []),
+              ]}
             />
-            {heroEnabled && (
-              <RowActionButton
-                intent="spammable"
-                label="Hero"
-                onClick={() => onRunHero(group.key)}
-                title="Single hero run"
-                width={ACTION_BUTTON_WIDTH.standardRow}
-              />
-            )}
             <RowActionButton
               intent="locked"
               label="Loop"

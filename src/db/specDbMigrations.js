@@ -112,6 +112,10 @@ export const MIGRATIONS = [
   // rows — next PIF run populates.
   `ALTER TABLE pif_variant_progress ADD COLUMN loop_filled INTEGER NOT NULL DEFAULT 0`,
   `ALTER TABLE pif_variant_progress ADD COLUMN loop_total INTEGER NOT NULL DEFAULT 0`,
+  // WHY: image_count tracks raw image count per variant (all views + heroes
+  // combined) so the Overview cell can display "total images" alongside the
+  // slot-fill fraction. Next PIF run or rebuild backfills legacy 0s.
+  `ALTER TABLE pif_variant_progress ADD COLUMN image_count INTEGER NOT NULL DEFAULT 0`,
 ];
 
 export const SECONDARY_INDEXES = `

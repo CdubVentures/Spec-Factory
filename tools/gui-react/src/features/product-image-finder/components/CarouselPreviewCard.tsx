@@ -19,7 +19,7 @@ export const CarouselPreviewCard = memo(function CarouselPreviewCard({ slides, o
       }`}
       onClick={enabled ? onClick : undefined}
     >
-      <div className="relative w-full h-28 overflow-hidden sf-surface-bg">
+      <div className="relative w-full h-32 overflow-hidden sf-surface-bg">
         {enabled ? (
           <>
             <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px pif-mosaic-gap-bg">

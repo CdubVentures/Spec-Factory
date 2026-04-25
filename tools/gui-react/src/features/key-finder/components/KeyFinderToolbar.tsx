@@ -167,7 +167,6 @@ export const KeyFinderToolbar = memo(function KeyFinderToolbar({
     { value: 'unresolved',      label: 'unresolved', count: counts.status.unresolved      ?? 0, tone: 'warning' },
     { value: 'running',         label: 'running',    count: counts.status.running         ?? 0, tone: 'accent',  running: true },
     { value: 'below_threshold', label: 'below',      count: counts.status.below_threshold ?? 0, tone: 'danger' },
-    { value: 'unk',             label: 'unk',        count: counts.status.unk             ?? 0, tone: 'muted' },
   ], [eligible, counts.status]);
 
   const infoText = `${grouped.totals.excluded} keys filtered out: variant-dependent fields (manual-override turf) + finder-owned keys (CEF / PIF / RDF / SKF).`;

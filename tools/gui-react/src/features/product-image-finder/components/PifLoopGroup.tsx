@@ -108,6 +108,7 @@ export const PifLoopGroup = memo(function PifLoopGroup({
               onDelete={onDeleteRun}
               expanded={!!runExpandMap[String(run.run_number)]}
               onToggle={() => onToggleRunExpand(String(run.run_number))}
+              insideLoop
             />
           ))}
           {loopShowMore.hasMore && (

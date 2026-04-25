@@ -415,25 +415,69 @@ describe('resolveLoopId', () => {
 /* ── buildModeBadge ───────────────────────────────────────────────── */
 
 describe('buildModeBadge', () => {
+  function makeLoopRun(focusView: string | null): ProductImageFinderRun {
+    return makeRun({
+      mode: 'view',
+      loop_id: 'loop-1',
+      response: {
+        images: [],
+        download_errors: [],
+        discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+        variant_key: 'color:black',
+        variant_label: 'Black',
+        focus_view: focusView,
+      },
+    });
+  }
+
   it('returns null when no mode', () => {
     assert.equal(buildModeBadge(makeRun()), null);
   });
 
-  it('returns VIEW badge for view mode', () => {
+  it('returns VIEW badge for standalone view mode', () => {
     const badge = buildModeBadge(makeRun({ mode: 'view' }));
     assert.equal(badge?.label, 'VIEW');
     assert.equal(badge?.className, 'sf-chip-info');
   });
 
-  it('returns HERO badge for hero mode', () => {
+  it('returns HERO badge for standalone hero mode', () => {
     const badge = buildModeBadge(makeRun({ mode: 'hero' }));
     assert.equal(badge?.label, 'HERO');
     assert.equal(badge?.className, 'sf-chip-accent');
   });
 
-  it('adds LOOP prefix when loop_id present', () => {
+  it('adds LOOP prefix on loop view run when not insideLoop and no focus_view', () => {
     const badge = buildModeBadge(makeRun({ mode: 'view', loop_id: 'loop-1' }));
     assert.equal(badge?.label, 'LOOP VIEW');
+  });
+
+  it('shows focus view label on loop run when insideLoop=true', () => {
+    const badge = buildModeBadge(makeLoopRun('top'), { insideLoop: true });
+    assert.equal(badge?.label, 'TOP');
+    assert.equal(badge?.className, 'sf-chip-info');
+  });
+
+  it('shows focus view label for any canonical view (bottom, angle, etc.)', () => {
+    assert.equal(buildModeBadge(makeLoopRun('bottom'), { insideLoop: true })?.label, 'BOTTOM');
+    assert.equal(buildModeBadge(makeLoopRun('angle'), { insideLoop: true })?.label, 'ANGLE');
+    assert.equal(buildModeBadge(makeLoopRun('rear'), { insideLoop: true })?.label, 'REAR');
+  });
+
+  it('drops LOOP prefix on loop hero run when insideLoop=true', () => {
+    const badge = buildModeBadge(makeRun({ mode: 'hero', loop_id: 'loop-1' }), { insideLoop: true });
+    assert.equal(badge?.label, 'HERO');
+    assert.equal(badge?.className, 'sf-chip-accent');
+  });
+
+  it('falls back to VIEW (no LOOP prefix) inside loop when focus_view missing on legacy run', () => {
+    const badge = buildModeBadge(makeRun({ mode: 'view', loop_id: 'loop-1' }), { insideLoop: true });
+    assert.equal(badge?.label, 'VIEW');
+  });
+
+  it('reads focus_view from top-level run field too (SQL projection path)', () => {
+    const run = makeRun({ mode: 'view', loop_id: 'loop-1', focus_view: 'left' });
+    const badge = buildModeBadge(run, { insideLoop: true });
+    assert.equal(badge?.label, 'LEFT');
   });
 });
 

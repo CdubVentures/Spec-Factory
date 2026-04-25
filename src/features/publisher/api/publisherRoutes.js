@@ -196,12 +196,18 @@ export function registerPublisherRoutes(ctx) {
       const limit = Math.min(500, Math.max(1, parseInt(params.get('limit') || '100', 10) || 100));
       const offset = (page - 1) * limit;
 
-      const rows = specDb.getFieldCandidatesPaginated({ limit, offset });
+      const candidateTotal = specDb.countFieldCandidates();
+      const rows = specDb.getFieldCandidatesPaginated({ limit: Math.max(1, candidateTotal), offset: 0 });
+      const allStrippedUnknownRows = listStrippedUnknownRows({ specDb, category });
+      const pageRows = [...rows, ...allStrippedUnknownRows]
+        .sort((a, b) => String(b.submitted_at || '').localeCompare(String(a.submitted_at || '')))
+        .slice(offset, offset + limit);
       // WHY: Augment each row with per-row evidence refs + accepted/rejected
       // counts so the publisher panel can render the Evid ✓ / ✗ count chips
       // and the row-drawer URL lists without a second roundtrip per row.
       // field_candidate_evidence is the SQL projection of metadata_json.evidence_refs.
-      const rowsWithEvidence = rows.map((row) => {
+      const rowsWithEvidence = pageRows.map((row) => {
+        if (row.row_kind === 'stripped_unknown') return row;
         const raw = specDb.listFieldCandidateEvidenceByCandidateId(row.id) || [];
         const evidence = raw.map((e) => ({
           url: e.url,
@@ -218,16 +224,11 @@ export function registerPublisherRoutes(ctx) {
           evidence_rejected_count: split.rejected,
         };
       });
-      const allStrippedUnknownRows = listStrippedUnknownRows({ specDb, category });
-      const strippedUnknownRows = page === 1 ? allStrippedUnknownRows : [];
-      const combinedRows = [...rowsWithEvidence, ...strippedUnknownRows]
-        .sort((a, b) => String(b.submitted_at || '').localeCompare(String(a.submitted_at || '')));
-      const total = specDb.countFieldCandidates();
       const stats = specDb.getFieldCandidatesStats();
 
       jsonRes(res, 200, {
-        rows: combinedRows,
-        total: total + allStrippedUnknownRows.length,
+        rows: rowsWithEvidence,
+        total: candidateTotal + allStrippedUnknownRows.length,
         page,
         limit,
         stats: { ...stats, total: stats.total + allStrippedUnknownRows.length, unknown_stripped: allStrippedUnknownRows.length },

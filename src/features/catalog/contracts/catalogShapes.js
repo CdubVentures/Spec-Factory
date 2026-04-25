@@ -23,6 +23,7 @@ export const PIF_VARIANT_PROGRESS_SHAPE = Object.freeze([
   { key: 'loop_total', coerce: 'int' },
   { key: 'hero_filled', coerce: 'int' },
   { key: 'hero_target', coerce: 'int' },
+  { key: 'image_count', coerce: 'int' },
 ]);
 
 // Per-variant scalar-finder snapshot: SKU finder + RDF use the same shape

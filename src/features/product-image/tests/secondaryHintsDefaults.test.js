@@ -4,8 +4,10 @@ import assert from 'node:assert/strict';
 import {
   CATEGORY_SINGLE_RUN_SECONDARY_HINTS_DEFAULTS,
   CATEGORY_LOOP_RUN_SECONDARY_HINTS_DEFAULTS,
+  CATEGORY_INDIVIDUAL_VIEW_RUN_SECONDARY_HINTS_DEFAULTS,
   resolveSingleRunSecondaryHints,
   resolveLoopRunSecondaryHints,
+  resolveIndividualViewRunSecondaryHints,
 } from '../secondaryHintsDefaults.js';
 
 /* ── Registry invariants ────────────────────────────────────────── */
@@ -145,6 +147,62 @@ describe('resolveLoopRunSecondaryHints', () => {
 
   it('unknown category + empty setting → empty array', () => {
     const result = resolveLoopRunSecondaryHints('', 'spaceship');
+    assert.deepEqual(result, []);
+  });
+});
+
+/* ── resolveIndividualViewRunSecondaryHints ─────────────────────────── */
+
+describe('CATEGORY_INDIVIDUAL_VIEW_RUN_SECONDARY_HINTS_DEFAULTS', () => {
+  it('is a frozen object', () => {
+    assert.ok(Object.isFrozen(CATEGORY_INDIVIDUAL_VIEW_RUN_SECONDARY_HINTS_DEFAULTS));
+  });
+
+  it('all values are arrays of canonical view keys', () => {
+    const CANONICAL = ['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle'];
+    for (const [category, keys] of Object.entries(CATEGORY_INDIVIDUAL_VIEW_RUN_SECONDARY_HINTS_DEFAULTS)) {
+      assert.ok(Array.isArray(keys), `${category} must be an array`);
+      for (const k of keys) {
+        assert.ok(CANONICAL.includes(k), `${category}.${k} is not canonical`);
+      }
+    }
+  });
+});
+
+describe('resolveIndividualViewRunSecondaryHints', () => {
+  it('empty setting → category default (or empty array)', () => {
+    const result = resolveIndividualViewRunSecondaryHints('', 'mouse');
+    assert.deepEqual(
+      result,
+      CATEGORY_INDIVIDUAL_VIEW_RUN_SECONDARY_HINTS_DEFAULTS.mouse ?? [],
+    );
+  });
+
+  it('valid JSON array of canonical keys → returned verbatim', () => {
+    const result = resolveIndividualViewRunSecondaryHints('["bottom","right"]', 'mouse');
+    assert.deepEqual(result, ['bottom', 'right']);
+  });
+
+  it('non-canonical keys filtered out', () => {
+    const result = resolveIndividualViewRunSecondaryHints('["bottom","notaview","front"]', 'mouse');
+    assert.deepEqual(result, ['bottom', 'front']);
+  });
+
+  it('explicit empty JSON array → empty array', () => {
+    const result = resolveIndividualViewRunSecondaryHints('[]', 'mouse');
+    assert.deepEqual(result, []);
+  });
+
+  it('invalid JSON → falls back to category default', () => {
+    const result = resolveIndividualViewRunSecondaryHints('not json', 'mouse');
+    assert.deepEqual(
+      result,
+      CATEGORY_INDIVIDUAL_VIEW_RUN_SECONDARY_HINTS_DEFAULTS.mouse ?? [],
+    );
+  });
+
+  it('unknown category + empty setting → empty array', () => {
+    const result = resolveIndividualViewRunSecondaryHints('', 'spaceship');
     assert.deepEqual(result, []);
   });
 });

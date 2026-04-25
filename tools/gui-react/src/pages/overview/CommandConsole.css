@@ -21,11 +21,52 @@
   border-radius: 8px;
   padding: 10px 14px;
   display: grid;
-  grid-template-rows: auto auto auto;
+  grid-template-rows: auto auto auto auto;
   gap: var(--sf-cc-row-gap);
   min-width: 0;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   color: rgb(var(--sf-color-text-primary-rgb));
+}
+
+/* ── Models row — read-only badges, scrollable on tight widths ────── */
+.sf-cc-models-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.sf-cc-models-track {
+  overflow-x: auto;
+  overflow-y: hidden;
+  min-width: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sf-token-border, #c4c8d2) transparent;
+}
+
+.sf-cc-models-track::-webkit-scrollbar { height: 6px; }
+.sf-cc-models-track::-webkit-scrollbar-track { background: transparent; }
+.sf-cc-models-track::-webkit-scrollbar-thumb {
+  background: var(--sf-token-border, #c4c8d2);
+  border-radius: 4px;
+}
+
+.sf-cc-models-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 0 3px;
+  white-space: nowrap;
+}
+
+.sf-cc-models-divider {
+  display: inline-block;
+  width: 1px;
+  height: 14px;
+  background: var(--sf-token-border, #e5e9ef);
+  margin: 0 3px;
+  flex-shrink: 0;
 }
 
 /* ── Row 1 — selection badge + smart-select pills ─────────────────── */

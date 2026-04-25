@@ -80,6 +80,12 @@ For these edits:
 - Verification should use existing commands or direct inspection only.
 - Keep the change scoped to the requested data/config/database source.
 
+Field Studio rule files are user-authored settings surfaces. When the human provides a Field Studio change file for an existing key/category, edits to `category_authority/*/_control_plane/field_studio_map.json` are `[CLASS: CONFIG]`:
+- Apply the requested settings directly and quickly.
+- Do not add or modify automated tests.
+- Do not patch compiler, runtime, schema, API, or UI source code while applying the settings.
+- If a setting does not project into generated artifacts or runtime behavior, report that as a separate implementation gap and wait for explicit approval before changing source code.
+
 This exception does not apply when the request requires changing application source code, schemas, migrations, compiler logic, validation logic, prompt-rendering logic, or public APIs. Those changes follow the normal change-class rules.
 
 ---

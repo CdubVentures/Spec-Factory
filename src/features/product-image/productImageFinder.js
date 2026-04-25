@@ -43,6 +43,7 @@ import { resolveViewAttemptBudgets } from './viewAttemptDefaults.js';
 import {
   resolveSingleRunSecondaryHints,
   resolveLoopRunSecondaryHints,
+  resolveIndividualViewRunSecondaryHints,
 } from './secondaryHintsDefaults.js';
 import { resolveViewPrompt, viewPromptSettingKey } from './viewPromptDefaults.js';
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
@@ -555,6 +556,9 @@ async function runSingleVariant({
  * @param {object} opts
  * @param {string} [opts.variantKey] — if provided, run only this variant. Otherwise run all.
  * @param {'view'|'hero'} [opts.mode] — search mode: 'view' for angle-based, 'hero' for promotional images.
+ * @param {string|null} [opts.view] — when set with mode='view', runs an Individual View Run targeting only
+ *   this canonical view (priorityViews=[view], additionalViews from individualViewRunSecondaryHints minus
+ *   focus). When null and mode='view', runs the Priority View Run (all priority views from viewConfig).
  * @param {Function} [opts.onVariantProgress] — (completed, total, variantKey) => void
  */
 export async function runProductImageFinder({
@@ -566,6 +570,7 @@ export async function runProductImageFinder({
   productRoot,
   variantKey = null,
   mode = 'view',
+  view = null,
   _callLlmOverride = null,
   _modelDirOverride = null,
   _staggerMsOverride = null,
@@ -612,10 +617,19 @@ export async function runProductImageFinder({
   const viewPromptOverride = finderStore.getSetting('viewPromptOverride') || '';
   const heroPromptOverride = finderStore.getSetting('heroPromptOverride') || '';
 
-  // Single-run secondary hints: views listed in ADDITIONAL alongside the priority views.
+  // Per-run-type secondary hints (which views appear in the ADDITIONAL section).
   const singleRunHintKeys = resolveSingleRunSecondaryHints(
     finderStore.getSetting('singleRunSecondaryHints') || '', product.category,
   );
+  const individualViewRunHintKeys = resolveIndividualViewRunSecondaryHints(
+    finderStore.getSetting('individualViewRunSecondaryHints') || '', product.category,
+  );
+
+  // Validate explicit individual-view focus before any heavy work.
+  const focusView = mode === 'view' && view ? view : null;
+  if (mode === 'view' && view && !CANONICAL_VIEW_KEYS.includes(view)) {
+    return { images: [], rejected: true, rejections: [{ reason_code: 'unknown_view', message: `Unknown view: ${view}` }] };
+  }
 
   // Gate: reject hero mode when heroEnabled is false
   if (mode === 'hero' && !heroEnabled) {
@@ -722,23 +736,35 @@ export async function runProductImageFinder({
     const variantImages = (pifDoc?.selected?.images || []).filter(img => matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key }));
     const alreadyDownloadedUrls = new Set(variantImages.map(img => normalizeImageUrl(img.url)).filter(Boolean));
 
-    // Single-run prompt composition:
-    //   PRIORITY = priority views from viewConfig (GUI order), role='priority'.
-    //   ADDITIONAL = singleRunSecondaryHints, role='additional',
-    //                filtered to never duplicate a priority view.
-    // Each entry's description text comes from resolveViewPrompt with the
-    // appropriate role so per-role user overrides flow through cleanly.
-    const priorityViews = viewConfig
-      .filter((v) => v.priority)
-      .map((v) => ({
-        key: v.key,
-        description: resolveViewPrompt({
-          role: 'priority', category: product.category, view: v.key,
-          dbOverride: finderStore.getSetting(viewPromptSettingKey('priority', v.key)) || '',
-        }),
-      }));
+    // Prompt composition branches by run type:
+    //   Priority View Run (focusView=null):
+    //     PRIORITY = priority views from viewConfig (GUI order), role='priority'.
+    //     ADDITIONAL = singleRunSecondaryHints minus priority views, role='additional'.
+    //   Individual View Run (focusView='top' etc.):
+    //     PRIORITY = [{focusView}], role='priority' (focus view sits in PRIORITY section).
+    //     ADDITIONAL = individualViewRunSecondaryHints minus the focus view, role='additional'.
+    // Description text comes from resolveViewPrompt with the appropriate role
+    // so per-role user overrides flow through cleanly.
+    const priorityViews = focusView
+      ? [{
+          key: focusView,
+          description: resolveViewPrompt({
+            role: 'priority', category: product.category, view: focusView,
+            dbOverride: finderStore.getSetting(viewPromptSettingKey('priority', focusView)) || '',
+          }),
+        }]
+      : viewConfig
+        .filter((v) => v.priority)
+        .map((v) => ({
+          key: v.key,
+          description: resolveViewPrompt({
+            role: 'priority', category: product.category, view: v.key,
+            dbOverride: finderStore.getSetting(viewPromptSettingKey('priority', v.key)) || '',
+          }),
+        }));
     const priorityKeySet = new Set(priorityViews.map((v) => v.key));
-    const additionalViews = singleRunHintKeys
+    const additionalSourceKeys = focusView ? individualViewRunHintKeys : singleRunHintKeys;
+    const additionalViews = additionalSourceKeys
       .filter((k) => !priorityKeySet.has(k))
       .map((k) => ({
         key: k,
@@ -1148,7 +1174,8 @@ export async function runCarouselLoop({
     onStreamChunk?.({ content: summary });
 
     const selected = { images: result.images };
-    const responsePayload = { mode: callMode, loop_id: loopId, started_at: callStartedAt, duration_ms: callDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
+    const callFocusView = callMode === 'view' ? (focusView || null) : null;
+    const responsePayload = { mode: callMode, loop_id: loopId, focus_view: callFocusView, started_at: callStartedAt, duration_ms: callDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
 
     // Smart update — fills response into the pending prompt entry
     onLlmCallComplete?.({
@@ -1173,6 +1200,7 @@ export async function runCarouselLoop({
       run: {
         mode: callMode,
         loop_id: loopId,
+        focus_view: callFocusView,
         started_at: callStartedAt,
         duration_ms: callDurationMs,
         model: _mtLoop.actualModel,

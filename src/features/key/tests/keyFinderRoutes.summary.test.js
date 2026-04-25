@@ -331,7 +331,7 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.equal(byKey.polling_rate.candidate_count, 2);
     assert.equal(byKey.sensor_model.run_count, 1);
     assert.equal(byKey.sensor_model.last_value, null, 'summary must not expose "unk" as a value');
-    assert.equal(byKey.sensor_model.last_status, 'unk');
+    assert.equal(byKey.sensor_model.last_status, 'unresolved', 'summary status should not expose "unk" in the Key Finder grid');
     assert.equal(byKey.acceleration.run_count, 0);
     assert.equal(byKey.acceleration.last_run_number, null);
 
@@ -351,7 +351,7 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.equal(byKey.acceleration.last_web_search, null);
   });
 
-  it('derives last_status — resolved / below_threshold / unk / unresolved', async (t) => {
+  it('derives last_status — resolved / below_threshold / unresolved', async (t) => {
     t.after(cleanupTmp);
     const pid = 'status-prod';
     fs.mkdirSync(path.join(PRODUCT_ROOT, pid), { recursive: true });
@@ -372,7 +372,7 @@ describe('GET /key-finder/:category/:productId/summary', () => {
       },
     });
 
-    // unk: unknown_reason non-empty, no publish
+    // honest unknown: unknown_reason non-empty, no publish, shown as unresolved in Key Finder
     seedRun({
       productRoot: PRODUCT_ROOT, productId: pid, category: 'mouse', fieldKey: 'sensor_model',
       runBody: {
@@ -414,7 +414,7 @@ describe('GET /key-finder/:category/:productId/summary', () => {
 
     assert.equal(byKey.polling_rate.last_status, 'resolved');
     assert.equal(byKey.polling_rate.published, true);
-    assert.equal(byKey.sensor_model.last_status, 'unk');
+    assert.equal(byKey.sensor_model.last_status, 'unresolved');
     assert.equal(byKey.sensor_model.published, false);
     assert.equal(byKey.acceleration.last_status, 'below_threshold');
     assert.equal(byKey.acceleration.published, false);

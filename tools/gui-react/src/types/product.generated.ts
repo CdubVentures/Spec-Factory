@@ -22,6 +22,7 @@ export interface PifVariantProgressGen {
   loop_total: number;
   hero_filled: number;
   hero_target: number;
+  image_count: number;
 }
 
 export interface ScalarVariantProgressGen {

@@ -185,14 +185,18 @@ export const FINDER_MODULES = Object.freeze([
         uiTip: 'Priority order and descriptions per view. Empty = category defaults.' },
 
       // Prompt hints — secondary views mentioned in the ADDITIONAL section per run type.
-      // Single run = one LLM call searching all priority views at once.
-      // Loop run = per-view focused calls driven by carousel strategy.
+      // Priority View Run = one LLM call searching all viewConfig priority views at once.
+      // Individual View Run = one LLM call targeting a single specific view.
+      // Loop Run = per-focus-view calls driven by the carousel strategy.
       { key: 'singleRunSecondaryHints', type: 'string', default: '', allowEmpty: true,
-        widget: 'viewHintsList', uiLabel: 'Single Run Secondary Hints', uiGroup: 'Prompt Hints',
-        uiTip: 'Views mentioned in the ADDITIONAL section of single-run prompts (besides the priority views). Empty = none.' },
+        widget: 'viewHintsList', uiLabel: 'Priority View Run Secondary Hints', uiGroup: 'Prompt Hints',
+        uiTip: 'Views mentioned in the ADDITIONAL section when the Priority View button runs (besides the priority views from View Configuration). Empty = none.' },
+      { key: 'individualViewRunSecondaryHints', type: 'string', default: '', allowEmpty: true,
+        widget: 'viewHintsList', uiLabel: 'Individual View Run Secondary Hints', uiGroup: 'Prompt Hints',
+        uiTip: 'Views mentioned in the ADDITIONAL section when one of the per-view buttons (Top, Bottom, ...) runs (besides the focus view itself). Empty = none.' },
       { key: 'loopRunSecondaryHints', type: 'string', default: '', allowEmpty: true,
         widget: 'viewHintsList', uiLabel: 'Loop Run Secondary Hints', uiGroup: 'Prompt Hints',
-        uiTip: 'Views mentioned in the ADDITIONAL section of loop-run prompts (besides the focus view). Empty = none.' },
+        uiTip: 'Views mentioned in the ADDITIONAL section per Loop iteration (besides the focus view). Empty = none.' },
 
       // Image quality — flat primitives + optional per-view widget
       { key: 'minWidth', type: 'int', default: 800, min: 100, max: 8000,

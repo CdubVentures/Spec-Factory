@@ -140,6 +140,52 @@ describe('compilePifPreviewPrompt', () => {
     assert.equal(envelope.prompts[0].label, 'view:top');
   });
 
+  it('view mode with explicit view sources ADDITIONAL views from individualViewRunSecondaryHints', async () => {
+    const finderStore = makeFinderStoreStub({
+      singleRunSecondaryHints: '["front"]',
+      individualViewRunSecondaryHints: '["bottom","rear"]',
+      loopRunSecondaryHints: '["left"]',
+    });
+    const specDb = makeSpecDbStub({ finderStore });
+
+    const envelope = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'view', view: 'top' },
+    });
+
+    const system = envelope.prompts[0].system;
+    // ADDITIONAL section must list bottom/rear (from individual hints) and not front (single) or left (loop).
+    assert.match(system, /"bottom"/);
+    assert.match(system, /"rear"/);
+    assert.ok(!/ADDITIONAL[\s\S]*"front"/.test(system), 'single-run hint "front" must not appear in ADDITIONAL section');
+    assert.ok(!/ADDITIONAL[\s\S]*"left"/.test(system), 'loop hint "left" must not appear in ADDITIONAL section');
+  });
+
+  it('view mode WITHOUT explicit view still uses singleRunSecondaryHints (priority-view run)', async () => {
+    const finderStore = makeFinderStoreStub({
+      singleRunSecondaryHints: '["front"]',
+      individualViewRunSecondaryHints: '["bottom","rear"]',
+    });
+    const specDb = makeSpecDbStub({ finderStore });
+
+    const envelope = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'view' },
+    });
+
+    const system = envelope.prompts[0].system;
+    assert.match(system, /"front"/);
+    assert.ok(!/ADDITIONAL[\s\S]*"bottom"/.test(system), 'individual-view hint "bottom" must not appear when no view is set');
+  });
+
   it('hero mode returns one hero-prompt envelope', async () => {
     const finderStore = makeFinderStoreStub();
     const specDb = makeSpecDbStub({ finderStore });

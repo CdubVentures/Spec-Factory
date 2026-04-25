@@ -74,6 +74,20 @@
   text-align: center;
 }
 
+/* Secondary label under the slot fraction: raw image-count for this variant,
+   shown as e.g. "9 img". Helps disambiguate "slots filled" from "images
+   collected" — only slot-filled count drives the ring fills. */
+.sf-pif-rings-imgcount {
+  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+  text-align: center;
+  line-height: 1;
+  margin-top: -1px;
+}
+
 /* PIF variant popover — 2×2 action grid (Run View / Run Hero / Run Loop / Evaluate). */
 .sf-pif-popover-actions {
   display: grid;
@@ -83,4 +97,47 @@
 }
 .sf-pif-popover-actions > button {
   width: 100%;
+}
+
+/* Per-variant cluster split into two distinct click targets:
+   - color swatch  → Popover for Run/Hero/Loop/Eval
+   - rings + count → CarouselPreviewPopup */
+.sf-pif-rings-color-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 1px;
+  border-radius: 4px;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.sf-pif-rings-color-trigger:hover,
+.sf-pif-rings-color-trigger:focus-visible {
+  border-color: color-mix(in srgb, var(--sf-token-accent, #4263eb) 55%, transparent);
+  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 6%, transparent);
+}
+
+.sf-pif-rings-carousel-trigger {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 2px 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: inherit;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+.sf-pif-rings-carousel-trigger:hover,
+.sf-pif-rings-carousel-trigger:focus-visible {
+  border-color: color-mix(in srgb, var(--sf-token-accent, #4263eb) 45%, transparent);
+  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 5%, transparent);
+}
+.sf-pif-rings-carousel-trigger:disabled {
+  cursor: default;
+  opacity: 0.6;
 }

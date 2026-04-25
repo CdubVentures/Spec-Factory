@@ -192,13 +192,38 @@ export function resolveLoopId(run: ProductImageFinderRun): string | null {
   return run.loop_id || run.response?.loop_id || null;
 }
 
-/** Build the mode badge label: VIEW, HERO, LOOP VIEW, LOOP HERO. */
-export function buildModeBadge(run: ProductImageFinderRun): { label: string; className: string } | null {
+/** Resolve the targeted focus view for a loop view-call (top, bottom, angle, ...). */
+export function resolveFocusView(run: ProductImageFinderRun): string | null {
+  return run.focus_view || run.response?.focus_view || null;
+}
+
+/**
+ * Build the mode badge label.
+ *
+ * Standalone runs: `VIEW` / `HERO` (or `LOOP VIEW` / `LOOP HERO` if a loop child
+ * is rendered outside its parent group).
+ *
+ * Inside a loop group (`opts.insideLoop=true`): drop the redundant `LOOP` prefix
+ * (the parent header already advertises LOOP) and render the specific focus view
+ * — e.g. `TOP`, `BOTTOM`, `ANGLE` — when persisted. Hero loop calls render `HERO`.
+ * Legacy loop runs without `focus_view` fall back to `VIEW`.
+ */
+export function buildModeBadge(
+  run: ProductImageFinderRun,
+  opts: { insideLoop?: boolean } = {},
+): { label: string; className: string } | null {
   const mode = resolveRunMode(run);
   if (!mode) return null;
+  const className = mode === 'hero' ? 'sf-chip-accent' : 'sf-chip-info';
+
+  if (opts.insideLoop) {
+    if (mode === 'hero') return { label: 'HERO', className };
+    const focusView = resolveFocusView(run);
+    return { label: (focusView || 'view').toUpperCase(), className };
+  }
+
   const isLoop = Boolean(resolveLoopId(run));
   const label = isLoop ? `LOOP ${mode.toUpperCase()}` : mode.toUpperCase();
-  const className = mode === 'hero' ? 'sf-chip-accent' : 'sf-chip-info';
   return { label, className };
 }
 

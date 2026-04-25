@@ -15,7 +15,7 @@ import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { readImageDimensions, buildVariantList, imageStem, runProductImageFinder, runCarouselLoop } from '../productImageFinder.js';
 import { evaluateCarousel } from '../carouselStrategy.js';
-import { resolveViewBudget, resolveViewConfig } from '../productImageLlmAdapter.js';
+import { resolveViewBudget, resolveViewConfig, CANONICAL_VIEW_KEYS } from '../productImageLlmAdapter.js';
 import { resolveViewAttemptBudgets } from '../viewAttemptDefaults.js';
 import {
   readProductImages,
@@ -51,21 +51,39 @@ function computePifProgressBuckets({ specDb, category }) {
   return { priorityKeys, loopExtrasKeys, heroEnabled, heroCount, satisfactionThreshold };
 }
 
-function evaluateVariantBuckets({ collectedImages, variantKey, variantId, buckets }) {
-  const { priorityKeys, loopExtrasKeys, heroEnabled, heroCount, satisfactionThreshold } = buckets;
-  const priority = evaluateCarousel({
-    collectedImages, viewBudget: priorityKeys, satisfactionThreshold,
-    heroEnabled: false, heroCount: 0, variantKey, variantId,
-  }).carouselProgress;
-  const loop = evaluateCarousel({
-    collectedImages, viewBudget: loopExtrasKeys, satisfactionThreshold,
-    heroEnabled: false, heroCount: 0, variantKey, variantId,
-  }).carouselProgress;
-  const hero = evaluateCarousel({
-    collectedImages, viewBudget: [], satisfactionThreshold,
-    heroEnabled, heroCount, variantKey, variantId,
-  }).carouselProgress;
-  return { priority, loop, hero };
+/**
+ * Count carousel slots with a resolved filename (user override OR eval winner /
+ * ranked hero). This is the slot-occupancy count the Overview rings and the
+ * Indexing Lab dots read — "image is in the carousel", NOT "image exists".
+ *
+ * Returns { priorityFilled, loopFilled, heroFilled } — each the count of slots
+ * currently occupying the carousel for this variant, plus `imageCount` of
+ * images owned by this variant across all runs.
+ */
+function countSlotFillsAndImages({ fullImages, carouselSlots, variantKey, variantId, buckets }) {
+  const { priorityKeys, loopExtrasKeys, heroEnabled, heroCount } = buckets;
+  const priorityResolved = resolveCarouselSlots({
+    viewBudget: priorityKeys, heroCount: 0, variantKey, variantId,
+    carouselSlots, images: fullImages,
+  });
+  const loopResolved = resolveCarouselSlots({
+    viewBudget: loopExtrasKeys, heroCount: 0, variantKey, variantId,
+    carouselSlots, images: fullImages,
+  });
+  const heroResolved = resolveCarouselSlots({
+    viewBudget: [], heroCount: heroEnabled ? heroCount : 0, variantKey, variantId,
+    carouselSlots, images: fullImages,
+  });
+  const filled = (slots) => slots.filter((s) => s.filename && s.filename !== '__cleared__').length;
+  const imageCount = (fullImages || []).filter(
+    (img) => (img?.variant_key || '') === (variantKey || '') || (variantId && img?.variant_id === variantId),
+  ).length;
+  return {
+    priorityFilled: filled(priorityResolved),
+    loopFilled: filled(loopResolved),
+    heroFilled: filled(heroResolved),
+    imageCount,
+  };
 }
 
 function writePifVariantProgress({ specDb, category, productId, carouselProgressByKey }) {
@@ -73,31 +91,31 @@ function writePifVariantProgress({ specDb, category, productId, carouselProgress
   const variants = specDb.variants?.listActive?.(productId) || [];
   if (variants.length === 0) return;
 
-  // carouselProgressByKey from the runner is keyed by variant.key and computed
-  // with viewBudget (loop). We re-evaluate per-bucket to isolate priority vs
-  // loop-extras vs hero. Source images come from product_images.json via the
-  // runner; if we don't have that here, fall back to reading the doc.
+  // Source of truth = product_images.json (full selected image set, with
+  // eval_best / hero / hero_rank flags persisted). Combined with the
+  // carousel_slots overrides map, this is exactly what resolveCarouselSlots
+  // needs to decide which slot is occupied for each variant.
   const buckets = computePifProgressBuckets({ specDb, category });
   const productRoot = defaultProductRoot();
   const doc = readProductImages({ productId, productRoot });
-  const collectedImages = (doc?.selected?.images || []).map((img) => ({
-    view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
-  }));
+  const fullImages = doc?.selected?.images || [];
+  const carouselSlots = doc?.carousel_slots || {};
 
   for (const v of variants) {
-    const { priority, loop, hero } = evaluateVariantBuckets({
-      collectedImages, variantKey: v.variant_key, variantId: v.variant_id, buckets,
+    const { priorityFilled, loopFilled, heroFilled, imageCount } = countSlotFillsAndImages({
+      fullImages, carouselSlots, variantKey: v.variant_key, variantId: v.variant_id, buckets,
     });
     specDb.upsertPifVariantProgress({
       productId,
       variantId: v.variant_id,
       variantKey: v.variant_key,
-      priorityFilled: Number(priority.viewsFilled) || 0,
+      priorityFilled,
       priorityTotal: buckets.priorityKeys.length,
-      loopFilled: Number(loop.viewsFilled) || 0,
+      loopFilled,
       loopTotal: buckets.loopExtrasKeys.length,
-      heroFilled: Number(hero.heroCount) || 0,
+      heroFilled,
       heroTarget: buckets.heroEnabled ? buckets.heroCount : 0,
+      imageCount,
     });
   }
 }
@@ -937,21 +955,33 @@ export function registerProductImageFinderRoutes(ctx) {
         const productRow = specDb.getProduct(productId);
         if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
 
-        // Read optional variant_key and mode from body
+        // Read optional variant_key, mode, and view from body.
         const body = await readJsonBody(req).catch(() => ({}));
         const variantKey = body?.variant_key || null;
         const mode = body?.mode === 'hero' ? 'hero' : 'view';
+        const view = mode === 'view' && typeof body?.view === 'string' && body.view ? body.view : null;
+        if (view && !CANONICAL_VIEW_KEYS.includes(view)) {
+          return jsonRes(res, 400, { error: 'unknown view', view });
+        }
+
+        // subType differentiates Priority View Run from Individual View Run in the
+        // operations tracker. Hero stays as 'hero'.
+        let subType;
+        if (mode === 'hero') subType = 'hero';
+        else if (view) subType = 'view-single';
+        else subType = 'priority-view';
 
         const stages = ['Discovery', 'Download', 'Processing', 'Complete'];
         op = registerOperation({
           type: 'pif',
-          subType: mode,
+          subType,
           category,
           productId,
           productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
           variantKey: variantKey || '',
           stages,
         });
+        if (view) updateProgressText({ id: op.id, text: `${view} view` });
         batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
         const signal = getOperationSignal(op.id);
 
@@ -984,6 +1014,7 @@ export function registerProductImageFinderRoutes(ctx) {
             logger: logger || null,
             variantKey,
             mode,
+            view,
             signal,
             onStageAdvance: (name) => updateStage({ id: op.id, stageName: name }),
             onModelResolved: (info) => updateModelInfo({ id: op.id, ...info }),

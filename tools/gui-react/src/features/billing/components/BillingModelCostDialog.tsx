@@ -4,6 +4,7 @@ import { LlmProviderIcon } from '../../../shared/ui/icons/LlmProviderIcon.tsx';
 import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { CloseIcon } from '../../../shared/ui/filterBar/icons.tsx';
 import { compactNumber, usd } from '../../../utils/formatting.ts';
+import { useFormatDateYMD } from '../../../utils/dateTime.ts';
 import {
   buildModelCostComparisonBars,
   buildModelCostDashboard,
@@ -312,6 +313,7 @@ export function BillingModelCostDialog({
     if (!groupByProvider) return null;
     return groupModelCostRowsByProvider(sortedRows);
   }, [groupByProvider, sortedRows]);
+  const formatPricingDate = useFormatDateYMD();
   const staleClass = isStale ? ' sf-stale-refetch' : '';
   const handleSort = (key: ModelCostSortKey) => setSort((current) => nextSortState(current, key));
   const handleChartDirectionToggle = () =>
@@ -334,7 +336,7 @@ export function BillingModelCostDialog({
                   Current unit prices by provider, merged with this Billing view's usage.
                 </Dialog.Description>
                 <div className="sf-model-cost-sources">
-                  <span>Pricing as of {data?.pricing_meta.as_of || '--'}</span>
+                  <span>Pricing as of {formatPricingDate(data?.pricing_meta.as_of) || '--'}</span>
                   {Object.entries(data?.pricing_meta.sources || {}).map(([key, href]) => (
                     <SourcePill key={key} label={key} href={href} />
                   ))}

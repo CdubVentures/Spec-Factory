@@ -51,6 +51,7 @@ function buildPifVariants(specDb, productId, pifTargets) {
       loop_total: Number(p?.loop_total) || pifTargets.loopTotal,
       hero_filled: Number(p?.hero_filled) || 0,
       hero_target: Number(p?.hero_target) || pifTargets.heroTarget,
+      image_count: Number(p?.image_count) || 0,
     };
   });
 }

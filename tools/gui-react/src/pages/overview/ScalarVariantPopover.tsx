@@ -15,6 +15,7 @@ function truncate(str: string, max = 10): string {
   return str.slice(0, max - 1) + '\u2026';
 }
 const DEFAULT_FORMAT = (v: string) => truncate(v, 10);
+const DEFAULT_FORMAT_VALUE = (v: string) => v;
 
 export interface ScalarVariantPopoverProps {
   readonly productId: string;
@@ -33,8 +34,10 @@ export interface ScalarVariantPopoverProps {
   readonly runUrl: string;
   /** Tooltip field label — e.g. "SKU" or "Release Date". */
   readonly valueLabel: string;
-  /** Label formatter for the value chip under the diamond (e.g. YYYY-MM for RDF). */
+  /** Label formatter for the value chip under the diamond. */
   readonly formatLabel?: (value: string) => string;
+  /** Full value formatter for tooltip and popover meta. */
+  readonly formatValue?: (value: string) => string;
   /** When true, the trigger SVG pulses (this variant has a run / loop op in flight). */
   readonly pulsing?: boolean;
 }
@@ -48,7 +51,7 @@ export interface ScalarVariantPopoverProps {
 export function ScalarVariantPopover({
   productId, category, variant, hexMap,
   moduleType, phaseId, title, labelPrefix, runUrl,
-  valueLabel, formatLabel = DEFAULT_FORMAT, pulsing = false,
+  valueLabel, formatLabel = DEFAULT_FORMAT, formatValue = DEFAULT_FORMAT_VALUE, pulsing = false,
 }: ScalarVariantPopoverProps) {
   const [open, setOpen] = useState(false);
   const hexParts = variant.color_atoms.map((atom) => hexMap.get(atom) || '').filter(Boolean);
@@ -62,6 +65,7 @@ export function ScalarVariantPopover({
   const loopUrl = `${runUrl}/loop`;
   const variantKey = variant.variant_key || '';
   const variantId = variant.variant_id;
+  const displayValue = hasValue ? formatValue(variant.value) : '';
 
   const handleRun = useCallback(() => {
     fire(runUrl, { variant_key: variantKey, variant_id: variantId }, { variantKey });
@@ -74,7 +78,7 @@ export function ScalarVariantPopover({
   }, [fire, loopUrl, variantKey, variantId]);
 
   const triggerTooltip = hasValue
-    ? `${label} \u00b7 ${valueLabel}: ${variant.value} \u00b7 conf ${Math.round(variant.confidence)}%`
+    ? `${label} \u00b7 ${valueLabel}: ${displayValue} \u00b7 conf ${Math.round(variant.confidence)}%`
     : `${label} \u00b7 ${valueLabel}: (no candidate)`;
 
   return (
@@ -96,7 +100,7 @@ export function ScalarVariantPopover({
         title={`${title} — ${label}`}
         meta={
           hasValue
-            ? <>{valueLabel}: <span className="font-mono">{variant.value}</span> &middot; {Math.round(variant.confidence)}%</>
+            ? <>{valueLabel}: <span className="font-mono">{displayValue}</span> &middot; {Math.round(variant.confidence)}%</>
             : <>No candidate yet</>
         }
         modelSlot={

@@ -674,11 +674,11 @@ export function prepareStatements(db) {
       INSERT INTO pif_variant_progress (
         category, product_id, variant_id, variant_key,
         priority_filled, priority_total, loop_filled, loop_total,
-        hero_filled, hero_target, updated_at
+        hero_filled, hero_target, image_count, updated_at
       ) VALUES (
         @category, @product_id, @variant_id, @variant_key,
         @priority_filled, @priority_total, @loop_filled, @loop_total,
-        @hero_filled, @hero_target, datetime('now')
+        @hero_filled, @hero_target, @image_count, datetime('now')
       )
       ON CONFLICT(category, product_id, variant_id) DO UPDATE SET
         variant_key = excluded.variant_key,
@@ -688,13 +688,14 @@ export function prepareStatements(db) {
         loop_total = excluded.loop_total,
         hero_filled = excluded.hero_filled,
         hero_target = excluded.hero_target,
+        image_count = excluded.image_count,
         updated_at = excluded.updated_at
     `),
     _listPifVariantProgressByProduct: db.prepare(
       `SELECT variant_id, variant_key,
               priority_filled, priority_total,
               loop_filled, loop_total,
-              hero_filled, hero_target, updated_at
+              hero_filled, hero_target, image_count, updated_at
          FROM pif_variant_progress
         WHERE category = ? AND product_id = ?
         ORDER BY variant_key`

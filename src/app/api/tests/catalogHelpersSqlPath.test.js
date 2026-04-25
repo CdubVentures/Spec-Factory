@@ -204,8 +204,8 @@ test('SQL catalog builder: pifVariants joins progress rows with variants metadat
       ],
       pifProgressByPid: {
         'mouse-a': [
-          { variant_id: 'v_black', variant_key: 'color:black', priority_filled: 4, priority_total: 4, loop_filled: 2, loop_total: 4, hero_filled: 3, hero_target: 3 },
-          { variant_id: 'v_white', variant_key: 'color:white', priority_filled: 1, priority_total: 4, loop_filled: 0, loop_total: 4, hero_filled: 0, hero_target: 3 },
+          { variant_id: 'v_black', variant_key: 'color:black', priority_filled: 4, priority_total: 4, loop_filled: 2, loop_total: 4, hero_filled: 3, hero_target: 3, image_count: 12 },
+          { variant_id: 'v_white', variant_key: 'color:white', priority_filled: 1, priority_total: 4, loop_filled: 0, loop_total: 4, hero_filled: 0, hero_target: 3, image_count: 3 },
         ],
       },
       variantsByPid: {
@@ -232,6 +232,7 @@ test('SQL catalog builder: pifVariants joins progress rows with variants metadat
     loop_total: 4,
     hero_filled: 3,
     hero_target: 3,
+    image_count: 12,
   });
 });
 
@@ -274,6 +275,7 @@ test('SQL catalog builder: pifVariants emits empty-rings row per variant when no
     loop_total: 4,       // 4 loop extras (budget 8 - priority 4)
     hero_filled: 0,
     hero_target: 3,      // heroCount
+    image_count: 0,      // no images collected yet
   });
 });
 

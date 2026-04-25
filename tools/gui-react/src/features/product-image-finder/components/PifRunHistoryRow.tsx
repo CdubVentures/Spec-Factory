@@ -20,6 +20,7 @@ interface PifRunHistoryRowProps {
   readonly onDelete: (runNumber: number) => void;
   readonly expanded: boolean;
   readonly onToggle: () => void;
+  readonly insideLoop?: boolean;
 }
 
 export const PifRunHistoryRow = memo(function PifRunHistoryRow({
@@ -29,11 +30,12 @@ export const PifRunHistoryRow = memo(function PifRunHistoryRow({
   onDelete,
   expanded,
   onToggle,
+  insideLoop = false,
 }: PifRunHistoryRowProps) {
   const images = run.selected?.images || [];
   const errors = run.response?.download_errors || [];
   const log = run.response?.discovery_log;
-  const badge = buildModeBadge(run);
+  const badge = buildModeBadge(run, { insideLoop });
 
   // Resolve variant color atoms → hex for swatch (editions look up their combo)
   const variantKey = run.response?.variant_key || '';

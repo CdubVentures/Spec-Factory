@@ -192,6 +192,52 @@ describe('publisher routes', () => {
     assert.equal(auditRow.evidence_rejected_count, 0);
   });
 
+  it('GET /publisher/:category/candidates paginates after merging stripped-unk audit rows', async () => {
+    seedCandidate(specDb, 'rt-page-real', 'weight', 88, 81);
+    const store = specDb.getFinderStore('keyFinder');
+    store.upsert({
+      category: 'mouse',
+      product_id: 'rt-page-unk',
+      last_run_id: 8,
+      latest_ran_at: '2026-04-24T10:01:00.000Z',
+      run_count: 1,
+    });
+    store.insertRun({
+      category: 'mouse',
+      product_id: 'rt-page-unk',
+      run_number: 8,
+      ran_at: '2026-04-24T10:01:00.000Z',
+      model: 'gpt-5.4',
+      selected: { keys: { sensor_model: { value: null, unknown_reason: 'still not disclosed' } } },
+      prompt: { system: 's', user: 'u' },
+      response: {
+        primary_field_key: 'sensor_model',
+        results: {
+          sensor_model: {
+            value: 'unk',
+            confidence: 0,
+            unknown_reason: 'still not disclosed',
+            evidence_refs: [],
+          },
+        },
+        discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+      },
+    });
+
+    const { ctx, responses } = makeCtx(specDb);
+    const handler = registerPublisherRoutes(ctx);
+    await handler(
+      ['publisher', 'mouse', 'candidates'],
+      new URLSearchParams('page=1&limit=1'),
+      'GET', {}, {},
+    );
+
+    assert.equal(responses[0].status, 200);
+    assert.equal(responses[0].body.rows.length, 1);
+    assert.ok(responses[0].body.total >= 2);
+    assert.equal(responses[0].body.stats.unknown_stripped >= 1, true);
+  });
+
   // --- GET /publisher/:category/stats ---
 
   it('GET /publisher/:category/stats returns stats object', async () => {

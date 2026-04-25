@@ -62,7 +62,6 @@ function statusPillClass(entry: KeyEntry): string {
   if (entry.running) return 'sf-status-text-info';
   if (entry.last_status === 'resolved') return 'sf-status-text-success';
   if (entry.last_status === 'below_threshold') return 'sf-status-text-warning';
-  if (entry.last_status === 'unk') return 'sf-text-muted';
   if (entry.last_status === 'unresolved') return 'sf-status-text-warning';
   return 'sf-text-subtle';
 }
@@ -75,12 +74,12 @@ function statusLabel(entry: KeyEntry): string {
 
 /**
  * Render a resolved value as a human-readable string. Arrays show every
- * item — the cell wraps to additional lines within the column width. "unk"
- * is dimmed via the caller's class; null/undefined renders as em-dash.
+ * item — the cell wraps to additional lines within the column width.
+ * null/undefined/"unk" render as blank display state.
  */
 function renderValue(value: unknown): string {
   if (value == null) return '—';
-  if (value === 'unk') return 'unk';
+  if (value === 'unk') return '—';
   if (Array.isArray(value)) {
     if (value.length === 0) return '[]';
     return `[${value.map((v) => String(v)).join(', ')}]`;

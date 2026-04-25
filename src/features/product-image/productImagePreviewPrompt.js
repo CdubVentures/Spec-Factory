@@ -28,6 +28,7 @@ import { resolveViewQualityConfig } from './viewQualityDefaults.js';
 import {
   resolveSingleRunSecondaryHints,
   resolveLoopRunSecondaryHints,
+  resolveIndividualViewRunSecondaryHints,
 } from './secondaryHintsDefaults.js';
 import { resolveViewPrompt, viewPromptSettingKey } from './viewPromptDefaults.js';
 import { readProductImages } from './productImageStore.js';
@@ -223,6 +224,7 @@ export async function resolvePifPromptContext({
   const viewBudget = resolveViewBudget(finderStore.getSetting('viewBudget') || '', product.category);
   const singleRunHintKeys = resolveSingleRunSecondaryHints(finderStore.getSetting('singleRunSecondaryHints') || '', product.category);
   const loopRunHintKeys = resolveLoopRunSecondaryHints(finderStore.getSetting('loopRunSecondaryHints') || '', product.category);
+  const individualViewRunHintKeys = resolveIndividualViewRunSecondaryHints(finderStore.getSetting('individualViewRunSecondaryHints') || '', product.category);
 
   const priorityViews = viewConfig
     .filter((v) => v.priority)
@@ -284,7 +286,7 @@ export async function resolvePifPromptContext({
     product, variant: variantShape, allVariants: variants,
     familyModelCount, ambiguityLevel, siblingsExcluded,
     viewConfig, viewQualityMap, viewBudget,
-    priorityViews, singleAdditionalViews, loopRunHintKeys,
+    priorityViews, singleAdditionalViews, loopRunHintKeys, individualViewRunHintKeys,
     minWidth, minHeight,
     heroEnabled, heroCount,
     viewPromptOverride, heroPromptOverride,
@@ -430,7 +432,19 @@ export async function compilePifPreviewPrompt(ctx) {
   };
 
   if (mode === 'view') {
-    const entry = buildViewPromptEntry(baseCtx, body.view || null, baseCtx.singleAdditionalViews, body.view ? `view:${body.view}` : 'view');
+    const focus = body.view || null;
+    const additionalViews = focus
+      ? baseCtx.individualViewRunHintKeys
+          .filter((k) => k !== focus)
+          .map((k) => ({
+            key: k,
+            description: resolveViewPrompt({
+              role: 'additional', category: baseCtx.product.category, view: k,
+              dbOverride: baseCtx.finderStore.getSetting(viewPromptSettingKey('additional', k)) || '',
+            }),
+          }))
+      : baseCtx.singleAdditionalViews;
+    const entry = buildViewPromptEntry(baseCtx, focus, additionalViews, focus ? `view:${focus}` : 'view');
     return envelope({ mode, prompts: [entry], inputsResolved });
   }
 

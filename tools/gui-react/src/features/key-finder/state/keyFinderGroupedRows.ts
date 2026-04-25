@@ -207,7 +207,8 @@ export function selectKeyFinderGroupedRows({
     const chainQueued = !opState && (chainQueuedKeys?.has(fk) ?? false);
     const effectiveOpMode = opState?.mode ?? (chainQueued ? 'loop' : null);
     const effectiveOpStatus = opState?.status ?? (chainQueued ? 'queued' : null);
-    const baseStatus: KeyStatus = (s?.last_status ?? null) as KeyStatus;
+    const rawStatus = (s?.last_status ?? null) as KeyStatus | 'unk';
+    const baseStatus: KeyStatus = rawStatus === 'unk' ? 'unresolved' : rawStatus;
 
     const entry: KeyEntry = {
       field_key: fk,

@@ -12,6 +12,8 @@ import {
   dispatchSkuRun,
   dispatchKfAll,
   type BulkFireFn,
+  type BulkDispatchOptions,
+  type BulkDispatchResult,
 } from './bulkDispatch.ts';
 
 type TerminalStatus = 'done' | 'error' | 'cancelled';
@@ -26,7 +28,7 @@ function isTerminal(status: OpStatus | undefined): boolean {
 /**
  * Resolves when every opId in `opIds` has reached a terminal status
  * (`done` / `error` / `cancelled`). Rejects on `signal` abort or `timeoutMs`
- * elapsed. Returns a map of opId → final status for the caller to classify
+ * elapsed. Returns a map of opId -> final status for the caller to classify
  * failures.
  */
 export function waitForOperationsTerminal(
@@ -42,6 +44,12 @@ export function waitForOperationsTerminal(
 
     const results = new Map<string, TerminalStatus>();
     let settled = false;
+
+    const cleanup = () => {
+      unsubscribe();
+      clearTimeout(timer);
+      signal.removeEventListener('abort', onAbort);
+    };
 
     const check = () => {
       if (settled) return;
@@ -77,13 +85,6 @@ export function waitForOperationsTerminal(
     };
     signal.addEventListener('abort', onAbort);
 
-    const cleanup = () => {
-      unsubscribe();
-      clearTimeout(timer);
-      signal.removeEventListener('abort', onAbort);
-    };
-
-    // Run once immediately in case every op is already terminal at start.
     check();
   });
 }
@@ -103,13 +104,13 @@ export interface PipelineStage {
 }
 
 export const PIPELINE_STAGES: readonly PipelineStage[] = Object.freeze([
-  { id: 'cef_1',    label: 'CEF run (1 of 2)', kind: 'cef' },
-  { id: 'cef_2',    label: 'CEF run (2 of 2)', kind: 'cef' },
-  { id: 'pif_loop', label: 'PIF loop',          kind: 'pif-loop' },
-  { id: 'pif_eval', label: 'PIF eval',          kind: 'pif-eval' },
-  { id: 'rdf_run',  label: 'RDF run',           kind: 'rdf-run' },
-  { id: 'sku_run',  label: 'SKU run',           kind: 'sku-run' },
-  { id: 'kf_loop',  label: 'KF loop (all keys)', kind: 'kf-loop' },
+  { id: 'cef_1', label: 'CEF run (1 of 2)', kind: 'cef' },
+  { id: 'cef_2', label: 'CEF run (2 of 2)', kind: 'cef' },
+  { id: 'pif_loop', label: 'PIF loop', kind: 'pif-loop' },
+  { id: 'pif_eval', label: 'PIF eval', kind: 'pif-eval' },
+  { id: 'rdf_run', label: 'RDF run', kind: 'rdf-run' },
+  { id: 'sku_run', label: 'SKU run', kind: 'sku-run' },
+  { id: 'kf_loop', label: 'KF loop (all keys)', kind: 'kf-loop' },
 ]);
 
 export type PipelineStatus = 'idle' | 'running' | 'cancelled' | 'done' | 'error';
@@ -134,57 +135,28 @@ const INITIAL_STATE: PipelineState = Object.freeze({
   endedAt: null,
 });
 
-async function dispatchStage(
-  stage: PipelineStage,
-  category: string,
-  products: readonly CatalogRow[],
-  fire: BulkFireFn,
-  reservedKeys: ReadonlySet<string>,
-  collectOpId: (id: string) => void,
-): Promise<void> {
-  // WHY: useBulkFire doesn't expose onDispatched in the bulk-fan-out helpers
-  // today — we tap the operations store directly to collect opIds created
-  // during this window. Because pipeline stages are serialized, any new
-  // non-terminal ops for the current category + relevant module appearing
-  // after `baseline` must belong to this stage.
-  const baselineIds = new Set(useOperationsStore.getState().operations.keys());
-
-  const moduleMatchesStage = (type: string): boolean => {
-    switch (stage.kind) {
-      case 'cef': return type === 'cef';
-      case 'pif-loop':
-      case 'pif-eval': return type === 'pif';
-      case 'rdf-run': return type === 'rdf';
-      case 'sku-run': return type === 'skf';
-      case 'kf-loop': return type === 'kf';
-      default: return false;
-    }
-  };
-
+export async function dispatchPipelineStage({
+  stage,
+  category,
+  products,
+  fire,
+  reservedKeys,
+  options = {},
+}: {
+  readonly stage: PipelineStage;
+  readonly category: string;
+  readonly products: readonly CatalogRow[];
+  readonly fire: BulkFireFn;
+  readonly reservedKeys: ReadonlySet<string>;
+  readonly options?: BulkDispatchOptions;
+}): Promise<BulkDispatchResult> {
   switch (stage.kind) {
-    case 'cef':      dispatchCefRun(category, products, fire); break;
-    case 'pif-loop': dispatchPifLoop(category, products, fire); break;
-    case 'pif-eval': await dispatchPifEval(category, products, fire); break;
-    case 'rdf-run':  dispatchRdfRun(category, products, fire); break;
-    case 'sku-run':  dispatchSkuRun(category, products, fire); break;
-    case 'kf-loop':  await dispatchKfAll(category, products, reservedKeys, 'loop', fire); break;
-  }
-
-  // Allow fire-and-forget POSTs to register (worst case: 50ms stagger × N).
-  // We poll the store for ~3s after the last expected stagger to collect
-  // newly registered opIds for this stage.
-  const settleMs = 3000;
-  const pollIntervalMs = 100;
-  const deadline = Date.now() + settleMs;
-  while (Date.now() < deadline) {
-    const ops = useOperationsStore.getState().operations;
-    for (const [id, op] of ops) {
-      if (baselineIds.has(id)) continue;
-      if (op.category !== category) continue;
-      if (!moduleMatchesStage(op.type)) continue;
-      collectOpId(id);
-    }
-    await new Promise((resolve) => setTimeout(resolve, pollIntervalMs));
+    case 'cef': return dispatchCefRun(category, products, fire, options);
+    case 'pif-loop': return dispatchPifLoop(category, products, fire, options);
+    case 'pif-eval': return dispatchPifEval(category, products, fire, options);
+    case 'rdf-run': return dispatchRdfRun(category, products, fire, options);
+    case 'sku-run': return dispatchSkuRun(category, products, fire, options);
+    case 'kf-loop': return dispatchKfAll(category, products, reservedKeys, 'loop', fire, options);
   }
 }
 
@@ -235,6 +207,12 @@ export function usePipelineController(category: string): UsePipelineControllerRe
         if (active.length === 0) break;
 
         const collected = new Set<string>();
+        const collectOperationId = (id: string) => {
+          if (collected.has(id)) return;
+          collected.add(id);
+          setState((prev) => ({ ...prev, stageOpIds: new Set(collected) }));
+        };
+
         setState((prev) => ({
           ...prev,
           stageIndex: i,
@@ -242,13 +220,6 @@ export function usePipelineController(category: string): UsePipelineControllerRe
           stageTerminalCount: 0,
         }));
 
-        await dispatchStage(stage, category, active, fire, reservedKeys, (id) => {
-          collected.add(id);
-        });
-
-        setState((prev) => ({ ...prev, stageOpIds: new Set(collected) }));
-
-        // Stream terminal counts while we wait.
         const watcher = useOperationsStore.subscribe(() => {
           const ops = useOperationsStore.getState().operations;
           let count = 0;
@@ -260,7 +231,24 @@ export function usePipelineController(category: string): UsePipelineControllerRe
         });
 
         try {
+          const dispatchResult = await dispatchPipelineStage({
+            stage,
+            category,
+            products: active,
+            fire,
+            reservedKeys,
+            options: {
+              signal: controller.signal,
+              onOperationId: collectOperationId,
+            },
+          });
+
+          for (const id of dispatchResult.operationIds) collectOperationId(id);
+          if (dispatchResult.failures > 0) throw new Error('pipeline_stage_dispatch_failed');
+          if (controller.signal.aborted) { terminatedByAbort = true; break; }
+
           const results = await waitForOperationsTerminal(Array.from(collected), controller.signal);
+          setState((prev) => ({ ...prev, stageTerminalCount: collected.size }));
           for (const [opId, status] of results) {
             if (status !== 'error') continue;
             const op = useOperationsStore.getState().operations.get(opId);
@@ -296,8 +284,6 @@ export function usePipelineController(category: string): UsePipelineControllerRe
     const controller = abortRef.current;
     if (!controller) return;
     controller.abort();
-    // Cancel in-flight ops best-effort. The pipeline loop already exits on
-    // abort, so this is purely to free server resources for the current stage.
     const current = useOperationsStore.getState();
     const inFlight: string[] = [];
     for (const id of state.stageOpIds) {

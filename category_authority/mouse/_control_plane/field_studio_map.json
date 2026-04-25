@@ -3296,7 +3296,17 @@
       },
       "value_form": "set",
       "value_form_sample": "list",
-      "variant_dependent": true
+      "variant_dependent": true,
+      "vocab": {
+        "allow_new": false,
+        "known_values": [
+          "standard",
+          "limited edition",
+          "collaboration",
+          "multiple"
+        ],
+        "mode": "closed"
+      }
     },
     "discontinued": {
       "aliases": [],

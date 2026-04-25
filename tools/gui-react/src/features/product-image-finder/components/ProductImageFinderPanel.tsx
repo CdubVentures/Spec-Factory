@@ -226,8 +226,12 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const findVariantId = useCallback((variantKey: string) =>
     variants.find((v) => v.key === variantKey)?.variant_id, [variants]);
 
-  const handleRunVariantView = useCallback((variantKey: string) => {
-    fire(pifRunUrl, { variant_key: variantKey, variant_id: findVariantId(variantKey), mode: 'view' }, { subType: 'view', variantKey });
+  const handleRunVariantPriorityView = useCallback((variantKey: string) => {
+    fire(pifRunUrl, { variant_key: variantKey, variant_id: findVariantId(variantKey), mode: 'view' }, { subType: 'priority-view', variantKey });
+  }, [fire, pifRunUrl, findVariantId]);
+
+  const handleRunVariantIndividualView = useCallback((variantKey: string, view: string) => {
+    fire(pifRunUrl, { variant_key: variantKey, variant_id: findVariantId(variantKey), mode: 'view', view }, { subType: 'view-single', variantKey });
   }, [fire, pifRunUrl, findVariantId]);
 
   const handleRunVariantHero = useCallback((variantKey: string) => {
@@ -548,7 +552,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                     heroEnabled={heroEnabled}
                     loopingVariant={loopingVariants.has(group.key)}
                     evaluatingVariant={evaluatingVariants.has(group.key)}
-                    onRunView={handleRunVariantView}
+                    onRunPriorityView={handleRunVariantPriorityView}
+                    onRunIndividualView={handleRunVariantIndividualView}
                     onRunHero={handleRunVariantHero}
                     onLoopVariant={handleLoopVariant}
                     onEvalVariant={handleEvalVariant}

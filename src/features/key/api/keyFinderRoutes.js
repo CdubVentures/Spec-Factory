@@ -314,8 +314,8 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
 
     let lastStatus = null;
     if (run) {
-      if (unknownReason) lastStatus = 'unk';
-      else if (published) lastStatus = 'resolved';
+      if (published) lastStatus = 'resolved';
+      else if (unknownReason) lastStatus = 'unresolved';
       else if (confidence !== null && threshold > 0 && confidence < threshold) lastStatus = 'below_threshold';
       else lastStatus = 'unresolved';
     } else if (published) {

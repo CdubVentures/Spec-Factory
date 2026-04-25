@@ -50,6 +50,8 @@ export interface ProductImageFinderRun {
   mode?: 'view' | 'hero';
   /** Shared ID across all runs in a single loop invocation. Absent on non-loop runs. */
   loop_id?: string | null;
+  /** Specific view this loop call targeted (e.g. 'top', 'bottom'). Null for hero / non-loop runs. */
+  focus_view?: string | null;
   /** ISO timestamp when the run started. Absent on legacy runs. */
   started_at?: string | null;
   /** Total run duration in milliseconds. Absent on legacy runs. */
@@ -67,6 +69,8 @@ export interface ProductImageFinderRun {
     mode?: 'view' | 'hero';
     /** Loop ID (duplicated from run level for SQL blob access). */
     loop_id?: string | null;
+    /** Focus view (duplicated from run level for SQL blob access). */
+    focus_view?: string | null;
     /** Started at (duplicated from run level for SQL blob access). */
     started_at?: string | null;
     /** Duration ms (duplicated from run level for SQL blob access). */

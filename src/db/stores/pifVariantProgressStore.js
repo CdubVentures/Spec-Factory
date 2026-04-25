@@ -13,7 +13,7 @@
  */
 export function createPifVariantProgressStore({ category, stmts }) {
 
-  function upsert({ productId, variantId, variantKey, priorityFilled, priorityTotal, loopFilled, loopTotal, heroFilled, heroTarget }) {
+  function upsert({ productId, variantId, variantKey, priorityFilled, priorityTotal, loopFilled, loopTotal, heroFilled, heroTarget, imageCount }) {
     stmts._upsertPifVariantProgress.run({
       category,
       product_id: String(productId || ''),
@@ -25,6 +25,7 @@ export function createPifVariantProgressStore({ category, stmts }) {
       loop_total: Number(loopTotal) || 0,
       hero_filled: Number(heroFilled) || 0,
       hero_target: Number(heroTarget) || 0,
+      image_count: Number(imageCount) || 0,
     });
   }
 

@@ -15,7 +15,7 @@
 
 import fs from 'node:fs';
 import { readProductImages } from './productImageStore.js';
-import { evaluateCarousel } from './carouselStrategy.js';
+import { resolveCarouselSlots } from './imageEvaluator.js';
 import { resolveViewBudget, resolveViewConfig } from './productImageLlmAdapter.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
@@ -42,7 +42,6 @@ export function rebuildPifVariantProgressFromJson({ specDb, productRoot }) {
   const heroEnabledRaw = finderStore?.getSetting?.('heroEnabled');
   const heroEnabled = String(heroEnabledRaw ?? 'true') !== 'false';
   const heroCount = parseInt(finderStore?.getSetting?.('heroCount') || '3', 10) || 3;
-  const satisfactionThreshold = parseInt(finderStore?.getSetting?.('satisfactionThreshold') || '3', 10) || 3;
 
   let entries;
   try {
@@ -64,11 +63,10 @@ export function rebuildPifVariantProgressFromJson({ specDb, productRoot }) {
       continue;
     }
 
-    const images = (data.selected?.images || []).map((img) => ({
-      view: img.view,
-      variant_key: img.variant_key,
-      quality_pass: img.quality_pass !== false,
-    }));
+    // Full image set with eval_best / hero / hero_rank flags intact. Needed by
+    // resolveCarouselSlots to decide which slot each image occupies.
+    const fullImages = data.selected?.images || [];
+    const carouselSlots = data.carousel_slots || {};
 
     const variants = specDb.variants?.listActive?.(productId) || [];
     if (variants.length === 0) {
@@ -76,30 +74,39 @@ export function rebuildPifVariantProgressFromJson({ specDb, productRoot }) {
       continue;
     }
 
+    const countFilled = (slots) =>
+      slots.filter((s) => s.filename && s.filename !== '__cleared__').length;
+
     for (const v of variants) {
-      const priority = evaluateCarousel({
-        collectedImages: images, viewBudget: priorityKeys, satisfactionThreshold,
-        heroEnabled: false, heroCount: 0, variantKey: v.variant_key, variantId: v.variant_id,
-      }).carouselProgress;
-      const loop = evaluateCarousel({
-        collectedImages: images, viewBudget: loopExtrasKeys, satisfactionThreshold,
-        heroEnabled: false, heroCount: 0, variantKey: v.variant_key, variantId: v.variant_id,
-      }).carouselProgress;
-      const hero = evaluateCarousel({
-        collectedImages: images, viewBudget: [], satisfactionThreshold,
-        heroEnabled, heroCount, variantKey: v.variant_key, variantId: v.variant_id,
-      }).carouselProgress;
+      const priorityResolved = resolveCarouselSlots({
+        viewBudget: priorityKeys, heroCount: 0, variantKey: v.variant_key, variantId: v.variant_id,
+        carouselSlots, images: fullImages,
+      });
+      const loopResolved = resolveCarouselSlots({
+        viewBudget: loopExtrasKeys, heroCount: 0, variantKey: v.variant_key, variantId: v.variant_id,
+        carouselSlots, images: fullImages,
+      });
+      const heroResolved = resolveCarouselSlots({
+        viewBudget: [], heroCount: heroEnabled ? heroCount : 0,
+        variantKey: v.variant_key, variantId: v.variant_id,
+        carouselSlots, images: fullImages,
+      });
+      const imageCount = fullImages.filter((img) => {
+        if (v.variant_id && img?.variant_id === v.variant_id) return true;
+        return (img?.variant_key || '') === (v.variant_key || '');
+      }).length;
 
       specDb.upsertPifVariantProgress({
         productId,
         variantId: v.variant_id,
         variantKey: v.variant_key,
-        priorityFilled: Number(priority.viewsFilled) || 0,
+        priorityFilled: countFilled(priorityResolved),
         priorityTotal: priorityKeys.length,
-        loopFilled: Number(loop.viewsFilled) || 0,
+        loopFilled: countFilled(loopResolved),
         loopTotal: loopExtrasKeys.length,
-        heroFilled: Number(hero.heroCount) || 0,
+        heroFilled: countFilled(heroResolved),
         heroTarget: heroEnabled ? heroCount : 0,
+        imageCount,
       });
       stats.variants_seeded++;
     }

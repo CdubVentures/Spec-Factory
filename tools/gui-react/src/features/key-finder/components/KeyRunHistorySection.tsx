@@ -32,7 +32,7 @@ interface KeyRunHistorySectionProps {
 
 function renderValue(value: unknown): string {
   if (value == null) return '—';
-  if (value === 'unk') return 'unk';
+  if (value === 'unk') return '—';
   if (Array.isArray(value)) {
     if (value.length === 0) return '[]';
     const shown = value.slice(0, 3).map((v) => String(v));
@@ -151,7 +151,7 @@ export const KeyRunHistorySection = memo(function KeyRunHistorySection({
               rightContent={
                 <>
                   <Chip
-                    label={valueDisplay || 'unk'}
+                    label={valueDisplay}
                     className={perKey?.value != null && perKey.value !== 'unk' ? 'sf-chip-success font-mono' : 'sf-chip-warning font-mono'}
                   />
                   <ConfidenceChip value={confidence} />

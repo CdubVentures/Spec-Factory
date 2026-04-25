@@ -23,6 +23,8 @@ export interface ScalarVariantsCellProps {
   readonly valueLabel: string;
   /** Optional label formatter for the truncated value under each diamond. */
   readonly formatLabel?: (value: string) => string;
+  /** Optional full value formatter for popovers and tooltips. */
+  readonly formatValue?: (value: string) => string;
 }
 
 /**
@@ -32,7 +34,7 @@ export interface ScalarVariantsCellProps {
 export function ScalarVariantsCell({
   productId, category, variants, hexMap,
   moduleType, phaseId, title, labelPrefix, runUrl,
-  valueLabel, formatLabel,
+  valueLabel, formatLabel, formatValue,
 }: ScalarVariantsCellProps) {
   // Subscribe once per product — each variant reads its own pulse bool from the shared set.
   const runningKeys = useRunningVariantKeysAny(moduleType, productId);
@@ -55,6 +57,7 @@ export function ScalarVariantsCell({
           runUrl={runUrl}
           valueLabel={valueLabel}
           formatLabel={formatLabel}
+          formatValue={formatValue}
           pulsing={runningKeys.has(v.variant_key)}
         />
       ))}

@@ -1,6 +1,13 @@
 import { useCallback } from 'react';
 import { api } from '../../api/client.ts';
 import { useOperationsStore } from '../../features/operations/state/operationsStore.ts';
+import {
+  awaitOperationTerminal as defaultAwaitOperationTerminal,
+  awaitPassengersRegistered as defaultAwaitPassengersRegistered,
+  type PassengersRegisteredOutcome,
+  type TerminalStatus,
+} from '../../features/operations/hooks/useFinderOperations.ts';
+import { parseAxisOrder, sortKeysByPriority } from '../../features/key-finder/state/keyFinderGroupedRows.ts';
 import type { CatalogRow } from '../../types/product.ts';
 import type { PifVariantProgressGen, ScalarVariantProgressGen } from '../../types/product.generated.ts';
 
@@ -16,7 +23,7 @@ import type { PifVariantProgressGen, ScalarVariantProgressGen } from '../../type
 
 interface AcceptedResponse { readonly ok: boolean; readonly operationId: string }
 
-interface BulkFireParams {
+export interface BulkFireParams {
   readonly type: string;
   readonly productId: string;
   readonly productLabel?: string;
@@ -26,6 +33,24 @@ interface BulkFireParams {
   readonly variantKey?: string;
   readonly fieldKey?: string;
   readonly onDispatched?: (operationId: string) => void;
+}
+
+export interface BulkDispatchOptions {
+  readonly staggerMs?: number;
+  readonly signal?: AbortSignal;
+  readonly onOperationId?: (operationId: string) => void;
+}
+
+export interface KfBulkDispatchOptions extends BulkDispatchOptions {
+  readonly awaitPassengersRegistered?: (operationId: string) => Promise<PassengersRegisteredOutcome | unknown>;
+  readonly awaitOperationTerminal?: (operationId: string) => Promise<TerminalStatus>;
+}
+
+export interface BulkDispatchResult {
+  readonly scheduled: number;
+  readonly operationIds: readonly string[];
+  readonly failures: number;
+  readonly skipped: number;
 }
 
 let _tempSeq = 0;
@@ -62,25 +87,28 @@ export function useBulkFire(category: string) {
   const remove = useOperationsStore((s) => s.remove);
 
   return useCallback(
-    (p: BulkFireParams): void => {
+    async (p: BulkFireParams): Promise<string> => {
       const tempId = `_pending_${++_tempSeq}`;
       upsert(makeStub(tempId, p, category));
-      api.post<AcceptedResponse>(p.url, p.body)
-        .then((data) => {
-          remove(tempId);
-          const alreadyDelivered = useOperationsStore.getState().operations.has(data.operationId);
-          if (!alreadyDelivered) {
-            upsert(makeStub(data.operationId, p, category));
-          }
-          try { p.onDispatched?.(data.operationId); } catch { /* caller bug must not break fire */ }
-        })
-        .catch(() => { remove(tempId); });
+      try {
+        const data = await api.post<AcceptedResponse>(p.url, p.body);
+        remove(tempId);
+        const alreadyDelivered = useOperationsStore.getState().operations.has(data.operationId);
+        if (!alreadyDelivered) {
+          upsert(makeStub(data.operationId, p, category));
+        }
+        try { p.onDispatched?.(data.operationId); } catch { /* caller bug must not break fire */ }
+        return data.operationId;
+      } catch (err) {
+        remove(tempId);
+        throw err;
+      }
     },
     [upsert, remove, category],
   );
 }
 
-export type BulkFireFn = ReturnType<typeof useBulkFire>;
+export type BulkFireFn = (params: BulkFireParams) => Promise<string>;
 
 const DEFAULT_STAGGER_MS = 50;
 
@@ -91,11 +119,89 @@ function productLabel(row: CatalogRow): string {
   return combined || row.productId;
 }
 
-function stagger<T>(items: readonly T[], stepMs: number, handler: (item: T, index: number) => void): void {
-  items.forEach((item, i) => {
-    if (i === 0) handler(item, 0);
-    else setTimeout(() => handler(item, i), i * stepMs);
+type DispatchOptionsInput = BulkDispatchOptions | number;
+
+function resolveOptions(input: DispatchOptionsInput | undefined): Required<Pick<BulkDispatchOptions, 'staggerMs'>> & BulkDispatchOptions {
+  if (typeof input === 'number') return { staggerMs: input };
+  return { staggerMs: input?.staggerMs ?? DEFAULT_STAGGER_MS, signal: input?.signal, onOperationId: input?.onOperationId };
+}
+
+function activeStatus(status: string): boolean {
+  return status === 'queued' || status === 'running';
+}
+
+function isModuleActive(type: string, productId: string): boolean {
+  for (const op of useOperationsStore.getState().operations.values()) {
+    if (op.type === type && op.productId === productId && activeStatus(op.status)) return true;
+  }
+  return false;
+}
+
+function isVariantActive(type: string, productId: string, subType: string, variantKey: string): boolean {
+  for (const op of useOperationsStore.getState().operations.values()) {
+    if (
+      op.type === type &&
+      op.productId === productId &&
+      op.subType === subType &&
+      op.variantKey === variantKey &&
+      activeStatus(op.status)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function isKfLoopActive(productId: string): boolean {
+  for (const op of useOperationsStore.getState().operations.values()) {
+    if (op.type === 'kf' && op.productId === productId && op.subType === 'loop' && activeStatus(op.status)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function waitForTurn(delayMs: number, signal?: AbortSignal): Promise<boolean> {
+  if (signal?.aborted) return Promise.resolve(false);
+  if (delayMs <= 0) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve(true);
+    }, delayMs);
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      resolve(false);
+    };
+    signal?.addEventListener('abort', onAbort, { once: true });
   });
+}
+
+async function dispatchTasks<T>(
+  items: readonly T[],
+  options: BulkDispatchOptions,
+  handler: (item: T, index: number) => Promise<string>,
+): Promise<BulkDispatchResult> {
+  const staggerMs = options.staggerMs ?? DEFAULT_STAGGER_MS;
+  const outcomes = await Promise.all(items.map(async (item, index) => {
+    const shouldFire = await waitForTurn(index * staggerMs, options.signal);
+    if (!shouldFire) return { id: null as string | null, failed: false, skipped: true };
+    try {
+      const id = await handler(item, index);
+      options.onOperationId?.(id);
+      return { id, failed: false, skipped: false };
+    } catch {
+      return { id: null as string | null, failed: true, skipped: false };
+    }
+  }));
+
+  return {
+    scheduled: items.length,
+    operationIds: outcomes.map((outcome) => outcome.id).filter((id): id is string => Boolean(id)),
+    failures: outcomes.filter((outcome) => outcome.failed).length,
+    skipped: outcomes.filter((outcome) => outcome.skipped).length,
+  };
 }
 
 // ── CEF — per product ─────────────────────────────────────────────────────
@@ -103,18 +209,19 @@ export function dispatchCefRun(
   category: string,
   products: readonly CatalogRow[],
   fire: BulkFireFn,
-  staggerMs: number = DEFAULT_STAGGER_MS,
-): number {
-  stagger(products, staggerMs, (row) => {
+  optionsInput?: DispatchOptionsInput,
+): Promise<BulkDispatchResult> {
+  const options = resolveOptions(optionsInput);
+  const runnable = products.filter((row) => !isModuleActive('cef', row.productId));
+  return dispatchTasks(runnable, options, (row) =>
     fire({
       type: 'cef',
       productId: row.productId,
       productLabel: productLabel(row),
       url: `/color-edition-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.productId)}`,
       body: {},
-    });
-  });
-  return products.length;
+    }),
+  );
 }
 
 // ── PIF loop — per variant ────────────────────────────────────────────────
@@ -122,11 +229,16 @@ export function dispatchPifLoop(
   category: string,
   products: readonly CatalogRow[],
   fire: BulkFireFn,
-  staggerMs: number = DEFAULT_STAGGER_MS,
-): number {
+  optionsInput?: DispatchOptionsInput,
+): Promise<BulkDispatchResult> {
+  const options = resolveOptions(optionsInput);
   const tasks: Array<{ row: CatalogRow; variant: PifVariantProgressGen }> = [];
-  for (const row of products) for (const v of row.pifVariants) tasks.push({ row, variant: v });
-  stagger(tasks, staggerMs, ({ row, variant }) => {
+  for (const row of products) {
+    for (const v of row.pifVariants) {
+      if (!isVariantActive('pif', row.productId, 'loop', v.variant_key)) tasks.push({ row, variant: v });
+    }
+  }
+  return dispatchTasks(tasks, options, ({ row, variant }) =>
     fire({
       type: 'pif',
       productId: row.productId,
@@ -135,9 +247,8 @@ export function dispatchPifLoop(
       body: { variant_key: variant.variant_key, variant_id: variant.variant_id },
       subType: 'loop',
       variantKey: variant.variant_key,
-    });
-  });
-  return tasks.length;
+    }),
+  );
 }
 
 // ── PIF eval — per collected view + per variant hero ──────────────────────
@@ -148,8 +259,9 @@ export async function dispatchPifEval(
   category: string,
   products: readonly CatalogRow[],
   fire: BulkFireFn,
-  staggerMs: number = DEFAULT_STAGGER_MS,
-): Promise<number> {
+  optionsInput?: DispatchOptionsInput,
+): Promise<BulkDispatchResult> {
+  const options = resolveOptions(optionsInput);
   const results = await Promise.all(products.map(async (row) => {
     try {
       const data = await api.get<PifDataShape>(
@@ -166,6 +278,7 @@ export async function dispatchPifEval(
       }
       const tasks: Array<{ variant: PifVariantProgressGen; kind: 'view' | 'hero'; view?: string }> = [];
       for (const variant of row.pifVariants) {
+        if (isVariantActive('pif', row.productId, 'evaluate', variant.variant_key)) continue;
         const views = variantViews.get(variant.variant_key) ?? new Set<string>();
         for (const view of views) {
           if (view === 'hero') continue;
@@ -182,12 +295,12 @@ export async function dispatchPifEval(
   const flat: Array<{ row: CatalogRow; variant: PifVariantProgressGen; kind: 'view' | 'hero'; view?: string }> = [];
   for (const { row, tasks } of results) for (const t of tasks) flat.push({ row, ...t });
 
-  stagger(flat, staggerMs, ({ row, variant, kind, view }) => {
+  return dispatchTasks(flat, options, ({ row, variant, kind, view }) => {
     const base = `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.productId)}`;
     const url = kind === 'view' ? `${base}/evaluate-view` : `${base}/evaluate-hero`;
     const body: Record<string, unknown> = { variant_key: variant.variant_key, variant_id: variant.variant_id };
     if (kind === 'view' && view) body.view = view;
-    fire({
+    return fire({
       type: 'pif',
       productId: row.productId,
       productLabel: productLabel(row),
@@ -197,7 +310,6 @@ export async function dispatchPifEval(
       variantKey: variant.variant_key,
     });
   });
-  return flat.length;
 }
 
 // ── RDF / SKU — per variant (run + loop share shape) ──────────────────────
@@ -213,13 +325,18 @@ function dispatchScalar(
   products: readonly CatalogRow[],
   variantAccessor: (row: CatalogRow) => readonly ScalarVariantProgressGen[],
   fire: BulkFireFn,
-  staggerMs: number,
-): number {
+  options: BulkDispatchOptions,
+): Promise<BulkDispatchResult> {
   const tasks: Array<{ row: CatalogRow; variant: ScalarVariantProgressGen }> = [];
-  for (const row of products) for (const v of variantAccessor(row)) tasks.push({ row, variant: v });
-  stagger(tasks, staggerMs, ({ row, variant }) => {
+  for (const row of products) {
+    for (const v of variantAccessor(row)) {
+      if (cfg.mode === 'loop' && isVariantActive(cfg.type, row.productId, 'loop', v.variant_key)) continue;
+      tasks.push({ row, variant: v });
+    }
+  }
+  return dispatchTasks(tasks, options, ({ row, variant }) => {
     const base = cfg.baseUrl(category, row.productId);
-    fire({
+    return fire({
       type: cfg.type,
       productId: row.productId,
       productLabel: productLabel(row),
@@ -229,7 +346,6 @@ function dispatchScalar(
       variantKey: variant.variant_key,
     });
   });
-  return tasks.length;
 }
 
 const rdfBase = (c: string, p: string) =>
@@ -238,23 +354,149 @@ const skuBase = (c: string, p: string) =>
   `/sku-finder/${encodeURIComponent(c)}/${encodeURIComponent(p)}`;
 
 export const dispatchRdfRun = (
-  category: string, products: readonly CatalogRow[], fire: BulkFireFn, staggerMs = DEFAULT_STAGGER_MS,
-) => dispatchScalar({ type: 'rdf', baseUrl: rdfBase, mode: 'run' }, category, products, (r) => r.rdfVariants, fire, staggerMs);
+  category: string, products: readonly CatalogRow[], fire: BulkFireFn, optionsInput?: DispatchOptionsInput,
+) => dispatchScalar({ type: 'rdf', baseUrl: rdfBase, mode: 'run' }, category, products, (r) => r.rdfVariants, fire, resolveOptions(optionsInput));
 
 export const dispatchRdfLoop = (
-  category: string, products: readonly CatalogRow[], fire: BulkFireFn, staggerMs = DEFAULT_STAGGER_MS,
-) => dispatchScalar({ type: 'rdf', baseUrl: rdfBase, mode: 'loop' }, category, products, (r) => r.rdfVariants, fire, staggerMs);
+  category: string, products: readonly CatalogRow[], fire: BulkFireFn, optionsInput?: DispatchOptionsInput,
+) => dispatchScalar({ type: 'rdf', baseUrl: rdfBase, mode: 'loop' }, category, products, (r) => r.rdfVariants, fire, resolveOptions(optionsInput));
 
 export const dispatchSkuRun = (
-  category: string, products: readonly CatalogRow[], fire: BulkFireFn, staggerMs = DEFAULT_STAGGER_MS,
-) => dispatchScalar({ type: 'skf', baseUrl: skuBase, mode: 'run' }, category, products, (r) => r.skuVariants, fire, staggerMs);
+  category: string, products: readonly CatalogRow[], fire: BulkFireFn, optionsInput?: DispatchOptionsInput,
+) => dispatchScalar({ type: 'skf', baseUrl: skuBase, mode: 'run' }, category, products, (r) => r.skuVariants, fire, resolveOptions(optionsInput));
 
 export const dispatchSkuLoop = (
-  category: string, products: readonly CatalogRow[], fire: BulkFireFn, staggerMs = DEFAULT_STAGGER_MS,
-) => dispatchScalar({ type: 'skf', baseUrl: skuBase, mode: 'loop' }, category, products, (r) => r.skuVariants, fire, staggerMs);
+  category: string, products: readonly CatalogRow[], fire: BulkFireFn, optionsInput?: DispatchOptionsInput,
+) => dispatchScalar({ type: 'skf', baseUrl: skuBase, mode: 'loop' }, category, products, (r) => r.skuVariants, fire, resolveOptions(optionsInput));
 
 // ── KF — per non-reserved key per product ─────────────────────────────────
-interface KeyFinderSummaryLike { readonly field_key: string }
+interface KeyFinderSummaryLike {
+  readonly field_key: string;
+  readonly difficulty?: string;
+  readonly required_level?: string;
+  readonly availability?: string;
+  readonly variant_dependent?: boolean;
+  readonly last_status?: string | null;
+  readonly published?: boolean;
+}
+
+interface KeyFinderBundlingConfigLike {
+  readonly sortAxisOrder?: string;
+}
+
+interface KfProductPlan {
+  readonly row: CatalogRow;
+  readonly keys: readonly string[];
+  readonly summary: readonly KeyFinderSummaryLike[];
+}
+
+function kfSummaryUrl(category: string, productId: string): string {
+  return `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/summary`;
+}
+
+function kfBundlingConfigUrl(category: string, productId: string): string {
+  return `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/bundling-config`;
+}
+
+function isKfResolved(summary: readonly KeyFinderSummaryLike[], fieldKey: string): boolean {
+  const row = summary.find((entry) => entry.field_key === fieldKey);
+  return Boolean(row && (row.last_status === 'resolved' || row.published));
+}
+
+async function fetchKfSummary(category: string, productId: string): Promise<readonly KeyFinderSummaryLike[]> {
+  return api.get<readonly KeyFinderSummaryLike[]>(kfSummaryUrl(category, productId));
+}
+
+async function buildKfProductPlan(
+  category: string,
+  row: CatalogRow,
+  reservedKeys: ReadonlySet<string>,
+  mode: 'run' | 'loop',
+): Promise<KfProductPlan> {
+  const [summary, bundlingConfig] = await Promise.all([
+    fetchKfSummary(category, row.productId),
+    api.get<KeyFinderBundlingConfigLike>(kfBundlingConfigUrl(category, row.productId)).catch(() => ({ sortAxisOrder: '' })),
+  ]);
+  const axisOrder = parseAxisOrder(bundlingConfig?.sortAxisOrder ?? '');
+  const eligible = summary.filter((entry) => {
+    if (!entry.field_key) return false;
+    if (reservedKeys.has(entry.field_key)) return false;
+    if (entry.variant_dependent === true) return false;
+    if (mode === 'loop' && (entry.last_status === 'resolved' || entry.published)) return false;
+    return true;
+  });
+  const sortable = eligible.map((entry) => ({
+    ...entry,
+    difficulty: entry.difficulty ?? '',
+    required_level: entry.required_level ?? '',
+    availability: entry.availability ?? '',
+  }));
+  return {
+    row,
+    summary,
+    keys: sortKeysByPriority(sortable, axisOrder).map((entry) => entry.field_key),
+  };
+}
+
+async function runKfProductChain({
+  category,
+  plan,
+  mode,
+  fire,
+  options,
+}: {
+  readonly category: string;
+  readonly plan: KfProductPlan;
+  readonly mode: 'run' | 'loop';
+  readonly fire: BulkFireFn;
+  readonly options: Required<Pick<KfBulkDispatchOptions, 'awaitPassengersRegistered' | 'awaitOperationTerminal'>> & BulkDispatchOptions;
+}): Promise<BulkDispatchResult> {
+  const operationIds: string[] = [];
+  let failures = 0;
+  let skipped = 0;
+  let latestSummary = plan.summary;
+
+  for (const fieldKey of plan.keys) {
+    if (options.signal?.aborted) {
+      skipped += 1;
+      continue;
+    }
+    if (mode === 'loop' && isKfResolved(latestSummary, fieldKey)) {
+      skipped += 1;
+      continue;
+    }
+    try {
+      const operationId = await fire({
+        type: 'kf',
+        productId: plan.row.productId,
+        productLabel: productLabel(plan.row),
+        url: `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(plan.row.productId)}`,
+        body: { field_key: fieldKey, mode },
+        subType: mode === 'loop' ? 'loop' : undefined,
+        fieldKey,
+      });
+      operationIds.push(operationId);
+      options.onOperationId?.(operationId);
+
+      if (mode === 'run') {
+        await options.awaitPassengersRegistered(operationId);
+      } else {
+        const status = await options.awaitOperationTerminal(operationId);
+        if (status === 'cancelled') break;
+        latestSummary = await fetchKfSummary(category, plan.row.productId).catch(() => latestSummary);
+      }
+    } catch {
+      failures += 1;
+    }
+  }
+
+  return {
+    scheduled: plan.keys.length,
+    operationIds,
+    failures,
+    skipped,
+  };
+}
 
 export async function dispatchKfAll(
   category: string,
@@ -262,33 +504,35 @@ export async function dispatchKfAll(
   reservedKeys: ReadonlySet<string>,
   mode: 'run' | 'loop',
   fire: BulkFireFn,
-  staggerMs: number = DEFAULT_STAGGER_MS,
-): Promise<number> {
-  const results = await Promise.all(products.map(async (row) => {
+  optionsInput: KfBulkDispatchOptions | number = {},
+): Promise<BulkDispatchResult> {
+  const resolvedInput = typeof optionsInput === 'number' ? { staggerMs: optionsInput } : optionsInput;
+  const options = {
+    ...resolveOptions(resolvedInput),
+    awaitPassengersRegistered: resolvedInput.awaitPassengersRegistered ?? defaultAwaitPassengersRegistered,
+    awaitOperationTerminal: resolvedInput.awaitOperationTerminal ?? defaultAwaitOperationTerminal,
+  };
+
+  const eligibleProducts = mode === 'loop'
+    ? products.filter((row) => !isKfLoopActive(row.productId))
+    : products;
+
+  const plans = await Promise.all(eligibleProducts.map(async (row) => {
     try {
-      const summary = await api.get<readonly KeyFinderSummaryLike[]>(
-        `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.productId)}/summary`,
-      );
-      const fieldKeys = summary.map((r) => r.field_key).filter((k) => k && !reservedKeys.has(k));
-      return { row, fieldKeys };
+      return await buildKfProductPlan(category, row, reservedKeys, mode);
     } catch {
-      return { row, fieldKeys: [] as string[] };
+      return { row, summary: [], keys: [] };
     }
   }));
 
-  const flat: Array<{ row: CatalogRow; fieldKey: string }> = [];
-  for (const { row, fieldKeys } of results) for (const k of fieldKeys) flat.push({ row, fieldKey: k });
+  const results = await Promise.all(plans.map((plan) =>
+    runKfProductChain({ category, plan, mode, fire, options }),
+  ));
 
-  stagger(flat, staggerMs, ({ row, fieldKey }) => {
-    fire({
-      type: 'kf',
-      productId: row.productId,
-      productLabel: productLabel(row),
-      url: `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.productId)}`,
-      body: { field_key: fieldKey, mode },
-      subType: mode === 'loop' ? 'loop' : undefined,
-      fieldKey,
-    });
-  });
-  return flat.length;
+  return {
+    scheduled: results.reduce((sum, result) => sum + result.scheduled, 0),
+    operationIds: results.flatMap((result) => result.operationIds),
+    failures: results.reduce((sum, result) => sum + result.failures, 0),
+    skipped: results.reduce((sum, result) => sum + result.skipped, 0),
+  };
 }
