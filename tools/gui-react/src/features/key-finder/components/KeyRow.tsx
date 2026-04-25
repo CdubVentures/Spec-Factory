@@ -79,7 +79,7 @@ function statusLabel(entry: KeyEntry): string {
  */
 function renderValue(value: unknown): string {
   if (value == null) return '—';
-  if (value === 'unk') return '—';
+  if (typeof value === 'string' && value.trim().toLowerCase() === 'unk') return '—';
   if (Array.isArray(value)) {
     if (value.length === 0) return '[]';
     return `[${value.map((v) => String(v)).join(', ')}]`;
@@ -96,7 +96,7 @@ function renderValue(value: unknown): string {
 
 function valueClass(value: unknown, running: boolean): string {
   if (running) return 'sf-text-subtle italic';
-  if (value == null || value === 'unk') return 'sf-text-subtle';
+  if (value == null || (typeof value === 'string' && value.trim().toLowerCase() === 'unk')) return 'sf-text-subtle';
   return 'sf-text-primary';
 }
 

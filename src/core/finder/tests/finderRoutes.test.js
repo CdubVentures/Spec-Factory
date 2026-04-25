@@ -1,7 +1,12 @@
-import { describe, it } from 'node:test';
+import { describe, it, before, after } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { createFinderRouteHandler } from '../finderRoutes.js';
 import { initOperationsRegistry } from '../../operations/index.js';
+
+const ROUTE_TMP_ROOT = path.join(os.tmpdir(), `finder-routes-test-${Date.now()}`);
 
 function makeJsonCapture() {
   const calls = [];
@@ -15,6 +20,7 @@ function makeSpecDbStub(overrides = {}) {
     getProduct: () => overrides.productRow ?? { product_id: 'p1', category: 'cat', brand: 'B', model: 'M', base_model: 'BM', variant: '' },
     getCompiledRules: () => ({ fields: { field_a: { key: 'field_a' } } }),
     deleteFieldCandidatesByProductAndField: (...args) => candidateDeleteCalls.push(args),
+    getFinderStore: () => overrides.finderStore ?? null,
     _candidateDeleteCalls: candidateDeleteCalls,
     category: 'cat',
   };
@@ -22,10 +28,11 @@ function makeSpecDbStub(overrides = {}) {
 
 function makeFinderConfig(overrides = {}) {
   return {
-    routePrefix: 'test-finder',
+    routePrefix: overrides.routePrefix || 'test-finder',
+    moduleId: overrides.moduleId || 'testFinder',
     moduleType: 'tf',
     phase: 'testFinder',
-    fieldKeys: ['field_a', 'field_b'],
+    fieldKeys: overrides.fieldKeys || ['field_a', 'field_b'],
     runFinder: overrides.runFinder || (async () => ({ rejected: false })),
     deleteRun: overrides.deleteRun || (() => null),
     deleteRuns: overrides.deleteRuns || undefined,
@@ -57,7 +64,7 @@ function makeCtx(specDbOverrides = {}) {
     ctx: {
       jsonRes,
       readJsonBody: async () => ({}),
-      config: {},
+      config: specDbOverrides.config || {},
       appDb: { listColors: () => [] },
       getSpecDb: () => specDb,
       broadcastWs,
@@ -67,6 +74,16 @@ function makeCtx(specDbOverrides = {}) {
     specDb,
     wsMessages,
   };
+}
+
+function writeFinderDoc({ productId, filePrefix, doc }) {
+  const dir = path.join(ROUTE_TMP_ROOT, productId);
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(path.join(dir, `${filePrefix}.json`), JSON.stringify(doc, null, 2), 'utf8');
+}
+
+function readFinderDoc(productId, filePrefix) {
+  return JSON.parse(fs.readFileSync(path.join(ROUTE_TMP_ROOT, productId, `${filePrefix}.json`), 'utf8'));
 }
 
 async function flushAsyncWork() {
@@ -81,6 +98,9 @@ function getOperationsUpserts(wsMessages) {
 }
 
 describe('createFinderRouteHandler — generic', () => {
+  before(() => fs.mkdirSync(ROUTE_TMP_ROOT, { recursive: true }));
+  after(() => { fs.rmSync(ROUTE_TMP_ROOT, { recursive: true, force: true }); });
+
   it('returns false for unrecognized prefix', async () => {
     const { ctx } = makeCtx();
     const handler = createFinderRouteHandler(makeFinderConfig())(ctx);
@@ -254,6 +274,95 @@ describe('createFinderRouteHandler — generic', () => {
   });
 
   // ── skipSelectedOnDelete: bookkeeping-only updates ─────────────
+
+  it('POST discovery-history/scrub clears only matching discovery-log arrays and emits a narrow data-change event', async () => {
+    const productId = 'route-scrub-rdf';
+    const filePrefix = 'release_date';
+    writeFinderDoc({
+      productId,
+      filePrefix,
+      doc: {
+        product_id: productId,
+        category: 'cat',
+        selected: { candidates: [{ variant_id: 'v_black', value: '2025-01-01' }] },
+        run_count: 2,
+        next_run_number: 3,
+        runs: [
+          {
+            run_number: 1,
+            selected: { candidates: [{ variant_id: 'v_black', value: '2025-01-01' }] },
+            prompt: { user: 'keep prompt' },
+            response: {
+              variant_id: 'v_black',
+              variant_key: 'color:black',
+              discovery_log: {
+                urls_checked: ['https://black.example'],
+                queries_run: ['black query'],
+                notes: ['keep note'],
+              },
+            },
+          },
+          {
+            run_number: 2,
+            selected: { candidates: [{ variant_id: 'v_white', value: '2025-02-02' }] },
+            response: {
+              variant_id: 'v_white',
+              variant_key: 'color:white',
+              discovery_log: {
+                urls_checked: ['https://white.example'],
+                queries_run: ['white query'],
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    const sqlUpdates = [];
+    let deleteRunSqlCalled = false;
+    let deleteAllRunsSqlCalled = false;
+    const { ctx, calls, specDb, wsMessages } = makeCtx({
+      config: { productRoot: ROUTE_TMP_ROOT },
+      finderStore: {
+        updateRunJson: (pid, runNumber, payload) => sqlUpdates.push({ pid, runNumber, payload }),
+      },
+    });
+    ctx.readJsonBody = async () => ({ kind: 'url', scope: 'variant', variantId: 'v_black' });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      routePrefix: 'release-date-finder',
+      moduleId: 'releaseDateFinder',
+      fieldKeys: ['release_date'],
+      getOne: () => ({ product_id: productId, category: 'cat', latest_ran_at: '', run_count: 2 }),
+      deleteRunSql: () => { deleteRunSqlCalled = true; },
+      deleteAllRunsSql: () => { deleteAllRunsSqlCalled = true; },
+    }))(ctx);
+
+    await handler(['release-date-finder', 'cat', productId, 'discovery-history', 'scrub'], new Map(), 'POST', {}, {});
+
+    assert.equal(calls[0].status, 200);
+    assert.equal(calls[0].body.ok, true);
+    assert.equal(calls[0].body.runsTouched, 1);
+    assert.equal(calls[0].body.urlsRemoved, 1);
+    assert.equal(calls[0].body.queriesRemoved, 0);
+    assert.deepEqual(calls[0].body.affectedRunNumbers, [1]);
+    assert.equal(specDb._candidateDeleteCalls.length, 0);
+    assert.equal(deleteRunSqlCalled, false);
+    assert.equal(deleteAllRunsSqlCalled, false);
+    assert.deepEqual(sqlUpdates.map((u) => u.runNumber), [1]);
+
+    const afterDoc = readFinderDoc(productId, filePrefix);
+    assert.equal(afterDoc.run_count, 2);
+    assert.deepEqual(afterDoc.runs.map((r) => r.run_number), [1, 2]);
+    assert.deepEqual(afterDoc.runs[0].response.discovery_log.urls_checked, []);
+    assert.deepEqual(afterDoc.runs[0].response.discovery_log.queries_run, ['black query']);
+    assert.deepEqual(afterDoc.runs[0].response.discovery_log.notes, ['keep note']);
+    assert.deepEqual(afterDoc.runs[1].response.discovery_log.urls_checked, ['https://white.example']);
+
+    const events = wsMessages
+      .filter((m) => m.channel === 'data-change')
+      .map((m) => m.data.event);
+    assert.ok(events.includes('release-date-finder-discovery-history-scrubbed'));
+  });
 
   it('DELETE single run with skipSelectedOnDelete calls updateBookkeeping instead of upsertSummary', async () => {
     const upsertCalls = [];

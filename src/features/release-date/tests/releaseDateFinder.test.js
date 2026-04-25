@@ -258,7 +258,7 @@ describe('runReleaseDateFinder', () => {
     assert.equal(doc.runs.length, 2, 'runs persisted for audit');
     assert.equal(doc.selected.candidates.length, 2);
     for (const c of doc.selected.candidates) {
-      assert.equal(c.value, '');
+      assert.equal(c.value, null);
       assert.ok(c.unknown_reason.length > 0);
     }
   });

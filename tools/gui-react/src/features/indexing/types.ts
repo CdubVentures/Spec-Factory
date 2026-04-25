@@ -769,15 +769,7 @@ export interface RoundSummaryResponse {
   round_count: number;
 }
 
-export type PanelKey = 'picker' | 'pipeline';
 export type PanelStateToken = 'live' | 'ready' | 'waiting';
-
-export const PANEL_KEYS: PanelKey[] = ['picker', 'pipeline'];
-
-export const DEFAULT_PANEL_COLLAPSED: Record<PanelKey, boolean> = {
-  picker: false,
-  pipeline: false,
-};
 
 export interface TimedIndexLabEvent {
   row: IndexLabEvent;

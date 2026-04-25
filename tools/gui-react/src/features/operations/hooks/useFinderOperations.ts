@@ -221,19 +221,64 @@ export function useRunningModulesByProduct(category: string): ReadonlyMap<string
       [category],
     ),
   );
-  return useMemo(() => {
-    const map = new Map<string, ReadonlySet<string>>();
-    if (!serialized) return map;
-    for (const token of serialized.split('|')) {
-      if (!token) continue;
-      const colonIdx = token.indexOf(':');
-      if (colonIdx <= 0) continue;
-      const pid = token.slice(0, colonIdx);
-      const mods = token.slice(colonIdx + 1).split(',').filter(Boolean);
-      if (mods.length > 0) map.set(pid, new Set(mods));
-    }
-    return map;
-  }, [serialized]);
+  return useMemo(() => deserializeModulesByProduct(serialized), [serialized]);
+}
+
+/**
+ * Per-product map of currently-active module types within a category, where
+ * "active" = queued OR running. Mirrors `selectRunningModulesByProduct` but
+ * uses the broader predicate that the dispatch helpers (bulkDispatch.ts:129)
+ * already treat as collision-worthy.
+ *
+ * Use this for **dispatch-collision detection** (e.g. the Command Console
+ * warn-confirm before firing an op type onto a product). For **visual
+ * indicators** (pulsing badges) use `selectRunningModulesByProduct` — pulsing
+ * on queued ops would misrepresent the actual work.
+ *
+ * Format: identical to the running-only sibling — `pid:cef,pif|pid2:kf`.
+ */
+export function selectActiveModulesByProduct(
+  ops: ReadonlyMap<string, Operation>,
+  category: string,
+): string {
+  const byPid = new Map<string, Set<string>>();
+  for (const op of ops.values()) {
+    if (op.status !== 'running' && op.status !== 'queued') continue;
+    if (!op.productId) continue;
+    if (category && op.category !== category) continue;
+    let set = byPid.get(op.productId);
+    if (!set) { set = new Set(); byPid.set(op.productId, set); }
+    set.add(op.type);
+  }
+  return [...byPid.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([pid, mods]) => `${pid}:${[...mods].sort().join(',')}`)
+    .join('|');
+}
+
+export function useActiveModulesByProduct(category: string): ReadonlyMap<string, ReadonlySet<string>> {
+  const serialized = useOperationsStore(
+    useCallback(
+      (s: { operations: ReadonlyMap<string, Operation> }) =>
+        selectActiveModulesByProduct(s.operations, category),
+      [category],
+    ),
+  );
+  return useMemo(() => deserializeModulesByProduct(serialized), [serialized]);
+}
+
+function deserializeModulesByProduct(serialized: string): ReadonlyMap<string, ReadonlySet<string>> {
+  const map = new Map<string, ReadonlySet<string>>();
+  if (!serialized) return map;
+  for (const token of serialized.split('|')) {
+    if (!token) continue;
+    const colonIdx = token.indexOf(':');
+    if (colonIdx <= 0) continue;
+    const pid = token.slice(0, colonIdx);
+    const mods = token.slice(colonIdx + 1).split(',').filter(Boolean);
+    if (mods.length > 0) map.set(pid, new Set(mods));
+  }
+  return map;
 }
 
 /** Per-key scope (keyFinder). Returns the set of field_keys currently running. */

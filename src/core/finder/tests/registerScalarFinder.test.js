@@ -151,6 +151,10 @@ describe('registerScalarFinder — default satisfactionPredicate', () => {
     assert.equal(_defaultSatisfactionPredicate({ candidate: { value: '', unknown_reason: 'no data' } }), true);
   });
 
+  it('true when candidate has unknown_reason AND null value (stored unknown diagnostic)', () => {
+    assert.equal(_defaultSatisfactionPredicate({ candidate: { value: null, unknown_reason: 'no data' } }), true);
+  });
+
   it('false when candidate has unknown_reason but non-empty value (not definitive)', () => {
     assert.equal(_defaultSatisfactionPredicate({ candidate: { value: '2024', unknown_reason: 'low conf' } }), false);
   });

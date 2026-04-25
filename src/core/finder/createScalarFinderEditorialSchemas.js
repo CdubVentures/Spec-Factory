@@ -20,6 +20,19 @@ import { z } from 'zod';
 import { evidenceRefSchema, evidenceRefExtendedSchema } from './evidencePromptFragment.js';
 import { publisherCandidateRefSchema, rejectionMetadataSchema } from './editorialSchemas.js';
 
+const COMMON_LLM_RESPONSE_KEYS = new Set(['confidence', 'unknown_reason', 'evidence_refs', 'discovery_log']);
+
+function getZodShape(schema) {
+  const shape = schema?.shape ?? schema?._def?.shape;
+  return typeof shape === 'function' ? shape() : shape;
+}
+
+function resolveScalarValueKey(schema) {
+  const shape = getZodShape(schema);
+  if (!shape || typeof shape !== 'object') return null;
+  return Object.keys(shape).find((key) => !COMMON_LLM_RESPONSE_KEYS.has(key)) || null;
+}
+
 export function createScalarFinderEditorialSchemas({ llmResponseSchema, includeEvidenceKind = false } = {}) {
   if (!llmResponseSchema) {
     throw new Error('createScalarFinderEditorialSchemas: llmResponseSchema required');
@@ -31,13 +44,24 @@ export function createScalarFinderEditorialSchemas({ llmResponseSchema, includeE
   // + popover quote. Legacy rebuilt rows without evidence_kind parse
   // cleanly because the field is optional on the extended schema.
   const sourceRefSchema = includeEvidenceKind ? evidenceRefExtendedSchema : evidenceRefSchema;
+  const responseValueKey = resolveScalarValueKey(llmResponseSchema);
+  const responseValueSchema = responseValueKey ? getZodShape(llmResponseSchema)?.[responseValueKey] : null;
+  const responseExtension = {
+    started_at: z.string().optional(),
+    duration_ms: z.number().optional(),
+    variant_id: z.string().nullable(),
+    variant_key: z.string(),
+    variant_label: z.string(),
+    loop_id: z.string().optional(),
+    ...(responseValueKey && responseValueSchema ? { [responseValueKey]: responseValueSchema.nullable() } : {}),
+  };
 
   const candidateSchema = z.object({
     variant_id: z.string().nullable(),
     variant_key: z.string(),
     variant_label: z.string(),
     variant_type: z.string(),
-    value: z.string(),
+    value: z.string().nullable(),
     confidence: z.number(),
     unknown_reason: z.string().default(''),
     sources: z.array(sourceRefSchema).default([]),
@@ -61,14 +85,7 @@ export function createScalarFinderEditorialSchemas({ llmResponseSchema, includeE
     duration_ms: z.number().nullable().optional(),
     selected: z.object({ candidates: z.array(candidateSchema) }),
     prompt: z.object({ system: z.string(), user: z.string() }),
-    response: llmResponseSchema.extend({
-      started_at: z.string().optional(),
-      duration_ms: z.number().optional(),
-      variant_id: z.string().nullable(),
-      variant_key: z.string(),
-      variant_label: z.string(),
-      loop_id: z.string().optional(),
-    }),
+    response: llmResponseSchema.extend(responseExtension),
   });
 
   const getResponseSchema = z.object({

@@ -23,6 +23,7 @@ import { resolveRequestedModel } from './resolveRequestedModel.js';
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
 import { submitCandidate as defaultSubmitCandidate } from '../publisher/index.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
+import { isUnknownSentinel } from '../../shared/valueNormalizers.js';
 import { FieldRulesEngine } from '../../engine/fieldRulesEngine.js';
 import { resolveKeyFinderPifPriorityImageContext } from '../product-image/index.js';
 
@@ -72,8 +73,12 @@ function readBoolKnob(finderStore, key, defaultTrue = true) {
 
 function normalizeUnknownPerKeyResultForStorage(perKey) {
   if (!perKey || typeof perKey !== 'object') return { value: null };
-  if (perKey.value !== 'unk') return perKey;
+  if (!isUnknownSentinel(perKey.value)) return perKey;
   return { ...perKey, value: null };
+}
+
+function isUnknownPerKeyValue(value) {
+  return value === undefined || isUnknownSentinel(value);
 }
 
 function normalizeUnknownResultsForStorage(results) {
@@ -415,7 +420,7 @@ export async function runKeyFinder(opts) {
     throw new Error(`llm_primary_mismatch: expected ${fieldKey}, got ${parsed.primary_field_key}`);
   }
   const perKey = parsed.results[fieldKey];
-  const isUnknown = perKey?.value === 'unk' || perKey?.value === undefined;
+  const isUnknown = isUnknownPerKeyValue(perKey?.value);
 
   // WHY: Record what ACTUALLY ran on the persisted run + sourceMeta so the
   // keyFinder "last model" column shows the truth. Two cases:
@@ -497,7 +502,7 @@ export async function runKeyFinder(opts) {
       passengerCandidates.push({ fieldKey: p.fieldKey, status: 'missing' });
       continue;
     }
-    const pIsUnknown = pResult.value === 'unk' || pResult.value === undefined;
+    const pIsUnknown = isUnknownPerKeyValue(pResult.value);
     if (pIsUnknown) {
       passengerCandidates.push({
         fieldKey: p.fieldKey,

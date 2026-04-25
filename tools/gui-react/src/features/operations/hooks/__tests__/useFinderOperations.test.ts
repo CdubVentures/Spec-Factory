@@ -6,6 +6,7 @@ import {
   selectKeyFieldOpStatesSignature,
   selectPassengerRidesSignature,
   selectActivePassengersSignature,
+  selectActiveModulesByProduct,
 } from '../useFinderOperations.ts';
 import type { Operation } from '../../state/operationsStore.ts';
 
@@ -305,5 +306,63 @@ describe('selectActivePassengersSignature', () => {
       makeOp({ id: 'a', type: 'kf', productId: 'p1', fieldKey: 'ips', status: 'running', passengerFieldKeys: ['ips', 'acceleration'] }),
     );
     assert.equal(selectActivePassengersSignature(ops, 'kf', 'p1'), 'ips:acceleration');
+  });
+});
+
+/* ── selectActiveModulesByProduct (queued + running) ───────────────── */
+
+describe('selectActiveModulesByProduct', () => {
+  it('returns empty signature for empty operations', () => {
+    assert.equal(selectActiveModulesByProduct(new Map(), 'mouse'), '');
+  });
+
+  it('includes a queued op (broader than running-only sibling)', () => {
+    const ops = opsMap(makeOp({ type: 'cef', productId: 'p1', status: 'queued' }));
+    assert.equal(selectActiveModulesByProduct(ops, 'mouse'), 'p1:cef');
+  });
+
+  it('includes a running op', () => {
+    const ops = opsMap(makeOp({ type: 'cef', productId: 'p1', status: 'running' }));
+    assert.equal(selectActiveModulesByProduct(ops, 'mouse'), 'p1:cef');
+  });
+
+  it('excludes terminal-status ops', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'cef', productId: 'p1', status: 'done' }),
+      makeOp({ id: 'b', type: 'pif', productId: 'p1', status: 'error' }),
+      makeOp({ id: 'c', type: 'kf',  productId: 'p1', status: 'cancelled' }),
+    );
+    assert.equal(selectActiveModulesByProduct(ops, 'mouse'), '');
+  });
+
+  it('coalesces multiple modules per product', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'cef', productId: 'p1', status: 'running' }),
+      makeOp({ id: 'b', type: 'pif', productId: 'p1', status: 'queued'  }),
+      makeOp({ id: 'c', type: 'kf',  productId: 'p1', status: 'running' }),
+    );
+    assert.equal(selectActiveModulesByProduct(ops, 'mouse'), 'p1:cef,kf,pif');
+  });
+
+  it('scopes by category', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'cef', productId: 'p1', category: 'mouse',    status: 'running' }),
+      makeOp({ id: 'b', type: 'pif', productId: 'p2', category: 'keyboard', status: 'queued'  }),
+    );
+    assert.equal(selectActiveModulesByProduct(ops, 'mouse'), 'p1:cef');
+  });
+
+  it('sorts products alphabetically with stable module order per product', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'kf',  productId: 'pB', status: 'queued'  }),
+      makeOp({ id: 'b', type: 'cef', productId: 'pA', status: 'running' }),
+      makeOp({ id: 'c', type: 'pif', productId: 'pA', status: 'queued'  }),
+    );
+    assert.equal(selectActiveModulesByProduct(ops, 'mouse'), 'pA:cef,pif|pB:kf');
+  });
+
+  it('skips ops with no productId', () => {
+    const ops = opsMap(makeOp({ id: 'a', type: 'pipeline', productId: undefined, status: 'running' }));
+    assert.equal(selectActiveModulesByProduct(ops, 'mouse'), '');
   });
 });

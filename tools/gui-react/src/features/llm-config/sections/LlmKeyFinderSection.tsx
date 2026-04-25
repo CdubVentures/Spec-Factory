@@ -1,10 +1,11 @@
 import { memo, useCallback, useMemo } from 'react';
 import { SettingGroupBlock, SettingRow, SettingToggle } from '../../pipeline-settings/index.ts';
 import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
-import { ModelSelectDropdown, GlobalDefaultIcon } from '../components/ModelSelectDropdown.tsx';
-import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions.ts';
-import { parseModelKey, resolveProviderForModel } from '../state/llmProviderRegistryBridge.ts';
-import { extractEffortFromModelName } from '../state/llmEffortFromModelName.ts';
+import { GlobalDefaultIcon } from '../components/ModelSelectDropdown.tsx';
+import {
+  LlmCapabilityPickerCore,
+  type LlmCapabilityBundle,
+} from '../../../shared/ui/finder/LlmCapabilityPickerCore.tsx';
 import { PromptTemplatesSection } from './LlmPhaseSection.tsx';
 import type { PromptTemplateDef } from './LlmPhaseSection.tsx';
 import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.generated.ts';
@@ -108,15 +109,6 @@ export const LlmKeyFinderSection = memo(function LlmKeyFinderSection({
   const tiers = useMemo(() => parseTiers(runtimeDraft.keyFinderTierSettingsJson), [runtimeDraft.keyFinderTierSettingsJson]);
   const override = phaseOverrides[OVERRIDE_KEY] ?? {};
 
-  const baseOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, 'primary', apiKeyFilter),
-    [llmModelOptions, registry, apiKeyFilter],
-  );
-  const reasoningOptions = useMemo(
-    () => buildModelDropdownOptions(llmModelOptions, registry, 'reasoning', apiKeyFilter),
-    [llmModelOptions, registry, apiKeyFilter],
-  );
-
   const updateOverrideField = useCallback(
     <K extends string>(field: K, value: unknown) => {
       const current = phaseOverrides[OVERRIDE_KEY] ?? {};
@@ -136,27 +128,14 @@ export const LlmKeyFinderSection = memo(function LlmKeyFinderSection({
     [tiers, updateDraft],
   );
 
-  function resolveCapabilities(modelKey: string): { thinking: boolean; webSearch: boolean; thinkingEffortOptions: readonly string[]; lockedEffort: string | null } {
-    if (!modelKey) return { thinking: false, webSearch: false, thinkingEffortOptions: [], lockedEffort: null };
-    const provider = resolveProviderForModel(registry, modelKey);
-    if (!provider) return { thinking: false, webSearch: false, thinkingEffortOptions: [], lockedEffort: null };
-    const { modelId } = parseModelKey(modelKey);
-    const model = provider.models.find((m) => m.modelId === modelId);
-    return {
-      thinking: model?.thinking === true,
-      webSearch: model?.webSearch === true,
-      thinkingEffortOptions: model?.thinkingEffortOptions ?? [],
-      lockedEffort: extractEffortFromModelName(modelId),
-    };
-  }
-
   const disableLimits = Boolean(override.disableLimits);
 
   const renderTierCard = (tierKey: keyof TierSettings, label: string, isFallback: boolean) => {
     const tier = tiers[tierKey];
-    const effectiveModelId = tier.useReasoning ? tier.reasoningModel : tier.model;
-    const caps = resolveCapabilities(effectiveModelId);
     const inheritedFromFallback = !isFallback ? tiers.fallback.model : '';
+    const handleTierChange = (next: LlmCapabilityBundle) => {
+      updateTier(tierKey, next);
+    };
     return (
       <SettingGroupBlock
         key={tierKey}
@@ -164,86 +143,18 @@ export const LlmKeyFinderSection = memo(function LlmKeyFinderSection({
         collapsible
         storageKey={`sf:llm-key-finder:tier:${tierKey}`}
       >
-        <SettingRow
-          label="Model"
-          tip={isFallback
-            ? 'Primary model for the Key Finder fallback path. All difficulty tiers inherit this when empty.'
-            : `Model for ${label.replace(' Tier', '').toLowerCase()}-difficulty keys. Empty inherits from Fallback.`}
-        >
-          <div className="flex items-center gap-1.5">
-            {!tier.model && !isFallback && <GlobalDefaultIcon />}
-            <ModelSelectDropdown
-              options={baseOptions}
-              className={inputCls}
-              value={tier.model}
-              onChange={(v: string) => updateTier(tierKey, { model: v })}
-              allowNone={!isFallback}
-              noneLabel={isFallback ? undefined : `↩ ${parseModelKey(inheritedFromFallback).modelId || '(fallback)'}`}
-              noneModelId={inheritedFromFallback}
-              globalDefaultModelId={globalDraft.llmModelPlan}
-            />
-          </div>
-        </SettingRow>
-        <SettingRow label="Use Reasoning" tip="Swap to the reasoning model for this tier.">
-          <SettingToggle
-            checked={tier.useReasoning}
-            onChange={(v: boolean) => updateTier(tierKey, { useReasoning: v })}
-          />
-        </SettingRow>
-        {tier.useReasoning && (
-          <SettingRow label="Reasoning Model" tip="Reasoning model used when Use Reasoning is on.">
-            <ModelSelectDropdown
-              options={reasoningOptions}
-              className={inputCls}
-              value={tier.reasoningModel}
-              onChange={(v: string) => updateTier(tierKey, { reasoningModel: v })}
-              allowNone
-              noneLabel={`↩ ${parseModelKey(globalDraft.llmModelReasoning).modelId}`}
-              noneModelId={globalDraft.llmModelReasoning}
-              globalDefaultModelId={globalDraft.llmModelReasoning}
-            />
-          </SettingRow>
-        )}
-        {caps.thinking && (
-          <SettingRow label="Thinking" tip="Send thinking flag to the model.">
-            <SettingToggle
-              checked={tier.thinking}
-              onChange={(v: boolean) => updateTier(tierKey, { thinking: v })}
-            />
-          </SettingRow>
-        )}
-        {caps.thinking && tier.thinking && caps.lockedEffort && (
-          <SettingRow label="Thinking Effort" tip="Effort level is locked in the model name.">
-            <select className={inputCls} disabled value={caps.lockedEffort}>
-              <option value={caps.lockedEffort}>{caps.lockedEffort}</option>
-            </select>
-          </SettingRow>
-        )}
-        {caps.thinking && tier.thinking && !caps.lockedEffort && caps.thinkingEffortOptions.length > 1 && (
-          <SettingRow label="Thinking Effort" tip="Reasoning effort level sent to the model.">
-            <select
-              className={inputCls}
-              value={tier.thinkingEffort || 'medium'}
-              onChange={(e) =>
-                updateTier(tierKey, { thinkingEffort: e.target.value as TierBundle['thinkingEffort'] })
-              }
-            >
-              {caps.thinkingEffortOptions.map((opt: string) => (
-                <option key={opt} value={opt}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </SettingRow>
-        )}
-        {caps.webSearch && (
-          <SettingRow label="Web Search" tip="Send web_search flag to the model for this tier.">
-            <SettingToggle
-              checked={tier.webSearch}
-              onChange={(v: boolean) => updateTier(tierKey, { webSearch: v })}
-            />
-          </SettingRow>
-        )}
+        <LlmCapabilityPickerCore
+          value={tier}
+          onChange={handleTierChange}
+          registry={registry}
+          llmModelOptions={llmModelOptions}
+          apiKeyFilter={apiKeyFilter}
+          globalDefaultPlanModel={globalDraft.llmModelPlan}
+          globalDefaultReasoningModel={globalDraft.llmModelReasoning}
+          inheritedModelId={inheritedFromFallback}
+          allowModelNone={!isFallback}
+          inputCls={inputCls}
+        />
       </SettingGroupBlock>
     );
   };

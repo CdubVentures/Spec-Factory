@@ -32,7 +32,7 @@ interface KeyRunHistorySectionProps {
 
 function renderValue(value: unknown): string {
   if (value == null) return '—';
-  if (value === 'unk') return '—';
+  if (typeof value === 'string' && value.trim().toLowerCase() === 'unk') return '—';
   if (Array.isArray(value)) {
     if (value.length === 0) return '[]';
     const shown = value.slice(0, 3).map((v) => String(v));

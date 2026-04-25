@@ -103,6 +103,11 @@ test('SQL catalog builder: returns CatalogRow[] from SQL products table', async 
       { tier: 'very_hard', total: 0, resolved: 0, perfect: 0 },
       { tier: 'mandatory', total: 0, resolved: 0, perfect: 0 },
     ],
+    cefLastRunAt: '',
+    pifLastRunAt: '',
+    rdfLastRunAt: '',
+    skuLastRunAt: '',
+    kfLastRunAt: '',
   });
 });
 

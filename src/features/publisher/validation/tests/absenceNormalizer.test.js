@@ -55,6 +55,10 @@ describe('normalizeAbsence — list', () => {
     [undefined,                     'list', [],         'undefined + list -> []'],
     [[null, 'black', ''],           'list', ['black'],  'filter null and empty elements'],
     [['a', null, undefined, '', 'b'], 'list', ['a', 'b'], 'deep filter preserves order'],
+    [['unk'],                       'list', [],         'filter unk sentinel element'],
+    [['UNK'],                       'list', [],         'filter uppercase unk sentinel element'],
+    [['black', 'unk', 'white'],     'list', ['black', 'white'], 'filter unk sentinel among real values'],
+    [['none'],                      'list', ['none'],   '"none" is semantic in lists, NOT absent'],
     [['black', 'white'],            'list', ['black', 'white'], 'clean list passes through'],
     [[],                            'list', [],         'empty list passes through'],
   ];

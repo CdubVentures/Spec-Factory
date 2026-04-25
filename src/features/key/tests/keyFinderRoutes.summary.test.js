@@ -77,6 +77,7 @@ function makeSpecDbStub({
   bucketsByFieldKey = {},
   activeVariants = [],
   productRows = [],
+  fieldKeyOrder = null,
 } = {}) {
   const finderStore = {
     getSetting: (k) => (k in finderSettings ? String(finderSettings[k]) : ''),
@@ -94,6 +95,9 @@ function makeSpecDbStub({
       listActive: () => activeVariants,
     },
     getCompiledRules: () => compiledRules,
+    getFieldKeyOrder: () => (Array.isArray(fieldKeyOrder)
+      ? { order_json: JSON.stringify(fieldKeyOrder), updated_at: 1 }
+      : null),
     getFinderStore: (id) => (id === 'keyFinder' ? finderStore : null),
     // getTopFieldCandidate — display-only tooltip data (top_confidence + top_evidence_count
     // columns on each row). Distinct from the bucket-evaluator path used for gating.
@@ -756,5 +760,100 @@ describe('GET /summary — passengerExclude knobs + concrete_evidence column', (
     assert.equal(byKey.sensor_model.concrete_evidence, false);
     assert.equal(byKey.sensor_model.top_confidence, null);
     assert.equal(byKey.sensor_model.top_evidence_count, null);
+  });
+
+  it('returns rows in field_key_order from the live SQL table (Field Studio Key Navigator order)', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'order-prod'), { recursive: true });
+    // Compiled rules insertion order: polling_rate, sensor_model, acceleration,
+    // wireless_technology. Saved navigator order reverses it AND interleaves
+    // groups — exactly the kind of layout an end user would set.
+    const specDb = makeSpecDbStub({
+      fieldKeyOrder: [
+        'wireless_technology',
+        'acceleration',
+        'sensor_model',
+        'polling_rate',
+      ],
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'order-prod', 'summary'], null, 'GET', {}, {});
+
+    assert.equal(responses[0].status, 200);
+    const fieldKeys = responses[0].body.map((r) => r.field_key);
+    assert.deepEqual(
+      fieldKeys,
+      ['wireless_technology', 'acceleration', 'sensor_model', 'polling_rate'],
+      'rows must follow the saved field_key_order, not compiled-rules insertion order',
+    );
+  });
+
+  it('appends compiled-rule keys missing from the saved order, preserving compile-order', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'order-partial-prod'), { recursive: true });
+    // Only two of four keys are in the saved order — covers the edge case
+    // where the user added new keys after their last reorder.
+    const specDb = makeSpecDbStub({
+      fieldKeyOrder: ['wireless_technology', 'acceleration'],
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'order-partial-prod', 'summary'], null, 'GET', {}, {});
+
+    const fieldKeys = responses[0].body.map((r) => r.field_key);
+    // Saved-order keys first (in saved order), then unseen compiled-rule keys
+    // in compile-order: polling_rate, sensor_model.
+    assert.deepEqual(
+      fieldKeys,
+      ['wireless_technology', 'acceleration', 'polling_rate', 'sensor_model'],
+    );
+  });
+
+  it('ignores __grp:: divider entries in saved order without dropping real keys', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'order-grp-prod'), { recursive: true });
+    // sessionCache.js stores group dividers as "__grp::<name>" inside the same
+    // order array. The summary must skip them but still apply the surrounding
+    // key sequence — never drop or surface a divider as a row.
+    const specDb = makeSpecDbStub({
+      fieldKeyOrder: [
+        '__grp::connectivity',
+        'wireless_technology',
+        '__grp::sensor_performance',
+        'acceleration',
+        'polling_rate',
+        'sensor_model',
+      ],
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'order-grp-prod', 'summary'], null, 'GET', {}, {});
+
+    const fieldKeys = responses[0].body.map((r) => r.field_key);
+    assert.deepEqual(
+      fieldKeys,
+      ['wireless_technology', 'acceleration', 'polling_rate', 'sensor_model'],
+    );
+  });
+
+  it('falls back to compiled-rules order when no field_key_order is set', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'order-fallback-prod'), { recursive: true });
+    const specDb = makeSpecDbStub({ fieldKeyOrder: null });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'order-fallback-prod', 'summary'], null, 'GET', {}, {});
+
+    const fieldKeys = responses[0].body.map((r) => r.field_key);
+    assert.deepEqual(
+      fieldKeys,
+      ['polling_rate', 'sensor_model', 'acceleration', 'wireless_technology'],
+      'compile-order is the documented fallback (Object.keys insertion order)',
+    );
   });
 });

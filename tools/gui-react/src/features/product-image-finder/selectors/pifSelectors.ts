@@ -259,6 +259,48 @@ export function groupRunsByLoop(runs: ProductImageFinderRun[]): RunGroup[] {
   return groups;
 }
 
+/**
+ * Build the expand-all maps for the PIF Run History section.
+ *
+ * - `loops` maps every loop group's `loopId` (or its positional fallback) to true.
+ * - `runs`  maps every run_number across every group to true.
+ *
+ * Inner panels (Discovery Log, System Prompt, User Message, LLM Response) live
+ * in their own persistence keys and are intentionally NOT toggled here.
+ */
+export function buildExpandAllRunHistoryMaps(
+  groups: readonly RunGroup[],
+): { loops: Record<string, boolean>; runs: Record<string, boolean> } {
+  const loops: Record<string, boolean> = {};
+  const runs: Record<string, boolean> = {};
+  groups.forEach((group, index) => {
+    if (group.type === 'loop') {
+      loops[group.loopId ?? String(index)] = true;
+    }
+    for (const run of group.runs) {
+      runs[String(run.run_number)] = true;
+    }
+  });
+  return { loops, runs };
+}
+
+/** True when every loop group is expanded AND every run row is expanded. */
+export function isAllRunHistoryExpanded(
+  groups: readonly RunGroup[],
+  loopExpand: Record<string, boolean>,
+  runExpand: Record<string, boolean>,
+): boolean {
+  if (groups.length === 0) return false;
+  for (let i = 0; i < groups.length; i++) {
+    const group = groups[i];
+    if (group.type === 'loop' && !loopExpand[group.loopId ?? String(i)]) return false;
+    for (const run of group.runs) {
+      if (!runExpand[String(run.run_number)]) return false;
+    }
+  }
+  return true;
+}
+
 /** Group eval records by variant_key, preserving chronological order. */
 export function groupEvalsByVariant(evals: EvalRecord[]): EvalVariantGroup[] {
   const groups: EvalVariantGroup[] = [];

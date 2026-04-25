@@ -21,6 +21,10 @@ export function hasKnownValue(v) {
   return !UNKNOWN_VALUE_TOKENS.has(token);
 }
 
+export function isUnknownSentinel(value) {
+  return typeof value === 'string' && UNKNOWN_SENTINEL_TOKENS.has(value.trim().toLowerCase());
+}
+
 export function normalizeModelToken(value) {
   return String(value || '').trim().toLowerCase();
 }
@@ -110,6 +114,7 @@ export function countMapValuesAbove(mapRef, threshold = 1) {
 // WHY: SSOT for unknown-value tokens. Every hasKnownValue call site in the
 // codebase must agree on this set. Frontend mirror: tools/gui-react/src/utils/constants.ts UNKNOWN_VALUES
 export const UNKNOWN_VALUE_TOKENS = new Set(['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined', '-']);
+export const UNKNOWN_SENTINEL_TOKENS = new Set(['unk']);
 
 export function addTokensFromText(set, value) {
   for (const token of String(value || '').toLowerCase().split(/[^a-z0-9]+/g)) {

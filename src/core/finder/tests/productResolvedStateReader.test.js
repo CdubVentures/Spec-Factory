@@ -473,6 +473,24 @@ test('fieldIdentityUsage: design key separates base design from edition artwork 
   assert.match(usage, /Never output colors, editions, sku, or release_date/i);
 });
 
+test('fieldIdentityUsage: authored field guidance prevents derived semantic profile text', () => {
+  const usage = buildFieldIdentityUsage({
+    fieldKey: 'design',
+    fieldRule: {
+      ...scalarRule('design'),
+      ai_assist: {
+        reasoning_note: 'Classify edition-design status as standard, limited edition, collaboration, or multiple.',
+      },
+    },
+  });
+
+  assert.match(usage, /When researching `design`:/);
+  assert.match(usage, /Follow the authored field guidance/i);
+  assert.match(usage, /confirm exact product\/variant identity/i);
+  assert.doesNotMatch(usage, /shared physical\/industrial design/i);
+  assert.doesNotMatch(usage, /Never output colors, editions, sku, or release_date/i);
+});
+
 test('fieldIdentityUsage: disabled variant inventory flag omits usage guidance', () => {
   const usage = buildFieldIdentityUsage({
     fieldKey: 'polling_rate',

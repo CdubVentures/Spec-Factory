@@ -200,6 +200,44 @@ describe('submitCandidate', async () => {
     assert.equal(pj.candidates, undefined);
   });
 
+  it('strips unk from list candidates before validation and persistence', async () => {
+    ensureProductJson('mouse-list-unk-strip');
+    const result = await submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-list-unk-strip',
+      fieldKey: 'colors',
+      value: ['black', 'unk'],
+      confidence: 90,
+      sourceMeta: { source: 'cef', run_number: 1 },
+    });
+
+    assert.equal(result.status, 'accepted');
+    assert.deepEqual(result.value, ['black']);
+    const dbRow = specDb.getFieldCandidate('mouse-list-unk-strip', 'colors', JSON.stringify(['black']));
+    assert.ok(dbRow);
+    const pj = readProductJson('mouse-list-unk-strip');
+    assert.deepEqual(pj.candidates.colors[0].value, ['black']);
+  });
+
+  it('rejects list candidates that only contain unk after stripping', async () => {
+    ensureProductJson('mouse-list-only-unk');
+    const result = await submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-list-only-unk',
+      fieldKey: 'colors',
+      value: ['UNK'],
+      confidence: 90,
+      sourceMeta: { source: 'cef', run_number: 2 },
+    });
+
+    assert.equal(result.status, 'rejected');
+    assert.equal(result.candidateId, null);
+    assert.ok(result.validationResult.rejections.some((r) => r.reason_code === 'absent_candidate_value'));
+    assert.equal(specDb.getFieldCandidatesByProductAndField('mouse-list-only-unk', 'colors').length, 0);
+    const pj = readProductJson('mouse-list-only-unk');
+    assert.equal(pj.candidates, undefined);
+  });
+
   // --- 4. Rejection: no field rule ---
   it('rejects when field rule is missing', async () => {
     ensureProductJson('mouse-norule');

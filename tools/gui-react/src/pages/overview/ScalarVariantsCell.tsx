@@ -11,6 +11,12 @@ export interface ScalarVariantsCellProps {
   readonly hexMap: ReadonlyMap<string, string>;
   /** Module type used by the operations tracker — e.g. 'skf' or 'rdf'. */
   readonly moduleType: 'skf' | 'rdf';
+  /** Finder id for the prompt-preview API — 'sku' or 'rdf'. */
+  readonly finderId: 'sku' | 'rdf';
+  /** Module id used by the Discovery History drawer — 'skuFinder' / 'releaseDateFinder'. */
+  readonly historyFinderId: string;
+  /** Route prefix matching the runs endpoint, e.g. 'sku-finder' / 'release-date-finder'. */
+  readonly historyRoutePrefix: string;
   /** LLM phase id for useResolvedFinderModel. */
   readonly phaseId: LlmOverridePhaseId;
   /** Full-name title shown in the popover header. */
@@ -33,7 +39,7 @@ export interface ScalarVariantsCellProps {
  */
 export function ScalarVariantsCell({
   productId, category, variants, hexMap,
-  moduleType, phaseId, title, labelPrefix, runUrl,
+  moduleType, finderId, historyFinderId, historyRoutePrefix, phaseId, title, labelPrefix, runUrl,
   valueLabel, formatLabel, formatValue,
 }: ScalarVariantsCellProps) {
   // Subscribe once per product — each variant reads its own pulse bool from the shared set.
@@ -51,6 +57,9 @@ export function ScalarVariantsCell({
           variant={v}
           hexMap={hexMap}
           moduleType={moduleType}
+          finderId={finderId}
+          historyFinderId={historyFinderId}
+          historyRoutePrefix={historyRoutePrefix}
           phaseId={phaseId}
           title={title}
           labelPrefix={labelPrefix}

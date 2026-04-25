@@ -2,7 +2,7 @@
 
 > **Purpose:** Document the Overview page bulk-action surface — row selection, the Command Console panel, the selection strip, the Score Card column, and the full-pipeline orchestrator.
 > **Prerequisites:** [routing-and-gui.md](../03-architecture/routing-and-gui.md), [catalog-and-product-selection.md](./catalog-and-product-selection.md)
-> **Last validated:** 2026-04-24
+> **Last validated:** 2026-04-24 (Links column added)
 
 ## Entry Points
 
@@ -10,7 +10,7 @@
 |--------|------|------|
 | Overview page | `tools/gui-react/src/pages/overview/OverviewPage.tsx` | catalog table at `/`, hosts every console surface |
 | Command Console panel | `tools/gui-react/src/pages/overview/CommandConsole.tsx` | top-right panel — bulk per-finder dispatch + smart-select + pipeline run/stop |
-| Selection strip | `tools/gui-react/src/pages/overview/SelectionStrip.tsx` | scrollable horizontal row of selected-product badges with live module indicators |
+| Active & selected row | `tools/gui-react/src/pages/overview/ActiveAndSelectedRow.tsx` | two-group row above the filter bar — left group lists every product running any worker (CEF/PIF/RDF/SKU/KF/Pipeline) regardless of selection; right group lists selected-but-idle products |
 | Score Card cell | `tools/gui-react/src/pages/overview/ScoreCardCell.tsx` | per-row letter grade (A+ through F) |
 | Pipeline orchestrator | `tools/gui-react/src/pages/overview/usePipelineController.ts` | 7-stage barrier hook for the Run Full Pipeline button |
 
@@ -21,8 +21,9 @@
 - `tools/gui-react/src/pages/overview/smartSelect.ts` - `pickBottomQuartileSample` and `pickNextBatch` pure helpers.
 - `tools/gui-react/src/pages/overview/useSmartSelectHistory.ts` - 24h sliding-window history persisted in `localStorage`.
 - `tools/gui-react/src/pages/overview/scoreCard.ts` - weighted-score calculator and letter-grade band.
+- `tools/gui-react/src/pages/overview/activeAndSelectedRowDerivation.ts` - pure splitter that produces the row's two visible groups (Active / Selected-idle).
 - `tools/gui-react/src/features/operations/hooks/useFireAndForget.ts` - dispatch transport for every bulk action.
-- `tools/gui-react/src/features/operations/hooks/useFinderOperations.ts` - `useRunningModulesByProduct(category)` powers the strip's per-badge live indicators.
+- `tools/gui-react/src/features/operations/hooks/useFinderOperations.ts` - `useRunningProductIds(category)` and `useRunningModulesByProduct(category)` power the Active group's badge list and per-badge live indicators.
 - `tools/gui-react/src/features/key-finder/api/keyFinderQueries.ts` - `useReservedKeysQuery(category)` filters the KF fan-out.
 
 ## SSOT
@@ -42,9 +43,9 @@
 │ │                        │  │ Row 3: Pipeline stepper      │   │
 │ └────────────────────────┘  └──────────────────────────────┘   │
 │                                                                │
-│ ┌─ SelectionStrip (only when selectedSize > 0) ─────────────┐  │
-│ │ N selected · X active │ [badge][badge][badge]… │ Clear    │  │
-│ └───────────────────────────────────────────────────────────┘  │
+│ ┌─ ActiveAndSelectedRow (only when active > 0 OR selected > 0) ─┐│
+│ │ [N active] [active badges…]  │  [M selected, idle] […] Clear ││
+│ └───────────────────────────────────────────────────────────────┘│
 │                                                                │
 │ OverviewFilterBar                                              │
 │                                                                │
@@ -52,7 +53,8 @@
 │   ├─ select column (checkbox, tri-state header)                │
 │   ├─ Brand · Base Model · Variant                              │
 │   ├─ CEF · PIF · SKU · RDF · Keys                              │
-│   └─ Score · Coverage · Conf · Fields                          │
+│   ├─ Score · Coverage · Conf · Fields                          │
+│   └─ Last Run · Links (paired chevron, slide open together)    │
 └────────────────────────────────────────────────────────────────┘
 ```
 
@@ -75,13 +77,14 @@ Three rows of fixed-height controls, all 22px tall for vertical alignment:
 
 Bulk buttons are disabled when `selection.size === 0` or while the pipeline is running. Operations exceeding 50 prompt a confirmation dialog.
 
-### 3. Selection strip
+### 3. Active & selected row
 
-- Renders only when `selection.size > 0`.
-- Horizontally scrollable row of badges, one per selected product.
-- Each badge shows `BRAND base_model variant` plus a strip of mini SVG indicators for any finder module currently running on that product. Active badges glow accent and the indicators pulse.
-- Each badge has an inline `×` to deselect that product; the row's right-hand `Clear` wipes the whole selection.
-- Live module set comes from `useRunningModulesByProduct(category)`, which derives `Map<productId, Set<moduleType>>` from the operations store with stable string serialization for Zustand equality.
+- Renders only when at least one product is active **or** at least one product is selected.
+- One row, two side-by-side groups:
+  - **Active** (left) — every product in the current category with any running op (CEF / PIF / RDF / SKU / KF / Pipeline), regardless of selection. Badges glow with an accent border and the per-worker mini-icons pulse. IndexLab-initiated pipeline runs surface here automatically with a `PL` label, since they share the operations channel.
+  - **Selected, idle** (right) — selected products with no running op. Gray styling cues "Command Console will start ops here". Each badge has an inline `×` to deselect, and the group's right-hand `Clear` wipes the whole selection.
+- A selected-and-active product appears **only in the Active group** during its run; on terminal status it migrates back into Selected-idle (the selection persists).
+- Pure group derivation lives in `activeAndSelectedRowDerivation.ts::deriveActiveAndSelectedGroups` for direct unit testing. The component reads `useRunningProductIds(category)` for the active set and `useRunningModulesByProduct(category)` for the per-badge module indicators.
 
 ### 4. Smart-select
 
@@ -95,7 +98,15 @@ Bulk buttons are disabled when `selection.size === 0` or while the pipeline is r
 - Weights total 100: Coverage 25, Confidence 20, Fields 15, PIF 15, CEF 10, SKU 7.5, RDF 7.5.
 - The cell is a monospace tinted chip; tooltip shows the score plus per-axis percentages and weights.
 
-### 6. Full-pipeline orchestrator
+### 6. Last Run + Links columns (paired chevron toggle)
+
+Two adjacent collapsible columns share one persisted flag — `usePersistedToggle('overview:detail-cols:open', false)` — so clicking either chevron expands both, and clicking either chevron again collapses both. Each column renders its own chevron header for ergonomic affordance; the click handlers flip the same flag.
+
+**Last Run** (`OverviewLastRunCell.tsx`) — collapsed = 36px arrow, expanded = ~200px column. Each row renders a vertical stack of five `[CEF · {datetime}] [PIF · {datetime}] [RDF · {datetime}] [SKU · {datetime}] [KF · {datetime}]` lines. Empty timestamp → `—`. Values are formatted with `pullFormatDateTime` (date + time in the user's timezone). Source: `CatalogRow.{cef|pif|rdf|sku|kf}LastRunAt` — projected once per category build by `catalogHelpers.js::buildLastRunMaps` from each finder's `*_finder` summary table (`latest_ran_at` column). Five batched queries per build; constant-time per-row read.
+
+**Links** (`OverviewLinksCell.tsx`) — collapsed = 36px arrow (sibling of Last Run), expanded = ~80px column. Each row renders a vertical stack of five pill-shaped tinted buttons — `CEF / PIF / RDF / SKU / KF` — using the shared per-module tokens (`--sf-token-accent-strong`, `--sf-token-state-success-fg`, `--sf-token-state-warning-fg`, custom purple, `--sf-token-accent`) with `color-mix` for fills and borders. On click, atomically writes `pickerBrand`, `pickerModel`, `pickerProductId` into `indexlabStore` (bypassing the cascading individual setters), stamps the persisted tab key `indexing:tab:active:<productId>:<category>` with the target `FinderPanelId` via `useTabStore`, then `navigate('/indexing')`. The Indexing Lab lands on the chosen finder tab with the product preselected, zero extra clicks.
+
+### 7. Full-pipeline orchestrator
 
 - Seven stages in fixed order: `cef_1`, `cef_2`, `pif_loop`, `pif_eval`, `rdf_run`, `sku_run`, `kf_loop`.
 - Global per-stage barrier: every selected product completes stage N before any starts stage N+1.
@@ -132,6 +143,7 @@ Verified in `bulkDispatch.ts` source: no client-side concurrency limiter. None o
 | source | `tools/gui-react/src/pages/overview/scoreCard.ts` | weighted-score calculation and letter-grade banding |
 | source | `tools/gui-react/src/pages/overview/usePipelineController.ts` | stage list, barrier semantics, fail-soft logic, cancel path |
 | source | `tools/gui-react/src/pages/overview/smartSelect.ts` | bottom-quartile and next-batch pure helpers |
+| source | `tools/gui-react/src/pages/overview/OverviewLinksCell.tsx` | arrow-toggled deep-link column (CEF/PIF/RDF/SKU/KF) — atomic pickerBrand/Model/ProductId setState + tabStore set + navigate('/indexing') |
 | source | `tools/gui-react/src/pages/overview/__tests__/smartSelect.test.ts` | unit tests for the smart-select helpers |
 | source | `tools/gui-react/src/features/operations/hooks/useFinderOperations.ts` | `useRunningModulesByProduct` selector |
 

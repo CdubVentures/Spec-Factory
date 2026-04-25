@@ -1,4 +1,5 @@
 import { ABSENCE_TOKENS } from './absenceTokens.js';
+import { isUnknownSentinel } from '../../../shared/valueNormalizers.js';
 
 /**
  * Canonicalizes absence values before shape check (Step 0).
@@ -19,7 +20,7 @@ export function normalizeAbsence(value, shape) {
   }
 
   if (Array.isArray(value)) {
-    return value.filter(v => v !== null && v !== undefined && v !== '');
+    return value.filter(v => v !== null && v !== undefined && v !== '' && !isUnknownSentinel(v));
   }
 
   return value;

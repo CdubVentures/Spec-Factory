@@ -24,6 +24,7 @@ import {
   usePagination,
   PagerSizeSelector,
   PagerNavFooter,
+  getIndexingPanelCollapsedDefault,
 } from '../../../shared/ui/finder/index.ts';
 import { HeaderActionButton, RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { usePromptPreviewQuery } from '../../indexing/api/promptPreviewQueries.ts';
@@ -52,18 +53,26 @@ import { pifHowItWorksSections } from '../pifHowItWorksContent.ts';
 import { ImageLightbox } from './ImageLightbox.tsx';
 import { imageServeUrl } from '../helpers/pifImageUrls.ts';
 import {
+  createPifHeaderPromptPreviewState,
+  createPifPromptPreviewBody,
+  type PifPromptPreviewState,
+} from '../state/pifPromptPreviewState.ts';
+import {
   buildVariantList,
   buildGalleryImages,
   groupImagesByVariant,
   resolveSlots,
   groupRunsByLoop,
   groupEvalsByVariant,
+  buildExpandAllRunHistoryMaps,
+  isAllRunHistoryExpanded,
 } from '../selectors/pifSelectors.ts';
 import { VariantImageGroup } from './VariantImageGroup.tsx';
 import { PifRunHistoryRow } from './PifRunHistoryRow.tsx';
 import { EvalHistoryRow } from './EvalHistoryRow.tsx';
 import { EvalVariantGroupRow } from './EvalVariantGroupRow.tsx';
 import { PifLoopGroup } from './PifLoopGroup.tsx';
+import { groupHistory, type FinderRun } from '../../../shared/ui/finder/discoveryHistoryHelpers.ts';
 
 /* ── Main Panel ──────────────────────────────────────────────────── */
 
@@ -72,22 +81,19 @@ interface ProductImageFinderPanelProps {
   category: string;
 }
 
-type PifPromptModalState = {
-  readonly variantKey: string;
-  readonly mode: 'view' | 'hero' | 'loop' | 'view-eval' | 'hero-eval';
-  readonly view?: string;
-};
-
 export function ProductImageFinderPanel({ productId, category }: ProductImageFinderPanelProps) {
-  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:pif:collapsed:${productId}`, true);
+  const [collapsed, toggleCollapsed] = usePersistedToggle(
+    `indexing:pif:collapsed:${productId}`,
+    getIndexingPanelCollapsedDefault('pif'),
+  );
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
-  const [activePromptModal, setActivePromptModal] = useState<PifPromptModalState | null>(null);
+  const [activePromptModal, setActivePromptModal] = useState<PifPromptPreviewState | null>(null);
   const [lightboxImg, setLightboxImg] = useState<GalleryImage | null>(null);
   const [pifImageGroupExpand, togglePifImageGroupExpand, replacePifImageGroupExpand] = usePersistedExpandMap(`indexing:pif:imageGroups:${productId}`);
-  const [pifRunExpand, togglePifRunExpand] = usePersistedExpandMap(`indexing:pif:runExpand:${productId}`);
+  const [pifRunExpand, togglePifRunExpand, replacePifRunExpand] = usePersistedExpandMap(`indexing:pif:runExpand:${productId}`);
   const [pifEvalExpand, togglePifEvalExpand] = usePersistedExpandMap(`indexing:pif:evalExpand:${productId}`);
   const [pifEvalGroupExpand, togglePifEvalGroupExpand] = usePersistedExpandMap(`indexing:pif:evalGroupExpand:${productId}`);
-  const [pifLoopExpand, togglePifLoopExpand] = usePersistedExpandMap(`indexing:pif:loopExpand:${productId}`);
+  const [pifLoopExpand, togglePifLoopExpand, replacePifLoopExpand] = usePersistedExpandMap(`indexing:pif:loopExpand:${productId}`);
 
   // LLM model for imageFinder phase (shared hook, parameterized by phase ID)
   const { model: resolvedModel, accessMode: resolvedAccessMode, modelDisplay, effortLevel } = useResolvedFinderModel('imageFinder');
@@ -112,15 +118,10 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   // PIF data
   const { data: pifData, isLoading, isError } = useProductImageFinderQuery(category, productId);
 
-  const promptPreviewBody = useMemo(() => (
-    activePromptModal
-      ? {
-          variant_key: activePromptModal.variantKey,
-          mode: activePromptModal.mode,
-          ...(activePromptModal.view ? { view: activePromptModal.view } : {}),
-        }
-      : {}
-  ), [activePromptModal]);
+  const promptPreviewBody = useMemo(
+    () => createPifPromptPreviewBody(activePromptModal),
+    [activePromptModal],
+  );
   const promptPreviewQuery = usePromptPreviewQuery(
     'pif',
     category,
@@ -130,13 +131,6 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   );
 
   const [headerPromptModalOpen, setHeaderPromptModalOpen] = useState(false);
-  const headerPromptQuery = usePromptPreviewQuery(
-    'pif',
-    category,
-    productId,
-    {},
-    headerPromptModalOpen,
-  );
 
   const deleteRunMut = useDeleteProductImageFinderRunMutation(category, productId);
   const deleteRunsBatchMut = useDeleteProductImageFinderRunsBatchMutation(category, productId);
@@ -186,6 +180,21 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     if (!registry?.length) return [];
     return buildVariantList(registry, cefData?.published?.color_names);
   }, [cefData, cefError]);
+  const headerPromptState = useMemo(
+    () => createPifHeaderPromptPreviewState(variants),
+    [variants],
+  );
+  const headerPromptBody = useMemo(
+    () => createPifPromptPreviewBody(headerPromptState),
+    [headerPromptState],
+  );
+  const headerPromptQuery = usePromptPreviewQuery(
+    'pif',
+    category,
+    productId,
+    headerPromptBody,
+    headerPromptModalOpen && Boolean(headerPromptState),
+  );
 
   // All images from all runs, ordered by run_number, tagged with run metadata
   const galleryImages = useMemo(
@@ -354,6 +363,25 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const runCount = effectiveResult?.run_count ?? 0;
   const runs = effectiveResult?.runs || [];
 
+  // Per-variant URL/query counts for the in-row Hist button label. PIF's
+  // discovery scope is 'variant+mode' (view vs hero kept separate), so we
+  // union URLs/queries across modes per variant_id to surface a single
+  // total — matches what the drawer renders when opened for that variant.
+  const histCountsByVariantId = useMemo(() => {
+    const grouped = groupHistory(runs as readonly FinderRun[], 'variant+mode');
+    const map = new Map<string, { urls: number; queries: number }>();
+    for (const [vid, modes] of grouped.byVariantMode.entries()) {
+      const urls = new Set<string>();
+      const queries = new Set<string>();
+      for (const bucket of modes.values()) {
+        for (const u of bucket.urls) urls.add(u);
+        for (const q of bucket.queries) queries.add(q);
+      }
+      map.set(vid, { urls: urls.size, queries: queries.size });
+    }
+    return map;
+  }, [runs]);
+
   // Aggregate carousel progress across all variants
   const carouselProgressMap = effectiveResult?.carouselProgress ?? {};
   // Slots per variant = viewBudget views + hero slots
@@ -409,6 +437,22 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const visiblePifRunGroups = pifRunGroups.slice(pifRunPag.startIndex, pifRunPag.endIndex);
   const visiblePifEvalGroups = pifEvalGroups.slice(pifEvalPag.startIndex, pifEvalPag.endIndex);
 
+  const allRunHistoryExpanded = useMemo(
+    () => isAllRunHistoryExpanded(pifRunGroups, pifLoopExpand, pifRunExpand),
+    [pifRunGroups, pifLoopExpand, pifRunExpand],
+  );
+
+  const handleToggleExpandAllRunHistory = useCallback(() => {
+    if (allRunHistoryExpanded) {
+      replacePifLoopExpand({});
+      replacePifRunExpand({});
+      return;
+    }
+    const { loops, runs: runMap } = buildExpandAllRunHistoryMaps(pifRunGroups);
+    replacePifLoopExpand(loops);
+    replacePifRunExpand(runMap);
+  }, [allRunHistoryExpanded, pifRunGroups, replacePifLoopExpand, replacePifRunExpand]);
+
   return (
     <div className="sf-surface-panel p-0 flex flex-col" data-panel="pif">
       {/* Header */}
@@ -441,7 +485,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           </>
         }
         historySlot={<DiscoveryHistoryButton finderId="productImageFinder" productId={productId} category={category} width={ACTION_BUTTON_WIDTH.standardHeader} />}
-        promptSlot={<PromptPreviewTriggerButton onClick={() => setHeaderPromptModalOpen(true)} disabled={!productId} width={ACTION_BUTTON_WIDTH.standardHeader} />}
+        promptSlot={<PromptPreviewTriggerButton onClick={() => setHeaderPromptModalOpen(true)} disabled={!productId || !headerPromptState} width={ACTION_BUTTON_WIDTH.standardHeader} />}
         actionSlot={
           <>
             <HeaderActionButton
@@ -552,12 +596,13 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                     heroEnabled={heroEnabled}
                     loopingVariant={loopingVariants.has(group.key)}
                     evaluatingVariant={evaluatingVariants.has(group.key)}
+                    histCounts={group.variant_id ? histCountsByVariantId.get(group.variant_id) ?? null : null}
                     onRunPriorityView={handleRunVariantPriorityView}
                     onRunIndividualView={handleRunVariantIndividualView}
                     onRunHero={handleRunVariantHero}
                     onLoopVariant={handleLoopVariant}
                     onEvalVariant={handleEvalVariant}
-                    onOpenPromptModal={(variantKey, mode) => setActivePromptModal({ variantKey, mode })}
+                    onOpenPromptModal={(variantKey, mode, view) => setActivePromptModal({ variantKey, mode, ...(view ? { view } : {}) })}
                     onOpenLightbox={handleOpenLightbox}
                     onDeleteImage={handleDeleteImage}
                     onDeleteVariantImages={handleDeleteVariantImages}
@@ -582,6 +627,12 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               trailing={
                 <div className="flex items-center gap-2">
                   <PagerSizeSelector pageSize={pifRunPag.pageSize} onPageSizeChange={pifRunPag.setPageSize} />
+                  <RowActionButton
+                    intent="neutral"
+                    label={allRunHistoryExpanded ? 'Collapse All' : 'Expand All'}
+                    onClick={handleToggleExpandAllRunHistory}
+                    disabled={pifRunGroups.length === 0}
+                  />
                   <RowActionButton
                     intent="delete"
                     label="Delete All"
@@ -720,9 +771,9 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
         open={headerPromptModalOpen}
         onClose={() => setHeaderPromptModalOpen(false)}
         query={headerPromptQuery}
-        title="Product Image Finder — Compiled Prompt"
-        subtitle={productId ? `product: ${productId}` : undefined}
-        storageKeyPrefix={`indexing:pif:header-preview:${productId}`}
+        title="Product Image Finder — Priority View Prompt"
+        subtitle={headerPromptState ? `variant: ${headerPromptState.variantKey}` : undefined}
+        storageKeyPrefix={`indexing:pif:header-preview:${productId}:${headerPromptState?.variantKey ?? ''}`}
       />
 
       {/* Lightbox overlay */}

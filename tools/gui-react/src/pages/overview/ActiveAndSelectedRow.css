@@ -1,0 +1,233 @@
+/* ActiveAndSelectedRow — single row with two visual groups:
+   Active (left)         — products with any running op, regardless of selection.
+                            Badges glow accent and indicators pulse per worker.
+   Selected, idle (right) — products in the user's selection that are NOT running.
+                            Gray styling cues "Command Console will start ops here".
+
+   Lives between the Command Console and the OverviewFilterBar, replacing the
+   former SelectionStrip's slot. Renders null when both groups are empty. */
+
+.sf-aas-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  background: var(--sf-token-surface, #fff);
+  border: 1px solid var(--sf-token-border, #e5e9ef);
+  border-radius: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.sf-aas-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.sf-aas-group + .sf-aas-group {
+  border-left: 1px solid var(--sf-token-border, #e5e9ef);
+  padding-left: 12px;
+  margin-left: 4px;
+}
+
+/* ── Eyebrow ────────────────────────────────────────────────────────── */
+.sf-aas-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.sf-aas-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 11px;
+  line-height: 1;
+}
+
+.sf-aas-count-active {
+  background: var(--sf-token-state-success-fg, #2b8a3e);
+}
+
+.sf-aas-count-idle {
+  background: var(--sf-token-accent, #4263eb);
+}
+
+.sf-aas-eyebrow-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+  white-space: nowrap;
+  line-height: 1;
+}
+
+/* ── Scrollable badge track ─────────────────────────────────────────── */
+.sf-aas-track {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 2px;
+  min-width: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--sf-token-border, #c4c8d2) transparent;
+  flex: 1 1 auto;
+}
+
+.sf-aas-track::-webkit-scrollbar {
+  height: 6px;
+}
+.sf-aas-track::-webkit-scrollbar-track {
+  background: transparent;
+}
+.sf-aas-track::-webkit-scrollbar-thumb {
+  background: var(--sf-token-border, #c4c8d2);
+  border-radius: 4px;
+}
+
+/* ── Badge — base ───────────────────────────────────────────────────── */
+.sf-aas-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  height: 26px;
+  padding: 0 4px 0 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  line-height: 1;
+  transition: border-color 120ms ease, background 120ms ease;
+}
+
+.sf-aas-badge-active {
+  background: color-mix(in srgb, var(--sf-token-state-success-fg, #2b8a3e) 10%, var(--sf-token-surface, #fff));
+  border: 1px solid color-mix(in srgb, var(--sf-token-state-success-fg, #2b8a3e) 55%, transparent);
+  color: rgb(var(--sf-color-text-primary-rgb));
+}
+
+.sf-aas-badge-idle {
+  background: var(--sf-token-surface-alt, #f4f6f9);
+  border: 1px solid var(--sf-token-border, #e5e9ef);
+  color: rgb(var(--sf-color-text-subtle-rgb));
+  opacity: 0.85;
+}
+
+.sf-aas-text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sf-aas-brand {
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+}
+
+.sf-aas-model {
+  font-weight: 600;
+}
+
+.sf-aas-variant {
+  font-size: 10px;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+  font-weight: 500;
+}
+
+/* ── Module mini indicators (active group only) ─────────────────────── */
+.sf-aas-mods {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 2px;
+  padding-left: 6px;
+  border-left: 1px solid var(--sf-token-border, #e5e9ef);
+}
+
+.sf-aas-mod {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  background: var(--sf-token-surface, #fff);
+  border: 1px solid currentColor;
+  animation: sf-aas-pulse 1.4s ease-in-out infinite;
+}
+
+.sf-aas-mod-cef      { color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb)); }
+.sf-aas-mod-pif      { color: var(--sf-token-state-success-fg, #2b8a3e); }
+.sf-aas-mod-rdf      { color: var(--sf-token-state-warning-fg, #e67700); }
+.sf-aas-mod-skf      { color: #9e5fe0; }
+.sf-aas-mod-kf       { color: var(--sf-token-accent, #4263eb); }
+.sf-aas-mod-pipeline { color: var(--sf-token-state-info-fg, #1c7ed6); }
+
+@keyframes sf-aas-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(0.92); }
+}
+
+/* ── Idle-badge per-row remove button ───────────────────────────────── */
+.sf-aas-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: transparent;
+  border: none;
+  color: rgb(var(--sf-color-text-subtle-rgb));
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.sf-aas-remove:hover {
+  background: var(--sf-token-state-danger-fg, #c92a2a);
+  color: #fff;
+}
+
+/* ── Idle-group "Clear selection" button ────────────────────────────── */
+.sf-aas-clear {
+  flex-shrink: 0;
+  height: 22px;
+  padding: 0 10px;
+  background: transparent;
+  border: 1px solid var(--sf-token-state-danger-fg, #c92a2a);
+  color: var(--sf-token-state-danger-fg, #c92a2a);
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  line-height: 1;
+  transition: background 120ms ease, color 120ms ease;
+}
+.sf-aas-clear:hover {
+  background: var(--sf-token-state-danger-fg, #c92a2a);
+  color: #fff;
+}

@@ -30,7 +30,10 @@ import { buildOperationTelemetry } from '../../../core/operations/buildOperation
 import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
 import { stripRunSourceFromCandidates } from '../../../core/finder/finderRoutes.js';
 import { buildOrchestratorProduct } from '../../../core/finder/finderOrchestrationHelpers.js';
+import { FINDER_MODULE_MAP } from '../../../core/finder/finderModuleRegistry.js';
+import { scrubFinderDiscoveryHistory } from '../../../core/finder/discoveryHistoryScrub.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
+import { isUnknownSentinel } from '../../../shared/valueNormalizers.js';
 import { isReservedFieldKey, getReservedFieldKeys } from '../../../core/finder/finderExclusions.js';
 import { calcKeyBudget, readFloatKnob } from '../keyBudgetCalc.js';
 import * as keyFinderRegistry from '../../../core/operations/keyFinderRegistry.js';
@@ -196,7 +199,7 @@ function resolveFamilySize(specDb, productId) {
 }
 
 function normalizeUnknownValueForOutput(value, unknownReason = '') {
-  if (value === 'unk') return null;
+  if (isUnknownSentinel(value)) return null;
   if (String(unknownReason || '').trim()) return null;
   return value;
 }
@@ -423,7 +426,45 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
     return rows;
   }
 
-  return fieldKeys.map((fk) => buildRow(fk, fields[fk]));
+  // WHY: compiled.fields preserves compile-order, NOT the live field_key_order
+  // table that Field Studio's Key Navigator persists. Every consumer of this
+  // summary (Overview tier popover renders rows in summary order; KeyFinder
+  // panel re-orders via /review/layout but bundle/group cells still flow from
+  // here) must see rows in the canonical user-set order. Reorder once at the
+  // source so all downstream UIs stay in lockstep with the navigator. New
+  // keys not yet in the saved order trail in compile-order.
+  const orderedKeys = applyFieldKeyOrder(fieldKeys, specDb);
+  return orderedKeys.map((fk) => buildRow(fk, fields[fk]));
+}
+
+function applyFieldKeyOrder(fieldKeys, specDb) {
+  const orderRow = specDb?.getFieldKeyOrder?.(specDb?.category) ?? null;
+  let savedOrder = null;
+  if (orderRow?.order_json) {
+    try {
+      const parsed = JSON.parse(orderRow.order_json);
+      if (Array.isArray(parsed)) {
+        savedOrder = parsed.filter((k) => typeof k === 'string' && !k.startsWith('__grp::'));
+      }
+    } catch {
+      savedOrder = null;
+    }
+  }
+  if (!savedOrder || savedOrder.length === 0) return fieldKeys;
+
+  const inFields = new Set(fieldKeys);
+  const seen = new Set();
+  const ordered = [];
+  for (const fk of savedOrder) {
+    if (inFields.has(fk) && !seen.has(fk)) {
+      ordered.push(fk);
+      seen.add(fk);
+    }
+  }
+  for (const fk of fieldKeys) {
+    if (!seen.has(fk)) ordered.push(fk);
+  }
+  return ordered;
 }
 
 function summaryFromDoc(doc) {
@@ -600,6 +641,42 @@ export function registerKeyFinderRoutes(ctx) {
         const statusCode = (err && typeof err === 'object' && Number.isInteger(err.statusCode)) ? err.statusCode : 500;
         if (statusCode >= 500) console.error('[key-finder] POST /preview-prompt failed:', message);
         return jsonRes(res, statusCode, { error: 'preview failed', message });
+      }
+    }
+
+    // ── POST /key-finder/:category/:productId/discovery-history/scrub ──
+    // Discovery-log maintenance only: clears URL/query arrays without deleting
+    // key runs, selected values, candidates, evidence, or passenger results.
+    if (method === 'POST' && category && productId && parts[3] === 'discovery-history' && parts[4] === 'scrub' && !parts[5]) {
+      try {
+        const specDb = getSpecDb(category);
+        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+        const productRoot = resolveProductRoot(config);
+        const doc = readKeyFinder({ productId, productRoot });
+        if (!doc) return jsonRes(res, 404, { error: 'not found' });
+
+        const body = await readJsonBody(req).catch(() => ({}));
+        const result = scrubFinderDiscoveryHistory({
+          productId,
+          productRoot,
+          module: FINDER_MODULE_MAP.keyFinder,
+          specDb,
+          request: body || {},
+        });
+
+        emitDataChange({
+          broadcastWs,
+          event: `${ROUTE_PREFIX}-discovery-history-scrubbed`,
+          category,
+          entities: { productIds: [productId] },
+          meta: { productId, ...result },
+        });
+
+        return jsonRes(res, 200, { ...result, category });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        return jsonRes(res, 400, { error: 'discovery history scrub failed', message });
       }
     }
 

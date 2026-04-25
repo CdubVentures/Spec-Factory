@@ -234,7 +234,7 @@ export function createVariantScalarFieldProducer(cfg) {
         variant_key: variant.key,
         variant_label: variant.label,
         variant_type: variant.type,
-        value: isUnknown ? '' : value,
+        value: isUnknown ? null : value,
         confidence,
         unknown_reason: isUnknown ? unknownReason : '',
         sources: evidenceRefs.map((e) => ({
@@ -257,7 +257,7 @@ export function createVariantScalarFieldProducer(cfg) {
         variant_id: variant.variant_id || null,
         variant_key: variant.key,
         variant_label: variant.label,
-        [responseValueKey]: value,
+        [responseValueKey]: isUnknown ? null : value,
         confidence,
         unknown_reason: unknownReason,
         evidence_refs: evidenceRefs,

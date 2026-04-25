@@ -47,7 +47,7 @@ export interface SkuFinderCandidate {
   variant_key: string;
   variant_label: string;
   variant_type: string;
-  value: string;
+  value: string | null;
   confidence: number;
   unknown_reason: string;
   sources: EvidenceRef[];
@@ -77,7 +77,7 @@ export interface SkuFinderRun {
     user: string;
   };
   response: {
-    sku: string;
+    sku: string | null;
     confidence: number;
     unknown_reason: string;
     evidence_refs: EvidenceRef[];

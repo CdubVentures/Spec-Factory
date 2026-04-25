@@ -166,3 +166,23 @@
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* Each Run / Loop pair stacks the action button and a thin purple Prompt
+   button so the prompt preview is reachable without a separate column. */
+.sf-ktp-row-action-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 56px;
+}
+.sf-ktp-btn-prompt {
+  height: 12px;
+  width: 100%;
+  font-size: 7px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  padding: 0;
+}

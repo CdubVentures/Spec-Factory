@@ -23,6 +23,8 @@ import {
   PIPELINE_STAGES,
   type PipelineState,
 } from './usePipelineController.ts';
+import { useActiveModulesByProduct } from '../../features/operations/hooks/useFinderOperations.ts';
+import { selectActiveProductsForType, formatActiveWarnMessage } from './commandConsoleActiveCheck.ts';
 import { CommandConsoleModelStrip } from './CommandConsoleModelStrip.tsx';
 import './CommandConsole.css';
 
@@ -261,59 +263,80 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
   const noneSelected = selectedSize === 0;
   const bulkDisabled = noneSelected || pipelineRunning;
 
+  // WHY: Pre-flight collision warn before each per-finder dispatch. Active
+  // semantics match bulkDispatch.ts:129 (queued OR running). The dialog is
+  // informational — Continue routes through existing dispatch contracts;
+  // some helpers skip actives (CEF Run, all Loops), others fire over (RDF/SKU/KF Run).
+  const activeModulesByProduct = useActiveModulesByProduct(category);
+  const confirmActiveDispatch = useCallback((type: string, label: string): boolean => {
+    const colliding = selectActiveProductsForType(type, selectedProducts, activeModulesByProduct);
+    if (colliding.length === 0) return true;
+    if (typeof window === 'undefined') return true;
+    return window.confirm(formatActiveWarnMessage(label, colliding.length, selectedProducts.length));
+  }, [selectedProducts, activeModulesByProduct]);
+
   const handleCefRun = useCallback(() => {
+    if (!confirmActiveDispatch('cef', 'CEF')) return;
     const count = selectedProducts.length;
     if (!confirmLargeBatch(count, count)) return;
     dispatchCefRun(category, selectedProducts, fire);
-  }, [category, selectedProducts, fire]);
+  }, [category, selectedProducts, fire, confirmActiveDispatch]);
 
   const handlePifLoop = useCallback(() => {
+    if (!confirmActiveDispatch('pif', 'PIF')) return;
     const count = selectedProducts.reduce((n, r) => n + r.pifVariants.length, 0);
     if (!confirmLargeBatch(count, selectedProducts.length)) return;
     dispatchPifLoop(category, selectedProducts, fire);
-  }, [category, selectedProducts, fire]);
+  }, [category, selectedProducts, fire, confirmActiveDispatch]);
 
   const handlePifEval = useCallback(() => {
+    if (!confirmActiveDispatch('pif', 'PIF')) return;
     const estimate = selectedProducts.reduce((n, r) => n + r.pifVariants.length * 6, 0);
     if (!confirmLargeBatch(estimate, selectedProducts.length)) return;
     void dispatchPifEval(category, selectedProducts, fire);
-  }, [category, selectedProducts, fire]);
+  }, [category, selectedProducts, fire, confirmActiveDispatch]);
 
   const handleRdfRun = useCallback(() => {
+    if (!confirmActiveDispatch('rdf', 'RDF')) return;
     const count = selectedProducts.reduce((n, r) => n + r.rdfVariants.length, 0);
     if (!confirmLargeBatch(count, selectedProducts.length)) return;
     dispatchRdfRun(category, selectedProducts, fire);
-  }, [category, selectedProducts, fire]);
+  }, [category, selectedProducts, fire, confirmActiveDispatch]);
 
   const handleRdfLoop = useCallback(() => {
+    if (!confirmActiveDispatch('rdf', 'RDF')) return;
     const count = selectedProducts.reduce((n, r) => n + r.rdfVariants.length, 0);
     if (!confirmLargeBatch(count, selectedProducts.length)) return;
     dispatchRdfLoop(category, selectedProducts, fire);
-  }, [category, selectedProducts, fire]);
+  }, [category, selectedProducts, fire, confirmActiveDispatch]);
 
   const handleSkuRun = useCallback(() => {
+    if (!confirmActiveDispatch('skf', 'SKU')) return;
     const count = selectedProducts.reduce((n, r) => n + r.skuVariants.length, 0);
     if (!confirmLargeBatch(count, selectedProducts.length)) return;
     dispatchSkuRun(category, selectedProducts, fire);
-  }, [category, selectedProducts, fire]);
+  }, [category, selectedProducts, fire, confirmActiveDispatch]);
 
   const handleSkuLoop = useCallback(() => {
+    if (!confirmActiveDispatch('skf', 'SKU')) return;
     const count = selectedProducts.reduce((n, r) => n + r.skuVariants.length, 0);
     if (!confirmLargeBatch(count, selectedProducts.length)) return;
     dispatchSkuLoop(category, selectedProducts, fire);
-  }, [category, selectedProducts, fire]);
+  }, [category, selectedProducts, fire, confirmActiveDispatch]);
 
   const handleKfRunAll = useCallback(() => {
+    if (!confirmActiveDispatch('kf', 'KF')) return;
     const estimate = selectedProducts.length * 40;
     if (!confirmLargeBatch(estimate, selectedProducts.length)) return;
     void dispatchKfAll(category, selectedProducts, reservedSet, 'run', fire);
-  }, [category, selectedProducts, reservedSet, fire]);
+  }, [category, selectedProducts, reservedSet, fire, confirmActiveDispatch]);
 
   const handleKfLoopAll = useCallback(() => {
+    if (!confirmActiveDispatch('kf', 'KF')) return;
     const estimate = selectedProducts.length * 40;
     if (!confirmLargeBatch(estimate, selectedProducts.length)) return;
     void dispatchKfAll(category, selectedProducts, reservedSet, 'loop', fire);
-  }, [category, selectedProducts, reservedSet, fire]);
+  }, [category, selectedProducts, reservedSet, fire, confirmActiveDispatch]);
 
   const handleStartPipeline = useCallback(() => {
     if (pipelineRunning || selectedProducts.length === 0) return;

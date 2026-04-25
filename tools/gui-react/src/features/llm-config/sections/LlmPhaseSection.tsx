@@ -5,14 +5,20 @@ import {
   SettingToggle,
 } from '../../pipeline-settings/index.ts';
 import type { LlmPhaseId } from '../types/llmPhaseTypes.generated.ts';
-import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.generated.ts';
+import type { LlmPhaseOverride, LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.generated.ts';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
 import { resolvePhaseModel, uiPhaseIdToOverrideKey, type GlobalDraftSlice } from '../state/llmPhaseOverridesBridge.generated.ts';
 import { buildModelDropdownOptions } from '../state/llmModelDropdownOptions.ts';
 import { AlertBanner } from '../../../shared/ui/feedback/AlertBanner.tsx';
 import { resolveProviderForModel, parseModelKey } from '../state/llmProviderRegistryBridge.ts';
 import { ModelSelectDropdown, GlobalDefaultIcon } from '../components/ModelSelectDropdown.tsx';
-import { extractEffortFromModelName } from '../state/llmEffortFromModelName.ts';
+import {
+  LlmCapabilityPickerCore,
+  resolveModelCapabilities,
+  LockedEffortIcon,
+  type LlmCapabilityBundle,
+  type LlmCapabilityEffort,
+} from '../../../shared/ui/finder/LlmCapabilityPickerCore.tsx';
 import { useModuleSettingsAuthority } from '../../pipeline-settings/state/moduleSettingsAuthority.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { PromptTemplateEditor, UserMessageInjectionPanel, VariableReferencePanels } from '../../../shared/ui/prompt-template/PromptTemplateEditor.tsx';
@@ -29,26 +35,6 @@ export interface PromptTemplateDef {
   readonly defaultTemplate: string;
   readonly variables: readonly TemplateVariableDef[];
   readonly userMessageInfo?: readonly UserMessageInjection[];
-}
-
-/** Small lock icon shown next to disabled effort selects when the level is baked into the model name. */
-function LockedEffortIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      className="h-3.5 w-3.5 shrink-0"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={1.6}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-label="Effort locked by model name"
-      style={{ color: 'var(--sf-muted)' }}
-    >
-      <rect x="3" y="7" width="10" height="7" rx="1.5" />
-      <path d="M5 7V5a3 3 0 0 1 6 0v2" />
-    </svg>
-  );
 }
 
 interface LlmPhaseSectionProps {
@@ -97,31 +83,39 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
     onPhaseOverrideChange(next);
   }, [overrideKey, phaseOverrides, onPhaseOverrideChange]);
 
-  // WHY: Capability flags gate Lab-only toggles per-model, not per-provider.
-  // lockedEffort detects baked-in effort from model name suffix (e.g. gpt-5.4-xhigh → "xhigh").
-  function resolveCapabilities(modelKey: string | undefined) {
-    if (!modelKey) return { thinking: false, webSearch: false, thinkingEffortOptions: [] as string[], lockedEffort: null as string | null };
-    const provider = resolveProviderForModel(registry, modelKey);
-    if (!provider) return { thinking: false, webSearch: false, thinkingEffortOptions: [] as string[], lockedEffort: null as string | null };
-    const { modelId } = parseModelKey(modelKey);
-    const model = provider.models.find((m) => m.modelId === modelId);
-    return {
-      thinking: model?.thinking === true,
-      webSearch: model?.webSearch === true,
-      thinkingEffortOptions: model?.thinkingEffortOptions ?? [],
-      lockedEffort: extractEffortFromModelName(modelId),
-    };
-  }
-
-  const effectiveModelCapabilities = useMemo(
-    () => resolveCapabilities(resolved?.effectiveModel),
-    [resolved?.effectiveModel, registry],
-  );
-
   const fallbackModelCapabilities = useMemo(
-    () => resolveCapabilities(resolved?.effectiveFallbackModel),
+    () => resolveModelCapabilities(registry, resolved?.effectiveFallbackModel ?? ''),
     [resolved?.effectiveFallbackModel, registry],
   );
+
+  // WHY: Bundle assembled from phaseOverrides + resolved.useReasoning (which
+  // may inherit from global). The picker's onChange hands back a full bundle;
+  // we diff to keep persistence shape identical to the legacy per-field writes.
+  const baseBundle: LlmCapabilityBundle = useMemo(() => {
+    const slot = overrideKey ? phaseOverrides[overrideKey] : undefined;
+    return {
+      model: slot?.baseModel ?? '',
+      useReasoning: resolved?.useReasoning ?? false,
+      reasoningModel: slot?.reasoningModel ?? '',
+      thinking: slot?.thinking ?? false,
+      thinkingEffort: (slot?.thinkingEffort ?? '') as LlmCapabilityEffort,
+      webSearch: slot?.webSearch ?? false,
+    };
+  }, [phaseOverrides, overrideKey, resolved?.useReasoning]);
+
+  const handleBaseBundleChange = useCallback((next: LlmCapabilityBundle) => {
+    if (!overrideKey) return;
+    const current = phaseOverrides[overrideKey] ?? {};
+    const patch: Partial<LlmPhaseOverride> = {};
+    if (next.model !== baseBundle.model) patch.baseModel = next.model;
+    if (next.useReasoning !== baseBundle.useReasoning) patch.useReasoning = next.useReasoning;
+    if (next.reasoningModel !== baseBundle.reasoningModel) patch.reasoningModel = next.reasoningModel;
+    if (next.thinking !== baseBundle.thinking) patch.thinking = next.thinking;
+    if (next.thinkingEffort !== baseBundle.thinkingEffort) patch.thinkingEffort = next.thinkingEffort;
+    if (next.webSearch !== baseBundle.webSearch) patch.webSearch = next.webSearch;
+    if (Object.keys(patch).length === 0) return;
+    onPhaseOverrideChange({ ...phaseOverrides, [overrideKey]: { ...current, ...patch } });
+  }, [overrideKey, phaseOverrides, baseBundle, onPhaseOverrideChange]);
 
   const phaseTokenWarnings = useMemo(() => {
     if (!overrideKey || !resolved) return [];
@@ -253,84 +247,18 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
 
     {/* ── Base Model ── */}
     <SettingGroupBlock title="Base Model" collapsible storageKey={`sf:llm-phase:${phaseId}:base`}>
-      <SettingRow label="Model" tip="Override the global base model for this phase. Leave on default to inherit.">
-        <div className="flex items-center gap-1.5">
-          {!phaseOverrides[overrideKey]?.baseModel && <GlobalDefaultIcon />}
-          <ModelSelectDropdown
-            options={baseOptions}
-            className={inputCls}
-            value={phaseOverrides[overrideKey]?.baseModel ?? ''}
-            onChange={(v) => updateOverrideField('baseModel', v)}
-            disabled={resolved.useReasoning}
-            allowNone
-            noneLabel={`↩ ${parseModelKey(resolved.baseModel).modelId}`}
-            noneModelId={resolved.baseModel}
-            globalDefaultModelId={globalDraft.llmModelPlan}
-          />
-        </div>
-      </SettingRow>
-      <SettingRow label="Use Reasoning" tip="Override reasoning toggle for this phase.">
-        <SettingToggle
-          checked={resolved.useReasoning}
-          onChange={(v) => updateOverrideField('useReasoning', v)}
-        />
-      </SettingRow>
-      {resolved.useReasoning && (
-        <SettingRow label="Reasoning Model" tip="Override the reasoning model for this phase.">
-          <div className="flex items-center gap-1.5">
-            {!phaseOverrides[overrideKey]?.reasoningModel && <GlobalDefaultIcon />}
-            <ModelSelectDropdown
-              options={reasoningOptions}
-              className={inputCls}
-              value={phaseOverrides[overrideKey]?.reasoningModel ?? ''}
-              onChange={(v) => updateOverrideField('reasoningModel', v)}
-              allowNone
-              noneLabel={`↩ ${parseModelKey(globalDraft.llmModelReasoning).modelId}`}
-              noneModelId={globalDraft.llmModelReasoning}
-              globalDefaultModelId={globalDraft.llmModelReasoning}
-            />
-          </div>
-        </SettingRow>
-      )}
-      {effectiveModelCapabilities.thinking && (
-        <SettingRow label="Thinking" tip="Send thinking flag to the Lab model for extended chain-of-thought reasoning.">
-          <SettingToggle
-            checked={phaseOverrides[overrideKey]?.thinking ?? false}
-            onChange={(v) => updateOverrideField('thinking', v)}
-          />
-        </SettingRow>
-      )}
-      {effectiveModelCapabilities.thinking && (phaseOverrides[overrideKey]?.thinking ?? false) && effectiveModelCapabilities.lockedEffort && (
-        <SettingRow label="Thinking Effort" tip="Effort level is locked in the model name.">
-          <div className="flex items-center gap-1.5">
-            <LockedEffortIcon />
-            <select className={inputCls} disabled value={effectiveModelCapabilities.lockedEffort}>
-              <option value={effectiveModelCapabilities.lockedEffort}>{effectiveModelCapabilities.lockedEffort}</option>
-            </select>
-          </div>
-        </SettingRow>
-      )}
-      {effectiveModelCapabilities.thinking && (phaseOverrides[overrideKey]?.thinking ?? false) && !effectiveModelCapabilities.lockedEffort && effectiveModelCapabilities.thinkingEffortOptions.length > 1 && (
-        <SettingRow label="Thinking Effort" tip="Reasoning effort level sent to the Lab model.">
-          <select
-            className={inputCls}
-            value={phaseOverrides[overrideKey]?.thinkingEffort ?? 'medium'}
-            onChange={(e) => updateOverrideField('thinkingEffort', e.target.value)}
-          >
-            {effectiveModelCapabilities.thinkingEffortOptions.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-        </SettingRow>
-      )}
-      {phaseId !== 'writer' && effectiveModelCapabilities.webSearch && (
-        <SettingRow label="Web Search" tip="Send web_search flag to the Lab model for this phase.">
-          <SettingToggle
-            checked={phaseOverrides[overrideKey]?.webSearch ?? false}
-            onChange={(v) => updateOverrideField('webSearch', v)}
-          />
-        </SettingRow>
-      )}
+      <LlmCapabilityPickerCore
+        value={baseBundle}
+        onChange={handleBaseBundleChange}
+        registry={registry}
+        llmModelOptions={llmModelOptions}
+        apiKeyFilter={apiKeyFilter}
+        globalDefaultPlanModel={globalDraft.llmModelPlan}
+        globalDefaultReasoningModel={globalDraft.llmModelReasoning}
+        inheritedModelId={resolved.baseModel}
+        allowWebSearch={phaseId !== 'writer'}
+        inputCls={inputCls}
+      />
     </SettingGroupBlock>
 
     {/* ── Fallback (error recovery — independent of writer) ── */}

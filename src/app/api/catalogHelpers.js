@@ -198,6 +198,33 @@ function readKeyFinderGateKnobs(specDb) {
   return { excludeConf, excludeEvd };
 }
 
+// Per-worker last-run lookup. One query per finder summary table, amortized
+// across every product in the category — avoids 5×N point lookups inside the
+// per-product loop. Each finder's summary row carries product_id +
+// latest_ran_at (see specDbSchema.js + finderSqlStore.js::listByCategory).
+function buildLastRunMap(specDb, moduleId, category) {
+  const store = specDb.getFinderStore?.(moduleId);
+  if (!store?.listByCategory) return new Map();
+  const rows = store.listByCategory(category) || [];
+  const map = new Map();
+  for (const row of rows) {
+    const pid = row?.product_id;
+    const ts = String(row?.latest_ran_at || '');
+    if (pid && ts) map.set(pid, ts);
+  }
+  return map;
+}
+
+function buildLastRunMaps(specDb, category) {
+  return {
+    cef: buildLastRunMap(specDb, 'colorEditionFinder', category),
+    pif: buildLastRunMap(specDb, 'productImageFinder', category),
+    rdf: buildLastRunMap(specDb, 'releaseDateFinder', category),
+    sku: buildLastRunMap(specDb, 'skuFinder', category),
+    kf:  buildLastRunMap(specDb, 'keyFinder', category),
+  };
+}
+
 function buildCatalogFromSql({ specDb, cleanVariant, category }) {
   if (!specDb) return [];
 
@@ -205,6 +232,7 @@ function buildCatalogFromSql({ specDb, cleanVariant, category }) {
   const totalFieldCount = readFieldKeyOrderCount(specDb, category);
   const pifTargets = readPifTargets(specDb, category);
   const keyGateKnobs = readKeyFinderGateKnobs(specDb);
+  const lastRunMaps = buildLastRunMaps(specDb, category);
 
   const seen = new Map();
 
@@ -249,6 +277,11 @@ function buildCatalogFromSql({ specDb, cleanVariant, category }) {
       skuVariants,
       rdfVariants,
       keyTierProgress,
+      cefLastRunAt: lastRunMaps.cef.get(pid) || '',
+      pifLastRunAt: lastRunMaps.pif.get(pid) || '',
+      rdfLastRunAt: lastRunMaps.rdf.get(pid) || '',
+      skuLastRunAt: lastRunMaps.sku.get(pid) || '',
+      kfLastRunAt:  lastRunMaps.kf.get(pid)  || '',
     });
   }
 

@@ -88,7 +88,8 @@
   margin-top: -1px;
 }
 
-/* PIF variant popover — 2×2 action grid (Run View / Run Hero / Run Loop / Evaluate). */
+/* PIF variant popover — 2×2 action grid (Run View / Run Hero / Run Loop / Evaluate).
+   Retained for any legacy caller; current popover uses .sf-pif-popover-actions-stack. */
 .sf-pif-popover-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -97,6 +98,56 @@
 }
 .sf-pif-popover-actions > button {
   width: 100%;
+}
+
+/* Stacked PIF popover layout: 5×2 grid of stacked run+preview pairs
+   (Priority + 8 individual views + Hero), then Loop + Evaluate below.
+   min-width forces the popover to grow so the 5-column grid has breathable
+   per-column width (~56px + gap), matching the variant-row run drawer. */
+.sf-pif-popover-actions-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  min-width: 320px;
+}
+.sf-pif-popover-runs-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+.sf-pif-popover-tail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+}
+.sf-pif-popover-tail-grid > button {
+  width: 100%;
+}
+.sf-pif-popover-run-cell,
+.sf-overview-run-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  min-width: 0;
+}
+.sf-pif-popover-run-cell > button:first-child,
+.sf-overview-run-cell > button:first-child {
+  width: 100%;
+  padding: 6px 4px;
+  font-size: 11px;
+}
+
+/* SKU/RDF popover — Run + Loop pair, each with the purple Prompt button below. */
+.sf-overview-scalar-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  min-width: 200px;
 }
 
 /* Per-variant cluster split into two distinct click targets:

@@ -1,13 +1,19 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { api } from '../../api/client.ts';
 import type { ScalarVariantProgressGen } from '../../types/product.generated.ts';
 import type { LlmOverridePhaseId } from '../../features/llm-config/types/llmPhaseOverrideTypes.generated.ts';
 import { ColorSwatch } from '../../shared/ui/finder/ColorSwatch.tsx';
-import { FinderRunModelBadge, useResolvedFinderModel } from '../../shared/ui/finder/index.ts';
+import { FinderRunModelBadge, PromptPreviewModal, useResolvedFinderModel } from '../../shared/ui/finder/index.ts';
 import { Popover } from '../../shared/ui/overlay/Popover.tsx';
 import { FinderRunPopoverShell } from '../../shared/ui/overlay/FinderRunPopoverShell.tsx';
 import { useFireAndForget } from '../../features/operations/hooks/useFireAndForget.ts';
 import { useIsModuleRunning } from '../../features/operations/hooks/useFinderOperations.ts';
+import { usePromptPreviewQuery } from '../../features/indexing/api/promptPreviewQueries.ts';
+import { useFinderDiscoveryHistoryStore } from '../../stores/finderDiscoveryHistoryStore.ts';
+import { groupHistory, type FinderRun } from '../../shared/ui/finder/discoveryHistoryHelpers.ts';
 import { ConfidenceDiamond } from './ConfidenceDiamond.tsx';
+import { RunPreviewCell } from './RunPreviewCell.tsx';
 import './PifVariantRings.css';
 
 function truncate(str: string, max = 10): string {
@@ -24,6 +30,13 @@ export interface ScalarVariantPopoverProps {
   readonly hexMap: ReadonlyMap<string, string>;
   /** Module type used by the operations tracker — e.g. 'skf' or 'rdf'. */
   readonly moduleType: 'skf' | 'rdf';
+  /** Finder id used by the prompt-preview API — 'sku' or 'rdf'. */
+  readonly finderId: 'sku' | 'rdf';
+  /** Module id passed to `/finder/:cat/:pid` GET for runs (lazy-fetched
+   *  when the popover opens). e.g. 'skuFinder' or 'releaseDateFinder'. */
+  readonly historyFinderId: string;
+  /** Route prefix matching the runs endpoint, e.g. 'sku-finder' / 'release-date-finder'. */
+  readonly historyRoutePrefix: string;
   /** LLM phase id for `useResolvedFinderModel` — e.g. 'skuFinder' or 'releaseDateFinder'. */
   readonly phaseId: LlmOverridePhaseId;
   /** Popover title — e.g. "SKU Finder" or "Release Date Finder". */
@@ -42,6 +55,8 @@ export interface ScalarVariantPopoverProps {
   readonly pulsing?: boolean;
 }
 
+type ScalarPromptMode = 'run' | 'loop';
+
 /**
  * Per-variant Run / Loop popover for scalar finders (SKU, RDF). Trigger is the
  * color chip + confidence diamond + truncated value label; clicking opens a
@@ -50,10 +65,11 @@ export interface ScalarVariantPopoverProps {
  */
 export function ScalarVariantPopover({
   productId, category, variant, hexMap,
-  moduleType, phaseId, title, labelPrefix, runUrl,
+  moduleType, finderId, historyFinderId, historyRoutePrefix, phaseId, title, labelPrefix, runUrl,
   valueLabel, formatLabel = DEFAULT_FORMAT, formatValue = DEFAULT_FORMAT_VALUE, pulsing = false,
 }: ScalarVariantPopoverProps) {
   const [open, setOpen] = useState(false);
+  const [promptPreview, setPromptPreview] = useState<ScalarPromptMode | null>(null);
   const hexParts = variant.color_atoms.map((atom) => hexMap.get(atom) || '').filter(Boolean);
   const label = variant.variant_label || variant.variant_key || variant.variant_id;
   const hasValue = variant.value && variant.confidence > 0;
@@ -76,6 +92,46 @@ export function ScalarVariantPopover({
     fire(loopUrl, { variant_key: variantKey, variant_id: variantId }, { subType: 'loop', variantKey });
     setOpen(false);
   }, [fire, loopUrl, variantKey, variantId]);
+
+  // Lazy-fetched runs for the Hist count badge. Fires only when the popover
+  // is open, so closed-row table render stays cheap.
+  const { data: finderRuns } = useQuery<{ runs?: readonly FinderRun[] }>({
+    queryKey: [historyRoutePrefix, category, productId],
+    queryFn: () => api.get(`/${historyRoutePrefix}/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`),
+    enabled: open && Boolean(productId) && Boolean(category),
+    staleTime: 5_000,
+  });
+  const histCounts = useMemo(() => {
+    if (!variantId) return null;
+    const grouped = groupHistory((finderRuns?.runs ?? []) as readonly FinderRun[], 'variant');
+    const bucket = grouped.byVariant.get(variantId);
+    return { urls: bucket?.urls.size ?? 0, queries: bucket?.queries.size ?? 0 };
+  }, [finderRuns?.runs, variantId]);
+
+  const openHistoryDrawer = useFinderDiscoveryHistoryStore((s) => s.openDrawer);
+  const handleOpenHistory = useCallback(() => {
+    if (!variantId) return;
+    openHistoryDrawer({
+      finderId: historyFinderId,
+      productId,
+      category,
+      variantIdFilter: variantId,
+    });
+    setOpen(false);
+  }, [openHistoryDrawer, historyFinderId, productId, category, variantId]);
+
+  const promptPreviewBody = useMemo(() => (
+    promptPreview
+      ? { variant_key: variantKey, mode: promptPreview }
+      : {}
+  ), [promptPreview, variantKey]);
+  const promptPreviewQuery = usePromptPreviewQuery(
+    finderId,
+    category,
+    productId,
+    promptPreviewBody,
+    Boolean(promptPreview),
+  );
 
   const triggerTooltip = hasValue
     ? `${label} \u00b7 ${valueLabel}: ${displayValue} \u00b7 conf ${Math.round(variant.confidence)}%`
@@ -114,15 +170,49 @@ export function ScalarVariantPopover({
           />
         }
         actions={
-          <>
-            <button type="button" className="sf-frp-btn-primary" onClick={handleRun} disabled={isRunning}>
-              Run
+          <div className="sf-overview-scalar-actions">
+            <RunPreviewCell
+              label="Run"
+              runTitle={`${title} — single Run`}
+              previewTitle={`Preview the ${labelPrefix} Run prompt`}
+              onRun={handleRun}
+              onPreview={() => setPromptPreview('run')}
+              primary
+            />
+            <RunPreviewCell
+              label="Loop"
+              runTitle={`${title} — Loop until budget exhausted`}
+              previewTitle={`Preview the ${labelPrefix} Loop prompt (iteration 1)`}
+              onRun={handleLoop}
+              onPreview={() => setPromptPreview('loop')}
+              disabled={isRunning}
+            />
+            <button
+              type="button"
+              className="sf-frp-btn-history sf-overview-scalar-hist"
+              onClick={handleOpenHistory}
+              disabled={!variantId}
+              title={!variantId ? 'No variant_id — open the panel-level history.' : `Open Discovery History filtered to "${label}".`}
+            >
+              Hist
+              <span className="ml-1 font-mono text-[11px]">
+                (<span className="font-bold">{histCounts?.queries ?? 0}</span>
+                <span className="font-normal opacity-70">qu</span>)
+                (<span className="font-bold">{histCounts?.urls ?? 0}</span>
+                <span className="font-normal opacity-70">url</span>)
+              </span>
             </button>
-            <button type="button" className="sf-frp-btn-secondary" onClick={handleLoop} disabled={isRunning}>
-              Loop
-            </button>
-          </>
+          </div>
         }
+      />
+
+      <PromptPreviewModal
+        open={Boolean(promptPreview)}
+        onClose={() => setPromptPreview(null)}
+        query={promptPreviewQuery}
+        title={`${title} — ${promptPreview === 'loop' ? 'Loop' : 'Run'}`}
+        subtitle={`variant: ${variantKey}`}
+        storageKeyPrefix={`overview:${finderId}:preview:${productId}:${variantKey}:${promptPreview ?? ''}`}
       />
     </Popover>
   );

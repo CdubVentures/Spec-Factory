@@ -12,6 +12,7 @@ import { reconcileThreshold } from '../publish/reconcileThreshold.js';
 import { registerOperation, updateStage, completeOperation, failOperation } from '../../../core/operations/operationsRegistry.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { computePublishedArraysFromVariants, aggregateCefFieldConfidence } from '../../color-edition/index.js';
+import { isUnknownSentinel } from '../../../shared/valueNormalizers.js';
 
 // WHY: colors/editions store their value as a JSON-stringified array in
 // field_candidates.value (e.g. '["black","white+silver"]'). UI consumers
@@ -34,7 +35,7 @@ function safeJsonParse(str, fallback) {
 
 function isUnknownScalarValue(value, unknownReason) {
   if (String(unknownReason || '').trim()) return true;
-  return typeof value === 'string' && value.trim().toLowerCase() === 'unk';
+  return isUnknownSentinel(value);
 }
 
 function makeStrippedUnknownRow({

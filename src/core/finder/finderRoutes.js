@@ -16,6 +16,8 @@ import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
 import { normalizeConfidence } from '../../features/publisher/publish/publishCandidate.js';
 import { republishField } from '../../features/publisher/publish/republishField.js';
 import { buildOrchestratorProduct } from './finderOrchestrationHelpers.js';
+import { FINDER_MODULE_MAP } from './finderModuleRegistry.js';
+import { scrubFinderDiscoveryHistory } from './discoveryHistoryScrub.js';
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -334,6 +336,47 @@ export function createFinderRouteHandler(finderConfig) {
           const statusCode = (err && typeof err === 'object' && Number.isInteger(err.statusCode)) ? err.statusCode : 500;
           if (statusCode >= 500) console.error(`[${routePrefix}] POST /preview-prompt failed:`, message);
           return jsonRes(res, statusCode, { error: 'preview failed', message });
+        }
+      }
+
+      // ── POST /:prefix/:category/:productId/discovery-history/scrub ──
+      // Clears URL/query arrays inside run discovery logs only. Run records,
+      // selected state, candidates, evidence, artifacts, and summary rows are
+      // intentionally untouched.
+      if (method === 'POST' && category && productId && parts[3] === 'discovery-history' && parts[4] === 'scrub' && !parts[5]) {
+        try {
+          const specDb = getSpecDb(category);
+          if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+          const row = getOne(specDb, productId);
+          if (!row) return jsonRes(res, 404, { error: 'not found' });
+
+          const module = FINDER_MODULE_MAP[moduleId];
+          if (!module) {
+            return jsonRes(res, 500, { error: 'finder module not registered', module_id: moduleId });
+          }
+
+          const body = await readJsonBody(req).catch(() => ({}));
+          const result = scrubFinderDiscoveryHistory({
+            productId,
+            productRoot: config?.productRoot || defaultProductRoot(),
+            module,
+            specDb,
+            request: body || {},
+          });
+
+          emitDataChange({
+            broadcastWs,
+            event: `${routePrefix}-discovery-history-scrubbed`,
+            category,
+            entities: { productIds: [productId] },
+            meta: { productId, ...result },
+          });
+
+          return jsonRes(res, 200, { ...result, category });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          return jsonRes(res, 400, { error: 'discovery history scrub failed', message });
         }
       }
 

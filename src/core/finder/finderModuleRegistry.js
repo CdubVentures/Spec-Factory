@@ -284,14 +284,14 @@ export const FINDER_MODULES = Object.freeze([
     // Data-change events: suffix → extra domains beyond routePrefix.
     // Standard 3 (run, run-deleted, deleted) always included.
     dataChangeEvents: {
-      'run': [],
-      'run-deleted': [],
-      'deleted': [],
-      'loop': [],
-      'image-processed': [],
-      'image-deleted': [],
-      'batch-processed': [],
-      'evaluate': [],
+      'run': ['catalog'],
+      'run-deleted': ['catalog'],
+      'deleted': ['catalog'],
+      'loop': ['catalog'],
+      'image-processed': ['catalog'],
+      'image-deleted': ['catalog'],
+      'batch-processed': ['catalog'],
+      'evaluate': ['catalog'],
     },
 
     // Module Settings (codegen: moduleSettingsSections.generated.ts)
@@ -787,10 +787,14 @@ export const FINDER_MODULE_BY_PREFIX = Object.freeze(
  * - Backend: dataChangeContract.js (spread into DATA_CHANGE_EVENT_DOMAIN_MAP)
  * - Frontend: invalidationResolver.js (spread into DATA_CHANGE_EVENT_DOMAIN_FALLBACK)
  */
+const STANDARD_FINDER_DATA_CHANGE_EVENTS = Object.freeze({
+  'discovery-history-scrubbed': [],
+});
+
 export const FINDER_DATA_CHANGE_EVENTS = Object.freeze(
   Object.fromEntries(
     FINDER_MODULES.flatMap((mod) => {
-      const events = mod.dataChangeEvents || {};
+      const events = { ...STANDARD_FINDER_DATA_CHANGE_EVENTS, ...(mod.dataChangeEvents || {}) };
       return Object.entries(events).map(([suffix, extraDomains]) => [
         `${mod.routePrefix}-${suffix}`,
         [mod.routePrefix, ...(Array.isArray(extraDomains) ? extraDomains : [])],

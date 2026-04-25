@@ -14,7 +14,10 @@ import { invalidateDataChangeQueries } from '../../data-change/index.js';
 import type { DataChangeMessage } from '../../data-change/index.js';
 import { useRunningFieldKeys, useKeyFieldOpStates, usePassengerRides, useActivePassengers, awaitPassengersRegistered, awaitOperationTerminal } from '../../operations/hooks/useFinderOperations.ts';
 import { useFireAndForget } from '../../operations/hooks/useFireAndForget.ts';
-import { IndexingPanelHeader } from '../../../shared/ui/finder/index.ts';
+import {
+  getIndexingPanelCollapsedDefault,
+  IndexingPanelHeader,
+} from '../../../shared/ui/finder/index.ts';
 import { DiscoveryHistoryButton } from '../../../shared/ui/finder/DiscoveryHistoryButton.tsx';
 import { FinderKpiCard } from '../../../shared/ui/finder/FinderKpiCard.tsx';
 import { HeaderActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
@@ -399,7 +402,10 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
     void fireLoopChain(GLOBAL_LOOP_CHAIN_ID, keys);
   }, [grouped.groups, loopChains, sortAxisOrder, fireLoopChain]);
 
-  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:key:collapsed:${productId}`, true);
+  const [collapsed, toggleCollapsed] = usePersistedToggle(
+    `indexing:key:collapsed:${productId}`,
+    getIndexingPanelCollapsedDefault('key'),
+  );
   const anyRunning = runningFieldKeys.size > 0;
   const globalLoopChain = loopChains.get(GLOBAL_LOOP_CHAIN_ID);
   const productLoopProgress = globalLoopChain

@@ -24,9 +24,11 @@ const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['studio-config', CATEGORY_TOKEN],
     ['studio-artifacts', CATEGORY_TOKEN],
     // WHY: Field Studio group / key order changes must live-refresh the
-    // Overview Keys popover's key list (reads /key-finder/:cat/:pid/summary,
-    // whose order mirrors compiled field_rules order). Invalidating the whole
-    // `['key-finder', cat]` subtree picks up every open popover + the KF panel.
+    // Overview Keys popover's key list. /summary now applies the saved
+    // field_key_order server-side (keyFinderRoutes::applyFieldKeyOrder), so
+    // re-fetching after a navigator reorder is what propagates the new order
+    // to every consumer. Invalidating the whole `['key-finder', cat]` subtree
+    // picks up every open popover + the KF panel.
     ['key-finder', CATEGORY_TOKEN],
     ['reviewLayout', CATEGORY_TOKEN],
     ['reviewProductsIndex', CATEGORY_TOKEN],

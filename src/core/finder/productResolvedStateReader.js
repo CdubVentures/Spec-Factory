@@ -292,6 +292,14 @@ function defaultIdentityUsageLines({ fieldKey, fieldRule } = {}) {
     `When researching \`${key}\`:`,
     '- Use VARIANT_INVENTORY as a source-identity filter, not as values to output.',
   ];
+  if (String(fieldRule?.ai_assist?.reasoning_note || '').trim()) {
+    return [
+      ...common,
+      '- Follow the authored field guidance for allowed values and interpretation.',
+      '- Use VARIANT_INVENTORY only to confirm exact product/variant identity and exclude sibling or special-variant evidence that is not the requested target.',
+      '- Do not copy VARIANT_INVENTORY columns directly into results.',
+    ];
+  }
   if (profile === 'visual_design') {
     return [
       ...common,

@@ -84,6 +84,16 @@ describe('createScalarFinderEditorialSchemas — candidateSchema', () => {
     assert.equal(parsed.variant_id, null);
   });
 
+  it('accepts null value for unknown scalar finder diagnostics', () => {
+    const { candidateSchema } = makeSchemas();
+    const parsed = candidateSchema.parse(baseCandidate({
+      value: null,
+      unknown_reason: 'not disclosed',
+    }));
+    assert.equal(parsed.value, null);
+    assert.equal(parsed.unknown_reason, 'not disclosed');
+  });
+
   it('accepts rejected_by_gate + rejection_reasons when present', () => {
     const { candidateSchema } = makeSchemas();
     const parsed = candidateSchema.parse(baseCandidate({

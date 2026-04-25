@@ -45,6 +45,7 @@ import { PromptDrawerChevron } from './PromptDrawerChevron.tsx';
 import { PromptPreviewModal } from './PromptPreviewModal.tsx';
 import { useResolvedFinderModel } from './useResolvedFinderModel.ts';
 import { useFinderColorHexMap } from './useFinderColorHexMap.ts';
+import { getIndexingPanelCollapsedDefault } from './indexingPanelCollapseDefaults.ts';
 import { resolveVariantColorAtoms } from './finderSelectors.ts';
 import { buildFinderVariantRows, buildEditionsMap } from './variantRowHelpers.ts';
 import { deriveFinderKpiCards, deriveVariantRows, sortRunsNewestFirst } from './scalarFinderSelectors.ts';
@@ -67,7 +68,7 @@ import type { PromptPreviewFinder, PromptPreviewRequestBody } from '../../../fea
 interface GenericPublisherCandidate {
   readonly candidate_id: number;
   readonly status: string;
-  readonly value: string;
+  readonly value: string | null;
   readonly confidence: number;
   readonly model: string;
 }
@@ -81,7 +82,7 @@ export interface GenericScalarCandidate {
   readonly variant_key: string;
   readonly variant_label: string;
   readonly variant_type: string;
-  readonly value: string;
+  readonly value: string | null;
   readonly confidence: number;
   readonly unknown_reason?: string;
   readonly sources: readonly FinderEvidenceRowSource[];
@@ -189,8 +190,13 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
 
   const fmt = formatValue ?? ((v: string) => v);
   const renderEv = renderEvidenceRow ?? ((source: FinderEvidenceRowSource, i: number) => <FinderEvidenceRow key={i} source={source} />);
+  const tabMeta = FINDER_TAB_META[finderId as FinderPanelId];
+  const panelId = (tabMeta?.iconClass ?? finderId) as IndexingPanelId;
 
-  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:${moduleType}:collapsed:${productId}`, true);
+  const [collapsed, toggleCollapsed] = usePersistedToggle(
+    `indexing:${moduleType}:collapsed:${productId}`,
+    getIndexingPanelCollapsedDefault(panelId),
+  );
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [variantExpand, toggleVariantExpand] = usePersistedExpandMap(`indexing:${moduleType}:variantExpand:${productId}`);
   const [runExpand, toggleRunExpand] = usePersistedExpandMap(`indexing:${moduleType}:runExpand:${productId}`);
@@ -402,8 +408,6 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
   }, [variantIdsWithAnyData, valueKey]);
   const withValueCount = variantRows.filter((r) => r.candidate?.value).length;
 
-  const tabMeta = FINDER_TAB_META[finderId as FinderPanelId];
-  const panelId = (tabMeta?.iconClass ?? finderId) as IndexingPanelId;
   const iconGlyph = tabMeta?.icon ?? '◆';
 
   return (
@@ -535,7 +539,7 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
                 const hexParts = atoms.map((a) => hexMap.get(a.trim()) || '');
                 const c = row.candidate;
                 const isLooping = loopingVariantKeys.has(row.variant_key);
-                const valueDisplay = fmt(c?.value || '');
+                const valueDisplay = fmt(c?.value ?? '');
                 const hasValue = Boolean(c?.value);
                 // Del should wipe everything associated with this variant,
                 // including runs whose latest candidate has been rejected
@@ -708,7 +712,7 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
                                 <span className={`px-1.5 py-0.5 rounded ${pc.status === 'resolved' ? 'sf-chip-success' : 'sf-chip-neutral'}`}>
                                   {pc.status}
                                 </span>
-                                <span className="sf-text-primary">{fmt(pc.value)}</span>
+                                <span className="sf-text-primary">{fmt(pc.value ?? '')}</span>
                                 <span>· {pc.confidence}%</span>
                                 <span className="sf-text-subtle">· {pc.model}</span>
                               </div>
@@ -747,8 +751,8 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
                   const variantLabel = resp?.variant_label || variantKey || '--';
                   const atoms = resolveVariantColorAtoms(variantKey, editions);
                   const hexParts = atoms.map((a) => hexMap.get(a.trim()) || '');
-                  const rawValue = resp ? (resp[valueKey] as string | undefined) : undefined;
-                  const valueDisplay = fmt(rawValue || '');
+                  const rawValue = resp ? (resp[valueKey] as string | null | undefined) : undefined;
+                  const valueDisplay = fmt(rawValue ?? '');
                   const evidenceCount = (resp?.evidence_refs?.length) ?? 0;
                   const log = resp?.discovery_log;
                   const discoverySections: DiscoverySection[] = [];
@@ -782,7 +786,7 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
                       rightContent={
                         <>
                           <Chip
-                            label={valueDisplay || 'unk'}
+                            label={valueDisplay || '—'}
                             className={valueDisplay ? 'sf-chip-success font-mono' : 'sf-chip-warning font-mono'}
                           />
                           <ConfidenceChip value={resp?.confidence ?? 0} />

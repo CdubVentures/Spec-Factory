@@ -20,10 +20,12 @@ import type { ProcessStatus } from '../../../types/events.ts';
 import { parseCatalogRows } from '../../catalog/api/catalogParsers.ts';
 import type {
   IndexingLlmConfigResponse,
-  PanelKey,
 } from '../types.ts';
-import { DEFAULT_PANEL_COLLAPSED } from '../types.ts';
 import { deriveIndexingPanelCollapsed } from '../state/indexingPanelState.ts';
+import {
+  getIndexingPanelCollapsedDefault,
+  type IndexingTopPanelCollapseId,
+} from '../../../shared/ui/finder/indexingPanelCollapseDefaults.ts';
 import { deriveProcessStatusFlags } from '../selectors/indexingStatusSelectors.ts';
 import { useIndexingRunSelectionState } from '../state/indexingRunSelectionState.ts';
 import { useIndexingRunQueries } from '../api/indexingRunQueries.ts';
@@ -256,8 +258,8 @@ export function IndexingPage() {
     runtimeSettingsLoading,
   });
 
-  const togglePanel = (panel: PanelKey) => {
-    collapseToggle(`indexing:panel:${panel}`, DEFAULT_PANEL_COLLAPSED[panel]);
+  const togglePanel = (panel: IndexingTopPanelCollapseId) => {
+    collapseToggle(`indexing:panel:${panel}`, getIndexingPanelCollapsedDefault(panel));
   };
 
   // WHY: Tab bar hosts Pipeline (fixed first tab) + the finder registry.

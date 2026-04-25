@@ -1,3 +1,5 @@
+import { isUnknownSentinel } from '../../../shared/valueNormalizers.js';
+
 export const UNKNOWN_LIKE_TOKENS = new Set(['', 'unknown', 'n/a', 'na', 'null', 'undefined', '-']);
 
 export function normalizeLower(value) {
@@ -6,6 +8,7 @@ export function normalizeLower(value) {
 
 export function isMeaningfulValue(value) {
   if (value == null) return false;
+  if (isUnknownSentinel(value)) return false;
   return !UNKNOWN_LIKE_TOKENS.has(normalizeLower(value));
 }
 

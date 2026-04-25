@@ -28,6 +28,8 @@
  *   phaseId    ← phase         (e.g. "colorFinder", "imageFinder")
  *
  * Collapse key convention: `indexing:<moduleType>:collapsed:${productId}`
+ * Panel chrome defaults: picker, pipeline, cef, pif, rdf, sku, and key open
+ * on first view unless the user has a persisted collapsed/open value.
  * Section card key convention: `indexing:section:<moduleType>:<section>:${productId}`
  *
  * Section defaults: data sections (images, selected state) = open;
@@ -55,6 +57,16 @@ export { DataIntegrityBanner } from './DataIntegrityBanner.tsx';
 export { FinderKpiCard } from './FinderKpiCard.tsx';
 export { IndexingPanelHeader } from './IndexingPanelHeader.tsx';
 export type { IndexingPanelId, IndexingPanelHeaderProps } from './IndexingPanelHeader.tsx';
+export {
+  getIndexingPanelCollapsedDefault,
+  INDEXING_PANEL_COLLAPSE_DEFAULTS,
+  INDEXING_PANEL_COLLAPSE_IDS,
+  INDEXING_TOP_PANEL_COLLAPSE_IDS,
+} from './indexingPanelCollapseDefaults.ts';
+export type {
+  IndexingPanelCollapseId,
+  IndexingTopPanelCollapseId,
+} from './indexingPanelCollapseDefaults.ts';
 export { PromptPreviewTriggerButton } from './PromptPreviewTriggerButton.tsx';
 export { AnimatedDots } from './AnimatedDots.tsx';
 export { FinderVariantRow } from './FinderVariantRow.tsx';

@@ -91,6 +91,14 @@ export const CATALOG_ROW_SHAPE = Object.freeze([
   { key: 'skuVariants', coerce: 'array', itemRef: 'ScalarVariantProgressGen' },
   { key: 'rdfVariants', coerce: 'array', itemRef: 'ScalarVariantProgressGen' },
   { key: 'keyTierProgress', coerce: 'array', itemRef: 'KeyTierProgressGen' },
+  // Per-worker last-run timestamps. Sourced from each finder's *_finder
+  // summary table's `latest_ran_at` column via getFinderStore(...).listByCategory(),
+  // batched once per category build. Empty string when the worker has never run.
+  { key: 'cefLastRunAt', coerce: 'string' },
+  { key: 'pifLastRunAt', coerce: 'string' },
+  { key: 'rdfLastRunAt', coerce: 'string' },
+  { key: 'skuLastRunAt', coerce: 'string' },
+  { key: 'kfLastRunAt', coerce: 'string' },
 ]);
 export const CATALOG_ROW_KEYS = Object.freeze(CATALOG_ROW_SHAPE.map(s => s.key));
 

@@ -6,7 +6,7 @@
  * resolveVariantColorAtoms, slotSourceMap) ran for every group on every parent
  * render, even when nothing changed.
  */
-import { memo, useMemo } from 'react';
+import { memo, useCallback, useMemo } from 'react';
 import {
   DataIntegrityBanner,
   FinderVariantRow,
@@ -18,6 +18,8 @@ import { RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionB
 import { resolveVariantColorAtoms, resolveSlots } from '../selectors/pifSelectors.ts';
 import { GalleryCard } from './GalleryCard.tsx';
 import { CarouselSlotRow } from './CarouselSlotRow.tsx';
+import { PifRunStackDrawer } from './PifRunStackDrawer.tsx';
+import { useFinderDiscoveryHistoryStore } from '../../../stores/finderDiscoveryHistoryStore.ts';
 import type { ImageGroup, GalleryImage, ProductImageEntry, CarouselProgress } from '../types.ts';
 
 interface VariantImageGroupProps {
@@ -33,12 +35,15 @@ interface VariantImageGroupProps {
   readonly heroEnabled: boolean;
   readonly loopingVariant: boolean;
   readonly evaluatingVariant: boolean;
+  /** Per-variant URL/query counts for the Hist button label. Null when the
+   *  variant has no runs in history. */
+  readonly histCounts: { readonly urls: number; readonly queries: number } | null;
   readonly onRunPriorityView: (variantKey: string) => void;
   readonly onRunIndividualView: (variantKey: string, view: string) => void;
   readonly onRunHero: (variantKey: string) => void;
   readonly onLoopVariant: (variantKey: string) => void;
   readonly onEvalVariant: (variantKey: string) => void;
-  readonly onOpenPromptModal: (variantKey: string, mode: 'view' | 'hero' | 'loop' | 'view-eval') => void;
+  readonly onOpenPromptModal: (variantKey: string, mode: 'view' | 'hero' | 'loop' | 'view-eval', view?: string) => void;
   readonly onOpenLightbox: (img: GalleryImage) => void;
   readonly onDeleteImage: (filename: string) => void;
   readonly onDeleteVariantImages: (filenames: readonly string[], label: string) => void;
@@ -72,6 +77,7 @@ export const VariantImageGroup = memo(function VariantImageGroup({
   heroEnabled,
   loopingVariant,
   evaluatingVariant,
+  histCounts,
   onRunPriorityView,
   onRunIndividualView,
   onRunHero,
@@ -133,6 +139,32 @@ export const VariantImageGroup = memo(function VariantImageGroup({
     variant_type: group.type,
   };
 
+  // Hist: open the shared discovery drawer pre-filtered to this variant.
+  // Mirrors the SKU/RDF per-variant Hist button. variant_id is the SSOT for
+  // the drawer filter; variant_key is what shows up in the UI label.
+  const openHistoryDrawer = useFinderDiscoveryHistoryStore((s) => s.openDrawer);
+  const handleOpenHistory = useCallback(() => {
+    if (!group.variant_id) return;
+    openHistoryDrawer({
+      finderId: 'productImageFinder',
+      productId,
+      category,
+      variantIdFilter: group.variant_id,
+    });
+  }, [openHistoryDrawer, productId, category, group.variant_id]);
+
+  const histLabel = useMemo(() => (
+    <>
+      Hist
+      <span className="ml-1 font-mono">
+        (<span className="font-bold">{histCounts?.queries ?? 0}</span>
+        <span className="font-normal opacity-70">qu</span>)
+        (<span className="font-bold">{histCounts?.urls ?? 0}</span>
+        <span className="font-normal opacity-70">url</span>)
+      </span>
+    </>
+  ), [histCounts]);
+
   return (
     <FinderVariantRow
       variant={variantAdapter}
@@ -156,26 +188,35 @@ export const VariantImageGroup = memo(function VariantImageGroup({
         <>
           <ImageCountBadge count={group.images.length} />
           <div className="shrink-0 flex items-center gap-1">
-            <PromptDrawerChevron
+            <PifRunStackDrawer
               storageKey={`indexing:pif:run-drawer:${productId}:${group.key}`}
-              openWidthClass="w-[34rem]"
+              openWidthClass="w-[44rem]"
               ariaLabel={`Run actions for ${group.label}`}
               openTitle="Run:"
               actions={[
-                { id: 'priority-view', label: 'Priority View', intent: 'spammable', onClick: () => onRunPriorityView(group.key), title: 'Priority View Run — one LLM call across all viewConfig priority views' },
+                {
+                  id: 'priority',
+                  label: 'Priority',
+                  runTitle: 'Priority View Run — one LLM call across all viewConfig priority views',
+                  previewTitle: 'Preview the Priority View Run prompt',
+                  onRun: () => onRunPriorityView(group.key),
+                  onPreview: () => onOpenPromptModal(group.key, 'view'),
+                },
                 ...INDIVIDUAL_VIEW_BUTTONS.map((v) => ({
                   id: v.id,
                   label: v.label,
-                  intent: 'spammable' as const,
-                  onClick: () => onRunIndividualView(group.key, v.id),
-                  title: `Individual View Run — ${v.label}`,
+                  runTitle: `Individual View Run — ${v.label}`,
+                  previewTitle: `Preview the ${v.label} Individual View Run prompt`,
+                  onRun: () => onRunIndividualView(group.key, v.id),
+                  onPreview: () => onOpenPromptModal(group.key, 'view', v.id),
                 })),
                 ...(heroEnabled ? [{
                   id: 'hero',
                   label: 'Hero',
-                  intent: 'spammable' as const,
-                  onClick: () => onRunHero(group.key),
-                  title: 'Hero Run — lifestyle/contextual images',
+                  runTitle: 'Hero Run — lifestyle/contextual images',
+                  previewTitle: 'Preview the Hero Run prompt',
+                  onRun: () => onRunHero(group.key),
+                  onPreview: () => onOpenPromptModal(group.key, 'hero'),
                 }] : []),
               ]}
             />
@@ -208,8 +249,8 @@ export const VariantImageGroup = memo(function VariantImageGroup({
             <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
             <PromptDrawerChevron
               storageKey={`indexing:pif:prompt-drawer:${productId}:${group.key}`}
-              openWidthClass="w-80"
-              ariaLabel={`Prompt previews for ${group.label}`}
+              openWidthClass="w-[28rem]"
+              ariaLabel={`Prompt previews + history for ${group.label}`}
               openTitle="Prompts:"
               actions={[
                 { label: 'View', onClick: () => onOpenPromptModal(group.key, 'view') },
@@ -217,6 +258,19 @@ export const VariantImageGroup = memo(function VariantImageGroup({
                 { label: 'Loop', onClick: () => onOpenPromptModal(group.key, 'loop') },
                 { label: 'Eval', onClick: () => onOpenPromptModal(group.key, 'view-eval') },
               ]}
+              secondaryTitle="Hist:"
+              secondaryLabelClass="sf-history-label"
+              secondaryActions={[{
+                id: 'hist',
+                label: histLabel,
+                onClick: handleOpenHistory,
+                disabled: !group.variant_id,
+                intent: group.variant_id ? 'history' : 'locked',
+                width: 'w-28',
+                title: !group.variant_id
+                  ? 'Variant has no variant_id — open the panel-level history.'
+                  : `Open Discovery History filtered to "${group.label}".`,
+              }]}
             />
           </div>
         </>

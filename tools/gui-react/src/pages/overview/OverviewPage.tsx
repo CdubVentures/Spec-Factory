@@ -12,7 +12,6 @@ import type { CatalogRow } from '../../types/product.ts';
 import { parseCatalogRows } from '../../features/catalog/api/catalogParsers.ts';
 import type { ColumnDef } from '@tanstack/react-table';
 import type { ColorRegistryEntry } from '../../features/color-edition-finder/types.ts';
-import { useRunningProductIds } from '../../features/operations/hooks/useFinderOperations.ts';
 import { CefRunPopover } from './CefRunPopover.tsx';
 import { PifVariantsCell } from './PifVariantsCell.tsx';
 import { ScalarVariantsCell } from './ScalarVariantsCell.tsx';
@@ -24,11 +23,28 @@ import {
   type OverviewSortKey,
 } from './OverviewFilterBar.tsx';
 import { CommandConsole } from './CommandConsole.tsx';
-import { SelectionStrip } from './SelectionStrip.tsx';
+import { ActiveAndSelectedRow } from './ActiveAndSelectedRow.tsx';
+import { OverviewLinksCell, OverviewLinksHeaderToggle } from './OverviewLinksCell.tsx';
+import { OverviewLastRunCell, OverviewLastRunHeaderToggle } from './OverviewLastRunCell.tsx';
+import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import {
   useOverviewSelectionStore,
   useIsSelected,
 } from './overviewSelectionStore.ts';
+import {
+  useColumnFilterStore,
+  selectFilterState,
+} from './columnFilters/columnFilterStore.ts';
+import { matchesColumnFilters } from './columnFilters/columnFilterPredicates.ts';
+import { ColumnFiltersStatusPill } from './columnFilters/ColumnFiltersStatusPill.tsx';
+import { ColumnFilterHeader } from './columnFilters/ColumnFilterHeader.tsx';
+import { BrandFilter } from './columnFilters/filters/BrandFilter.tsx';
+import { CefFilter } from './columnFilters/filters/CefFilter.tsx';
+import { ScoreFilter } from './columnFilters/filters/ScoreFilter.tsx';
+import { NumericRangeFilter } from './columnFilters/filters/NumericRangeFilter.tsx';
+import { VariantMetricFilter } from './columnFilters/filters/VariantMetricFilter.tsx';
+import { ScalarVariantFilter } from './columnFilters/filters/ScalarVariantFilter.tsx';
+import { KeysFilter } from './columnFilters/filters/KeysFilter.tsx';
 
 function SelectHeaderCell({ category, visibleIds }: { category: string; visibleIds: readonly string[] }) {
   const selectedSet = useOverviewSelectionStore((s) => s.byCategory[category]);
@@ -85,7 +101,6 @@ const CEF_REQUIRED_RUNS = 2;
 const INITIAL_FILTER_STATE: OverviewFilterState = Object.freeze({
   search: '',
   sortBy: 'default' as OverviewSortKey,
-  activeFirst: false,
 });
 
 function matchesSearch(row: CatalogRow, query: string): boolean {
@@ -138,12 +153,19 @@ function MetricWithDot({ value, text }: { value: number; text: string }) {
 function buildColumns(
   hexMap: ReadonlyMap<string, string>,
   category: string,
+  catalog: readonly CatalogRow[],
   formatRdfValue: (value: string) => string,
+  detailColsOpen: boolean,
+  toggleDetailCols: () => void,
 ): ColumnDef<CatalogRow, unknown>[] {
   return [
     {
       accessorKey: 'brand',
-      header: 'Brand',
+      header: () => (
+        <ColumnFilterHeader category={category} filterKey="brand" label="Brand">
+          <BrandFilter category={category} catalog={catalog} />
+        </ColumnFilterHeader>
+      ),
       size: 120,
       cell: ({ getValue }) => {
         const v = getValue() as string;
@@ -177,7 +199,11 @@ function buildColumns(
     },
     {
       accessorKey: 'cefRunCount',
-      header: 'CEF',
+      header: () => (
+        <ColumnFilterHeader category={category} filterKey="cef" label="CEF">
+          <CefFilter category={category} />
+        </ColumnFilterHeader>
+      ),
       size: 110,
       cell: ({ row }) => (
         <CefRunPopover
@@ -190,7 +216,11 @@ function buildColumns(
     },
     {
       accessorKey: 'pifVariants',
-      header: 'PIF',
+      header: () => (
+        <ColumnFilterHeader category={category} filterKey="pif" label="PIF">
+          <VariantMetricFilter category={category} />
+        </ColumnFilterHeader>
+      ),
       size: 414,
       cell: ({ row }) => (
         <PifVariantsCell
@@ -203,7 +233,11 @@ function buildColumns(
     },
     {
       accessorKey: 'skuVariants',
-      header: 'SKU',
+      header: () => (
+        <ColumnFilterHeader category={category} filterKey="sku" label="SKU">
+          <ScalarVariantFilter category={category} filterKey="sku" />
+        </ColumnFilterHeader>
+      ),
       size: 376,
       cell: ({ row }) => (
         <ScalarVariantsCell
@@ -212,6 +246,9 @@ function buildColumns(
           variants={row.original.skuVariants}
           hexMap={hexMap}
           moduleType="skf"
+          finderId="sku"
+          historyFinderId="skuFinder"
+          historyRoutePrefix="sku-finder"
           phaseId="skuFinder"
           title="SKU Finder"
           labelPrefix="SKU"
@@ -222,7 +259,11 @@ function buildColumns(
     },
     {
       accessorKey: 'rdfVariants',
-      header: 'RDF',
+      header: () => (
+        <ColumnFilterHeader category={category} filterKey="rdf" label="RDF">
+          <ScalarVariantFilter category={category} filterKey="rdf" />
+        </ColumnFilterHeader>
+      ),
       size: 376,
       cell: ({ row }) => (
         <ScalarVariantsCell
@@ -231,6 +272,9 @@ function buildColumns(
           variants={row.original.rdfVariants}
           hexMap={hexMap}
           moduleType="rdf"
+          finderId="rdf"
+          historyFinderId="releaseDateFinder"
+          historyRoutePrefix="release-date-finder"
           phaseId="releaseDateFinder"
           title="Release Date Finder"
           labelPrefix="RDF"
@@ -243,7 +287,11 @@ function buildColumns(
     },
     {
       id: 'key',
-      header: 'Keys',
+      header: () => (
+        <ColumnFilterHeader category={category} filterKey="keys" label="Keys">
+          <KeysFilter category={category} />
+        </ColumnFilterHeader>
+      ),
       size: 280,
       cell: ({ row }) => (
         <KeyTierRings
@@ -255,13 +303,21 @@ function buildColumns(
     },
     {
       id: 'scoreCard',
-      header: 'Score',
+      header: () => (
+        <ColumnFilterHeader category={category} filterKey="score" label="Score">
+          <ScoreFilter category={category} />
+        </ColumnFilterHeader>
+      ),
       size: 70,
       cell: ({ row }) => <ScoreCardCell row={row.original} />,
     },
     {
       accessorKey: 'coverage',
-      header: 'Coverage',
+      header: () => (
+        <ColumnFilterHeader category={category} filterKey="coverage" label="Coverage">
+          <NumericRangeFilter category={category} filterKey="coverage" label="Coverage" unit="percent" />
+        </ColumnFilterHeader>
+      ),
       cell: ({ getValue }) => {
         const v = getValue() as number;
         return <MetricWithDot value={v} text={pct(v)} />;
@@ -270,7 +326,11 @@ function buildColumns(
     },
     {
       accessorKey: 'confidence',
-      header: 'Conf',
+      header: () => (
+        <ColumnFilterHeader category={category} filterKey="confidence" label="Conf">
+          <NumericRangeFilter category={category} filterKey="confidence" label="Confidence" unit="percent" />
+        </ColumnFilterHeader>
+      ),
       cell: ({ getValue }) => {
         const v = getValue() as number;
         return <MetricWithDot value={v} text={pct(v)} />;
@@ -279,7 +339,11 @@ function buildColumns(
     },
     {
       accessorKey: 'fieldsFilled',
-      header: 'Fields',
+      header: () => (
+        <ColumnFilterHeader category={category} filterKey="fields" label="Fields">
+          <NumericRangeFilter category={category} filterKey="fields" label="Fields filled" unit="count" />
+        </ColumnFilterHeader>
+      ),
       cell: ({ row }) => {
         const filled = row.original.fieldsFilled;
         const total = row.original.fieldsTotal;
@@ -287,6 +351,26 @@ function buildColumns(
         return <MetricWithDot value={ratio} text={`${filled}/${total}`} />;
       },
       size: 95,
+    },
+    {
+      id: 'lastRun',
+      enableSorting: false,
+      size: detailColsOpen ? 200 : 36,
+      header: () => <OverviewLastRunHeaderToggle open={detailColsOpen} onToggle={toggleDetailCols} />,
+      cell: ({ row }) => (detailColsOpen
+        ? <OverviewLastRunCell row={row.original} />
+        : null
+      ),
+    },
+    {
+      id: 'links',
+      enableSorting: false,
+      size: detailColsOpen ? 80 : 36,
+      header: () => <OverviewLinksHeaderToggle open={detailColsOpen} onToggle={toggleDetailCols} />,
+      cell: ({ row }) => (detailColsOpen
+        ? <OverviewLinksCell row={row.original} category={category} />
+        : null
+      ),
     },
   ];
 }
@@ -316,21 +400,19 @@ export function OverviewPage() {
   );
 
   const [filterState, setFilterState] = useState<OverviewFilterState>(INITIAL_FILTER_STATE);
-  const runningProductIds = useRunningProductIds(category);
+  // WHY: Single shared toggle drives both detail columns (Links + Last Run)
+  // so they slide open/closed together — clicking either chevron flips both.
+  const [detailColsOpen, toggleDetailCols] = usePersistedToggle('overview:detail-cols:open', false);
+
+  const columnFilters = useColumnFilterStore(selectFilterState(category));
 
   const visibleRows = useMemo(() => {
-    const filtered = catalog.filter((r) => matchesSearch(r, filterState.search));
-    const { sortBy, activeFirst } = filterState;
-    const sorted = filtered.slice().sort((a, b) => {
-      if (activeFirst) {
-        const aActive = runningProductIds.has(a.productId) ? 1 : 0;
-        const bActive = runningProductIds.has(b.productId) ? 1 : 0;
-        if (aActive !== bActive) return bActive - aActive;
-      }
-      return compareBySort(a, b, sortBy);
-    });
-    return sorted;
-  }, [catalog, filterState, runningProductIds]);
+    const filtered = catalog
+      .filter((r) => matchesSearch(r, filterState.search))
+      .filter((r) => matchesColumnFilters(r, columnFilters));
+    const { sortBy } = filterState;
+    return filtered.slice().sort((a, b) => compareBySort(a, b, sortBy));
+  }, [catalog, filterState, columnFilters]);
 
   const visibleIds = useMemo<readonly string[]>(
     () => visibleRows.map((r) => r.productId),
@@ -353,9 +435,9 @@ export function OverviewPage() {
           </div>
         ),
       },
-      ...buildColumns(hexMap, category, formatRdfValue),
+      ...buildColumns(hexMap, category, catalog, formatRdfValue, detailColsOpen, toggleDetailCols),
     ],
-    [hexMap, category, visibleIds, formatRdfValue],
+    [hexMap, category, catalog, visibleIds, formatRdfValue, detailColsOpen, toggleDetailCols],
   );
 
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
@@ -377,15 +459,19 @@ export function OverviewPage() {
         <CommandConsole category={category} allRows={catalog} />
       </div>
 
-      <SelectionStrip category={category} allRows={catalog} />
+      <ActiveAndSelectedRow category={category} allRows={catalog} />
 
-      <OverviewFilterBar
-        state={filterState}
-        onChange={setFilterState}
-        shown={visibleRows.length}
-        total={catalog.length}
-        runningCount={runningProductIds.size}
-      />
+      <div>
+        <OverviewFilterBar
+          state={filterState}
+          onChange={setFilterState}
+          shown={visibleRows.length}
+          total={catalog.length}
+        />
+        <div className="flex justify-end empty:hidden">
+          <ColumnFiltersStatusPill category={category} />
+        </div>
+      </div>
 
       <div className="sf-table-shell">
         <DataTable

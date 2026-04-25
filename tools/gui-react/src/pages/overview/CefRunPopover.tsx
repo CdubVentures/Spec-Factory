@@ -58,9 +58,10 @@ export function CefRunPopover({ productId, category, filled, total }: CefRunPopo
             type="button"
             className="sf-frp-btn-primary"
             onClick={onRun}
-            disabled={isRunning || !productId}
+            disabled={!productId}
+            title="Run CEF — fire-and-forget; spam-click to queue multiple runs"
           >
-            {isRunning ? 'Running\u2026' : 'Run CEF'}
+            Run CEF
           </button>
         }
       />

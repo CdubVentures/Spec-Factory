@@ -2,11 +2,12 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import type { KeyFinderSummaryRow } from '../../features/key-finder/types.ts';
-import { FinderRunModelBadge, useResolvedFinderModel } from '../../shared/ui/finder/index.ts';
+import { DiscoveryHistoryButton, FinderRunModelBadge, PromptPreviewModal, useResolvedFinderModel } from '../../shared/ui/finder/index.ts';
 import { Popover } from '../../shared/ui/overlay/Popover.tsx';
 import { FinderRunPopoverShell } from '../../shared/ui/overlay/FinderRunPopoverShell.tsx';
 import { useFireAndForget } from '../../features/operations/hooks/useFireAndForget.ts';
 import { useRunningFieldKeys } from '../../features/operations/hooks/useFinderOperations.ts';
+import { usePromptPreviewQuery } from '../../features/indexing/api/promptPreviewQueries.ts';
 import './KeyTierPopover.css';
 
 export type KeyTierName = 'easy' | 'medium' | 'hard' | 'very_hard' | 'mandatory';
@@ -28,6 +29,12 @@ export interface KeyTierPopoverProps {
   readonly trigger: ReactNode;
   readonly triggerLabel?: string;
 }
+
+type KeyPromptPreviewState = {
+  readonly fieldKey: string;
+  readonly mode: 'run' | 'loop';
+  readonly label: string;
+};
 
 function matchesTier(row: KeyFinderSummaryRow, tier: KeyTierName): boolean {
   if (tier === 'mandatory') return row.required_level === 'mandatory';
@@ -58,10 +65,24 @@ export function KeyTierPopover({
   productId, category, tier, resolved, total, trigger, triggerLabel,
 }: KeyTierPopoverProps) {
   const [open, setOpen] = useState(false);
+  const [promptPreview, setPromptPreview] = useState<KeyPromptPreviewState | null>(null);
 
   const { model, accessMode, modelDisplay, effortLevel } = useResolvedFinderModel('keyFinder');
   const fire = useFireAndForget({ type: 'kf', category, productId });
   const runningFieldKeys = useRunningFieldKeys('kf', productId);
+
+  const promptPreviewBody = useMemo(() => (
+    promptPreview
+      ? { field_key: promptPreview.fieldKey, mode: promptPreview.mode }
+      : {}
+  ), [promptPreview]);
+  const promptPreviewQuery = usePromptPreviewQuery(
+    'key',
+    category,
+    productId,
+    promptPreviewBody,
+    Boolean(promptPreview),
+  );
 
   // Lazy — fetch only when popover is open. React-query dedups across the 5
   // tier popovers so opening several per session still only hits once per
@@ -171,24 +192,53 @@ export function KeyTierPopover({
                             )}
                           </span>
                           <span className="sf-ktp-row-actions">
-                            <button
-                              type="button"
-                              className="sf-ktp-btn sf-ktp-btn-primary"
-                              disabled={busy}
-                              onClick={() => handleRun(r.field_key)}
-                              title="Run this key once"
-                            >
-                              Run
-                            </button>
-                            <button
-                              type="button"
-                              className="sf-ktp-btn sf-ktp-btn-secondary"
-                              disabled={busy}
-                              onClick={() => handleLoop(r.field_key)}
-                              title="Loop this key until the concrete gate passes or budget is spent"
-                            >
-                              Loop
-                            </button>
+                            <span className="sf-ktp-row-action-cell">
+                              <button
+                                type="button"
+                                className="sf-ktp-btn sf-ktp-btn-primary"
+                                onClick={() => handleRun(r.field_key)}
+                                title="Run this key once — fire-and-forget; spam-click to queue multiple runs"
+                              >
+                                Run
+                              </button>
+                              <button
+                                type="button"
+                                className="sf-prompt-preview-button sf-ktp-btn-prompt"
+                                onClick={() => setPromptPreview({ fieldKey: r.field_key, mode: 'run', label: `${r.label || r.field_key} — Run` })}
+                                title="Preview the Run prompt for this key"
+                                aria-label={`Preview the Run prompt for ${r.label || r.field_key}`}
+                              >
+                                Prompt
+                              </button>
+                            </span>
+                            <span className="sf-ktp-row-action-cell">
+                              <button
+                                type="button"
+                                className="sf-ktp-btn sf-ktp-btn-secondary"
+                                disabled={busy}
+                                onClick={() => handleLoop(r.field_key)}
+                                title="Loop this key until the concrete gate passes or budget is spent"
+                              >
+                                Loop
+                              </button>
+                              <button
+                                type="button"
+                                className="sf-prompt-preview-button sf-ktp-btn-prompt"
+                                onClick={() => setPromptPreview({ fieldKey: r.field_key, mode: 'loop', label: `${r.label || r.field_key} — Loop` })}
+                                title="Preview the Loop prompt (iteration 1) for this key"
+                                aria-label={`Preview the Loop prompt for ${r.label || r.field_key}`}
+                              >
+                                Prompt
+                              </button>
+                            </span>
+                            <DiscoveryHistoryButton
+                              finderId="keyFinder"
+                              productId={productId}
+                              category={category}
+                              scope="row"
+                              fieldKeyFilter={[r.field_key]}
+                              width="w-28"
+                            />
                           </span>
                         </li>
                       );
@@ -200,6 +250,15 @@ export function KeyTierPopover({
           )}
         </div>
       </FinderRunPopoverShell>
+
+      <PromptPreviewModal
+        open={Boolean(promptPreview)}
+        onClose={() => setPromptPreview(null)}
+        query={promptPreviewQuery}
+        title={`Key Finder — ${promptPreview?.label ?? ''}`}
+        subtitle={promptPreview ? `field_key: ${promptPreview.fieldKey}` : undefined}
+        storageKeyPrefix={`overview:key:preview:${productId}:${promptPreview?.fieldKey ?? ''}:${promptPreview?.mode ?? ''}`}
+      />
     </Popover>
   );
 }

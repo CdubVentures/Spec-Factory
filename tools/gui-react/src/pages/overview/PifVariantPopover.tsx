@@ -3,11 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import type { PifVariantProgressGen } from '../../types/product.generated.ts';
 import { ColorSwatch } from '../../shared/ui/finder/ColorSwatch.tsx';
-import { FinderRunModelBadge, useResolvedFinderModel } from '../../shared/ui/finder/index.ts';
+import { FinderRunModelBadge, PromptPreviewModal, useResolvedFinderModel } from '../../shared/ui/finder/index.ts';
 import { Popover } from '../../shared/ui/overlay/Popover.tsx';
 import { FinderRunPopoverShell } from '../../shared/ui/overlay/FinderRunPopoverShell.tsx';
 import { useFireAndForget } from '../../features/operations/hooks/useFireAndForget.ts';
 import { useIsModuleRunning } from '../../features/operations/hooks/useFinderOperations.ts';
+import { usePromptPreviewQuery } from '../../features/indexing/api/promptPreviewQueries.ts';
+import { useFinderDiscoveryHistoryStore } from '../../stores/finderDiscoveryHistoryStore.ts';
+import { groupHistory, type FinderRun } from '../../shared/ui/finder/discoveryHistoryHelpers.ts';
+import { RunPreviewCell } from './RunPreviewCell.tsx';
 import {
   buildGalleryImages,
   resolveSlots,
@@ -15,6 +19,11 @@ import {
 } from '../../features/product-image-finder/selectors/pifSelectors.ts';
 import { imageServeUrl } from '../../features/product-image-finder/helpers/pifImageUrls.ts';
 import { CarouselPreviewPopup } from '../../features/product-image-finder/components/CarouselPreviewPopup.tsx';
+import {
+  createPifLoopPromptPreviewState,
+  createPifPromptPreviewBody,
+  type PifPromptPreviewState,
+} from '../../features/product-image-finder/state/pifPromptPreviewState.ts';
 import type {
   CarouselSlide,
   GalleryImage,
@@ -35,6 +44,17 @@ export interface PifVariantPopoverProps {
 const EVAL_STAGGER_MS = 500;
 const DEFAULT_VIEW_BUDGET: readonly string[] = ['top', 'left', 'angle'];
 
+const INDIVIDUAL_VIEWS: ReadonlyArray<{ readonly id: string; readonly label: string }> = [
+  { id: 'top',    label: 'Top' },
+  { id: 'bottom', label: 'Bottom' },
+  { id: 'left',   label: 'Left' },
+  { id: 'right',  label: 'Right' },
+  { id: 'front',  label: 'Front' },
+  { id: 'rear',   label: 'Rear' },
+  { id: 'sangle', label: 'S-Angle' },
+  { id: 'angle',  label: 'Angle' },
+];
+
 /**
  * Per-variant PIF cell with two click targets:
  *   • Color swatch     → action popover (Run View / Hero / Loop / Evaluate)
@@ -46,6 +66,7 @@ export function PifVariantPopover({
 }: PifVariantPopoverProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [carouselOpen, setCarouselOpen] = useState(false);
+  const [promptPreview, setPromptPreview] = useState<PifPromptPreviewState | null>(null);
   const hexParts = variant.color_atoms.map((atom) => hexMap.get(atom) || '').filter(Boolean);
   const label = variant.variant_label || variant.variant_key || variant.variant_id;
   const totalFilled = variant.priority_filled + variant.loop_filled + variant.hero_filled;
@@ -136,8 +157,13 @@ export function PifVariantPopover({
     });
   }, [pifData, variantKey, category, productId]);
 
-  const handleRunView = useCallback(() => {
+  const handleRunPriority = useCallback(() => {
     fire(runUrl, { variant_key: variantKey, variant_id: variantId, mode: 'view' }, { subType: 'priority-view', variantKey });
+    setPopoverOpen(false);
+  }, [fire, runUrl, variantKey, variantId]);
+
+  const handleRunIndividualView = useCallback((view: string) => {
+    fire(runUrl, { variant_key: variantKey, variant_id: variantId, mode: 'view', view }, { subType: 'view-single', variantKey });
     setPopoverOpen(false);
   }, [fire, runUrl, variantKey, variantId]);
 
@@ -164,6 +190,47 @@ export function PifVariantPopover({
     }
     setPopoverOpen(false);
   }, [fire, evalViewUrl, evalHeroUrl, canonicalViews, hasHeroes, variantKey, variantId]);
+
+  const promptPreviewBody = useMemo(
+    () => createPifPromptPreviewBody(promptPreview),
+    [promptPreview],
+  );
+  const promptPreviewQuery = usePromptPreviewQuery(
+    'pif',
+    category,
+    productId,
+    promptPreviewBody,
+    Boolean(promptPreview),
+  );
+
+  // Per-variant Hist: union URL/query counts across view+hero modes for this
+  // variant. Mirrors the indexing-lab variant row so the Overview popover and
+  // the lab show identical counts for the same variant.
+  const histCounts = useMemo(() => {
+    if (!variantId) return null;
+    const grouped = groupHistory((pifData?.runs ?? []) as readonly FinderRun[], 'variant+mode');
+    const modes = grouped.byVariantMode.get(variantId);
+    if (!modes) return { urls: 0, queries: 0 };
+    const urls = new Set<string>();
+    const queries = new Set<string>();
+    for (const bucket of modes.values()) {
+      for (const u of bucket.urls) urls.add(u);
+      for (const q of bucket.queries) queries.add(q);
+    }
+    return { urls: urls.size, queries: queries.size };
+  }, [pifData?.runs, variantId]);
+
+  const openHistoryDrawer = useFinderDiscoveryHistoryStore((s) => s.openDrawer);
+  const handleOpenHistory = useCallback(() => {
+    if (!variantId) return;
+    openHistoryDrawer({
+      finderId: 'productImageFinder',
+      productId,
+      category,
+      variantIdFilter: variantId,
+    });
+    setPopoverOpen(false);
+  }, [openHistoryDrawer, productId, category, variantId]);
 
   const ringsTitle = slides.length > 0
     ? `Open carousel preview (${slides.length} image${slides.length === 1 ? '' : 's'})`
@@ -206,18 +273,67 @@ export function PifVariantPopover({
             </>
           }
           actions={
-            <div className="sf-pif-popover-actions">
-              <button type="button" className="sf-frp-btn-primary" onClick={handleRunView} disabled={isRunning}>
-                Run View
-              </button>
-              <button type="button" className="sf-frp-btn-secondary" onClick={handleRunHero} disabled={isRunning}>
-                Run Hero
-              </button>
-              <button type="button" className="sf-frp-btn-secondary" onClick={handleRunLoop} disabled={isRunning}>
-                Run Loop
-              </button>
-              <button type="button" className="sf-frp-btn-secondary" onClick={handleEval} disabled={!hasEvalTargets}>
-                Evaluate
+            <div className="sf-pif-popover-actions-stack">
+              <div className="sf-pif-popover-runs-grid">
+                <RunPreviewCell
+                  label="Priority"
+                  runTitle="Priority View Run — one LLM call across all viewConfig priority views"
+                  previewTitle="Preview the Priority View Run prompt"
+                  onRun={handleRunPriority}
+                  onPreview={() => setPromptPreview({ variantKey, mode: 'view', label: 'Priority View Run' })}
+                  primary
+                />
+                {INDIVIDUAL_VIEWS.map((v) => (
+                  <RunPreviewCell
+                    key={v.id}
+                    label={v.label}
+                    runTitle={`Individual View Run — ${v.label}`}
+                    previewTitle={`Preview the ${v.label} Individual View Run prompt`}
+                    onRun={() => handleRunIndividualView(v.id)}
+                    onPreview={() => setPromptPreview({ variantKey, mode: 'view', view: v.id, label: `${v.label} Individual View Run` })}
+                  />
+                ))}
+                <RunPreviewCell
+                  label="Hero"
+                  runTitle="Hero Run — lifestyle/contextual images"
+                  previewTitle="Preview the Hero Run prompt"
+                  onRun={handleRunHero}
+                  onPreview={() => setPromptPreview({ variantKey, mode: 'hero', label: 'Hero Run' })}
+                />
+              </div>
+              <div className="sf-pif-popover-tail-grid">
+                <RunPreviewCell
+                  label="Loop"
+                  runTitle="Loop: per-view focused calls until carousel complete"
+                  previewTitle="Preview the Loop prompt sequence"
+                  onRun={handleRunLoop}
+                  onPreview={() => setPromptPreview(createPifLoopPromptPreviewState(variantKey))}
+                  disabled={isRunning}
+                />
+                <button
+                  type="button"
+                  className="sf-frp-btn-secondary"
+                  onClick={handleEval}
+                  disabled={!hasEvalTargets || isRunning}
+                  title="Carousel Builder: vision LLM picks winners"
+                >
+                  Evaluate
+                </button>
+              </div>
+              <button
+                type="button"
+                className="sf-frp-btn-history"
+                onClick={handleOpenHistory}
+                disabled={!variantId}
+                title={!variantId ? 'No variant_id — open the panel-level history.' : `Open Discovery History filtered to "${label}".`}
+              >
+                Hist
+                <span className="ml-1 font-mono text-[11px]">
+                  (<span className="font-bold">{histCounts?.queries ?? 0}</span>
+                  <span className="font-normal opacity-70">qu</span>)
+                  (<span className="font-bold">{histCounts?.urls ?? 0}</span>
+                  <span className="font-normal opacity-70">url</span>)
+                </span>
               </button>
             </div>
           }
@@ -258,9 +374,19 @@ export function PifVariantPopover({
       {carouselOpen && slides.length === 0 && (
         <CarouselEmptyOverlay onClose={() => setCarouselOpen(false)} label={label} />
       )}
+
+      <PromptPreviewModal
+        open={Boolean(promptPreview)}
+        onClose={() => setPromptPreview(null)}
+        query={promptPreviewQuery}
+        title={`PIF — ${promptPreview?.label ?? ''}`}
+        subtitle={`variant: ${promptPreview?.variantKey ?? variantKey}`}
+        storageKeyPrefix={`overview:pif:preview:${productId}:${variantKey}:${promptPreview?.mode ?? ''}:${promptPreview?.view ?? ''}`}
+      />
     </span>
   );
 }
+
 
 /** Lightweight overlay shown when the carousel button is clicked but the
  *  variant has no resolved slots yet. Matches the carousel popup's z-index

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import { strictEqual, ok } from 'node:assert';
-import { hasKnownValue, UNKNOWN_VALUE_TOKENS } from '../valueNormalizers.js';
+import { hasKnownValue, isUnknownSentinel, UNKNOWN_VALUE_TOKENS } from '../valueNormalizers.js';
 
 const KNOWN_CASES = [
   ['hello', 'normal string'],
@@ -19,6 +19,8 @@ const UNKNOWN_CASES = [
   ['unknown', 'full word'],
   ['Unknown', 'mixed-case unknown'],
   ['UNKNOWN', 'upper-case unknown'],
+  ['unk', 'short unknown sentinel'],
+  ['UNK', 'upper short unknown sentinel'],
   ['n/a', 'slash form'],
   ['N/A', 'upper slash form'],
   ['na', 'no-slash form'],
@@ -36,7 +38,7 @@ const UNKNOWN_CASES = [
   [undefined, 'JS undefined'],
 ];
 
-const REQUIRED_UNKNOWN_VALUE_TOKENS = ['', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined', '-'];
+const REQUIRED_UNKNOWN_VALUE_TOKENS = ['', 'unk', 'unknown', 'n/a', 'na', 'none', 'null', 'undefined', '-'];
 
 describe('hasKnownValue', () => {
   for (const [input, label] of KNOWN_CASES) {
@@ -61,5 +63,20 @@ describe('UNKNOWN_VALUE_TOKENS', () => {
 
   it('is a Set', () => {
     ok(UNKNOWN_VALUE_TOKENS instanceof Set);
+  });
+});
+
+describe('isUnknownSentinel', () => {
+  it('matches unk case-insensitively with trimming', () => {
+    strictEqual(isUnknownSentinel('unk'), true);
+    strictEqual(isUnknownSentinel('UNK'), true);
+    strictEqual(isUnknownSentinel('  UnK  '), true);
+  });
+
+  it('does not treat broader absence tokens as the LLM unk sentinel', () => {
+    strictEqual(isUnknownSentinel('unknown'), false);
+    strictEqual(isUnknownSentinel('none'), false);
+    strictEqual(isUnknownSentinel(''), false);
+    strictEqual(isUnknownSentinel(null), false);
   });
 });

@@ -62,6 +62,46 @@ test('CEF delete-all-runs invalidates review grid', () => {
   assert.equal(hasQueryKey(keys, ['product', 'mouse']), true);
 });
 
+test('PIF lifecycle events invalidate overview catalog so rings refresh live', () => {
+  const events = [
+    'product-image-finder-run',
+    'product-image-finder-loop',
+    'product-image-finder-run-deleted',
+    'product-image-finder-deleted',
+    'product-image-finder-image-processed',
+    'product-image-finder-image-deleted',
+    'product-image-finder-batch-processed',
+    'product-image-finder-evaluate',
+  ];
+
+  for (const event of events) {
+    const keys = resolveDataChangeInvalidationQueryKeys({
+      message: { type: 'data-change', event },
+      categories: ['mouse'],
+    });
+
+    assert.equal(
+      hasQueryKey(keys, ['catalog', 'mouse']),
+      true,
+      `${event} should invalidate the Overview catalog query`,
+    );
+    assert.equal(
+      hasQueryKey(keys, ['product-image-finder', 'mouse']),
+      true,
+      `${event} should still invalidate the PIF detail query`,
+    );
+  }
+});
+
+test('finder discovery-history scrub events invalidate the owning finder query', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: { type: 'data-change', event: 'release-date-finder-discovery-history-scrubbed' },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['release-date-finder', 'mouse']), true);
+});
+
 test('component impact regression: component events invalidate componentImpact', () => {
   const keys = resolveDataChangeInvalidationQueryKeys({
     message: {

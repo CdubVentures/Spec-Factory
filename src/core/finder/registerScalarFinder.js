@@ -19,6 +19,13 @@
  */
 
 import { createVariantScalarFieldProducer } from './variantScalarFieldProducer.js';
+import { isUnknownSentinel } from '../../shared/valueNormalizers.js';
+
+function isUnknownCandidateValue(value) {
+  if (value == null) return true;
+  if (isUnknownSentinel(value)) return true;
+  return String(value).trim() === '';
+}
 
 /**
  * Default extractCandidate — byte-identical to RDF's inline logic.
@@ -34,7 +41,7 @@ export function _defaultExtractCandidate(valueKey) {
     // fragment anchors it to a tier-based rubric at prompt time. Schema clamps 0-100.
     const confidence = Number.isFinite(llmResult?.confidence) ? llmResult.confidence : 0;
     const unknownReason = String(llmResult?.unknown_reason || '').trim();
-    const isUnknown = rawValue === '' || rawValue.toLowerCase() === 'unk';
+    const isUnknown = rawValue === '' || isUnknownSentinel(rawValue);
     return {
       value: rawValue,
       confidence,
@@ -57,7 +64,7 @@ export function _defaultExtractCandidate(valueKey) {
  */
 export function _defaultSatisfactionPredicate(result) {
   if (!result) return false;
-  if (result.candidate?.unknown_reason && result.candidate?.value === '') return true;
+  if (result.candidate?.unknown_reason && isUnknownCandidateValue(result.candidate?.value)) return true;
   if (result.publishStatus === 'published') return true;
   return false;
 }

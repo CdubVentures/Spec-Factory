@@ -14,6 +14,8 @@ import {
   groupEvalsByVariant,
   derivePifKpiCards,
   removeImageFromResult,
+  buildExpandAllRunHistoryMaps,
+  isAllRunHistoryExpanded,
 } from '../pifSelectors.ts';
 import type {
   ProductImageEntry,
@@ -522,6 +524,74 @@ describe('groupRunsByLoop', () => {
     assert.equal(groups[0].type, 'single');
     assert.equal(groups[1].type, 'loop');
     assert.equal(groups[2].type, 'single');
+  });
+});
+
+/* ── buildExpandAllRunHistoryMaps + isAllRunHistoryExpanded ───────── */
+
+describe('buildExpandAllRunHistoryMaps', () => {
+  it('returns empty maps for empty groups', () => {
+    const maps = buildExpandAllRunHistoryMaps([]);
+    assert.deepEqual(maps.loops, {});
+    assert.deepEqual(maps.runs, {});
+  });
+
+  it('marks every loop_id true and every run_number true for mixed groups', () => {
+    const groups = groupRunsByLoop([
+      makeRun({ run_number: 1 }),
+      makeRun({ run_number: 2, loop_id: 'L1' }),
+      makeRun({ run_number: 3, loop_id: 'L1' }),
+      makeRun({ run_number: 4 }),
+    ]);
+    const maps = buildExpandAllRunHistoryMaps(groups);
+    assert.deepEqual(maps.loops, { L1: true });
+    assert.deepEqual(maps.runs, { '1': true, '2': true, '3': true, '4': true });
+  });
+
+  it('uses positional fallback key for loop groups missing loopId', () => {
+    const groups = groupRunsByLoop([
+      makeRun({ run_number: 1, loop_id: '' as unknown as string }),
+    ]);
+    const maps = buildExpandAllRunHistoryMaps(groups);
+    assert.deepEqual(maps.runs, { '1': true });
+  });
+});
+
+describe('isAllRunHistoryExpanded', () => {
+  const groups = groupRunsByLoop([
+    makeRun({ run_number: 1 }),
+    makeRun({ run_number: 2, loop_id: 'L1' }),
+    makeRun({ run_number: 3, loop_id: 'L1' }),
+  ]);
+
+  it('returns false when there are no groups', () => {
+    assert.equal(isAllRunHistoryExpanded([], {}, {}), false);
+  });
+
+  it('returns false when no rows are expanded', () => {
+    assert.equal(isAllRunHistoryExpanded(groups, {}, {}), false);
+  });
+
+  it('returns false when only loop is expanded but rows are not', () => {
+    assert.equal(isAllRunHistoryExpanded(groups, { L1: true }, {}), false);
+  });
+
+  it('returns false when one row is missing', () => {
+    assert.equal(
+      isAllRunHistoryExpanded(groups, { L1: true }, { '1': true, '2': true }),
+      false,
+    );
+  });
+
+  it('returns true when every loop and every row is expanded', () => {
+    assert.equal(
+      isAllRunHistoryExpanded(
+        groups,
+        { L1: true },
+        { '1': true, '2': true, '3': true },
+      ),
+      true,
+    );
   });
 });
 

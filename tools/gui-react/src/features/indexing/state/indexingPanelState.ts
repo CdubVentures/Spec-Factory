@@ -1,9 +1,13 @@
-import { DEFAULT_PANEL_COLLAPSED, PANEL_KEYS, type PanelKey } from '../types.ts';
+import {
+  getIndexingPanelCollapsedDefault,
+  INDEXING_TOP_PANEL_COLLAPSE_IDS,
+  type IndexingTopPanelCollapseId,
+} from '../../../shared/ui/finder/indexingPanelCollapseDefaults.ts';
 
 export function deriveIndexingPanelCollapsed(collapseValues: Record<string, boolean>) {
-  const result = {} as Record<PanelKey, boolean>;
-  for (const key of PANEL_KEYS) {
-    result[key] = collapseValues[`indexing:panel:${key}`] ?? DEFAULT_PANEL_COLLAPSED[key];
+  const result = {} as Record<IndexingTopPanelCollapseId, boolean>;
+  for (const key of INDEXING_TOP_PANEL_COLLAPSE_IDS) {
+    result[key] = collapseValues[`indexing:panel:${key}`] ?? getIndexingPanelCollapsedDefault(key);
   }
   return result;
 }

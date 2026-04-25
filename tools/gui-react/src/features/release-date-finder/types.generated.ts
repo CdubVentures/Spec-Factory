@@ -47,7 +47,7 @@ export interface ReleaseDateFinderCandidate {
   variant_key: string;
   variant_label: string;
   variant_type: string;
-  value: string;
+  value: string | null;
   confidence: number;
   unknown_reason: string;
   sources: EvidenceRef[];
@@ -77,7 +77,7 @@ export interface ReleaseDateFinderRun {
     user: string;
   };
   response: {
-    release_date: string;
+    release_date: string | null;
     confidence: number;
     unknown_reason: string;
     evidence_refs: EvidenceRef[];

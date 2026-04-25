@@ -130,7 +130,11 @@ test('Overview RDF cells route release dates through the user date formatter', a
       './ScoreCardCell.tsx': componentStub('ScoreCardCell'),
       './OverviewFilterBar.tsx': componentStub('OverviewFilterBar'),
       './CommandConsole.tsx': componentStub('CommandConsole'),
-      './SelectionStrip.tsx': componentStub('SelectionStrip'),
+      './ActiveAndSelectedRow.tsx': componentStub('ActiveAndSelectedRow'),
+      './OverviewLastRunCell.tsx': `
+        export function OverviewLastRunCell(props) { return { type: 'OverviewLastRunCell', props: props || {} }; }
+        export function OverviewLastRunHeaderToggle(props) { return { type: 'OverviewLastRunHeaderToggle', props: props || {} }; }
+      `,
       './overviewSelectionStore.ts': `
         export function useOverviewSelectionStore(selector) {
           return selector({ byCategory: {}, addMany: () => {}, toggle: () => {} });

@@ -10,7 +10,7 @@ import type { FinderVariantRowData } from '../variantRowHelpers.ts';
 interface FixtureCandidate {
   readonly variant_id: string | null;
   readonly variant_key: string;
-  readonly value: string;
+  readonly value: string | null;
   readonly publisher_candidates?: readonly { readonly status: string }[];
 }
 
@@ -61,7 +61,7 @@ describe('deriveFinderKpiCards', () => {
     const result: FixtureResult = {
       candidates: [
         { variant_id: 'v_001', variant_key: 'color:black', value: '2025-01-15' },
-        { variant_id: 'v_002', variant_key: 'color:white', value: '' },
+        { variant_id: 'v_002', variant_key: 'color:white', value: null },
         { variant_id: 'v_003', variant_key: 'edition:le-2025', value: '2025-06-01' },
       ],
     };

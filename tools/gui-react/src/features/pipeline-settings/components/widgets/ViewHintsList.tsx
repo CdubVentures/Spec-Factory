@@ -34,7 +34,13 @@ export function ViewHintsList({ entry, value, isSaving, onSave }: FinderSettingW
   const activeCount = selectedSet.size;
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
+      {entry.uiLabel && (
+        <div className="space-y-0.5">
+          <span className="sf-text-label sf-text-primary">{entry.uiLabel}</span>
+          {entry.uiTip && <p className="sf-text-caption sf-text-muted">{entry.uiTip}</p>}
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <span className="text-[11px] font-semibold sf-text-primary">
           {activeCount === 0 ? 'No hints — ADDITIONAL section omitted from prompt' : `${activeCount} hint${activeCount === 1 ? '' : 's'}`}

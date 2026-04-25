@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import { createFinderJsonStore } from '../../core/finder/finderJsonStore.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
+import { isUnknownSentinel } from '../../shared/valueNormalizers.js';
 
 export const keyFinderStore = createFinderJsonStore({
   filePrefix: 'key_finder',
@@ -21,6 +22,32 @@ export const mergeKeyFinderDiscovery = keyFinderStore.merge;
 export const deleteKeyFinderRun = keyFinderStore.deleteRun;
 export const deleteKeyFinderRuns = keyFinderStore.deleteRuns;
 export const deleteKeyFinderAll = keyFinderStore.deleteAll;
+
+function normalizeUnknownPerKeyForStorage(perKey) {
+  if (!perKey || typeof perKey !== 'object') return perKey;
+  if (!isUnknownSentinel(perKey.value)) return perKey;
+  return { ...perKey, value: null };
+}
+
+function normalizeUnknownKeyMapForStorage(keyMap) {
+  if (!keyMap || typeof keyMap !== 'object') return keyMap;
+  return Object.fromEntries(
+    Object.entries(keyMap).map(([fieldKey, perKey]) => [fieldKey, normalizeUnknownPerKeyForStorage(perKey)]),
+  );
+}
+
+function normalizeUnknownRunForStorage(run) {
+  if (!run || typeof run !== 'object') return run;
+  return {
+    ...run,
+    selected: run.selected && typeof run.selected === 'object'
+      ? { ...run.selected, keys: normalizeUnknownKeyMapForStorage(run.selected.keys) }
+      : run.selected,
+    response: run.response && typeof run.response === 'object'
+      ? { ...run.response, results: normalizeUnknownKeyMapForStorage(run.response.results) }
+      : run.response,
+  };
+}
 
 /**
  * Clear the currently-selected value for a single key. Mirrors
@@ -164,7 +191,8 @@ export function rebuildKeyFinderFromJson({ specDb, productRoot }) {
       run_count: data.run_count || runs.length,
     });
 
-    for (const run of runs) {
+    for (const rawRun of runs) {
+      const run = normalizeUnknownRunForStorage(rawRun);
       store.insertRun({
         category: data.category,
         product_id: productId,

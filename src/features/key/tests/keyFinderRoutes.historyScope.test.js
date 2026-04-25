@@ -13,7 +13,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { registerKeyFinderRoutes } from '../api/keyFinderRoutes.js';
-import { mergeKeyFinderDiscovery } from '../keyStore.js';
+import { mergeKeyFinderDiscovery, readKeyFinder } from '../keyStore.js';
 import { initOperationsRegistry } from '../../../core/operations/index.js';
 
 const COMPILED_RULES = {
@@ -27,7 +27,8 @@ const COMPILED_RULES = {
 
 function makeCtx({ specDb, productRoot } = {}) {
   const responses = [];
-  const broadcastWs = () => {};
+  const broadcasts = [];
+  const broadcastWs = (channel, data) => { broadcasts.push({ channel, data }); };
   const ctx = {
     jsonRes: (res, status, body) => { responses.push({ status, body }); return body; },
     readJsonBody: async () => ({}),
@@ -38,15 +39,16 @@ function makeCtx({ specDb, productRoot } = {}) {
     logger: { error: () => {}, info: () => {}, warn: () => {} },
   };
   initOperationsRegistry({ broadcastWs });
-  return { ctx, responses };
+  return { ctx, responses, broadcasts };
 }
 
-function makeSpecDbStub({ hasRules = true } = {}) {
+function makeSpecDbStub({ hasRules = true, finderStore = null } = {}) {
   return {
     category: 'mouse',
     getFieldCandidatesByProductAndField: () => [],
     getProduct: () => null,
     getCompiledRules: () => (hasRules ? COMPILED_RULES : null),
+    getFinderStore: () => finderStore,
   };
 }
 
@@ -139,13 +141,13 @@ describe('GET /key-finder/:category/:productId with scope param', () => {
     assert.equal(responses[0].body.runs.length, 2);
   });
 
-  it('normalizes legacy run-history "unk" values to null before response', async (t) => {
+  it('normalizes legacy run-history unk sentinels to null before response', async (t) => {
     t.after(cleanupTmp);
     const pid = 'legacy-unk-prod';
     fs.mkdirSync(path.join(PRODUCT_ROOT, pid), { recursive: true });
 
     seedRun(PRODUCT_ROOT, pid, 'sensor_model', 1, {
-      value: 'unk',
+      value: 'UNK',
       confidence: 0,
       unknown_reason: 'not disclosed',
       evidence_refs: [],
@@ -202,5 +204,80 @@ describe('GET /key-finder/:category/:productId with scope param', () => {
     assert.equal(responses[0].status, 200);
     assert.equal(responses[0].body.runs.length, 1);
     assert.equal(responses[0].body.runs[0].response.primary_field_key, 'polling_rate');
+  });
+
+  it('POST discovery-history/scrub clears primary key history without clearing passenger-only shared sessions', async (t) => {
+    t.after(cleanupTmp);
+    const pid = 'key-scrub-prod';
+    fs.mkdirSync(path.join(PRODUCT_ROOT, pid), { recursive: true });
+
+    mergeKeyFinderDiscovery({
+      productId: pid,
+      productRoot: PRODUCT_ROOT,
+      newDiscovery: { category: 'mouse', last_ran_at: '2024-03-15T10:01:00Z' },
+      run: {
+        model: 'gpt-5.4-mini',
+        selected: { keys: { polling_rate: { value: '8000Hz' }, sensor_model: { value: 'Focus Pro' } } },
+        prompt: { system: 's', user: 'u' },
+        response: {
+          primary_field_key: 'polling_rate',
+          results: { polling_rate: { value: '8000Hz' }, sensor_model: { value: 'Focus Pro' } },
+          discovery_log: {
+            urls_checked: ['https://primary.example'],
+            queries_run: ['polling rate query'],
+            notes: ['keep primary note'],
+          },
+        },
+      },
+    });
+    mergeKeyFinderDiscovery({
+      productId: pid,
+      productRoot: PRODUCT_ROOT,
+      newDiscovery: { category: 'mouse', last_ran_at: '2024-03-15T10:02:00Z' },
+      run: {
+        model: 'gpt-5.4-mini',
+        selected: { keys: { sensor_model: { value: 'Focus Pro' }, polling_rate: { value: '8000Hz' } } },
+        prompt: { system: 's2', user: 'u2' },
+        response: {
+          primary_field_key: 'sensor_model',
+          results: { sensor_model: { value: 'Focus Pro' }, polling_rate: { value: '8000Hz' } },
+          discovery_log: {
+            urls_checked: ['https://passenger.example'],
+            queries_run: ['sensor model query'],
+            notes: ['keep passenger note'],
+          },
+        },
+      },
+    });
+
+    const sqlUpdates = [];
+    const specDb = makeSpecDbStub({
+      finderStore: {
+        updateRunJson: (productId, runNumber, payload) => sqlUpdates.push({ productId, runNumber, payload }),
+      },
+    });
+    const { ctx, responses, broadcasts } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    ctx.readJsonBody = async () => ({ kind: 'all', scope: 'field_key', fieldKey: 'polling_rate' });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', pid, 'discovery-history', 'scrub'], null, 'POST', {}, {});
+
+    assert.equal(responses[0].status, 200);
+    assert.equal(responses[0].body.runsTouched, 1);
+    assert.deepEqual(responses[0].body.affectedRunNumbers, [1]);
+    assert.deepEqual(sqlUpdates.map((u) => u.runNumber), [1]);
+
+    const doc = readKeyFinder({ productId: pid, productRoot: PRODUCT_ROOT });
+    assert.deepEqual(doc.selected.keys.polling_rate, { value: '8000Hz' });
+    assert.deepEqual(doc.runs[0].response.discovery_log.urls_checked, []);
+    assert.deepEqual(doc.runs[0].response.discovery_log.queries_run, []);
+    assert.deepEqual(doc.runs[0].response.discovery_log.notes, ['keep primary note']);
+    assert.deepEqual(doc.runs[1].response.discovery_log.urls_checked, ['https://passenger.example']);
+    assert.deepEqual(doc.runs[1].response.discovery_log.queries_run, ['sensor model query']);
+
+    const events = broadcasts
+      .filter((m) => m.channel === 'data-change')
+      .map((m) => m.data.event);
+    assert.ok(events.includes('key-finder-discovery-history-scrubbed'));
   });
 });

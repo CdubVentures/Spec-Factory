@@ -12,7 +12,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import { FINDER_PANELS } from '../../../features/indexing/state/finderPanelRegistry.generated.ts';
 import { useFinderDiscoveryHistoryStore } from '../../../stores/finderDiscoveryHistoryStore.ts';
@@ -24,12 +24,25 @@ import {
   type ScopeLevel,
   type FinderRun,
 } from './discoveryHistoryHelpers.ts';
+import {
+  buildDiscoveryHistoryScrubRequest,
+  type DiscoveryHistoryScrubKind,
+  type DiscoveryHistoryScrubRequest,
+} from './discoveryHistoryScrubPayload.ts';
 import { FinderKpiCard } from './FinderKpiCard.tsx';
 import { FinderSectionCard } from './FinderSectionCard.tsx';
 import type { KpiCard } from './types.ts';
 
 interface GenericFinderResponse {
   runs?: FinderRun[];
+}
+
+interface DiscoveryHistoryScrubResponse {
+  ok: boolean;
+  runsTouched: number;
+  urlsRemoved: number;
+  queriesRemoved: number;
+  affectedRunNumbers: number[];
 }
 
 type KindFilter = 'all' | 'url' | 'query';
@@ -88,6 +101,7 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
   const scopeLevel = resolveScopeLevel(finderId);
   const routePrefix = resolveRoutePrefix(finderId);
   const finderLabel = resolveFinderLabel(finderId);
+  const queryClient = useQueryClient();
   // WHY: Optional allow-list of field_keys. keyFinder's group-history button
   // sets this to the current group's keys so the drawer shows one group's
   // worth of buckets instead of all of them. Panel keeps this live by calling
@@ -112,6 +126,17 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
       `/${routePrefix}/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
     ),
     enabled: open && Boolean(routePrefix),
+  });
+
+  const scrubMutation = useMutation<DiscoveryHistoryScrubResponse, Error, DiscoveryHistoryScrubRequest>({
+    mutationFn: (body) => api.post<DiscoveryHistoryScrubResponse>(
+      `/${routePrefix}/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/discovery-history/scrub`,
+      body,
+    ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [routePrefix, category, productId] });
+      queryClient.invalidateQueries({ queryKey: ['finder-runs-for-history', finderId, category, productId] });
+    },
   });
 
   const { data: cefData } = useColorEditionFinderQuery(category, productId);
@@ -262,6 +287,21 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
   }, [scopeLevel, filtered, grouped, runsUsed]);
 
   const hasAnyData = filtered.totalUrls + filtered.totalQueries > 0;
+  const allowProductActions = !(scopeLevel === 'field_key' && fieldKeyFilter && fieldKeyFilter.length > 0);
+  const handleScrub = (input: {
+    kind: DiscoveryHistoryScrubKind;
+    variantId?: string;
+    variantKey?: string;
+    mode?: string;
+    fieldKey?: string;
+  }) => {
+    const request = buildDiscoveryHistoryScrubRequest({ scopeLevel, ...input });
+    const confirmed = typeof window === 'undefined'
+      ? true
+      : window.confirm('Clear matching discovery history entries? Runs and evidence stay intact.');
+    if (!confirmed) return;
+    scrubMutation.mutate(request);
+  };
 
   return (
     <div
@@ -300,6 +340,26 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
         labelByVariantId={labelByVariantId}
       />
 
+      {hasAnyData && allowProductActions && (
+        <div className="px-5 py-2.5 border-b sf-border-soft shrink-0 flex items-center justify-between gap-3 text-left">
+          <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted">
+            Product
+          </div>
+          <ScrubButtons
+            urlsCount={filtered.totalUrls}
+            queriesCount={filtered.totalQueries}
+            disabled={scrubMutation.isPending}
+            onScrub={(scrubKind) => handleScrub({ kind: scrubKind })}
+          />
+        </div>
+      )}
+
+      {scrubMutation.isError && (
+        <div className="px-5 py-2 border-b sf-border-soft text-[11px] sf-status-text-danger">
+          Failed to clear discovery history.
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto overflow-x-hidden px-5 py-4 space-y-2.5 text-left">
         {runsQuery.isLoading && (
           <div className="text-[11px] sf-text-muted">Loading…</div>
@@ -322,6 +382,8 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
             urls={filtered.productUrls}
             queries={filtered.productQueries}
             kind={kind}
+            isScrubbing={scrubMutation.isPending}
+            onScrub={(scrubKind) => handleScrub({ kind: scrubKind })}
           />
         )}
 
@@ -332,6 +394,8 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
             groups={filtered.byVariant}
             labelByVariantId={labelByVariantId}
             kind={kind}
+            isScrubbing={scrubMutation.isPending}
+            onScrub={(scrubKind, variantId) => handleScrub({ kind: scrubKind, variantId })}
           />
         )}
 
@@ -342,6 +406,9 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
             groups={filtered.byVariantMode}
             labelByVariantId={labelByVariantId}
             kind={kind}
+            isScrubbing={scrubMutation.isPending}
+            onScrub={(scrubKind, variantId, mode) => handleScrub({ kind: scrubKind, variantId, mode })}
+            onScrubVariant={(scrubKind, variantId) => handleScrub({ kind: scrubKind, variantId })}
           />
         )}
 
@@ -351,6 +418,8 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
             productId={productId}
             groups={filtered.byFieldKey}
             kind={kind}
+            isScrubbing={scrubMutation.isPending}
+            onScrub={(scrubKind, fieldKey) => handleScrub({ kind: scrubKind, fieldKey })}
           />
         )}
       </div>
@@ -507,15 +576,67 @@ function KindToggle({ kind, onChange }: { kind: KindFilter; onChange: (v: KindFi
   );
 }
 
+interface ScrubButtonsProps {
+  urlsCount: number;
+  queriesCount: number;
+  disabled: boolean;
+  onScrub: (kind: DiscoveryHistoryScrubKind) => void;
+}
+
+function ScrubButtons({ urlsCount, queriesCount, disabled, onScrub }: ScrubButtonsProps) {
+  const hasUrls = urlsCount > 0;
+  const hasQueries = queriesCount > 0;
+  if (!hasUrls && !hasQueries) return null;
+  return (
+    <div className="flex items-center gap-1.5 shrink-0">
+      {hasUrls && (
+        <button
+          type="button"
+          onClick={() => onScrub('url')}
+          disabled={disabled}
+          className="h-6 px-2 text-[10px] font-bold rounded sf-danger-button disabled:opacity-50"
+          title="Clear URLs"
+        >
+          Clear URLs
+        </button>
+      )}
+      {hasQueries && (
+        <button
+          type="button"
+          onClick={() => onScrub('query')}
+          disabled={disabled}
+          className="h-6 px-2 text-[10px] font-bold rounded sf-danger-button disabled:opacity-50"
+          title="Clear queries"
+        >
+          Clear Queries
+        </button>
+      )}
+      {hasUrls && hasQueries && (
+        <button
+          type="button"
+          onClick={() => onScrub('all')}
+          disabled={disabled}
+          className="h-6 px-2 text-[10px] font-bold rounded sf-danger-button-solid disabled:opacity-50"
+          title="Clear URLs and queries"
+        >
+          Clear Both
+        </button>
+      )}
+    </div>
+  );
+}
+
 interface FlatBodyProps {
   finderId: string;
   productId: string;
   urls: string[];
   queries: string[];
   kind: KindFilter;
+  isScrubbing: boolean;
+  onScrub: (kind: DiscoveryHistoryScrubKind) => void;
 }
 
-function FlatBody({ finderId, productId, urls, queries, kind }: FlatBodyProps) {
+function FlatBody({ finderId, productId, urls, queries, kind, isScrubbing, onScrub }: FlatBodyProps) {
   return (
     <>
       {kind !== 'query' && urls.length > 0 && (
@@ -523,6 +644,7 @@ function FlatBody({ finderId, productId, urls, queries, kind }: FlatBodyProps) {
           title="URLs"
           count={`${urls.length}`}
           storeKey={`discoveryHistory:${finderId}:${productId}:urls`}
+          trailing={<ScrubButtons urlsCount={urls.length} queriesCount={0} disabled={isScrubbing} onScrub={onScrub} />}
         >
           <ItemList items={urls} kind="url" />
         </FinderSectionCard>
@@ -532,6 +654,7 @@ function FlatBody({ finderId, productId, urls, queries, kind }: FlatBodyProps) {
           title="Queries"
           count={`${queries.length}`}
           storeKey={`discoveryHistory:${finderId}:${productId}:queries`}
+          trailing={<ScrubButtons urlsCount={0} queriesCount={queries.length} disabled={isScrubbing} onScrub={onScrub} />}
         >
           <ItemList items={queries} kind="query" />
         </FinderSectionCard>
@@ -546,10 +669,12 @@ interface VariantBodyProps {
   groups: Map<string, FilteredBucket>;
   labelByVariantId: Map<string, string>;
   kind: KindFilter;
+  isScrubbing: boolean;
+  onScrub: (kind: DiscoveryHistoryScrubKind, variantId: string) => void;
 }
 
 function VariantBody({
-  finderId, productId, groups, labelByVariantId, kind,
+  finderId, productId, groups, labelByVariantId, kind, isScrubbing, onScrub,
 }: VariantBodyProps) {
   return (
     <>
@@ -559,6 +684,14 @@ function VariantBody({
           title={labelByVariantId.get(vid) || vid}
           count={`${bucket.urls.length} url · ${bucket.queries.length} qu`}
           storeKey={`discoveryHistory:${finderId}:${productId}:variant:${vid}`}
+          trailing={(
+            <ScrubButtons
+              urlsCount={bucket.urls.length}
+              queriesCount={bucket.queries.length}
+              disabled={isScrubbing}
+              onScrub={(scrubKind) => onScrub(scrubKind, vid)}
+            />
+          )}
         >
           {kind !== 'query' && bucket.urls.length > 0 && (
             <SubList
@@ -585,10 +718,12 @@ interface FieldKeyBodyProps {
   productId: string;
   groups: Map<string, FilteredBucket>;
   kind: KindFilter;
+  isScrubbing: boolean;
+  onScrub: (kind: DiscoveryHistoryScrubKind, fieldKey: string) => void;
 }
 
 function FieldKeyBody({
-  finderId, productId, groups, kind,
+  finderId, productId, groups, kind, isScrubbing, onScrub,
 }: FieldKeyBodyProps) {
   return (
     <>
@@ -598,6 +733,14 @@ function FieldKeyBody({
           title={fk}
           count={`${bucket.urls.length} url · ${bucket.queries.length} qu`}
           storeKey={`discoveryHistory:${finderId}:${productId}:field:${fk}`}
+          trailing={(
+            <ScrubButtons
+              urlsCount={bucket.urls.length}
+              queriesCount={bucket.queries.length}
+              disabled={isScrubbing}
+              onScrub={(scrubKind) => onScrub(scrubKind, fk)}
+            />
+          )}
         >
           {kind !== 'query' && bucket.urls.length > 0 && (
             <SubList
@@ -625,10 +768,13 @@ interface VariantModeBodyProps {
   groups: Map<string, Map<string, FilteredBucket>>;
   labelByVariantId: Map<string, string>;
   kind: KindFilter;
+  isScrubbing: boolean;
+  onScrub: (kind: DiscoveryHistoryScrubKind, variantId: string, mode: string) => void;
+  onScrubVariant: (kind: DiscoveryHistoryScrubKind, variantId: string) => void;
 }
 
 function VariantModeBody({
-  finderId, productId, groups, labelByVariantId, kind,
+  finderId, productId, groups, labelByVariantId, kind, isScrubbing, onScrub, onScrubVariant,
 }: VariantModeBodyProps) {
   return (
     <>
@@ -641,6 +787,14 @@ function VariantModeBody({
             title={labelByVariantId.get(vid) || vid}
             count={`${urlSum} url · ${querySum} qu · ${modes.size} modes`}
             storeKey={`discoveryHistory:${finderId}:${productId}:variant:${vid}`}
+            trailing={(
+              <ScrubButtons
+                urlsCount={urlSum}
+                queriesCount={querySum}
+                disabled={isScrubbing}
+                onScrub={(scrubKind) => onScrubVariant(scrubKind, vid)}
+              />
+            )}
           >
             <div className="flex flex-col gap-2">
               {[...modes.entries()].map(([m, bucket]) => (
@@ -649,6 +803,14 @@ function VariantModeBody({
                   title={m}
                   count={`${bucket.urls.length} url · ${bucket.queries.length} qu`}
                   storeKey={`discoveryHistory:${finderId}:${productId}:variant:${vid}:mode:${m}`}
+                  trailing={(
+                    <ScrubButtons
+                      urlsCount={bucket.urls.length}
+                      queriesCount={bucket.queries.length}
+                      disabled={isScrubbing}
+                      onScrub={(scrubKind) => onScrub(scrubKind, vid, m)}
+                    />
+                  )}
                 >
                   {kind !== 'query' && bucket.urls.length > 0 && (
                     <SubList

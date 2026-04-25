@@ -75,6 +75,11 @@ export interface CatalogRowGen {
   skuVariants: ScalarVariantProgressGen[];
   rdfVariants: ScalarVariantProgressGen[];
   keyTierProgress: KeyTierProgressGen[];
+  cefLastRunAt: string;
+  pifLastRunAt: string;
+  rdfLastRunAt: string;
+  skuLastRunAt: string;
+  kfLastRunAt: string;
 }
 
 export interface BrandGen {

@@ -470,6 +470,45 @@ test('honest "unk" — submitCandidate NOT called; run still persists', async (t
   assert.equal(result.unknown_reason, 'Manufacturer page does not disclose the sensor IC');
 });
 
+test('honest uppercase "UNK" is treated as unknown before storage and publisher submit', async (t) => {
+  t.after(cleanupTmp);
+  const productId = 'kf-unk-uppercase';
+  const { fsStub, specDb } = setupForProduct(productId);
+  let submitCalled = false;
+  const upperResponse = {
+    ...UNK_RESPONSE,
+    result: {
+      ...UNK_RESPONSE.result,
+      results: {
+        sensor_model: {
+          ...UNK_RESPONSE.result.results.sensor_model,
+          value: 'UNK',
+        },
+      },
+    },
+  };
+
+  const result = await runKeyFinder({
+    product: { ...PRODUCT, product_id: productId },
+    fieldKey: 'sensor_model',
+    category: 'mouse',
+    specDb, appDb: null, config: {},
+    broadcastWs: null,
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async () => upperResponse,
+    _submitCandidateOverride: async () => { submitCalled = true; return { status: 'accepted' }; },
+  });
+
+  assert.equal(submitCalled, false, 'submitCandidate must NOT fire for uppercase "UNK"');
+  assert.equal(result.status, 'unk');
+  const doc = readKeyFinder({ productId, productRoot: PRODUCT_ROOT });
+  assert.equal(doc.runs[0].response.results.sensor_model.value, null);
+  assert.equal(doc.runs[0].selected.keys.sensor_model.value, null);
+  assert.equal(fsStub.runs[0].response.results.sensor_model.value, null);
+  assert.equal(fsStub.runs[0].selected.keys.sensor_model.value, null);
+});
+
 test('run record round-trips — response.primary_field_key echoed; SQL insertRun called with matching payload', async (t) => {
   t.after(cleanupTmp);
   const productId = 'kf-roundtrip';

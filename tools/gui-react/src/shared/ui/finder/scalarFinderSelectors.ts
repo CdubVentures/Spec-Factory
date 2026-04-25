@@ -19,7 +19,7 @@ interface PublisherCandidateLike {
 interface ScalarCandidateLike {
   readonly variant_id?: string | null;
   readonly variant_key?: string;
-  readonly value?: string;
+  readonly value?: string | null;
   readonly publisher_candidates?: readonly PublisherCandidateLike[];
 }
 

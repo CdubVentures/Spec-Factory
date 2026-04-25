@@ -299,6 +299,43 @@ describe('variantScalarFieldProducer — runOnce happy path', () => {
       ['started_at', 'duration_ms', 'variant_id', 'variant_key', 'variant_label', 'some_date', 'confidence', 'unknown_reason', 'evidence_refs', 'discovery_log'],
     );
   });
+
+  it('stores unknown scalar finder diagnostics with null value and no publisher submit', async () => {
+    const injection = makeFakeFeatureInjection({
+      createCallLlm: () => async () => ({
+        result: {
+          some_date: 'unk',
+          confidence: 0,
+          unknown_reason: 'not disclosed',
+          evidence_refs: [],
+          discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+        },
+        usage: null,
+      }),
+      extractCandidate: (llmResult) => ({
+        value: String(llmResult?.some_date ?? ''),
+        confidence: Number.isFinite(llmResult?.confidence) ? llmResult.confidence : 0,
+        unknownReason: String(llmResult?.unknown_reason || ''),
+        evidenceRefs: [],
+        discoveryLog: llmResult?.discovery_log,
+        isUnknown: true,
+      }),
+    });
+    const { runOnce } = createVariantScalarFieldProducer(injection);
+    const specDb = makeSpecDbStub({ variants: [DEFAULT_VARIANTS[0]] });
+
+    const result = await runOnce({
+      product: PRODUCT, appDb: null, specDb, config: {}, productRoot: '/tmp',
+    });
+
+    assert.equal(specDb._submittedCandidates.length, 0);
+    assert.equal(result.candidates[0].value, null);
+    assert.equal(result.candidates[0].unknown_reason, 'not disclosed');
+    const run = injection._memoryStore.runs[0];
+    assert.equal(run.selected.candidates[0].value, null);
+    assert.equal(run.response.some_date, null);
+    assert.equal(run.response.unknown_reason, 'not disclosed');
+  });
 });
 
 describe('variantScalarFieldProducer — early rejects', () => {

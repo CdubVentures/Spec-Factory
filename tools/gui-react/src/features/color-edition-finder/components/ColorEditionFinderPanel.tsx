@@ -19,6 +19,7 @@ import {
   usePagination,
   PagerSizeSelector,
   PagerNavFooter,
+  getIndexingPanelCollapsedDefault,
 } from '../../../shared/ui/finder/index.ts';
 import { RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { usePromptPreviewQuery } from '../../indexing/api/promptPreviewQueries.ts';
@@ -205,7 +206,10 @@ interface ColorEditionFinderPanelProps {
 }
 
 export function ColorEditionFinderPanel({ productId, category }: ColorEditionFinderPanelProps) {
-  const [collapsed, toggleCollapsed] = usePersistedToggle(`indexing:cef:collapsed:${productId}`, true);
+  const [collapsed, toggleCollapsed] = usePersistedToggle(
+    `indexing:cef:collapsed:${productId}`,
+    getIndexingPanelCollapsedDefault('cef'),
+  );
   const { published } = usePublishedFields(category, productId);
 
   const { data: result = null, isLoading, isError } = useColorEditionFinderQuery(category, productId);

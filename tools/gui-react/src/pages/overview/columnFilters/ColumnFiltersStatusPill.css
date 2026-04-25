@@ -1,0 +1,35 @@
+.sf-cfp-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--sf-token-accent, #4263eb) 35%, transparent);
+  font-size: 11px;
+  color: rgb(var(--sf-color-text-primary-rgb));
+}
+
+.sf-cfp-count {
+  font-weight: 700;
+  color: var(--sf-token-accent, #4263eb);
+}
+
+.sf-cfp-label {
+  font-weight: 500;
+}
+
+.sf-cfp-clear {
+  background: transparent;
+  border: none;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--sf-token-accent, #4263eb);
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background 120ms ease;
+}
+.sf-cfp-clear:hover {
+  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 14%, transparent);
+}
