@@ -28,12 +28,12 @@ export const VIEW_PROMPT_ROLES = Object.freeze(['loop', 'priority', 'additional'
 const MOUSE = Object.freeze({
   top:    "Bird's-eye shot looking directly down at the mouse from above — camera directly overhead, showing full shape outline and button layout",
   left:   'Strict side profile from the left at eye level — camera level with the mouse, no tilt, showing the full side silhouette, button profile, and scroll wheel',
-  angle:  'Rear/top 3/4 angle showing the mouse from above and behind at roughly 30–45 degrees — product-only on clean background',
+  angle:  'Rear/top three-quarter mouse product shot: top shell plus one side with rear or palm-rest curvature dominant; not a pure top-down shot and not a front/nose-dominant sangle shot.',
   bottom: 'Underside/belly view showing the base, sensor, mouse feet/skates, and any bottom labels or DPI switch',
-  right:  'Strict side profile from the right at eye level — mirror of the left view, showing right-side buttons and grip texture',
-  front:  'Head-on front view — camera faces the nose of the mouse showing buttons, scroll wheel, and front profile straight on',
+  right:  'True right-side profile mouse product shot: long horizontal side silhouette with the right side wall, grip, or side buttons dominant and only minimal top surface visible; not a top-down or three-quarter shot.',
+  front:  'Nose/front-facing mouse product shot: camera faces the front edge of the mouse, with the front lip, USB/cable exit, scroll wheel/button-front shape, or nose profile visible; not a top-down shell shot.',
   rear:   'Head-on rear view showing the back/rear of the mouse, the palm rest curvature from behind',
-  sangle: 'Front/side 3/4 angle — showing the mouse from the front-left at roughly 30–45 degrees, camera slightly elevated',
+  sangle: 'Front-side three-quarter mouse product shot: side geometry plus the front/nose/USB/cable/front-lip area are visible; low wide showcase angles are acceptable when the front-side geometry is clear.',
 });
 
 const MONITOR = Object.freeze({

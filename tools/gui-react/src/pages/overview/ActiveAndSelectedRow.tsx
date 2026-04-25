@@ -151,10 +151,19 @@ export function ActiveAndSelectedRow({ category, allRows }: ActiveAndSelectedRow
     [allRows, activeIds, selectedSet],
   );
 
-  if (groups.active.length === 0 && groups.selectedIdle.length === 0) return null;
+  // WHY: Always render the row container — even when empty — so the strip's
+  // appearance/disappearance doesn't push the table down/up and shift the
+  // popover triggers. The empty-state class flattens the visuals (no border,
+  // no eyebrow) but keeps the reserved height so layout stays stable.
+  const isEmpty = groups.active.length === 0 && groups.selectedIdle.length === 0;
 
   return (
-    <div className="sf-aas-row" role="region" aria-label="Active and selected products">
+    <div
+      className={`sf-aas-row${isEmpty ? ' sf-aas-empty' : ''}`}
+      role="region"
+      aria-label="Active and selected products"
+      aria-hidden={isEmpty || undefined}
+    >
       {groups.active.length > 0 && (
         <div className="sf-aas-group sf-aas-group-active">
           <div className="sf-aas-eyebrow">

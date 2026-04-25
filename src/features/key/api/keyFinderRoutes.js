@@ -709,8 +709,8 @@ export function registerKeyFinderRoutes(ctx) {
         broadcastWs,
         event: `${ROUTE_PREFIX}-unpublished`,
         category,
-        entities: { productIds: [productId] },
-        meta: { productId, field_key: fieldKey },
+        entities: { productIds: [productId], fieldKeys: [fieldKey] },
+        meta: { productId, field_key: fieldKey, fieldKey },
       });
       return jsonRes(res, 200, { status: 'unpublished', field_key: fieldKey });
     }
@@ -749,8 +749,8 @@ export function registerKeyFinderRoutes(ctx) {
         broadcastWs,
         event: `${ROUTE_PREFIX}-field-deleted`,
         category,
-        entities: { productIds: [productId] },
-        meta: { productId, field_key: fieldKey, deleted_runs: deletedRuns },
+        entities: { productIds: [productId], fieldKeys: [fieldKey] },
+        meta: { productId, field_key: fieldKey, fieldKey, deleted_runs: deletedRuns },
       });
       return jsonRes(res, 200, { status: 'deleted', field_key: fieldKey, deleted_runs: deletedRuns });
     }
@@ -832,8 +832,8 @@ export function registerKeyFinderRoutes(ctx) {
           emitArgs: {
             event: eventName,
             category,
-            entities: { productIds: [productId] },
-            meta: { productId, field_key: fieldKey },
+            entities: { productIds: [productId], fieldKeys: [fieldKey] },
+            meta: { productId, field_key: fieldKey, fieldKey },
           },
           asyncWork: () => {
             const product = buildOrchestratorProduct({ productId, category, productRow });
@@ -856,8 +856,8 @@ export function registerKeyFinderRoutes(ctx) {
                   broadcastWs,
                   event: `${ROUTE_PREFIX}-run`,
                   category,
-                  entities: { productIds: [productId] },
-                  meta: { productId, field_key: fieldKey, passenger_field_keys: passengerFieldKeys, phase: 'registered' },
+                  entities: { productIds: [productId], fieldKeys: [fieldKey, ...passengerFieldKeys] },
+                  meta: { productId, field_key: fieldKey, fieldKey, passenger_field_keys: passengerFieldKeys, fieldKeys: [fieldKey, ...passengerFieldKeys], phase: 'registered' },
                 });
               },
             });
@@ -904,8 +904,8 @@ export function registerKeyFinderRoutes(ctx) {
         broadcastWs,
         event: `${ROUTE_PREFIX}-run-deleted`,
         category,
-        entities: { productIds: [productId] },
-        meta: { productId, deletedRun: runNumber, field_keys: affectedKeys },
+        entities: { productIds: [productId], fieldKeys: affectedKeys },
+        meta: { productId, deletedRun: runNumber, field_keys: affectedKeys, fieldKeys: affectedKeys },
       });
       return jsonRes(res, 200, { status: 'deleted', run_number: runNumber });
     }
@@ -935,8 +935,8 @@ export function registerKeyFinderRoutes(ctx) {
         broadcastWs,
         event: `${ROUTE_PREFIX}-deleted`,
         category,
-        entities: { productIds: [productId] },
-        meta: { productId, field_keys: [...affectedKeys] },
+        entities: { productIds: [productId], fieldKeys: [...affectedKeys] },
+        meta: { productId, field_keys: [...affectedKeys], fieldKeys: [...affectedKeys] },
       });
       return jsonRes(res, 200, { status: 'deleted_all' });
     }

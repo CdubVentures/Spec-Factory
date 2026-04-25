@@ -2,6 +2,7 @@ import type { ScalarVariantProgressGen } from '../../types/product.generated.ts'
 import type { LlmOverridePhaseId } from '../../features/llm-config/types/llmPhaseOverrideTypes.generated.ts';
 import { useRunningVariantKeysAny } from '../../features/operations/hooks/useFinderOperations.ts';
 import { ScalarVariantPopover } from './ScalarVariantPopover.tsx';
+import type { IndexLabLinkTabId } from './IndexLabLink.tsx';
 import './PifVariantRings.css';
 
 export interface ScalarVariantsCellProps {
@@ -31,6 +32,12 @@ export interface ScalarVariantsCellProps {
   readonly formatLabel?: (value: string) => string;
   /** Optional full value formatter for popovers and tooltips. */
   readonly formatValue?: (value: string) => string;
+  /** Tab id used by the IndexLabLink under the diamond — 'skuFinder' or 'releaseDateFinder'. */
+  readonly linkTabId: IndexLabLinkTabId;
+  /** Brand for the IndexLab picker. */
+  readonly brand: string;
+  /** base_model for the IndexLab picker. */
+  readonly baseModel: string;
 }
 
 /**
@@ -40,7 +47,7 @@ export interface ScalarVariantsCellProps {
 export function ScalarVariantsCell({
   productId, category, variants, hexMap,
   moduleType, finderId, historyFinderId, historyRoutePrefix, phaseId, title, labelPrefix, runUrl,
-  valueLabel, formatLabel, formatValue,
+  valueLabel, formatLabel, formatValue, linkTabId, brand, baseModel,
 }: ScalarVariantsCellProps) {
   // Subscribe once per product — each variant reads its own pulse bool from the shared set.
   const runningKeys = useRunningVariantKeysAny(moduleType, productId);
@@ -68,6 +75,9 @@ export function ScalarVariantsCell({
           formatLabel={formatLabel}
           formatValue={formatValue}
           pulsing={runningKeys.has(v.variant_key)}
+          linkTabId={linkTabId}
+          brand={brand}
+          baseModel={baseModel}
         />
       ))}
     </span>

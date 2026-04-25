@@ -123,11 +123,17 @@ describe('buildViewEvalPrompt', () => {
     assert.ok(result.includes('color'));
   });
 
-  it('promptOverride replaces default criteria', () => {
-    const result = buildViewEvalPrompt({ ...defaults, promptOverride: 'CUSTOM EVAL RULES HERE' });
-    assert.ok(result.includes('CUSTOM EVAL RULES HERE'));
-    // Default criteria section header should be absent when override is provided
-    assert.ok(!result.includes('Evaluation criteria'));
+  it('treats promptOverride as a full view-eval prompt template override', () => {
+    const result = buildViewEvalPrompt({
+      ...defaults,
+      promptOverride: 'CUSTOM VIEW EVAL {{IDENTITY}}\n{{VIEW_LINE}}\n{{COUNT_LINE}}\n{{CRITERIA}}',
+    });
+    assert.ok(result.startsWith('CUSTOM VIEW EVAL Product: Razer DeathAdder V3'));
+    assert.ok(result.includes('View: "top"'));
+    assert.ok(result.includes('You are evaluating 3 candidate images'));
+    assert.ok(result.includes('Evaluation criteria'));
+    assert.ok(!result.includes('{{IDENTITY}}'));
+    assert.ok(!result.includes('Images are labeled Image 1'));
   });
 
   it('evalCriteria replaces default criteria when no promptOverride', () => {
@@ -135,14 +141,14 @@ describe('buildViewEvalPrompt', () => {
     assert.ok(result.includes('CATEGORY SPECIFIC CRITERIA'));
   });
 
-  it('promptOverride beats evalCriteria', () => {
+  it('promptOverride template can still include evalCriteria through CRITERIA', () => {
     const result = buildViewEvalPrompt({
       ...defaults,
-      promptOverride: 'OVERRIDE WINS',
-      evalCriteria: 'CATEGORY CRITERIA LOSES',
+      promptOverride: 'OVERRIDE TEMPLATE\n{{CRITERIA}}',
+      evalCriteria: 'CATEGORY CRITERIA WINS',
     });
-    assert.ok(result.includes('OVERRIDE WINS'));
-    assert.ok(!result.includes('CATEGORY CRITERIA LOSES'));
+    assert.ok(result.includes('OVERRIDE TEMPLATE'));
+    assert.ok(result.includes('CATEGORY CRITERIA WINS'));
   });
 
   it('falls back to default criteria when neither override nor evalCriteria', () => {
@@ -197,9 +203,17 @@ describe('buildHeroSelectionPrompt', () => {
     assert.ok(result.includes('3'));
   });
 
-  it('promptOverride replaces default criteria', () => {
-    const result = buildHeroSelectionPrompt({ ...defaults, promptOverride: 'MY HERO RULES' });
-    assert.ok(result.includes('MY HERO RULES'));
+  it('treats promptOverride as a full hero-eval prompt template override', () => {
+    const result = buildHeroSelectionPrompt({
+      ...defaults,
+      promptOverride: 'CUSTOM HERO EVAL {{IDENTITY}}\n{{COUNT_LINE}}\n{{CRITERIA}}\n{{HERO_COUNT}}',
+    });
+    assert.ok(result.startsWith('CUSTOM HERO EVAL Product: Razer DeathAdder V3'));
+    assert.ok(result.includes('You are evaluating 3 hero/marketing image candidates'));
+    assert.ok(result.includes('Hero image evaluation criteria'));
+    assert.ok(result.includes('3'));
+    assert.ok(!result.includes('{{IDENTITY}}'));
+    assert.ok(!result.includes('These are hero images for a product page'));
   });
 
   it('heroCriteria replaces default criteria when no promptOverride', () => {
@@ -207,14 +221,14 @@ describe('buildHeroSelectionPrompt', () => {
     assert.ok(result.includes('CATEGORY HERO CRITERIA'));
   });
 
-  it('promptOverride beats heroCriteria', () => {
+  it('promptOverride template can still include heroCriteria through CRITERIA', () => {
     const result = buildHeroSelectionPrompt({
       ...defaults,
-      promptOverride: 'OVERRIDE WINS',
-      heroCriteria: 'CATEGORY HERO LOSES',
+      promptOverride: 'OVERRIDE TEMPLATE\n{{CRITERIA}}',
+      heroCriteria: 'CATEGORY HERO WINS',
     });
-    assert.ok(result.includes('OVERRIDE WINS'));
-    assert.ok(!result.includes('CATEGORY HERO LOSES'));
+    assert.ok(result.includes('OVERRIDE TEMPLATE'));
+    assert.ok(result.includes('CATEGORY HERO WINS'));
   });
 
   it('handles empty candidates', () => {

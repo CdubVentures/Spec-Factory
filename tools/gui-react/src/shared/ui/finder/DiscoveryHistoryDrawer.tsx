@@ -28,6 +28,7 @@ import {
   buildDiscoveryHistoryScrubRequest,
   type DiscoveryHistoryScrubKind,
   type DiscoveryHistoryScrubRequest,
+  type DiscoveryHistoryScrubScope,
 } from './discoveryHistoryScrubPayload.ts';
 import { FinderKpiCard } from './FinderKpiCard.tsx';
 import { FinderSectionCard } from './FinderSectionCard.tsx';
@@ -50,6 +51,40 @@ type KindFilter = 'all' | 'url' | 'query';
 interface FilteredBucket {
   urls: string[];
   queries: string[];
+}
+
+interface ScrubInvoke {
+  kind: DiscoveryHistoryScrubKind;
+  variantId?: string;
+  variantKey?: string;
+  mode?: string;
+  fieldKey?: string;
+  scopeLabel?: string;
+  urlsCount: number;
+  queriesCount: number;
+}
+
+interface PendingScrub {
+  request: DiscoveryHistoryScrubRequest;
+  title: string;
+  urlsCount: number;
+  queriesCount: number;
+}
+
+function composeScrubTitle(opts: {
+  kind: DiscoveryHistoryScrubKind;
+  scope: DiscoveryHistoryScrubScope;
+  scopeLabel?: string;
+  mode?: string;
+}): string {
+  const noun = opts.kind === 'url' ? 'URLs' : opts.kind === 'query' ? 'queries' : 'discovery history';
+  if (opts.scope === 'field_key') return `Clear ${noun} for "${opts.scopeLabel ?? ''}"?`;
+  if (opts.scope === 'variant_mode') {
+    return `Clear ${noun} for variant "${opts.scopeLabel ?? ''}" (mode "${opts.mode ?? ''}")?`;
+  }
+  if (opts.scope === 'variant') return `Clear ${noun} for variant "${opts.scopeLabel ?? ''}"?`;
+  if (opts.kind === 'all') return `Clear all discovery history for this product?`;
+  return `Clear all ${noun} for this product?`;
 }
 
 function resolveRoutePrefix(finderId: string): string {
@@ -288,19 +323,22 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
 
   const hasAnyData = filtered.totalUrls + filtered.totalQueries > 0;
   const allowProductActions = !(scopeLevel === 'field_key' && fieldKeyFilter && fieldKeyFilter.length > 0);
-  const handleScrub = (input: {
-    kind: DiscoveryHistoryScrubKind;
-    variantId?: string;
-    variantKey?: string;
-    mode?: string;
-    fieldKey?: string;
-  }) => {
-    const request = buildDiscoveryHistoryScrubRequest({ scopeLevel, ...input });
-    const confirmed = typeof window === 'undefined'
-      ? true
-      : window.confirm('Clear matching discovery history entries? Runs and evidence stay intact.');
-    if (!confirmed) return;
-    scrubMutation.mutate(request);
+  const [pendingConfirm, setPendingConfirm] = useState<PendingScrub | null>(null);
+  const handleScrub = (input: ScrubInvoke) => {
+    const { kind: scrubKind, urlsCount, queriesCount, scopeLabel, ...rest } = input;
+    const request = buildDiscoveryHistoryScrubRequest({ scopeLevel, kind: scrubKind, ...rest });
+    const title = composeScrubTitle({
+      kind: scrubKind,
+      scope: request.scope,
+      scopeLabel,
+      mode: rest.mode,
+    });
+    setPendingConfirm({ request, title, urlsCount, queriesCount });
+  };
+  const handleConfirmScrub = () => {
+    if (!pendingConfirm) return;
+    scrubMutation.mutate(pendingConfirm.request);
+    setPendingConfirm(null);
   };
 
   return (
@@ -345,11 +383,16 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
           <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted">
             Product
           </div>
-          <ScrubButtons
+          <ScrubButton
             urlsCount={filtered.totalUrls}
             queriesCount={filtered.totalQueries}
+            kind={kind}
             disabled={scrubMutation.isPending}
-            onScrub={(scrubKind) => handleScrub({ kind: scrubKind })}
+            onClick={() => handleScrub({
+              kind,
+              urlsCount: filtered.totalUrls,
+              queriesCount: filtered.totalQueries,
+            })}
           />
         </div>
       )}
@@ -382,8 +425,6 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
             urls={filtered.productUrls}
             queries={filtered.productQueries}
             kind={kind}
-            isScrubbing={scrubMutation.isPending}
-            onScrub={(scrubKind) => handleScrub({ kind: scrubKind })}
           />
         )}
 
@@ -395,7 +436,7 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
             labelByVariantId={labelByVariantId}
             kind={kind}
             isScrubbing={scrubMutation.isPending}
-            onScrub={(scrubKind, variantId) => handleScrub({ kind: scrubKind, variantId })}
+            onScrub={handleScrub}
           />
         )}
 
@@ -407,8 +448,7 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
             labelByVariantId={labelByVariantId}
             kind={kind}
             isScrubbing={scrubMutation.isPending}
-            onScrub={(scrubKind, variantId, mode) => handleScrub({ kind: scrubKind, variantId, mode })}
-            onScrubVariant={(scrubKind, variantId) => handleScrub({ kind: scrubKind, variantId })}
+            onScrub={handleScrub}
           />
         )}
 
@@ -419,10 +459,20 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
             groups={filtered.byFieldKey}
             kind={kind}
             isScrubbing={scrubMutation.isPending}
-            onScrub={(scrubKind, fieldKey) => handleScrub({ kind: scrubKind, fieldKey })}
+            onScrub={handleScrub}
           />
         )}
       </div>
+
+      <DiscoveryHistoryScrubConfirm
+        open={!!pendingConfirm}
+        title={pendingConfirm?.title ?? ''}
+        urlsCount={pendingConfirm?.urlsCount ?? 0}
+        queriesCount={pendingConfirm?.queriesCount ?? 0}
+        isPending={scrubMutation.isPending}
+        onConfirm={handleConfirmScrub}
+        onCancel={() => setPendingConfirm(null)}
+      />
     </div>
   );
 }
@@ -576,52 +626,76 @@ function KindToggle({ kind, onChange }: { kind: KindFilter; onChange: (v: KindFi
   );
 }
 
-interface ScrubButtonsProps {
+interface ScrubButtonProps {
   urlsCount: number;
   queriesCount: number;
+  kind: KindFilter;
   disabled: boolean;
-  onScrub: (kind: DiscoveryHistoryScrubKind) => void;
+  onClick: () => void;
 }
 
-function ScrubButtons({ urlsCount, queriesCount, disabled, onScrub }: ScrubButtonsProps) {
-  const hasUrls = urlsCount > 0;
-  const hasQueries = queriesCount > 0;
-  if (!hasUrls && !hasQueries) return null;
+function ScrubButton({ urlsCount, queriesCount, kind, disabled, onClick }: ScrubButtonProps) {
+  const visible = kind === 'url'
+    ? urlsCount > 0
+    : kind === 'query'
+      ? queriesCount > 0
+      : urlsCount + queriesCount > 0;
+  if (!visible) return null;
+  const label = kind === 'url' ? 'Clear URLs' : kind === 'query' ? 'Clear Queries' : 'Clear';
   return (
-    <div className="flex items-center gap-1.5 shrink-0">
-      {hasUrls && (
-        <button
-          type="button"
-          onClick={() => onScrub('url')}
-          disabled={disabled}
-          className="h-6 px-2 text-[10px] font-bold rounded sf-danger-button disabled:opacity-50"
-          title="Clear URLs"
-        >
-          Clear URLs
-        </button>
-      )}
-      {hasQueries && (
-        <button
-          type="button"
-          onClick={() => onScrub('query')}
-          disabled={disabled}
-          className="h-6 px-2 text-[10px] font-bold rounded sf-danger-button disabled:opacity-50"
-          title="Clear queries"
-        >
-          Clear Queries
-        </button>
-      )}
-      {hasUrls && hasQueries && (
-        <button
-          type="button"
-          onClick={() => onScrub('all')}
-          disabled={disabled}
-          className="h-6 px-2 text-[10px] font-bold rounded sf-danger-button-solid disabled:opacity-50"
-          title="Clear URLs and queries"
-        >
-          Clear Both
-        </button>
-      )}
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="inline-flex items-center justify-center gap-1 h-7 px-2 text-[9px] font-bold uppercase tracking-wide rounded whitespace-nowrap sf-delete-button disabled:opacity-40 disabled:cursor-not-allowed"
+      title={label}
+    >
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="w-[11px] h-[11px]">
+        <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4m2 0v9.333a1.333 1.333 0 01-1.334 1.334H4.667a1.333 1.333 0 01-1.334-1.334V4h9.334z" />
+      </svg>
+      <span>{label}</span>
+    </button>
+  );
+}
+
+interface DiscoveryHistoryScrubConfirmProps {
+  open: boolean;
+  title: string;
+  urlsCount: number;
+  queriesCount: number;
+  isPending: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}
+
+function DiscoveryHistoryScrubConfirm({
+  open, title, urlsCount, queriesCount, isPending, onConfirm, onCancel,
+}: DiscoveryHistoryScrubConfirmProps) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="sf-surface-panel rounded-lg shadow-xl p-6 max-w-sm w-full space-y-4">
+        <h3 className="text-sm font-bold sf-text-primary">{title}</h3>
+        <p className="sf-text-caption sf-text-muted">
+          {`This will remove ${urlsCount} URL(s) and ${queriesCount} query(s) from this finder's discovery history. Runs and evidence are preserved.`}
+        </p>
+        <div className="flex items-center justify-end gap-2">
+          <button
+            onClick={onCancel}
+            disabled={isPending}
+            className="px-3 py-1.5 text-[11px] font-semibold rounded sf-action-button disabled:opacity-50"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            disabled={isPending}
+            className="px-3 py-1.5 text-[11px] font-bold rounded sf-danger-button disabled:opacity-50"
+          >
+            {isPending ? 'Clearing...' : 'Clear'}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -632,11 +706,9 @@ interface FlatBodyProps {
   urls: string[];
   queries: string[];
   kind: KindFilter;
-  isScrubbing: boolean;
-  onScrub: (kind: DiscoveryHistoryScrubKind) => void;
 }
 
-function FlatBody({ finderId, productId, urls, queries, kind, isScrubbing, onScrub }: FlatBodyProps) {
+function FlatBody({ finderId, productId, urls, queries, kind }: FlatBodyProps) {
   return (
     <>
       {kind !== 'query' && urls.length > 0 && (
@@ -644,7 +716,6 @@ function FlatBody({ finderId, productId, urls, queries, kind, isScrubbing, onScr
           title="URLs"
           count={`${urls.length}`}
           storeKey={`discoveryHistory:${finderId}:${productId}:urls`}
-          trailing={<ScrubButtons urlsCount={urls.length} queriesCount={0} disabled={isScrubbing} onScrub={onScrub} />}
         >
           <ItemList items={urls} kind="url" />
         </FinderSectionCard>
@@ -654,7 +725,6 @@ function FlatBody({ finderId, productId, urls, queries, kind, isScrubbing, onScr
           title="Queries"
           count={`${queries.length}`}
           storeKey={`discoveryHistory:${finderId}:${productId}:queries`}
-          trailing={<ScrubButtons urlsCount={0} queriesCount={queries.length} disabled={isScrubbing} onScrub={onScrub} />}
         >
           <ItemList items={queries} kind="query" />
         </FinderSectionCard>
@@ -670,7 +740,7 @@ interface VariantBodyProps {
   labelByVariantId: Map<string, string>;
   kind: KindFilter;
   isScrubbing: boolean;
-  onScrub: (kind: DiscoveryHistoryScrubKind, variantId: string) => void;
+  onScrub: (input: ScrubInvoke) => void;
 }
 
 function VariantBody({
@@ -685,11 +755,18 @@ function VariantBody({
           count={`${bucket.urls.length} url · ${bucket.queries.length} qu`}
           storeKey={`discoveryHistory:${finderId}:${productId}:variant:${vid}`}
           trailing={(
-            <ScrubButtons
+            <ScrubButton
               urlsCount={bucket.urls.length}
               queriesCount={bucket.queries.length}
+              kind={kind}
               disabled={isScrubbing}
-              onScrub={(scrubKind) => onScrub(scrubKind, vid)}
+              onClick={() => onScrub({
+                kind,
+                variantId: vid,
+                scopeLabel: labelByVariantId.get(vid) || vid,
+                urlsCount: bucket.urls.length,
+                queriesCount: bucket.queries.length,
+              })}
             />
           )}
         >
@@ -719,7 +796,7 @@ interface FieldKeyBodyProps {
   groups: Map<string, FilteredBucket>;
   kind: KindFilter;
   isScrubbing: boolean;
-  onScrub: (kind: DiscoveryHistoryScrubKind, fieldKey: string) => void;
+  onScrub: (input: ScrubInvoke) => void;
 }
 
 function FieldKeyBody({
@@ -734,11 +811,18 @@ function FieldKeyBody({
           count={`${bucket.urls.length} url · ${bucket.queries.length} qu`}
           storeKey={`discoveryHistory:${finderId}:${productId}:field:${fk}`}
           trailing={(
-            <ScrubButtons
+            <ScrubButton
               urlsCount={bucket.urls.length}
               queriesCount={bucket.queries.length}
+              kind={kind}
               disabled={isScrubbing}
-              onScrub={(scrubKind) => onScrub(scrubKind, fk)}
+              onClick={() => onScrub({
+                kind,
+                fieldKey: fk,
+                scopeLabel: fk,
+                urlsCount: bucket.urls.length,
+                queriesCount: bucket.queries.length,
+              })}
             />
           )}
         >
@@ -769,30 +853,37 @@ interface VariantModeBodyProps {
   labelByVariantId: Map<string, string>;
   kind: KindFilter;
   isScrubbing: boolean;
-  onScrub: (kind: DiscoveryHistoryScrubKind, variantId: string, mode: string) => void;
-  onScrubVariant: (kind: DiscoveryHistoryScrubKind, variantId: string) => void;
+  onScrub: (input: ScrubInvoke) => void;
 }
 
 function VariantModeBody({
-  finderId, productId, groups, labelByVariantId, kind, isScrubbing, onScrub, onScrubVariant,
+  finderId, productId, groups, labelByVariantId, kind, isScrubbing, onScrub,
 }: VariantModeBodyProps) {
   return (
     <>
       {[...groups.entries()].map(([vid, modes]) => {
         let urlSum = 0, querySum = 0;
         for (const b of modes.values()) { urlSum += b.urls.length; querySum += b.queries.length; }
+        const variantLabel = labelByVariantId.get(vid) || vid;
         return (
           <FinderSectionCard
             key={vid}
-            title={labelByVariantId.get(vid) || vid}
+            title={variantLabel}
             count={`${urlSum} url · ${querySum} qu · ${modes.size} modes`}
             storeKey={`discoveryHistory:${finderId}:${productId}:variant:${vid}`}
             trailing={(
-              <ScrubButtons
+              <ScrubButton
                 urlsCount={urlSum}
                 queriesCount={querySum}
+                kind={kind}
                 disabled={isScrubbing}
-                onScrub={(scrubKind) => onScrubVariant(scrubKind, vid)}
+                onClick={() => onScrub({
+                  kind,
+                  variantId: vid,
+                  scopeLabel: variantLabel,
+                  urlsCount: urlSum,
+                  queriesCount: querySum,
+                })}
               />
             )}
           >
@@ -804,11 +895,19 @@ function VariantModeBody({
                   count={`${bucket.urls.length} url · ${bucket.queries.length} qu`}
                   storeKey={`discoveryHistory:${finderId}:${productId}:variant:${vid}:mode:${m}`}
                   trailing={(
-                    <ScrubButtons
+                    <ScrubButton
                       urlsCount={bucket.urls.length}
                       queriesCount={bucket.queries.length}
+                      kind={kind}
                       disabled={isScrubbing}
-                      onScrub={(scrubKind) => onScrub(scrubKind, vid, m)}
+                      onClick={() => onScrub({
+                        kind,
+                        variantId: vid,
+                        mode: m,
+                        scopeLabel: variantLabel,
+                        urlsCount: bucket.urls.length,
+                        queriesCount: bucket.queries.length,
+                      })}
                     />
                   )}
                 >

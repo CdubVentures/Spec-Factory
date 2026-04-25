@@ -50,6 +50,7 @@ function FinderPhaseBadge({ spec }: { spec: FinderPhaseSpec }) {
       thinking={model?.thinking ?? false}
       webSearch={model?.webSearch ?? false}
       effortLevel={effortLevel}
+      showAccessModeText
     />
   );
   return (
@@ -76,9 +77,11 @@ export function CommandConsoleModelStrip() {
           <FinderRunModelBadge
             labelPrefix={t.label}
             model={r.model}
+            accessMode={r.accessMode}
             thinking={r.thinking}
             webSearch={r.webSearch}
             effortLevel={r.effortLevel}
+            showAccessModeText
           />
         );
         return (

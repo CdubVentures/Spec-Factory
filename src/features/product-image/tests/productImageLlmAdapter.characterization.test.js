@@ -71,16 +71,24 @@ describe('buildProductImageFinderPrompt — characterization', () => {
     const result = buildProductImageFinderPrompt({ product: PRODUCT, variantLabel: 'black', priorityViews: PRIORITY_VIEWS, additionalViews: ADDITIONAL_VIEWS });
     assert.ok(result.includes('Image requirements:'));
     assert.ok(result.includes('Clean product shot'));
+    assert.ok(result.includes('View slot rule'));
     assert.ok(result.includes('DIRECT link'));
+    assert.ok(result.includes('NOT: lifestyle photos'));
   });
 
-  it('replaces image requirements with promptOverride', () => {
+  it('treats promptOverride as a full prompt template override', () => {
     const result = buildProductImageFinderPrompt({
       product: PRODUCT, variantLabel: 'black', priorityViews: PRIORITY_VIEWS, additionalViews: ADDITIONAL_VIEWS,
-      promptOverride: 'CUSTOM INSTRUCTIONS HERE',
+      promptOverride: 'CUSTOM TEMPLATE {{BRAND}} {{MODEL}}\n{{PRIORITY_VIEWS}}\n{{IMAGE_REQUIREMENTS}}\n{{ALL_VIEW_KEYS}}',
     });
-    assert.ok(result.includes('CUSTOM INSTRUCTIONS HERE'));
-    assert.ok(!result.includes('Image requirements:'));
+    assert.ok(result.startsWith('CUSTOM TEMPLATE Logitech G502 X Plus'));
+    assert.ok(result.includes('PRIORITY'));
+    assert.ok(result.includes('Image requirements:'));
+    assert.ok(result.includes('View slot rule'));
+    assert.ok(result.includes('top, bottom, left, right, front, rear, sangle, angle'));
+    assert.ok(!result.includes('{{BRAND}}'));
+    assert.ok(!result.includes('{{IMAGE_REQUIREMENTS}}'));
+    assert.ok(!result.includes('Find high-resolution product images for:'));
   });
 
   it('includes identity warning for easy ambiguity', () => {
@@ -278,13 +286,17 @@ describe('buildHeroImageFinderPrompt — characterization', () => {
     assert.ok(result.includes('https://example.com'));
   });
 
-  it('replaces instructions with promptOverride', () => {
+  it('treats promptOverride as a full hero prompt template override', () => {
     const result = buildHeroImageFinderPrompt({
       product: PRODUCT, variantLabel: 'black',
-      promptOverride: 'MY CUSTOM HERO INSTRUCTIONS',
+      promptOverride: 'CUSTOM HERO TEMPLATE {{BRAND}} {{MODEL}}\n{{HERO_INSTRUCTIONS}}\n{{DISCOVERY_LOG_SHAPE}}',
     });
-    assert.ok(result.includes('MY CUSTOM HERO INSTRUCTIONS'));
-    assert.ok(!result.includes('WHAT MAKES A GOOD HERO IMAGE'));
+    assert.ok(result.startsWith('CUSTOM HERO TEMPLATE Logitech G502 X Plus'));
+    assert.ok(result.includes('WHAT MAKES A GOOD HERO IMAGE'));
+    assert.ok(result.includes('discovery_log'));
+    assert.ok(!result.includes('{{BRAND}}'));
+    assert.ok(!result.includes('{{HERO_INSTRUCTIONS}}'));
+    assert.ok(!result.includes('Every image you return MUST use the view name "hero".'));
   });
 
   it('includes JSON return format', () => {

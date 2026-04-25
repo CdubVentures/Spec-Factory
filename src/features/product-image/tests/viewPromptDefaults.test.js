@@ -55,6 +55,13 @@ describe('VIEW_PROMPT_DEFAULTS', () => {
       }
     }
   });
+
+  it('mouse hard-view defaults disambiguate geometry instead of relying on labels', () => {
+    assert.ok(VIEW_PROMPT_DEFAULTS.mouse.front.priority.includes('not a top-down shell shot'));
+    assert.ok(VIEW_PROMPT_DEFAULTS.mouse.sangle.priority.includes('front/nose/USB'));
+    assert.ok(VIEW_PROMPT_DEFAULTS.mouse.angle.priority.includes('not a pure top-down shot'));
+    assert.ok(VIEW_PROMPT_DEFAULTS.mouse.right.priority.includes('right side wall'));
+  });
 });
 
 describe('GENERIC_VIEW_PROMPT_DEFAULTS', () => {

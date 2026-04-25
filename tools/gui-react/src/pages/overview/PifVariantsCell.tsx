@@ -8,6 +8,8 @@ export interface PifVariantsCellProps {
   readonly category: string;
   readonly variants: readonly PifVariantProgressGen[];
   readonly hexMap: ReadonlyMap<string, string>;
+  readonly brand: string;
+  readonly baseModel: string;
 }
 
 /**
@@ -15,7 +17,7 @@ export interface PifVariantsCellProps {
  * Each cluster is color chip + 3-ring progress + fraction; clicking opens a
  * per-variant popover with Run View / Hero / Loop / Evaluate actions.
  */
-export function PifVariantsCell({ productId, category, variants, hexMap }: PifVariantsCellProps) {
+export function PifVariantsCell({ productId, category, variants, hexMap, brand, baseModel }: PifVariantsCellProps) {
   // Subscribe once per product; each variant reads from the shared set so we
   // don't multiply store subscriptions across 5–10 variants × 359 products.
   const runningKeys = useRunningVariantKeysAny('pif', productId);
@@ -31,6 +33,8 @@ export function PifVariantsCell({ productId, category, variants, hexMap }: PifVa
           category={category}
           variant={v}
           hexMap={hexMap}
+          brand={brand}
+          baseModel={baseModel}
           pulsing={runningKeys.has(v.variant_key)}
         />
       ))}

@@ -31,12 +31,15 @@ import type {
   ProductImageFinderResult,
 } from '../../features/product-image-finder/types.ts';
 import { PifVariantRings } from './PifVariantRings.tsx';
+import { IndexLabLink } from './IndexLabLink.tsx';
 
 export interface PifVariantPopoverProps {
   readonly productId: string;
   readonly category: string;
   readonly variant: PifVariantProgressGen;
   readonly hexMap: ReadonlyMap<string, string>;
+  readonly brand: string;
+  readonly baseModel: string;
   /** When true, the trigger SVGs pulse (this variant has a PIF op running). */
   readonly pulsing?: boolean;
 }
@@ -62,7 +65,7 @@ const INDIVIDUAL_VIEWS: ReadonlyArray<{ readonly id: string; readonly label: str
  *                         resolved slots (same component the Indexing Lab uses)
  */
 export function PifVariantPopover({
-  productId, category, variant, hexMap, pulsing = false,
+  productId, category, variant, hexMap, brand, baseModel, pulsing = false,
 }: PifVariantPopoverProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [carouselOpen, setCarouselOpen] = useState(false);
@@ -157,24 +160,23 @@ export function PifVariantPopover({
     });
   }, [pifData, variantKey, category, productId]);
 
+  // WHY: Action handlers below intentionally leave the popover open — users
+  // spam-click to queue multiple runs/views and watch the active strip update
+  // without having to re-open the popover each time.
   const handleRunPriority = useCallback(() => {
     fire(runUrl, { variant_key: variantKey, variant_id: variantId, mode: 'view' }, { subType: 'priority-view', variantKey });
-    setPopoverOpen(false);
   }, [fire, runUrl, variantKey, variantId]);
 
   const handleRunIndividualView = useCallback((view: string) => {
     fire(runUrl, { variant_key: variantKey, variant_id: variantId, mode: 'view', view }, { subType: 'view-single', variantKey });
-    setPopoverOpen(false);
   }, [fire, runUrl, variantKey, variantId]);
 
   const handleRunHero = useCallback(() => {
     fire(runUrl, { variant_key: variantKey, variant_id: variantId, mode: 'hero' }, { subType: 'hero', variantKey });
-    setPopoverOpen(false);
   }, [fire, runUrl, variantKey, variantId]);
 
   const handleRunLoop = useCallback(() => {
     fire(loopUrl, { variant_key: variantKey, variant_id: variantId }, { subType: 'loop', variantKey });
-    setPopoverOpen(false);
   }, [fire, loopUrl, variantKey, variantId]);
 
   const handleEval = useCallback(() => {
@@ -188,7 +190,6 @@ export function PifVariantPopover({
         fire(evalHeroUrl, { variant_key: variantKey, variant_id: variantId }, { subType: 'evaluate', variantKey });
       }, canonicalViews.length * EVAL_STAGGER_MS);
     }
-    setPopoverOpen(false);
   }, [fire, evalViewUrl, evalHeroUrl, canonicalViews, hasHeroes, variantKey, variantId]);
 
   const promptPreviewBody = useMemo(
@@ -229,7 +230,6 @@ export function PifVariantPopover({
       category,
       variantIdFilter: variantId,
     });
-    setPopoverOpen(false);
   }, [openHistoryDrawer, productId, category, variantId]);
 
   const ringsTitle = slides.length > 0
@@ -359,14 +359,30 @@ export function PifVariantPopover({
           heroFilled={variant.hero_filled}
           heroTarget={variant.hero_target}
         />
-        <span className="sf-pif-rings-label">{totalFilled}/{totalTarget}</span>
-        <span
-          className="sf-pif-rings-imgcount"
-          title={`${variant.image_count} image${variant.image_count === 1 ? '' : 's'} collected for this variant`}
-        >
-          {variant.image_count} img
-        </span>
       </button>
+
+      <IndexLabLink
+        category={category}
+        productId={productId}
+        brand={brand}
+        baseModel={baseModel}
+        tabId="productImageFinder"
+        title={`Open Product Image Finder for ${label}`}
+        className="sf-pif-rings-label"
+      >
+        {totalFilled}/{totalTarget}
+      </IndexLabLink>
+      <IndexLabLink
+        category={category}
+        productId={productId}
+        brand={brand}
+        baseModel={baseModel}
+        tabId="productImageFinder"
+        title={`${variant.image_count} image${variant.image_count === 1 ? '' : 's'} collected for this variant`}
+        className="sf-pif-rings-imgcount"
+      >
+        {variant.image_count} img
+      </IndexLabLink>
 
       {carouselOpen && slides.length > 0 && (
         <CarouselPreviewPopup slides={slides} onClose={() => setCarouselOpen(false)} />

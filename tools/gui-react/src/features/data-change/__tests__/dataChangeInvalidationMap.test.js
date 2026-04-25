@@ -102,6 +102,18 @@ test('finder discovery-history scrub events invalidate the owning finder query',
   assert.equal(hasQueryKey(keys, ['release-date-finder', 'mouse']), true);
 });
 
+test('Key Finder field delete events invalidate the owning finder and review surfaces', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: { type: 'data-change', event: 'key-finder-field-deleted' },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['key-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['reviewProductsIndex', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['publisher', 'published', 'mouse']), true);
+});
+
 test('component impact regression: component events invalidate componentImpact', () => {
   const keys = resolveDataChangeInvalidationQueryKeys({
     message: {

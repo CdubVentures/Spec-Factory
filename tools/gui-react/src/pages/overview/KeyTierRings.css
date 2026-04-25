@@ -11,6 +11,15 @@
   flex-wrap: nowrap;
 }
 
+/* Per-tier wrapper: stacks the popover-trigger cluster (label + rings) above
+   the IndexLab fraction link, mirroring the gap the old single cluster used. */
+.sf-ktr-tier {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
 .sf-ktr-cluster {
   display: inline-flex;
   flex-direction: column;

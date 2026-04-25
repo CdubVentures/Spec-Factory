@@ -26,6 +26,7 @@ import os from 'node:os';
 import { registerKeyFinderRoutes } from '../api/keyFinderRoutes.js';
 import { mergeKeyFinderDiscovery, readKeyFinder } from '../keyStore.js';
 import { initOperationsRegistry } from '../../../core/operations/index.js';
+import { DATA_CHANGE_EVENT_NAMES } from '../../../core/events/dataChangeContract.js';
 import * as keyFinderRegistry from '../../../core/operations/keyFinderRegistry.js';
 
 // ── Fixtures ─────────────────────────────────────────────────────────
@@ -192,6 +193,13 @@ function makeCtx({ specDb } = {}) {
 
 // ── Tests ────────────────────────────────────────────────────────────
 
+it('key-finder-field-deleted event is registered for data-change propagation', () => {
+  assert.ok(
+    DATA_CHANGE_EVENT_NAMES.includes('key-finder-field-deleted'),
+    'key delete events must be registered so every tab invalidates Key Finder data immediately',
+  );
+});
+
 describe('POST /key-finder/:cat/:pid/keys/:fk/unpublish', () => {
   beforeEach(() => {
     keyFinderRegistry._resetForTest();
@@ -243,6 +251,7 @@ describe('POST /key-finder/:cat/:pid/keys/:fk/unpublish', () => {
     assert.ok(evt, `expected key-finder-unpublished broadcast; got ${JSON.stringify(broadcasts.map((b) => b.data?.event))}`);
     assert.equal(evt.data.meta.field_key, 'polling_rate');
     assert.equal(evt.data.meta.productId, pid);
+    assert.deepEqual(evt.data.entities.fieldKeys, ['polling_rate']);
   });
 
   it('idempotent: no resolved + no selected entry → 200 no-op', async () => {
@@ -412,6 +421,7 @@ describe('DELETE /key-finder/:cat/:pid/keys/:fk', () => {
     const evt = broadcasts.find((b) => b.data?.event === 'key-finder-field-deleted');
     assert.ok(evt);
     assert.equal(evt.data.meta.field_key, 'polling_rate');
+    assert.deepEqual(evt.data.entities.fieldKeys, ['polling_rate']);
     assert.deepEqual([...evt.data.meta.deleted_runs].sort(), [1, 2]);
   });
 

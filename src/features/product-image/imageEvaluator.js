@@ -105,9 +105,9 @@ export function buildViewEvalPrompt({
 - Composition: View angle matches the requested view above, product centered, clean background → prefer the better candidate
 - Background removal quality: Halo artifacts, missing parts, jagged edges → prefer the better candidate`;
 
-  const criteria = promptOverride.trim() || evalCriteria || defaultCriteria;
+  const criteria = evalCriteria || defaultCriteria;
 
-  const template = templateOverride || VIEW_EVAL_DEFAULT_TEMPLATE;
+  const template = templateOverride || promptOverride || VIEW_EVAL_DEFAULT_TEMPLATE;
 
   return resolvePromptTemplate(template, {
     IDENTITY: identity,
@@ -199,9 +199,9 @@ Your job is a LEGAL and QUALITY gatekeeper, not an art director. Any image type 
    - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled for evaluation.
    - Must not be blurry, heavily compressed, or look like a low-res screenshot.`;
 
-  const criteria = promptOverride.trim() || heroCriteria || defaultCriteria;
+  const criteria = heroCriteria || defaultCriteria;
 
-  const template = templateOverride || HERO_EVAL_DEFAULT_TEMPLATE;
+  const template = templateOverride || promptOverride || HERO_EVAL_DEFAULT_TEMPLATE;
 
   return resolvePromptTemplate(template, {
     IDENTITY: identity,

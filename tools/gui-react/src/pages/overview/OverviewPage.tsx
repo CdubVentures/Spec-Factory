@@ -24,7 +24,6 @@ import {
 } from './OverviewFilterBar.tsx';
 import { CommandConsole } from './CommandConsole.tsx';
 import { ActiveAndSelectedRow } from './ActiveAndSelectedRow.tsx';
-import { OverviewLinksCell, OverviewLinksHeaderToggle } from './OverviewLinksCell.tsx';
 import { OverviewLastRunCell, OverviewLastRunHeaderToggle } from './OverviewLastRunCell.tsx';
 import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import {
@@ -211,6 +210,8 @@ function buildColumns(
           category={category}
           filled={row.original.cefRunCount}
           total={CEF_REQUIRED_RUNS}
+          brand={row.original.brand}
+          baseModel={row.original.base_model}
         />
       ),
     },
@@ -228,6 +229,8 @@ function buildColumns(
           category={category}
           variants={row.original.pifVariants}
           hexMap={hexMap}
+          brand={row.original.brand}
+          baseModel={row.original.base_model}
         />
       ),
     },
@@ -254,6 +257,9 @@ function buildColumns(
           labelPrefix="SKU"
           runUrl={`/sku-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.original.productId)}`}
           valueLabel="SKU"
+          linkTabId="skuFinder"
+          brand={row.original.brand}
+          baseModel={row.original.base_model}
         />
       ),
     },
@@ -282,6 +288,9 @@ function buildColumns(
           valueLabel="Release Date"
           formatLabel={formatRdfValue}
           formatValue={formatRdfValue}
+          linkTabId="releaseDateFinder"
+          brand={row.original.brand}
+          baseModel={row.original.base_model}
         />
       ),
     },
@@ -298,6 +307,8 @@ function buildColumns(
           productId={row.original.productId}
           category={category}
           tiers={row.original.keyTierProgress}
+          brand={row.original.brand}
+          baseModel={row.original.base_model}
         />
       ),
     },
@@ -359,16 +370,6 @@ function buildColumns(
       header: () => <OverviewLastRunHeaderToggle open={detailColsOpen} onToggle={toggleDetailCols} />,
       cell: ({ row }) => (detailColsOpen
         ? <OverviewLastRunCell row={row.original} />
-        : null
-      ),
-    },
-    {
-      id: 'links',
-      enableSorting: false,
-      size: detailColsOpen ? 80 : 36,
-      header: () => <OverviewLinksHeaderToggle open={detailColsOpen} onToggle={toggleDetailCols} />,
-      cell: ({ row }) => (detailColsOpen
-        ? <OverviewLinksCell row={row.original} category={category} />
         : null
       ),
     },

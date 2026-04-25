@@ -58,12 +58,12 @@ export const CATEGORY_VIEW_DEFAULTS = Object.freeze({
   mouse: [
     { key: 'top',    priority: true,  description: 'Bird\'s-eye shot looking directly down at the mouse from above — camera directly overhead, showing full shape outline and button layout' },
     { key: 'left',   priority: true,  description: 'Strict side profile from the left at eye level — camera level with the mouse, no tilt, showing the full side silhouette, button profile, and scroll wheel' },
-    { key: 'angle',  priority: true,  description: 'Rear/top 3/4 angle showing the mouse from above and behind at roughly 30–45 degrees — product-only on clean background' },
+    { key: 'angle',  priority: true,  description: 'Rear/top three-quarter mouse product shot: top shell plus one side with rear or palm-rest curvature dominant; not a pure top-down shot and not a front/nose-dominant sangle shot.' },
     { key: 'bottom', priority: false, description: 'Underside/belly view showing the base, sensor, mouse feet/skates, and any bottom labels or DPI switch' },
-    { key: 'right',  priority: false, description: 'Strict side profile from the right at eye level — mirror of the left view, showing right-side buttons and grip texture' },
-    { key: 'front',  priority: false, description: 'Head-on front view — camera faces the nose of the mouse showing buttons, scroll wheel, and front profile straight on' },
+    { key: 'right',  priority: false, description: 'True right-side profile mouse product shot: long horizontal side silhouette with the right side wall, grip, or side buttons dominant and only minimal top surface visible; not a top-down or three-quarter shot.' },
+    { key: 'front',  priority: false, description: 'Nose/front-facing mouse product shot: camera faces the front edge of the mouse, with the front lip, USB/cable exit, scroll wheel/button-front shape, or nose profile visible; not a top-down shell shot.' },
     { key: 'rear',   priority: false, description: 'Head-on rear view showing the back/rear of the mouse, the palm rest curvature from behind' },
-    { key: 'sangle', priority: false, description: 'Front/side 3/4 angle — showing the mouse from the front-left at roughly 30–45 degrees, camera slightly elevated' },
+    { key: 'sangle', priority: false, description: 'Front-side three-quarter mouse product shot: side geometry plus the front/nose/USB/cable/front-lip area are visible; low wide showcase angles are acceptable when the front-side geometry is clear.' },
   ],
   monitor: [
     { key: 'front',  priority: true,  description: 'Head-on front view of the monitor — camera faces the display straight on, showing the full screen, bezels, and stand' },
@@ -666,8 +666,9 @@ export function buildProductImageFinderPrompt({
 
   const allViewKeys = CANONICAL_VIEW_KEYS.join(', ');
 
-  const imageRequirements = promptOverride || `Image requirements:
+  const imageRequirements = `Image requirements:
 - Clean product shot — the product isolated on a white or plain background, or a clean studio/press shot
+- View slot rule: a clean product shot only satisfies a named view when the visible camera angle matches that view definition. If the pixels show another canonical view, label it as that actual view or omit it; do not let page labels, filenames, alt text, or gallery position override visible geometry.
 - NOT: lifestyle photos, styled banners, marketing collages, box art, screenshots, in-use/in-hand photos, group shots, images with decorative backgrounds
 - The image must show the EXACT product: ${brand} ${model} in ${variantDesc}
 - Minimum resolution per view is listed above in the view definitions — bigger is always better
@@ -682,7 +683,7 @@ export function buildProductImageFinderPrompt({
     scopeLabel: "this variant's view searches",
   });
 
-  const template = templateOverride || PIF_VIEW_DEFAULT_TEMPLATE;
+  const template = templateOverride || promptOverride || PIF_VIEW_DEFAULT_TEMPLATE;
 
   const variantSuffix = variant ? ` (variant: ${variant})` : '';
 
@@ -769,7 +770,7 @@ export function createProductImageFinderCallLlm(deps) {
  * @param {number} opts.familyModelCount
  * @param {string} opts.ambiguityLevel
  * @param {object} opts.previousDiscovery — { urlsChecked, queriesRun }
- * @param {string} [opts.promptOverride] — custom instruction text replacing default
+ * @param {string} [opts.promptOverride] — custom full prompt template replacing default
  * @returns {string}
  */
 // WHY: Default template for PIF hero search. {{VARIABLE}} placeholders mark dynamic injection points.
@@ -820,8 +821,7 @@ export function buildHeroImageFinderPrompt({
     scopeLabel: "this variant's hero searches",
   });
 
-  // Use custom override or built-in instructions
-  const heroInstructions = promptOverride || `Find high-quality lifestyle and contextual product images for: ${brand} ${model} — ${variantDesc}
+  const heroInstructions = `Find high-quality lifestyle and contextual product images for: ${brand} ${model} — ${variantDesc}
 
 You are looking for images that show this product IN CONTEXT — placed on a desk, in a gaming setup, on a workspace surface, or in any real-world environment. The background and setting are intentional and valuable. These are NOT cutout/studio shots.
 
@@ -856,7 +856,7 @@ Allowed sources (in priority order):
 3. Authorized retailer product galleries (Amazon A+ content, Best Buy) — lifestyle images showing the product in context
 Do NOT use images from editorial review sites — even if the photo looks contextual, it is copyrighted editorial content.`;
 
-  const template = templateOverride || PIF_HERO_DEFAULT_TEMPLATE;
+  const template = templateOverride || promptOverride || PIF_HERO_DEFAULT_TEMPLATE;
 
   const variantSuffix = variant ? ` (variant: ${variant})` : '';
 

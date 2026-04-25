@@ -14,6 +14,7 @@ import { useFinderDiscoveryHistoryStore } from '../../stores/finderDiscoveryHist
 import { groupHistory, type FinderRun } from '../../shared/ui/finder/discoveryHistoryHelpers.ts';
 import { ConfidenceDiamond } from './ConfidenceDiamond.tsx';
 import { RunPreviewCell } from './RunPreviewCell.tsx';
+import { IndexLabLink, type IndexLabLinkTabId } from './IndexLabLink.tsx';
 import './PifVariantRings.css';
 
 function truncate(str: string, max = 10): string {
@@ -53,6 +54,12 @@ export interface ScalarVariantPopoverProps {
   readonly formatValue?: (value: string) => string;
   /** When true, the trigger SVG pulses (this variant has a run / loop op in flight). */
   readonly pulsing?: boolean;
+  /** Tab id used by the IndexLabLink under the diamond. */
+  readonly linkTabId: IndexLabLinkTabId;
+  /** Brand for the IndexLab picker. */
+  readonly brand: string;
+  /** base_model for the IndexLab picker. */
+  readonly baseModel: string;
 }
 
 type ScalarPromptMode = 'run' | 'loop';
@@ -67,6 +74,7 @@ export function ScalarVariantPopover({
   productId, category, variant, hexMap,
   moduleType, finderId, historyFinderId, historyRoutePrefix, phaseId, title, labelPrefix, runUrl,
   valueLabel, formatLabel = DEFAULT_FORMAT, formatValue = DEFAULT_FORMAT_VALUE, pulsing = false,
+  linkTabId, brand, baseModel,
 }: ScalarVariantPopoverProps) {
   const [open, setOpen] = useState(false);
   const [promptPreview, setPromptPreview] = useState<ScalarPromptMode | null>(null);
@@ -83,14 +91,15 @@ export function ScalarVariantPopover({
   const variantId = variant.variant_id;
   const displayValue = hasValue ? formatValue(variant.value) : '';
 
+  // WHY: Action handlers below intentionally leave the popover open — users
+  // spam-click to queue multiple runs and watch the active strip update
+  // without having to re-open the popover each time.
   const handleRun = useCallback(() => {
     fire(runUrl, { variant_key: variantKey, variant_id: variantId }, { variantKey });
-    setOpen(false);
   }, [fire, runUrl, variantKey, variantId]);
 
   const handleLoop = useCallback(() => {
     fire(loopUrl, { variant_key: variantKey, variant_id: variantId }, { subType: 'loop', variantKey });
-    setOpen(false);
   }, [fire, loopUrl, variantKey, variantId]);
 
   // Lazy-fetched runs for the Hist count badge. Fires only when the popover
@@ -117,7 +126,6 @@ export function ScalarVariantPopover({
       category,
       variantIdFilter: variantId,
     });
-    setOpen(false);
   }, [openHistoryDrawer, historyFinderId, productId, category, variantId]);
 
   const promptPreviewBody = useMemo(() => (
@@ -138,20 +146,18 @@ export function ScalarVariantPopover({
     : `${label} \u00b7 ${valueLabel}: (no candidate)`;
 
   return (
-    <Popover
-      open={open}
-      onOpenChange={setOpen}
-      triggerLabel={`${labelPrefix} ${label} — click to run`}
-      trigger={
-        <span className={`sf-pif-rings-cluster${pulsing ? ' sf-pulsing' : ''}`} title={triggerTooltip}>
-          <ColorSwatch hexParts={hexParts} size="md" />
-          <ConfidenceDiamond confidence={variant.confidence} />
-          <span className="sf-pif-rings-label">
-            {hasValue ? formatLabel(variant.value) : '\u2014'}
+    <span className={`sf-pif-rings-cluster${pulsing ? ' sf-pulsing' : ''}`}>
+      <Popover
+        open={open}
+        onOpenChange={setOpen}
+        triggerLabel={`${labelPrefix} ${label} — click to run`}
+        trigger={
+          <span className="sf-pif-rings-color-trigger" title={triggerTooltip}>
+            <ColorSwatch hexParts={hexParts} size="md" />
+            <ConfidenceDiamond confidence={variant.confidence} />
           </span>
-        </span>
-      }
-    >
+        }
+      >
       <FinderRunPopoverShell
         title={`${title} — ${label}`}
         meta={
@@ -214,6 +220,19 @@ export function ScalarVariantPopover({
         subtitle={`variant: ${variantKey}`}
         storageKeyPrefix={`overview:${finderId}:preview:${productId}:${variantKey}:${promptPreview ?? ''}`}
       />
-    </Popover>
+      </Popover>
+
+      <IndexLabLink
+        category={category}
+        productId={productId}
+        brand={brand}
+        baseModel={baseModel}
+        tabId={linkTabId}
+        title={`Open ${title} for ${label}`}
+        className="sf-pif-rings-label"
+      >
+        {hasValue ? formatLabel(variant.value) : '\u2014'}
+      </IndexLabLink>
+    </span>
   );
 }

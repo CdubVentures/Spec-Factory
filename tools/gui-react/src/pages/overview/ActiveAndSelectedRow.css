@@ -17,6 +17,16 @@
   border-radius: 8px;
   min-width: 0;
   flex-wrap: wrap;
+  /* WHY: reserve a stable height matching the populated state (badge=26 +
+     padding=12 + border=2) so toggling content doesn't push the table down
+     and reposition popover triggers mid-interaction. */
+  min-height: 40px;
+}
+
+.sf-aas-row.sf-aas-empty {
+  /* Visually flat when there's nothing to show, but keeps reserved height. */
+  background: transparent;
+  border-color: transparent;
 }
 
 .sf-aas-group {

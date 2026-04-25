@@ -44,6 +44,10 @@ import {
   resolveKeyPromptPassengerSnapshot,
   type KeyPromptPreviewState,
 } from '../state/keyFinderPromptPreviewSnapshot.ts';
+import {
+  formatKeyFinderDestructiveBatchFailure,
+  runKeyFinderDestructiveBatch,
+} from '../state/keyFinderDestructiveBatch.ts';
 import { runLoopChain } from '../state/runLoopChain.ts';
 import {
   GLOBAL_LOOP_CHAIN_ID,
@@ -170,6 +174,7 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
   const unpubMut = useUnpublishKeyMutation(category, productId);
   const deleteKeyMut = useDeleteKeyMutation(category, productId);
   const [keyDeleteTarget, setKeyDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [keyBulkOpPending, setKeyBulkOpPending] = useState(false);
 
   const handleUnpubKey = useCallback((fieldKey: string) => {
     setKeyDeleteTarget({ kind: 'key-unpublish', fieldKey });
@@ -215,31 +220,61 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
     setKeyDeleteTarget({ kind: 'key-delete-all', fieldKeys, count: fieldKeys.length });
   }, [grouped.groups]);
 
-  const isKeyOpPending = unpubMut.isPending || deleteKeyMut.isPending;
+  const isKeyOpPending = keyBulkOpPending || unpubMut.isPending || deleteKeyMut.isPending;
   const handleConfirmKeyOp = useCallback(() => {
     if (!keyDeleteTarget) return;
     const kind = keyDeleteTarget.kind;
     const dismiss = () => setKeyDeleteTarget(null);
-    const onError = (err: Error) => {
+    const onError = (err: unknown) => {
       setKeyDeleteTarget(null);
       const verb = kind.startsWith('key-unpublish') ? 'Unpub' : 'Delete';
-      window.alert(`${verb} failed: ${err.message}`);
+      const message = err instanceof Error ? err.message : String(err || 'Unknown error');
+      window.alert(`${verb} failed: ${message}`);
     };
 
     // Single-key ops await the mutation so the modal shows pending state then
-    // dismisses on success. Bulk ops fan out N fire-and-forget mutations and
-    // dismiss immediately — per-key WS events drive the UI updates as each
-    // completes. Any 409 key_busy is silently skipped at the per-key level.
+    // dismisses on success. Bulk ops keep the modal pending until every key
+    // settles, then surface any busy/failed keys instead of looking inert.
     if (kind === 'key-unpublish' && keyDeleteTarget.fieldKey) {
-      unpubMut.mutate({ fieldKey: keyDeleteTarget.fieldKey }, { onSuccess: dismiss, onError });
+      void unpubMut.mutateAsync({ fieldKey: keyDeleteTarget.fieldKey })
+        .then(dismiss)
+        .catch(onError);
     } else if (kind === 'key-delete' && keyDeleteTarget.fieldKey) {
-      deleteKeyMut.mutate({ fieldKey: keyDeleteTarget.fieldKey }, { onSuccess: dismiss, onError });
+      void deleteKeyMut.mutateAsync({ fieldKey: keyDeleteTarget.fieldKey })
+        .then(dismiss)
+        .catch(onError);
     } else if ((kind === 'key-unpublish-group' || kind === 'key-unpublish-all') && keyDeleteTarget.fieldKeys) {
-      for (const fieldKey of keyDeleteTarget.fieldKeys) unpubMut.mutate({ fieldKey });
-      dismiss();
+      void (async () => {
+        setKeyBulkOpPending(true);
+        try {
+          const result = await runKeyFinderDestructiveBatch({
+            fieldKeys: keyDeleteTarget.fieldKeys ?? [],
+            mutate: unpubMut.mutateAsync,
+          });
+          if (result.failed.length > 0) {
+            window.alert(formatKeyFinderDestructiveBatchFailure('Unpub', result));
+          }
+          dismiss();
+        } finally {
+          setKeyBulkOpPending(false);
+        }
+      })();
     } else if ((kind === 'key-delete-group' || kind === 'key-delete-all') && keyDeleteTarget.fieldKeys) {
-      for (const fieldKey of keyDeleteTarget.fieldKeys) deleteKeyMut.mutate({ fieldKey });
-      dismiss();
+      void (async () => {
+        setKeyBulkOpPending(true);
+        try {
+          const result = await runKeyFinderDestructiveBatch({
+            fieldKeys: keyDeleteTarget.fieldKeys ?? [],
+            mutate: deleteKeyMut.mutateAsync,
+          });
+          if (result.failed.length > 0) {
+            window.alert(formatKeyFinderDestructiveBatchFailure('Delete', result));
+          }
+          dismiss();
+        } finally {
+          setKeyBulkOpPending(false);
+        }
+      })();
     }
   }, [keyDeleteTarget, unpubMut, deleteKeyMut]);
 

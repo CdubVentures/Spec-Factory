@@ -239,6 +239,30 @@ describe('every finder phase exposes prompt_templates for the LLM Config GUI', (
         `${phaseId} defaultTemplate must contain {{TEMPLATE_VARIABLES}} (canonical syntax)`);
     }
   });
+
+  test('PIF image prompt settings expose full-template required variables', () => {
+    const expectedRequiredBySetting = {
+      viewPromptOverride: ['BRAND', 'MODEL', 'VARIANT_DESC', 'PRIORITY_VIEWS', 'ALL_VIEW_KEYS', 'IMAGE_REQUIREMENTS'],
+      heroPromptOverride: ['HERO_INSTRUCTIONS'],
+      evalPromptOverride: ['IDENTITY', 'VIEW_LINE', 'COUNT_LINE', 'CRITERIA'],
+      heroEvalPromptOverride: ['IDENTITY', 'COUNT_LINE', 'CRITERIA', 'HERO_COUNT'],
+    };
+    const fullTemplateSettings = [
+      ['image-finder', 'viewPromptOverride'],
+      ['image-finder', 'heroPromptOverride'],
+      ['image-evaluator', 'evalPromptOverride'],
+      ['image-evaluator', 'heroEvalPromptOverride'],
+    ];
+    for (const [phaseId, settingKey] of fullTemplateSettings) {
+      const entry = PHASE_SCHEMA_REGISTRY[phaseId].prompt_templates.find(t => t.settingKey === settingKey);
+      assert.ok(entry, `${phaseId} missing ${settingKey}`);
+      const required = (entry.variables || []).filter(v => v.required).map(v => v.name);
+      assert.deepEqual(required, expectedRequiredBySetting[settingKey], `${settingKey} must validate the full template variables runtime resolves`);
+      for (const name of required) {
+        assert.ok(entry.defaultTemplate.includes(`{{${name}}}`), `${settingKey} defaultTemplate must include {{${name}}}`);
+      }
+    }
+  });
 });
 
 // ── Section 2: sibling injection for multi-model families ─────────────

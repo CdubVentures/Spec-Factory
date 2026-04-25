@@ -32,6 +32,7 @@ export function KeyModelStrip() {
             key={t.tier}
             labelPrefix={t.label}
             model={r.model}
+            accessMode={r.accessMode}
             thinking={r.thinking}
             webSearch={r.webSearch}
             effortLevel={r.effortLevel}

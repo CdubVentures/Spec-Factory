@@ -3,6 +3,7 @@ import {
   type ReactNode, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { isTriggerInViewport } from './popoverViewport.ts';
 import './Popover.css';
 
 export type PopoverPlacement = 'bottom' | 'top';
@@ -96,36 +97,51 @@ export function Popover({
   const contentRef = useRef<HTMLDivElement | null>(null);
   const [pos, setPos] = useState<PositionState | null>(null);
 
-  // Measure + position. First pass uses estimates; second pass after real measurement.
-  useLayoutEffect(() => {
-    if (!open) { setPos(null); return; }
+  // Measure + position. Shared by initial open and scroll/resize repositioning
+  // so the panel tracks the trigger as the page reflows around it.
+  const reposition = useCallback(() => {
     const tRect = triggerRef.current?.getBoundingClientRect();
     if (!tRect) return;
+    const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+    if (!isTriggerInViewport(tRect, { width: vw, height: vh })) {
+      setOpen(false);
+      return;
+    }
     const cRect = contentRef.current?.getBoundingClientRect();
     const measured = cRect && cRect.width > 0
       ? { width: cRect.width, height: cRect.height }
       : { width: EST_CONTENT_W, height: EST_CONTENT_H };
     setPos(computePosition(tRect, measured, placement));
-  }, [open, placement, children]);
+  }, [placement, setOpen]);
 
-  // Close on OUTSIDE scroll / resize rather than reposition — matches typical
-  // cell-popover UX. Scrolls originating inside the popover itself (e.g. the
-  // key-list overflow) must NOT close it, so we filter by event target.
+  // First-paint measure: estimate-driven, then real-measurement pass.
+  useLayoutEffect(() => {
+    if (!open) { setPos(null); return; }
+    reposition();
+  }, [open, placement, children, reposition]);
+
+  // Reposition (NOT close) on outside scroll / resize. Layout churn from
+  // sibling components — e.g. the active-row strip mounting when a finder op
+  // starts — would otherwise capture-fire scroll events and snap the popover
+  // shut mid-interaction. Scrolls originating inside the popover itself (e.g.
+  // the key-list overflow) are ignored so internal scrolling is unaffected.
+  // The popover only closes if the trigger leaves the viewport entirely.
   useEffect(() => {
     if (!open) return;
     const onScroll = (e: Event) => {
       const target = e.target as Node | null;
       if (target && contentRef.current && contentRef.current.contains(target)) return;
-      setOpen(false);
+      reposition();
     };
-    const onResize = () => setOpen(false);
+    const onResize = () => reposition();
     window.addEventListener('scroll', onScroll, true);
     window.addEventListener('resize', onResize);
     return () => {
       window.removeEventListener('scroll', onScroll, true);
       window.removeEventListener('resize', onResize);
     };
-  }, [open, setOpen]);
+  }, [open, reposition]);
 
   // Outside click + Esc.
   useEffect(() => {

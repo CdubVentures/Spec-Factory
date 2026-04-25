@@ -2,12 +2,15 @@ import type { KeyTierProgressGen } from '../../types/product.generated.ts';
 import { buildRingDasharray } from './pifRingMath.ts';
 import { useIsModuleRunning } from '../../features/operations/hooks/useFinderOperations.ts';
 import { KeyTierPopover, type KeyTierName } from './KeyTierPopover.tsx';
+import { IndexLabLink } from './IndexLabLink.tsx';
 import './KeyTierRings.css';
 
 export interface KeyTierRingsProps {
   readonly productId: string;
   readonly category: string;
   readonly tiers: readonly KeyTierProgressGen[];
+  readonly brand: string;
+  readonly baseModel: string;
 }
 
 const TIER_LABEL: Readonly<Record<string, string>> = {
@@ -35,7 +38,7 @@ function isKnownTier(t: string): t is KeyTierName {
  * tier's SVG pulses; individual key rows inside the popover pulse on their
  * own when that specific field_key is in flight.
  */
-export function KeyTierRings({ productId, category, tiers }: KeyTierRingsProps) {
+export function KeyTierRings({ productId, category, tiers, brand, baseModel }: KeyTierRingsProps) {
   const anyKfRunning = useIsModuleRunning('kf', productId);
   if (!tiers.length) {
     return <span className="sf-text-subtle text-xs italic">—</span>;
@@ -57,7 +60,6 @@ export function KeyTierRings({ productId, category, tiers }: KeyTierRingsProps) 
               <circle className="sf-ktr-track" cx="25" cy="25" r="21"/>
               <circle className="sf-ktr-track" cx="25" cy="25" r="12"/>
             </svg>
-            <span className="sf-ktr-frac">—</span>
           </span>
         ) : (() => {
           const outer = buildRingDasharray({ filled: resolved, target: total, radius: 21 });
@@ -93,25 +95,38 @@ export function KeyTierRings({ productId, category, tiers }: KeyTierRingsProps) 
                   />
                 )}
               </svg>
-              <span className="sf-ktr-frac">
-                <span className="sf-ktr-frac-resolved">{resolved}</span>
-                <span className="sf-ktr-frac-sep">/</span>
-                <span className="sf-ktr-frac-total">{total}</span>
-              </span>
             </span>
           );
         })();
 
         return (
-          <KeyTierPopover
-            key={t.tier}
-            productId={productId}
-            category={category}
-            tier={t.tier}
-            resolved={resolved}
-            total={total}
-            trigger={clusterBody}
-          />
+          <span key={t.tier} className="sf-ktr-tier">
+            <KeyTierPopover
+              productId={productId}
+              category={category}
+              tier={t.tier}
+              resolved={resolved}
+              total={total}
+              trigger={clusterBody}
+            />
+            <IndexLabLink
+              category={category}
+              productId={productId}
+              brand={brand}
+              baseModel={baseModel}
+              tabId="keyFinder"
+              title={`Open Key Finder for ${label}`}
+              className="sf-ktr-frac"
+            >
+              {total === 0 ? '—' : (
+                <>
+                  <span className="sf-ktr-frac-resolved">{resolved}</span>
+                  <span className="sf-ktr-frac-sep">/</span>
+                  <span className="sf-ktr-frac-total">{total}</span>
+                </>
+              )}
+            </IndexLabLink>
+          </span>
         );
       })}
     </span>

@@ -700,6 +700,7 @@ export const FINDER_MODULES = Object.freeze([
       'run': ['review', 'product', 'publisher'],
       'loop': ['review', 'product', 'publisher'],
       'run-deleted': ['review', 'product', 'publisher'],
+      'field-deleted': ['review', 'product', 'publisher'],
       'deleted': ['review', 'product', 'publisher'],
     },
 

@@ -25,6 +25,8 @@ interface FinderRunModelBadgeProps {
   readonly webSearch?: boolean;
   /** Optional disambiguation label shown as a leading pill (e.g. "PIF", "EVAL"). */
   readonly labelPrefix?: string;
+  /** Show visible API/LAB text next to the access icon. Used where duplicate model IDs appear side by side. */
+  readonly showAccessModeText?: boolean;
 }
 
 const ICON_SIZE = 9;
@@ -90,6 +92,7 @@ export const FinderRunModelBadge = memo(function FinderRunModelBadge({
   thinking,
   webSearch,
   labelPrefix,
+  showAccessModeText,
 }: FinderRunModelBadgeProps) {
   if (!model) return null;
 
@@ -116,10 +119,14 @@ export const FinderRunModelBadge = memo(function FinderRunModelBadge({
       {hasAccessMode && (
         <span
           className="inline-flex items-center"
-          style={{ color: isLab ? 'var(--sf-state-run-ai-fg)' : 'rgb(var(--sf-color-text-muted-rgb))' }}
+          style={{
+            gap: showAccessModeText ? 2 : 0,
+            color: isLab ? 'var(--sf-state-run-ai-fg)' : 'rgb(var(--sf-color-text-muted-rgb))',
+          }}
           title={isLab ? 'LLM Lab' : 'Cloud API'}
         >
           {isLab ? <LabIconMini /> : <ApiIconMini />}
+          {showAccessModeText && <span>{isLab ? 'LAB' : 'API'}</span>}
         </span>
       )}
       {thinking && (

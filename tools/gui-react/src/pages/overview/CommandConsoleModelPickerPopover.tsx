@@ -20,6 +20,14 @@ import {
 } from '../../shared/ui/finder/LlmCapabilityPickerCore.tsx';
 import { useLlmPolicyAuthority } from '../../features/llm-config/state/useLlmPolicyAuthority.ts';
 import { DEFAULT_LLM_POLICY } from '../../features/llm-config/state/llmPolicyDefaults.ts';
+import { RUNTIME_SETTING_DEFAULTS } from '../../stores/settingsManifest.ts';
+import { mergeDefaultsIntoRegistry } from '../../features/llm-config/state/llmDefaultProviderRegistry.ts';
+import { parseProviderRegistry } from '../../features/llm-config/state/llmProviderRegistryBridge.ts';
+import {
+  PROVIDER_API_KEY_MAP,
+  providerHasApiKey,
+  type RuntimeApiKeySlice,
+} from '../../features/llm-config/state/llmProviderApiKeyGate.ts';
 import type { LlmOverridePhaseId, LlmPhaseOverride, LlmPhaseOverrides } from '../../features/llm-config/types/llmPhaseOverrideTypes.generated.ts';
 import type { LlmProviderEntry } from '../../features/llm-config/types/llmProviderRegistryTypes.ts';
 import type { DifficultyTier } from '../../features/key-finder/hooks/useKeyDifficultyModelMap.ts';
@@ -36,6 +44,7 @@ interface SharedBindingResult {
   readonly inheritedModelId: string;
   readonly allowModelNone: boolean;
   readonly allowWebSearch: boolean;
+  readonly apiKeyFilter: (provider: LlmProviderEntry) => boolean;
 }
 
 interface PickerTierBundle {
@@ -64,6 +73,37 @@ const EMPTY_BUNDLE: LlmCapabilityBundle = {
   webSearch: false,
 };
 
+const DEFAULT_REGISTRY = parseProviderRegistry(RUNTIME_SETTING_DEFAULTS.llmProviderRegistryJson);
+
+function runtimeApiKeysFromPolicy(policy: ReturnType<typeof useLlmPolicyAuthority>['policy']): RuntimeApiKeySlice {
+  return {
+    geminiApiKey: policy.apiKeys.gemini ?? '',
+    deepseekApiKey: policy.apiKeys.deepseek ?? '',
+    anthropicApiKey: policy.apiKeys.anthropic ?? '',
+    openaiApiKey: policy.apiKeys.openai ?? '',
+  };
+}
+
+function buildOverviewPickerRegistry(
+  policy: ReturnType<typeof useLlmPolicyAuthority>['policy'],
+  runtimeApiKeys: RuntimeApiKeySlice,
+): LlmProviderEntry[] {
+  const rawRegistry: LlmProviderEntry[] = Array.isArray(policy.providerRegistry)
+    ? (policy.providerRegistry as LlmProviderEntry[])
+    : [];
+  const merged = mergeDefaultsIntoRegistry(rawRegistry, DEFAULT_REGISTRY);
+  return merged.map((provider) => {
+    const runtimeKeyField = PROVIDER_API_KEY_MAP[provider.id];
+    const runtimeKey = runtimeKeyField ? runtimeApiKeys[runtimeKeyField] : '';
+    const apiKey = provider.apiKey || runtimeKey || '';
+    return apiKey === provider.apiKey ? provider : { ...provider, apiKey };
+  });
+}
+
+function createOverviewApiKeyFilter(runtimeApiKeys: RuntimeApiKeySlice): (provider: LlmProviderEntry) => boolean {
+  return (provider: LlmProviderEntry) => providerHasApiKey(provider, runtimeApiKeys);
+}
+
 function bundleFromPhaseSlot(slot: Partial<LlmPhaseOverride> | undefined): LlmCapabilityBundle {
   return {
     model: slot?.baseModel ?? '',
@@ -91,6 +131,18 @@ function useFinderPhaseBundleBinding(phaseId: LlmOverridePhaseId): SharedBinding
   const overrides = (llmAuthority.policy.phaseOverrides ?? {}) as LlmPhaseOverrides;
   const slot = overrides[phaseId];
   const value = useMemo(() => bundleFromPhaseSlot(slot), [slot]);
+  const runtimeApiKeys = useMemo(
+    () => runtimeApiKeysFromPolicy(llmAuthority.policy),
+    [llmAuthority.policy],
+  );
+  const registry = useMemo(
+    () => buildOverviewPickerRegistry(llmAuthority.policy, runtimeApiKeys),
+    [llmAuthority.policy, runtimeApiKeys],
+  );
+  const apiKeyFilter = useMemo(
+    () => createOverviewApiKeyFilter(runtimeApiKeys),
+    [runtimeApiKeys],
+  );
 
   const onChange = useCallback((next: LlmCapabilityBundle) => {
     const current = (overrides[phaseId] ?? {}) as Partial<LlmPhaseOverride>;
@@ -110,10 +162,6 @@ function useFinderPhaseBundleBinding(phaseId: LlmOverridePhaseId): SharedBinding
     });
   }, [llmAuthority, overrides, phaseId]);
 
-  const registry: LlmProviderEntry[] = Array.isArray(llmAuthority.policy.providerRegistry)
-    ? (llmAuthority.policy.providerRegistry as LlmProviderEntry[])
-    : [];
-
   return {
     value,
     onChange,
@@ -124,6 +172,7 @@ function useFinderPhaseBundleBinding(phaseId: LlmOverridePhaseId): SharedBinding
     allowModelNone: true,
     // WHY: writer phase blocks web search; CEF/PIF/EVAL/RDF/SKU all permit it.
     allowWebSearch: phaseId !== 'writer',
+    apiKeyFilter,
   };
 }
 
@@ -133,6 +182,18 @@ function useKeyFinderTierBundleBinding(tier: KfTierSlot): SharedBindingResult {
   const slot = tiers[tier];
   const fallbackSlot = tiers.fallback;
   const value = useMemo(() => bundleFromTierSlot(slot), [slot]);
+  const runtimeApiKeys = useMemo(
+    () => runtimeApiKeysFromPolicy(llmAuthority.policy),
+    [llmAuthority.policy],
+  );
+  const registry = useMemo(
+    () => buildOverviewPickerRegistry(llmAuthority.policy, runtimeApiKeys),
+    [llmAuthority.policy, runtimeApiKeys],
+  );
+  const apiKeyFilter = useMemo(
+    () => createOverviewApiKeyFilter(runtimeApiKeys),
+    [runtimeApiKeys],
+  );
 
   const onChange = useCallback((next: LlmCapabilityBundle) => {
     const current = (tiers[tier] ?? {}) as PickerTierBundle;
@@ -142,10 +203,6 @@ function useKeyFinderTierBundleBinding(tier: KfTierSlot): SharedBindingResult {
       { keyFinderTiers: nextTiers } as unknown as Partial<typeof llmAuthority.policy>,
     );
   }, [llmAuthority, tiers, tier]);
-
-  const registry: LlmProviderEntry[] = Array.isArray(llmAuthority.policy.providerRegistry)
-    ? (llmAuthority.policy.providerRegistry as LlmProviderEntry[])
-    : [];
 
   const isFallback = tier === 'fallback';
   return {
@@ -157,6 +214,7 @@ function useKeyFinderTierBundleBinding(tier: KfTierSlot): SharedBindingResult {
     inheritedModelId: !isFallback ? (fallbackSlot?.model ?? '') : '',
     allowModelNone: !isFallback,
     allowWebSearch: true,
+    apiKeyFilter,
   };
 }
 
@@ -192,6 +250,7 @@ function PhasePickerBody({ phaseId, title }: { phaseId: LlmOverridePhaseId; titl
         inheritedModelId={binding.inheritedModelId}
         allowModelNone={binding.allowModelNone}
         allowWebSearch={binding.allowWebSearch}
+        apiKeyFilter={binding.apiKeyFilter}
         inputCls="sf-input w-full py-2 sf-text-label leading-5"
       />
     </FinderRunPopoverShell>
@@ -212,6 +271,7 @@ function KfTierPickerBody({ tier, title }: { tier: KfTierSlot; title: string }) 
         inheritedModelId={binding.inheritedModelId}
         allowModelNone={binding.allowModelNone}
         allowWebSearch={binding.allowWebSearch}
+        apiKeyFilter={binding.apiKeyFilter}
         inputCls="sf-input w-full py-2 sf-text-label leading-5"
       />
     </FinderRunPopoverShell>
@@ -235,4 +295,13 @@ export function CommandConsoleModelPickerPopover(props: CommandConsoleModelPicke
 }
 
 // Re-export for tests + downstream consumers.
-export { useFinderPhaseBundleBinding, useKeyFinderTierBundleBinding, bundleFromPhaseSlot, bundleFromTierSlot, EMPTY_BUNDLE };
+export {
+  useFinderPhaseBundleBinding,
+  useKeyFinderTierBundleBinding,
+  bundleFromPhaseSlot,
+  bundleFromTierSlot,
+  EMPTY_BUNDLE,
+  runtimeApiKeysFromPolicy,
+  buildOverviewPickerRegistry,
+  createOverviewApiKeyFilter,
+};
