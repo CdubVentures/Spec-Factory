@@ -42,14 +42,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: var(--sf-font-family-mono, "SFMono-Regular", "Consolas", "Liberation Mono", monospace);
-  font-size: 10.5px;
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-caption);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--sf-token-letter-spacing-tight);
   color: rgb(var(--sf-color-text-primary-rgb));
 }
 
 .sf-confidence-ring-label-na {
-  font-size: 14px;
+  font-size: var(--sf-token-font-size-body-sm);
   color: rgb(var(--sf-color-text-dim-rgb, var(--sf-color-text-subtle-rgb)));
 }

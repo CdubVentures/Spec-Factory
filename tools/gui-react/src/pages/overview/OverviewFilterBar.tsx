@@ -6,7 +6,7 @@ import {
   type SegmentOption,
 } from '../../shared/ui/filterBar/index.ts';
 
-export type OverviewSortKey = 'default' | 'confidence' | 'coverage' | 'fields' | 'live' | 'live-grouped';
+export type OverviewSortKey = 'default' | 'confidence' | 'coverage' | 'fields';
 
 export interface OverviewFilterState {
   readonly search: string;
@@ -25,8 +25,6 @@ const SORT_LABELS: Readonly<Record<OverviewSortKey, string>> = {
   confidence: 'Confidence',
   coverage: 'Coverage',
   fields: 'Fields',
-  live: 'Live',
-  'live-grouped': 'Grouped',
 };
 
 /**
@@ -44,8 +42,6 @@ export const OverviewFilterBar = memo(function OverviewFilterBar({
     { value: 'confidence', label: SORT_LABELS.confidence, count: 0, tone: 'success' },
     { value: 'coverage',   label: SORT_LABELS.coverage,   count: 0, tone: 'info' },
     { value: 'fields',     label: SORT_LABELS.fields,     count: 0, tone: 'accent' },
-    { value: 'live',       label: SORT_LABELS.live,       count: 0, tone: 'warning' },
-    { value: 'live-grouped', label: SORT_LABELS['live-grouped'], count: 0, tone: 'warning' },
   ], []);
 
   const setField = <K extends keyof OverviewFilterState>(key: K, value: OverviewFilterState[K]) => {

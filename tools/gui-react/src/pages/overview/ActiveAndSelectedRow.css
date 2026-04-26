@@ -14,7 +14,7 @@
   padding: 6px 10px;
   background: var(--sf-token-surface, #fff);
   border: 1px solid var(--sf-token-border, #e5e9ef);
-  border-radius: 8px;
+  border-radius: var(--sf-token-radius-lg);
   min-width: 0;
   flex-wrap: wrap;
   /* WHY: reserve a stable height matching the populated state (badge=26 +
@@ -61,8 +61,8 @@
   border-radius: var(--sf-token-radius-pill);
   color: #fff;
   font-weight: 700;
-  font-size: 11px;
-  line-height: 1;
+  font-size: var(--sf-token-font-size-caption);
+  line-height: var(--sf-token-line-height-none);
 }
 
 .sf-aas-count-active {
@@ -74,13 +74,13 @@
 }
 
 .sf-aas-eyebrow-label {
-  font-size: 9px;
+  font-size: var(--sf-token-font-size-nano);
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: var(--sf-token-letter-spacing-widest);
   text-transform: uppercase;
   color: rgb(var(--sf-color-text-subtle-rgb));
   white-space: nowrap;
-  line-height: 1;
+  line-height: var(--sf-token-line-height-none);
 }
 
 /* ── Scrollable badge track ─────────────────────────────────────────── */
@@ -106,7 +106,7 @@
 }
 .sf-aas-track::-webkit-scrollbar-thumb {
   background: var(--sf-token-border, #c4c8d2);
-  border-radius: 4px;
+  border-radius: var(--sf-token-radius-sm);
 }
 
 /* ── Badge — base ───────────────────────────────────────────────────── */
@@ -118,8 +118,8 @@
   height: 26px;
   padding: 0 4px 0 10px;
   border-radius: var(--sf-token-radius-pill);
-  font-size: 11px;
-  line-height: 1;
+  font-size: var(--sf-token-font-size-caption);
+  line-height: var(--sf-token-line-height-none);
   transition: border-color 120ms ease, background 120ms ease;
 }
 
@@ -147,9 +147,9 @@
 }
 
 .sf-aas-brand {
-  font-size: 9.5px;
+  font-size: var(--sf-token-font-size-nano);
   font-weight: 700;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--sf-token-letter-spacing-wider);
   text-transform: uppercase;
   color: rgb(var(--sf-color-text-subtle-rgb));
 }
@@ -159,7 +159,7 @@
 }
 
 .sf-aas-variant {
-  font-size: 10px;
+  font-size: var(--sf-token-font-size-nano);
   color: rgb(var(--sf-color-text-subtle-rgb));
   font-weight: 500;
 }
@@ -180,7 +180,7 @@
   justify-content: center;
   width: 16px;
   height: 16px;
-  border-radius: 4px;
+  border-radius: var(--sf-token-radius-sm);
   background: var(--sf-token-surface, #fff);
   border: 1px solid currentColor;
   animation: sf-aas-pulse 1.4s ease-in-out infinite;
@@ -209,9 +209,9 @@
   background: transparent;
   border: none;
   color: rgb(var(--sf-color-text-subtle-rgb));
-  font-size: 14px;
+  font-size: var(--sf-token-font-size-body-sm);
   font-weight: 600;
-  line-height: 1;
+  line-height: var(--sf-token-line-height-none);
   cursor: pointer;
   flex-shrink: 0;
   transition: background 120ms ease, color 120ms ease;
@@ -230,11 +230,11 @@
   background: transparent;
   border: 1px solid var(--sf-token-state-danger-fg, #c92a2a);
   color: var(--sf-token-state-danger-fg, #c92a2a);
-  border-radius: 4px;
-  font-size: 10.5px;
+  border-radius: var(--sf-token-radius-sm);
+  font-size: var(--sf-token-font-size-caption);
   font-weight: 600;
   cursor: pointer;
-  line-height: 1;
+  line-height: var(--sf-token-line-height-none);
   transition: background 120ms ease, color 120ms ease;
 }
 .sf-aas-clear:hover {

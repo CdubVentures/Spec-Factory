@@ -677,9 +677,35 @@ export async function callLlmWithRouting({
     return baseCallId;
   };
 
-  const emitTrackedCall = ({ label, prompt, response, route, isFallback = false, usage = null, startedAt = null, durationMs = null, error = null }) => {
+  const modelContextForRoute = ({ route, thinking = false, webSearch = false, effortLevel = '' } = {}) => {
+    const model = route?.model || '';
+    const resolvedThinking = Boolean(thinking);
+    return {
+      thinking: resolvedThinking,
+      webSearch: Boolean(webSearch),
+      effortLevel: resolveEffortLabel({ model, effortLevel, thinking: resolvedThinking }),
+      accessMode: route?._registryEntry?.accessMode || route?.accessMode || 'api',
+    };
+  };
+
+  const primaryModelContext = modelContextForRoute({
+    route: primary,
+    thinking: phaseThinking,
+    webSearch: phaseWebSearch,
+    effortLevel: phaseThinkingEffort,
+  });
+
+  const fallbackModelContext = () => modelContextForRoute({
+    route: fallback,
+    thinking: resolvePhaseFlag(config, phase, 'FallbackThinking'),
+    webSearch: resolvePhaseFlag(config, phase, 'FallbackWebSearch'),
+    effortLevel: resolvePhaseString(config, phase, 'FallbackThinkingEffort'),
+  });
+
+  const emitTrackedCall = ({ label, prompt, response, route, modelContext = null, isFallback = false, usage = null, startedAt = null, durationMs = null, error = null }) => {
     if (typeof onLlmCallComplete !== 'function') return;
     const callId = resolveTrackedCallId(label);
+    const resolvedModelContext = modelContext || modelContextForRoute({ route });
     onLlmCallComplete({
       ...llmCallExtras,
       ...(callId ? { callId } : {}),
@@ -688,10 +714,10 @@ export async function callLlmWithRouting({
       response,
       model: route?.model || '',
       isFallback: Boolean(isFallback),
-      thinking: false,
-      webSearch: false,
-      effortLevel: extractEffortFromModelName(route?.model || '') || '',
-      accessMode: route?._registryEntry?.accessMode || route?.accessMode || 'api',
+      thinking: resolvedModelContext.thinking,
+      webSearch: resolvedModelContext.webSearch,
+      effortLevel: resolvedModelContext.effortLevel,
+      accessMode: resolvedModelContext.accessMode,
       usage,
       ...(startedAt ? { started_at: startedAt } : {}),
       ...(Number.isFinite(durationMs) ? { duration_ms: durationMs } : {}),
@@ -736,7 +762,7 @@ export async function callLlmWithRouting({
     const fbWebSearch = resolvePhaseFlag(config, phase, 'FallbackWebSearch');
     const fbThinking = resolvePhaseFlag(config, phase, 'FallbackThinking');
     const fbThinkingEffort = resolvePhaseString(config, phase, 'FallbackThinkingEffort');
-    onModelResolved?.({ model: fallback.model, provider: fallback.provider, isFallback: true, accessMode: fallback._registryEntry?.accessMode || 'api', thinking: Boolean(fbThinking), webSearch: Boolean(fbWebSearch), effortLevel: resolveEffortLabel({ model: fallback.model, effortLevel: fbThinkingEffort, thinking: fbThinking }) });
+    onModelResolved?.({ model: fallback.model, provider: fallback.provider, isFallback: true, ...fallbackModelContext() });
     const capFb = capitalize(String(phase || '').trim());
     const fbReasoning = capFb ? Boolean(config[`_resolved${capFb}FallbackUseReasoning`]) : false;
     const fallbackBakedEffort = extractEffortFromModelName(fallback.model);
@@ -797,7 +823,7 @@ export async function callLlmWithRouting({
   const useWriterPhase = !jsonStrictEnabled && jsonSchema;
 
   if (useWriterPhase) {
-    onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch), effortLevel: resolveEffortLabel({ model: primary.model, effortLevel: phaseThinkingEffort, thinking: phaseThinking }) });
+    onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, ...primaryModelContext });
     let researchText;
     const researchPrompt = { system, user };
     const researchLabel = `${llmCallLabel} Research`;
@@ -807,6 +833,7 @@ export async function callLlmWithRouting({
       prompt: researchPrompt,
       response: null,
       route: primary,
+      modelContext: primaryModelContext,
       isFallback: false,
     });
     try {
@@ -826,6 +853,7 @@ export async function callLlmWithRouting({
         prompt: researchPrompt,
         response: researchText,
         route: primary,
+        modelContext: primaryModelContext,
         isFallback: false,
         usage: researchCall.usage,
         startedAt: researchCall.startedAt,
@@ -845,6 +873,7 @@ export async function callLlmWithRouting({
         prompt: researchPrompt,
         response: { status: 'failed', phase: 'research', error: error.message },
         route: primary,
+        modelContext: primaryModelContext,
         isFallback: false,
         error: error.message,
       });
@@ -854,6 +883,7 @@ export async function callLlmWithRouting({
         prompt: researchPrompt,
         response: null,
         route: fallback,
+        modelContext: fallbackModelContext(),
         isFallback: true,
       });
       try {
@@ -864,6 +894,7 @@ export async function callLlmWithRouting({
           prompt: researchPrompt,
           response: researchText,
           route: fallback,
+          modelContext: fallbackModelContext(),
           isFallback: true,
           usage: fallbackResearchCall.usage,
           startedAt: fallbackResearchCall.startedAt,
@@ -875,6 +906,7 @@ export async function callLlmWithRouting({
           prompt: researchPrompt,
           response: { status: 'failed', phase: 'research', error: fallbackError.message },
           route: fallback || primary,
+          modelContext: fallback ? fallbackModelContext() : primaryModelContext,
           isFallback: Boolean(fallback),
           error: fallbackError.message,
         });
@@ -936,6 +968,13 @@ export async function callLlmWithRouting({
     const writerLabel = 'Writer Formatting';
     const writerFallbackLabel = 'Writer Formatting Fallback';
 
+    const writerModelContext = (routeToUse, { isFallback = false } = {}) => modelContextForRoute({
+      route: routeToUse,
+      thinking: isFallback ? writerFallbackThinking : writerThinking,
+      webSearch: false,
+      effortLevel: isFallback ? writerFallbackThinkingEffort : writerThinkingEffort,
+    });
+
     const buildWriterCallParams = (routeToUse, { isFallback = false } = {}) => {
       const routeBakedEffort = extractEffortFromModelName(routeToUse.model);
       const activeReasoning = isFallback ? writerFallbackReasoning : writerReasoning;
@@ -980,11 +1019,13 @@ export async function callLlmWithRouting({
     };
 
     const dispatchWriter = async ({ routeToUse, label, isFallback = false }) => {
+      const trackedModelContext = writerModelContext(routeToUse, { isFallback });
       emitTrackedCall({
         label,
         prompt: writerPrompt,
         response: null,
         route: routeToUse,
+        modelContext: trackedModelContext,
         isFallback,
       });
       try {
@@ -994,6 +1035,7 @@ export async function callLlmWithRouting({
           prompt: writerPrompt,
           response: writerCall.result,
           route: routeToUse,
+          modelContext: trackedModelContext,
           isFallback,
           usage: writerCall.usage,
           startedAt: writerCall.startedAt,
@@ -1006,6 +1048,7 @@ export async function callLlmWithRouting({
           prompt: writerPrompt,
           response: { status: 'failed', phase: 'writer', error: error.message },
           route: routeToUse,
+          modelContext: trackedModelContext,
           isFallback,
           error: error.message,
         });
@@ -1030,13 +1073,14 @@ export async function callLlmWithRouting({
   }
 
   // Existing single-call behavior (jsonStrict: true or no jsonSchema)
-  onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch), effortLevel: resolveEffortLabel({ model: primary.model, effortLevel: phaseThinkingEffort, thinking: phaseThinking }) });
+  onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, ...primaryModelContext });
   const singlePrompt = { system, user };
   emitTrackedCall({
     label: llmCallLabel,
     prompt: singlePrompt,
     response: null,
     route: primary,
+    modelContext: primaryModelContext,
     isFallback: false,
   });
   try {
@@ -1053,6 +1097,7 @@ export async function callLlmWithRouting({
       prompt: singlePrompt,
       response: primaryCall.result,
       route: primary,
+      modelContext: primaryModelContext,
       isFallback: false,
       usage: primaryCall.usage,
       startedAt: primaryCall.startedAt,
@@ -1065,6 +1110,7 @@ export async function callLlmWithRouting({
       prompt: singlePrompt,
       response: { status: 'failed', phase: 'single', error: error.message },
       route: primary,
+      modelContext: primaryModelContext,
       isFallback: false,
       error: error.message,
     });
@@ -1088,6 +1134,7 @@ export async function callLlmWithRouting({
         prompt: singlePrompt,
         response: null,
         route: fallback,
+        modelContext: fallbackModelContext(),
         isFallback: true,
       });
       const fallbackCall = await wrapLabQueue(fallback, () => callProviderWithUsage(buildFallbackCallParams()));
@@ -1096,6 +1143,7 @@ export async function callLlmWithRouting({
         prompt: singlePrompt,
         response: fallbackCall.result,
         route: fallback,
+        modelContext: fallbackModelContext(),
         isFallback: true,
         usage: fallbackCall.usage,
         startedAt: fallbackCall.startedAt,
@@ -1108,6 +1156,7 @@ export async function callLlmWithRouting({
         prompt: singlePrompt,
         response: { status: 'failed', phase: 'single', error: fallbackError.message },
         route: fallback,
+        modelContext: fallbackModelContext(),
         isFallback: true,
         error: fallbackError.message,
       });

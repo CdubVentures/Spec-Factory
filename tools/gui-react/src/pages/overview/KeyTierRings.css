@@ -26,22 +26,22 @@
   align-items: center;
   gap: 3px;
   padding: 2px 1px;
-  border-radius: 5px;
+  border-radius: var(--sf-token-radius-sm);
   cursor: default;
 }
 
 .sf-ktr-label {
-  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace);
-  font-size: 10px;
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-nano);
   font-weight: 700;
   color: rgb(var(--sf-color-text-subtle-rgb));
-  letter-spacing: 0.05em;
+  letter-spacing: var(--sf-token-letter-spacing-wider);
   text-transform: uppercase;
-  line-height: 1;
+  line-height: var(--sf-token-line-height-none);
 }
 .sf-ktr-mandatory {
   color: var(--sf-token-accent, #5f3dc4);
-  font-size: 12px;
+  font-size: var(--sf-token-font-size-label);
 }
 
 .sf-ktr-svg {
@@ -77,11 +77,11 @@
 .sf-ktr-empty .sf-ktr-label { color: rgb(var(--sf-color-text-dim-rgb, var(--sf-color-text-subtle-rgb))); }
 
 .sf-ktr-frac {
-  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace);
-  font-size: 10px;
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-nano);
   font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1;
+  letter-spacing: var(--sf-token-letter-spacing-tight);
+  line-height: var(--sf-token-line-height-none);
   color: rgb(var(--sf-color-text-subtle-rgb));
 }
 .sf-ktr-frac-resolved { color: var(--sf-token-state-success-fg); }

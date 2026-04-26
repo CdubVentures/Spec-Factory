@@ -347,6 +347,73 @@ describe('appendLlmCall', () => {
     assert.equal(append.data.call.isFallback, true);
     assert.equal(append.data.call.effortLevel, 'xhigh');
   });
+
+  it('replaces stale outer pending row when routed research telemetry starts', () => {
+    const broadcastSpy = [];
+    initOperationsRegistry({ broadcastWs: (channel, data) => broadcastSpy.push({ channel, data }) });
+    const op = registerOperation(VALID_OP);
+    broadcastSpy.length = 0;
+
+    appendLlmCall({
+      id: op.id,
+      call: {
+        callId: 'sku:v1:0',
+        prompt: { system: 's', user: 'u' },
+        response: null,
+        model: 'gpt-5.4',
+        label: 'Discovery',
+      },
+    });
+    appendLlmCall({
+      id: op.id,
+      call: {
+        callId: 'sku:v1:0:research',
+        prompt: { system: 's', user: 'u' },
+        response: null,
+        model: 'gpt-5.4',
+        label: 'Discovery Research',
+      },
+    });
+
+    const calls = listOperations()[0].llmCalls;
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].callId, 'sku:v1:0:research');
+    assert.equal(calls[0].label, 'Discovery Research');
+    assert.equal(calls[0].callIndex, 0);
+    assert.deepEqual(
+      broadcastSpy.filter((m) => m.channel === 'operations').map((m) => m.data.action),
+      ['llm-call-append', 'llm-call-update'],
+    );
+  });
+
+  it('does not replace completed outer rows with routed research telemetry', () => {
+    const op = registerOperation(VALID_OP);
+    appendLlmCall({
+      id: op.id,
+      call: {
+        callId: 'sku:v1:0',
+        prompt: { system: 's', user: 'u' },
+        response: { done: true },
+        model: 'gpt-5.4',
+        label: 'Discovery',
+      },
+    });
+    appendLlmCall({
+      id: op.id,
+      call: {
+        callId: 'sku:v1:0:research',
+        prompt: { system: 's', user: 'u' },
+        response: null,
+        model: 'gpt-5.4',
+        label: 'Discovery Research',
+      },
+    });
+
+    const calls = listOperations()[0].llmCalls;
+    assert.equal(calls.length, 2);
+    assert.equal(calls[0].callId, 'sku:v1:0');
+    assert.equal(calls[1].callId, 'sku:v1:0:research');
+  });
 });
 
 // ── updateModelInfo ──────────────────────────────────────────────────

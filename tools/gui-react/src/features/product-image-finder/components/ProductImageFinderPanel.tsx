@@ -12,6 +12,7 @@ import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import {
   IndexingPanelHeader,
   PromptPreviewTriggerButton,
+  PromptDrawerChevron,
   FinderKpiCard,
   FinderPanelFooter,
   FinderEditablePhaseModelBadge,
@@ -461,8 +462,6 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
             <FinderEditablePhaseModelBadge phaseId="imageEvaluator" labelPrefix="EVAL" title="EVAL - Image Evaluator" />
           </>
         }
-        historySlot={<DiscoveryHistoryButton finderId="productImageFinder" productId={productId} category={category} width={ACTION_BUTTON_WIDTH.standardHeader} />}
-        promptSlot={<PromptPreviewTriggerButton onClick={() => setHeaderPromptModalOpen(true)} disabled={!productId || !headerPromptState} width={ACTION_BUTTON_WIDTH.standardHeader} />}
         actionSlot={
           <>
             <HeaderActionButton
@@ -481,6 +480,46 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               disabled={!hasCefData}
               busy={variants.length > 0 && variants.every((v) => loopingVariants.has(v.key))}
               width={ACTION_BUTTON_WIDTH.standardHeader}
+            />
+            <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
+            <PromptDrawerChevron
+              storageKey={`indexing:pif:panel-drawer:${productId}`}
+              openWidthClass="w-[40rem]"
+              drawerHeight="header"
+              ariaLabel="Prompt + history + delete actions for PIF"
+              closedTitle="Show Prompt / Hist / Data for PIF"
+              openedTitle="Hide Prompt / Hist / Data for PIF"
+              openTitle="Prompts:"
+              primaryCustom={
+                <PromptPreviewTriggerButton
+                  onClick={() => setHeaderPromptModalOpen(true)}
+                  disabled={!productId || !headerPromptState}
+                  width={ACTION_BUTTON_WIDTH.standardHeader}
+                />
+              }
+              secondaryTitle="Hist:"
+              secondaryLabelClass="sf-history-label"
+              secondaryCustom={
+                <DiscoveryHistoryButton
+                  finderId="productImageFinder"
+                  productId={productId}
+                  category={category}
+                  width={ACTION_BUTTON_WIDTH.standardHeader}
+                />
+              }
+              tertiaryTitle="Data:"
+              tertiaryLabelClass="sf-delete-label"
+              tertiaryActions={[
+                {
+                  id: 'del-all',
+                  label: 'Delete All',
+                  onClick: () => setDeleteTarget({ kind: 'all', count: runCount }),
+                  disabled: deleteAllMut.isPending,
+                  intent: deleteAllMut.isPending ? 'locked' : 'delete',
+                  width: ACTION_BUTTON_WIDTH.standardHeader,
+                  title: 'Permanently wipe ALL PIF data for this product (runs, URL/query history, image files on disk, evals, carousel slots). Cannot be undone.',
+                },
+              ]}
             />
           </>
         }

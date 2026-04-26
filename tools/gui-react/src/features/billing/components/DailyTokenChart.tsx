@@ -70,7 +70,7 @@ function DailyTokenTooltip({ active, payload, label }: TokenBarTooltipProps) {
         return (
           <div key={p.dataKey} className="sf-chart-tooltip-row">
             <span className="sf-chart-tooltip-label">
-              <span className="sf-filter-dot" style={{ background: entry?.color ?? '#94a3b8' }} />
+              <span className="sf-filter-dot" style={{ background: entry?.color ?? 'var(--sf-token-text-subtle)' }} />
               {entry?.label ?? p.dataKey}
             </span>
             <span className="sf-chart-tooltip-value">

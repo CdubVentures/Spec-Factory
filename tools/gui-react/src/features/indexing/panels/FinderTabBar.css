@@ -96,7 +96,7 @@
 
 /* ── Icon badge — per-finder color pill (idle and active both use tokens) */
 .finder-tab-icon {
-  line-height: 1;
+  line-height: var(--sf-token-line-height-none);
   transition: background .14s ease, border-color .14s ease;
 }
 
@@ -175,7 +175,7 @@
 
 .finder-tab-ring-label {
   font-family: var(--sf-font-family-mono);
-  font-size: 7.5px;
+  font-size: var(--sf-token-font-size-2xs);
   fill: rgb(var(--sf-color-text-primary-rgb));
   font-weight: 700;
 }
@@ -202,10 +202,10 @@
   gap: 5px;
   padding: 3px 8px;
   border-radius: var(--sf-radius-pill);
-  font-size: 9.5px;
+  font-size: var(--sf-token-font-size-nano);
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.45px;
+  letter-spacing: var(--sf-token-letter-spacing-wider);
   background: rgb(var(--sf-color-text-subtle-rgb) / 0.1);
   color: rgb(var(--sf-color-text-muted-rgb));
   border: 1px solid rgb(var(--sf-color-border-subtle-rgb) / 0.5);

@@ -33,7 +33,7 @@ export function VideoSectionPanel(props: GenericSectionPanelProps) {
               being trimmed to just the page content window.
             </span>
             <span className="sf-text-label" style={{ marginTop: 4 }}>
-              Install: <code style={{ background: 'rgba(0,0,0,0.15)', padding: '2px 6px', borderRadius: 4 }}>winget install Gyan.FFmpeg</code> then restart the server.
+              Install: <code style={{ background: 'var(--sf-token-overlay-muted)', padding: '2px 6px', borderRadius: 'var(--sf-token-radius-sm)' }}>winget install Gyan.FFmpeg</code> then restart the server.
             </span>
           </div>
         </div>

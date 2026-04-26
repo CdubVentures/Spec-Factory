@@ -54,14 +54,14 @@ export function CarouselPreviewPopup({
   return createPortal(
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0,0,0,0.88)' }}
+      style={{ backgroundColor: 'var(--sf-token-overlay-backdrop)' }}
       onClick={onClose}
     >
       {/* Close button */}
       <button
         onClick={onClose}
         className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center text-white/60 hover:text-white text-xl transition-colors"
-        style={{ backgroundColor: 'rgba(255,255,255,0.08)' }}
+        style={{ backgroundColor: 'var(--sf-token-overlay-button)' }}
       >
         {'\u2715'}
       </button>
@@ -69,14 +69,14 @@ export function CarouselPreviewPopup({
       {/* Content shell — retail-style: vertical thumb rail + main image */}
       <div
         className="relative flex rounded-xl overflow-hidden shadow-2xl"
-        style={{ width: '70vw', height: '70vh', backgroundColor: 'rgba(18,18,18,1)' }}
+        style={{ width: '70vw', height: '70vh', backgroundColor: 'var(--sf-token-overlay-surface)' }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* ── Left: Vertical thumbnail rail ── */}
         {slides.length > 1 && (
           <div
             className="shrink-0 flex flex-col gap-1.5 py-3 px-2.5 overflow-y-auto"
-            style={{ width: 82, backgroundColor: 'rgba(12,12,12,1)', borderRight: '1px solid rgba(255,255,255,0.06)' }}
+            style={{ width: 82, backgroundColor: 'var(--sf-token-overlay-surface-deep)', borderRight: '1px solid var(--sf-token-overlay-divider)' }}
           >
             {slides.map((slide, i) => {
               const isActive = i === selectedIndex;
@@ -91,7 +91,7 @@ export function CarouselPreviewPopup({
                     width: 62,
                     height: 62,
                     ...(isActive
-                      ? { ringColor: 'var(--sf-state-info-fg, #38bdf8)', ringOffsetColor: 'rgba(12,12,12,1)' }
+                      ? { ringColor: 'var(--sf-token-state-info-fg)', ringOffsetColor: 'var(--sf-token-overlay-surface-deep)' }
                       : {}),
                   }}
                 >
@@ -99,7 +99,7 @@ export function CarouselPreviewPopup({
                     src={slide.src}
                     alt={slide.slotLabel}
                     className="w-full h-full object-contain"
-                    style={{ backgroundColor: 'rgba(255,255,255,0.03)' }}
+                    style={{ backgroundColor: 'transparent' }}
                     draggable={false}
                   />
                 </button>
@@ -137,14 +137,14 @@ export function CarouselPreviewPopup({
                 <button
                   onClick={() => mainApi?.scrollPrev()}
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all hover:scale-110"
-                  style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}
+                  style={{ backgroundColor: 'var(--sf-token-overlay-button-strong)', backdropFilter: 'blur(8px)' }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
                 </button>
                 <button
                   onClick={() => mainApi?.scrollNext()}
                   className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all hover:scale-110"
-                  style={{ backgroundColor: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(8px)' }}
+                  style={{ backgroundColor: 'var(--sf-token-overlay-button-strong)', backdropFilter: 'blur(8px)' }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
                 </button>
@@ -155,7 +155,7 @@ export function CarouselPreviewPopup({
           {/* ── Bottom info bar ── */}
           <div
             className="shrink-0 flex items-center gap-2.5 px-5 py-2.5"
-            style={{ borderTop: '1px solid rgba(255,255,255,0.06)', backgroundColor: 'rgba(12,12,12,1)' }}
+            style={{ borderTop: '1px solid var(--sf-token-overlay-divider)', backgroundColor: 'var(--sf-token-overlay-surface-deep)' }}
           >
             {current && (
               <>
@@ -167,7 +167,7 @@ export function CarouselPreviewPopup({
                     className="shrink-0 rounded-full"
                     style={{
                       width: 7, height: 7,
-                      backgroundColor: current.source === 'eval' ? '#16a34a' : '#38bdf8',
+                      backgroundColor: current.source === 'eval' ? 'var(--sf-token-state-success-fg)' : 'var(--sf-token-state-info-fg)',
                     }}
                   />
                 </ActionTooltip>
@@ -189,7 +189,7 @@ export function CarouselPreviewPopup({
                   <ActionTooltip text={current.reasoning} side="left">
                     <span
                       className="flex items-center justify-center rounded-full font-mono shrink-0 cursor-help"
-                      style={{ width: 16, height: 16, fontSize: 9, color: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.08)' }}
+                      style={{ width: 16, height: 16, fontSize: 9, color: 'rgba(255,255,255,0.5)', backgroundColor: 'var(--sf-token-overlay-button)' }}
                     >
                       R
                     </span>
@@ -199,7 +199,7 @@ export function CarouselPreviewPopup({
                   <ActionTooltip text={`Run ${current.runNumber}`}>
                     <span
                       className="flex items-center justify-center rounded-full font-mono shrink-0"
-                      style={{ width: 16, height: 16, fontSize: 9, color: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.08)' }}
+                      style={{ width: 16, height: 16, fontSize: 9, color: 'rgba(255,255,255,0.5)', backgroundColor: 'var(--sf-token-overlay-button)' }}
                     >
                       {current.runNumber}
                     </span>

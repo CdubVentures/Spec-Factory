@@ -6,6 +6,7 @@ import { PubMark, PubLegend } from '../../../shared/ui/feedback/PubMark.tsx';
 import {
   IndexingPanelHeader,
   PromptPreviewTriggerButton,
+  PromptDrawerChevron,
   FinderKpiCard,
   FinderPanelFooter,
   FinderEditablePhaseModelBadge,
@@ -21,7 +22,7 @@ import {
   PagerNavFooter,
   getIndexingPanelCollapsedDefault,
 } from '../../../shared/ui/finder/index.ts';
-import { RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
+import { HeaderActionButton, RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { usePromptPreviewQuery } from '../../indexing/api/promptPreviewQueries.ts';
 import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
@@ -280,11 +281,59 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
         title="Color & Edition Finder"
         tip="Discovers color variants and edition slugs for this product via LLM analysis."
         isRunning={isRunningCef}
-        onRun={() => fire(cefRunUrl, {})}
         modelStrip={<FinderEditablePhaseModelBadge phaseId="colorFinder" labelPrefix="CEF" title="CEF - Color & Edition Finder" />}
-        historySlot={<DiscoveryHistoryButton finderId="colorEditionFinder" productId={productId} category={category} width={ACTION_BUTTON_WIDTH.standardHeader} />}
-        promptSlot={<PromptPreviewTriggerButton onClick={() => setPromptModalOpen(true)} disabled={!productId} width={ACTION_BUTTON_WIDTH.standardHeader} />}
         defaultButtonWidth={ACTION_BUTTON_WIDTH.standardHeader}
+        actionSlot={
+          <>
+            <HeaderActionButton
+              intent="locked"
+              label="Run"
+              onClick={() => fire(cefRunUrl, {})}
+              disabled={isRunningCef}
+              width={ACTION_BUTTON_WIDTH.standardHeader}
+            />
+            <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
+            <PromptDrawerChevron
+              storageKey={`indexing:cef:panel-drawer:${productId}`}
+              openWidthClass="w-[40rem]"
+              drawerHeight="header"
+              ariaLabel="Prompt + history + delete actions for CEF"
+              closedTitle="Show Prompt / Hist / Data for CEF"
+              openedTitle="Hide Prompt / Hist / Data for CEF"
+              openTitle="Prompts:"
+              primaryCustom={
+                <PromptPreviewTriggerButton
+                  onClick={() => setPromptModalOpen(true)}
+                  disabled={!productId}
+                  width={ACTION_BUTTON_WIDTH.standardHeader}
+                />
+              }
+              secondaryTitle="Hist:"
+              secondaryLabelClass="sf-history-label"
+              secondaryCustom={
+                <DiscoveryHistoryButton
+                  finderId="colorEditionFinder"
+                  productId={productId}
+                  category={category}
+                  width={ACTION_BUTTON_WIDTH.standardHeader}
+                />
+              }
+              tertiaryTitle="Data:"
+              tertiaryLabelClass="sf-delete-label"
+              tertiaryActions={[
+                {
+                  id: 'del-all',
+                  label: 'Delete All',
+                  onClick: () => setDeleteTarget({ kind: 'all', count: runHistoryRows.length }),
+                  disabled: isAnyDeletePending,
+                  intent: isAnyDeletePending ? 'locked' : 'delete',
+                  width: ACTION_BUTTON_WIDTH.standardHeader,
+                  title: 'Permanently wipe ALL CEF data for this product (runs, URL/query history, candidates, published colors/editions, every variant, plus all variant-scoped downstream artifacts: PIF images/runs/evals/carousel and RDF/SKU per-variant entries). Cannot be undone.',
+                },
+              ]}
+            />
+          </>
+        }
       />
 
       {/* Body */}

@@ -36,8 +36,8 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  line-height: 1;
+  font-size: var(--sf-token-font-size-body-sm);
+  line-height: var(--sf-token-line-height-none);
   font-weight: 600;
   flex: none;
 }

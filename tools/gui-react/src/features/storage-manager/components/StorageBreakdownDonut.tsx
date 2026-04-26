@@ -20,7 +20,7 @@ const TYPE_COLORS: Record<string, string> = {
 const FALLBACK_COLORS = [
   'var(--sf-token-state-info-fg)',
   'var(--sf-token-state-error-fg)',
-  '#8b5cf6',
+  'var(--sf-token-accent-strong)',
 ];
 
 const CIRCUMFERENCE = 2 * Math.PI * 43;

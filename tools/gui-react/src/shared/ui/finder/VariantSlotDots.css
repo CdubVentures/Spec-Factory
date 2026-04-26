@@ -14,10 +14,10 @@
 }
 
 .sf-slot-dots-label {
-  font-size: 9.5px;
+  font-size: var(--sf-token-font-size-nano);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--sf-token-letter-spacing-widest);
   color: rgb(var(--sf-color-text-dim-rgb, var(--sf-color-text-subtle-rgb)));
   min-width: 38px;
 }
@@ -43,16 +43,16 @@
 }
 
 .sf-slot-dot-hero {
-  border-radius: 2px;
+  border-radius: var(--sf-token-radius-xs);
   width: 11px;
   height: 11px;
   transform: rotate(45deg);
 }
 
 .sf-slot-dots-frac {
-  font-family: var(--sf-font-family-mono, "SFMono-Regular", "Consolas", "Liberation Mono", monospace);
-  font-size: 11px;
-  letter-spacing: -0.01em;
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-caption);
+  letter-spacing: var(--sf-token-letter-spacing-tight);
   margin-left: 2px;
   min-width: 36px;
 }

@@ -41,17 +41,17 @@
 }
 
 .sf-variant-row-name {
-  font-size: 13.5px;
+  font-size: var(--sf-token-font-size-body-sm);
   font-weight: 700;
   color: rgb(var(--sf-color-text-primary-rgb));
-  letter-spacing: 0.01em;
-  line-height: 1.25;
+  letter-spacing: var(--sf-token-letter-spacing-wide);
+  line-height: var(--sf-token-line-height-tight);
 }
 
 .sf-variant-row-secondary {
-  font-size: 12px;
+  font-size: var(--sf-token-font-size-label);
   color: rgb(var(--sf-color-text-muted-rgb));
-  line-height: 1.3;
+  line-height: var(--sf-token-line-height-snug);
   min-width: 0;
 }
 

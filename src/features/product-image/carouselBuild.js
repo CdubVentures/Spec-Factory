@@ -17,7 +17,6 @@ import {
   createImageEvaluatorCallLlm,
   createHeroEvalCallLlm,
   createThumbnailBase64,
-  buildViewEvalPrompt,
   buildHeroSelectionPrompt,
   resolveCarouselSlots,
 } from './imageEvaluator.js';
@@ -26,7 +25,6 @@ import { buildLlmCallDeps } from '../../core/llm/buildLlmCallDeps.js';
 import { buildBillingOnUsage } from '../../billing/costLedger.js';
 import { matchVariant } from './variantMatch.js';
 import {
-  resolveViewEvalPromptInputs,
   resolveHeroEvalPromptInputs,
 } from './productImagePreviewPrompt.js';
 
@@ -200,26 +198,6 @@ export async function runEvalView({
   const evalCriteria = dbCriteria || resolveViewEvalCriteria(product.category, view);
 
   const evalFn = _evalViewFn || evaluateViewCandidates;
-  const viewLabel = `Evaluate ${view.charAt(0).toUpperCase() + view.slice(1)}`;
-  const evalVariant = {
-    key: variantKey,
-    variant_id: variantId || null,
-    label: viewImages[0]?.variant_label || variantKey,
-    type: viewImages[0]?.variant_type || 'color',
-  };
-  const preEvalPrompt = buildViewEvalPrompt({
-    ...resolveViewEvalPromptInputs({
-      product,
-      variant: evalVariant,
-      view,
-      viewDescription,
-      candidates: viewImages,
-      evalPromptOverride,
-      evalCriteria,
-    }),
-    carouselContext,
-  });
-  onLlmCallComplete?.({ prompt: { system: preEvalPrompt, user: `${view} view — ${viewImages.length} candidates` }, response: null, model: resolvedModelName, variant: variantKey, mode: 'view-eval', label: viewLabel });
   const result = await evalFn({
     imagePaths,
     imageMetadata,
@@ -234,7 +212,6 @@ export async function runEvalView({
     carouselContext,
     callLlm,
   });
-  onLlmCallComplete?.({ prompt: { system: result._prompt || '(view eval)', user: `${view} view — ${viewImages.length} candidates` }, response: result._response, model: resolvedModelName, variant: variantKey, mode: 'view-eval', usage: result.usage || null, label: viewLabel });
 
   // WHY: Serialize JSON writes per product — multiple view evals fire simultaneously
   // and all read/modify/write the same product_images.json file.
@@ -560,8 +537,7 @@ export async function runEvalHero({
     heroCriteria,
     heroCount,
   }));
-  onLlmCallComplete?.({ prompt: { system: heroSystemPrompt, user: userText }, response: null, model: resolvedModelName, variant: variantKey, mode: 'hero-eval', label: 'Evaluate Hero' });
-  const { result: heroResults, usage: heroUsage } = await heroCall({
+  const { result: heroResults } = await heroCall({
     product,
     variantLabel,
     variantType,
@@ -572,7 +548,6 @@ export async function runEvalHero({
     userText,
     images,
   });
-  onLlmCallComplete?.({ prompt: { system: heroSystemPrompt, user: userText }, response: heroResults, model: resolvedModelName, variant: variantKey, mode: 'hero-eval', usage: heroUsage || null, label: 'Evaluate Hero' });
 
   // WHY: Serialize JSON writes per product — concurrent eval operations.
   const merge = _mergeFn || mergeEvaluation;

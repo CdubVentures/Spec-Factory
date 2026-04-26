@@ -408,14 +408,14 @@ function CarouselEmptyOverlay({ label, onClose }: { readonly label: string; read
   return (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center"
-      style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}
+      style={{ backgroundColor: 'var(--sf-token-overlay-strong)' }}
       onClick={onClose}
       role="dialog"
       aria-label={`No carousel images for ${label}`}
     >
       <div
         className="rounded-lg px-6 py-5 text-center"
-        style={{ backgroundColor: 'rgba(24,24,24,1)', color: 'rgba(255,255,255,0.85)', minWidth: 280 }}
+        style={{ backgroundColor: 'var(--sf-token-overlay-surface)', color: 'rgba(255,255,255,0.85)', minWidth: 280 }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-[13px] font-semibold mb-1">No carousel images yet</div>
@@ -424,7 +424,7 @@ function CarouselEmptyOverlay({ label, onClose }: { readonly label: string; read
           type="button"
           onClick={onClose}
           className="mt-3 px-3 py-1 rounded text-[11px] font-semibold"
-          style={{ backgroundColor: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.9)' }}
+          style={{ backgroundColor: 'var(--sf-token-overlay-button)', color: 'rgba(255,255,255,0.9)' }}
         >
           Close
         </button>

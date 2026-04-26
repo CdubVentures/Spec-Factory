@@ -13,13 +13,13 @@
 }
 
 .sf-conf-diamond-text {
-  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace);
-  font-size: 13px;
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-body-sm);
   font-weight: 800;
   fill: #fff;
   dominant-baseline: central;
   text-anchor: middle;
-  letter-spacing: -0.03em;
+  letter-spacing: var(--sf-token-letter-spacing-tighter);
 }
 
 /* Confidence tiers — threshold match keyFinder ConfidenceRing */
@@ -35,7 +35,7 @@
 }
 .sf-conf-diamond-empty .sf-conf-diamond-text {
   fill: rgb(var(--sf-color-text-subtle-rgb));
-  font-size: 16px;
+  font-size: var(--sf-token-font-size-body);
   font-weight: 600;
 }
 
@@ -47,10 +47,10 @@
   gap: 6px;
 }
 .sf-run-diamond-frac {
-  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace);
-  font-size: 11px;
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-caption);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--sf-token-letter-spacing-tight);
   margin-left: 4px;
 }
 .sf-run-diamond-frac-done { color: var(--sf-token-state-success-fg); }

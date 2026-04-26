@@ -128,10 +128,10 @@
     border-color: var(--sf-state-error-border);
   }
 
-  .traffic-green { @apply bg-green-500; }
-  .traffic-yellow { @apply bg-yellow-400; }
-  .traffic-red { @apply bg-red-500; }
-  .traffic-gray { @apply bg-gray-400; }
+  .traffic-green { background-color: var(--sf-token-state-success-fg); }
+  .traffic-yellow { background-color: var(--sf-token-state-warning-fg); }
+  .traffic-red { background-color: var(--sf-token-state-error-fg); }
+  .traffic-gray { background-color: var(--sf-token-text-subtle); }
 }
 
 .animate-dot-bounce {

@@ -12,7 +12,7 @@
   align-items: center;
   gap: 14px;
   flex-wrap: wrap;
-  font-size: 10.5px;
+  font-size: var(--sf-token-font-size-caption);
   color: rgb(var(--sf-color-text-subtle-rgb));
   padding: 2px 2px 6px;
   margin-top: -4px;
@@ -28,7 +28,7 @@
   display: inline-block;
   width: 12px;
   height: 3px;
-  border-radius: 2px;
+  border-radius: var(--sf-token-radius-xs);
 }
 .sf-ktp-legend-sw-done { background: var(--sf-token-state-success-fg, #2b8a3e); }
 .sf-ktp-legend-sw-part { background: var(--sf-token-state-warning-fg, #e67700); }
@@ -47,7 +47,7 @@
 
 .sf-ktp-empty {
   padding: 12px 4px;
-  font-size: 12px;
+  font-size: var(--sf-token-font-size-label);
   color: rgb(var(--sf-color-text-subtle-rgb));
   text-align: center;
   font-style: italic;
@@ -68,9 +68,9 @@
 }
 
 .sf-ktp-group-label {
-  font-size: 10px;
+  font-size: var(--sf-token-font-size-nano);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--sf-token-letter-spacing-widest);
   text-transform: uppercase;
   color: rgb(var(--sf-color-text-subtle-rgb));
   padding: 0 2px 4px;
@@ -91,7 +91,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 5px 8px;
-  border-radius: 5px;
+  border-radius: var(--sf-token-radius-sm);
   background: var(--sf-token-surface-alt, #fafbfc);
   border: 1px solid var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
   transition: background 120ms ease;
@@ -114,7 +114,7 @@
 .sf-ktp-row-label {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
+  font-size: var(--sf-token-font-size-label);
   font-weight: 500;
   color: rgb(var(--sf-color-text-primary-rgb));
   white-space: nowrap;
@@ -136,13 +136,13 @@
 }
 
 .sf-ktp-btn {
-  font-size: 11px;
+  font-size: var(--sf-token-font-size-caption);
   font-weight: 600;
   padding: 3px 9px;
-  border-radius: 4px;
+  border-radius: var(--sf-token-radius-sm);
   border: 1px solid transparent;
   cursor: pointer;
-  line-height: 1.2;
+  line-height: var(--sf-token-line-height-tight);
   transition: background 120ms ease, border-color 120ms ease;
 }
 .sf-ktp-btn-primary {
@@ -179,10 +179,10 @@
 .sf-ktp-btn-prompt {
   height: 12px;
   width: 100%;
-  font-size: 7px;
+  font-size: var(--sf-token-font-size-2xs);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
-  line-height: 1;
+  letter-spacing: var(--sf-token-letter-spacing-widest);
+  line-height: var(--sf-token-line-height-none);
   padding: 0;
 }

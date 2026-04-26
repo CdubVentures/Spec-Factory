@@ -135,10 +135,11 @@ const urlColumns: ColumnDef<ProductHistoryUrlRow, unknown>[] = [
 
 /* ── Chart constants ──────────────────────────────────────────────── */
 
-const C_OK = '#86efac';
-const C_TIMEOUT = '#c084fc';
-const C_BLOCKED = '#fcd34d';
-const C_TT_BG = '#111f41';
+// WHY: All chart palette colors flow through theme tokens so any theme can re-skin them.
+const C_OK = 'var(--sf-token-state-success-fg)';
+const C_TIMEOUT = 'var(--sf-token-state-timeout-fg)';
+const C_BLOCKED = 'var(--sf-token-state-warning-fg)';
+const C_TT_BG = 'var(--sf-token-overlay-strong)';
 
 /* ── Sub-components ───────────────────────────────────────────────── */
 
@@ -203,10 +204,10 @@ function buildPipelineSteps(f: RunFunnelSummary): FlowStepDef[] {
     { badge: 'Fetched', badgeCls: 'sf-callout-info', value: f.urls_ok, valueCls: 'text-[var(--sf-token-accent-strong)]', label: 'OK', extra: (f.urls_blocked > 0 || f.urls_error > 0) ? (
       <div className="flex gap-1 mt-1.5">
         {f.urls_blocked > 0 && <span className="sf-callout-danger text-[9px] font-semibold px-1.5 py-0 rounded">{f.urls_blocked} blocked</span>}
-        {f.urls_error > 0 && <span className="text-[9px] font-semibold px-1.5 py-0 rounded" style={{ background: 'rgba(147,51,234,0.12)', color: '#c084fc' }}>{f.urls_error} timeout</span>}
+        {f.urls_error > 0 && <span className="text-[9px] font-semibold px-1.5 py-0 rounded" style={{ background: 'var(--sf-token-state-timeout-bg)', color: 'var(--sf-token-state-timeout-fg)' }}>{f.urls_error} timeout</span>}
       </div>
     ) : undefined },
-    { badge: 'Parsed', badgeCls: 'sf-callout-info', value: f.docs_parsed, valueCls: 'text-[#c084fc]', label: pct(f.docs_parsed, f.urls_ok + f.urls_blocked + f.urls_error) },
+    { badge: 'Parsed', badgeCls: 'sf-callout-info', value: f.docs_parsed, valueCls: 'text-[var(--sf-token-state-timeout-fg)]', label: pct(f.docs_parsed, f.urls_ok + f.urls_blocked + f.urls_error) },
   ];
 }
 
@@ -268,9 +269,9 @@ function DomainHealthBars({ domains }: { domains: DomainBreakdownRow[] }) {
           <span className="w-[130px] font-mono text-[10px] sf-text-primary truncate">{d.domain}</span>
           <div className="flex-1 h-4 rounded sf-surface-panel overflow-hidden flex">
             <div className="h-full rounded-l" style={{ width: `${(d.ok / maxUrls) * 100}%`, background: C_OK }} />
-            {d.errors > 0 && <div className="h-full" style={{ width: `${(d.errors / maxUrls) * 100}%`, background: '#f87171' }} />}
+            {d.errors > 0 && <div className="h-full" style={{ width: `${(d.errors / maxUrls) * 100}%`, background: 'var(--sf-token-state-error-fg)' }} />}
           </div>
-          <span className="w-10 text-right font-mono text-[10px]" style={{ color: d.errors > 0 ? '#f87171' : C_OK }}>
+          <span className="w-10 text-right font-mono text-[10px]" style={{ color: d.errors > 0 ? 'var(--sf-token-state-error-fg)' : C_OK }}>
             {d.ok}/{d.urls}
           </span>
         </div>
@@ -305,7 +306,7 @@ function ErrorsTab({ errors, run }: { errors: FetchErrorRow[]; run: ProductHisto
           <div className="text-[10px] font-semibold uppercase tracking-wide sf-text-muted mt-1">HTTP Blocked</div>
         </div>
         <div className="sf-surface-elevated rounded-lg p-4 text-center">
-          <div className="text-[28px] font-bold" style={{ color: '#c084fc' }}>{timeouts}</div>
+          <div className="text-[28px] font-bold" style={{ color: 'var(--sf-token-state-timeout-fg)' }}>{timeouts}</div>
           <div className="text-[10px] font-semibold uppercase tracking-wide sf-text-muted mt-1">Timeouts</div>
         </div>
         <div className="sf-surface-elevated rounded-lg p-4 text-center">
@@ -323,7 +324,7 @@ function ErrorsTab({ errors, run }: { errors: FetchErrorRow[]; run: ProductHisto
               <div key={`${e.url}-${i}`} className="flex items-center gap-3 px-4 py-3">
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-extrabold font-mono shrink-0 ${
                   isTimeout ? '' : 'sf-callout-warning'
-                }`} style={isTimeout ? { background: 'rgba(147,51,234,0.12)', color: '#c084fc', border: '1px solid rgba(147,51,234,0.25)' } : undefined}>
+                }`} style={isTimeout ? { background: 'var(--sf-token-state-timeout-bg)', color: 'var(--sf-token-state-timeout-fg)', border: '1px solid var(--sf-token-state-timeout-border)' } : undefined}>
                   {isTimeout ? 'T/O' : e.http_status}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -336,7 +337,7 @@ function ErrorsTab({ errors, run }: { errors: FetchErrorRow[]; run: ProductHisto
                 </div>
                 <span className={`text-[10px] font-semibold px-2.5 py-1 rounded-full shrink-0 ${
                   isTimeout ? '' : 'sf-callout-warning'
-                }`} style={isTimeout ? { background: 'rgba(147,51,234,0.12)', color: '#c084fc' } : undefined}>
+                }`} style={isTimeout ? { background: 'var(--sf-token-state-timeout-bg)', color: 'var(--sf-token-state-timeout-fg)' } : undefined}>
                   {isTimeout ? 'Timeout' : `HTTP ${e.http_status}`}
                 </span>
               </div>
@@ -406,9 +407,9 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
     if (!selRun) return [];
     const f = selRun.funnel;
     return [
-      { name: 'T1 Seeds', value: f.tier1_queries ?? 0, color: '#f97583' },
-      { name: 'T2 Groups', value: f.tier2_queries ?? 0, color: '#79c0ff' },
-      { name: 'T3 Keys', value: f.tier3_queries ?? 0, color: '#7ee787' },
+      { name: 'T1 Seeds', value: f.tier1_queries ?? 0, color: 'var(--sf-token-chart-1)' },
+      { name: 'T2 Groups', value: f.tier2_queries ?? 0, color: 'var(--sf-token-chart-2)' },
+      { name: 'T3 Keys', value: f.tier3_queries ?? 0, color: 'var(--sf-token-chart-3)' },
     ].filter((d) => d.value > 0);
   }, [selRun]);
 
@@ -426,16 +427,16 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
     if (!selRun) return [];
     const counts: Record<string, number> = {};
     for (const d of selRun.domains) counts[d.safety] = (counts[d.safety] || 0) + 1;
-    const colorMap: Record<string, string> = { safe: C_OK, caution: C_BLOCKED, blocked: '#f87171', unknown: '#94a3b8' };
-    return Object.entries(counts).map(([name, value]) => ({ name, value, color: colorMap[name] || '#94a3b8' }));
+    const colorMap: Record<string, string> = { safe: C_OK, caution: C_BLOCKED, blocked: 'var(--sf-token-state-error-fg)', unknown: 'var(--sf-token-chart-8)' };
+    return Object.entries(counts).map(([name, value]) => ({ name, value, color: colorMap[name] || 'var(--sf-token-chart-8)' }));
   }, [selRun]);
 
   const domainRoleData = useMemo(() => {
     if (!selRun) return [];
     const counts: Record<string, number> = {};
     for (const d of selRun.domains) counts[d.role] = (counts[d.role] || 0) + 1;
-    const colorMap: Record<string, string> = { manufacturer: '#818cf8', review: '#93c5fd', retailer: C_BLOCKED, support: '#c084fc', other: '#94a3b8', unknown: '#64748b' };
-    return Object.entries(counts).map(([name, value]) => ({ name, value, color: colorMap[name] || '#94a3b8' }));
+    const colorMap: Record<string, string> = { manufacturer: 'var(--sf-token-chart-5)', review: 'var(--sf-token-chart-6)', retailer: C_BLOCKED, support: 'var(--sf-token-chart-7)', other: 'var(--sf-token-chart-8)', unknown: 'var(--sf-token-chart-8)' };
+    return Object.entries(counts).map(([name, value]) => ({ name, value, color: colorMap[name] || 'var(--sf-token-chart-8)' }));
   }, [selRun]);
 
   const llmSelectionData = useMemo(() => {
@@ -443,7 +444,7 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
     const f = selRun.funnel;
     return [
       ...(f.llm_kept > 0 ? [{ name: 'Kept', value: f.llm_kept, color: C_OK }] : []),
-      ...(f.llm_dropped > 0 ? [{ name: 'Dropped', value: f.llm_dropped, color: '#f87171' }] : []),
+      ...(f.llm_dropped > 0 ? [{ name: 'Dropped', value: f.llm_dropped, color: 'var(--sf-token-state-error-fg)' }] : []),
     ];
   }, [selRun]);
 

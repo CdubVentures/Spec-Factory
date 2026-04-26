@@ -8,22 +8,22 @@
 }
 
 .sf-kpi-label {
-  font-size: 10px;
+  font-size: var(--sf-token-font-size-nano);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--sf-token-letter-spacing-wider);
   color: var(--sf-token-text-muted);
   font-weight: 700;
 }
 
 .sf-kpi-value {
-  font-size: 18px;
+  font-size: var(--sf-token-font-size-title-sm);
   font-weight: 700;
   color: var(--sf-token-text-primary);
-  line-height: 1.15;
+  line-height: var(--sf-token-line-height-tight);
 }
 
 .sf-kpi-unit {
-  font-size: 12px;
+  font-size: var(--sf-token-font-size-label);
   color: var(--sf-token-text-muted);
   font-weight: 500;
 }
@@ -31,7 +31,7 @@
 .sf-kpi-bar {
   margin-top: 6px;
   height: 4px;
-  border-radius: 2px;
+  border-radius: var(--sf-token-radius-xs);
   background: var(--sf-token-surface-elevated);
   overflow: hidden;
 }
@@ -39,7 +39,7 @@
 .sf-kpi-bar-fill {
   height: 100%;
   width: var(--sf-kpi-fill-pct, 0%);
-  border-radius: 2px;
+  border-radius: var(--sf-token-radius-xs);
   transition: width 180ms ease-out;
   background: var(--sf-token-text-muted);
 }
@@ -50,7 +50,7 @@
 .sf-kpi-tile[data-tone="neutral"] .sf-kpi-bar-fill { background: var(--sf-token-text-muted); }
 
 .sf-kpi-sub {
-  font-size: 10.5px;
+  font-size: var(--sf-token-font-size-caption);
   color: var(--sf-token-text-muted);
   margin-top: 1px;
 }

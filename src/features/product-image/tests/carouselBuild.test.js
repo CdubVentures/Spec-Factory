@@ -195,6 +195,28 @@ describe('runEvalView', () => {
     // Mouse top description should mention mouse-specific details (button layout, shape outline)
     assert.ok(capturedDesc.includes('button'), 'mouse top should mention button layout');
   });
+
+  it('does not emit outer LLM call rows around the evaluator-owned call', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'top-black.png', view: 'top' }),
+      makeImage({ filename: 'top-black-2.png', view: 'top' }),
+    ]);
+    const llmCalls = [];
+    await runEvalView({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(),
+      config: {},
+      variantKey: 'color:black',
+      view: 'top',
+      productRoot: TMP,
+      onLlmCallComplete: (call) => llmCalls.push(call),
+      _evalViewFn: async ({ imagePaths }) => ({
+        rankings: [{ filename: path.basename(imagePaths[0]), rank: 1, best: true, flags: [], reasoning: 'ok' }],
+      }),
+      _mergeFn: () => ({}),
+    });
+    assert.deepEqual(llmCalls, []);
+  });
 });
 
 /* ── runEvalHero ────────────────────────────────────────────────── */
@@ -326,6 +348,27 @@ describe('runEvalHero', () => {
     });
     assert.ok(stages.includes('Heroes'));
     assert.ok(stages.includes('Complete'));
+  });
+
+  it('does not emit outer LLM call rows around the hero evaluator-owned call', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'hero-black.png', view: 'hero' }),
+      makeImage({ filename: 'hero-black-2.png', view: 'hero' }),
+    ]);
+    const llmCalls = [];
+    await runEvalHero({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(),
+      config: {},
+      variantKey: 'color:black',
+      productRoot: TMP,
+      onLlmCallComplete: (call) => llmCalls.push(call),
+      _heroCallFn: async ({ candidates }) => ({ result: {
+        heroes: [{ filename: candidates[0].filename, hero_rank: 1, reasoning: 'ok' }],
+      }, usage: null }),
+      _mergeFn: () => ({}),
+    });
+    assert.deepEqual(llmCalls, []);
   });
 });
 

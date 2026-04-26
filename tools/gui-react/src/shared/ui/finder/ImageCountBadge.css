@@ -9,24 +9,24 @@
   padding: 0 10px;
   background: rgb(var(--sf-color-surface-rgb) / 0.5);
   border: 1px solid rgb(var(--sf-color-border-subtle-rgb) / 0.6);
-  border-radius: 6px;
-  line-height: 1;
+  border-radius: var(--sf-token-radius-md);
+  line-height: var(--sf-token-line-height-none);
   flex-shrink: 0;
   box-sizing: border-box;
 }
 
 .sf-image-count-badge-num {
-  font-family: var(--sf-font-family-mono, "SFMono-Regular", "Consolas", "Liberation Mono", monospace);
-  font-size: 12px;
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-label);
   font-weight: 800;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--sf-token-letter-spacing-tight);
   color: rgb(var(--sf-color-text-primary-rgb));
 }
 
 .sf-image-count-badge-label {
-  font-size: 8.5px;
+  font-size: var(--sf-token-font-size-micro);
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: var(--sf-token-letter-spacing-widest);
   font-weight: 700;
   color: rgb(var(--sf-color-text-dim-rgb, var(--sf-color-text-subtle-rgb)));
 }

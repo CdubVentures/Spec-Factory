@@ -37,8 +37,21 @@
   --sf-token-state-key-border: rgba(66, 99, 235, 0.28);
   --sf-token-state-sku-fg: #9e5fe0;
   --sf-token-state-grade-d-fg: #fd7e14;
+  --sf-token-state-timeout-fg: #9333ea;
+  --sf-token-state-timeout-bg: rgba(147, 51, 234, 0.12);
+  --sf-token-state-timeout-border: rgba(147, 51, 234, 0.25);
+  /* Chart categorical palette \u2014 8-slot qualitative scale for donuts/bars */
+  --sf-token-chart-1: #f97583;
+  --sf-token-chart-2: #79c0ff;
+  --sf-token-chart-3: #7ee787;
+  --sf-token-chart-4: #fcd34d;
+  --sf-token-chart-5: #818cf8;
+  --sf-token-chart-6: #93c5fd;
+  --sf-token-chart-7: #c084fc;
+  --sf-token-chart-8: #64748b;
   --sf-token-font-family-ui: "Segoe UI", "Inter", "Helvetica Neue", "Noto Sans", sans-serif;
   --sf-token-font-family-mono: "SFMono-Regular", "Consolas", "Liberation Mono", "Menlo", monospace;
+  --sf-token-font-size-2xs: 7px;
   --sf-token-font-size-micro: 8px;
   --sf-token-font-size-nano: 9px;
   --sf-token-font-size-caption: 11px;
@@ -51,9 +64,18 @@
   --sf-token-font-size-title-lg: 24px;
   --sf-token-font-size-display-sm: 30px;
   --sf-token-font-size-display: 36px;
+  --sf-token-line-height-none: 1;
   --sf-token-line-height-tight: 1.2;
+  --sf-token-line-height-snug: 1.3;
   --sf-token-line-height-normal: 1.45;
   --sf-token-line-height-relaxed: 1.6;
+  --sf-token-letter-spacing-tighter: -0.03em;
+  --sf-token-letter-spacing-tight: -0.02em;
+  --sf-token-letter-spacing-normal: 0;
+  --sf-token-letter-spacing-wide: 0.02em;
+  --sf-token-letter-spacing-wider: 0.05em;
+  --sf-token-letter-spacing-widest: 0.08em;
+  --sf-token-letter-spacing-eyebrow: 0.18em;
   --sf-token-space-0: 0;
   --sf-token-space-0-5: 0.125rem;
   --sf-token-space-1: 0.25rem;
@@ -66,13 +88,54 @@
   --sf-token-space-8: 2rem;
   --sf-token-space-12: 3rem;
   --sf-token-radius-none: 0;
+  --sf-token-radius-xs: 0.125rem;
   --sf-token-radius-sm: 0.25rem;
   --sf-token-radius-md: 0.375rem;
   --sf-token-radius-lg: 0.5rem;
+  --sf-token-radius-xl: 0.75rem;
   --sf-token-radius-pill: 9999px;
   --sf-token-radius-status: var(--sf-token-radius-md);
   --sf-token-radius-chip: var(--sf-token-radius-sm);
   --sf-token-radius-callout: var(--sf-token-radius-sm);
+  /* Modal/popover overlay surfaces (semi-opaque dark over content) */
+  --sf-token-overlay-bg: rgba(11, 18, 32, 0.55);
+  --sf-token-overlay-strong: rgba(11, 18, 32, 0.85);
+  --sf-token-overlay-muted: rgba(11, 18, 32, 0.30);
+  /* Image-viewer / lightbox surfaces \u2014 deliberately near-black across all themes */
+  --sf-token-overlay-backdrop: rgba(0, 0, 0, 0.88);
+  --sf-token-overlay-surface: rgb(18, 18, 18);
+  --sf-token-overlay-surface-deep: rgb(12, 12, 12);
+  --sf-token-overlay-divider: rgba(255, 255, 255, 0.06);
+  --sf-token-overlay-button: rgba(255, 255, 255, 0.08);
+  --sf-token-overlay-button-strong: rgba(0, 0, 0, 0.55);
+  /* Consumer-group badges (Studio workbench: idx, eng, rev, flag, seed, comp, val, pub, llm) */
+  --sf-token-consumer-idx-bg: #cffafe;
+  --sf-token-consumer-idx-fg: #0e7490;
+  --sf-token-consumer-idx-border: #a5f3fc;
+  --sf-token-consumer-eng-bg: #fef3c7;
+  --sf-token-consumer-eng-fg: #92400e;
+  --sf-token-consumer-eng-border: #fde68a;
+  --sf-token-consumer-rev-bg: #ffe4e6;
+  --sf-token-consumer-rev-fg: #be123c;
+  --sf-token-consumer-rev-border: #fecdd3;
+  --sf-token-consumer-flag-bg: #ffedd5;
+  --sf-token-consumer-flag-fg: #c2410c;
+  --sf-token-consumer-flag-border: #fed7aa;
+  --sf-token-consumer-seed-bg: #ecfccb;
+  --sf-token-consumer-seed-fg: #4d7c0f;
+  --sf-token-consumer-seed-border: #d9f99d;
+  --sf-token-consumer-comp-bg: #ede9fe;
+  --sf-token-consumer-comp-fg: #6d28d9;
+  --sf-token-consumer-comp-border: #ddd6fe;
+  --sf-token-consumer-val-bg: #d1fae5;
+  --sf-token-consumer-val-fg: #065f46;
+  --sf-token-consumer-val-border: #a7f3d0;
+  --sf-token-consumer-pub-bg: #dbeafe;
+  --sf-token-consumer-pub-fg: #1d4ed8;
+  --sf-token-consumer-pub-border: #93c5fd;
+  --sf-token-consumer-llm-bg: #fae8ff;
+  --sf-token-consumer-llm-fg: #a21caf;
+  --sf-token-consumer-llm-border: #f5d0fe;
   --sf-color-surface-rgb: 248 250 252;
   --sf-color-surface-elevated-rgb: 255 255 255;
   --sf-color-panel-rgb: 238 242 255;
@@ -127,6 +190,50 @@ html[data-sf-theme-mode='dark'] {
   --sf-token-state-key-fg: #93a9ff;
   --sf-token-state-key-bg: rgba(147, 169, 255, 0.14);
   --sf-token-state-key-border: rgba(147, 169, 255, 0.30);
+  --sf-token-state-timeout-fg: #c084fc;
+  --sf-token-state-timeout-bg: rgba(192, 132, 252, 0.18);
+  --sf-token-state-timeout-border: rgba(192, 132, 252, 0.40);
+  /* Dark-mode chart palette \u2014 brighter saturated values for contrast on dark surfaces */
+  --sf-token-chart-1: #ff7b8a;
+  --sf-token-chart-2: #82c8ff;
+  --sf-token-chart-3: #6ee7a0;
+  --sf-token-chart-4: #fcd34d;
+  --sf-token-chart-5: #a5b4fc;
+  --sf-token-chart-6: #93c5fd;
+  --sf-token-chart-7: #d8b4fe;
+  --sf-token-chart-8: #94a3b8;
+  /* Dark-mode overlays use deeper black with higher opacity for proper contrast */
+  --sf-token-overlay-bg: rgba(0, 0, 0, 0.65);
+  --sf-token-overlay-strong: rgba(0, 0, 0, 0.88);
+  --sf-token-overlay-muted: rgba(0, 0, 0, 0.40);
+  /* Dark-mode consumer badges: muted bg + lighter fg for proper contrast */
+  --sf-token-consumer-idx-bg: rgba(8, 145, 178, 0.20);
+  --sf-token-consumer-idx-fg: #67e8f9;
+  --sf-token-consumer-idx-border: rgba(8, 145, 178, 0.40);
+  --sf-token-consumer-eng-bg: rgba(245, 158, 11, 0.20);
+  --sf-token-consumer-eng-fg: #fcd34d;
+  --sf-token-consumer-eng-border: rgba(245, 158, 11, 0.40);
+  --sf-token-consumer-rev-bg: rgba(225, 29, 72, 0.18);
+  --sf-token-consumer-rev-fg: #fda4af;
+  --sf-token-consumer-rev-border: rgba(225, 29, 72, 0.40);
+  --sf-token-consumer-flag-bg: rgba(234, 88, 12, 0.18);
+  --sf-token-consumer-flag-fg: #fdba74;
+  --sf-token-consumer-flag-border: rgba(234, 88, 12, 0.40);
+  --sf-token-consumer-seed-bg: rgba(101, 163, 13, 0.20);
+  --sf-token-consumer-seed-fg: #bef264;
+  --sf-token-consumer-seed-border: rgba(101, 163, 13, 0.40);
+  --sf-token-consumer-comp-bg: rgba(124, 58, 237, 0.20);
+  --sf-token-consumer-comp-fg: #c4b5fd;
+  --sf-token-consumer-comp-border: rgba(124, 58, 237, 0.40);
+  --sf-token-consumer-val-bg: rgba(5, 150, 105, 0.20);
+  --sf-token-consumer-val-fg: #6ee7b7;
+  --sf-token-consumer-val-border: rgba(5, 150, 105, 0.40);
+  --sf-token-consumer-pub-bg: rgba(37, 99, 235, 0.20);
+  --sf-token-consumer-pub-fg: #93c5fd;
+  --sf-token-consumer-pub-border: rgba(37, 99, 235, 0.40);
+  --sf-token-consumer-llm-bg: rgba(168, 85, 247, 0.18);
+  --sf-token-consumer-llm-fg: #f0abfc;
+  --sf-token-consumer-llm-border: rgba(168, 85, 247, 0.40);
   --sf-color-surface-rgb: 10 19 48;
   --sf-color-surface-elevated-rgb: 17 31 65;
   --sf-color-panel-rgb: 13 24 52;
@@ -670,6 +777,36 @@ html[data-sf-theme='snowstorm'],
 html[data-sf-theme='dawn'],
 html[data-sf-theme='tokyoday'] {
   color-scheme: light;
+  /* WHY: :root pastel consumer-badge bgs (e.g., #cffafe cyan, #fef3c7 amber)
+     read as wash-out on the cream/lavender mid-tone surfaces. Boost bg one
+     tone darker + strengthen fg + thicken border for proper contrast. */
+  --sf-token-consumer-idx-bg:    #a5f3fc;
+  --sf-token-consumer-idx-fg:    #075985;
+  --sf-token-consumer-idx-border:#67e8f9;
+  --sf-token-consumer-eng-bg:    #fde68a;
+  --sf-token-consumer-eng-fg:    #78350f;
+  --sf-token-consumer-eng-border:#fcd34d;
+  --sf-token-consumer-rev-bg:    #fecdd3;
+  --sf-token-consumer-rev-fg:    #9f1239;
+  --sf-token-consumer-rev-border:#fda4af;
+  --sf-token-consumer-flag-bg:    #fed7aa;
+  --sf-token-consumer-flag-fg:    #9a3412;
+  --sf-token-consumer-flag-border:#fdba74;
+  --sf-token-consumer-seed-bg:    #d9f99d;
+  --sf-token-consumer-seed-fg:    #365314;
+  --sf-token-consumer-seed-border:#bef264;
+  --sf-token-consumer-comp-bg:    #ddd6fe;
+  --sf-token-consumer-comp-fg:    #5b21b6;
+  --sf-token-consumer-comp-border:#c4b5fd;
+  --sf-token-consumer-val-bg:    #a7f3d0;
+  --sf-token-consumer-val-fg:    #064e3b;
+  --sf-token-consumer-val-border:#6ee7b7;
+  --sf-token-consumer-pub-bg:    #bfdbfe;
+  --sf-token-consumer-pub-fg:    #1e3a8a;
+  --sf-token-consumer-pub-border:#93c5fd;
+  --sf-token-consumer-llm-bg:    #f5d0fe;
+  --sf-token-consumer-llm-fg:    #86198f;
+  --sf-token-consumer-llm-border:#f0abfc;
 }
 
 html[data-sf-theme='solarized'] .sf-input,
@@ -1489,36 +1626,44 @@ html[data-sf-theme='nightowl'] {
 }
 
 html[data-sf-radius='tight'] {
+  --sf-token-radius-xs: 0.0625rem;
   --sf-token-radius-sm: 0.1875rem;
   --sf-token-radius-md: 0.3125rem;
   --sf-token-radius-lg: 0.4375rem;
+  --sf-token-radius-xl: 0.625rem;
   --sf-token-radius-status: var(--sf-token-radius-md);
   --sf-token-radius-chip: var(--sf-token-radius-sm);
   --sf-token-radius-callout: var(--sf-token-radius-sm);
 }
 
 html[data-sf-radius='standard'] {
+  --sf-token-radius-xs: 0.125rem;
   --sf-token-radius-sm: 0.25rem;
   --sf-token-radius-md: 0.375rem;
   --sf-token-radius-lg: 0.5rem;
+  --sf-token-radius-xl: 0.75rem;
   --sf-token-radius-status: var(--sf-token-radius-md);
   --sf-token-radius-chip: var(--sf-token-radius-sm);
   --sf-token-radius-callout: var(--sf-token-radius-sm);
 }
 
 html[data-sf-radius='relaxed'] {
+  --sf-token-radius-xs: 0.1875rem;
   --sf-token-radius-sm: 0.3125rem;
   --sf-token-radius-md: 0.5rem;
   --sf-token-radius-lg: 0.625rem;
+  --sf-token-radius-xl: 0.875rem;
   --sf-token-radius-status: var(--sf-token-radius-md);
   --sf-token-radius-chip: var(--sf-token-radius-sm);
   --sf-token-radius-callout: var(--sf-token-radius-sm);
 }
 
 html[data-sf-radius='pill-heavy'] {
+  --sf-token-radius-xs: 0.125rem;
   --sf-token-radius-sm: 0.25rem;
   --sf-token-radius-md: 0.375rem;
   --sf-token-radius-lg: 0.5rem;
+  --sf-token-radius-xl: 0.75rem;
   --sf-token-radius-status: var(--sf-token-radius-pill);
   --sf-token-radius-chip: var(--sf-token-radius-pill);
   --sf-token-radius-callout: var(--sf-token-radius-md);
@@ -1579,8 +1724,10 @@ html[data-sf-radius] {
   --sf-space-8: var(--sf-token-space-8);
   --sf-space-12: var(--sf-token-space-12);
   --sf-radius-none: var(--sf-token-radius-none);
+  --sf-radius-xs: var(--sf-token-radius-xs);
   --sf-radius-sm: var(--sf-token-radius-sm);
   --sf-radius-md: var(--sf-token-radius-md);
+  --sf-radius-xl: var(--sf-token-radius-xl);
   --sf-radius-lg: var(--sf-token-radius-lg);
   --sf-radius-pill: var(--sf-token-radius-pill);
   --sf-radius-status: var(--sf-token-radius-status);
@@ -1601,7 +1748,7 @@ html[data-sf-radius] {
 
 ::-webkit-scrollbar-thumb {
   background: rgb(var(--sf-color-border-subtle-rgb) / 0.38);
-  border-radius: 3px;
+  border-radius: var(--sf-token-radius-xs);
 }
 
 ::-webkit-scrollbar-thumb:hover {
@@ -3629,14 +3776,14 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
 .sf-hero-band {
   background: var(--sf-token-surface-elevated);
   border: 1px solid var(--sf-token-border-default);
-  border-radius: 14px;
+  border-radius: var(--sf-token-radius-xl);
   padding: 20px 24px 22px;
   display: flex;
   flex-direction: column;
   gap: 14px;
 }
 
-.sf-hero-band-skel { min-height: 12rem; border-radius: 14px; }
+.sf-hero-band-skel { min-height: 12rem; border-radius: var(--sf-token-radius-xl); }
 
 .sf-hero-header {
   display: flex;
@@ -3735,7 +3882,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   position: relative;
   background: var(--sf-token-surface-elevated);
   border: 1px solid var(--sf-token-border-default);
-  border-radius: 10px;
+  border-radius: var(--sf-token-radius-xl);
   padding: 12px 13px 10px;
   display: flex;
   flex-direction: column;
@@ -3814,7 +3961,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   font-weight: 600;
   font-size: 10px;
   padding: 1px 6px;
-  border-radius: 999px;
+  border-radius: var(--sf-token-radius-pill);
   font-family: 'SFMono-Regular', 'Consolas', monospace;
 }
 
@@ -3844,7 +3991,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   font-family: 'SFMono-Regular', 'Consolas', monospace;
   font-size: 9.5px;
   padding: 1px 5px;
-  border-radius: 3px;
+  border-radius: var(--sf-token-radius-xs);
   color: var(--sf-token-text-subtle);
   background: var(--sf-token-surface-panel);
   border: 1px solid var(--sf-token-border-default);
@@ -3872,7 +4019,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
 .sf-section-heading-bar {
   width: 4px;
   height: 20px;
-  border-radius: 3px;
+  border-radius: var(--sf-token-radius-xs);
   background: var(--sf-cost-accent, #818cf8);
 }
 
@@ -3915,7 +4062,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   gap: 7px;
   align-items: center;
   padding: 3px 6px;
-  border-radius: 5px;
+  border-radius: var(--sf-token-radius-sm);
   color: var(--sf-token-text-muted);
 }
 
@@ -3927,7 +4074,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
 .sf-donut-legend-sq {
   width: 10px;
   height: 10px;
-  border-radius: 3px;
+  border-radius: var(--sf-token-radius-xs);
   justify-self: center;
 }
 
@@ -3957,7 +4104,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   padding: 14px 12px 10px;
   background: var(--sf-token-surface-panel);
   border: 1px solid var(--sf-token-border-default);
-  border-radius: 10px;
+  border-radius: var(--sf-token-radius-xl);
 }
 
 .sf-cache-hit-rate {
@@ -4052,7 +4199,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   font-family: 'SFMono-Regular', 'Consolas', monospace;
   font-size: 10px;
   padding: 1px 6px;
-  border-radius: 3px;
+  border-radius: var(--sf-token-radius-xs);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   font-weight: 700;
@@ -4077,7 +4224,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   display: inline-flex;
   width: 68px;
   height: 8px;
-  border-radius: 3px;
+  border-radius: var(--sf-token-radius-xs);
   overflow: hidden;
   background: var(--sf-token-surface-panel);
   vertical-align: middle;
@@ -4096,7 +4243,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
 .sf-bar-callout {
   padding: 10px 12px;
   background: var(--sf-token-surface-panel);
-  border-radius: 8px;
+  border-radius: var(--sf-token-radius-lg);
   border: 1px solid var(--sf-token-border-default);
   font-size: 11.5px;
   color: var(--sf-token-text-muted);
@@ -4140,7 +4287,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
 
 .sf-filter-chip {
   padding: 4px 12px;
-  border-radius: 6px;
+  border-radius: var(--sf-token-radius-md);
   border: 1px solid var(--sf-token-border-default);
   font-size: 0.72rem;
   font-weight: 500;
@@ -4193,7 +4340,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   border: 0;
   cursor: pointer;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: var(--sf-token-radius-md);
   font-family: inherit;
   font-weight: 500;
 }
@@ -4233,7 +4380,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   align-items: center;
   gap: 3px;
   padding: 3px 8px 3px 6px;
-  border-radius: 8px;
+  border-radius: var(--sf-token-radius-lg);
   border: 1px solid var(--sf-token-border-default);
   background: var(--sf-token-surface-base);
   margin: 0 3px;
@@ -5281,7 +5428,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   font-weight: 700;
   letter-spacing: 0.04em;
   padding: 2px 7px;
-  border-radius: 4px;
+  border-radius: var(--sf-token-radius-sm);
   text-transform: uppercase;
   white-space: nowrap;
   display: inline-block;
@@ -5292,7 +5439,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
   font-weight: 700;
   letter-spacing: 0.03em;
   padding: 1px 4px;
-  border-radius: 3px;
+  border-radius: var(--sf-token-radius-xs);
   text-transform: uppercase;
   display: inline-block;
 }
@@ -5301,7 +5448,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-sky-strong {
 
 .sf-pager-btn {
   padding: 4px 10px;
-  border-radius: 5px;
+  border-radius: var(--sf-token-radius-sm);
   border: 1px solid var(--sf-token-border-default);
   background: var(--sf-token-surface-elevated);
   font-size: 11px;
@@ -6031,6 +6178,16 @@ html[data-sf-theme-mode='dark'] .sf-drawer-input {
 
 .sf-table-head {
   background: linear-gradient(180deg, rgb(var(--sf-color-surface-elevated-rgb)), rgb(var(--sf-color-panel-rgb)));
+  /* WHY: sticky thead must outrank tbody cells that create stacking contexts
+     (rotated SVG rings, transformed badges). Without this, scrolled rotated
+     content paints above the header. */
+  position: relative;
+  z-index: 5;
+}
+.sf-table-head th {
+  position: relative;
+  z-index: 5;
+  background: inherit;
 }
 
 .sf-table-head-cell {
@@ -7230,8 +7387,7 @@ html[data-sf-theme-mode='dark'] .sf-chip-purple {
 
 /* ── LLM Calls Dashboard: Amber text for slow durations ─── */
 
-.sf-text-amber { color: rgb(180 83 9); }
-html[data-sf-theme-mode='dark'] .sf-text-amber { color: rgb(251 191 36); }
+.sf-text-amber { color: var(--sf-token-state-warning-fg); }
 
 /* ── Search Worker Panel: Blink cursor animation ─────────── */
 

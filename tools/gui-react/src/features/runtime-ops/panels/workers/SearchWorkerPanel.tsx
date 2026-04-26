@@ -158,7 +158,7 @@ function CurrentQueryCard({ query, isRunning, isStuck, worker }: {
   const borderClass = isStuck ? 'border-[var(--sf-token-state-warning-fg)]' : query ? 'border-[var(--sf-token-accent)]' : 'sf-border-soft';
   return (
     <div className={`sf-surface-panel rounded-lg p-4 border ${borderClass}`}
-      style={query ? { background: isStuck ? 'rgba(234,179,8,0.04)' : 'rgba(99,102,241,0.04)' } : undefined}
+      style={query ? { background: isStuck ? 'var(--sf-token-state-warning-bg)' : 'var(--sf-token-state-info-bg)' } : undefined}
     >
       <div className="text-[9px] font-bold uppercase tracking-[0.08em] sf-text-dim mb-2">Current Query</div>
       <div className="font-mono text-[13px] break-all leading-relaxed" style={{ color: isStuck ? 'var(--sf-token-state-warning-fg)' : query ? 'var(--sf-token-accent)' : undefined }}>
@@ -220,10 +220,10 @@ function StoryCard({ label, note, isActive, isDone, isStuck }: {
   const done = isDone && !isActive;
   const stuckActive = isActive && isStuck;
   const borderStyle = isActive
-    ? (stuckActive ? '1px solid rgba(245,158,11,0.4)' : '1px solid rgba(var(--sf-color-accent-rgb) / 0.4)')
+    ? (stuckActive ? '1px solid var(--sf-token-state-warning-border)' : '1px solid rgba(var(--sf-color-accent-rgb) / 0.4)')
     : done ? '1px solid rgba(var(--sf-color-accent-rgb) / 0.2)' : undefined;
   const bgStyle = isActive
-    ? (stuckActive ? 'rgba(245,158,11,0.04)' : 'rgba(var(--sf-color-accent-rgb) / 0.04)') : undefined;
+    ? (stuckActive ? 'var(--sf-token-state-warning-bg)' : 'rgba(var(--sf-color-accent-rgb) / 0.04)') : undefined;
 
   return (
     <div className={`flex-1 rounded-lg p-2.5 ${!isActive && !done ? 'sf-surface-card sf-border-soft border' : 'sf-surface-card'}`}
@@ -405,13 +405,13 @@ function AttemptDetail({ attempt, workerId, onJourney, onResults, category }: {
           <div className="h-1.5 rounded overflow-hidden sf-surface-panel flex mb-1.5">
             {triage.keep > 0 && <div className="h-full" style={{ width: `${(triage.keep / triage.total) * 100}%`, background: 'var(--sf-token-state-success-fg)' }} />}
             {triage.maybe > 0 && <div className="h-full" style={{ width: `${(triage.maybe / triage.total) * 100}%`, background: 'var(--sf-token-state-warning-fg)' }} />}
-            {triage.drop > 0 && <div className="h-full" style={{ width: `${(triage.drop / triage.total) * 100}%`, background: 'rgba(248,113,113,0.6)' }} />}
+            {triage.drop > 0 && <div className="h-full" style={{ width: `${(triage.drop / triage.total) * 100}%`, background: 'var(--sf-token-state-error-fg)' }} />}
             {triage.hardDrop > 0 && <div className="h-full" style={{ width: `${(triage.hardDrop / triage.total) * 100}%`, background: 'var(--sf-token-state-error-fg)' }} />}
           </div>
           <div className="flex gap-3 text-[10px]">
             <span className="flex items-center gap-1"><span className="w-[7px] h-[7px] rounded-sm" style={{ background: 'var(--sf-token-state-success-fg)' }} /> <strong style={{ color: 'var(--sf-token-state-success-fg)' }}>{triage.keep}</strong> <span className="sf-text-dim">keep</span></span>
             {triage.maybe > 0 && <span className="flex items-center gap-1"><span className="w-[7px] h-[7px] rounded-sm" style={{ background: 'var(--sf-token-state-warning-fg)' }} /> <strong style={{ color: 'var(--sf-token-state-warning-fg)' }}>{triage.maybe}</strong> <span className="sf-text-dim">maybe</span></span>}
-            <span className="flex items-center gap-1"><span className="w-[7px] h-[7px] rounded-sm" style={{ background: 'rgba(248,113,113,0.6)' }} /> <strong style={{ color: 'var(--sf-token-state-error-fg)' }}>{triage.drop}</strong> <span className="sf-text-dim">drop</span></span>
+            <span className="flex items-center gap-1"><span className="w-[7px] h-[7px] rounded-sm" style={{ background: 'var(--sf-token-state-error-fg)' }} /> <strong style={{ color: 'var(--sf-token-state-error-fg)' }}>{triage.drop}</strong> <span className="sf-text-dim">drop</span></span>
             {triage.hardDrop > 0 && <span className="flex items-center gap-1"><span className="w-[7px] h-[7px] rounded-sm" style={{ background: 'var(--sf-token-state-error-fg)' }} /> <strong style={{ color: 'var(--sf-token-state-error-fg)' }}>{triage.hardDrop}</strong> <span className="sf-text-dim">hard drop</span></span>}
           </div>
         </div>

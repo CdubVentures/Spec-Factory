@@ -4,6 +4,12 @@ import { LoopProgressRouter } from './LoopProgressRouter.tsx';
 import { variantHexPartsForOp } from '../state/opVariantSwatch.ts';
 import { useOpVariantAtomsMap } from '../state/useOpVariantAtomsMap.ts';
 import { sortOperations, readSortMode, writeSortMode, SORT_MODES, type OpSortMode } from '../state/opSort.ts';
+import { selectOperationPreviewStreamText } from '../state/operationStreamPreview.ts';
+import {
+  cancelActiveOperations,
+  formatStopAllActiveOperationsMessage,
+  selectActiveOperationIds,
+} from '../state/operationBulkCancel.ts';
 import { ColorSwatch, useFinderColorHexMap } from '../../../shared/ui/finder';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePersistedNullableTab } from '../../../stores/tabStore.ts';
@@ -134,7 +140,10 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
   readonly onStop: (e: React.MouseEvent) => void;
   readonly confirming: boolean;
 }) {
-  const streamText = useOperationsStore((s) => s.streamTexts.get(op.id) ?? '');
+  const streamText = useOperationsStore((s) => selectOperationPreviewStreamText({
+    streamText: s.streamTexts.get(op.id) ?? '',
+    callStreams: s.callStreamTexts.get(op.id),
+  }));
   const colorHexMap = useFinderColorHexMap();
   const variantAtomsMap = useOpVariantAtomsMap(op);
   const variantHexParts = variantHexPartsForOp(op, colorHexMap, variantAtomsMap);
@@ -155,14 +164,14 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
         hover:bg-[rgb(var(--sf-color-surface-elevated-rgb)/0.85)]
         hover:border-[rgb(var(--sf-color-border-subtle-rgb)/0.6)]
         ${isDone || isCancelled ? 'opacity-60' : ''}
-        ${isError ? 'border-[rgba(248,113,113,0.25)] bg-[rgba(248,113,113,0.04)]' : ''}
+        ${isError ? 'border-[var(--sf-token-state-error-border)] bg-[var(--sf-token-state-error-bg)]' : ''}
       `}
       onClick={onClick}
       role="button"
       tabIndex={0}
     >
       {/* Dismiss badge — only for terminal ops, top-right corner */}
-      {op.status !== 'running' && (
+      {op.status !== 'running' && op.status !== 'queued' && (
         <button
           type="button"
           onClick={onDismiss}
@@ -208,7 +217,7 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
           )}
         </span>
         {/* Inline stop button — always visible for running ops */}
-        {op.status === 'running' && (
+        {(op.status === 'running' || op.status === 'queued') && (
           <button
             type="button"
             onClick={onStop}
@@ -286,6 +295,7 @@ export function OperationsTracker() {
   );
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isStoppingAll, setIsStoppingAll] = useState(false);
   const [sortMode, setSortMode] = useState<OpSortMode>(readSortMode);
 
   const handleSortModeChange = useCallback((mode: OpSortMode) => {
@@ -294,7 +304,7 @@ export function OperationsTracker() {
   }, []);
 
   const sorted = useMemo(() => sortOperations(operations, sortMode), [operations, sortMode]);
-  const runningCount = useMemo(() => sorted.filter((o) => o.status === 'running').length, [sorted]);
+  const activeCount = useMemo(() => selectActiveOperationIds(sorted).length, [sorted]);
   const selectedOp = useMemo(() => {
     if (!selectedOpId) return null;
     return operations.get(selectedOpId) ?? null;
@@ -303,10 +313,10 @@ export function OperationsTracker() {
   // WHY: Force re-render every second to update elapsed timers while ops are running.
   const [, setTick] = useState(0);
   useEffect(() => {
-    if (runningCount === 0) return;
+    if (activeCount === 0) return;
     const interval = setInterval(() => setTick((n) => n + 1), 1000);
     return () => clearInterval(interval);
-  }, [runningCount]);
+  }, [activeCount]);
 
   // Clear confirm timer on unmount
   useEffect(() => () => { if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current); }, []);
@@ -329,7 +339,7 @@ export function OperationsTracker() {
       // Second click — confirmed, fire cancel
       if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
       setConfirmCancelId(null);
-      api.post(`/operations/${op.id}/cancel`).catch(() => {});
+      api.post(`/operations/${encodeURIComponent(op.id)}/cancel`).catch(() => {});
     } else {
       // First click — show confirmation, auto-reset after 3s
       setConfirmCancelId(op.id);
@@ -338,32 +348,53 @@ export function OperationsTracker() {
     }
   }, [confirmCancelId]);
 
+  const handleStopAll = useCallback(() => {
+    if (activeCount === 0 || isStoppingAll) return;
+    if (typeof window !== 'undefined' && !window.confirm(formatStopAllActiveOperationsMessage(activeCount))) return;
+
+    setIsStoppingAll(true);
+    void cancelActiveOperations(sorted, (operationId) =>
+      api.post(`/operations/${encodeURIComponent(operationId)}/cancel`, {}),
+    ).finally(() => setIsStoppingAll(false));
+  }, [activeCount, isStoppingAll, sorted]);
+
   return (
     <div className={`flex flex-col ${isOpen ? 'flex-1' : 'flex-none'}`} style={{ minHeight: 0 }}>
       {/* Header */}
-      <button
-        type="button"
-        onClick={toggleOpen}
-        className="flex items-center gap-1.5 pb-1.5 cursor-pointer select-none group"
-      >
-        <span className="text-[10px] font-semibold uppercase tracking-[0.06em] sf-text-subtle flex-1 text-left">
-          Active Operations
-        </span>
-        {sorted.length > 0 && (
-          <span className={`
-            inline-flex items-center justify-center min-w-[15px] h-[15px] px-1
-            text-[9px] font-bold rounded-full leading-none
-            ${runningCount > 0
-              ? 'text-[rgb(var(--sf-color-text-inverse-rgb))] bg-[rgb(var(--sf-color-accent-rgb))]'
-              : 'sf-text-muted bg-[rgb(var(--sf-color-border-default-rgb))]'}
-          `}>
-            {runningCount}
+      <div className="flex items-center gap-1.5 pb-1.5">
+        <button
+          type="button"
+          onClick={toggleOpen}
+          className="flex items-center gap-1.5 cursor-pointer select-none group min-w-0 flex-1"
+        >
+          <span className="text-[10px] font-semibold uppercase tracking-[0.06em] sf-text-subtle flex-1 text-left truncate">
+            Active Operations
           </span>
+          {activeCount > 0 && (
+            <span className="
+              inline-flex items-center justify-center min-w-[15px] h-[15px] px-1
+              text-[9px] font-bold rounded-full leading-none
+              text-[rgb(var(--sf-color-text-inverse-rgb))] bg-[rgb(var(--sf-color-accent-rgb))]
+            ">
+              {activeCount}
+            </span>
+          )}
+          <span className="text-[9px] sf-text-subtle group-hover:sf-text-primary transition-colors">
+            {isOpen ? '\u25B4' : '\u25BE'}
+          </span>
+        </button>
+        {activeCount > 0 && (
+          <button
+            type="button"
+            onClick={handleStopAll}
+            disabled={isStoppingAll}
+            className="shrink-0 inline-flex items-center justify-center h-[18px] px-1.5 rounded-[3px] text-[8px] font-bold uppercase tracking-[0.04em] border transition-all text-[var(--sf-state-danger-fg)] border-[var(--sf-state-danger-fg)] bg-[var(--sf-state-danger-bg)] disabled:opacity-50 disabled:cursor-not-allowed"
+            title={`Stop ${activeCount} queued or running operation(s)`}
+          >
+            {isStoppingAll ? 'Stopping' : 'Stop all'}
+          </button>
         )}
-        <span className="text-[9px] sf-text-subtle group-hover:sf-text-primary transition-colors">
-          {isOpen ? '\u25B4' : '\u25BE'}
-        </span>
-      </button>
+      </div>
 
       {/* Sort selector (only when expanded and at least 1 op) */}
       {isOpen && sorted.length > 0 && (

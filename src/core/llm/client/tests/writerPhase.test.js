@@ -16,6 +16,7 @@ function makeRegistry() {
       type: 'openai-compatible',
       baseUrl: 'https://primary.test',
       apiKey: 'key-p',
+      accessMode: 'lab',
       models: [{ id: 'mp', modelId: 'model-primary', role: 'primary' }],
     },
     {
@@ -588,6 +589,71 @@ describe('global writer - writer fallback and phase call telemetry', () => {
       assert.equal(emissions[3].response.status, 'failed');
       assert.match(emissions[3].response.error, /writer unavailable/);
       assert.deepEqual(emissions[5].response, { ok: true });
+    } finally {
+      global.fetch = original;
+    }
+  });
+
+  it('two-phase telemetry carries the same model context shown in Live Output', async () => {
+    const original = global.fetch;
+    const emissions = [];
+    global.fetch = async (_url, opts) => {
+      const body = JSON.parse(opts.body);
+      const hasSchema = Boolean(body.response_format);
+      return {
+        ok: true,
+        status: 200,
+        async text() {
+          return JSON.stringify({
+            choices: [{ message: { content: hasSchema ? '{"ok":true}' : 'Research: ok' } }],
+            model: body.model,
+            usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+          });
+        },
+      };
+    };
+
+    try {
+      const config = baseConfig({
+        ...phaseFlatKeys('ColorFinder', {
+          _resolvedColorFinderThinking: true,
+          _resolvedColorFinderWebSearch: true,
+          _resolvedColorFinderThinkingEffort: 'xhigh',
+        }),
+        _resolvedWriterBaseModel: 'model-writer',
+        _resolvedWriterUseReasoning: false,
+        _resolvedWriterThinking: true,
+        _resolvedWriterThinkingEffort: 'high',
+      });
+
+      await callLlmWithRouting({
+        config, phase: 'colorFinder', reason: 'color_finder', role: 'triage',
+        system: 's', user: 'u',
+        jsonSchema: TEST_SCHEMA,
+        llmCallLabel: 'Discovery',
+        onLlmCallComplete: (call) => emissions.push(call),
+      });
+
+      const researchRows = emissions.filter((call) => call.label === 'Discovery Research');
+      const writerRows = emissions.filter((call) => call.label === 'Writer Formatting');
+
+      assert.equal(researchRows.length, 2);
+      for (const row of researchRows) {
+        assert.equal(row.model, 'model-primary');
+        assert.equal(row.accessMode, 'lab');
+        assert.equal(row.thinking, true);
+        assert.equal(row.webSearch, true);
+        assert.equal(row.effortLevel, 'xhigh');
+      }
+
+      assert.equal(writerRows.length, 2);
+      for (const row of writerRows) {
+        assert.equal(row.model, 'model-writer');
+        assert.equal(row.accessMode, 'api');
+        assert.equal(row.thinking, true);
+        assert.equal(row.webSearch, false);
+        assert.equal(row.effortLevel, 'high');
+      }
     } finally {
       global.fetch = original;
     }

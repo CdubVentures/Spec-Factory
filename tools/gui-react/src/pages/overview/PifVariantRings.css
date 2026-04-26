@@ -7,7 +7,7 @@
   align-items: center;
   gap: 5px;
   padding: 4px 2px 6px;
-  border-radius: 6px;
+  border-radius: var(--sf-token-radius-md);
   cursor: default;
 }
 
@@ -65,10 +65,10 @@
 }
 
 .sf-pif-rings-label {
-  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace);
-  font-size: 11px;
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-caption);
   font-weight: 700;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--sf-token-letter-spacing-tight);
   color: var(--sf-token-text-primary);
   min-width: 34px;
   text-align: center;
@@ -78,13 +78,13 @@
    shown as e.g. "9 img". Helps disambiguate "slots filled" from "images
    collected" — only slot-filled count drives the ring fills. */
 .sf-pif-rings-imgcount {
-  font-family: var(--sf-font-family-mono, 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace);
-  font-size: 9.5px;
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-nano);
   font-weight: 600;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--sf-token-letter-spacing-tight);
   color: rgb(var(--sf-color-text-subtle-rgb));
   text-align: center;
-  line-height: 1;
+  line-height: var(--sf-token-line-height-none);
   margin-top: -1px;
 }
 
@@ -138,7 +138,7 @@
 .sf-overview-run-cell > button:first-child {
   width: 100%;
   padding: 6px 4px;
-  font-size: 11px;
+  font-size: var(--sf-token-font-size-caption);
 }
 
 /* SKU/RDF popover — Run + Loop pair, each with the purple Prompt button below. */
@@ -166,7 +166,7 @@
   background: transparent;
   border: 1px solid transparent;
   padding: 1px;
-  border-radius: 4px;
+  border-radius: var(--sf-token-radius-sm);
 }
 
 .sf-pif-rings-carousel-trigger {
@@ -177,7 +177,7 @@
   background: transparent;
   border: 1px solid transparent;
   padding: 2px 4px;
-  border-radius: 6px;
+  border-radius: var(--sf-token-radius-md);
   cursor: pointer;
   color: inherit;
   transition: border-color 120ms ease, background 120ms ease;

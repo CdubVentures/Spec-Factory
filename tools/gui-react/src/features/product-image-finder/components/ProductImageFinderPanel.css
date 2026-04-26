@@ -27,7 +27,7 @@
   height: 14px;
   border-radius: 50%;
   font-family: var(--sf-font-mono, monospace);
-  font-size: 8px;
+  font-size: var(--sf-token-font-size-micro);
   color: #999;
   background-color: rgba(0, 0, 0, 0.05);
   flex-shrink: 0;

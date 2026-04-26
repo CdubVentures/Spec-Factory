@@ -108,7 +108,7 @@ export function DailyCostChart({ data, isLoading, isStale }: DailyCostChartProps
                 <Tooltip content={<DailyBarTooltip />} />
                 {activeReasons.map((reason) => {
                   const entry = BILLING_CALL_TYPE_REGISTRY.find((e) => e.reason === reason);
-                  const color = entry ? chartColor(entry.color) : '#94a3b8';
+                  const color = entry ? chartColor(entry.color) : 'var(--sf-token-text-subtle)';
                   return (
                     <Bar key={reason} dataKey={reason} stackId="cost" fill={color} minPointSize={1} />
                   );

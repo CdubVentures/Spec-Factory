@@ -26,6 +26,12 @@ interface DataTableProps<T> {
   renderExpandedRow?: (row: T) => ReactNode | null;
   /** Control which rows can expand. Defaults to all rows when renderExpandedRow is set. */
   getCanExpand?: (row: T) => boolean;
+  /** Optional controlled sorting. When both are provided, internal sort state
+   *  + persistence are bypassed so the parent owns the source of truth (used
+   *  by surfaces that mix TanStack column sort with an external sort, e.g.
+   *  the Overview Live header). */
+  sorting?: SortingState;
+  onSortingChange?: (next: SortingState) => void;
 }
 
 interface PersistedDataTableState {
@@ -131,12 +137,27 @@ function DataTableInner<T>({
   getRowClassName,
   renderExpandedRow,
   getCanExpand,
+  sorting: controlledSorting,
+  onSortingChange: controlledOnSortingChange,
 }: DataTableProps<T>) {
   const initialSessionState = useMemo(
     () => readDataTableSessionState(persistKey),
     [persistKey],
   );
-  const [sorting, setSorting] = useState<SortingState>(initialSessionState.sorting);
+  const [internalSorting, setInternalSorting] = useState<SortingState>(initialSessionState.sorting);
+  const isControlled = controlledSorting !== undefined && controlledOnSortingChange !== undefined;
+  const sorting = isControlled ? controlledSorting : internalSorting;
+  const setSorting = useCallback<(next: SortingState | ((prev: SortingState) => SortingState)) => void>(
+    (next) => {
+      if (isControlled) {
+        const resolved = typeof next === 'function' ? (next as (p: SortingState) => SortingState)(controlledSorting!) : next;
+        controlledOnSortingChange!(resolved);
+      } else {
+        setInternalSorting(next);
+      }
+    },
+    [isControlled, controlledSorting, controlledOnSortingChange],
+  );
   const [globalFilter, setGlobalFilter] = useState(initialSessionState.globalFilter);
 
   // WHY: Persist expanded-row state to the shared tab store so opening a row
@@ -153,13 +174,19 @@ function DataTableInner<T>({
 
   useEffect(() => {
     const next = readDataTableSessionState(persistKey);
-    setSorting(next.sorting);
+    if (!isControlled) setSorting(next.sorting);
     setGlobalFilter(next.globalFilter);
-  }, [persistKey]);
+  }, [persistKey, isControlled, setSorting]);
 
   useEffect(() => {
-    writeDataTableSessionState(persistKey, { sorting, globalFilter });
-  }, [persistKey, sorting, globalFilter]);
+    // In controlled mode, the parent owns sort persistence — only persist
+    // the globalFilter half so we don't write a stale sort entry that would
+    // resurrect on next mount.
+    writeDataTableSessionState(persistKey, {
+      sorting: isControlled ? [] : sorting,
+      globalFilter,
+    });
+  }, [persistKey, sorting, globalFilter, isControlled]);
 
   useEffect(() => {
     if (!expandStorageKey) return;

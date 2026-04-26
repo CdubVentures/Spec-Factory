@@ -10,7 +10,7 @@ import { pct } from '../../utils/formatting.ts';
 import { useFormatDateYMD } from '../../utils/dateTime.ts';
 import type { CatalogRow } from '../../types/product.ts';
 import { parseCatalogRows } from '../../features/catalog/api/catalogParsers.ts';
-import type { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
 import type { ColorRegistryEntry } from '../../features/color-edition-finder/types.ts';
 import { CefRunPopover } from './CefRunPopover.tsx';
 import { PifVariantsCell } from './PifVariantsCell.tsx';
@@ -27,7 +27,7 @@ import { ActiveAndSelectedRow } from './ActiveAndSelectedRow.tsx';
 import { OverviewLastRunCell, OverviewLastRunHeaderToggle } from './OverviewLastRunCell.tsx';
 import { LiveOpsCell } from './LiveOpsCell.tsx';
 import { useRunningModulesByProductOrdered } from '../../features/operations/hooks/useFinderOperations.ts';
-import { compareBySort, cycleLiveSort } from './overviewSort.ts';
+import { compareBySort } from './overviewSort.ts';
 import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import {
   useOverviewSelectionStore,
@@ -100,32 +100,6 @@ function SelectCell({ category, productId }: { category: string; productId: stri
 // module will let a product advance. Visual today, enforcement later.
 const CEF_REQUIRED_RUNS = 2;
 
-interface LiveHeaderCellProps {
-  readonly sortBy: OverviewFilterState['sortBy'];
-  readonly onCycle: () => void;
-}
-
-function LiveHeaderCell({ sortBy, onCycle }: LiveHeaderCellProps) {
-  const indicator = sortBy === 'live' ? '\u25BC'             // ▼ count desc
-                  : sortBy === 'live-grouped' ? '\u29FE'     // ⧾ grouped
-                  : '';
-  const title = sortBy === 'live' ? 'Sorted by live ops (most active first). Click to group by feature set.'
-              : sortBy === 'live-grouped' ? 'Grouped by running feature set. Click to clear.'
-              : 'Click to sort by live operations.';
-  const active = sortBy === 'live' || sortBy === 'live-grouped';
-  return (
-    <button
-      type="button"
-      className={`sf-cfh-row sf-cfh-row--left sf-live-header${active ? ' sf-live-header--active' : ''}`}
-      onClick={onCycle}
-      title={title}
-      aria-label={title}
-    >
-      <span className="sf-cfh-label">Live</span>
-      {indicator && <span className="sf-live-header-indicator" aria-hidden>{indicator}</span>}
-    </button>
-  );
-}
 
 const INITIAL_FILTER_STATE: OverviewFilterState = Object.freeze({
   search: '',
@@ -160,9 +134,13 @@ function buildColumns(
   formatRdfValue: (value: string) => string,
   detailColsOpen: boolean,
   toggleDetailCols: () => void,
-  liveSortBy: OverviewFilterState['sortBy'],
-  cycleLive: () => void,
+  runningByProduct: ReadonlyMap<string, readonly string[]>,
 ): ColumnDef<CatalogRow, unknown>[] {
+  // WHY: Single source of truth for sort = filterState.sortBy + Live header
+  // cycle. TanStack's per-column sort would silently override our page-level
+  // compareBySort and is also persisted to localStorage, so a stale click
+  // could outlive the session. Disable everywhere to keep it Excel-style:
+  // last click on a sort surface wins, no ghost from prior sessions.
   return [
     {
       accessorKey: 'brand',
@@ -241,35 +219,6 @@ function buildColumns(
       ),
     },
     {
-      accessorKey: 'skuVariants',
-      header: () => (
-        <ColumnFilterHeader category={category} filterKey="sku" label="SKU">
-          <ScalarVariantFilter category={category} filterKey="sku" />
-        </ColumnFilterHeader>
-      ),
-      size: 376,
-      cell: ({ row }) => (
-        <ScalarVariantsCell
-          productId={row.original.productId}
-          category={category}
-          variants={row.original.skuVariants}
-          hexMap={hexMap}
-          moduleType="skf"
-          finderId="sku"
-          historyFinderId="skuFinder"
-          historyRoutePrefix="sku-finder"
-          phaseId="skuFinder"
-          title="SKU Finder"
-          labelPrefix="SKU"
-          runUrl={`/sku-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.original.productId)}`}
-          valueLabel="SKU"
-          linkTabId="skuFinder"
-          brand={row.original.brand}
-          baseModel={row.original.base_model}
-        />
-      ),
-    },
-    {
       accessorKey: 'rdfVariants',
       header: () => (
         <ColumnFilterHeader category={category} filterKey="rdf" label="RDF">
@@ -295,6 +244,35 @@ function buildColumns(
           formatLabel={formatRdfValue}
           formatValue={formatRdfValue}
           linkTabId="releaseDateFinder"
+          brand={row.original.brand}
+          baseModel={row.original.base_model}
+        />
+      ),
+    },
+    {
+      accessorKey: 'skuVariants',
+      header: () => (
+        <ColumnFilterHeader category={category} filterKey="sku" label="SKU">
+          <ScalarVariantFilter category={category} filterKey="sku" />
+        </ColumnFilterHeader>
+      ),
+      size: 376,
+      cell: ({ row }) => (
+        <ScalarVariantsCell
+          productId={row.original.productId}
+          category={category}
+          variants={row.original.skuVariants}
+          hexMap={hexMap}
+          moduleType="skf"
+          finderId="sku"
+          historyFinderId="skuFinder"
+          historyRoutePrefix="sku-finder"
+          phaseId="skuFinder"
+          title="SKU Finder"
+          labelPrefix="SKU"
+          runUrl={`/sku-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.original.productId)}`}
+          valueLabel="SKU"
+          linkTabId="skuFinder"
           brand={row.original.brand}
           baseModel={row.original.base_model}
         />
@@ -371,13 +349,30 @@ function buildColumns(
     },
     {
       id: 'live',
-      // WHY: Header click cycles the FilterBar's sortBy: off → 'live' (count
-      // desc) → 'live-grouped' (cluster by running feature set) → off. Cell
-      // self-subscribes to the ops store so it ticks live regardless of the
+      // WHY: Real TanStack-sortable column so shift-click composes Live with
+      // other columns (Excel-style multi-sort). The custom sortingFn ranks
+      // by running-op count primarily, then by joined module signature so
+      // rows with the same feature set cluster naturally. Cell self-
+      // subscribes to the ops store so it ticks live regardless of the
       // catalog poll cadence.
-      header: () => <LiveHeaderCell sortBy={liveSortBy} onCycle={cycleLive} />,
-      enableSorting: false,
+      header: () => (
+        <span className="sf-cfh-row sf-cfh-row--left">
+          <span className="sf-cfh-label">Live</span>
+        </span>
+      ),
       size: 90,
+      sortingFn: (rowA, rowB) => {
+        const ma = runningByProduct.get(rowA.original.productId) ?? [];
+        const mb = runningByProduct.get(rowB.original.productId) ?? [];
+        // TanStack flips for desc, so internal ordering is asc-by-default
+        // (fewer running first). Users get the intuitive "click for ▼ =
+        // most active first" via TanStack's standard toggle.
+        if (ma.length !== mb.length) return ma.length - mb.length;
+        const sa = ma.join(',');
+        const sb = mb.join(',');
+        if (sa !== sb) return sa.localeCompare(sb);
+        return 0; // multi-sort tiebreak: defer to next sort column or input order
+      },
       cell: ({ row }) => (
         <LiveOpsCell category={category} productId={row.original.productId} />
       ),
@@ -424,6 +419,17 @@ export function OverviewPage() {
   // so they slide open/closed together — clicking either chevron flips both.
   const [detailColsOpen, toggleDetailCols] = usePersistedToggle('overview:detail-cols:open', false);
 
+  // WHY: TanStack column sorting is lifted out of DataTable so Excel-style
+  // "last click wins" works across both sort surfaces. Clicking a column
+  // header clears filterState.sortBy; clicking the Live header clears tableSorting.
+  const [tableSorting, setTableSorting] = useState<SortingState>([]);
+  const handleTableSortingChange = useCallback((next: SortingState) => {
+    setTableSorting(next);
+    if (next.length > 0) {
+      setFilterState((s) => (s.sortBy === 'default' ? s : { ...s, sortBy: 'default' }));
+    }
+  }, []);
+
   const columnFilters = useColumnFilterStore(selectFilterState(category));
   const runningByProduct = useRunningModulesByProductOrdered(category);
 
@@ -432,16 +438,20 @@ export function OverviewPage() {
       .filter((r) => matchesSearch(r, filterState.search))
       .filter((r) => matchesColumnFilters(r, columnFilters));
     const { sortBy } = filterState;
-    return filtered.slice().sort((a, b) => compareBySort(a, b, sortBy, runningByProduct));
-  }, [catalog, filterState, columnFilters, runningByProduct]);
+    return filtered.slice().sort((a, b) => compareBySort(a, b, sortBy));
+  }, [catalog, filterState, columnFilters]);
 
   const visibleIds = useMemo<readonly string[]>(
     () => visibleRows.map((r) => r.productId),
     [visibleRows],
   );
 
-  const cycleLive = useCallback(() => {
-    setFilterState((s) => ({ ...s, sortBy: cycleLiveSort(s.sortBy) }));
+  // WHY: Chip-driven sort presets (confidence/coverage/fields) flow through
+  // the page-level compareBySort. When the user picks a chip, clear the
+  // TanStack column sort so the chip's intent wins.
+  const handleFilterChange = useCallback((next: OverviewFilterState) => {
+    setFilterState(next);
+    if (next.sortBy !== 'default') setTableSorting([]);
   }, []);
 
   const columns = useMemo<ColumnDef<CatalogRow, unknown>[]>(
@@ -460,9 +470,9 @@ export function OverviewPage() {
           </div>
         ),
       },
-      ...buildColumns(hexMap, category, catalog, formatRdfValue, detailColsOpen, toggleDetailCols, filterState.sortBy, cycleLive),
+      ...buildColumns(hexMap, category, catalog, formatRdfValue, detailColsOpen, toggleDetailCols, runningByProduct),
     ],
-    [hexMap, category, catalog, visibleIds, formatRdfValue, detailColsOpen, toggleDetailCols, filterState.sortBy, cycleLive],
+    [hexMap, category, catalog, visibleIds, formatRdfValue, detailColsOpen, toggleDetailCols, runningByProduct],
   );
 
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
@@ -489,7 +499,7 @@ export function OverviewPage() {
       <div>
         <OverviewFilterBar
           state={filterState}
-          onChange={setFilterState}
+          onChange={handleFilterChange}
           shown={visibleRows.length}
           total={catalog.length}
         />
@@ -504,6 +514,8 @@ export function OverviewPage() {
           columns={columns}
           persistKey={`overview:table:${category}`}
           maxHeight="max-h-[calc(100vh-340px)]"
+          sorting={tableSorting}
+          onSortingChange={handleTableSortingChange}
         />
       </div>
     </div>

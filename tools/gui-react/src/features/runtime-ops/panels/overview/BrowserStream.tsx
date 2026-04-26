@@ -274,7 +274,13 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
 
       {status === 'ended' && hasFrame && (
         <div className="absolute inset-x-0 top-0 z-10 flex justify-center p-3 pointer-events-none">
-          <div className="bg-black/75 text-white sf-text-caption px-3 py-1.5 rounded border border-white/20">
+          <div
+            className="text-white sf-text-caption px-3 py-1.5 rounded"
+            style={{
+              background: 'var(--sf-token-overlay-strong)',
+              border: '1px solid var(--sf-token-overlay-divider)',
+            }}
+          >
             Stream ended. Last captured frame retained.
           </div>
         </div>

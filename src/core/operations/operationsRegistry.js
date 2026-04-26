@@ -242,12 +242,42 @@ export function updateLoopProgress({ id, loopProgress }) {
  *   1. Before call: { prompt, response: null } → prompt visible immediately
  *   2. After call:  { prompt, response: {...} } → fills in response
  */
+function researchBaseCallId(callId) {
+  const token = typeof callId === 'string' ? callId : '';
+  const suffix = ':research';
+  return token.endsWith(suffix) ? token.slice(0, -suffix.length) : '';
+}
+
 export function appendLlmCall({ id, call }) {
   const op = ops.get(id);
   if (!op || op.status !== 'running') return;
   if (!op.llmCalls) op.llmCalls = [];
 
   const callId = typeof call?.callId === 'string' ? call.callId : '';
+  const baseCallId = researchBaseCallId(callId);
+  if (baseCallId) {
+    const supersededIndex = op.llmCalls.findIndex((c) => (
+      c?.callId === baseCallId
+      && c.response === null
+    ));
+    if (supersededIndex >= 0) {
+      const existing = op.llmCalls[supersededIndex];
+      const updated = {
+        ...existing,
+        ...call,
+        prompt: existing.prompt || call.prompt,
+        response: Object.hasOwn(call, 'response') ? call.response : existing.response,
+        callIndex: existing.callIndex,
+        timestamp: new Date().toISOString(),
+      };
+      op.llmCalls[supersededIndex] = updated;
+      if (_broadcastWs) {
+        _broadcastWs('operations', { action: 'llm-call-update', id, callIndex: updated.callIndex, call: updated });
+      }
+      return;
+    }
+  }
+
   if (callId) {
     const existingIndex = op.llmCalls.findIndex((c) => c.callId === callId);
     if (existingIndex >= 0) {

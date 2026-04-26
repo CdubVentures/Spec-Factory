@@ -86,7 +86,7 @@
   justify-content: center;
   gap: 10px;
   padding: 40px 16px;
-  font-size: 13px;
+  font-size: var(--sf-token-font-size-body-sm);
   color: var(--sf-token-text-muted);
 }
 
@@ -114,7 +114,7 @@
 .sf-picker-subtitle-empty {
   color: var(--sf-token-text-muted);
   font-style: italic;
-  font-size: 12.5px;
+  font-size: var(--sf-token-font-size-label);
 }
 
 .sf-picker-stale-pill {
@@ -122,11 +122,11 @@
   align-items: center;
   gap: 4px;
   padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 10.5px;
+  border-radius: var(--sf-token-radius-sm);
+  font-size: var(--sf-token-font-size-caption);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--sf-token-letter-spacing-wide);
   color: var(--sf-state-danger-fg);
   background: var(--sf-state-danger-bg);
   border: 1px solid var(--sf-state-danger-border);
@@ -136,8 +136,8 @@
 /* ── Header action buttons ──────────────────────────────────────── */
 .sf-picker-btn {
   padding: 4px 10px;
-  border-radius: 5px;
-  font-size: 11.5px;
+  border-radius: var(--sf-token-radius-sm);
+  font-size: var(--sf-token-font-size-caption);
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
@@ -168,7 +168,7 @@
 
 .sf-picker-slot {
   padding: 8px 12px;
-  border-radius: 6px;
+  border-radius: var(--sf-token-radius-md);
   border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.1));
   background: var(--sf-token-surface-base);
   display: flex;
@@ -183,18 +183,18 @@
 }
 
 .sf-picker-slot-label {
-  font-size: 10px;
+  font-size: var(--sf-token-font-size-nano);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--sf-token-letter-spacing-wider);
   color: var(--sf-token-text-muted);
   font-weight: 700;
 }
 
 .sf-picker-slot-value {
-  font-size: 14px;
+  font-size: var(--sf-token-font-size-body-sm);
   font-weight: 600;
   color: var(--sf-token-text-primary);
-  line-height: 1.3;
+  line-height: var(--sf-token-line-height-snug);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -208,7 +208,7 @@
   color: var(--sf-token-text-muted);
   font-weight: 500;
   font-style: italic;
-  font-size: 13px;
+  font-size: var(--sf-token-font-size-body-sm);
 }
 
 /* ── Search bar ─────────────────────────────────────────────────── */
@@ -228,15 +228,15 @@
   top: 50%;
   transform: translateY(-50%);
   color: var(--sf-token-text-muted);
-  font-size: 13px;
+  font-size: var(--sf-token-font-size-body-sm);
   pointer-events: none;
 }
 
 .sf-picker-search-input {
   width: 100%;
   padding: 9px 44px 9px 38px;
-  font-size: 13.5px;
-  border-radius: 7px;
+  font-size: var(--sf-token-font-size-body-sm);
+  border-radius: var(--sf-token-radius-md);
   border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.15));
   background: var(--sf-token-surface-elevated);
   color: var(--sf-token-text-primary);
@@ -259,17 +259,17 @@
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
-  font-size: 10.5px;
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-caption);
   color: var(--sf-token-text-muted);
   padding: 2px 6px;
-  border-radius: 3px;
+  border-radius: var(--sf-token-radius-xs);
   background: var(--sf-token-surface-base);
   border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.08));
 }
 
 .sf-picker-search-hint {
-  font-size: 11.5px;
+  font-size: var(--sf-token-font-size-caption);
   color: var(--sf-token-text-muted);
 }
 
@@ -285,7 +285,7 @@
   gap: 0;
   background: var(--sf-token-surface-base);
   border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.08));
-  border-radius: 8px;
+  border-radius: var(--sf-token-radius-lg);
   overflow: hidden;
 }
 
@@ -294,26 +294,26 @@
   padding: 28px 16px;
   text-align: center;
   border: 1px dashed var(--sf-token-border-default, rgba(0, 0, 0, 0.14));
-  border-radius: 8px;
+  border-radius: var(--sf-token-radius-lg);
   background: var(--sf-token-surface-base);
 }
 
 .sf-picker-empty-icon {
-  font-size: 34px;
+  font-size: var(--sf-token-font-size-display-sm);
   color: var(--sf-picker-accent-fg, rgb(var(--sf-color-accent-rgb)));
   margin-bottom: 8px;
   opacity: 0.8;
 }
 
 .sf-picker-empty-hero h4 {
-  font-size: 15px;
+  font-size: var(--sf-token-font-size-body-sm);
   font-weight: 700;
   color: var(--sf-token-text-primary);
   margin: 0 0 4px 0;
 }
 
 .sf-picker-empty-hero p {
-  font-size: 12.5px;
+  font-size: var(--sf-token-font-size-label);
   color: var(--sf-token-text-muted);
   max-width: 440px;
   margin: 0 auto;
@@ -324,31 +324,31 @@
   padding: 14px 16px;
   border: 1px solid var(--sf-state-danger-border);
   background: var(--sf-state-danger-bg);
-  border-radius: 8px;
+  border-radius: var(--sf-token-radius-lg);
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
 .sf-picker-stale-head {
-  font-size: 13px;
+  font-size: var(--sf-token-font-size-body-sm);
   font-weight: 700;
   color: var(--sf-state-danger-fg);
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  letter-spacing: var(--sf-token-letter-spacing-wide);
 }
 
 .sf-picker-stale-body {
-  font-size: 12.5px;
+  font-size: var(--sf-token-font-size-label);
   color: var(--sf-token-text-primary);
 }
 
 .sf-picker-stale-body code {
-  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', Consolas, monospace;
-  font-size: 11.5px;
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-caption);
   padding: 1px 4px;
   background: var(--sf-token-surface-elevated);
-  border-radius: 3px;
+  border-radius: var(--sf-token-radius-xs);
 }
 
 .sf-picker-stale-notice .sf-picker-btn {
@@ -366,10 +366,10 @@
 }
 
 .sf-picker-recents-label {
-  font-size: 10.5px;
+  font-size: var(--sf-token-font-size-caption);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: var(--sf-token-letter-spacing-wider);
   color: var(--sf-token-text-muted);
   flex: none;
 }
@@ -379,10 +379,10 @@
   align-items: center;
   gap: 6px;
   padding: 3px 10px;
-  border-radius: 99px;
+  border-radius: var(--sf-token-radius-pill);
   background: var(--sf-token-surface-elevated);
   border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.12));
-  font-size: 11.5px;
+  font-size: var(--sf-token-font-size-caption);
   color: var(--sf-token-text-primary);
   cursor: pointer;
   white-space: nowrap;

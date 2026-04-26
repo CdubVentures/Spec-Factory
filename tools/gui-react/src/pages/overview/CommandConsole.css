@@ -18,7 +18,7 @@
 .sf-cc-panel {
   background: var(--sf-token-surface, #fff);
   border: 1px solid var(--sf-token-border, #e5e9ef);
-  border-radius: 8px;
+  border-radius: var(--sf-token-radius-lg);
   padding: 10px 14px;
   display: grid;
   grid-template-rows: auto auto auto auto;
@@ -49,7 +49,7 @@
 .sf-cc-models-track::-webkit-scrollbar-track { background: transparent; }
 .sf-cc-models-track::-webkit-scrollbar-thumb {
   background: var(--sf-token-border, #c4c8d2);
-  border-radius: 4px;
+  border-radius: var(--sf-token-radius-sm);
 }
 
 .sf-cc-models-strip {
@@ -87,9 +87,9 @@
   border-radius: var(--sf-token-radius-pill);
   background: var(--sf-token-surface-alt, #f4f6f9);
   border: 1px solid var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
-  font-size: 11px;
+  font-size: var(--sf-token-font-size-caption);
   font-weight: 600;
-  line-height: 1;
+  line-height: var(--sf-token-line-height-none);
 }
 
 .sf-cc-selection-badge.is-empty {
@@ -108,8 +108,8 @@
   background: var(--sf-token-accent, #4263eb);
   color: #fff;
   font-weight: 700;
-  font-size: 10.5px;
-  line-height: 1;
+  font-size: var(--sf-token-font-size-caption);
+  line-height: var(--sf-token-line-height-none);
 }
 
 .sf-cc-selection-badge.is-empty .sf-cc-selection-count {
@@ -145,13 +145,13 @@
 }
 
 .sf-cc-eyebrow {
-  font-size: 9px;
+  font-size: var(--sf-token-font-size-nano);
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: var(--sf-token-letter-spacing-widest);
   text-transform: uppercase;
   color: rgb(var(--sf-color-text-subtle-rgb));
   white-space: nowrap;
-  line-height: 1;
+  line-height: var(--sf-token-line-height-none);
 }
 
 /* ── Row 2 — finder chips ─────────────────────────────────────────── */
@@ -190,17 +190,17 @@
   justify-content: center;
   width: var(--sf-cc-icon-slot);
   height: var(--sf-cc-icon-slot);
-  line-height: 0;
+  line-height: var(--sf-token-line-height-none);
   flex-shrink: 0;
 }
 
 .sf-cc-chip-label {
-  font-size: 10px;
+  font-size: var(--sf-token-font-size-nano);
   font-weight: 700;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--sf-token-letter-spacing-widest);
   color: rgb(var(--sf-color-text-primary-rgb));
   text-transform: uppercase;
-  line-height: 1;
+  line-height: var(--sf-token-line-height-none);
 }
 
 .sf-cc-chip-cef .sf-cc-chip-icon { color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb)); }
@@ -213,6 +213,15 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Right-anchored trailing slot in the chips row — hosts the bulk
+   Delete-All drawer chevron so it sits flush with the right edge,
+   inline with the existing finder chips. */
+.sf-cc-chips-trailing {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
 }
 
 /* ── Row 3 — pipeline stepper + run/stop ──────────────────────────── */
@@ -256,7 +265,7 @@
 
 .sf-cc-stepper-bar {
   height: 20px;
-  border-radius: 4px;
+  border-radius: var(--sf-token-radius-sm);
   background: var(--sf-token-border, #e5e9ef);
   overflow: hidden;
   position: relative;
@@ -264,7 +273,7 @@
 
 .sf-cc-stepper-bar-fill {
   height: 100%;
-  border-radius: 4px;
+  border-radius: var(--sf-token-radius-sm);
   background: var(--sf-token-accent, #4263eb);
   transition: width 220ms ease;
 }
@@ -296,10 +305,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 9.5px;
+  font-size: var(--sf-token-font-size-nano);
   font-weight: 700;
-  letter-spacing: 0.05em;
-  line-height: 1;
+  letter-spacing: var(--sf-token-letter-spacing-wider);
+  line-height: var(--sf-token-line-height-none);
   text-transform: uppercase;
   color: rgb(var(--sf-color-text-primary-rgb));
   pointer-events: none;
@@ -323,9 +332,9 @@
 }
 
 .sf-cc-pipeline-status {
-  font-size: 10px;
+  font-size: var(--sf-token-font-size-nano);
   color: rgb(var(--sf-color-text-subtle-rgb));
-  line-height: 1;
+  line-height: var(--sf-token-line-height-none);
   text-align: right;
   white-space: nowrap;
   overflow: hidden;
@@ -341,12 +350,12 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  font-size: 10.5px;
+  font-size: var(--sf-token-font-size-caption);
   font-weight: 600;
-  border-radius: 4px;
+  border-radius: var(--sf-token-radius-sm);
   border: 1px solid transparent;
   cursor: pointer;
-  line-height: 1;
+  line-height: var(--sf-token-line-height-none);
   white-space: nowrap;
   transition: background 120ms ease, border-color 120ms ease, color 120ms ease, transform 80ms ease;
   box-sizing: border-box;
@@ -410,7 +419,7 @@
   flex-direction: column;
   gap: 8px;
   padding: 10px 12px 12px;
-  font-size: 12px;
+  font-size: var(--sf-token-font-size-label);
 }
 .sf-cc-keys-toggle-row {
   display: inline-flex;
@@ -434,7 +443,7 @@
   height: 16px;
   border-radius: 50%;
   background: var(--sf-token-surface-alt, #f3f4f6);
-  font-size: 10px;
+  font-size: var(--sf-token-font-size-nano);
   font-weight: 700;
   color: var(--sf-token-text-muted, #6b7280);
   cursor: help;
@@ -455,8 +464,8 @@
   height: 24px;
   padding: 0 8px;
   border: 1px solid var(--sf-token-border-soft, #e5e7eb);
-  border-radius: 4px;
-  font-size: 12px;
+  border-radius: var(--sf-token-radius-sm);
+  font-size: var(--sf-token-font-size-label);
   font-family: inherit;
   background: var(--sf-token-surface, #fff);
   color: var(--sf-token-text-primary, #111827);
@@ -469,7 +478,7 @@
   background: transparent;
   border: none;
   color: var(--sf-token-accent, #4263eb);
-  font-size: 11px;
+  font-size: var(--sf-token-font-size-caption);
   font-weight: 600;
   padding: 2px 4px;
   cursor: pointer;
@@ -485,7 +494,7 @@
   flex-direction: column;
   gap: 1px;
   border: 1px solid var(--sf-token-border-soft, #e5e7eb);
-  border-radius: 4px;
+  border-radius: var(--sf-token-radius-sm);
   background: var(--sf-token-surface, #fff);
 }
 .sf-cc-keys-empty {
@@ -513,8 +522,8 @@
   background: var(--sf-token-accent-light, #edf2ff);
 }
 .sf-cc-keys-row-name {
-  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-size: 12px;
+  font-family: var(--sf-token-font-family-mono);
+  font-size: var(--sf-token-font-size-label);
   color: var(--sf-token-text-primary, #111827);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -539,7 +548,7 @@
   border-top: 1px solid var(--sf-token-border-soft, #e5e7eb);
 }
 .sf-cc-keys-footer-meta {
-  font-size: 11px;
+  font-size: var(--sf-token-font-size-caption);
   color: var(--sf-token-text-muted, #6b7280);
   font-variant-numeric: tabular-nums;
 }

@@ -18,25 +18,27 @@ interface Props {
   fieldPath: string;
 }
 
+// WHY: Each consumer's bg/fg/border resolves through theme tokens so any
+// theme can re-skin the badge palette without editing this file.
 const badgeInline: Record<ParentGroup, React.CSSProperties> = {
-  idx:  { background: '#cffafe', color: '#0e7490', border: '1px solid #a5f3fc' },
-  eng:  { background: '#fef3c7', color: '#92400e', border: '1px solid #fde68a' },
-  rev:  { background: '#ffe4e6', color: '#be123c', border: '1px solid #fecdd3' },
-  flag: { background: '#ffedd5', color: '#c2410c', border: '1px solid #fed7aa' },
-  seed: { background: '#ecfccb', color: '#4d7c0f', border: '1px solid #d9f99d' },
-  comp: { background: '#ede9fe', color: '#6d28d9', border: '1px solid #ddd6fe' },
-  val:  { background: '#d1fae5', color: '#065f46', border: '1px solid #a7f3d0' },
-  pub:  { background: '#dbeafe', color: '#1d4ed8', border: '1px solid #93c5fd' },
-  llm:  { background: '#fae8ff', color: '#a21caf', border: '1px solid #f5d0fe' },
+  idx:  { background: 'var(--sf-token-consumer-idx-bg)',  color: 'var(--sf-token-consumer-idx-fg)',  border: '1px solid var(--sf-token-consumer-idx-border)'  },
+  eng:  { background: 'var(--sf-token-consumer-eng-bg)',  color: 'var(--sf-token-consumer-eng-fg)',  border: '1px solid var(--sf-token-consumer-eng-border)'  },
+  rev:  { background: 'var(--sf-token-consumer-rev-bg)',  color: 'var(--sf-token-consumer-rev-fg)',  border: '1px solid var(--sf-token-consumer-rev-border)'  },
+  flag: { background: 'var(--sf-token-consumer-flag-bg)', color: 'var(--sf-token-consumer-flag-fg)', border: '1px solid var(--sf-token-consumer-flag-border)' },
+  seed: { background: 'var(--sf-token-consumer-seed-bg)', color: 'var(--sf-token-consumer-seed-fg)', border: '1px solid var(--sf-token-consumer-seed-border)' },
+  comp: { background: 'var(--sf-token-consumer-comp-bg)', color: 'var(--sf-token-consumer-comp-fg)', border: '1px solid var(--sf-token-consumer-comp-border)' },
+  val:  { background: 'var(--sf-token-consumer-val-bg)',  color: 'var(--sf-token-consumer-val-fg)',  border: '1px solid var(--sf-token-consumer-val-border)'  },
+  pub:  { background: 'var(--sf-token-consumer-pub-bg)',  color: 'var(--sf-token-consumer-pub-fg)',  border: '1px solid var(--sf-token-consumer-pub-border)'  },
+  llm:  { background: 'var(--sf-token-consumer-llm-bg)',  color: 'var(--sf-token-consumer-llm-fg)',  border: '1px solid var(--sf-token-consumer-llm-border)'  },
 };
 
 const badgeStyle: React.CSSProperties = {
-  fontSize: '9px',
+  fontSize: 'var(--sf-token-font-size-nano)',
   lineHeight: '14px',
   padding: '0 5px',
-  borderRadius: '3px',
+  borderRadius: 'var(--sf-token-radius-xs)',
   fontWeight: 700,
-  letterSpacing: '0.02em',
+  letterSpacing: 'var(--sf-token-letter-spacing-wide)',
   userSelect: 'none',
   whiteSpace: 'nowrap',
 };

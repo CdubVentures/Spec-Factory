@@ -131,13 +131,13 @@ export function WorkbenchColumnPresets({
           : (autoSaveEnabled ? 'Auto-Save On' : 'Auto-Save Off')}
         {saving && (
           <span
-            className="absolute inline-block h-2 w-2 rounded-full sf-dot-pending animate-pulse border border-white/90 shadow-sm"
+            className="absolute inline-block h-2 w-2 rounded-full sf-dot-pending animate-pulse border border-sf-surface-elevated shadow-sm"
             style={{ right: '2px', bottom: '2px' }}
           />
         )}
         {!saving && saveSuccess && (
           <span
-            className="absolute inline-block h-2 w-2 rounded-full sf-success-bg-500 border border-white/90 shadow-sm"
+            className="absolute inline-block h-2 w-2 rounded-full sf-success-bg-500 border border-sf-surface-elevated shadow-sm"
             style={{ right: '2px', bottom: '2px' }}
           />
         )}

@@ -3,7 +3,6 @@ import { useOperationsStore } from '../state/operationsStore.ts';
 import type { Operation, LlmCallRecord, LlmCallStreamText } from '../state/operationsStore.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
-import { extractEffortFromModelName } from '../../llm-config/state/llmEffortFromModelName.ts';
 import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
 import { useFormatTime, parseBackendMs } from '../../../utils/dateTime.ts';
 import {
@@ -258,17 +257,14 @@ function LlmCallRow({ call, callStream, labelIndex, labelTotal }: LlmCallRowProp
             thinking={call.thinking}
             webSearch={call.webSearch}
             isFallback={call.isFallback}
-            showAccessMode={false}
           />
         </span>
         {call.model && (
           <span className="text-[9px] font-mono sf-text-muted">
             {call.model}
             {(() => {
-              // WHY: Prefer per-call effortLevel (captured at call time); fall back to name-suffix extraction for legacy records.
-              const e = call.effortLevel
-                ? resolveEffortLabel({ model: call.model, effortLevel: call.effortLevel, thinking: call.thinking })
-                : extractEffortFromModelName(call.model);
+              // WHY: Same effort resolution as Live Output, including baked model-name suffixes for legacy rows.
+              const e = resolveEffortLabel({ model: call.model, effortLevel: call.effortLevel, thinking: call.thinking });
               return e ? <span className="sf-text-subtle font-normal"> {e}</span> : null;
             })()}
           </span>
@@ -503,7 +499,7 @@ export function OperationDetailModal({ op, onClose }: Props) {
 
           {/* Error banner */}
           {isError && op.error && (
-            <section className="rounded-sm border border-[rgba(248,113,113,0.3)] bg-[rgba(248,113,113,0.06)] px-3 py-2">
+            <section className="rounded-sm border border-[var(--sf-token-state-error-border)] bg-[var(--sf-token-state-error-bg)] px-3 py-2">
               <div className="text-[10px] font-semibold text-[var(--sf-state-danger-fg)] uppercase tracking-[0.06em] mb-1">
                 Error
               </div>

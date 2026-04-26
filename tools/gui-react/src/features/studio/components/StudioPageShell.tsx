@@ -171,7 +171,7 @@ export function StudioPageShell({
                   <span
                     tabIndex={0}
                     aria-label={`Save status: ${saveStatusLabel}`}
-                    className={`absolute inline-block h-2.5 w-2.5 rounded-full ${saveStatusDot} border border-white/90 shadow-sm`}
+                    className={`absolute inline-block h-2.5 w-2.5 rounded-full ${saveStatusDot} border border-sf-surface-elevated shadow-sm`}
                     style={{ right: "3px", bottom: "3px" }}
                   />
                 </Tooltip.Trigger>
@@ -242,7 +242,7 @@ export function StudioPageShell({
                   <span
                     tabIndex={0}
                     aria-label={`Compile status: ${compileStatusLabel}`}
-                    className={`absolute inline-block h-2.5 w-2.5 rounded-full ${compileStatusDot} border border-white/90 shadow-sm`}
+                    className={`absolute inline-block h-2.5 w-2.5 rounded-full ${compileStatusDot} border border-sf-surface-elevated shadow-sm`}
                     style={{ right: "3px", bottom: "3px" }}
                   />
                 </Tooltip.Trigger>

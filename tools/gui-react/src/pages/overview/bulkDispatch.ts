@@ -569,6 +569,83 @@ export async function dispatchKfAll(
   };
 }
 
+// ── Bulk Delete-All across selected products ───────────────────────────
+// Each helper fans out DELETE /:finder-prefix/:cat/:pid to every selected
+// product. The server's `onAfterDeleteAll` cascade hook (shipped earlier)
+// handles the per-finder full wipe — these helpers just orchestrate the
+// fan-out: stagger between calls, swallow per-product errors so one
+// 500 doesn't abort the rest, and return the same BulkDispatchResult
+// shape the run/loop dispatchers use.
+
+interface FinderDeleteRoute {
+  readonly type: 'cef' | 'pif' | 'rdf' | 'skf' | 'kf';
+  readonly prefix: string;
+}
+
+const CEF_DELETE: FinderDeleteRoute = { type: 'cef', prefix: 'color-edition-finder' };
+const PIF_DELETE: FinderDeleteRoute = { type: 'pif', prefix: 'product-image-finder' };
+const RDF_DELETE: FinderDeleteRoute = { type: 'rdf', prefix: 'release-date-finder' };
+const SKU_DELETE: FinderDeleteRoute = { type: 'skf', prefix: 'sku-finder' };
+const KF_DELETE: FinderDeleteRoute = { type: 'kf', prefix: 'key-finder' };
+
+function dispatchFinderDeleteAll(
+  route: FinderDeleteRoute,
+  category: string,
+  products: readonly CatalogRow[],
+  optionsInput?: DispatchOptionsInput,
+): Promise<BulkDispatchResult> {
+  const options = resolveOptions(optionsInput);
+  return dispatchTasks(products, options, async (row) => {
+    const url = `/${route.prefix}/${encodeURIComponent(category)}/${encodeURIComponent(row.productId)}`;
+    await api.del(url);
+    // No operationId — these are sync server-side deletes that don't
+    // register in the operations tracker. Return empty string so the
+    // generic dispatchTasks shape stays consistent (operationIds list
+    // for delete fan-outs is always empty).
+    return '';
+  });
+}
+
+export function dispatchCefDeleteAll(
+  category: string,
+  products: readonly CatalogRow[],
+  optionsInput?: DispatchOptionsInput,
+): Promise<BulkDispatchResult> {
+  return dispatchFinderDeleteAll(CEF_DELETE, category, products, optionsInput);
+}
+
+export function dispatchPifDeleteAll(
+  category: string,
+  products: readonly CatalogRow[],
+  optionsInput?: DispatchOptionsInput,
+): Promise<BulkDispatchResult> {
+  return dispatchFinderDeleteAll(PIF_DELETE, category, products, optionsInput);
+}
+
+export function dispatchRdfDeleteAll(
+  category: string,
+  products: readonly CatalogRow[],
+  optionsInput?: DispatchOptionsInput,
+): Promise<BulkDispatchResult> {
+  return dispatchFinderDeleteAll(RDF_DELETE, category, products, optionsInput);
+}
+
+export function dispatchSkuDeleteAll(
+  category: string,
+  products: readonly CatalogRow[],
+  optionsInput?: DispatchOptionsInput,
+): Promise<BulkDispatchResult> {
+  return dispatchFinderDeleteAll(SKU_DELETE, category, products, optionsInput);
+}
+
+export function dispatchKfDeleteAll(
+  category: string,
+  products: readonly CatalogRow[],
+  optionsInput?: DispatchOptionsInput,
+): Promise<BulkDispatchResult> {
+  return dispatchFinderDeleteAll(KF_DELETE, category, products, optionsInput);
+}
+
 /**
  * Per-key Run / Loop fan-out across selected products. Mirrors `dispatchKfAll`
  * but takes a curated `pickedKeys` set and intersects it with the standard

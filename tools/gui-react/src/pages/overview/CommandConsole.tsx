@@ -1,4 +1,4 @@
-import { useCallback, useMemo, type ReactNode } from 'react';
+import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import type { CatalogRow } from '../../types/product.ts';
 import { useReservedKeysQuery } from '../../features/key-finder/api/keyFinderQueries.ts';
 import {
@@ -16,6 +16,11 @@ import {
   dispatchSkuLoop,
   dispatchKfAll,
   dispatchKfPickedKeys,
+  dispatchCefDeleteAll,
+  dispatchPifDeleteAll,
+  dispatchRdfDeleteAll,
+  dispatchSkuDeleteAll,
+  dispatchKfDeleteAll,
 } from './bulkDispatch.ts';
 import { pickBottomQuartileSample, pickNextBatch } from './smartSelect.ts';
 import { useSmartSelectHistory } from './useSmartSelectHistory.ts';
@@ -26,6 +31,7 @@ import {
 } from './usePipelineController.ts';
 import { useActiveModulesByProduct } from '../../features/operations/hooks/useFinderOperations.ts';
 import { selectActiveProductsForType, formatActiveWarnMessage } from './commandConsoleActiveCheck.ts';
+import { estimatePifEvalOperationCount } from './commandConsoleBatchEstimates.ts';
 import { CommandConsoleModelStrip } from './CommandConsoleModelStrip.tsx';
 import { CommandConsoleKeysDropdown } from './CommandConsoleKeysDropdown.tsx';
 import {
@@ -34,7 +40,50 @@ import {
   SMART_SELECT_SIZE_MAX,
 } from './useSmartSelectSize.ts';
 import { RangeSlider } from '../../shared/ui/forms/RangeSlider.tsx';
+import { PromptDrawerChevron, FinderDeleteConfirmModal } from '../../shared/ui/finder/index.ts';
+import { ACTION_BUTTON_WIDTH } from '../../shared/ui/actionButton/index.ts';
 import './CommandConsole.css';
+
+type BulkDeleteFinder = 'cef' | 'pif' | 'rdf' | 'sku' | 'kf';
+
+interface BulkDeleteCopy {
+  readonly label: string;
+  readonly title: string;
+  readonly description: (productCount: number) => string;
+}
+
+const BULK_DELETE_COPY: Readonly<Record<BulkDeleteFinder, BulkDeleteCopy>> = {
+  cef: {
+    label: 'CEF',
+    title: 'Permanently wipe ALL CEF data across selected products. Cascades into variants, PIF (images/runs/evals/carousel), and RDF/SKU per-variant entries.',
+    description: (n) =>
+      `This will permanently wipe everything for CEF across all ${n} selected product(s): every run and discovery history (URLs + queries), every CEF candidate, every published color/edition, every variant in the registry, plus every variant-scoped artifact downstream — PIF images/runs/evals/carousel and all RDF/SKU per-variant entries. Cannot be undone.`,
+  },
+  pif: {
+    label: 'PIF',
+    title: 'Permanently wipe ALL PIF data across selected products (runs, image files, evals, carousel slots).',
+    description: (n) =>
+      `This will permanently wipe everything for PIF across all ${n} selected product(s): every run and discovery history (URLs + queries), every image file on disk (master + originals), all eval records, and every carousel slot selection. CEF variants are preserved. Cannot be undone.`,
+  },
+  rdf: {
+    label: 'RDF',
+    title: 'Permanently wipe ALL RDF data across selected products (runs, candidates, published release_date).',
+    description: (n) =>
+      `This will permanently wipe everything for RDF across all ${n} selected product(s): every run and discovery history (URLs + queries), every RDF candidate, and every published release_date. Cannot be undone.`,
+  },
+  sku: {
+    label: 'SKU',
+    title: 'Permanently wipe ALL SKU data across selected products (runs, candidates, published sku).',
+    description: (n) =>
+      `This will permanently wipe everything for SKU across all ${n} selected product(s): every run and discovery history (URLs + queries), every SKU candidate, and every published sku. Cannot be undone.`,
+  },
+  kf: {
+    label: 'KF',
+    title: 'Permanently wipe ALL KF data across selected products (runs, per-key candidates, per-key published values).',
+    description: (n) =>
+      `This will permanently wipe everything for KF across all ${n} selected product(s): every run and discovery history (URLs + queries), every per-key candidate and evidence, and every per-key published value. Cannot be undone.`,
+  },
+};
 
 export interface CommandConsoleProps {
   readonly category: string;
@@ -312,7 +361,7 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
 
   const handlePifEval = useCallback(() => {
     if (!confirmActiveDispatch('pif', 'PIF')) return;
-    const estimate = selectedProducts.reduce((n, r) => n + r.pifVariants.length * 6, 0);
+    const estimate = estimatePifEvalOperationCount(selectedProducts);
     if (!confirmLargeBatch(estimate, selectedProducts.length)) return;
     void dispatchPifEval(category, selectedProducts, fire);
   }, [category, selectedProducts, fire, confirmActiveDispatch]);
@@ -377,6 +426,45 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
     if (!confirmLargeBatch(estimate, selectedProducts.length)) return;
     void pipeline.start(selectedProducts);
   }, [pipelineRunning, selectedProducts, pipeline]);
+
+  // ── Bulk Delete-All across selected products ──────────────────────
+  // Three confirmation gates before any DELETE fires:
+  //   1. confirmActiveDispatch — informational warn if collisions exist
+  //   2. confirmLargeBatch     — guard against accidental N>50 fan-outs
+  //   3. FinderDeleteConfirmModal — final destructive confirm with the
+  //      finder-specific blast radius spelled out
+  const [bulkDeleteFinder, setBulkDeleteFinder] = useState<BulkDeleteFinder | null>(null);
+  const [bulkDeletePending, setBulkDeletePending] = useState(false);
+
+  const requestBulkDelete = useCallback((finder: BulkDeleteFinder) => {
+    if (selectedProducts.length === 0) return;
+    const moduleType = finder === 'sku' ? 'skf' : finder;
+    const moduleLabel = BULK_DELETE_COPY[finder].label;
+    if (!confirmActiveDispatch(moduleType, moduleLabel)) return;
+    if (!confirmLargeBatch(selectedProducts.length, selectedProducts.length)) return;
+    setBulkDeleteFinder(finder);
+  }, [selectedProducts, confirmActiveDispatch]);
+
+  const confirmBulkDelete = useCallback(async () => {
+    if (!bulkDeleteFinder) return;
+    setBulkDeletePending(true);
+    try {
+      const dispatchers: Record<BulkDeleteFinder, () => Promise<unknown>> = {
+        cef: () => dispatchCefDeleteAll(category, selectedProducts),
+        pif: () => dispatchPifDeleteAll(category, selectedProducts),
+        rdf: () => dispatchRdfDeleteAll(category, selectedProducts),
+        sku: () => dispatchSkuDeleteAll(category, selectedProducts),
+        kf: () => dispatchKfDeleteAll(category, selectedProducts),
+      };
+      await dispatchers[bulkDeleteFinder]();
+    } finally {
+      setBulkDeletePending(false);
+      setBulkDeleteFinder(null);
+    }
+  }, [bulkDeleteFinder, category, selectedProducts]);
+
+  const bulkDeleteCount = selectedProducts.length;
+  const bulkDeleteCopy = bulkDeleteFinder ? BULK_DELETE_COPY[bulkDeleteFinder] : null;
 
   const statusText = pipelineStatusText(pipeline.state);
 
@@ -476,6 +564,72 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
             },
           ]}
         />
+
+        {/* Bulk Delete-All drawer — fans out per-finder DELETE
+            across every selected product. Hidden chevron when
+            nothing is selected so users can't accidentally arm it. */}
+        <div className="sf-cc-chips-trailing">
+          <PromptDrawerChevron
+            storageKey={`overview:cc:bulk-delete-drawer:${category}`}
+            openWidthClass="w-[24rem]"
+            drawerHeight="row"
+            ariaLabel="Bulk Delete-All actions across selected products"
+            closedTitle={noneSelected
+              ? 'Select products first to enable bulk Delete-All actions.'
+              : `Show bulk Delete-All actions for ${selectedSize} selected product(s).`}
+            openedTitle={`Hide bulk Delete-All actions for ${selectedSize} selected product(s).`}
+            chevronClass="sf-delete-label"
+            tertiaryTitle="Delete:"
+            tertiaryLabelClass="sf-delete-label"
+            tertiaryActions={[
+              {
+                id: 'bulk-del-cef',
+                label: BULK_DELETE_COPY.cef.label,
+                onClick: () => requestBulkDelete('cef'),
+                disabled: noneSelected || bulkDeletePending,
+                intent: noneSelected || bulkDeletePending ? 'locked' : 'delete',
+                width: ACTION_BUTTON_WIDTH.standardHeader,
+                title: BULK_DELETE_COPY.cef.title,
+              },
+              {
+                id: 'bulk-del-pif',
+                label: BULK_DELETE_COPY.pif.label,
+                onClick: () => requestBulkDelete('pif'),
+                disabled: noneSelected || bulkDeletePending,
+                intent: noneSelected || bulkDeletePending ? 'locked' : 'delete',
+                width: ACTION_BUTTON_WIDTH.standardHeader,
+                title: BULK_DELETE_COPY.pif.title,
+              },
+              {
+                id: 'bulk-del-rdf',
+                label: BULK_DELETE_COPY.rdf.label,
+                onClick: () => requestBulkDelete('rdf'),
+                disabled: noneSelected || bulkDeletePending,
+                intent: noneSelected || bulkDeletePending ? 'locked' : 'delete',
+                width: ACTION_BUTTON_WIDTH.standardHeader,
+                title: BULK_DELETE_COPY.rdf.title,
+              },
+              {
+                id: 'bulk-del-sku',
+                label: BULK_DELETE_COPY.sku.label,
+                onClick: () => requestBulkDelete('sku'),
+                disabled: noneSelected || bulkDeletePending,
+                intent: noneSelected || bulkDeletePending ? 'locked' : 'delete',
+                width: ACTION_BUTTON_WIDTH.standardHeader,
+                title: BULK_DELETE_COPY.sku.title,
+              },
+              {
+                id: 'bulk-del-kf',
+                label: BULK_DELETE_COPY.kf.label,
+                onClick: () => requestBulkDelete('kf'),
+                disabled: noneSelected || bulkDeletePending,
+                intent: noneSelected || bulkDeletePending ? 'locked' : 'delete',
+                width: ACTION_BUTTON_WIDTH.standardHeader,
+                title: BULK_DELETE_COPY.kf.title,
+              },
+            ]}
+          />
+        </div>
       </div>
 
       {/* Row 3 — model strip (read-only) ─────────────────────────────── */}
@@ -514,6 +668,19 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
           </button>
         </span>
       </div>
+
+      {/* Bulk Delete-All — final destructive confirm modal. Reuses the
+          per-panel modal so the destructive UX is consistent everywhere. */}
+      {bulkDeleteFinder && bulkDeleteCopy && (
+        <FinderDeleteConfirmModal
+          target={{ kind: 'all', count: bulkDeleteCount }}
+          onConfirm={() => { void confirmBulkDelete(); }}
+          onCancel={() => setBulkDeleteFinder(null)}
+          isPending={bulkDeletePending}
+          moduleLabel={bulkDeleteCopy.label}
+          descriptionOverrides={{ all: bulkDeleteCopy.description(bulkDeleteCount) }}
+        />
+      )}
     </aside>
   );
 }

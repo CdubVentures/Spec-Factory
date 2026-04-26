@@ -8,6 +8,11 @@ import {
   dispatchPifEval,
   dispatchRdfLoop,
   dispatchRdfRun,
+  dispatchCefDeleteAll,
+  dispatchPifDeleteAll,
+  dispatchRdfDeleteAll,
+  dispatchSkuDeleteAll,
+  dispatchKfDeleteAll,
   type BulkFireFn,
   type BulkFireParams,
 } from '../bulkDispatch.ts';
@@ -15,9 +20,11 @@ import type { CatalogRow } from '../../../types/product.ts';
 import type { PifVariantProgressGen, ScalarVariantProgressGen } from '../../../types/product.generated.ts';
 
 const originalGet = api.get;
+const originalDel = api.del;
 
 afterEach(() => {
   (api as unknown as { get: typeof originalGet }).get = originalGet;
+  (api as unknown as { del: typeof originalDel }).del = originalDel;
   useOperationsStore.getState().clear();
 });
 
@@ -372,5 +379,106 @@ describe('Overview bulk dispatch contracts', () => {
     // Default axis order is difficulty,required_level,availability — both equal here, so
     // alphabetical field_key tiebreaker puts already_published before already_resolved.
     assert.deepEqual(calls.map((c) => c.fieldKey), ['already_published', 'already_resolved']);
+  });
+});
+
+// ── Bulk Delete-All across selected products ─────────────────────────────
+//
+// Each helper fans out DELETE /:finder-prefix/:cat/:pid to every selected
+// product. Server-side cascade (the `onAfterDeleteAll` hook shipped earlier)
+// handles the full wipe per finder — these helpers just orchestrate the
+// fan-out: stagger, error tolerance, return shape.
+
+function delRecorder(calls: string[], failures: ReadonlySet<string> = new Set()): typeof api.del {
+  return (async (path: string) => {
+    calls.push(path);
+    if (failures.has(path)) throw new Error(`mock failure: ${path}`);
+    return { ok: true } as never;
+  }) as typeof api.del;
+}
+
+describe('Overview bulk Delete-All dispatchers', () => {
+  it('dispatchCefDeleteAll fires DELETE /color-edition-finder/:cat/:pid per selected product', async () => {
+    const calls: string[] = [];
+    (api as unknown as { del: typeof api.del }).del = delRecorder(calls);
+    const products = [product('p1'), product('p2'), product('p3')];
+
+    const result = await dispatchCefDeleteAll('mouse', products, { staggerMs: 0 });
+
+    assert.deepEqual(calls, [
+      '/color-edition-finder/mouse/p1',
+      '/color-edition-finder/mouse/p2',
+      '/color-edition-finder/mouse/p3',
+    ]);
+    assert.equal(result.scheduled, 3);
+    assert.equal(result.failures, 0);
+  });
+
+  it('dispatchPifDeleteAll fires DELETE /product-image-finder/:cat/:pid per selected product', async () => {
+    const calls: string[] = [];
+    (api as unknown as { del: typeof api.del }).del = delRecorder(calls);
+    const result = await dispatchPifDeleteAll('mouse', [product('p1'), product('p2')], { staggerMs: 0 });
+    assert.deepEqual(calls, [
+      '/product-image-finder/mouse/p1',
+      '/product-image-finder/mouse/p2',
+    ]);
+    assert.equal(result.scheduled, 2);
+  });
+
+  it('dispatchRdfDeleteAll fires DELETE /release-date-finder/:cat/:pid per selected product', async () => {
+    const calls: string[] = [];
+    (api as unknown as { del: typeof api.del }).del = delRecorder(calls);
+    const result = await dispatchRdfDeleteAll('mouse', [product('p1')], { staggerMs: 0 });
+    assert.deepEqual(calls, ['/release-date-finder/mouse/p1']);
+    assert.equal(result.scheduled, 1);
+  });
+
+  it('dispatchSkuDeleteAll fires DELETE /sku-finder/:cat/:pid per selected product', async () => {
+    const calls: string[] = [];
+    (api as unknown as { del: typeof api.del }).del = delRecorder(calls);
+    const result = await dispatchSkuDeleteAll('mouse', [product('p1'), product('p2')], { staggerMs: 0 });
+    assert.deepEqual(calls, ['/sku-finder/mouse/p1', '/sku-finder/mouse/p2']);
+    assert.equal(result.scheduled, 2);
+  });
+
+  it('dispatchKfDeleteAll fires DELETE /key-finder/:cat/:pid per selected product', async () => {
+    const calls: string[] = [];
+    (api as unknown as { del: typeof api.del }).del = delRecorder(calls);
+    const result = await dispatchKfDeleteAll('mouse', [product('p1')], { staggerMs: 0 });
+    assert.deepEqual(calls, ['/key-finder/mouse/p1']);
+    assert.equal(result.scheduled, 1);
+  });
+
+  it('returns failures count without aborting the rest of the fan-out', async () => {
+    const calls: string[] = [];
+    (api as unknown as { del: typeof api.del }).del = delRecorder(
+      calls,
+      new Set(['/color-edition-finder/mouse/p2']),
+    );
+    const result = await dispatchCefDeleteAll(
+      'mouse',
+      [product('p1'), product('p2'), product('p3')],
+      { staggerMs: 0 },
+    );
+    // p1 + p3 succeed, p2 fails — fan-out completes.
+    assert.equal(result.scheduled, 3);
+    assert.equal(result.failures, 1);
+    assert.equal(calls.length, 3, 'every product should be attempted even if one fails');
+  });
+
+  it('encodes special characters in category and productId path segments', async () => {
+    const calls: string[] = [];
+    (api as unknown as { del: typeof api.del }).del = delRecorder(calls);
+    await dispatchCefDeleteAll('cat with space', [product('p/1')], { staggerMs: 0 });
+    assert.deepEqual(calls, ['/color-edition-finder/cat%20with%20space/p%2F1']);
+  });
+
+  it('returns scheduled=0 when no products are selected', async () => {
+    const calls: string[] = [];
+    (api as unknown as { del: typeof api.del }).del = delRecorder(calls);
+    const result = await dispatchCefDeleteAll('mouse', [], { staggerMs: 0 });
+    assert.deepEqual(calls, []);
+    assert.equal(result.scheduled, 0);
+    assert.equal(result.failures, 0);
   });
 });
