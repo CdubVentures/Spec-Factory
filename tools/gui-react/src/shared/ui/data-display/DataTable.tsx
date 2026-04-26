@@ -62,6 +62,15 @@ interface PersistedDataTableState {
   globalFilter: string;
 }
 
+interface DataTableColumnMeta {
+  readonly cellClassName?: string;
+}
+
+function getCellClassName<T>(cell: { readonly column: { readonly columnDef: ColumnDef<T, unknown> } }): string {
+  const meta = cell.column.columnDef.meta as DataTableColumnMeta | undefined;
+  return meta?.cellClassName ?? '';
+}
+
 function getLocalStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -349,7 +358,7 @@ function DataTableInner<T>({
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={cell.id}
-                          className="px-2 py-1.5 whitespace-nowrap overflow-hidden"
+                          className={`px-2 py-1.5 whitespace-nowrap overflow-hidden ${getCellClassName(cell)}`}
                           onClick={onCellClick ? (e) => {
                             e.stopPropagation();
                             onCellClick(row.original, cell.column.id, row.index);
@@ -380,7 +389,7 @@ function DataTableInner<T>({
                       {row.getVisibleCells().map((cell) => (
                         <td
                           key={cell.id}
-                          className="px-2 py-1.5 whitespace-nowrap overflow-hidden"
+                          className={`px-2 py-1.5 whitespace-nowrap overflow-hidden ${getCellClassName(cell)}`}
                           onClick={onCellClick ? (e) => {
                             e.stopPropagation();
                             onCellClick(row.original, cell.column.id, row.index);

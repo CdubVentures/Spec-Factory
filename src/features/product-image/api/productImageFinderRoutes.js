@@ -13,7 +13,7 @@ import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { registerOperation, getOperationSignal, countRunningOperations, updateStage, updateModelInfo, updateProgressText, updateLoopProgress, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../../../core/operations/index.js';
 import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
-import { serveLocalAsset } from '../../../core/media/imageVariantAssets.js';
+import { removeLocalAssetVariants, serveLocalAsset } from '../../../core/media/imageVariantAssets.js';
 import { readImageDimensions, buildVariantList, imageStem, runProductImageFinder, runCarouselLoop } from '../productImageFinder.js';
 import { evaluateCarousel } from '../carouselStrategy.js';
 import { resolveViewBudget, resolveViewConfig, CANONICAL_VIEW_KEYS } from '../productImageLlmAdapter.js';
@@ -157,6 +157,179 @@ function resolveMissingPifDependencyResponse({ specDb, category, productId, prod
   };
 }
 
+function parseJsonValue(value, fallback) {
+  if (value == null || value === '') return fallback;
+  if (typeof value !== 'string') return value;
+  try { return JSON.parse(value); } catch { return fallback; }
+}
+
+function parseJsonArray(value) {
+  const parsed = parseJsonValue(value, []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function resolvePifCarouselSettings({ finderStore, category }) {
+  const viewBudget = resolveViewBudget(finderStore?.getSetting?.('viewBudget') || '', category);
+  const viewAttemptBudget = parseInt(finderStore?.getSetting?.('viewAttemptBudget') || '5', 10) || 5;
+  const viewAttemptBudgets = resolveViewAttemptBudgets(
+    finderStore?.getSetting?.('viewAttemptBudgets') || '',
+    category,
+    viewBudget,
+    viewAttemptBudget,
+  );
+  return {
+    viewAttemptBudget,
+    viewAttemptBudgets,
+    heroAttemptBudget: parseInt(finderStore?.getSetting?.('heroAttemptBudget') || '3', 10) || 3,
+    heroEnabled: (finderStore?.getSetting?.('heroEnabled') || 'true') !== 'false',
+    viewBudget,
+  };
+}
+
+function buildSummaryListImage(img) {
+  const result = {
+    view: img?.view || '',
+    filename: img?.filename || '',
+    variant_key: img?.variant_key || '',
+  };
+  if (img?.variant_id) result.variant_id = img.variant_id;
+  return result;
+}
+
+function buildSummaryImage(img) {
+  const result = {
+    view: img?.view || '',
+    filename: img?.filename || '',
+    url: '',
+    source_page: '',
+    alt_text: '',
+    bytes: Number(img?.bytes) || 0,
+    width: Number(img?.width) || 0,
+    height: Number(img?.height) || 0,
+    quality_pass: img?.quality_pass !== false,
+    variant_key: img?.variant_key || '',
+    variant_label: img?.variant_label || '',
+    variant_type: img?.variant_type === 'edition' ? 'edition' : 'color',
+    downloaded_at: '',
+  };
+  for (const key of [
+    'variant_id',
+    'bg_removed',
+    'content_hash',
+    'trim_failed',
+    'eval_best',
+    'eval_flags',
+    'eval_reasoning',
+    'eval_actual_view',
+    'eval_matches_requested_view',
+    'eval_usable_as_required_view',
+    'eval_usable_as_carousel_extra',
+    'eval_duplicate',
+    'eval_quality',
+    'hero',
+    'hero_rank',
+  ]) {
+    if (img?.[key] !== undefined) result[key] = img[key];
+  }
+  return result;
+}
+
+function buildSummaryHistoryCounts(runs) {
+  const buckets = new Map();
+  for (const run of runs) {
+    const response = run.response || {};
+    const key = response.variant_id || response.variant_key || '';
+    if (!key) continue;
+    const bucket = buckets.get(key) || { urls: new Set(), queries: new Set() };
+    const log = response.discovery_log || {};
+    for (const url of Array.isArray(log.urls_checked) ? log.urls_checked : []) {
+      bucket.urls.add(url);
+    }
+    for (const query of Array.isArray(log.queries_run) ? log.queries_run : []) {
+      bucket.queries.add(query);
+    }
+    buckets.set(key, bucket);
+  }
+  return Object.fromEntries(
+    [...buckets].map(([key, bucket]) => [key, { urls: bucket.urls.size, queries: bucket.queries.size }]),
+  );
+}
+
+function buildSummaryRun(run, overlayEval) {
+  const response = run.response || {};
+  return {
+    run_number: run.run_number,
+    ran_at: run.ran_at,
+    model: run.model,
+    fallback_used: run.fallback_used,
+    effort_level: run.effort_level,
+    access_mode: run.access_mode,
+    thinking: run.thinking,
+    web_search: run.web_search,
+    mode: run.mode,
+    loop_id: run.loop_id,
+    focus_view: run.focus_view,
+    started_at: run.started_at,
+    duration_ms: run.duration_ms,
+    selected: {
+      ...(run.selected || {}),
+      images: (run.selected?.images || []).map((img) => buildSummaryImage(overlayEval(img))),
+    },
+    response: {
+      variant_id: response.variant_id,
+      variant_key: response.variant_key,
+      variant_label: response.variant_label,
+      variant_type: response.variant_type,
+      mode: response.mode,
+      loop_id: response.loop_id,
+      focus_view: response.focus_view,
+      started_at: response.started_at,
+      duration_ms: response.duration_ms,
+      run_scope_key: response.run_scope_key,
+    },
+  };
+}
+
+function buildPifSummaryResponse({ row, runs, specDb, category, productId, productRow }) {
+  const finderStore = specDb.getFinderStore('productImageFinder');
+  const dependencyStatus = resolvePifDependencyStatus({ specDb, category, productId, productRow });
+  if (!row) {
+    return {
+      product_id: productId,
+      category,
+      images: [],
+      image_count: 0,
+      run_count: 0,
+      last_ran_at: '',
+      runs: [],
+      historyCounts: {},
+      carouselSettings: resolvePifCarouselSettings({ finderStore, category }),
+      carousel_slots: {},
+      dependencyStatus,
+    };
+  }
+
+  const evalState = parseJsonValue(row.eval_state, {});
+  const overlayEval = (img) => {
+    const evalData = evalState?.[img?.filename];
+    return evalData ? { ...img, ...evalData } : img;
+  };
+
+  return {
+    product_id: row.product_id,
+    category: row.category,
+    images: parseJsonArray(row.images).map(buildSummaryListImage),
+    image_count: row.image_count,
+    run_count: row.run_count,
+    last_ran_at: row.latest_ran_at,
+    runs: runs.map((run) => buildSummaryRun(run, overlayEval)),
+    historyCounts: buildSummaryHistoryCounts(runs),
+    carouselSettings: resolvePifCarouselSettings({ finderStore, category: row.category }),
+    carousel_slots: parseJsonValue(row.carousel_slots, {}),
+    dependencyStatus,
+  };
+}
+
 export function registerProductImageFinderRoutes(ctx) {
   const store = (specDb) => specDb.getFinderStore('productImageFinder');
 
@@ -294,6 +467,18 @@ export function registerProductImageFinderRoutes(ctx) {
 
     const category = parts[1] || '';
     const productId = parts[2] || '';
+
+    // GET /product-image-finder/:category/:productId/summary - lightweight Overview/preview payload.
+    if (method === 'GET' && category && productId && parts[3] === 'summary' && !parts[4]) {
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+      const productRow = specDb.getProduct?.(productId);
+      if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+      const finderStore = store(specDb);
+      const row = finderStore.get(productId);
+      const runs = row ? finderStore.listRuns(productId) : [];
+      return jsonRes(res, 200, buildPifSummaryResponse({ row, runs, specDb, category, productId, productRow }));
+    }
 
     // GET /product-image-finder/:category/:productId/dependencies — PIF identity lock status.
     // Works before any PIF summary row exists so the UI can show Run Dep first.
@@ -1297,13 +1482,19 @@ export function registerProductImageFinderRoutes(ctx) {
 
       const productRoot = defaultProductRoot();
       const deleteStem = imageStem(filename);
+      const imagesDir = path.join(productRoot, productId, 'images');
+      const masterCacheDir = path.join(imagesDir, '.cache', 'master');
+      const originalsCacheDir = path.join(imagesDir, '.cache', 'originals');
 
       // Delete master file from disk (master is always .png after RMBG)
-      const masterPath = path.join(productRoot, productId, 'images', deleteStem + '.png');
+      const masterPath = path.join(imagesDir, deleteStem + '.png');
+      removeLocalAssetVariants({ sourcePath: masterPath, cacheDir: masterCacheDir });
       try { fs.unlinkSync(masterPath); } catch { /* file may already be gone */ }
       // Also try the exact requested filename if it differs (pre-RMBG ext)
       if (filename !== deleteStem + '.png') {
-        try { fs.unlinkSync(path.join(productRoot, productId, 'images', filename)); } catch { /* */ }
+        const exactPath = path.join(imagesDir, filename);
+        removeLocalAssetVariants({ sourcePath: exactPath, cacheDir: masterCacheDir });
+        try { fs.unlinkSync(exactPath); } catch { /* */ }
       }
 
       // Read current JSON to find original_filename, then strip + recalculate
@@ -1315,7 +1506,8 @@ export function registerProductImageFinderRoutes(ctx) {
         for (const run of doc.runs) {
           for (const img of (run.selected?.images || [])) {
             if (imageStem(img.filename) === deleteStem && img.original_filename) {
-              const origPath = path.join(productRoot, productId, 'images', 'originals', img.original_filename);
+              const origPath = path.join(imagesDir, 'originals', img.original_filename);
+              removeLocalAssetVariants({ sourcePath: origPath, cacheDir: originalsCacheDir });
               try { fs.unlinkSync(origPath); } catch { /* */ }
             }
           }
@@ -1402,11 +1594,17 @@ export function registerProductImageFinderRoutes(ctx) {
       // WHY: Delete files BEFORE genericHandler sends the HTTP response.
       // Otherwise the frontend refetches before file cleanup finishes.
       const imagesDir = path.join(productRoot, productId, 'images');
+      const masterCacheDir = path.join(imagesDir, '.cache', 'master');
+      const originalsCacheDir = path.join(imagesDir, '.cache', 'originals');
       for (const img of runImages) {
         if (img.filename && !survivingFilenames.has(img.filename)) {
-          try { fs.unlinkSync(path.join(imagesDir, img.filename)); } catch { /* */ }
+          const masterPath = path.join(imagesDir, img.filename);
+          removeLocalAssetVariants({ sourcePath: masterPath, cacheDir: masterCacheDir });
+          try { fs.unlinkSync(masterPath); } catch { /* */ }
           if (img.original_filename) {
-            try { fs.unlinkSync(path.join(imagesDir, 'originals', img.original_filename)); } catch { /* */ }
+            const originalPath = path.join(imagesDir, 'originals', img.original_filename);
+            removeLocalAssetVariants({ sourcePath: originalPath, cacheDir: originalsCacheDir });
+            try { fs.unlinkSync(originalPath); } catch { /* */ }
           }
         }
       }

@@ -29,6 +29,7 @@ import {
   usePipelineController,
   PIPELINE_STAGES,
   type PipelineState,
+  type PipelineStageId,
 } from './usePipelineController.ts';
 import { useActiveModulesByProduct } from '../../features/operations/hooks/useFinderOperations.ts';
 import { selectActiveProductsForType, formatActiveWarnMessage } from './commandConsoleActiveCheck.ts';
@@ -209,55 +210,58 @@ function FinderChip({ moduleKey, label, icon, actions, disabled }: FinderChipPro
 
 // ── Pipeline stepper — 7 segmented progress bars per stage ────────────
 const STAGE_SHORT_LABELS: Readonly<Record<string, string>> = {
-  cef_1: 'CEF\u2081',
-  cef_2: 'CEF\u2082',
-  pif_dep: 'Dep',
+  cef_1: 'CEF1',
+  cef_2: 'CEF2',
+  kf_early: 'KF0',
+  pif_dep: 'DP',
   pif_loop: 'PIF',
   pif_eval: 'Eval',
   rdf_run: 'RDF',
   sku_run: 'SKU',
-  kf_loop: 'KF',
+  kf_context: 'KFc',
 };
 
-type SegmentState = 'idle' | 'pending' | 'active' | 'done' | 'error' | 'cancelled';
+type SegmentState = 'idle' | 'pending' | 'active' | 'done' | 'error' | 'cancelled' | 'skipped';
 
 function computeSegmentState(
-  stageIdx: number,
+  stageId: PipelineStageId,
   pipelineStatus: PipelineState['status'],
-  pipelineStageIdx: number,
+  state: PipelineState,
 ): SegmentState {
   if (pipelineStatus === 'idle') return 'idle';
-  if (stageIdx < pipelineStageIdx) return 'done';
-  if (stageIdx === pipelineStageIdx) {
-    if (pipelineStatus === 'running') return 'active';
-    if (pipelineStatus === 'done') return 'done';
-    if (pipelineStatus === 'cancelled') return 'cancelled';
-    if (pipelineStatus === 'error') return 'error';
-  }
-  // beyond current stage
-  if (pipelineStatus === 'done') return 'done'; // should not happen if index == total, but defensively
+  const runtime = state.stageProgress.get(stageId);
+  if (!runtime) return pipelineStatus === 'done' ? 'done' : 'pending';
+  if (runtime.status === 'running') return pipelineStatus === 'cancelled' ? 'cancelled' : 'active';
+  if (runtime.status === 'done') return 'done';
+  if (runtime.status === 'error') return 'error';
+  if (runtime.status === 'skipped') return 'skipped';
+  if (pipelineStatus === 'done') return 'done';
+  if (pipelineStatus === 'error') return 'error';
   return 'pending';
 }
 
 function PipelineStepper({ state }: { state: PipelineState }) {
-  const totalOps = state.stageOpIds.size;
-  const activeFrac = totalOps > 0 ? state.stageTerminalCount / totalOps : 0;
   return (
     <div className="sf-cc-stepper" role="group" aria-label="Pipeline stage progress">
       {PIPELINE_STAGES.map((stage, i) => {
-        const segState = computeSegmentState(i, state.status, state.stageIndex);
+        const runtime = state.stageProgress.get(stage.id);
+        const totalOps = runtime?.opIds.size ?? 0;
+        const terminalCount = runtime?.terminalCount ?? 0;
+        const activeFrac = totalOps > 0 ? terminalCount / totalOps : 0;
+        const segState = computeSegmentState(stage.id, state.status, state);
         const fillPct =
           segState === 'done' ? 100 :
           segState === 'active' ? Math.max(4, Math.round(activeFrac * 100)) :
           segState === 'error' ? 100 :
           segState === 'cancelled' ? 100 :
+          segState === 'skipped' ? 100 :
           0;
         return (
           <div
             key={stage.id}
             className={`sf-cc-stepper-seg sf-cc-stepper-seg-${segState}`}
             title={segState === 'active'
-              ? `${stage.label} \u2014 ${state.stageTerminalCount}/${totalOps} ops done`
+              ? `${stage.label} \u2014 ${terminalCount}/${totalOps} ops done`
               : stage.label}
           >
             <div className="sf-cc-stepper-bar">
@@ -275,8 +279,15 @@ function pipelineStatusText(state: PipelineState): string | null {
   if (state.status === 'idle') return null;
   const failedCount = state.failedProducts.size;
   if (state.status === 'running') {
-    const totalOps = state.stageOpIds.size;
-    return `${state.stageTerminalCount}/${totalOps}${failedCount > 0 ? ` \u00B7 ${failedCount} failed` : ''}`;
+    let totalOps = 0;
+    let terminalCount = 0;
+    for (const runtime of state.stageProgress.values()) {
+      if (runtime.status !== 'running') continue;
+      totalOps += runtime.opIds.size;
+      terminalCount += runtime.terminalCount;
+    }
+    const activeText = totalOps > 0 ? `${terminalCount}/${totalOps}` : 'Running';
+    return `${activeText}${failedCount > 0 ? ` \u00B7 ${failedCount} failed` : ''}`;
   }
   if (state.status === 'done') return failedCount > 0 ? `Complete \u00B7 ${failedCount} failed` : 'Complete';
   if (state.status === 'cancelled') return 'Cancelled';
@@ -691,7 +702,7 @@ export const CommandConsole = memo(function CommandConsoleInner({ category, allR
             className="sf-cc-btn sf-cc-btn-primary"
             onClick={handleStartPipeline}
             disabled={noneSelected || pipelineRunning}
-            title={`Run CEF\u00D72 \u2192 PIF loop \u2192 PIF eval \u2192 RDF \u2192 SKU \u2192 KF loop across ${selectedProducts.length} product(s).`}
+            title={`Run dependency-driven pipeline across ${selectedProducts.length} product(s): CEF and independent KF start first; RDF/SKU run after CEF; PIF waits dependency keys; contextual KF runs last.`}
           >
             <PlayGlyph />Run
           </button>

@@ -43,6 +43,20 @@ export interface ReviewFieldRowActionResponse {
   readonly deleted_runs_by_product?: Readonly<Record<string, readonly number[]>>;
 }
 
+export interface ReviewProductNonVariantActionResult extends ReviewFieldRowActionResult {
+  readonly fieldKey: string;
+}
+
+export interface ReviewProductNonVariantActionResponse {
+  readonly ok: boolean;
+  readonly status: 'unpublished' | 'deleted';
+  readonly product_id: string;
+  readonly field_count: number;
+  readonly field_keys: readonly string[];
+  readonly results: readonly ReviewProductNonVariantActionResult[];
+  readonly deleted_runs_by_field?: Readonly<Record<string, readonly number[]>>;
+}
+
 export function unpublishReviewFieldRow(
   category: string,
   fieldKey: string,
@@ -59,6 +73,25 @@ export function deleteReviewFieldRow(
 ): Promise<ReviewFieldRowActionResponse> {
   return api.del<ReviewFieldRowActionResponse>(
     `/review/${category}/field-row/${encodeURIComponent(fieldKey)}`,
+  );
+}
+
+export function unpublishReviewProductNonVariantKeys(
+  category: string,
+  productId: string,
+): Promise<ReviewProductNonVariantActionResponse> {
+  return api.post<ReviewProductNonVariantActionResponse>(
+    `/review/${category}/product/${encodeURIComponent(productId)}/non-variant-keys/unpublish-all`,
+    {},
+  );
+}
+
+export function deleteReviewProductNonVariantKeys(
+  category: string,
+  productId: string,
+): Promise<ReviewProductNonVariantActionResponse> {
+  return api.del<ReviewProductNonVariantActionResponse>(
+    `/review/${category}/product/${encodeURIComponent(productId)}/non-variant-keys`,
   );
 }
 

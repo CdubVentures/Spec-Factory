@@ -1655,22 +1655,42 @@
     },
     "coating": {
       "ai_assist": {
-        "reasoning_note": ""
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Extract the factory exterior shell/hand-contact surface finish or coating, not body material, feet, cable, scroll-wheel rubber, mousepad surface, or aftermarket/in-box optional grip tape. Normalize Standard Matte/matte finish/matte UV coating to matte, glossy/high-shine to glossy, full-shell rubberized/soft-touch/rubbery plastic to rubberized, Smooth-Touch Finish to smooth-touch, and integrated side grip inserts to rubber grips. If a product family has official coating/color variants, return the union for the family page, but return only the exact coating for a known SKU/colorway/edition. In comparison tables, read the row/header context: ZOWIE Rubber commonly belongs to Cable and must not become coating. PIF images may support visible matte/glossy sheen or built-in rubber side panels, but do not infer UV/rubberized chemistry from images alone.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
       },
-      "aliases": [],
-      "availability": "always",
+      "aliases": [
+        "glossy finish -> glossy",
+        "high-shine finish -> glossy",
+        "integrated side grip inserts -> rubber grips",
+        "matte finish -> matte",
+        "matte rubberized plastic -> rubberized",
+        "matte UV coating -> matte",
+        "rubber side grips -> rubber grips",
+        "rubberized plastic -> rubberized",
+        "rubbery full-shell coating -> rubberized",
+        "skin-friendly matte UV coating -> matte",
+        "Smooth-Touch Finish -> smooth-touch",
+        "soft-touch coating -> rubberized",
+        "Standard Matte -> matte",
+        "textured rubber grips -> rubber grips"
+      ],
+      "availability": "sometimes",
       "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
-          "dedupe": true,
-          "sort": "none"
+          "item_union": true
         },
         "shape": "list",
         "type": "string"
       },
       "data_type": "string",
-      "difficulty": "easy",
+      "difficulty": "medium",
       "display_name": "Coating",
       "enum": {
         "match": {},
@@ -1726,20 +1746,31 @@
         ]
       },
       "priority": {
-        "availability": "always",
-        "difficulty": "easy",
+        "availability": "sometimes",
+        "difficulty": "medium",
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "review"
+          "manufacturer product pages",
+          "official specs/comparison tables",
+          "official launch/blog pages",
+          "professional review coating sections",
+          "specialist mouse review/spec pages",
+          "product/PIF images for visible sheen or built-in side grips only"
         ],
         "domain_hints": [
           "eloshapes.com",
           "mousespecs.org",
           "rtings.com",
-          "techpowerup.com"
+          "techpowerup.com",
+          "endgamegear.com",
+          "zowie.benq.com",
+          "gloriousgaming.com",
+          "logitechg.com",
+          "razer.com",
+          "aoc.com"
         ],
         "preferred_tiers": [
           "tier1",
@@ -1749,10 +1780,18 @@
         "query_terms": [
           "coating",
           "surface coating",
+          "shell coating",
+          "finish",
           "matte",
+          "matte UV coating",
           "glossy",
-          "textured",
-          "grip coating"
+          "high-shine",
+          "rubberized",
+          "soft-touch",
+          "smooth-touch",
+          "rubber side grips",
+          "textured rubber grips",
+          "grip tape"
         ]
       },
       "ui": {
@@ -3224,10 +3263,37 @@
     },
     "feet_material": {
       "ai_assist": {
-        "reasoning_note": ""
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the installed/default glide feet/skates material for the exact mouse/SKU, not aftermarket replacements or optional accessory kits. Normalize Teflon to PTFE. Use PTFE (Virgin-Grade) only when the source says virgin, pure/100%, zero-additive, or equivalent; use PTFE (95%) only for 95%/>95% claims; use PTFE (Black-Dyed) only when feet/skates are explicitly black/dyed PTFE, not from mouse color. Treat glass, ceramic, UHMWPE/UHMW-PE/UPE, and metal/X'Glide armor boots as material classes when tied to feet/skates. If sources say PTFE or glass or list optional/in-box replacement skates without resolving the exact installed/default variant, return unk rather than unioning values. Strip thickness, shape, colorway, and lifespan/distance claims from the material value. Do not infer material from bottom images, shell material, or mousepad compatibility.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
       },
-      "aliases": [],
-      "availability": "always",
+      "aliases": [
+        "100% PTFE -> PTFE (Virgin-Grade)",
+        "95% PTFE -> PTFE (95%)",
+        "aluminosilicate glass -> Glass",
+        "aluminum gliders -> Metal",
+        "Armor Boot -> Metal",
+        "black PTFE -> PTFE (Black-Dyed)",
+        "black Teflon -> PTFE (Black-Dyed)",
+        "ceramic pads -> Ceramic",
+        "ceramic skates -> Ceramic",
+        "dyed PTFE -> PTFE (Black-Dyed)",
+        "glass skates -> Glass",
+        "more than 95% PTFE -> PTFE (95%)",
+        "pure PTFE -> PTFE (Virgin-Grade)",
+        "Teflon -> PTFE",
+        "UHMW-PE -> UHMWPE",
+        "ultra-high molecular weight polyethylene -> UHMWPE",
+        "UPE -> UHMWPE",
+        "virgin PTFE -> PTFE (Virgin-Grade)",
+        "X'Glide -> Metal",
+        "zero-additive PTFE -> PTFE (Virgin-Grade)"
+      ],
+      "availability": "sometimes",
       "component": null,
       "constraints": [],
       "contract": {
@@ -3235,11 +3301,15 @@
         "type": "string"
       },
       "data_type": "string",
-      "difficulty": "easy",
+      "difficulty": "medium",
       "display_name": "Feet Material",
       "enum": {
         "match": {},
-        "policy": "closed",
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
+        "policy": "open_prefer_known",
         "source": "data_lists.feet_material"
       },
       "evidence": {
@@ -3280,21 +3350,28 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "always",
-        "difficulty": "easy",
+        "availability": "sometimes",
+        "difficulty": "medium",
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "review",
-          "spec_sheet"
+          "manufacturer product pages",
+          "manufacturer support/spec pages",
+          "official accessory pages",
+          "product manuals/spec sheets",
+          "professional review/lab pages",
+          "authorized retailer spec tables"
         ],
         "domain_hints": [
-          "mousespecs.org",
+          "manufacturer/brand official pages",
           "rtings.com",
           "techpowerup.com",
-          "eloshapes.com"
+          "mousespecs.org",
+          "eloshapes.com",
+          "prosettings.net",
+          "authorized retailer spec pages"
         ],
         "preferred_tiers": [
           "tier1",
@@ -3304,10 +3381,23 @@
         "query_terms": [
           "feet material",
           "mouse feet",
-          "PTFE",
-          "skates",
+          "mouse skates",
           "glide pads",
-          "Teflon"
+          "skates material",
+          "PTFE",
+          "Teflon",
+          "100% PTFE",
+          "pure PTFE",
+          "zero-additive PTFE",
+          "virgin PTFE",
+          "95% PTFE",
+          "black PTFE",
+          "glass skates",
+          "ceramic pads",
+          "UHMWPE",
+          "UHMW-PE",
+          "metal feet",
+          "X'Glide"
         ]
       },
       "ui": {
@@ -4047,9 +4137,36 @@
     },
     "honeycomb_frame": {
       "ai_assist": {
-        "reasoning_note": ""
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Treat honeycomb_frame=true when the exact mouse has a deliberate externally visible perforated, cut-out, holey, hex/honeycomb, mesh, skeletal, cage, or exoskeleton shell/frame on the main outer body; the hole pattern does not need to be hexagonal, and partial-body perforation counts when it is part of the top/side/main shell. Treat false when an explicit source says solid shell, removed all holes, or no honeycomb/cutouts, or when clear official/PIF product images show an unperforated top/side/body. Do not infer true from low weight alone, internal lattice, sensor/screw/vent openings, printed patterns, grip tape texture, or trivial underside-only openings. When family members differ, answer only the exact model/SKU/edition; if text is silent and images do not clearly show the shell, return unk rather than using absence as proof.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
       },
-      "aliases": [],
+      "aliases": [
+        "cage frame",
+        "cutout shell",
+        "exoskeleton",
+        "hex design",
+        "hex shell",
+        "holed shell",
+        "holey shell",
+        "honeycomb frame",
+        "honeycomb shell",
+        "mesh mouse",
+        "mesh shell",
+        "no honeycomb cutouts",
+        "open shell",
+        "partial-body perforation",
+        "perforated casing",
+        "perforated shell",
+        "removed all holes",
+        "skeletal shell",
+        "solid shell",
+        "speed holes"
+      ],
       "availability": "sometimes",
       "component": null,
       "constraints": [],
@@ -4099,13 +4216,20 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "review",
-          "product_page"
+          "manufacturer product page",
+          "official press release/blog",
+          "official product image gallery or PIF top/side/bottom images",
+          "professional review design/build section",
+          "retailer product details only as fallback"
         ],
         "domain_hints": [
-          "eloshapes.com",
+          "requested brand/manufacturer product page",
+          "requested brand support/spec page",
           "rtings.com",
-          "mousespecs.org"
+          "techpowerup.com",
+          "tomshardware.com",
+          "pcmag.com",
+          "eloshapes.com"
         ],
         "preferred_tiers": [
           "tier1",
@@ -4113,11 +4237,19 @@
           "tier3"
         ],
         "query_terms": [
-          "honeycomb",
+          "honeycomb shell",
+          "hex shell",
+          "holey shell",
           "perforated shell",
-          "holes",
-          "honeycomb design",
-          "lightweight shell"
+          "perforated casing",
+          "cutout shell",
+          "mesh mouse",
+          "exoskeleton mouse",
+          "open shell",
+          "partial-body perforation",
+          "solid shell",
+          "removed all holes",
+          "no honeycomb cutouts"
         ]
       },
       "ui": {
@@ -4940,15 +5072,46 @@
     },
     "material": {
       "ai_assist": {
-        "reasoning_note": ""
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the material(s) of the mouse primary external body/shell/chassis/enclosure for the exact product, edition, SKU, and colorway being requested. Special editions and sibling models can change material, so do not union across a product family. Return a list only for substantial built-in exterior materials on the exact product, such as a plastic shell plus built-in rubber side grip panels. Do not include paint, coating, rubberized finish, optional grip tape, mouse feet/skates, cable, receiver/dongle, PCB/PWA, battery, packaging, or sustainability percentages. Normalize housing/chassis/exoskeleton/enclosure/body/outer shell/source spelling to canonical material values; prefer the most specific proven material over generic plastic or metal. Do not infer plastic from a normal-looking mouse, light weight, or common market practice. If credible sources only prove coating/finish, weight, or appearance and do not state a material, return unk with the searched sources. Product/PIF images may help reject wrong variants, but they are not standalone proof unless on-page text/metadata explicitly identifies the material.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
       },
-      "aliases": [],
-      "availability": "always",
+      "aliases": [
+        "body material",
+        "bottom shell",
+        "built-in rubber side grips",
+        "carbon fiber composite",
+        "carbon fiber shell",
+        "case material",
+        "CFRP",
+        "chassis material",
+        "construction",
+        "enclosure material",
+        "exoskeleton",
+        "external casing",
+        "frame material",
+        "housing material",
+        "magnesium alloy shell",
+        "material composition",
+        "nylon outer shell",
+        "ocean plastic shell",
+        "outer shell",
+        "plastic parts",
+        "recycled plastic shell",
+        "shell material",
+        "top shell"
+      ],
+      "availability": "sometimes",
       "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
+          "item_union": false,
           "sort": "none"
         },
         "shape": "list",
@@ -5003,21 +5166,27 @@
         ]
       },
       "priority": {
-        "availability": "always",
+        "availability": "sometimes",
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "review",
-          "product_page"
+          "official product pages",
+          "official support/spec pages",
+          "press releases/newsroom posts",
+          "manufacturer explainer pages",
+          "professional review/spec pages",
+          "authorized retailer product-spec tables"
         ],
         "domain_hints": [
+          "brand-official product/spec/support/press pages first",
+          "rtings.com",
+          "techpowerup.com",
           "mousespecs.org",
           "eloshapes.com",
-          "rtings.com",
-          "techpowerup.com"
+          "authorized retailer spec tables as fallback"
         ],
         "preferred_tiers": [
           "tier1",
@@ -5026,10 +5195,23 @@
         ],
         "query_terms": [
           "material",
+          "materials",
           "shell material",
           "housing material",
+          "chassis material",
+          "enclosure material",
+          "body material",
+          "outer shell",
+          "top shell",
+          "case material",
+          "construction",
+          "material composition",
           "plastic type",
-          "build material"
+          "magnesium alloy shell",
+          "carbon fiber shell",
+          "bio-based nylon",
+          "recycled plastic shell",
+          "ocean plastic shell"
         ]
       },
       "ui": {
@@ -9229,7 +9411,7 @@
       }
     }
   },
-  "generated_at": "2026-04-26T21:25:42.189Z",
+  "generated_at": "2026-04-26T22:04:04.597Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

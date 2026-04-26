@@ -16,18 +16,64 @@ import { hasKnownValue } from '../../utils/fieldNormalize.ts';
 import { useFieldLabels } from '../../hooks/useFieldLabels.ts';
 import { sourceBadgeClass, SOURCE_BADGE_FALLBACK } from '../../utils/colors.ts';
 import {
+  getEnumReviewQueryKey,
   invalidateEnumAuthorityQueries,
   invalidateEnumReviewDataQuery,
   setEnumReviewQueryData,
 } from './enumReviewStore.js';
 import { useFieldRulesStore } from '../../features/studio/state/useFieldRulesStore.ts';
-import type { EnumReviewPayload, EnumFieldReview, EnumValueReviewItem } from '../../types/componentReview.ts';
+import {
+  cancelLinkedReviewProductFields,
+  clearLinkedReviewProductFields,
+  restoreLinkedReviewProductFields,
+  updateLinkedReviewProductFields,
+  type LinkedReviewProductFieldSnapshot,
+} from './componentReviewCache.ts';
+import type { EnumReviewPayload, EnumFieldReview, EnumValueReviewItem, LinkedProduct } from '../../types/componentReview.ts';
 
 interface EnumSubTabProps {
   data: EnumReviewPayload;
   category: string;
   queryClient: QueryClient;
   debugLinkedProducts?: boolean;
+}
+
+interface EnumAcceptMutationBody {
+  field: string;
+  action: string;
+  value: string;
+  candidateId?: string;
+  candidateSource?: string;
+  oldValue?: string;
+  listValueId?: number;
+  enumListId?: number;
+  valueIndex?: number;
+  linkedProducts?: readonly LinkedProduct[];
+}
+
+interface EnumRemoveMutationBody {
+  field: string;
+  action: string;
+  value: string;
+  listValueId?: number;
+  enumListId?: number;
+  valueIndex?: number;
+  linkedProducts?: readonly LinkedProduct[];
+}
+
+interface EnumRenameMutationBody {
+  field: string;
+  oldValue: string;
+  newValue: string;
+  valueIndex?: number;
+  listValueId?: number;
+  enumListId?: number;
+  linkedProducts?: readonly LinkedProduct[];
+}
+
+interface EnumReviewMutationContext {
+  previousEnumReviewData?: EnumReviewPayload;
+  previousLinkedReviewProductFields?: LinkedReviewProductFieldSnapshot;
 }
 
 function enumToCellState(valueItem: EnumValueReviewItem): ReviewValueCellState {
@@ -323,52 +369,94 @@ export function EnumSubTab({
     );
   }
 
-  const acceptMutation = useMutation({
-    mutationFn: (body: {
-      field: string;
-      action: string;
-      value: string;
-      candidateId?: string;
-      candidateSource?: string;
-      oldValue?: string;
-      listValueId?: number;
-      enumListId?: number;
-    }) =>
+  const acceptMutation = useMutation<unknown, Error, EnumAcceptMutationBody, EnumReviewMutationContext>({
+    mutationFn: (body) =>
       api.post(`/review-components/${category}/enum-override`, body),
+    onMutate: async (body) => {
+      const queryKey = getEnumReviewQueryKey(category);
+      const previousEnumReviewData = queryClient.getQueryData<EnumReviewPayload>(queryKey);
+      const linkedProducts = body.linkedProducts ?? [];
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey }),
+        linkedProducts.length > 0 ? cancelLinkedReviewProductFields(queryClient, category) : Promise.resolve(),
+      ]);
+      if (body.valueIndex !== undefined) {
+        optimisticAccept(body.field, body.valueIndex, body.candidateId ?? null, body.value);
+      }
+      const source = String(body.candidateSource || 'enum').trim() || 'enum';
+      const previousLinkedReviewProductFields = linkedProducts.length > 0
+        ? updateLinkedReviewProductFields(queryClient, {
+          category,
+          field: body.field,
+          linkedProducts,
+          value: body.value,
+          source,
+          timestamp: new Date().toISOString(),
+          acceptedCandidateId: body.candidateId ?? null,
+          overridden: false,
+        })
+        : undefined;
+      return { previousEnumReviewData, previousLinkedReviewProductFields };
+    },
     onSuccess: () => {
       invalidateEnumAuthorityQueries(queryClient, category);
     },
-    onError: () => {
+    onError: (_error, _body, context) => {
+      if (context?.previousEnumReviewData !== undefined) {
+        queryClient.setQueryData(getEnumReviewQueryKey(category), context.previousEnumReviewData);
+      }
+      if (context?.previousLinkedReviewProductFields) {
+        restoreLinkedReviewProductFields(queryClient, context.previousLinkedReviewProductFields);
+      }
       invalidateEnumReviewDataQuery(queryClient, category);
     },
   });
 
-  const removeMutation = useMutation({
-    mutationFn: (body: { field: string; action: string; value: string; listValueId?: number; enumListId?: number }) =>
+  const removeMutation = useMutation<unknown, Error, EnumRemoveMutationBody, EnumReviewMutationContext>({
+    mutationFn: (body) =>
       api.post(`/review-components/${category}/enum-override`, body),
+    onMutate: async (body) => {
+      const queryKey = getEnumReviewQueryKey(category);
+      const previousEnumReviewData = queryClient.getQueryData<EnumReviewPayload>(queryKey);
+      const linkedProducts = body.linkedProducts ?? [];
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey }),
+        linkedProducts.length > 0 ? cancelLinkedReviewProductFields(queryClient, category) : Promise.resolve(),
+      ]);
+      if (body.valueIndex !== undefined) {
+        optimisticRemove(body.field, body.valueIndex);
+      }
+      const previousLinkedReviewProductFields = linkedProducts.length > 0
+        ? clearLinkedReviewProductFields(queryClient, {
+          category,
+          field: body.field,
+          linkedProducts,
+        })
+        : undefined;
+      return { previousEnumReviewData, previousLinkedReviewProductFields };
+    },
     onSuccess: () => {
       invalidateEnumAuthorityQueries(queryClient, category);
       closeEnumDrawer();
     },
-    onError: () => {
+    onError: (_error, _body, context) => {
+      if (context?.previousEnumReviewData !== undefined) {
+        queryClient.setQueryData(getEnumReviewQueryKey(category), context.previousEnumReviewData);
+      }
+      if (context?.previousLinkedReviewProductFields) {
+        restoreLinkedReviewProductFields(queryClient, context.previousLinkedReviewProductFields);
+      }
       invalidateEnumReviewDataQuery(queryClient, category);
     },
   });
 
-  const drawerRenameMutation = useMutation({
+  const drawerRenameMutation = useMutation<unknown, Error, EnumRenameMutationBody, EnumReviewMutationContext>({
     mutationFn: ({
       field,
       oldValue,
       newValue: newVal,
       listValueId,
       enumListId,
-    }: {
-      field: string;
-      oldValue: string;
-      newValue: string;
-      valueIndex?: number;
-      listValueId?: number;
-      enumListId?: number;
     }) => api.post(`/review-components/${category}/enum-rename`, {
       field,
       oldValue,
@@ -376,8 +464,14 @@ export function EnumSubTab({
       listValueId,
       enumListId,
     }),
-    onMutate: async ({ field, newValue: newVal, valueIndex, listValueId }) => {
-      if (!toPositiveId(listValueId)) return;
+    onMutate: async ({ field, newValue: newVal, valueIndex, listValueId, linkedProducts = [] }) => {
+      if (!toPositiveId(listValueId)) return {};
+      const queryKey = getEnumReviewQueryKey(category);
+      const previousEnumReviewData = queryClient.getQueryData<EnumReviewPayload>(queryKey);
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey }),
+        linkedProducts.length > 0 ? cancelLinkedReviewProductFields(queryClient, category) : Promise.resolve(),
+      ]);
       setEnumReviewQueryData(
         queryClient,
         category,
@@ -392,11 +486,30 @@ export function EnumSubTab({
           };
         },
       );
+      const previousLinkedReviewProductFields = linkedProducts.length > 0
+        ? updateLinkedReviewProductFields(queryClient, {
+          category,
+          field,
+          linkedProducts,
+          value: newVal,
+          source: 'user',
+          timestamp: new Date().toISOString(),
+          acceptedCandidateId: null,
+          overridden: true,
+        })
+        : undefined;
+      return { previousEnumReviewData, previousLinkedReviewProductFields };
     },
     onSuccess: () => {
       invalidateEnumAuthorityQueries(queryClient, category);
     },
-    onError: () => {
+    onError: (_error, _body, context) => {
+      if (context?.previousEnumReviewData !== undefined) {
+        queryClient.setQueryData(getEnumReviewQueryKey(category), context.previousEnumReviewData);
+      }
+      if (context?.previousLinkedReviewProductFields) {
+        restoreLinkedReviewProductFields(queryClient, context.previousLinkedReviewProductFields);
+      }
       invalidateEnumReviewDataQuery(queryClient, category);
     },
   });
@@ -478,6 +591,14 @@ export function EnumSubTab({
     const trimmed = editText.trim();
     const field = selectedEnumField;
     const idx = editingIndex;
+    const linkedProducts = selectedFieldData.values[idx]?.linked_products ?? [];
+    const queryKey = getEnumReviewQueryKey(category);
+    const previousEnumReviewData = queryClient.getQueryData<EnumReviewPayload>(queryKey);
+    let previousLinkedReviewProductFields: LinkedReviewProductFieldSnapshot | undefined;
+    await Promise.all([
+      queryClient.cancelQueries({ queryKey }),
+      linkedProducts.length > 0 ? cancelLinkedReviewProductFields(queryClient, category) : Promise.resolve(),
+    ]);
 
     // Optimistic rename in cache — match by index
     setEnumReviewQueryData(queryClient, category, (old) => {
@@ -490,6 +611,18 @@ export function EnumSubTab({
         }),
       };
     });
+    if (linkedProducts.length > 0) {
+      previousLinkedReviewProductFields = updateLinkedReviewProductFields(queryClient, {
+        category,
+        field,
+        linkedProducts,
+        value: trimmed,
+        source: 'user',
+        timestamp: new Date().toISOString(),
+        acceptedCandidateId: null,
+        overridden: true,
+      });
+    }
 
     try {
       const enumListId = toPositiveId(selectedFieldData.enum_list_id);
@@ -501,6 +634,12 @@ export function EnumSubTab({
         enumListId: enumListId ?? undefined,
       });
     } catch (err) {
+      if (previousEnumReviewData !== undefined) {
+        queryClient.setQueryData(queryKey, previousEnumReviewData);
+      }
+      if (previousLinkedReviewProductFields) {
+        restoreLinkedReviewProductFields(queryClient, previousLinkedReviewProductFields);
+      }
       console.error('Enum rename failed:', err);
     } finally {
       invalidateEnumAuthorityQueries(queryClient, category);
@@ -709,8 +848,9 @@ export function EnumSubTab({
                     value,
                     listValueId: listValueId ?? undefined,
                     enumListId: enumListId ?? undefined,
+                    valueIndex: idx,
+                    linkedProducts: vi.linked_products ?? [],
                   });
-                  optimisticRemove(field, idx);
                   setSelectedValueIndex(null);
                 }}
                 disabled={removeMutation.isPending || !canMutateValueSlot}
@@ -773,6 +913,7 @@ export function EnumSubTab({
                     valueIndex: viIndex,
                     listValueId: listValueId ?? undefined,
                     enumListId: enumListId ?? undefined,
+                    linkedProducts: vi.linked_products ?? [],
                   });
                 }}
                 manualOverrideLabel="Rename Value"
@@ -783,7 +924,6 @@ export function EnumSubTab({
                   const cid = String(candidateId || '').trim();
                   const acceptedValue = String(candidate.value ?? '').trim();
                   if (!cid || !acceptedValue) return;
-                  optimisticAccept(fd.field, viIndex, candidateId, acceptedValue);
                   openEnumDrawer(fd.field, acceptedValue);
                   setSelectedValueIndex(viIndex);
                   acceptMutation.mutate({
@@ -795,6 +935,8 @@ export function EnumSubTab({
                     candidateSource: candidate.source_id || candidate.source || '',
                     listValueId: listValueId ?? undefined,
                     enumListId: enumListId ?? undefined,
+                    valueIndex: viIndex,
+                    linkedProducts: vi.linked_products ?? [],
                   });
                 } : undefined}
                 onConfirmSharedCandidate={hasSharedPending && canMutateValueSlot ? (candidateId, candidate) => {
@@ -809,6 +951,8 @@ export function EnumSubTab({
                     candidateSource: candidate.source_id || candidate.source || '',
                     listValueId: listValueId ?? undefined,
                     enumListId: enumListId ?? undefined,
+                    valueIndex: viIndex,
+                    linkedProducts: vi.linked_products ?? [],
                   });
                 } : undefined}
                 onConfirmShared={hasSharedPending && canMutateValueSlot ? () => {
@@ -821,6 +965,8 @@ export function EnumSubTab({
                     candidateId: fallbackSharedConfirmCandidateId,
                     listValueId: listValueId ?? undefined,
                     enumListId: enumListId ?? undefined,
+                    valueIndex: viIndex,
+                    linkedProducts: vi.linked_products ?? [],
                   });
                 } : undefined}
                 extraActions={extraActions}

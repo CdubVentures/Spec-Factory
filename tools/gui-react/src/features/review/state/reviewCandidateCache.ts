@@ -17,6 +17,12 @@ export interface ReviewFieldRowCacheTarget {
   readonly field: string;
 }
 
+export interface ReviewProductNonVariantCacheTarget {
+  readonly category: string;
+  readonly productId: string;
+  readonly fieldKeys: readonly string[];
+}
+
 export interface ReviewFieldValueSourceMeta {
   readonly source?: string;
   readonly method?: string;
@@ -45,6 +51,12 @@ interface ReviewFieldRowCandidateCacheSnapshot {
 }
 
 export interface ReviewFieldRowCacheSnapshot {
+  readonly productsIndexQueryKey: QueryKey;
+  readonly productsIndex: ProductsIndexResponse | undefined;
+  readonly candidateData: readonly ReviewFieldRowCandidateCacheSnapshot[];
+}
+
+export interface ReviewProductNonVariantCacheSnapshot {
   readonly productsIndexQueryKey: QueryKey;
   readonly productsIndex: ProductsIndexResponse | undefined;
   readonly candidateData: readonly ReviewFieldRowCandidateCacheSnapshot[];
@@ -264,6 +276,34 @@ function patchProductsIndexFieldRow(
   };
 }
 
+function patchProductsIndexProductFields(
+  data: ProductsIndexResponse | undefined,
+  target: ReviewProductNonVariantCacheTarget,
+  patchField: (fieldState: FieldState) => FieldState | undefined,
+): ProductsIndexResponse | undefined {
+  if (!data) return data;
+  return {
+    ...data,
+    products: data.products.map((product) => {
+      if (product.product_id !== target.productId) return product;
+      const fields = target.fieldKeys.reduce<Record<string, FieldState>>((current, fieldKey) => {
+        const fieldState = current[fieldKey];
+        if (!fieldState) return current;
+        const nextField = patchField(fieldState);
+        if (nextField) {
+          return {
+            ...current,
+            [fieldKey]: nextField,
+          };
+        }
+        const { [fieldKey]: _removed, ...remaining } = current;
+        return remaining;
+      }, product.fields);
+      return { ...product, fields };
+    }),
+  };
+}
+
 function readReviewFieldValueCacheSnapshot(
   queryClient: QueryClient,
   category: string,
@@ -292,6 +332,23 @@ function readFieldRowCandidateCacheSnapshots(
       category: target.category,
       productId,
       field: target.field,
+    });
+    return {
+      queryKey,
+      data: queryClient.getQueryData<CandidateResponse>(queryKey),
+    };
+  });
+}
+
+function readProductNonVariantCandidateCacheSnapshots(
+  queryClient: QueryClient,
+  target: ReviewProductNonVariantCacheTarget,
+): ReviewFieldRowCandidateCacheSnapshot[] {
+  return target.fieldKeys.map((field) => {
+    const queryKey = buildReviewCandidateQueryKey({
+      category: target.category,
+      productId: target.productId,
+      field,
     });
     return {
       queryKey,
@@ -365,6 +422,30 @@ export async function cancelReviewFieldRowCacheQueries(
   ]);
 }
 
+export async function cancelReviewProductNonVariantCacheQueries(
+  queryClient: QueryClient,
+  target: ReviewProductNonVariantCacheTarget,
+): Promise<void> {
+  const candidateCancelTasks = target.fieldKeys.map((field) =>
+    queryClient.cancelQueries({
+      queryKey: buildReviewCandidateQueryKey({
+        category: target.category,
+        productId: target.productId,
+        field,
+      }),
+      exact: true,
+    }),
+  );
+
+  await Promise.all([
+    queryClient.cancelQueries({
+      queryKey: buildReviewProductsIndexQueryKey(target.category),
+      exact: true,
+    }),
+    ...candidateCancelTasks,
+  ]);
+}
+
 export function readReviewCandidateCacheSnapshot(
   queryClient: QueryClient,
   target: ReviewCandidateCacheTarget,
@@ -398,6 +479,21 @@ export function readReviewFieldRowCacheSnapshot(
   };
 }
 
+export function readReviewProductNonVariantCacheSnapshot(
+  queryClient: QueryClient,
+  target: ReviewProductNonVariantCacheTarget,
+): ReviewProductNonVariantCacheSnapshot {
+  const productsIndexQueryKey = buildReviewProductsIndexQueryKey(target.category);
+  const productsIndex = queryClient.getQueryData<ProductsIndexResponse>(
+    productsIndexQueryKey,
+  );
+  return {
+    productsIndexQueryKey,
+    productsIndex,
+    candidateData: readProductNonVariantCandidateCacheSnapshots(queryClient, target),
+  };
+}
+
 export function restoreReviewCandidateCaches(
   queryClient: QueryClient,
   category: string,
@@ -420,6 +516,16 @@ export function restoreReviewFieldValueCaches(
 export function restoreReviewFieldRowCaches(
   queryClient: QueryClient,
   snapshot: ReviewFieldRowCacheSnapshot,
+): void {
+  restoreQueryData(queryClient, snapshot.productsIndexQueryKey, snapshot.productsIndex);
+  for (const entry of snapshot.candidateData) {
+    restoreQueryData(queryClient, entry.queryKey, entry.data);
+  }
+}
+
+export function restoreReviewProductNonVariantCaches(
+  queryClient: QueryClient,
+  snapshot: ReviewProductNonVariantCacheSnapshot,
 ): void {
   restoreQueryData(queryClient, snapshot.productsIndexQueryKey, snapshot.productsIndex);
   for (const entry of snapshot.candidateData) {
@@ -499,6 +605,36 @@ export function deleteReviewFieldRowFromCaches(
   queryClient.setQueryData<ProductsIndexResponse | undefined>(
     buildReviewProductsIndexQueryKey(target.category),
     (current) => patchProductsIndexFieldRow(current, target, () => undefined),
+  );
+  for (const entry of snapshot.candidateData) {
+    queryClient.setQueryData<CandidateResponse | undefined>(
+      entry.queryKey,
+      clearCandidateResponse,
+    );
+  }
+  return snapshot;
+}
+
+export function unpublishReviewProductNonVariantFromCaches(
+  queryClient: QueryClient,
+  target: ReviewProductNonVariantCacheTarget,
+): ReviewProductNonVariantCacheSnapshot {
+  const snapshot = readReviewProductNonVariantCacheSnapshot(queryClient, target);
+  queryClient.setQueryData<ProductsIndexResponse | undefined>(
+    buildReviewProductsIndexQueryKey(target.category),
+    (current) => patchProductsIndexProductFields(current, target, clearFieldSelection),
+  );
+  return snapshot;
+}
+
+export function deleteReviewProductNonVariantFromCaches(
+  queryClient: QueryClient,
+  target: ReviewProductNonVariantCacheTarget,
+): ReviewProductNonVariantCacheSnapshot {
+  const snapshot = readReviewProductNonVariantCacheSnapshot(queryClient, target);
+  queryClient.setQueryData<ProductsIndexResponse | undefined>(
+    buildReviewProductsIndexQueryKey(target.category),
+    (current) => patchProductsIndexProductFields(current, target, () => undefined),
   );
   for (const entry of snapshot.candidateData) {
     queryClient.setQueryData<CandidateResponse | undefined>(

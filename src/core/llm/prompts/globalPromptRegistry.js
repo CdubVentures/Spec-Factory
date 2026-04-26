@@ -167,6 +167,14 @@ Do not inflate confidence beyond what the cited evidence supports.`,
     defaultTemplate: 'IDENTITY: You are looking for the EXACT product "{{BRAND}} {{MODEL}}"{{VARIANT_SUFFIX}}. Not a different model in the same product family. If you encounter sibling models, skip them.',
   },
 
+  categoryContext: {
+    label: 'Product category context',
+    description: 'Single global category identity line for product-scoped finder prompts. Empty when the runtime product has no category.',
+    appliesTo: ['cef', 'pif', 'rdf', 'sku', 'key', 'scalar'],
+    variables: [{ name: 'CATEGORY', required: true }],
+    defaultTemplate: 'Category: {{CATEGORY}}',
+  },
+
   discoveryLogShape: {
     label: 'Discovery log return-JSON shape',
     description: 'Basic discovery_log JSON shape returned by PIF-view, PIF-hero, RDF, SKU. CEF uses an extended shape with identity-gate extras (confirmed_from_known, added_new, rejected_from_known) and does NOT consume this fragment.',

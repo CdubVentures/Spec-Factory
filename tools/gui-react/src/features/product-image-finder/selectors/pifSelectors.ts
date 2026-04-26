@@ -33,6 +33,13 @@ export const GENERIC_VIEW_ORDER: readonly string[] = ['top', 'left', 'angle', 's
 const CANONICAL_EXTRA_VIEWS = new Set(['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle']);
 const DISQUALIFYING_EXTRA_FLAGS = new Set(['watermark', 'badge', 'cropped', 'wrong_product', 'other']);
 
+interface GalleryImageRun {
+  readonly run_number: number;
+  readonly ran_at?: string;
+  readonly model?: string;
+  readonly selected?: { readonly images?: readonly ProductImageEntry[] };
+}
+
 /* ── Variant / Color Helpers ──────────────────────────────────────── */
 
 export const resolveVariantColorAtoms = sharedResolveVariantColorAtoms;
@@ -82,7 +89,7 @@ export function buildVariantList(
 /* ── Gallery Image Transforms ─────────────────────────────────────── */
 
 /** Build a flat list of all images across all runs, ordered by run_number asc. */
-export function buildGalleryImages(runs: ProductImageFinderRun[]): GalleryImage[] {
+export function buildGalleryImages(runs: readonly GalleryImageRun[]): GalleryImage[] {
   const images: GalleryImage[] = [];
   const sorted = [...runs].sort((a, b) => a.run_number - b.run_number);
   for (const run of sorted) {

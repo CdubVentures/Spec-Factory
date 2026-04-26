@@ -6,6 +6,7 @@ import { Writable } from 'node:stream';
 import sharp from 'sharp';
 import { registerProductImageFinderRoutes } from '../api/productImageFinderRoutes.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
+import { removeLocalAssetVariants } from '../../../core/media/imageVariantAssets.js';
 
 const PRODUCT_ID = `pif-image-assets-${process.pid}-${Date.now()}`;
 const CATEGORY = 'mouse';
@@ -191,5 +192,37 @@ describe('product image asset serving contract', () => {
     assert.ok(Math.max(previewMeta.width, previewMeta.height) <= 1600);
     assert.equal(previewMeta.hasAlpha, true);
     assert.deepEqual(fs.readFileSync(filePath), original);
+  });
+
+  it('can remove derived variants without deleting the source image', async () => {
+    const filename = 'cache-cleanup-source.png';
+    const filePath = await writeTransparentPng(filename);
+    const cacheDir = path.join(defaultProductRoot(), PRODUCT_ID, 'images', '.cache', 'master');
+    const handler = registerProductImageFinderRoutes(createCtx());
+
+    for (const variant of ['thumb', 'preview']) {
+      const res = createStreamingMockRes();
+      await handler(
+        ['product-image-finder', CATEGORY, PRODUCT_ID, 'images', filename],
+        new URLSearchParams(`variant=${variant}`),
+        'GET',
+        { headers: {} },
+        res,
+      );
+      await waitForStream(res);
+    }
+
+    const targetStem = filename.replace(/\.\w+$/, '');
+    const thumbBefore = fs.readdirSync(path.join(cacheDir, 'thumb')).filter((entry) => entry.startsWith(`${targetStem}-`));
+    const previewBefore = fs.readdirSync(path.join(cacheDir, 'preview')).filter((entry) => entry.startsWith(`${targetStem}-`));
+
+    assert.ok(thumbBefore.length > 0);
+    assert.ok(previewBefore.length > 0);
+
+    removeLocalAssetVariants({ sourcePath: filePath, cacheDir });
+
+    assert.deepEqual(fs.readdirSync(path.join(cacheDir, 'thumb')).filter((entry) => entry.startsWith(`${targetStem}-`)), []);
+    assert.deepEqual(fs.readdirSync(path.join(cacheDir, 'preview')).filter((entry) => entry.startsWith(`${targetStem}-`)), []);
+    assert.ok(fs.existsSync(filePath));
   });
 });

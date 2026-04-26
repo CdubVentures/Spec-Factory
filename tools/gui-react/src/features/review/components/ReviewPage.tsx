@@ -30,29 +30,43 @@ import {
   deleteCandidateBySourceId,
   deleteAllCandidatesForField,
   deleteReviewFieldRow,
+  deleteReviewProductNonVariantKeys,
   unpublishReviewFieldRow,
+  unpublishReviewProductNonVariantKeys,
   type ReviewFieldRowActionResponse,
+  type ReviewProductNonVariantActionResponse,
 } from '../api/reviewApi.ts';
 import { isVariantGeneratorField } from '../selectors/overrideFormState.ts';
-import { buildReviewFieldRowDeleteTarget, type ReviewFieldRowActionKind } from '../selectors/reviewFieldRowActions.ts';
+import {
+  buildReviewFieldRowDeleteTarget,
+  buildReviewProductHeaderDeleteTarget,
+  deriveReviewProductHeaderActionState,
+  type ReviewFieldRowActionKind,
+  type ReviewProductHeaderActionKind,
+} from '../selectors/reviewFieldRowActions.ts';
 import { FinderDeleteConfirmModal } from '../../../shared/ui/finder/FinderDeleteConfirmModal.tsx';
 import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import {
   cancelReviewCandidateCacheQueries,
   cancelReviewFieldValueCacheQueries,
+  cancelReviewProductNonVariantCacheQueries,
   cancelReviewFieldRowCacheQueries,
   clearPublishedReviewFieldFromCaches,
+  deleteReviewProductNonVariantFromCaches,
   deleteReviewFieldRowFromCaches,
   removeAllReviewCandidatesFromCaches,
   removeReviewCandidateFromCaches,
   restoreReviewCandidateCaches,
   restoreReviewFieldValueCaches,
+  restoreReviewProductNonVariantCaches,
   restoreReviewFieldRowCaches,
   updateReviewFieldValueInCaches,
+  unpublishReviewProductNonVariantFromCaches,
   unpublishReviewFieldRowFromCaches,
   type ReviewCandidateCacheSnapshot,
   type ReviewFieldValueCacheSnapshot,
+  type ReviewProductNonVariantCacheSnapshot,
   type ReviewFieldRowCacheSnapshot,
 } from '../state/reviewCandidateCache.ts';
 
@@ -73,6 +87,10 @@ interface CandidateDeleteMutationContext {
 
 interface FieldRowMutationContext {
   readonly snapshot: ReviewFieldRowCacheSnapshot;
+}
+
+interface ProductNonVariantMutationContext {
+  readonly snapshot: ReviewProductNonVariantCacheSnapshot;
 }
 
 interface FieldValueMutationContext {
@@ -527,6 +545,54 @@ export function ReviewPage() {
     },
   });
 
+  const productNonVariantUnpublishMut = useDataChangeMutation<
+    ReviewProductNonVariantActionResponse,
+    Error,
+    { productId: string; fieldKeys: readonly string[] },
+    ProductNonVariantMutationContext
+  >({
+    event: 'key-finder-unpublished',
+    category,
+    mutationFn: ({ productId }) => unpublishReviewProductNonVariantKeys(category, productId),
+    options: {
+      onMutate: async ({ productId, fieldKeys }) => {
+        const target = { category, productId, fieldKeys };
+        await cancelReviewProductNonVariantCacheQueries(queryClient, target);
+        return {
+          snapshot: unpublishReviewProductNonVariantFromCaches(queryClient, target),
+        };
+      },
+      onError: (_error, _variables, context) => {
+        if (!context) return;
+        restoreReviewProductNonVariantCaches(queryClient, context.snapshot);
+      },
+    },
+  });
+
+  const productNonVariantDeleteMut = useDataChangeMutation<
+    ReviewProductNonVariantActionResponse,
+    Error,
+    { productId: string; fieldKeys: readonly string[] },
+    ProductNonVariantMutationContext
+  >({
+    event: 'key-finder-field-deleted',
+    category,
+    mutationFn: ({ productId }) => deleteReviewProductNonVariantKeys(category, productId),
+    options: {
+      onMutate: async ({ productId, fieldKeys }) => {
+        const target = { category, productId, fieldKeys };
+        await cancelReviewProductNonVariantCacheQueries(queryClient, target);
+        return {
+          snapshot: deleteReviewProductNonVariantFromCaches(queryClient, target),
+        };
+      },
+      onError: (_error, _variables, context) => {
+        if (!context) return;
+        restoreReviewProductNonVariantCaches(queryClient, context.snapshot);
+      },
+    },
+  });
+
   // Core save logic — shared by debounced autosave and immediate commit.
   //
   // WHY variantId lookup: for variant-dependent fields (release_date, etc.)
@@ -585,7 +651,13 @@ export function ReviewPage() {
   // Active product for drawer
   const activeProduct = products.find(p => p.product_id === selectedProductId);
   const activeFieldState = activeProduct?.fields[selectedField];
+  const productHeaderActionState = useMemo(
+    () => deriveReviewProductHeaderActionState({ rows: layout?.rows ?? [] }),
+    [layout?.rows],
+  );
   const fieldRowActionPending = fieldRowUnpublishMut.isPending || fieldRowDeleteMut.isPending;
+  const productHeaderActionPending = productNonVariantUnpublishMut.isPending || productNonVariantDeleteMut.isPending;
+  const reviewGridActionPending = fieldRowActionPending || productHeaderActionPending;
   const handleFieldRowAction = useCallback((action: ReviewFieldRowActionKind, fieldKey: string) => {
     setFieldRowDeleteTarget(buildReviewFieldRowDeleteTarget({
       action,
@@ -593,24 +665,60 @@ export function ReviewPage() {
       productCount: indexData?.total ?? products.length,
     }));
   }, [indexData?.total, products.length]);
-  const handleConfirmFieldRowAction = useCallback(() => {
-    if (!fieldRowDeleteTarget?.fieldKey) return;
-    const fieldKey = fieldRowDeleteTarget.fieldKey;
+  const handleProductHeaderAction = useCallback((action: ReviewProductHeaderActionKind, productId: string, productLabel: string) => {
+    setFieldRowDeleteTarget(buildReviewProductHeaderDeleteTarget({
+      action,
+      productId,
+      productLabel,
+      fieldCount: productHeaderActionState.fieldCount,
+    }));
+  }, [productHeaderActionState.fieldCount]);
+  const handleConfirmReviewGridAction = useCallback(() => {
+    if (!fieldRowDeleteTarget) return;
     const dismiss = () => setFieldRowDeleteTarget(null);
     const onError = (err: unknown) => {
       setFieldRowDeleteTarget(null);
-      const verb = fieldRowDeleteTarget.kind === 'field-row-unpublish' ? 'Unpublish' : 'Delete';
+      const verb = fieldRowDeleteTarget.kind === 'field-row-unpublish' || fieldRowDeleteTarget.kind === 'product-nonvariant-unpublish'
+        ? 'Unpublish'
+        : 'Delete';
       const message = err instanceof Error ? err.message : String(err || 'Unknown error');
       window.alert(`${verb} failed: ${message}`);
     };
     if (fieldRowDeleteTarget.kind === 'field-row-unpublish') {
+      if (!fieldRowDeleteTarget.fieldKey) return;
+      const fieldKey = fieldRowDeleteTarget.fieldKey;
       void fieldRowUnpublishMut.mutateAsync({ fieldKey }).then(dismiss).catch(onError);
       return;
     }
     if (fieldRowDeleteTarget.kind === 'field-row-delete') {
+      if (!fieldRowDeleteTarget.fieldKey) return;
+      const fieldKey = fieldRowDeleteTarget.fieldKey;
       void fieldRowDeleteMut.mutateAsync({ fieldKey }).then(dismiss).catch(onError);
+      return;
     }
-  }, [fieldRowDeleteTarget, fieldRowUnpublishMut, fieldRowDeleteMut]);
+    if (fieldRowDeleteTarget.kind === 'product-nonvariant-unpublish') {
+      if (!fieldRowDeleteTarget.productId) return;
+      void productNonVariantUnpublishMut.mutateAsync({
+        productId: fieldRowDeleteTarget.productId,
+        fieldKeys: productHeaderActionState.fieldKeys,
+      }).then(dismiss).catch(onError);
+      return;
+    }
+    if (fieldRowDeleteTarget.kind === 'product-nonvariant-delete') {
+      if (!fieldRowDeleteTarget.productId) return;
+      void productNonVariantDeleteMut.mutateAsync({
+        productId: fieldRowDeleteTarget.productId,
+        fieldKeys: productHeaderActionState.fieldKeys,
+      }).then(dismiss).catch(onError);
+    }
+  }, [
+    fieldRowDeleteTarget,
+    fieldRowUnpublishMut,
+    fieldRowDeleteMut,
+    productNonVariantUnpublishMut,
+    productNonVariantDeleteMut,
+    productHeaderActionState.fieldKeys,
+  ]);
 
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
   if (!layout || !indexData || indexData.total === 0) {
@@ -660,7 +768,9 @@ export function ReviewPage() {
           onStartEditing={handleStartEditing}
           category={category}
           onFieldRowAction={handleFieldRowAction}
-          fieldRowActionPending={fieldRowActionPending}
+          fieldRowActionPending={reviewGridActionPending}
+          onProductHeaderAction={handleProductHeaderAction}
+          productHeaderActionPending={reviewGridActionPending}
         />
 
         {drawerOpen && activeProduct && activeFieldState && (() => {
@@ -720,11 +830,15 @@ export function ReviewPage() {
       {fieldRowDeleteTarget && (
         <FinderDeleteConfirmModal
           target={fieldRowDeleteTarget}
-          onConfirm={handleConfirmFieldRowAction}
+          onConfirm={handleConfirmReviewGridAction}
           onCancel={() => setFieldRowDeleteTarget(null)}
-          isPending={fieldRowActionPending}
+          isPending={reviewGridActionPending}
           moduleLabel="Review Grid"
-          confirmLabel={fieldRowDeleteTarget.kind === 'field-row-unpublish' ? 'Unpublish' : 'Delete'}
+          confirmLabel={
+            fieldRowDeleteTarget.kind === 'field-row-unpublish' || fieldRowDeleteTarget.kind === 'product-nonvariant-unpublish'
+              ? 'Unpublish'
+              : 'Delete'
+          }
         />
       )}
     </div>

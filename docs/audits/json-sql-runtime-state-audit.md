@@ -1,0 +1,1258 @@
+# JSON / SQL Runtime State Audit
+
+Date: 2026-04-26
+
+Scope: read-only audit of backend routes, runtime workers, SQL projections, rebuild surfaces, frontend query consumers, and data-change invalidation paths related to mutable state stored in JSON and/or SQLite.
+
+No code edits were made during the audit that produced this document.
+
+Update note, 2026-04-26: this document was amended after the PIF image/popup performance work. That work changed runtime behavior and surfaced additional JSON/SQL/runtime-cache gaps; the addendum below records the new state and the remaining gaps.
+
+## Contract Being Audited
+
+Spec Factory uses a dual-state model:
+
+- JSON is the durable audit/rebuild layer.
+- SQLite is the runtime and frontend projection layer.
+- GUI/API/runtime reads should use SQLite where the state is mutable runtime state.
+- Mutations should update SQLite first, then mirror JSON for rebuild/audit.
+- Bootstrap/reseed may read JSON to reconstruct SQLite.
+
+This audit treats a path as non-compliant when it does one of these:
+
+- The GUI/API reads mutable runtime state directly from JSON.
+- A runtime worker makes live decisions from JSON while an SQL projection exists or should exist.
+- A mutation writes JSON only, leaving SQL consumers stale.
+- A dual write writes JSON first and SQL second, creating a JSON-without-SQL failure window for frontend/runtime state.
+- Tests document or protect the old JSON-only contract.
+
+## High-Risk Dependency Map
+
+The most important dependent screen is Overview:
+
+- Frontend: `tools/gui-react/src/pages/overview/OverviewPage.tsx`
+- API: `GET /api/v1/catalog/:category`
+- Backend builder: `src/app/api/catalogHelpers.js`
+
+`catalogHelpers.js` is SQL-driven. It reads:
+
+- `products`
+- `field_candidates`
+- `variants`
+- `pif_variant_progress`
+- finder summary/runs tables through `specDb.getFinderStore(...)`
+
+Therefore, any JSON-only update can show up in one screen that reads JSON, while Overview remains stale because it reads SQLite.
+
+Data-change invalidation is mostly registered correctly:
+
+- Backend registry: `src/core/events/eventRegistry.js`
+- Frontend resolver: `tools/gui-react/src/features/data-change/invalidationResolver.js`
+- App bridge: `tools/gui-react/src/pages/layout/hooks/useWsEventBridge.ts`
+
+But invalidation cannot fix a missing SQL projection. If the SQL row did not change, the refetched GUI query will still return stale data.
+
+## Executive Summary
+
+The previous audit was directionally correct, but incomplete. The largest missing item is the broader review override workflow. Manual overrides are only one JSON-only path; consolidated review overrides are another separate JSON-SSOT path.
+
+Definite violations:
+
+1. Review manual overrides.
+2. Consolidated review overrides.
+3. Global prompts.
+4. Source strategy and spec seeds.
+5. Storage Manager run detail.
+6. Cross-cutting finder run persistence, delete-all, and discovery-history scrub paths.
+7. Key Finder routes and prompt history.
+8. Scalar finder prompt history for RDF/SKU.
+9. CEF prompt/runtime history.
+10. PIF progress, mutations, prompt history, and some evaluation/carousel paths.
+11. PIF binary image asset inventory and derived-image cache lifecycle are still filesystem-first.
+12. PIF lightweight summary is SQL-backed, but still route-local and hand-projected instead of schema/registry-driven.
+13. IndexLab product URL history.
+
+Design-call items:
+
+1. Internal source corpus.
+2. Learning artifacts.
+3. Runtime control override file.
+4. Catalog add/update write order.
+5. Run artifact fallback reads that are immutable artifacts, not mutable runtime state.
+
+Mostly compliant:
+
+1. Overview/catalog read path.
+2. User settings.
+3. Module finder settings.
+4. Unit/color registries.
+5. Studio maps.
+6. Run list builder.
+7. RuntimeOps artifacts.
+8. Billing.
+9. Deletion store SQL-first cleanup.
+10. Brand registry.
+
+## Frontend Impact Matrix
+
+| Surface | Main query key(s) | Backend source | Stale when JSON-only? | Notes |
+| --- | --- | --- | --- | --- |
+| Overview catalog | `['catalog', category]` | SQL via `buildCatalogFromSql` | Yes | Reads products, candidates, variants, PIF progress, finder summaries. |
+| Review product grid | `['product', category, productId]`, `['reviewProductsIndex', category]` | Mixed SQL + JSON merge | Partially | Manual overrides currently appear because grid merges `product.json`; this masks SQL staleness. |
+| Review catalog picker | `['catalog-review', category]` | SQL product list | Yes | Manual product.json edits do not update picker identity. |
+| Finder panels | `['key-finder', category]`, `['release-date-finder', category]`, `['sku-finder', category]`, `['color-edition-finder', category]`, `['product-image-finder', category]` | Mixed | Yes | Generic scalar routes are more SQL-based; Key Finder is still JSON-heavy. |
+| PIF Overview rings | `['catalog', category]` | `pif_variant_progress` SQL | Yes | If JSON images change but progress projection is stale, rings stay stale. |
+| PIF Overview popover | `['product-image-finder', category, productId, 'summary']` | SQL summary/runs plus filesystem image URLs | Partially | New lightweight summary avoids full PIF payload, but still ships product-wide run/image data for one variant popover. |
+| Storage Manager | `['storage']`, `['storage', 'runs', category]`, run detail queries | Mixed SQL + `run.json` | Yes | Run list is SQL-first; run detail still reads `run.json`. |
+| Pipeline source settings | `['source-strategy', category]`, `['spec-seeds', category]` | JSON routes | N/A currently | No SQL projection exists for the GUI setting. |
+| Global prompt editor | `['llm-policy', 'global-prompts']` | JSON-backed snapshot | N/A currently | Needs appDb-backed runtime source. |
+
+## Post-Implementation Addendum: Frontend Runtime Propagation
+
+This addendum reflects the instant-propagation work completed after the original read-only audit. The work improved frontend cache coherence, but it did not change the deeper JSON/SQL state findings below.
+
+Closed by the implementation:
+
+- Product add, bulk add, update, and delete now patch the shared product-derived React Query caches used by Catalog, Overview, Indexing, Review catalog, and Review Grid.
+- Brand rename now patches exact affected products across shared product caches when Brand Manager has the impact product list loaded.
+- Review Grid row-wide actions and scalar override/clear flows now patch the Review Grid cache immediately and roll back on API failure.
+- Component Review inline edits and drawer override/accept flows now patch linked Review Grid fields immediately.
+- Enum Review accept, remove, confirm, drawer rename, and inline rename now patch linked Review Grid fields immediately.
+- Settings data-change fan-out now covers runtime settings, UI settings, finder families, Indexing LLM config, and prompt preview invalidation. Existing contracts verify global settings events fall back to the active category and dirty/flush-pending runtime settings are not overwritten by stale refetches.
+
+Important limitation:
+
+- These fixes are frontend cache coherence fixes. They make mounted screens respond faster, but they do not make a JSON-only backend write SQL-compliant. If SQL is stale, a later refetch can still bring stale SQL data back into a cache.
+
+### Remaining Frontend Propagation Gaps
+
+#### 1. Brand Cascade Depends on Loaded Impact Data
+
+Status: open gap.
+
+Files:
+
+- `tools/gui-react/src/features/studio/components/BrandManager.tsx`
+- `tools/gui-react/src/features/catalog/components/productCacheOptimism.ts`
+
+Current behavior:
+
+- The optimistic brand cascade patches product caches only when `impactData.product_details` is already available in Brand Manager.
+- If the impact query is disabled, stale, failed, or not yet loaded, the rename still saves, but product caches rely on invalidation/refetch instead of instant propagation.
+
+Impact:
+
+- Overview, Indexing catalog, Review catalog, and Review Grid can briefly show the old brand after a rename.
+- The correctness eventually depends on backend data-change plus SQL refetch.
+
+Required fix:
+
+- Make the brand rename mutation return the affected product IDs by category, or require/refetch impact data before the optimistic mutation starts.
+- Use that returned server payload as the optimistic cache patch input.
+- Keep the current loaded-impact path as a fast local fallback only.
+
+#### 2. Component and Enum Propagation Patches Review Grid Only
+
+Status: open gap.
+
+Files:
+
+- `tools/gui-react/src/pages/component-review/componentReviewCache.ts`
+- `tools/gui-react/src/pages/component-review/ComponentSubTab.tsx`
+- `tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx`
+- `tools/gui-react/src/pages/component-review/EnumSubTab.tsx`
+- Product detail queries: `['product', category, productId]`
+- Candidate queries: `['candidates', category, productId, field]`
+
+Current behavior:
+
+- Component/enum optimistic propagation patches `['reviewProductsIndex', category]`.
+- Product detail payloads and candidate query caches are not patched.
+- The mutation success handlers invalidate product/candidate families, but those surfaces wait for refetch.
+
+Impact:
+
+- Review Grid updates instantly.
+- A mounted product drawer/detail view can still show the previous value until refetch.
+- Candidate counts, accepted candidate metadata, and field evidence rows can lag behind the green cell shown in the grid.
+
+Required fix:
+
+- Extend the linked-product cache helper to patch product detail queries for each linked product.
+- Patch or clear matching candidate query caches when accept/remove/clear changes candidate visibility.
+- Keep rollback snapshots for every patched query family, not only Review Grid.
+
+#### 3. Component Shared-Lane Confirm Is Only Partially Optimistic
+
+Status: open gap.
+
+Files:
+
+- `tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx`
+
+Current behavior:
+
+- Shared-lane confirm patches Review Grid when a `candidateValue` is available.
+- It does not optimistically patch `componentReviewData` to clear pending flags or accepted candidate state.
+- If no candidate value is available, it skips optimistic Review Grid patching and relies on invalidation.
+
+Impact:
+
+- The linked Review Grid cell can update, but the component drawer/tab can still show pending state until refetch.
+- Confirm actions with fallback/current values are less instant than manual override and candidate accept.
+
+Required fix:
+
+- Add a component-review cache patch for confirm that clears the pending lane and marks the candidate as accepted.
+- Resolve the effective confirm value before mutation so every confirm path has a patchable value.
+- Roll back both `componentReviewData` and Review Grid on error.
+
+#### 4. Component Review Panel and Batch Actions Still Rely on Invalidation
+
+Status: open gap.
+
+Files:
+
+- `tools/gui-react/src/pages/component-review/ComponentReviewPanel.tsx`
+- `tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx`
+- `tools/gui-react/src/pages/component-review/ComponentSubTab.tsx`
+
+Current behavior:
+
+- Panel-level review actions, AI batch actions, and drawer "Accept Entire Row" still invalidate broad query families.
+- They do not patch linked product Review Grid fields, component review rows, enum review rows, product detail caches, or candidate caches.
+
+Impact:
+
+- Single-cell edits are now instant, but batch/row workflows can still feel delayed.
+- Overview and Review Grid wait for backend processing and refetch.
+
+Required fix:
+
+- Define optimistic patch contracts for each batch action:
+  - Accept entire component row.
+  - Approve/dismiss/merge component review item.
+  - Run component AI review batch.
+  - Batch enum accept/remove if added later.
+- Use server response payloads where exact changed fields are too broad to infer safely.
+
+#### 5. Derived Metrics Are Not Optimistically Recomputed
+
+Status: open gap.
+
+Files:
+
+- `tools/gui-react/src/features/catalog/components/productCacheOptimism.ts`
+- `tools/gui-react/src/features/review/state/reviewCandidateCache.ts`
+- `tools/gui-react/src/pages/component-review/componentReviewCache.ts`
+- Overview and Review metrics consumers.
+
+Current behavior:
+
+- Optimistic patches update visible identity/field values.
+- They generally do not recompute all derived metrics, including confidence, coverage, missing count, finder ring totals, component flags, enum flags, or Overview score tiles.
+
+Impact:
+
+- The primary cell changes instantly.
+- Summary counters can lag until refetch.
+- Users can see a new value next to an old score/count for a short period.
+
+Required fix:
+
+- Centralize metric recomputation selectors for product/review rows.
+- Reuse those selectors in optimistic cache patches.
+- For expensive or backend-only metrics, mark the row as locally pending instead of showing stale precision.
+
+#### 6. Settings Propagation Is Reactive, Not Fully Optimistic Across All Consumers
+
+Status: partial gap.
+
+Files:
+
+- `tools/gui-react/src/features/pipeline-settings/state/runtimeSettingsAuthorityHooks.ts`
+- `tools/gui-react/src/stores/runtimeSettingsValueStore.ts`
+- `tools/gui-react/src/pages/layout/hooks/useWsEventBridge.ts`
+- `tools/gui-react/src/features/data-change/invalidationResolver.js`
+- `tools/gui-react/src/features/pipeline-settings/state/moduleSettingsAuthority.ts`
+
+Current behavior:
+
+- Runtime settings in the current tab update immediately through `runtimeSettingsValueStore`.
+- Server-confirmed settings writes invalidate related query families.
+- Dirty and flush-pending settings intentionally block stale server hydration.
+- Module settings are optimistic for their own query, but downstream finder panels and prompt previews rely on invalidation/refetch.
+
+Impact:
+
+- Runtime settings behave like a true app in the active tab.
+- External-tab edits or module setting edits can still feel like refetch-driven updates.
+- If a tab has local dirty settings, external confirmed settings changes are intentionally blocked and no conflict UI is shown.
+
+Required fix:
+
+- Add explicit conflict/status UI for external settings updates blocked by dirty or flush-pending local state.
+- For module settings, publish a local settings-propagation event that mounted finder panels can consume without waiting for query refetch.
+- Add tests for mounted module-setting consumers, not just invalidation key coverage.
+
+#### 7. Cross-Surface Propagation Still Stops at Frontend Cache Boundaries
+
+Status: open gap.
+
+Affected surfaces:
+
+- Overview catalog: `['catalog', category]`
+- Indexing catalog: `['catalog', category, 'indexing']`
+- Review Grid: `['reviewProductsIndex', category]`
+- Product detail: `['product', category, productId]`
+- Finder panels and prompt previews.
+
+Current behavior:
+
+- Product identity and brand changes now patch several shared product caches.
+- Review field/component/enum mutations mainly patch Review Grid.
+- Finder panels, prompt previews, active operation data, and product detail data usually wait for data-change invalidation.
+
+Impact:
+
+- The app is more responsive, but the propagation model is still per-feature helper based.
+- A new shared data surface can be missed unless the mutation author remembers to patch it.
+
+Required fix:
+
+- Introduce a single registry-driven frontend cache projection map for product, field, component, enum, finder, and settings mutations.
+- Mutation responses should carry normalized changed entities.
+- A central cache dispatcher should patch every loaded query family from those entities.
+- Feature components should not manually know all sibling query keys.
+
+#### 8. Backend SQL Gaps Can Still Reintroduce Stale Data After Refetch
+
+Status: open gap, same root as the main audit findings.
+
+Current behavior:
+
+- Frontend optimistic updates can temporarily hide backend split-brain issues.
+- When invalidation refetches a SQL-backed query after a JSON-only mutation, the cache can revert to stale SQL data.
+
+Impact:
+
+- Instant UI propagation is not sufficient proof of data correctness.
+- The deeper JSON/SQL violations in Review overrides, finder histories, PIF progress, source strategy, prompt settings, and run detail still need SQL-first fixes.
+
+Required fix:
+
+- Complete the SQL-first migration findings below.
+- Add end-to-end contracts that mutate once and assert Overview, Review Grid, product detail, finder panels, and prompt preview agree after refetch.
+
+## Findings
+
+### 1. Review Manual Overrides
+
+Status: definite violation.
+
+Active route:
+
+- `src/features/review/api/itemMutationRoutes.js`
+- Imports `writeManualOverride` from `src/features/publisher/publish/writeManualOverride.js`.
+- The route comment says manual overrides write directly to `product.json` and skip `field_candidates`.
+
+Read path:
+
+- `src/features/review/domain/reviewGridData.js`
+- Reads `.workspace/products/{productId}/product.json`.
+- Synthesizes `manual_override` rows into the review payload.
+
+Impact:
+
+- Review grid can show the manual override.
+- Overview coverage/confidence can miss it because Overview reads resolved `field_candidates`.
+- Publisher surfaces that rely on SQL-resolved candidates can disagree with `product.json`.
+- Data-change emits refreshes, but refetching SQL does not help if SQL was never updated.
+
+Conflicting implementation already exists:
+
+- `src/features/publisher/publish/publishManualOverride.js`
+- This writes a resolved SQL candidate and mirrors `product.json`.
+- It is not the active Review API path.
+
+Tests currently protecting the wrong contract:
+
+- `src/features/publisher/publish/tests/writeManualOverride.test.js`
+- `src/features/review/api/tests/itemMutationRoutes.manualOverride.happyPath.characterization.test.js`
+- `src/features/review/api/tests/itemMutationRoutes.variantId.test.js`
+
+Required fix:
+
+- Route manual override through a SQL-first manual override service.
+- Store manual overrides as resolved SQL runtime state with `source_type = 'manual_override'`.
+- Mirror `product.json` after SQL succeeds.
+- Remove Review grid's product.json manual-override merge path.
+- Update tests to assert SQL candidate creation and SQL-based grid reads.
+
+### 2. Consolidated Review Overrides
+
+Status: definite violation.
+
+Files:
+
+- `src/shared/consolidatedOverrides.js`
+- `src/features/review/domain/overrideWorkflow.js`
+- `src/features/review/domain/overrideHelpers.js`
+- `src/features/review/domain/reviewGridHelpers.js`
+
+Current contract:
+
+- `category_authority/{category}/_overrides/overrides.json` is treated as the override SSOT.
+- `readProductFromConsolidated(...)` and `upsertProductInConsolidated(...)` are used in review workflow code.
+- Some comments/tests explicitly state SQL sync was removed.
+
+Impact:
+
+- Review finalize/metrics/workflow state can diverge from SQL runtime state.
+- Overview and product-level SQL consumers will not know about JSON-only review override changes unless a separate projection happens.
+- A future SQL-first manual override fix would be incomplete if consolidated override state remains JSON-only.
+
+Tests currently protecting the wrong contract:
+
+- `src/features/review/domain/tests/overrideWorkflowCharacterization.test.js`
+- `src/shared/tests/consolidatedOverrides.test.js`
+
+Required fix:
+
+- Define the SQL runtime state for review overrides.
+- Convert workflow reads to SQL.
+- Convert workflow writes to SQL first.
+- Mirror consolidated JSON after SQL succeeds.
+- Keep JSON as rebuild/export/import artifact only.
+
+### 3. Global Prompts
+
+Status: definite violation.
+
+Files:
+
+- `src/core/llm/prompts/globalPromptStore.js`
+- `src/features/settings-authority/globalPromptsHandler.js`
+- `src/app/api/bootstrap/createBootstrapEnvironment.js`
+- Frontend: `tools/gui-react/src/features/llm-config/state/useGlobalPromptsAuthority.ts`
+- Frontend API: `tools/gui-react/src/features/llm-config/api/globalPromptsApi.ts`
+
+Current behavior:
+
+- Overrides persist to `.workspace/global/global-prompts.json`.
+- Bootstrap calls `loadGlobalPromptsSync()`.
+- GET `/llm-policy/global-prompts` serves the JSON-backed in-memory snapshot.
+- PUT `/llm-policy/global-prompts` writes JSON and updates the snapshot.
+
+Impact:
+
+- Global prompt settings are mutable runtime state but bypass `app.sqlite`.
+- Runtime prompt builders read process memory populated from JSON instead of appDb.
+- If JSON updates but appDb is expected elsewhere, the app has no central SQL source.
+
+Required fix:
+
+- Add appDb-backed prompt override storage, likely in a registry-driven table or `settings` section.
+- Bootstrap appDb first, then load prompt overrides from appDb.
+- Mirror `.workspace/global/global-prompts.json` for rebuild only.
+- Reseed appDb from JSON when app.sqlite is deleted.
+- Keep the frontend API shape stable.
+
+Related prompt-contract risk:
+
+- PIF `viewPromptOverride` is a full-template override, not an image requirements fragment.
+- If the GUI stores only an `Image requirements:` fragment, missing-template-variable errors occur.
+- This is separate from JSON/SQL persistence but should be fixed while touching prompt settings.
+
+### 4. Source Strategy and Spec Seeds
+
+Status: definite violation.
+
+Files:
+
+- `src/features/indexing/sources/sourceFileService.js`
+- `src/features/indexing/sources/specSeedsFileService.js`
+- `src/features/indexing/api/sourceStrategyRoutes.js`
+- `src/features/indexing/api/specSeedsRoutes.js`
+- Runtime helper: `src/features/indexing/orchestration/shared/runProductOrchestrationHelpers.js`
+- Frontend: `tools/gui-react/src/features/pipeline-settings/state/sourceStrategyAuthority.ts`
+- Frontend: `tools/gui-react/src/features/pipeline-settings/state/specSeedsAuthority.ts`
+- Frontend copy: `tools/gui-react/src/features/pipeline-settings/sections/PipelineSourceStrategySection.tsx`
+
+Current behavior:
+
+- `sources.json` is explicitly described as the route/orchestration source.
+- `spec_seeds.json` is read/written directly by API routes.
+- `src/db/specDbSchema.js` says the `source_strategy` table was removed and `sources.json` is SSOT.
+
+Impact:
+
+- GUI settings mutate JSON directly.
+- Runtime orchestration reads source strategy from JSON.
+- There is no SQLite runtime projection for this setting.
+- Data-change invalidates frontend query keys, but those queries re-read JSON.
+
+Required fix:
+
+- Reintroduce a SQL projection for source strategy and spec seeds.
+- Routes read/write SQL first.
+- JSON mirrors after SQL succeeds.
+- Runtime orchestration reads SQL.
+- Deleted-DB rebuild reseeds SQL from `sources.json` and `spec_seeds.json`.
+
+### 5. Storage Manager Run Detail
+
+Status: definite violation for run detail; run list is mostly compliant.
+
+Files:
+
+- `src/features/indexing/api/storageManagerRoutes.js`
+- SQL tables: `runs`, `run_artifacts`, `crawl_sources`, `source_screenshots`, `source_videos`
+- SQL builders: `src/features/indexing/api/builders/runListBuilder.js`
+- RuntimeOps: `src/features/indexing/api/runtimeOpsRoutes.js`
+
+Current behavior:
+
+- `GET /storage/runs/:runId` reads `run.json` to enrich sources and identity.
+- The run list builder is SQL-first and has tests documenting no `run.json` fallback.
+- RuntimeOps artifacts use `run_artifacts` as the primary source.
+
+Impact:
+
+- Storage Manager detail can show data that SQL-backed RuntimeOps/run-list paths do not.
+- Deleting or editing `run.json` can affect detail even when SQL has the correct runtime data.
+- SQL artifact tables already exist, so this is a read-path cleanup.
+
+Required fix:
+
+- Build run detail from `runs`, `crawl_sources`, `source_screenshots`, `source_videos`, and `run_artifacts`.
+- Do not parse `run.json` in the GUI route.
+- Keep `run.json` only as rebuild/audit output.
+
+### 6. Key Finder
+
+Status: definite violation.
+
+Files:
+
+- `src/features/key/api/keyFinderRoutes.js`
+- `src/features/key/keyFinder.js`
+- `src/features/key/keyFinderPreviewPrompt.js`
+- `src/features/key/keyStore.js`
+
+Current behavior:
+
+- List route scans product directories and reads `key_finder.json`.
+- Summary route reads `key_finder.json`.
+- Detail route reads `key_finder.json`.
+- Discovery-history scrub reads and mutates JSON.
+- Live runner reads previous runs from JSON for prompt history.
+- Preview compiler reads previous runs from JSON.
+
+SQL exists:
+
+- `key_finder`
+- `key_finder_runs`
+- Generated from `FINDER_MODULES`.
+- Rebuild exists through `rebuildKeyFinderFromJson`.
+
+Impact:
+
+- Key Finder panel can reflect JSON state that Overview does not.
+- Overview key rings read SQL candidates and compiled rules, not the JSON doc.
+- Prompt history and discovery-history scrub can diverge from SQL runs.
+
+Tests currently protecting the wrong contract:
+
+- `src/features/key/tests/keyFinderRoutes.summary.test.js`
+
+Required fix:
+
+- List/summary/detail routes read SQL summary and runs.
+- Prompt preview and live runner previous history read SQL runs.
+- Discovery-history scrub updates SQL runs first, then mirrors JSON.
+- JSON store remains rebuild layer.
+
+### 7. Release Date Finder and SKU Finder
+
+Status: partial violation.
+
+Files:
+
+- `src/core/finder/variantScalarFieldProducer.js`
+- `src/features/release-date/releaseDateFinderPreviewPrompt.js`
+- `src/features/sku/skuFinderPreviewPrompt.js`
+- `src/features/release-date/releaseDateStore.js`
+- `src/features/sku/skuStore.js`
+
+Compliant part:
+
+- Generic scalar finder GET routes are SQL-based through `createFinderRouteHandler`.
+- Summary/runs tables exist:
+  - `release_date_finder`
+  - `release_date_finder_runs`
+  - `sku_finder`
+  - `sku_finder_runs`
+- Rebuild from JSON exists.
+
+Violation:
+
+- Live producer reads previous JSON runs for prompt history.
+- Preview compilers read `release_date.json` and `sku.json` for previous runs.
+
+Impact:
+
+- A scrub or run mutation that updates SQL only would not affect prompt history until JSON is mirrored.
+- A JSON-only change can affect future prompts without updating SQL panels/Overview.
+
+Required fix:
+
+- Add SQL previous-run history readers for scalar finders.
+- Use SQL runs in live and preview prompt builders.
+- Mirror JSON after SQL writes and after SQL scrub.
+
+### 8. Color & Edition Finder
+
+Status: partial violation.
+
+Files:
+
+- `src/features/color-edition/colorEditionFinder.js`
+- `src/features/color-edition/colorEditionPreviewPrompt.js`
+- `src/features/color-edition/colorEditionStore.js`
+- `src/features/color-edition/variantLifecycle.js`
+
+Compliant part:
+
+- API route uses generic finder route handler and SQL summary/runs for GET.
+- Variants table is the runtime source for active variant identity.
+- Rebuild from JSON exists.
+
+Violation:
+
+- Live finder reads `color_edition.json` existing/previous runs for prompt/history.
+- Preview compiler reads `color_edition.json` unless a current result is supplied.
+- Variant lifecycle still mutates JSON store in several cleanup/rename paths.
+
+Impact:
+
+- CEF prompt behavior can diverge from SQL run history.
+- Downstream PIF/RDF/SKU depend on variants SQL, but prompt history can still be JSON-driven.
+
+Required fix:
+
+- Move CEF prompt/history reads to SQL runs.
+- Keep variant identity from `variants`.
+- Ensure lifecycle cleanup writes SQL first, then mirrors JSON.
+
+### 9. Product Image Finder
+
+Status: mixed, high risk.
+
+Files:
+
+- `src/features/product-image/api/productImageFinderRoutes.js`
+- `src/features/product-image/productImageFinder.js`
+- `src/features/product-image/productImagePreviewPrompt.js`
+- `src/features/product-image/imageEvaluator.js`
+- `src/features/product-image/carouselBuild.js`
+- `src/features/product-image/productImageStore.js`
+- `src/features/product-image/pifVariantProgressRebuild.js`
+
+Compliant or partially compliant parts:
+
+- GET `/product-image-finder/:category/:productId/summary` now reads SQL finder summary/runs and strips prompts, raw response images, source URLs/pages, alt text, and raw discovery URL/query arrays.
+- Overview PIF popover now reads the lightweight summary instead of the full PIF result.
+- Summary query key `['product-image-finder', category, productId, 'summary']` is covered by the `['product-image-finder', category]` data-change template because TanStack invalidation is prefix-based.
+- PIF thumbnail/preview routes generate derived WebP assets while preserving full original/master image bytes for full-view paths.
+- PIF delete-image and delete-run paths now best-effort remove derived thumbnail/preview cache files for deleted source images.
+- `product_image_finder`, `product_image_finder_runs`, and `pif_variant_progress` exist.
+- `pif_variant_progress` can rebuild from `product_images.json`.
+- Overview reads PIF progress from SQL.
+
+Violations:
+
+- PIF binary image assets are still filesystem-first. SQL stores filenames/metadata in summary/run JSON blobs, but there is no normalized SQL asset inventory for master/original image files, file existence, content hash, mtime, cache fingerprint, or deletion state.
+- Derived image variants under `.workspace/products/{productId}/images/.cache/...` are runtime cache files with no formal contract in this audit. That is acceptable only if they are documented as discardable derived state and every source replacement/deletion path invalidates them.
+- Derived cache cleanup is incomplete. Delete-image and delete-run paths clean relevant cache entries, and delete-all removes the whole image directory, but process/reprocess/process-all/download/replace/variant-cascade paths can still leave stale derived files for the same logical image stem.
+- The lightweight summary endpoint is still route-local hand projection, not generated from a backend schema or shared contract. The frontend `ProductImageFinderSummary` type is manually maintained and can drift from the route.
+- The lightweight summary remains product-wide. Opening one variant popover still fetches all product runs, selected images, carousel slots, and per-variant history counts for that product. Live smoke after the optimization showed about 150 KB for one product versus about 2.68 MB for the full endpoint, but the target should be a variant-scoped/materialized payload.
+- Summary generation still reads every SQL run row for the product and maps selected image blobs in application code. That is SQL-backed, but not O(1) with product history size.
+- History counts are now pre-aggregated by the summary route, but the counts are computed at request time from run response JSON blobs. They should be materialized or queried from a normalized discovery-history table if the counts remain part of Overview.
+- Data-change invalidation is correct but coarse: any PIF event invalidates `['product-image-finder', category]`, which covers summary queries but can invalidate all PIF product summaries in the category. There is no product-scoped PIF domain template.
+- `writePifVariantProgress` treats `product_images.json` as source of truth for progress.
+- Several route mutation paths read/write `product_images.json` and then update SQL.
+- `PATCH /carousel-slot` explicitly says "JSON first, then SQL projection".
+- PIF preview reads `product_images.json` for previous runs.
+- PIF live finder reads `product_images.json` in several places for dedupe/history/current image state.
+- Image evaluator and carousel builder read/write JSON and then update SQL projection.
+
+Impact:
+
+- Overview PIF rings can be stale if JSON changed but `pif_variant_progress` did not.
+- PIF panel and Overview can disagree if one route reads JSON and the other reads SQL.
+- JSON-first write order can leave JSON updated and SQL stale if SQL update fails.
+- PIF popovers are much faster after the lightweight summary, but still scale with product history rather than with the one variant/slot set the user opened.
+- A source image replacement can show a stale derived thumbnail/preview if cache-busting metadata does not change or if an old cache file is reused by a path that does not include the `v=` cache-bust parameter.
+- File deletion can succeed while SQL metadata remains, or SQL deletion can succeed while filesystem cleanup misses an image/original/cache file; there is no single transaction boundary for PIF image asset lifecycle.
+
+Required fix:
+
+- Treat SQL runs/summary/progress as the runtime source.
+- Add or define a SQL-backed PIF asset inventory/projection, or explicitly document image binaries as external durable artifacts with SQL as the authoritative metadata owner.
+- Make every source-image mutation path invalidate derived `.cache` entries before returning success: process, process-all, reprocess, download/replace, variant cascade, full reset, single image delete, run delete, and delete-all.
+- Move the lightweight summary contract into a schema-backed/shared contract and generate or infer the frontend type from it.
+- Add a variant-scoped summary endpoint or materialized summary table for Overview popovers, e.g. by `variant_id`/`variant_key`, so the UI fetches only the slots/images/counts it renders.
+- Materialize PIF history counts or normalize discovery history so Overview does not scan run response JSON blobs per popup.
+- Consider adding product-scoped PIF invalidation templates once wrapper/domain-query work lands, so PIF updates do not over-invalidate every product summary in a category.
+- PIF mutations update SQL first, then mirror JSON.
+- `writePifVariantProgress` should derive from SQL images/runs/projection data, not by reading `product_images.json`.
+- PIF preview/live prompt history should use SQL runs.
+- Keep JSON rebuild from SQL writes.
+
+### 9A. PIF Image Asset Cache and Quality Contract
+
+Status: design gap with partial mitigation.
+
+Files:
+
+- `src/core/media/imageVariantAssets.js`
+- `src/features/product-image/api/productImageFinderRoutes.js`
+- `tools/gui-react/src/features/product-image-finder/helpers/pifImageUrls.ts`
+- `tools/gui-react/src/features/product-image-finder/components/GalleryCard.tsx`
+- `tools/gui-react/src/features/product-image-finder/components/SlotCard.tsx`
+- `tools/gui-react/src/features/product-image-finder/components/CarouselSlotRow.tsx`
+- `tools/gui-react/src/pages/overview/PifVariantPopover.tsx`
+
+Current behavior after the performance work:
+
+- Full image routes still serve source/master bytes unchanged.
+- `variant=thumb` and `variant=preview` produce derived WebP files from the source image.
+- Frontend thumbnail/preview surfaces request the smaller variants.
+- Full lightbox/image inspection paths keep full-quality URLs.
+- Cache-busting now uses image byte metadata on the main PIF thumbnail/preview consumers touched by the recent work.
+
+What is not a quality risk:
+
+- Derived WebP thumbnails/previews do not replace the canonical original/master files.
+- Deleting derived cache files only removes regenerable cache output.
+- Full quality remains available as long as the original/master source file exists.
+
+Remaining gaps:
+
+- There is no central manifest declaring which UI surfaces may use `thumb`, `preview`, or full. This is hand-coded per component.
+- There is no automated frontend contract that every thumbnail surface uses `variant=thumb` with a cache-bust value and every preview surface uses `variant=preview`.
+- There is no automated contract that full-inspection surfaces avoid `thumb`/`preview`.
+- Derived cache cleanup is best-effort and not transactional with SQL/JSON state.
+- Cache storage can grow without a pruning policy because old derived files are fingerprinted by source mtime/size and retained after replacements unless a mutation explicitly deletes them.
+- Runtime image serving still checks the filesystem directly; SQL can reference missing files and files can exist without SQL references.
+- PIF image metadata used by the UI is still spread across SQL summary rows, SQL run JSON blobs, product JSON mirrors, and filesystem facts.
+
+Required fix:
+
+- Define the PIF image asset contract: canonical source file, SQL metadata row, JSON rebuild mirror, and derived cache policy.
+- Add a normalized SQL projection for product image assets or a documented artifact table relationship.
+- Add a small cache-prune/invalidate utility used by every PIF image mutation path.
+- Add boundary tests for thumbnail/preview/full URL selection through public component or helper contracts.
+- Add a periodic or mutation-triggered prune for orphaned `.cache` files.
+
+### 10. IndexLab Product URL History
+
+Status: definite runtime read violation.
+
+Files:
+
+- `src/features/indexing/pipeline/searchPlanner/indexlabUrlHistoryReader.js`
+- `src/features/indexing/pipeline/orchestration/runDiscoverySeedPlan.js`
+
+Current behavior:
+
+- Runtime planning reads prior source URLs from `product.json`.
+
+SQL alternatives:
+
+- `url_crawl_ledger`
+- `crawl_sources`
+
+Impact:
+
+- Search planning can use JSON history that does not match SQL crawl history.
+- JSON-only URL edits can influence discovery behavior without SQL audit consistency.
+
+Required fix:
+
+- Replace product.json URL-history reader with a SQL reader.
+- Use `url_crawl_ledger` or `crawl_sources`, depending on whether the intent is per-product historical URLs or per-run crawled sources.
+- Keep product.json source URL list as rebuild/audit mirror only.
+
+### 11. Cross-Cutting Finder Run Persistence and Mutation Helpers
+
+Status: definite violation / write-order gap.
+
+Files:
+
+- `src/core/finder/finderJsonStore.js`
+- `src/core/finder/finderRoutes.js`
+- `src/core/finder/discoveryHistoryScrub.js`
+- `src/core/finder/variantCleanup.js`
+- `src/core/finder/variantScalarFieldProducer.js`
+- `src/features/key/keyFinder.js`
+- `src/features/product-image/productImageStore.js`
+
+Current behavior:
+
+- Finder GET routes can be SQL-backed, but the shared persistence helper writes `{finder}.json` before SQL run/summary rows in several live-run paths.
+- Scalar finder runs call `mergeDiscovery(...)` first, then `finderStore.insertRun(...)` / `finderStore.upsert(...)`.
+- Key Finder persists `key_finder.json` before inserting/upserting SQL.
+- PIF uses the same JSON store pattern for `product_images.json`.
+- Discovery-history scrub reads and mutates finder JSON, then updates SQL run JSON blobs.
+- Variant cleanup reads and writes finder JSON, then updates SQL summary/run rows.
+- Generic single-run and batch-delete routes are partly better because they delete SQL run rows first, then update JSON; delete-all is mixed and calls JSON cleanup before SQL run cleanup.
+
+Impact:
+
+- A write failure after JSON succeeds can leave JSON with a newer run/history state than SQL.
+- SQL-backed Overview/finder panels may stay stale while future prompts or rebuilds see newer JSON.
+- Tests for generic finder routes and discovery-history scrub currently normalize the JSON-first contract.
+
+Required fix:
+
+- Introduce SQL-first finder run-history services per module class.
+- Allocate run numbers from SQL or a transaction-safe SQL high-water mark before JSON mirror writes.
+- Make discovery-history scrub update SQL run payloads first, then mirror JSON.
+- Make variant cleanup update SQL rows first, then mirror JSON.
+- Keep JSON store helpers as rebuild/mirror helpers, not runtime mutation owners.
+
+### 12. Publisher Candidate and Published-State Dependencies
+
+Status: mostly SQL-first, but dependent on manual-override fix.
+
+Files:
+
+- `src/features/publisher/candidate-gate/submitCandidate.js`
+- `src/features/publisher/publish/publishCandidate.js`
+- `src/features/publisher/publish/republishField.js`
+- `src/features/review/domain/deleteCandidate.js`
+- `src/core/finder/finderRoutes.js`
+
+Compliant parts:
+
+- Candidate submission inserts `field_candidates` first, then appends to `product.json.candidates`.
+- Evidence projection writes SQL from candidate metadata.
+- Auto-publish marks SQL candidate status before mirroring published fields into `product.json`.
+- Review candidate delete removes SQL candidates first, then mirrors candidate/published cleanup into `product.json`.
+
+Remaining dependency:
+
+- Auto-publish and republish still read `product.json.fields` / `variant_fields` to honor a `manual_override` lock.
+- Once manual override state moves to SQL, these lock checks must read SQL. Otherwise the publisher will keep depending on JSON for a live runtime decision.
+
+Required fix:
+
+- Include publisher manual-override lock reads in the Phase 1 manual override migration.
+- Keep `product.json.fields` as mirror/rebuild output after SQL state is resolved.
+
+## Design-Call Items
+
+### A. Internal Source Corpus
+
+Files:
+
+- `src/features/indexing/pipeline/searchExecution/sourceCorpus.js`
+
+Current behavior:
+
+- Reads/writes `_source_intel/{category}/corpus.json`.
+
+Question:
+
+- Is this production runtime state used to decide live discovery, or an operational artifact/cache?
+
+Recommendation:
+
+- If it influences runtime search, add a SQL projection.
+- If it is cache-only, document it as ephemeral/derived and define invalidation rules.
+
+### B. Learning Artifacts
+
+Files:
+
+- `src/features/indexing/pipeline/shared/helpers.js`
+- `src/features/indexing/api/queueBillingLearningRoutes.js`
+- Docs mention SQLite learning stores were removed.
+
+Current behavior:
+
+- Reads `_learning/{category}/field_lexicon.json`.
+- Reads `_learning/{category}/query_templates.json`.
+- Reads `_learning/{category}/field_yield.json`.
+
+Question:
+
+- Are these mutable learning settings that guide live discovery?
+
+Recommendation:
+
+- If yes, project to SQL.
+- If no, mark them as offline artifacts and avoid GUI/runtime treating them as canonical state.
+
+### C. Runtime Control File
+
+Files:
+
+- `src/features/indexing/orchestration/shared/runtimeHelpers.js`
+- `src/features/indexing/orchestration/bootstrap/createRuntimeOverridesLoader.js`
+- `src/shared/settingsRegistry.js`
+
+Current behavior:
+
+- Reads `_runtime/control/runtime_overrides.json`.
+- No write surface was identified in the audit.
+
+Question:
+
+- Is this a supported operator control surface or a temporary escape hatch?
+
+Recommendation:
+
+- If supported, move to appDb/specDb depending on scope.
+- If escape hatch, document the exception and keep it outside GUI-owned mutable state.
+
+### D. Catalog Add/Update Write Order
+
+Files:
+
+- `src/features/catalog/products/productCatalog.js`
+- `src/features/catalog/api/catalogRoutes.js`
+- `src/app/api/catalogHelpers.js`
+
+Current behavior:
+
+- Catalog list/overview is SQL-driven.
+- Add/update creates or updates `product.json`, then route upserts `products`.
+- Comments conflict: some say `product.json` SSOT / SQL cache, others say SQL SSOT.
+
+Impact:
+
+- Add/update has a JSON-without-SQL failure window.
+- If the route fails after `product.json` write but before SQL upsert, Overview/catalog list may not show the product.
+
+Recommendation:
+
+- Clarify product identity contract.
+- Prefer SQL-first for GUI/runtime identity, then mirror `product.json`.
+- Keep product.json for deleted-DB rebuild.
+
+### E. Run Artifact Fallback Reads
+
+Files:
+
+- `src/features/indexing/api/builders/runArtifactReaders.js`
+- `src/features/indexing/api/builders/indexlabDataBuilders.js`
+- `src/indexlab/runSummarySerializer.js`
+
+Current behavior:
+
+- RuntimeOps event reads are SQL-first through `run_artifacts` and `bridge_events`.
+- `runSummarySerializer.js` still has stale comments saying the GUI reads `run-summary.json`, but runtime code/tests indicate `run_summary` is now stored in SQL `run_artifacts`.
+- `readIndexLabRunSerpExplorer(...)` can still read `logs/summary.json` as an immutable run artifact fallback when SQL `search_profile` lacks `serp_explorer`.
+
+Question:
+
+- Should immutable historical run artifacts be explicitly allowed as GUI detail fallbacks, or should every GUI detail view read only `run_artifacts` SQL?
+
+Recommendation:
+
+- Do not treat immutable run artifact reads as the same severity as mutable JSON state.
+- If a GUI route uses an artifact fallback, document it as artifact-only and prefer a SQL `run_artifacts` row when available.
+- Clean stale comments that still describe `run-summary.json` as a GUI file source.
+
+## Mostly Compliant Patterns
+
+### Overview / Catalog Read Path
+
+Files:
+
+- `src/app/api/catalogHelpers.js`
+- `tools/gui-react/src/pages/overview/OverviewPage.tsx`
+
+Status:
+
+- Overview query reads `/catalog/:category`.
+- Backend `buildCatalogFromSql` reads SQL.
+- It does not parse per-product JSON for coverage/confidence/progress.
+
+Risk:
+
+- This makes upstream JSON-only writes visible as stale Overview data.
+
+### User Settings
+
+Files:
+
+- `src/features/settings-authority/userSettingsService.js`
+- `src/db/appDbSeed.js`
+- `src/db/seedRegistry.js`
+
+Status:
+
+- appDb is primary at runtime.
+- `user-settings.json` is mirror/fallback/reseed.
+
+### Brand Registry
+
+Files:
+
+- `src/features/catalog/identity/brandRegistry.js`
+- `src/features/catalog/api/brandRoutes.js`
+- `src/db/appDbSeed.js`
+
+Status:
+
+- appDb is the runtime source for brand reads/writes.
+- `brand_registry.json` is written after HTTP mutations as a rebuild mirror.
+- A mirror write failure does not roll back SQL runtime state.
+
+### Module Finder Settings
+
+Files:
+
+- `src/features/module-settings/api/moduleSettingsRoutes.js`
+- `src/db/appDb.js`
+- `src/core/finder/finderSqlDdl.js`
+
+Status:
+
+- Global finder settings use appDb `finder_global_settings`.
+- Category finder settings use per-category finder settings tables.
+- JSON settings files are mirrors for rebuild.
+
+### Unit and Color Registries
+
+Files:
+
+- `src/features/unit-registry/api/unitRegistryRoutes.js`
+- `src/features/color-registry/api/colorRoutes.js`
+- `src/db/appDbSchema.js`
+
+Status:
+
+- appDb-backed runtime projection with JSON durable registry/reseed.
+
+### Studio Maps
+
+Files:
+
+- `src/features/studio/api/studioRoutes.js`
+- `src/features/studio/fieldStudioMapReseed.js`
+
+Status:
+
+- SQL is runtime SSOT for field studio map.
+- JSON reseed exists.
+
+### Run List Builder and RuntimeOps
+
+Files:
+
+- `src/features/indexing/api/builders/runListBuilder.js`
+- `src/features/indexing/api/runtimeOpsRoutes.js`
+- `src/features/indexing/api/builders/runArtifactReaders.js`
+
+Status:
+
+- Run list metadata is SQL-first.
+- RuntimeOps artifact readers use `run_artifacts` for needset/search profile artifacts.
+
+### Billing
+
+Files:
+
+- `src/billing/costLedger.js`
+- `src/db/appDbSeed.js`
+
+Status:
+
+- appDb primary for GUI billing.
+- JSONL ledger is durable rebuild mirror.
+
+### Deletion Store
+
+Files:
+
+- `src/db/stores/deletionStore.js`
+
+Status:
+
+- SQL deletion happens first.
+- JSON files are rewritten afterward as mirror cleanup.
+
+## Test Debt
+
+Tests that must change during the fixes:
+
+- Manual override JSON-only tests:
+  - `src/features/publisher/publish/tests/writeManualOverride.test.js`
+  - `src/features/review/api/tests/itemMutationRoutes.manualOverride.happyPath.characterization.test.js`
+  - `src/features/review/api/tests/itemMutationRoutes.variantId.test.js`
+- Consolidated override JSON-SSOT tests:
+  - `src/features/review/domain/tests/overrideWorkflowCharacterization.test.js`
+  - `src/shared/tests/consolidatedOverrides.test.js`
+- Key Finder JSON-route tests:
+  - `src/features/key/tests/keyFinderRoutes.summary.test.js`
+- Source strategy/spec seed file-route tests:
+  - `src/features/indexing/api/tests/sourceStrategyRoutesDataChangeContract.test.js`
+  - `src/features/indexing/api/tests/sourceStrategyCategoryScope.test.js`
+  - `src/features/indexing/sources/tests/sourceFileService.test.js`
+  - `src/features/indexing/sources/tests/specSeedsFileService.test.js`
+- PIF JSON-first/progress tests:
+  - `src/features/product-image/tests/productImageFinderRoutes.dataChange.test.js`
+  - `src/features/product-image/tests/productImageFinderRoutes.summary.test.js`
+  - `src/features/product-image/tests/productImageFinderImageAssets.test.js`
+  - `src/features/product-image/tests/pifVariantProgressRebuild.test.js`
+  - `tools/gui-react/src/features/product-image-finder/components/__tests__/slotCardImageUrl.test.js`
+  - `tools/gui-react/src/pages/overview/__tests__/pifVariantPopoverDependencies.test.js`
+  - PIF store/eval/carousel tests that assert JSON as immediate runtime source.
+- PIF asset/cache contract tests still needed:
+  - Summary route returns only schema-approved lightweight fields and does not reintroduce raw prompts/source URL arrays.
+  - Overview popover uses the lightweight summary endpoint, not the full PIF endpoint.
+  - Thumbnail surfaces use `variant=thumb` plus cache-bust.
+  - Preview carousel surfaces use `variant=preview` plus cache-bust.
+  - Full inspection/lightbox surfaces keep full-quality image URLs.
+  - Every image mutation path prunes derived cache files for affected source images.
+- Prompt-history tests for CEF/RDF/SKU/PIF/Key Finder that currently seed JSON to influence preview/live prompt output.
+- Generic finder route/discovery-history tests:
+  - `src/core/finder/tests/finderRoutes.test.js`
+  - `src/core/finder/tests/discoveryHistoryScrub.test.js`
+  - `src/core/finder/tests/finderJsonStore.test.js`
+
+Test strategy:
+
+- Do not add broad source-text tests.
+- Use public route/service contracts.
+- Assert SQL-first write behavior.
+- Assert JSON mirror/rebuild still works.
+- Assert Overview/query consumers update after the same mutation because SQL changed.
+
+## Recommended Fix Order
+
+### Phase 1: Review Override Family
+
+Fix together:
+
+- Manual override API.
+- Consolidated review override workflow.
+- Review grid manual override merge.
+- Publisher/manual override tests.
+- Overview consistency tests.
+
+Contract after fix:
+
+- Manual/user override writes SQL runtime state first.
+- JSON `product.json` and consolidated override JSON mirror after SQL succeeds.
+- Review grid and Overview read SQL only for runtime override state.
+
+Why first:
+
+- Highest user-visible split-brain risk.
+- Current tests explicitly protect the wrong behavior.
+
+### Phase 2: Global Prompts
+
+Fix:
+
+- appDb-backed prompt override table/section.
+- Bootstrap load order.
+- GET/PUT `/llm-policy/global-prompts`.
+- JSON mirror/reseed.
+- PIF prompt override UX/schema issue if touching prompt settings.
+
+Why second:
+
+- Prompt errors are currently user-visible.
+- Global prompt state is cross-cutting and should be stabilized before more finder work.
+
+### Phase 3: Source Strategy and Spec Seeds
+
+Fix:
+
+- SQL tables/projection.
+- API routes.
+- Runtime orchestration readers.
+- JSON mirror/reseed.
+- Frontend remains on same query keys.
+
+Why third:
+
+- This is a clean settings surface with obvious frontend/API/runtime boundaries.
+
+### Phase 4: Finder History and Route Reads
+
+Fix in this order:
+
+1. Key Finder list/summary/detail/preview/live history.
+2. Generic finder run persistence/write order.
+3. Generic discovery-history scrub and variant cleanup.
+4. RDF/SKU preview and live previous-history readers.
+5. CEF preview/live previous-history readers.
+6. PIF preview/live previous-history readers.
+
+Why fourth:
+
+- SQL finder summary/runs tables already exist.
+- This reduces prompt/runtime drift without changing user-facing output semantics first.
+
+### Phase 5: PIF Runtime Mutations and Progress
+
+Fix:
+
+- SQL-first image/eval/carousel mutations.
+- Progress derivation from SQL, not JSON.
+- PIF image asset inventory or explicit artifact contract.
+- Derived cache invalidation for every PIF image mutation path.
+- Variant-scoped/materialized PIF summary for Overview popovers.
+- Schema-backed summary response contract shared with frontend types.
+- JSON mirror after SQL.
+- Rebuild from JSON retained.
+
+Why separate:
+
+- PIF has many paths and a high blast radius.
+- It needs focused tests around Overview rings, finder panel summaries, image detail, carousel, and rebuild.
+- It also owns the largest user-visible image payload and thumbnail/preview quality contract.
+
+### Phase 6: Storage Manager Run Detail
+
+Fix:
+
+- Replace `run.json` detail enrichment with SQL joins/artifact reads.
+
+Why later:
+
+- Mostly a read-path cleanup.
+- SQL tables already exist.
+
+### Phase 7: IndexLab URL History and Design Calls
+
+Fix or decide:
+
+- URL history reader from `url_crawl_ledger` / `crawl_sources`.
+- Source corpus.
+- Learning artifacts.
+- Runtime control file.
+- Catalog write-order clarification.
+- Run artifact fallback policy.
+
+## Completion Criteria
+
+The migration is not complete until all of these are true:
+
+- No GUI/API route reads mutable runtime state directly from JSON.
+- No runtime prompt/history reader uses JSON when an SQL runs/projection table exists.
+- Every mutable runtime write is SQL-first, JSON-second.
+- Binary/runtime artifacts have one declared metadata owner, and any filesystem cache is documented as derived/discardable.
+- Derived image caches cannot outlive source-image mutation paths in a way that changes what the UI shows.
+- Lightweight route contracts are schema-backed or generated so frontend response types do not drift from backend output.
+- Deleted-DB rebuild reconstructs all SQL runtime projections from JSON mirrors.
+- Overview, Review, finder panels, Storage Manager, and prompt previews agree after the same mutation.
+- Tests no longer assert JSON-only mutable state as correct behavior.

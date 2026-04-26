@@ -17,6 +17,7 @@ import { buildEvidenceVerificationPromptBlock } from '../../core/finder/evidence
 import { buildValueConfidencePromptBlock } from '../../core/finder/valueConfidencePromptFragment.js';
 import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
 import { buildIdentityWarning } from '../../core/llm/prompts/identityContext.js';
+import { buildCategoryContext } from '../../core/llm/prompts/categoryContext.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { colorEditionFinderResponseSchema, variantIdentityCheckResponseSchema } from './colorEditionSchema.js';
 
@@ -95,6 +96,7 @@ function buildPaletteLine(colors) {
 // WHY: Default template with {{VARIABLE}} placeholders for the CEF discovery prompt.
 // Extracted so users can customize instructions while dynamic data injection is preserved.
 export const CEF_DISCOVERY_DEFAULT_TEMPLATE = `Find every official color and every official edition for: {{BRAND}} {{MODEL}}
+{{CATEGORY_CONTEXT}}
 {{KNOWN_FINDINGS}}
 Research thoroughly. Check the manufacturer site, major retailers, press releases, and review sites. Look for standard colorways, limited editions, collaboration editions (game tie-ins, franchise partnerships), and regional exclusives. Do not stop after finding the first few — keep searching until you are confident you have found them all.
 
@@ -156,6 +158,7 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
   const baseModel = product.base_model || '';
   const model = product.model || '';
   const variant = product.variant || '';
+  const category = product.category || '';
 
   const queryModel = baseModel || model;
   const queryVariant = baseModel ? variant : '';
@@ -192,6 +195,7 @@ export function buildColorEditionFinderPrompt({ colorNames = [], colors = [], pr
   return resolvePromptTemplate(template, {
     BRAND: brand,
     MODEL: model,
+    CATEGORY_CONTEXT: buildCategoryContext(category),
     KNOWN_FINDINGS: knownSection,
     IDENTITY_WARNING: identityWarning ? `\n${identityWarning}\n` : '',
     PALETTE: palette,
@@ -228,6 +232,7 @@ export function createColorEditionFinderCallLlm(deps) {
   return createPhaseCallLlm(deps, COLOR_EDITION_FINDER_SPEC, (domainArgs) => ({
     user: JSON.stringify({
       brand: domainArgs.product?.brand || '',
+      category: domainArgs.product?.category || '',
       base_model: domainArgs.product?.base_model || '',
       model: domainArgs.product?.model || '',
       variant: domainArgs.product?.variant || '',
@@ -259,6 +264,7 @@ export function buildVariantIdentityCheckPrompt({ product = {}, existingRegistry
 
   const brand = product.brand || '';
   const model = product.model || '';
+  const category = product.category || '';
 
   const registryLines = existingRegistry
     .map((e) => `  ${e.variant_id} | ${e.variant_type} | ${e.variant_key} | label: "${e.variant_label}" | atoms: [${e.color_atoms.join(', ')}]${e.edition_slug ? ` | edition: ${e.edition_slug}` : ''}`)
@@ -313,7 +319,10 @@ export function buildVariantIdentityCheckPrompt({ product = {}, existingRegistry
     ? `The existing registry was confirmed by ${runCount} prior analysis pass${runCount > 1 ? 'es' : ''}. Treat existing variants as "confirmed unless proven wrong." The burden of proof is on NEW discoveries.`
     : 'This is the first identity check for this product. All discoveries are unconfirmed.';
 
+  const categoryContext = buildCategoryContext(category);
+
   return `You are the VARIANT JUDGE for: ${brand} ${model}
+${categoryContext}
 
 Your job is to validate, compare, and judge variant data quality — not just match IDs.
 ${ambiguityBlock}
@@ -456,6 +465,7 @@ export function createVariantIdentityCheckCallLlm(deps) {
     llmCallLabel: 'Identity Check',
     user: JSON.stringify({
       brand: domainArgs.product?.brand || '',
+      category: domainArgs.product?.category || '',
       model: domainArgs.product?.model || '',
       existing_variants: (domainArgs.existingRegistry || []).length,
       new_colors: domainArgs.newColors?.length || 0,

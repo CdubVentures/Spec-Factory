@@ -28,6 +28,9 @@ function makeFinderStore() {
       images: [{
         view: 'top',
         filename: 'top-black.png',
+        url: 'https://heavy.example.test/source/top-black.png',
+        source_page: 'https://heavy.example.test/source',
+        alt_text: 'large alt text should not be in summary',
         variant_key: 'color:black',
         variant_id: 'v-black',
         bytes: 987,
@@ -99,11 +102,16 @@ describe('Product Image Finder summary route', () => {
     assert.equal(result.status, 200);
     assert.equal(result.body.product_id, PRODUCT_ID);
     assert.equal(result.body.images.length, 1);
+    assert.equal(result.body.images[0].url, undefined);
     assert.deepEqual(result.body.carousel_slots, { 'color:black': { top: 'top-black.png' } });
     assert.equal(result.body.runs[0].prompt, undefined);
     assert.equal(result.body.runs[0].response.images, undefined);
-    assert.deepEqual(result.body.runs[0].response.discovery_log.urls_checked, ['https://example.test/top']);
+    assert.equal(result.body.runs[0].response.discovery_log, undefined);
+    assert.deepEqual(result.body.historyCounts['v-black'], { urls: 1, queries: 1 });
     assert.equal(result.body.runs[0].selected.images[0].eval_best, true);
+    assert.equal(result.body.runs[0].selected.images[0].url, '');
+    assert.equal(result.body.runs[0].selected.images[0].source_page, '');
+    assert.equal(result.body.runs[0].selected.images[0].alt_text, '');
   });
 
   it('returns an empty summary with dependency status before a PIF row exists', async () => {

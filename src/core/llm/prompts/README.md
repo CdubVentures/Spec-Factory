@@ -8,6 +8,7 @@ Universal prompt fragments shared across finders (CEF, PIF, RDF, and future) and
 
 - `buildIdentityWarning({ familyModelCount, ambiguityLevel, brand, model, siblingModels, fieldDomainNoun }) → string` — returns a leading-newline block with tier-appropriate warning + optional siblings line. Empty = no warning (never emitted for unknown products).
 - `buildSiblingsLine({ siblingModels, fieldDomainNoun }) → string` — returns empty string when no siblings, otherwise the rendered exclusion line.
+- `buildCategoryContext(category) → string` — returns the globally editable category identity line (`categoryContext`) or empty when category is missing.
 - `GLOBAL_PROMPTS` — registry object keyed by `GLOBAL_PROMPT_KEYS`. Each entry: `{ label, description, appliesTo, variables, defaultTemplate }`.
 - `GLOBAL_PROMPT_KEYS` — frozen list of all valid keys.
 - `resolveGlobalPrompt(key) → string` — returns user override (from `globalPromptStore`) if non-empty, else `defaultTemplate`. Throws on unknown key.

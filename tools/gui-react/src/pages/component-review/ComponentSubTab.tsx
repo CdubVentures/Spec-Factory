@@ -14,6 +14,13 @@ import { useFieldLabels } from '../../hooks/useFieldLabels.ts';
 import { FlagIcon } from '../../shared/ui/icons/FlagIcon.tsx';
 import { ComponentReviewDrawer } from './ComponentReviewDrawer.tsx';
 import { ComponentReviewPanel } from './ComponentReviewPanel.tsx';
+import {
+  buildComponentReviewGridLinkedProducts,
+  cancelLinkedReviewProductFields,
+  restoreLinkedReviewProductFields,
+  updateLinkedReviewProductFields,
+  type LinkedReviewProductFieldSnapshot,
+} from './componentReviewCache.ts';
 import type { ComponentReviewPayload, ComponentReviewItem, ComponentPropertyState, ComponentReviewDocument, ComponentReviewFlaggedItem } from '../../types/componentReview.ts';
 
 /** Extended item type that can carry synthetic-row metadata */
@@ -27,6 +34,21 @@ interface ComponentSubTabProps {
   category: string;
   queryClient: QueryClient;
   debugLinkedProducts?: boolean;
+}
+
+interface ComponentOverrideMutationBody {
+  componentType: string;
+  name: string;
+  maker: string;
+  property: string;
+  value: string;
+  componentIdentityId?: number;
+  componentValueId?: number;
+}
+
+interface ComponentOverrideMutationContext {
+  previousComponentReviewData?: ComponentReviewPayload;
+  previousLinkedReviewProductFields?: LinkedReviewProductFieldSnapshot;
 }
 
 /** Check if a selectedCell matches a specific row + property using row index for uniqueness */
@@ -246,32 +268,57 @@ export function ComponentSubTab({
   const commitComponentEdit = useComponentReviewStore((s) => s.commitComponentEdit);
   const clearComponentCell = useComponentReviewStore((s) => s.clearComponentCell);
 
-  const overrideMut = useMutation({
-    mutationFn: (body: {
-      componentType: string;
-      name: string;
-      maker: string;
-      property: string;
-      value: string;
-      componentIdentityId?: number;
-      componentValueId?: number;
-    }) =>
+  const overrideMut = useMutation<unknown, Error, ComponentOverrideMutationBody, ComponentOverrideMutationContext>({
+    mutationFn: (body) =>
       api.post(`/review-components/${category}/component-override`, body),
     onMutate: async (body) => {
       const isIdentityProperty = String(body?.property || '').trim().startsWith('__');
       const hasRequiredId = isIdentityProperty
         ? Boolean(toPositiveId(body?.componentIdentityId))
         : Boolean(toPositiveId(body?.componentValueId));
-      if (!hasRequiredId) return;
+      if (!hasRequiredId) return {};
       const queryKey = ['componentReviewData', category, data.componentType];
-      await queryClient.cancelQueries({ queryKey });
       // Use rowIndex from current selectedCell for precise targeting
       const { selectedCell: cell } = useComponentReviewStore.getState();
       const idx = cell?.rowIndex ?? -1;
+      const previousComponentReviewData = queryClient.getQueryData<ComponentReviewPayload>(queryKey);
+      const row = previousComponentReviewData?.items?.[idx];
+      const linkedProducts = row
+        ? buildComponentReviewGridLinkedProducts({
+          componentType: data.componentType,
+          property: body.property,
+          linkedProducts: row.linked_products ?? [],
+        })
+        : [];
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey }),
+        linkedProducts.length > 0 ? cancelLinkedReviewProductFields(queryClient, category) : Promise.resolve(),
+      ]);
       // Guard: skip optimistic update for synthetic row indices (idx >= real items count)
       queryClient.setQueryData<ComponentReviewPayload>(queryKey, (old) =>
         old && idx >= 0 && idx < old.items.length ? applyComponentOptimisticOverride(old, idx, body.property, body.value) : old,
       );
+      const previousLinkedReviewProductFields = linkedProducts.length > 0
+        ? updateLinkedReviewProductFields(queryClient, {
+          category,
+          field: body.property,
+          linkedProducts,
+          value: body.value,
+          source: 'user',
+          timestamp: new Date().toISOString(),
+          acceptedCandidateId: null,
+          overridden: true,
+        })
+        : undefined;
+      return { previousComponentReviewData, previousLinkedReviewProductFields };
+    },
+    onError: (_error, _body, context) => {
+      if (context?.previousComponentReviewData !== undefined) {
+        queryClient.setQueryData(['componentReviewData', category, data.componentType], context.previousComponentReviewData);
+      }
+      if (context?.previousLinkedReviewProductFields) {
+        restoreLinkedReviewProductFields(queryClient, context.previousLinkedReviewProductFields);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['componentReviewData', category, data.componentType] });

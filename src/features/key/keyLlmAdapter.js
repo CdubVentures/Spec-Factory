@@ -34,6 +34,7 @@ import {
   buildSearchHintsBlock,
   buildCrossFieldConstraintsBlock,
 } from '../../core/llm/prompts/fieldRuleRenderers.js';
+import { buildCategoryContext } from '../../core/llm/prompts/categoryContext.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { keyFinderResponseSchema } from './keySchema.js';
 
@@ -46,6 +47,7 @@ const DEFAULT_KNOBS = Object.freeze({
 });
 
 export const KEY_FINDER_DEFAULT_TEMPLATE = `Find value(s) for: {{BRAND}} {{MODEL}}{{VARIANT_SUFFIX}}
+{{CATEGORY_CONTEXT}}
 
 {{IDENTITY_INTRO}}
 {{IDENTITY_WARNING}}
@@ -483,6 +485,7 @@ export function buildKeyFinderPrompt({
     MODEL: model,
     VARIANT_SUFFIX: variantSuffix,
     CATEGORY: category,
+    CATEGORY_CONTEXT: buildCategoryContext(category || product.category),
     FAMILY_SIZE: String(familySize),
 
     IDENTITY_INTRO: resolvePromptTemplate(resolveGlobalPrompt('identityIntro'), {
@@ -592,6 +595,7 @@ export function createKeyFinderCallLlm(deps, tierOrBundle = 'medium') {
   return createPhaseCallLlm(deps, spec, (domainArgs) => {
     const userText = JSON.stringify({
       brand: domainArgs.product?.brand || '',
+      category: domainArgs.category || domainArgs.product?.category || '',
       model: domainArgs.product?.model || domainArgs.product?.base_model || '',
       primary_field_key: domainArgs.primary?.fieldKey || '',
       passenger_count: Array.isArray(domainArgs.passengers) ? domainArgs.passengers.length : 0,

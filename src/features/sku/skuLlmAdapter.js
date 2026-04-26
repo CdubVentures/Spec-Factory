@@ -21,6 +21,7 @@ import { buildEvidenceVerificationPromptBlock } from '../../core/finder/evidence
 import { buildValueConfidencePromptBlock } from '../../core/finder/valueConfidencePromptFragment.js';
 import { buildSiblingVariantsPromptBlock } from '../../core/finder/siblingVariantsPromptFragment.js';
 import { buildIdentityWarning } from '../../core/llm/prompts/identityContext.js';
+import { buildCategoryContext } from '../../core/llm/prompts/categoryContext.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { skuFinderResponseSchema } from './skuSchema.js';
 
@@ -66,6 +67,7 @@ variant-specific MPNs for other colors and you cannot find one for this variant.
 });
 
 export const SKF_DEFAULT_TEMPLATE = `Find the manufacturer part number (MPN) for: {{BRAND}} {{MODEL}} — {{VARIANT_DESC}}
+{{CATEGORY_CONTEXT}}
 
 {{IDENTITY_INTRO}}
 {{IDENTITY_WARNING}}
@@ -128,6 +130,7 @@ export function buildSkuFinderPrompt({
   const brand = product.brand || '';
   const model = product.model || '';
   const variant = product.variant || '';
+  const category = product.category || '';
 
   const variantDesc = variantType === 'edition'
     ? `the "${variantLabel}" edition`
@@ -155,6 +158,7 @@ export function buildSkuFinderPrompt({
   return resolvePromptTemplate(template, {
     BRAND: brand,
     MODEL: model,
+    CATEGORY_CONTEXT: buildCategoryContext(category),
     VARIANT_DESC: variantDesc,
     VARIANT_SUFFIX: variantSuffix,
     IDENTITY_INTRO: resolvePromptTemplate(resolveGlobalPrompt('identityIntro'), {
@@ -216,6 +220,7 @@ export function createSkuFinderCallLlm(deps) {
     llmCallExtras: domainArgs.llmCallExtras || {},
     user: JSON.stringify({
       brand: domainArgs.product?.brand || '',
+      category: domainArgs.product?.category || '',
       model: domainArgs.product?.model || '',
       base_model: domainArgs.product?.base_model || '',
       variant_label: domainArgs.variantLabel || '',

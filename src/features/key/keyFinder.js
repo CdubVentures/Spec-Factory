@@ -367,6 +367,7 @@ export async function runKeyFinder(opts) {
   const systemPrompt = buildKeyFinderPrompt(domainArgs);
   const userMessage = JSON.stringify({
     brand: product.brand || '',
+    category: category || product.category || '',
     model: product.model || product.base_model || '',
     primary_field_key: fieldKey,
     passenger_count: passengers.length,

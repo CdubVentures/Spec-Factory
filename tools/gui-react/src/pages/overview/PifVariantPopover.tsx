@@ -10,7 +10,6 @@ import { useFireAndForget } from '../../features/operations/hooks/useFireAndForg
 import { useRunningFieldKeys, useRunningVariantKeys } from '../../features/operations/hooks/useFinderOperations.ts';
 import { usePromptPreviewQuery } from '../../features/indexing/api/promptPreviewQueries.ts';
 import { useFinderDiscoveryHistoryStore } from '../../stores/finderDiscoveryHistoryStore.ts';
-import { groupHistory, type FinderRun } from '../../shared/ui/finder/discoveryHistoryHelpers.ts';
 import { RunPreviewCell } from './RunPreviewCell.tsx';
 import {
   buildGalleryImages,
@@ -29,7 +28,7 @@ import type {
   GalleryImage,
   ProductImageEntry,
   ProductImageDependencyStatus,
-  ProductImageFinderResult,
+  ProductImageFinderSummary,
 } from '../../features/product-image-finder/types.ts';
 import { PifVariantRings } from './PifVariantRings.tsx';
 import { IndexLabLink } from './IndexLabLink.tsx';
@@ -109,14 +108,18 @@ export function PifVariantPopover({
   // WS invalidation keeps open popups fresh. A short stale window prevents
   // every hover/reopen from refetching the full PIF payload.
   const popOpen = popoverOpen || carouselOpen;
+  const pifSummaryQueryKey = useMemo(
+    () => ['product-image-finder', category, productId, 'summary'] as const,
+    [category, productId],
+  );
   const pifQueryFn = useCallback(
-    () => api.get<ProductImageFinderResult>(
-      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
+    () => api.get<ProductImageFinderSummary>(
+      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/summary`,
     ),
     [category, productId],
   );
-  const { data: pifData } = useQuery<ProductImageFinderResult>({
-    queryKey: ['product-image-finder', category, productId],
+  const { data: pifData } = useQuery<ProductImageFinderSummary>({
+    queryKey: pifSummaryQueryKey,
     queryFn: pifQueryFn,
     enabled: popOpen && Boolean(category) && Boolean(productId),
     staleTime: 30_000,
@@ -130,11 +133,11 @@ export function PifVariantPopover({
   const prefetchPif = useCallback(() => {
     if (!category || !productId) return;
     void queryClient.prefetchQuery({
-      queryKey: ['product-image-finder', category, productId],
+      queryKey: pifSummaryQueryKey,
       queryFn: pifQueryFn,
       staleTime: 30_000,
     });
-  }, [queryClient, pifQueryFn, category, productId]);
+  }, [queryClient, pifSummaryQueryKey, pifQueryFn, category, productId]);
   const { data: dependencyStatus } = useQuery<ProductImageDependencyStatus>({
     queryKey: ['product-image-finder', category, productId, 'dependencies'] as const,
     queryFn: () => api.get<ProductImageDependencyStatus>(
@@ -287,18 +290,10 @@ export function PifVariantPopover({
   // variant. Mirrors the indexing-lab variant row so the Overview popover and
   // the lab show identical counts for the same variant.
   const histCounts = useMemo(() => {
-    if (!variantId) return null;
-    const grouped = groupHistory((pifData?.runs ?? []) as readonly FinderRun[], 'variant+mode');
-    const modes = grouped.byVariantMode.get(variantId);
-    if (!modes) return { urls: 0, queries: 0 };
-    const urls = new Set<string>();
-    const queries = new Set<string>();
-    for (const bucket of modes.values()) {
-      for (const u of bucket.urls) urls.add(u);
-      for (const q of bucket.queries) queries.add(q);
-    }
-    return { urls: urls.size, queries: queries.size };
-  }, [pifData?.runs, variantId]);
+    const key = variantId || variantKey;
+    if (!key) return null;
+    return pifData?.historyCounts?.[key] ?? { urls: 0, queries: 0 };
+  }, [pifData?.historyCounts, variantId, variantKey]);
 
   const openHistoryDrawer = useFinderDiscoveryHistoryStore((s) => s.openDrawer);
   const handleOpenHistory = useCallback(() => {

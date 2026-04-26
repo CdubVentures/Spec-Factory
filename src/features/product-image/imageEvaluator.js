@@ -9,6 +9,7 @@ import { readProductImages, writeProductImages } from './productImageStore.js';
 import { matchVariant } from './variantMatch.js';
 import { resolveViewEvalPromptInputs } from './productImagePreviewPrompt.js';
 import { formatProductImageIdentityFactsBlock } from './productImageIdentityDependencies.js';
+import { buildCategoryContext } from '../../core/llm/prompts/categoryContext.js';
 
 const VARIANT_IDENTITY_GATE = `Variant identity gate:
 - Same model is not enough. The candidate must match the target color/edition variant before view quality is ranked.
@@ -55,6 +56,7 @@ export async function createThumbnailBase64({ imagePath, size = 512 }) {
 // WHY: Default template for view evaluation prompt. {{CRITERIA}} resolves to per-category/per-view
 // eval criteria (already editable in the GUI), so the structural prompt around it is now also editable.
 export const VIEW_EVAL_DEFAULT_TEMPLATE = `{{IDENTITY}}
+{{CATEGORY_CONTEXT}}
 {{PRODUCT_IMAGE_IDENTITY_FACTS}}
 {{VIEW_LINE}}
 {{COUNT_LINE}}
@@ -134,6 +136,7 @@ export function buildViewEvalPrompt({
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
+  const category = product.category || '';
   const variantDesc = variantType === 'edition'
     ? `the "${variantLabel}" edition`
     : `the "${variantLabel}" color variant`;
@@ -158,6 +161,7 @@ export function buildViewEvalPrompt({
 
   return resolvePromptTemplate(template, {
     IDENTITY: identity,
+    CATEGORY_CONTEXT: buildCategoryContext(category),
     PRODUCT_IMAGE_IDENTITY_FACTS: formatProductImageIdentityFactsBlock(productImageIdentityFacts, { mode: 'eval' }),
     VARIANT_IDENTITY_GATE,
     VIEW_LINE: viewLine,
@@ -177,6 +181,7 @@ export function buildViewEvalPrompt({
 // WHY: Default template for hero evaluation. {{CRITERIA}} resolves to per-category hero criteria
 // (already editable), {{HERO_COUNT}} controls how many heroes to pick.
 export const HERO_EVAL_DEFAULT_TEMPLATE = `{{IDENTITY}}
+{{CATEGORY_CONTEXT}}
 {{PRODUCT_IMAGE_IDENTITY_FACTS}}
 {{COUNT_LINE}}
 
@@ -226,6 +231,7 @@ export function buildHeroSelectionPrompt({
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
+  const category = product.category || '';
   const variantDesc = variantType === 'edition'
     ? `the "${variantLabel}" edition`
     : `the "${variantLabel}" color variant`;
@@ -265,6 +271,7 @@ Your job is a LEGAL and QUALITY gatekeeper, not an art director. Lifestyle desk 
 
   return resolvePromptTemplate(template, {
     IDENTITY: identity,
+    CATEGORY_CONTEXT: buildCategoryContext(category),
     PRODUCT_IMAGE_IDENTITY_FACTS: formatProductImageIdentityFactsBlock(productImageIdentityFacts, { mode: 'eval' }),
     VARIANT_IDENTITY_GATE,
     COUNT_LINE: countLine,

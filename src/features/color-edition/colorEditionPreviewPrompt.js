@@ -92,6 +92,7 @@ export async function resolveColorEditionDiscoveryInputs({
 
   const userMessage = JSON.stringify({
     brand: product.brand || '',
+    category: product.category || '',
     base_model: product.base_model || '',
     model: product.model || '',
     variant: product.variant || '',

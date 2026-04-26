@@ -13,8 +13,11 @@
     "coating": {
       "policy": "open_prefer_known",
       "values": [
+        "glossy",
         "matte",
-        "rubber grips"
+        "rubber grips",
+        "rubberized",
+        "smooth-touch"
       ]
     },
     "colors": {
@@ -152,13 +155,16 @@
       ]
     },
     "feet_material": {
-      "policy": "closed",
+      "policy": "open_prefer_known",
       "values": [
+        "Ceramic",
         "Glass",
+        "Metal",
         "PTFE",
         "PTFE (95%)",
         "PTFE (Black-Dyed)",
-        "PTFE (Virgin-Grade)"
+        "PTFE (Virgin-Grade)",
+        "UHMWPE"
       ]
     },
     "form_factor": {
@@ -310,6 +316,6 @@
       ]
     }
   },
-  "generated_at": "2026-04-26T21:25:42.189Z",
+  "generated_at": "2026-04-26T22:04:04.597Z",
   "version": 1
 }

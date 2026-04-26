@@ -256,6 +256,7 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
   const systemPrompt = buildKeyFinderPrompt(domainArgs);
   const userMessage = JSON.stringify({
     brand: product.brand || '',
+    category: product.category || '',
     model: product.model || product.base_model || '',
     primary_field_key: fieldKey,
     passenger_count: passengers.length,

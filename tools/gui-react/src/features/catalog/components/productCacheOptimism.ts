@@ -23,6 +23,13 @@ export interface SharedProductCacheSnapshot {
   readonly reviewProductsIndex: ProductsIndexResponse | undefined;
 }
 
+export interface BrandCascadeProductCacheTarget {
+  readonly newBrand: string;
+  readonly productsByCategory: Readonly<Record<string, readonly string[]>>;
+}
+
+export type BrandCascadeProductCacheSnapshot = Readonly<Record<string, SharedProductCacheSnapshot>>;
+
 function patchCachedProductRows<TProduct extends ProductIdentityFields>(
   products: readonly TProduct[] | undefined,
   productId: string,
@@ -42,6 +49,18 @@ function patchCachedProductRows<TProduct extends ProductIdentityFields>(
       ...(typeof patch.variant === 'string' ? { variant: patch.variant } : {}),
       ...(typeof patch.status === 'string' ? { status: patch.status } : {}),
     } as TProduct;
+  });
+}
+
+function patchCachedProductsById<TProduct extends ProductIdentityFields>(
+  products: readonly TProduct[] | undefined,
+  productIds: readonly string[],
+  patch: Readonly<Record<string, unknown>>,
+): TProduct[] {
+  const productIdSet = new Set(productIds);
+  return (products ?? []).map((product) => {
+    if (!productIdSet.has(product.productId)) return product;
+    return patchCachedProductRows([product], product.productId, patch)[0];
   });
 }
 
@@ -154,6 +173,36 @@ function patchReviewProductsIndex(
   if (!data) return data;
   const products = data.products.map((product) => {
     if (product.product_id !== productId) return product;
+    const baseModel = typeof patch.base_model === 'string'
+      ? patch.base_model
+      : product.identity.model;
+    return {
+      ...product,
+      identity: {
+        ...product.identity,
+        ...(typeof patch.brand === 'string' ? { brand: patch.brand } : {}),
+        ...(typeof patch.base_model === 'string' ? { model: baseModel } : {}),
+        ...(typeof patch.variant === 'string' ? { variant: patch.variant } : {}),
+      },
+    };
+  });
+  return {
+    ...data,
+    products,
+    brands: deriveReviewBrands(products),
+    total: products.length,
+  };
+}
+
+function patchReviewProductsIndexById(
+  data: ProductsIndexResponse | undefined,
+  productIds: readonly string[],
+  patch: Readonly<Record<string, unknown>>,
+): ProductsIndexResponse | undefined {
+  if (!data) return data;
+  const productIdSet = new Set(productIds);
+  const products = data.products.map((product) => {
+    if (!productIdSet.has(product.product_id)) return product;
     const baseModel = typeof patch.base_model === 'string'
       ? patch.base_model
       : product.identity.model;
@@ -305,6 +354,15 @@ export function restoreSharedProductCaches(
   restoreQueryData(queryClient, queryKeys.reviewProductsIndex, snapshot.reviewProductsIndex);
 }
 
+export function restoreBrandCascadeProductCaches(
+  queryClient: QueryClient,
+  snapshot: BrandCascadeProductCacheSnapshot,
+): void {
+  for (const [category, categorySnapshot] of Object.entries(snapshot)) {
+    restoreSharedProductCaches(queryClient, category, categorySnapshot);
+  }
+}
+
 export function patchSharedProductCaches(
   queryClient: QueryClient,
   category: string,
@@ -338,6 +396,45 @@ export function patchSharedProductCaches(
     (current) => patchReviewProductsIndex(current, productId, patch),
   );
   return snapshot;
+}
+
+export function patchBrandCascadeProductCaches(
+  queryClient: QueryClient,
+  target: BrandCascadeProductCacheTarget,
+): BrandCascadeProductCacheSnapshot {
+  const snapshots: Record<string, SharedProductCacheSnapshot> = {};
+  for (const [category, productIds] of Object.entries(target.productsByCategory)) {
+    const scopedProductIds = [...new Set(productIds.map((productId) => String(productId || '').trim()).filter(Boolean))];
+    if (scopedProductIds.length === 0) continue;
+    const queryKeys = buildSharedProductCacheQueryKeys(category);
+    snapshots[category] = readSharedProductCacheSnapshot(queryClient, category);
+    const patch = { brand: target.newBrand };
+    patchLoadedArrayQuery<CatalogProduct>(
+      queryClient,
+      queryKeys.catalogProducts,
+      (current) => patchCachedProductsById(current, scopedProductIds, patch),
+    );
+    patchLoadedArrayQuery<CatalogRow>(
+      queryClient,
+      queryKeys.overviewCatalog,
+      (current) => patchCachedProductsById(current, scopedProductIds, patch),
+    );
+    patchLoadedArrayQuery<CatalogRow>(
+      queryClient,
+      queryKeys.indexingCatalog,
+      (current) => patchCachedProductsById(current, scopedProductIds, patch),
+    );
+    patchLoadedArrayQuery<CatalogProduct>(
+      queryClient,
+      queryKeys.reviewCatalog,
+      (current) => patchCachedProductsById(current, scopedProductIds, patch),
+    );
+    queryClient.setQueryData<ProductsIndexResponse | undefined>(
+      queryKeys.reviewProductsIndex,
+      (current) => patchReviewProductsIndexById(current, scopedProductIds, patch),
+    );
+  }
+  return snapshots;
 }
 
 export function insertSharedProductCaches(

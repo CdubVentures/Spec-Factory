@@ -9,6 +9,12 @@ import { Spinner } from "../../../shared/ui/feedback/Spinner.tsx";
 import { inputCls, labelCls } from "./studioConstants.ts";
 import { invalidateFieldRulesQueries } from "../state/invalidateFieldRulesQueries.ts";
 import { patchCachedBrand, removeCachedBrand } from "./brandCacheOptimism.ts";
+import {
+  cancelSharedProductCacheQueries,
+  patchBrandCascadeProductCaches,
+  restoreBrandCascadeProductCaches,
+  type BrandCascadeProductCacheSnapshot,
+} from "../../catalog/components/productCacheOptimism.ts";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { BrandImpactAnalysis, Brand, BrandMutationResult } from "../../../types/product.ts";
 
@@ -76,6 +82,7 @@ interface BrandBulkImportResult {
 
 interface BrandCacheMutationContext {
   readonly previousBrands?: Brand[];
+  readonly previousProductCaches?: BrandCascadeProductCacheSnapshot;
 }
 
 function slugify(str: string): string {
@@ -240,16 +247,36 @@ export function BrandManager() {
     }) => api.put<BrandMutationResult>(`/brands/${slug}`, patch),
     onMutate: async ({ slug, patch }): Promise<BrandCacheMutationContext> => {
       await queryClient.cancelQueries({ queryKey: brandsQueryKey });
+      const productsByCategory = isRename
+        ? (impactData?.product_details ?? {})
+        : {};
+      const affectedCategories = Object.entries(productsByCategory)
+        .filter(([, productIds]) => Array.isArray(productIds) && productIds.length > 0)
+        .map(([cat]) => cat);
+      if (affectedCategories.length > 0) {
+        await Promise.all(
+          affectedCategories.map((cat) => cancelSharedProductCacheQueries(queryClient, cat)),
+        );
+      }
       const previousBrands = queryClient.getQueryData<Brand[]>(brandsQueryKey);
       queryClient.setQueryData<Brand[]>(
         brandsQueryKey,
         (current) => patchCachedBrand(current, slug, patch),
       );
-      return { previousBrands };
+      const previousProductCaches = isRename && typeof patch.name === "string"
+        ? patchBrandCascadeProductCaches(queryClient, {
+          newBrand: patch.name,
+          productsByCategory,
+        })
+        : undefined;
+      return { previousBrands, previousProductCaches };
     },
     onError: (_error, _variables, context) => {
       if (context?.previousBrands) {
         queryClient.setQueryData(brandsQueryKey, context.previousBrands);
+      }
+      if (context?.previousProductCaches) {
+        restoreBrandCascadeProductCaches(queryClient, context.previousProductCaches);
       }
     },
     onSuccess: (data) => {

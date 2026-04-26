@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useCallback, useState, useRef, memo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useOperationsStore, type Operation } from '../state/operationsStore.ts';
 import { LoopProgressRouter } from './LoopProgressRouter.tsx';
 import { variantHexPartsForOp } from '../state/opVariantSwatch.ts';
@@ -12,8 +13,11 @@ import {
 import {
   selectActiveOperationCount,
   selectOperationById,
+  resolveOperationIndexLabLinkIdentity,
   selectVisibleOperationsMap,
 } from '../state/operationsTrackerSelectors.ts';
+import { parseCatalogRows } from '../../catalog/api/catalogParsers.ts';
+import type { CatalogRow } from '../../../types/product.ts';
 import { ColorSwatch, useFinderColorHexMap } from '../../../shared/ui/finder';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePersistedNullableTab } from '../../../stores/tabStore.ts';
@@ -165,6 +169,16 @@ const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confi
   const chipCls = MODULE_STYLES[op.type] ?? 'sf-chip-neutral';
   const baseLabel = MODULE_LABELS[op.type] ?? op.type.toUpperCase().slice(0, 3);
   const label = op.subType ? `${baseLabel}.${op.subType[0]?.toUpperCase() ?? ''}` : baseLabel;
+  const moduleTabId = resolveModuleTabId(op.type);
+  const { data: catalogRows = [] } = useQuery<CatalogRow[]>({
+    queryKey: ['catalog', op.category],
+    queryFn: () => api.parsedGet(`/catalog/${encodeURIComponent(op.category)}`, parseCatalogRows),
+    enabled: Boolean(moduleTabId && op.category && op.productId),
+  });
+  const linkIdentity = useMemo(
+    () => resolveOperationIndexLabLinkIdentity(op, catalogRows),
+    [op, catalogRows],
+  );
   const isDone = op.status === 'done';
   const isError = op.status === 'error';
   const isCancelled = op.status === 'cancelled';
@@ -200,7 +214,6 @@ const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confi
       {/* Row 1: module chip + variant swatch (PIF/RDF) OR field_key chip (KF) + product label + elapsed */}
       <span className="flex items-center gap-1.5 min-w-0">
         {(() => {
-          const moduleTabId = resolveModuleTabId(op.type);
           const chip = (
             <span className={`inline-flex items-center px-1 text-[8px] font-bold font-mono uppercase tracking-[0.04em] rounded-[2px] border border-current leading-[1.5] shrink-0 ${chipCls}`}>
               {label}
@@ -210,18 +223,19 @@ const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confi
           // the Indexing Lab (same destination the Overview column popovers
           // use). IndexLabLink stops propagation so the parent card's
           // onClick (which opens the OperationDetailModal) does not fire.
-          // brand/baseModel are passed empty — IndexingPage's catalog
-          // derivation self-heals both from productId on mount.
+          // The active operation only carries productId, so the current
+          // catalog projection supplies the brand/model context required for
+          // variant-aware Indexing Lab selection.
           if (!moduleTabId) return chip;
           return (
             <IndexLabLink
               category={op.category}
-              productId={op.productId}
-              brand=""
-              baseModel=""
+              productId={linkIdentity.productId}
+              brand={linkIdentity.brand}
+              baseModel={linkIdentity.baseModel}
               tabId={moduleTabId}
               title={`Open ${label} in Indexing Lab`}
-              className="shrink-0"
+              className="sf-ops-index-link shrink-0"
             >
               {chip}
             </IndexLabLink>

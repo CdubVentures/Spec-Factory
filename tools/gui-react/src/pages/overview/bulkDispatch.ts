@@ -10,6 +10,7 @@ import {
 import { parseAxisOrder, sortKeysByPriority } from '../../features/key-finder/state/keyFinderGroupedRows.ts';
 import type { CatalogRow } from '../../types/product.ts';
 import type { PifVariantProgressGen, ScalarVariantProgressGen } from '../../types/product.generated.ts';
+import { classifyPipelineKfBucket, type PipelineKfBucket } from './pipelinePlan.ts';
 
 /**
  * Bulk fan-out primitives for the Overview command console. Each helper
@@ -410,6 +411,9 @@ interface KeyFinderSummaryLike {
   readonly required_level?: string;
   readonly availability?: string;
   readonly variant_dependent?: boolean;
+  readonly product_image_dependent?: boolean;
+  readonly uses_variant_inventory?: boolean;
+  readonly uses_pif_priority_images?: boolean;
   readonly last_status?: string | null;
   readonly published?: boolean;
 }
@@ -453,11 +457,13 @@ function filterAndSortKfKeys(
   reservedKeys: ReadonlySet<string>,
   mode: 'run' | 'loop',
   pickedFilter?: ReadonlySet<string>,
+  pipelineBucket?: Extract<PipelineKfBucket, 'early' | 'contextual'>,
 ): readonly string[] {
   const eligible = summary.filter((entry) => {
     if (!entry.field_key) return false;
     if (reservedKeys.has(entry.field_key)) return false;
     if (entry.variant_dependent === true) return false;
+    if (pipelineBucket && classifyPipelineKfBucket(entry, reservedKeys) !== pipelineBucket) return false;
     if (mode === 'loop' && (entry.last_status === 'resolved' || entry.published)) return false;
     if (pickedFilter && !pickedFilter.has(entry.field_key)) return false;
     return true;
@@ -487,12 +493,13 @@ async function buildKfProductPlan(
   row: CatalogRow,
   reservedKeys: ReadonlySet<string>,
   mode: 'run' | 'loop',
+  pipelineBucket?: Extract<PipelineKfBucket, 'early' | 'contextual'>,
 ): Promise<KfProductPlan> {
   const { summary, axisOrder } = await fetchKfPlanInputs(category, row.productId);
   return {
     row,
     summary,
-    keys: filterAndSortKfKeys(summary, axisOrder, reservedKeys, mode),
+    keys: filterAndSortKfKeys(summary, axisOrder, reservedKeys, mode, undefined, pipelineBucket),
   };
 }
 
@@ -600,6 +607,42 @@ export async function dispatchKfAll(
 
   const results = await Promise.all(plans.map((plan) =>
     runKfProductChain({ category, plan, mode, fire, options }),
+  ));
+
+  return {
+    scheduled: results.reduce((sum, result) => sum + result.scheduled, 0),
+    operationIds: results.flatMap((result) => result.operationIds),
+    failures: results.reduce((sum, result) => sum + result.failures, 0),
+    skipped: results.reduce((sum, result) => sum + result.skipped, 0),
+  };
+}
+
+export async function dispatchKfPipelineBucket(
+  category: string,
+  products: readonly CatalogRow[],
+  reservedKeys: ReadonlySet<string>,
+  bucket: Extract<PipelineKfBucket, 'early' | 'contextual'>,
+  fire: BulkFireFn,
+  optionsInput: KfBulkDispatchOptions | number = {},
+): Promise<BulkDispatchResult> {
+  const resolvedInput = typeof optionsInput === 'number' ? { staggerMs: optionsInput } : optionsInput;
+  const options = {
+    ...resolveOptions(resolvedInput),
+    awaitPassengersRegistered: resolvedInput.awaitPassengersRegistered ?? defaultAwaitPassengersRegistered,
+    awaitOperationTerminal: resolvedInput.awaitOperationTerminal ?? defaultAwaitOperationTerminal,
+  };
+
+  const eligibleProducts = products.filter((row) => !isKfLoopActive(row.productId));
+  const plans = await Promise.all(eligibleProducts.map(async (row) => {
+    try {
+      return await buildKfProductPlan(category, row, reservedKeys, 'loop', bucket);
+    } catch {
+      return { row, summary: [], keys: [] };
+    }
+  }));
+
+  const results = await Promise.all(plans.map((plan) =>
+    runKfProductChain({ category, plan, mode: 'loop', fire, options }),
   ));
 
   return {

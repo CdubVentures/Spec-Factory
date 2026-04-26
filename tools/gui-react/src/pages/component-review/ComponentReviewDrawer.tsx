@@ -18,6 +18,13 @@ import { CellDrawer } from '../../shared/ui/overlay/CellDrawer.tsx';
 import { FlagsSection, FlagsOverviewSection } from '../../shared/ui/feedback/FlagsSection.tsx';
 import { PendingAIReviewSection } from './PendingAIReviewSection.tsx';
 import { LinkedProductsList } from './LinkedProductsList.tsx';
+import {
+  buildComponentReviewGridLinkedProducts,
+  cancelLinkedReviewProductFields,
+  restoreLinkedReviewProductFields,
+  updateLinkedReviewProductFields,
+  type LinkedReviewProductFieldSnapshot,
+} from './componentReviewCache.ts';
 import type { ComponentReviewItem, ComponentPropertyState, ComponentReviewPayload, ComponentReviewFlaggedItem } from '../../types/componentReview.ts';
 
 interface ComponentImpactResult {
@@ -37,6 +44,47 @@ interface ComponentReviewDrawerProps {
   isSynthetic?: boolean;
   debugLinkedProducts?: boolean;
   propertyColumns?: string[];
+}
+
+type ComponentDrawerMutationValue = string | string[];
+
+interface ComponentDrawerOverrideMutationBody {
+  componentType: string;
+  name: string;
+  maker: string;
+  property: string;
+  value: ComponentDrawerMutationValue;
+  componentIdentityId?: number;
+  componentValueId?: number;
+}
+
+interface ComponentDrawerCandidateAcceptMutationBody {
+  componentType: string;
+  name: string;
+  maker: string;
+  property: string;
+  value: string;
+  candidateId?: string;
+  candidateSource?: string;
+  componentIdentityId?: number;
+  componentValueId?: number;
+}
+
+interface ComponentDrawerConfirmSharedMutationBody {
+  componentType: string;
+  name: string;
+  maker: string;
+  property: string;
+  candidateId?: string;
+  candidateValue?: string;
+  candidateConfidence?: number;
+  componentIdentityId?: number;
+  componentValueId?: number;
+}
+
+interface ComponentDrawerMutationContext {
+  previousComponentReviewData?: ComponentReviewPayload;
+  previousLinkedReviewProductFields?: LinkedReviewProductFieldSnapshot;
 }
 
 const varianceBadge: Record<string, string> = {
@@ -686,28 +734,50 @@ export function ComponentReviewDrawer({
     },
   });
 
-  const overrideMut = useMutation({
-    mutationFn: (body: {
-      componentType: string;
-      name: string;
-      maker: string;
-      property: string;
-      value: string | string[];
-      componentIdentityId?: number;
-      componentValueId?: number;
-    }) =>
+  const overrideMut = useMutation<unknown, Error, ComponentDrawerOverrideMutationBody, ComponentDrawerMutationContext>({
+    mutationFn: (body) =>
       api.post(`/review-components/${category}/component-override`, body),
     onMutate: async (body) => {
       const isIdentityProperty = String(body?.property || '').trim().startsWith('__');
       const hasRequiredId = isIdentityProperty
         ? Boolean(toPositiveId(body?.componentIdentityId))
         : Boolean(toPositiveId(body?.componentValueId));
-      if (!hasRequiredId) return;
+      if (!hasRequiredId) return {};
       const queryKey = ['componentReviewData', category, componentType];
-      await queryClient.cancelQueries({ queryKey });
+      const previousComponentReviewData = queryClient.getQueryData<ComponentReviewPayload>(queryKey);
+      const linkedProducts = buildComponentReviewGridLinkedProducts({
+        componentType,
+        property: body.property,
+        linkedProducts: item.linked_products ?? [],
+      });
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey }),
+        linkedProducts.length > 0 ? cancelLinkedReviewProductFields(queryClient, category) : Promise.resolve(),
+      ]);
       queryClient.setQueryData<ComponentReviewPayload>(queryKey, (old) =>
         old ? applyDrawerManualOverride(old, body.name, body.maker, body.property, body.value, rowIndex) : old,
       );
+      const previousLinkedReviewProductFields = linkedProducts.length > 0
+        ? updateLinkedReviewProductFields(queryClient, {
+          category,
+          field: body.property,
+          linkedProducts,
+          value: Array.isArray(body.value) ? body.value[0] ?? '' : body.value,
+          source: 'user',
+          timestamp: new Date().toISOString(),
+          acceptedCandidateId: null,
+          overridden: true,
+        })
+        : undefined;
+      return { previousComponentReviewData, previousLinkedReviewProductFields };
+    },
+    onError: (_error, _body, context) => {
+      if (context?.previousComponentReviewData !== undefined) {
+        queryClient.setQueryData(['componentReviewData', category, componentType], context.previousComponentReviewData);
+      }
+      if (context?.previousLinkedReviewProductFields) {
+        restoreLinkedReviewProductFields(queryClient, context.previousLinkedReviewProductFields);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['componentReviewData', category, componentType] });
@@ -719,30 +789,51 @@ export function ComponentReviewDrawer({
 
   // Separate mutation for candidate acceptance — uses applyDrawerCandidateAccept (overridden=false)
   // so the optimistic update doesn't get overwritten by overrideMut's onMutate.
-  const candidateAcceptMut = useMutation({
-    mutationFn: (body: {
-      componentType: string;
-      name: string;
-      maker: string;
-      property: string;
-      value: string;
-      candidateId?: string;
-      candidateSource?: string;
-      componentIdentityId?: number;
-      componentValueId?: number;
-    }) =>
+  const candidateAcceptMut = useMutation<unknown, Error, ComponentDrawerCandidateAcceptMutationBody, ComponentDrawerMutationContext>({
+    mutationFn: (body) =>
       api.post(`/review-components/${category}/component-override`, body),
     onMutate: async (body) => {
       const isIdentityProperty = String(body?.property || '').trim().startsWith('__');
       const hasRequiredId = isIdentityProperty
         ? Boolean(toPositiveId(body?.componentIdentityId))
         : Boolean(toPositiveId(body?.componentValueId));
-      if (!hasRequiredId) return;
+      if (!hasRequiredId) return {};
       const queryKey = ['componentReviewData', category, componentType];
-      await queryClient.cancelQueries({ queryKey });
+      const previousComponentReviewData = queryClient.getQueryData<ComponentReviewPayload>(queryKey);
+      const linkedProducts = buildComponentReviewGridLinkedProducts({
+        componentType,
+        property: body.property,
+        linkedProducts: item.linked_products ?? [],
+      });
+      await Promise.all([
+        queryClient.cancelQueries({ queryKey }),
+        linkedProducts.length > 0 ? cancelLinkedReviewProductFields(queryClient, category) : Promise.resolve(),
+      ]);
       queryClient.setQueryData<ComponentReviewPayload>(queryKey, (old) =>
         old ? applyDrawerCandidateAccept(old, body.name, body.maker, body.property, body.value, body.candidateId ?? null, rowIndex) : old,
       );
+      const source = String(body.candidateSource || 'component').trim() || 'component';
+      const previousLinkedReviewProductFields = linkedProducts.length > 0
+        ? updateLinkedReviewProductFields(queryClient, {
+          category,
+          field: body.property,
+          linkedProducts,
+          value: body.value,
+          source,
+          timestamp: new Date().toISOString(),
+          acceptedCandidateId: body.candidateId ?? null,
+          overridden: false,
+        })
+        : undefined;
+      return { previousComponentReviewData, previousLinkedReviewProductFields };
+    },
+    onError: (_error, _body, context) => {
+      if (context?.previousComponentReviewData !== undefined) {
+        queryClient.setQueryData(['componentReviewData', category, componentType], context.previousComponentReviewData);
+      }
+      if (context?.previousLinkedReviewProductFields) {
+        restoreLinkedReviewProductFields(queryClient, context.previousLinkedReviewProductFields);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['componentReviewData', category, componentType] });
@@ -752,18 +843,39 @@ export function ComponentReviewDrawer({
     },
   });
 
-  const confirmSharedLaneMut = useMutation({
-    mutationFn: (body: {
-      componentType: string;
-      name: string;
-      maker: string;
-      property: string;
-      candidateId?: string;
-      candidateValue?: string;
-      candidateConfidence?: number;
-      componentIdentityId?: number;
-      componentValueId?: number;
-    }) => api.post(`/review-components/${category}/component-key-review-confirm`, body),
+  const confirmSharedLaneMut = useMutation<unknown, Error, ComponentDrawerConfirmSharedMutationBody, ComponentDrawerMutationContext>({
+    mutationFn: (body) => api.post(`/review-components/${category}/component-key-review-confirm`, body),
+    onMutate: async (body) => {
+      if (body.candidateValue === undefined) return {};
+      const isIdentityProperty = String(body?.property || '').trim().startsWith('__');
+      const hasRequiredId = isIdentityProperty
+        ? Boolean(toPositiveId(body?.componentIdentityId))
+        : Boolean(toPositiveId(body?.componentValueId));
+      if (!hasRequiredId) return {};
+      const linkedProducts = buildComponentReviewGridLinkedProducts({
+        componentType,
+        property: body.property,
+        linkedProducts: item.linked_products ?? [],
+      });
+      if (linkedProducts.length === 0) return {};
+      await cancelLinkedReviewProductFields(queryClient, category);
+      const previousLinkedReviewProductFields = updateLinkedReviewProductFields(queryClient, {
+        category,
+        field: body.property,
+        linkedProducts,
+        value: body.candidateValue,
+        source: 'component',
+        timestamp: new Date().toISOString(),
+        acceptedCandidateId: body.candidateId ?? null,
+        overridden: false,
+      });
+      return { previousLinkedReviewProductFields };
+    },
+    onError: (_error, _body, context) => {
+      if (context?.previousLinkedReviewProductFields) {
+        restoreLinkedReviewProductFields(queryClient, context.previousLinkedReviewProductFields);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['componentReviewData', category, componentType] });
       queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });

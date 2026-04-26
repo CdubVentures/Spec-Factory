@@ -18,7 +18,10 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildColorEditionFinderPrompt } from '../../../features/color-edition/colorEditionLlmAdapter.js';
+import {
+  buildColorEditionFinderPrompt,
+  buildVariantIdentityCheckPrompt,
+} from '../../../features/color-edition/colorEditionLlmAdapter.js';
 import {
   buildReleaseDateFinderPrompt,
   RDF_DEFAULT_TEMPLATE,
@@ -33,6 +36,11 @@ import {
   PIF_VIEW_DEFAULT_TEMPLATE,
   PIF_HERO_DEFAULT_TEMPLATE,
 } from '../../../features/product-image/productImageLlmAdapter.js';
+import {
+  buildViewEvalPrompt,
+  buildHeroSelectionPrompt,
+} from '../../../features/product-image/imageEvaluator.js';
+import { buildKeyFinderPrompt } from '../../../features/key/keyLlmAdapter.js';
 import { resolveAmbiguityContext, buildOrchestratorProduct } from '../finderOrchestrationHelpers.js';
 import { resolveIdentityAmbiguitySnapshot } from '../../../features/indexing/orchestration/shared/identityHelpers.js';
 import { PHASE_SCHEMA_REGISTRY } from '../../../features/indexing/pipeline/shared/phaseSchemaRegistry.js';
@@ -54,6 +62,7 @@ function guiPhaseIdFor(mod) {
 const UNRESOLVED_PLACEHOLDER_RE = /\{\{[A-Z_][A-Z0-9_]*\}\}/;
 
 const PRODUCT_AIR = {
+  category: 'mouse',
   brand: 'Corsair',
   base_model: 'M75',
   model: 'M75 Air Wireless',
@@ -67,6 +76,24 @@ const FAMILY_CONTEXT = {
 };
 
 const EMPTY_DISCOVERY = { urlsChecked: [], queriesRun: [] };
+const CATEGORY_LOCKED_PRODUCT = {
+  category: 'keyboard',
+  brand: 'TestBrand',
+  base_model: 'TestBoard',
+  model: 'TestBoard Pro',
+  variant: 'TKL',
+};
+
+const CATEGORY_KEY_RULE = {
+  field_key: 'polling_rate',
+  display_name: 'Polling Rate',
+  ui: { label: 'Polling Rate' },
+  contract: { type: 'number', shape: 'scalar', unit: 'Hz' },
+  enum: { policy: 'open' },
+  evidence: { min_evidence_refs: 1 },
+  ai_assist: { reasoning_note: '' },
+  search_hints: {},
+};
 
 // ── Section 1: no unresolved placeholders ──────────────────────────────
 describe('compiled prompt has no unresolved {{PLACEHOLDER}} tokens', () => {
@@ -200,6 +227,77 @@ describe('compiled prompt has no unresolved {{PLACEHOLDER}} tokens', () => {
   });
 });
 
+describe('compiled prompt renders actual product category', () => {
+  const cases = [
+    ['CEF discovery', () => buildColorEditionFinderPrompt({
+      colorNames: ['black'],
+      colors: [{ name: 'black', hex: '#000000' }],
+      product: CATEGORY_LOCKED_PRODUCT,
+      previousRuns: [],
+      previousDiscovery: EMPTY_DISCOVERY,
+    })],
+    ['CEF identity check', () => buildVariantIdentityCheckPrompt({
+      product: CATEGORY_LOCKED_PRODUCT,
+      existingRegistry: [],
+      newColors: [],
+      newColorNames: {},
+      newEditions: {},
+    })],
+    ['PIF view', () => buildProductImageFinderPrompt({
+      product: CATEGORY_LOCKED_PRODUCT,
+      variantLabel: 'black',
+      variantType: 'color',
+      priorityViews: [{ key: 'top', description: 'top shot', priority: true }],
+      additionalViews: [],
+      previousDiscovery: EMPTY_DISCOVERY,
+    })],
+    ['PIF hero', () => buildHeroImageFinderPrompt({
+      product: CATEGORY_LOCKED_PRODUCT,
+      variantLabel: 'black',
+      variantType: 'color',
+      previousDiscovery: EMPTY_DISCOVERY,
+    })],
+    ['PIF view eval', () => buildViewEvalPrompt({
+      product: CATEGORY_LOCKED_PRODUCT,
+      variantLabel: 'black',
+      variantType: 'color',
+      view: 'top',
+      viewDescription: 'top shot',
+      candidateCount: 2,
+    })],
+    ['PIF hero eval', () => buildHeroSelectionPrompt({
+      product: CATEGORY_LOCKED_PRODUCT,
+      variantLabel: 'black',
+      variantType: 'color',
+      candidates: [{ filename: 'hero.png' }],
+    })],
+    ['RDF', () => buildReleaseDateFinderPrompt({
+      product: CATEGORY_LOCKED_PRODUCT,
+      variantLabel: 'black',
+      variantType: 'color',
+      previousDiscovery: EMPTY_DISCOVERY,
+    })],
+    ['SKU', () => buildSkuFinderPrompt({
+      product: CATEGORY_LOCKED_PRODUCT,
+      variantLabel: 'black',
+      variantType: 'color',
+      previousDiscovery: EMPTY_DISCOVERY,
+    })],
+    ['KF', () => buildKeyFinderPrompt({
+      product: CATEGORY_LOCKED_PRODUCT,
+      category: CATEGORY_LOCKED_PRODUCT.category,
+      primary: { fieldKey: 'polling_rate', fieldRule: CATEGORY_KEY_RULE },
+      previousDiscovery: EMPTY_DISCOVERY,
+    })],
+  ];
+
+  for (const [name, build] of cases) {
+    test(`${name} includes Category: keyboard`, () => {
+      assert.match(build(), /^Category: keyboard$/m);
+    });
+  }
+});
+
 // ── Section 1b: GUI-editable contract — every finder phase has prompt_templates ──
 // WHY: SKU shipped without a prompt_templates overlay in phaseSchemaRegistry.js,
 // silently falling back to the pre-rendered system_prompt preview. The GUI looked
@@ -242,10 +340,10 @@ describe('every finder phase exposes prompt_templates for the LLM Config GUI', (
 
   test('PIF image prompt settings expose full-template required variables', () => {
     const expectedRequiredBySetting = {
-      viewPromptOverride: ['BRAND', 'MODEL', 'VARIANT_DESC', 'DISCOVERY_IDENTITY_GATE', 'PRIORITY_VIEWS', 'ALL_VIEW_KEYS', 'IMAGE_REQUIREMENTS'],
-      heroPromptOverride: ['HERO_INSTRUCTIONS'],
-      evalPromptOverride: ['IDENTITY', 'VIEW_LINE', 'COUNT_LINE', 'VARIANT_IDENTITY_GATE', 'CRITERIA'],
-      heroEvalPromptOverride: ['IDENTITY', 'COUNT_LINE', 'VARIANT_IDENTITY_GATE', 'CRITERIA', 'HERO_COUNT'],
+      viewPromptOverride: ['BRAND', 'MODEL', 'CATEGORY', 'VARIANT_DESC', 'DISCOVERY_IDENTITY_GATE', 'PRIORITY_VIEWS', 'ALL_VIEW_KEYS', 'IMAGE_REQUIREMENTS'],
+      heroPromptOverride: ['CATEGORY', 'HERO_INSTRUCTIONS'],
+      evalPromptOverride: ['IDENTITY', 'CATEGORY', 'VIEW_LINE', 'COUNT_LINE', 'VARIANT_IDENTITY_GATE', 'CRITERIA'],
+      heroEvalPromptOverride: ['IDENTITY', 'CATEGORY', 'COUNT_LINE', 'VARIANT_IDENTITY_GATE', 'CRITERIA', 'HERO_COUNT'],
     };
     const fullTemplateSettings = [
       ['image-finder', 'viewPromptOverride'],
@@ -527,7 +625,7 @@ describe('scalar finder prompt contract (O(1) overlay)', () => {
   test('SCALAR_FINDER_VARIABLES has the canonical entries in the expected order', () => {
     const names = SCALAR_FINDER_VARIABLES.map((v) => v.name);
     assert.deepEqual(names, [
-      'BRAND', 'MODEL', 'VARIANT_DESC', 'VARIANT_SUFFIX', 'VARIANT_TYPE_WORD',
+      'BRAND', 'MODEL', 'CATEGORY', 'VARIANT_DESC', 'VARIANT_SUFFIX', 'VARIANT_TYPE_WORD',
       'IDENTITY_INTRO', 'IDENTITY_WARNING', 'EVIDENCE_REQUIREMENTS',
       'VALUE_CONFIDENCE_GUIDANCE', 'UNK_POLICY',
       'SOURCE_GUIDANCE', 'VARIANT_DISAMBIGUATION',
@@ -537,7 +635,7 @@ describe('scalar finder prompt contract (O(1) overlay)', () => {
 
   test('SCALAR_FINDER_USER_MESSAGE_INFO has the 5 canonical fields', () => {
     const fields = SCALAR_FINDER_USER_MESSAGE_INFO.map((e) => e.field);
-    assert.deepEqual(fields, ['brand', 'model', 'base_model', 'variant_label', 'variant_type']);
+    assert.deepEqual(fields, ['brand', 'model', 'base_model', 'category', 'variant_label', 'variant_type']);
   });
 
   test('FINDER_SCALAR_DEFAULT_TEMPLATES contains every variantFieldProducer with defaultTemplateExport', () => {

@@ -16,6 +16,7 @@ export function defaultBuildScalarUserMessage(product, variant) {
     brand: product.brand,
     model: product.model,
     base_model: product.base_model,
+    category: product.category,
     variant: variant.key,
     variant_label: variant.label,
     variant_type: variant.type,
@@ -97,6 +98,7 @@ export function resolveScalarFinderPromptInputs({
 
   const inputsResolved = {
     product_id: product.product_id,
+    category: product.category,
     variant_key: variant.key,
     variant_label: variant.label,
     variant_type: variant.type,

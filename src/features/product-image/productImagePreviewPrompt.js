@@ -334,6 +334,7 @@ function envelope({ mode, prompts, inputsResolved, notes = [] }) {
 function userMsgFor(product, variantKey) {
   return JSON.stringify({
     brand: product.brand || '',
+    category: product.category || '',
     model: product.model || '',
     base_model: product.base_model || '',
     variant: variantKey,

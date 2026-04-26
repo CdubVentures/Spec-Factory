@@ -1,4 +1,4 @@
-export const LLM_PRICING_AS_OF = '2026-04-24';
+export const LLM_PRICING_AS_OF = '2026-04-26';
 
 export const LLM_PRICING_SOURCES = {
   openai: 'https://openai.com/api/pricing/',

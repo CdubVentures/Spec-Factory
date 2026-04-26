@@ -5,6 +5,7 @@ import { useUiCategoryStore } from '../../stores/uiCategoryStore.ts';
 import { MetricCard } from '../../shared/ui/data-display/MetricCard.tsx';
 import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
 import { MiniGauge } from '../../shared/ui/data-display/MiniGauge.tsx';
+import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { pct } from '../../utils/formatting.ts';
 import { useFormatDateYMD } from '../../utils/dateTime.ts';
 import type { CatalogRow } from '../../types/product.ts';
@@ -25,6 +26,7 @@ import { ActiveAndSelectedRow } from './ActiveAndSelectedRow.tsx';
 import { deriveFamilyCountByProductId } from './familyCount.ts';
 import { OverviewLastRunCell, OverviewLastRunHeaderToggle } from './OverviewLastRunCell.tsx';
 import { LiveOpsCell } from './LiveOpsCell.tsx';
+import { PipelineProgressStrip } from './PipelineProgressStrip.tsx';
 import { useRunningModulesByProductOrdered } from '../../features/operations/hooks/useFinderOperations.ts';
 import {
   getOverviewLastRunMs,
@@ -132,23 +134,6 @@ const SelectCell = memo(function SelectCell({ category, productId }: { category:
 // module will let a product advance. Visual today, enforcement later.
 const CEF_REQUIRED_RUNS = 2;
 
-// WHY: Skeleton table body shown on the very first catalog fetch (or after a
-// category switch with no cached rows). Keeps page chrome — metric cards,
-// filter bar, command console — visible immediately so the page doesn't
-// flash a centered spinner over an empty void. Reuses shared design-system
-// classes (sf-shimmer + sf-skel-row); no one-off styling.
-const SKELETON_ROW_COUNT = 12;
-
-function OverviewTableSkeleton() {
-  return (
-    <div className="space-y-1 p-2" aria-hidden="true">
-      {Array.from({ length: SKELETON_ROW_COUNT }, (_, i) => (
-        <div key={i} className="sf-shimmer sf-skel-row" />
-      ))}
-    </div>
-  );
-}
-
 
 const INITIAL_FILTER_STATE: OverviewFilterState = Object.freeze({
   search: '',
@@ -200,9 +185,15 @@ function buildColumns(
         </ColumnFilterHeader>
       ),
       size: 120,
-      cell: ({ getValue }) => {
+      meta: { cellClassName: 'sf-overview-identity-cell' },
+      cell: ({ getValue, row }) => {
         const v = getValue() as string;
-        return v ? <span className="text-xs">{v}</span> : <span className="sf-text-subtle text-xs italic">—</span>;
+        return (
+          <div className="sf-overview-brand-cell">
+            {v ? <span className="text-xs">{v}</span> : <span className="sf-text-subtle text-xs italic">—</span>}
+            <PipelineProgressStrip category={category} productId={row.original.productId} />
+          </div>
+        );
       },
     },
     {
@@ -451,7 +442,7 @@ export function OverviewPage() {
     [formatDateYMD],
   );
 
-  const { data: catalog = [], isPending } = useQuery({
+  const { data: catalog = [], isLoading } = useQuery({
     queryKey: ['catalog', category],
     queryFn: () => api.parsedGet(`/catalog/${category}`, parseCatalogRows),
     // WHY: inherits global staleTime (5s). Earlier attempt at Infinity
@@ -568,8 +559,6 @@ export function OverviewPage() {
     [hexMap, category, catalog, formatRdfValue, detailColsOpen, toggleDetailCols],
   );
 
-  const showSkeleton = isPending && catalog.length === 0;
-
   // WHY: avgConf/keysResolved/keysTotal are three O(n) reductions over the
   // catalog. Memoizing keeps them stable across non-catalog renders so the
   // metric cards don't recompute on every search keystroke / filter tick.
@@ -591,6 +580,10 @@ export function OverviewPage() {
       keysTotal: total,
     };
   }, [catalog]);
+
+  // WHY: early return placed AFTER all hooks (rules of hooks). Conditional
+  // hook count between renders triggers React error #310.
+  if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
 
   return (
     <div className="space-y-6 sf-text-primary">
@@ -618,29 +611,25 @@ export function OverviewPage() {
       </div>
 
       <div className="sf-table-shell">
-        {showSkeleton ? (
-          <OverviewTableSkeleton />
-        ) : (
-          <VisibleIdsContext.Provider value={visibleIds}>
-            <FamilyCountContext.Provider value={familyCountByProductId}>
-              <DataTable
-                data={visibleRows}
-                columns={columns}
-                persistKey={`overview:table:${category}`}
-                maxHeight="max-h-[calc(100vh-340px)]"
-                sorting={tableSorting}
-                onSortingChange={handleTableSortingChange}
-                manualSorting
-                onColumnHeaderSort={handleColumnHeaderSort}
-                // WHY: Catalogs run 350-600 products. Fixed-height row virtualization
-                // renders only the viewport (+ overscan) instead of all rows. Row
-                // height matches the cells' tallest variants — PIF/Scalar variant
-                // ring clusters dominate at ~72px including padding.
-                virtualize={{ rowHeight: 72, overscan: 10 }}
-              />
-            </FamilyCountContext.Provider>
-          </VisibleIdsContext.Provider>
-        )}
+        <VisibleIdsContext.Provider value={visibleIds}>
+          <FamilyCountContext.Provider value={familyCountByProductId}>
+            <DataTable
+              data={visibleRows}
+              columns={columns}
+              persistKey={`overview:table:${category}`}
+              maxHeight="max-h-[calc(100vh-340px)]"
+              sorting={tableSorting}
+              onSortingChange={handleTableSortingChange}
+              manualSorting
+              onColumnHeaderSort={handleColumnHeaderSort}
+              // WHY: Catalogs run 350-600 products. Fixed-height row virtualization
+              // renders only the viewport (+ overscan) instead of all rows. Row
+              // height matches the cells' tallest variants plus the row-level
+              // pipeline strip under the identity columns.
+              virtualize={{ rowHeight: 88, overscan: 10 }}
+            />
+          </FamilyCountContext.Provider>
+        </VisibleIdsContext.Provider>
       </div>
     </div>
   );

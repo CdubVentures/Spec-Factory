@@ -251,7 +251,7 @@
 /* ── Stepper ──────────────────────────────────────────────────────── */
 .sf-cc-stepper {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  grid-template-columns: repeat(9, 1fr);
   gap: 4px;
   min-width: 0;
   align-items: stretch;
@@ -294,6 +294,10 @@
 .sf-cc-stepper-seg-cancelled .sf-cc-stepper-bar-fill {
   background: rgb(var(--sf-color-text-subtle-rgb));
 }
+.sf-cc-stepper-seg-skipped .sf-cc-stepper-bar-fill {
+  background: rgb(var(--sf-color-text-subtle-rgb));
+  opacity: 0.55;
+}
 
 /* Label sits INSIDE the bar, centered over the fill+track overlap.
    Default (idle/pending): dark text over light grey track.
@@ -321,7 +325,8 @@
 .sf-cc-stepper-seg-active .sf-cc-stepper-label,
 .sf-cc-stepper-seg-done .sf-cc-stepper-label,
 .sf-cc-stepper-seg-error .sf-cc-stepper-label,
-.sf-cc-stepper-seg-cancelled .sf-cc-stepper-label {
+.sf-cc-stepper-seg-cancelled .sf-cc-stepper-label,
+.sf-cc-stepper-seg-skipped .sf-cc-stepper-label {
   color: var(--sf-token-on-accent-fg);
   text-shadow: 0 0 2px rgb(var(--sf-token-shadow-color-rgb) / 0.45), 0 0 1px rgb(var(--sf-token-shadow-color-rgb) / 0.4);
 }

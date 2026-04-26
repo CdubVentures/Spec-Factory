@@ -132,6 +132,54 @@ export interface ProductImageDependencyStatus {
   missing_keys: string[];
 }
 
+export interface ProductImageFinderSummaryRun {
+  run_number: number;
+  ran_at: string;
+  model: string;
+  fallback_used: boolean;
+  effort_level?: string;
+  access_mode?: string;
+  thinking?: boolean;
+  web_search?: boolean;
+  mode?: 'view' | 'hero';
+  loop_id?: string | null;
+  focus_view?: string | null;
+  started_at?: string | null;
+  duration_ms?: number | null;
+  selected: { images: ProductImageEntry[] };
+  response?: {
+    variant_id?: string | null;
+    variant_key?: string;
+    variant_label?: string;
+    variant_type?: 'color' | 'edition' | null;
+    mode?: 'view' | 'hero';
+    loop_id?: string | null;
+    focus_view?: string | null;
+    started_at?: string | null;
+    duration_ms?: number | null;
+    run_scope_key?: string;
+    discovery_log?: {
+      urls_checked?: string[];
+      queries_run?: string[];
+      notes?: string[];
+    };
+  };
+}
+
+export interface ProductImageFinderSummary {
+  product_id: string;
+  category: string;
+  images: Array<{ view: string; filename: string; variant_key: string; variant_id?: string }>;
+  image_count: number;
+  run_count: number;
+  last_ran_at: string;
+  runs: ProductImageFinderSummaryRun[];
+  historyCounts?: Record<string, { urls: number; queries: number }>;
+  carouselSettings?: CarouselSettings;
+  carousel_slots?: Record<string, Record<string, string | null>>;
+  dependencyStatus?: ProductImageDependencyStatus;
+}
+
 export interface ResolvedSlot {
   slot: string;
   filename: string | null;

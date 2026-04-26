@@ -23,3 +23,17 @@
   text-decoration: underline;
   outline: none;
 }
+
+.sf-ops-index-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  line-height: var(--sf-token-line-height-none);
+  vertical-align: middle;
+}
+
+.sf-ops-index-link:hover,
+.sf-ops-index-link:focus-visible {
+  text-decoration: none;
+}

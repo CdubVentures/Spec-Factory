@@ -61,6 +61,10 @@ function derivedFilename({ sourcePath, variant, sourceStat }) {
   return `${stem}-${fileFingerprint(sourceStat)}-${variant}.webp`;
 }
 
+function derivedStem(sourcePath) {
+  return path.basename(sourcePath, path.extname(sourcePath)).replace(/[^\w-]+/g, '-');
+}
+
 async function ensureDerivedImage({ sourcePath, cacheDir, variant, sourceStat }) {
   const config = IMAGE_VARIANTS[variant];
   if (!config || !isImagePath(sourcePath)) {
@@ -125,4 +129,16 @@ export async function serveLocalAsset({ sourcePath, cacheDir, variant: rawVarian
   res.writeHead(200, headers);
   fs.createReadStream(resolved.filePath).pipe(res);
   return true;
+}
+
+export function removeLocalAssetVariants({ sourcePath, cacheDir }) {
+  const stem = `${derivedStem(sourcePath)}-`;
+  for (const variant of Object.keys(IMAGE_VARIANTS)) {
+    const dir = path.join(cacheDir, variant);
+    if (!fs.existsSync(dir)) continue;
+    for (const entry of fs.readdirSync(dir)) {
+      if (!entry.startsWith(stem)) continue;
+      try { fs.rmSync(path.join(dir, entry), { force: true }); } catch { /* best effort */ }
+    }
+  }
 }

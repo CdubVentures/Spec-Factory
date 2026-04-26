@@ -19,6 +19,7 @@ import { resolveGlobalPrompt } from '../../core/llm/prompts/globalPromptRegistry
 import { buildPreviousDiscoveryBlock } from '../../core/finder/discoveryLog.js';
 import { buildSiblingVariantsPromptBlock } from '../../core/finder/siblingVariantsPromptFragment.js';
 import { buildIdentityWarning } from '../../core/llm/prompts/identityContext.js';
+import { buildCategoryContext } from '../../core/llm/prompts/categoryContext.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { productImageFinderResponseSchema } from './productImageSchema.js';
 import { formatProductImageIdentityFactsBlock } from './productImageIdentityDependencies.js';
@@ -716,6 +717,7 @@ export function resolveViewConfig(viewConfigSetting, category) {
  */
 // WHY: Default template for PIF view search. {{VARIABLE}} placeholders mark dynamic injection points.
 export const PIF_VIEW_DEFAULT_TEMPLATE = `Find high-resolution product images for: {{BRAND}} {{MODEL}} — {{VARIANT_DESC}}
+{{CATEGORY_CONTEXT}}
 
 {{IDENTITY_INTRO}}
 {{IDENTITY_WARNING}}
@@ -770,6 +772,7 @@ export function buildProductImageFinderPrompt({
   const baseModel = product.base_model || '';
   const model = product.model || '';
   const variant = product.variant || '';
+  const category = product.category || '';
 
   const queryModel = baseModel || model;
   const queryVariant = baseModel ? variant : '';
@@ -837,6 +840,7 @@ export function buildProductImageFinderPrompt({
   return resolvePromptTemplate(template, {
     BRAND: brand,
     MODEL: model,
+    CATEGORY_CONTEXT: buildCategoryContext(category),
     VARIANT_DESC: variantDesc,
     VARIANT_SUFFIX: variantSuffix,
     IDENTITY_INTRO: resolvePromptTemplate(resolveGlobalPrompt('identityIntro'), {
@@ -903,6 +907,7 @@ export function createProductImageFinderCallLlm(deps) {
     },
     user: JSON.stringify({
       brand: domainArgs.product?.brand || '',
+      category: domainArgs.product?.category || '',
       model: domainArgs.product?.model || '',
       base_model: domainArgs.product?.base_model || '',
       variant_label: domainArgs.variantLabel || '',
@@ -932,6 +937,7 @@ export function createProductImageFinderCallLlm(deps) {
  */
 // WHY: Default template for PIF hero search. {{VARIABLE}} placeholders mark dynamic injection points.
 export const PIF_HERO_DEFAULT_TEMPLATE = `{{HERO_INSTRUCTIONS}}
+{{CATEGORY_CONTEXT}}
 
 {{IDENTITY_INTRO}}
 {{IDENTITY_WARNING}}
@@ -961,6 +967,7 @@ export function buildHeroImageFinderPrompt({
   const brand = product.brand || '';
   const model = product.model || '';
   const variant = product.variant || '';
+  const category = product.category || '';
 
   const variantDesc = variantType === 'edition'
     ? `the "${variantLabel}" edition`
@@ -1029,6 +1036,7 @@ Do NOT use images from editorial review sites when they are original review phot
   return resolvePromptTemplate(template, {
     BRAND: brand,
     MODEL: model,
+    CATEGORY_CONTEXT: buildCategoryContext(category),
     VARIANT_SUFFIX: variantSuffix,
     IDENTITY_INTRO: resolvePromptTemplate(resolveGlobalPrompt('identityIntro'), {
       BRAND: brand, MODEL: model, VARIANT_SUFFIX: variantSuffix,
@@ -1075,6 +1083,7 @@ export function createHeroImageFinderCallLlm(deps) {
     },
     user: JSON.stringify({
       brand: domainArgs.product?.brand || '',
+      category: domainArgs.product?.category || '',
       model: domainArgs.product?.model || '',
       base_model: domainArgs.product?.base_model || '',
       variant_label: domainArgs.variantLabel || '',

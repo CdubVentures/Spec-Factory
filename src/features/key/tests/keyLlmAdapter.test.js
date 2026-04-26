@@ -91,12 +91,10 @@ function renderPrimary(fieldKey, fieldRule, overrides = {}) {
 // ── Template placeholder surface area ───────────────────────────────────
 
 test('default template contains every placeholder the builder injects', () => {
-  // CATEGORY + FAMILY_SIZE are optional placeholders (available in the
-  // variable contract for authors who want to use them in per-category
-  // overrides) but not present in the default template by design \u2014 redundant
-  // with IDENTITY_INTRO which already carries product identity.
+  // FAMILY_SIZE is an optional placeholder available to prompt authors.
+  // CATEGORY is part of the default prompt identity lock.
   const placeholders = [
-    '{{BRAND}}', '{{MODEL}}', '{{VARIANT_SUFFIX}}',
+    '{{BRAND}}', '{{MODEL}}', '{{VARIANT_SUFFIX}}', '{{CATEGORY}}',
     '{{IDENTITY_INTRO}}', '{{IDENTITY_WARNING}}',
     '{{PRIMARY_FIELD_KEY}}',
     '{{PRIMARY_FIELD_GUIDANCE}}',

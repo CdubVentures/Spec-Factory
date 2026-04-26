@@ -7,7 +7,12 @@ import { ReviewValueCell } from '../../../shared/ui/data-display/ReviewValueCell
 import { useScrollStore, resolveScrollPosition } from '../../../stores/scrollStore.ts';
 import { useReviewStore, useEditingValue } from '../state/reviewStore.ts';
 import { useGridPan } from '../hooks/useGridPan.ts';
-import { deriveReviewFieldRowActionState, type ReviewFieldRowActionKind } from '../selectors/reviewFieldRowActions.ts';
+import {
+  deriveReviewFieldRowActionState,
+  deriveReviewProductHeaderActionState,
+  type ReviewFieldRowActionKind,
+  type ReviewProductHeaderActionKind,
+} from '../selectors/reviewFieldRowActions.ts';
 import type { ReviewLayout, ProductReviewPayload, CellMode, ReviewLayoutRow } from '../../../types/review.ts';
 
 interface ReviewMatrixProps {
@@ -22,6 +27,8 @@ interface ReviewMatrixProps {
   category: string;
   onFieldRowAction?: (action: ReviewFieldRowActionKind, fieldKey: string) => void;
   fieldRowActionPending?: boolean;
+  onProductHeaderAction?: (action: ReviewProductHeaderActionKind, productId: string, productLabel: string) => void;
+  productHeaderActionPending?: boolean;
 }
 
 /** Reads editingValue from store — only this component re-renders per keystroke. */
@@ -153,7 +160,7 @@ function FieldHeaderCell({
         <button
           type="button"
           className={`sf-review-matrix-field-button ${hasActions ? 'sf-review-matrix-field-button-actionable' : ''}`}
-          title={row.label}
+          title={fieldRuleTitle}
           aria-label={`${row.label} field actions`}
           aria-haspopup={hasActions ? 'menu' : undefined}
           aria-expanded={hasActions ? open : undefined}
@@ -190,17 +197,134 @@ function FieldHeaderCell({
           </div>
         )}
       </div>
-      {row.field_rule.required ? (
-        <span
-          className="ml-auto inline-block w-2 h-2 rounded-full sf-review-matrix-required-dot flex-shrink-0 cursor-help"
-          title={fieldRuleTitle}
-        />
-      ) : row.field_rule.units ? (
-        <span
-          className="ml-auto inline-block w-1.5 h-1.5 rounded-full sf-review-matrix-optional-dot flex-shrink-0 cursor-help"
-          title={fieldRuleTitle}
-        />
-      ) : null}
+    </div>
+  );
+}
+
+function ProductHeaderActionIcon({ action }: { readonly action: ReviewProductHeaderActionKind }) {
+  if (action === 'unpublish-non-variant-keys') {
+    return (
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="sf-review-matrix-field-menu-icon" aria-hidden="true">
+        <path d="M3 8.5h10M6.5 5L3 8.5L6.5 12" />
+        <path d="M13 4v8" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="sf-review-matrix-field-menu-icon" aria-hidden="true">
+      <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4" />
+      <path d="M4 4l.667 10h6.666L12 4M6.75 6.5v5M9.25 6.5v5" />
+    </svg>
+  );
+}
+
+function productHeaderLabel(product: ProductReviewPayload): string {
+  const brand = String(product.identity.brand || '').trim();
+  const model = String(product.identity.model || '').trim();
+  const id = product.identity.id ? `#${product.identity.id}` : '';
+  return [brand, model, id].filter(Boolean).join(' ') || product.product_id;
+}
+
+interface ProductHeaderCellProps {
+  readonly product: ProductReviewPayload;
+  readonly left: number;
+  readonly width: number;
+  readonly height: number;
+  readonly dimmed: boolean;
+  readonly filledFields: number;
+  readonly totalFields: number;
+  readonly actions: readonly { readonly kind: ReviewProductHeaderActionKind; readonly label: string }[];
+  readonly onProductHeaderAction?: (action: ReviewProductHeaderActionKind, productId: string, productLabel: string) => void;
+  readonly actionPending: boolean;
+}
+
+function ProductHeaderCell({
+  product,
+  left,
+  width,
+  height,
+  dimmed,
+  filledFields,
+  totalFields,
+  actions,
+  onProductHeaderAction,
+  actionPending,
+}: ProductHeaderCellProps) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const label = productHeaderLabel(product);
+  const hasActions = actions.length > 0 && typeof onProductHeaderAction === 'function';
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function handlePointerDown(event: PointerEvent) {
+      if (event.target instanceof Node && menuRef.current?.contains(event.target)) return;
+      setOpen(false);
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div
+      className={`absolute top-0 sf-review-matrix-product-header px-1.5 py-1 text-center flex flex-col justify-center ${hasActions ? 'sf-review-matrix-product-header-has-actions' : ''} ${open ? 'sf-review-matrix-product-header-open' : ''} ${dimmed ? 'opacity-40 sf-review-matrix-product-header-dimmed' : ''}`}
+      style={{ width, left, height }}
+    >
+      {hasActions && (
+        <div ref={menuRef} className="sf-review-matrix-product-menu-root" onPointerDown={(event) => event.stopPropagation()}>
+          <button
+            type="button"
+            className="sf-review-matrix-product-menu-button"
+            aria-label={`${label} non-variant key actions`}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            onClick={(event) => {
+              event.stopPropagation();
+              setOpen((current) => !current);
+            }}
+          >
+            <MenuChevronIcon />
+          </button>
+          {open && (
+            <div className="sf-review-matrix-product-menu" role="menu">
+              {actions.map((action) => (
+                <button
+                  key={action.kind}
+                  type="button"
+                  role="menuitem"
+                  className={`sf-review-matrix-field-menu-item ${action.kind === 'delete-non-variant-keys' ? 'sf-review-matrix-field-menu-item-danger' : ''}`}
+                  disabled={actionPending}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onProductHeaderAction?.(action.kind, product.product_id, label);
+                    setOpen(false);
+                  }}
+                >
+                  <ProductHeaderActionIcon action={action.kind} />
+                  <span>{action.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      <div className="text-[11px] font-semibold truncate">{product.identity.brand}</div>
+      <div className="sf-text-caption sf-status-text-muted truncate">{product.identity.model}</div>
+      <div className="sf-text-nano sf-text-subtle font-mono truncate">
+        {product.identity.id ? `#${product.identity.id}` : '#--'} | {product.identity.identifier ? product.identity.identifier.slice(0, 6) : 'no-id'}
+      </div>
+      <div className="sf-text-nano sf-text-subtle flex items-center justify-center gap-1">
+        <span>{pct(product.metrics.confidence)}</span>
+        <span>|</span>
+        <span>{filledFields}/{totalFields}</span>
+      </div>
     </div>
   );
 }
@@ -217,6 +341,8 @@ export const ReviewMatrix = memo(function ReviewMatrix({
   category,
   onFieldRowAction,
   fieldRowActionPending = false,
+  onProductHeaderAction,
+  productHeaderActionPending = false,
 }: ReviewMatrixProps) {
   const rows = layout.rows;
   const parentRef = useRef<HTMLDivElement>(null);
@@ -283,6 +409,10 @@ export const ReviewMatrix = memo(function ReviewMatrix({
   }, [cellMode, activeCell, onStartEditing]);
 
   const totalColWidth = FIELD_COL_WIDTH + colVirtualizer.getTotalSize();
+  const productHeaderActionState = useMemo(
+    () => deriveReviewProductHeaderActionState({ rows }),
+    [rows],
+  );
 
   return (
     <Tooltip.Provider delayDuration={200}>
@@ -311,22 +441,19 @@ export const ReviewMatrix = memo(function ReviewMatrix({
                     return fs && fs.selected.confidence > 0;
                   }).length;
                   return (
-                    <div
+                    <ProductHeaderCell
                       key={p.product_id}
-                      className={`absolute top-0 sf-review-matrix-product-header px-1.5 py-1 text-center flex flex-col justify-center ${dimmed ? 'opacity-40 sf-review-matrix-product-header-dimmed' : ''}`}
-                      style={{ width: vCol.size, left: vCol.start, height: HEADER_HEIGHT }}
-                    >
-                      <div className="text-[11px] font-semibold truncate">{p.identity.brand}</div>
-                      <div className="sf-text-caption sf-status-text-muted truncate">{p.identity.model}</div>
-                      <div className="sf-text-nano sf-text-subtle font-mono truncate">
-                        {p.identity.id ? `#${p.identity.id}` : '#--'} | {p.identity.identifier ? p.identity.identifier.slice(0, 6) : 'no-id'}
-                      </div>
-                      <div className="sf-text-nano sf-text-subtle flex items-center justify-center gap-1">
-                        <span>{pct(p.metrics.confidence)}</span>
-                        <span>|</span>
-                        <span>{filledFields}/{totalFields}</span>
-                      </div>
-                    </div>
+                      product={p}
+                      left={vCol.start}
+                      width={vCol.size}
+                      height={HEADER_HEIGHT}
+                      dimmed={dimmed}
+                      filledFields={filledFields}
+                      totalFields={totalFields}
+                      actions={productHeaderActionState.actions}
+                      onProductHeaderAction={onProductHeaderAction}
+                      actionPending={productHeaderActionPending}
+                    />
                   );
                 })}
               </div>

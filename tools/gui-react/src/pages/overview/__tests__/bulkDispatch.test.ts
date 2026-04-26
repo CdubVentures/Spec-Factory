@@ -4,6 +4,7 @@ import { api } from '../../../api/client.ts';
 import { useOperationsStore, type Operation } from '../../../features/operations/state/operationsStore.ts';
 import {
   dispatchKfAll,
+  dispatchKfPipelineBucket,
   dispatchKfPickedKeys,
   dispatchPifDependencyRun,
   dispatchPifEval,
@@ -407,6 +408,67 @@ describe('Overview bulk dispatch contracts', () => {
     // Default axis order is difficulty,required_level,availability — both equal here, so
     // alphabetical field_key tiebreaker puts already_published before already_resolved.
     assert.deepEqual(calls.map((c) => c.fieldKey), ['already_published', 'already_resolved']);
+  });
+
+  it('dispatchKfPipelineBucket runs early keys without prompt dependencies', async () => {
+    (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
+      if (path.endsWith('/bundling-config')) return { sortAxisOrder: '' } as never;
+      if (path.endsWith('/summary')) {
+        return [
+          { field_key: 'reserved_key', difficulty: 'easy', required_level: 'mandatory', availability: 'always' },
+          { field_key: 'static_key', difficulty: 'easy', required_level: 'mandatory', availability: 'always', uses_variant_inventory: false, uses_pif_priority_images: false, product_image_dependent: false },
+          { field_key: 'variant_context', difficulty: 'easy', required_level: 'mandatory', availability: 'always', uses_variant_inventory: true, uses_pif_priority_images: false, product_image_dependent: false },
+          { field_key: 'pif_visual', difficulty: 'easy', required_level: 'mandatory', availability: 'always', uses_variant_inventory: false, uses_pif_priority_images: true, product_image_dependent: false },
+          { field_key: 'connection', difficulty: 'easy', required_level: 'mandatory', availability: 'always', uses_variant_inventory: true, uses_pif_priority_images: false, product_image_dependent: true },
+        ] as never;
+      }
+      throw new Error(`unexpected GET ${path}`);
+    };
+
+    const calls: BulkFireParams[] = [];
+    await dispatchKfPipelineBucket(
+      'mouse',
+      [product('p1')],
+      new Set(['reserved_key']),
+      'early',
+      fireRecorder(calls),
+      {
+        staggerMs: 0,
+        awaitOperationTerminal: async () => 'done',
+      },
+    );
+
+    assert.deepEqual(calls.map((call) => call.fieldKey), ['static_key']);
+  });
+
+  it('dispatchKfPipelineBucket runs contextual keys after upstream prompt context is ready', async () => {
+    (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
+      if (path.endsWith('/bundling-config')) return { sortAxisOrder: '' } as never;
+      if (path.endsWith('/summary')) {
+        return [
+          { field_key: 'static_key', difficulty: 'easy', required_level: 'mandatory', availability: 'always', uses_variant_inventory: false, uses_pif_priority_images: false, product_image_dependent: false },
+          { field_key: 'variant_context', difficulty: 'easy', required_level: 'mandatory', availability: 'always', uses_variant_inventory: true, uses_pif_priority_images: false, product_image_dependent: false },
+          { field_key: 'pif_visual', difficulty: 'easy', required_level: 'mandatory', availability: 'always', uses_variant_inventory: false, uses_pif_priority_images: true, product_image_dependent: false },
+          { field_key: 'connection', difficulty: 'easy', required_level: 'mandatory', availability: 'always', uses_variant_inventory: true, uses_pif_priority_images: false, product_image_dependent: true },
+        ] as never;
+      }
+      throw new Error(`unexpected GET ${path}`);
+    };
+
+    const calls: BulkFireParams[] = [];
+    await dispatchKfPipelineBucket(
+      'mouse',
+      [product('p1')],
+      new Set(),
+      'contextual',
+      fireRecorder(calls),
+      {
+        staggerMs: 0,
+        awaitOperationTerminal: async () => 'done',
+      },
+    );
+
+    assert.deepEqual(calls.map((call) => call.fieldKey), ['pif_visual', 'variant_context']);
   });
 });
 

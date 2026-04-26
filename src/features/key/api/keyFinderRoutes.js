@@ -63,6 +63,27 @@ function resolveProductRoot(config) {
   return config?.productRoot || defaultProductRoot();
 }
 
+const LEGACY_VARIANT_USAGE_ACTIVE_MODES = new Set(['default', 'append', 'override']);
+
+function ruleUsesVariantInventory(fieldRule = {}) {
+  const raw = fieldRule?.ai_assist?.variant_inventory_usage;
+  const cfg = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
+  if (typeof cfg.enabled === 'boolean') return cfg.enabled;
+  const legacyMode = String(cfg.mode || '').trim();
+  if (legacyMode === 'off') return false;
+  if (LEGACY_VARIANT_USAGE_ACTIVE_MODES.has(legacyMode)) return true;
+  return true;
+}
+
+function ruleUsesPifPriorityImages(fieldRule = {}) {
+  const raw = fieldRule?.ai_assist?.pif_priority_images;
+  if (typeof raw === 'boolean') return raw;
+  if (raw && typeof raw === 'object' && !Array.isArray(raw) && typeof raw.enabled === 'boolean') {
+    return raw.enabled;
+  }
+  return false;
+}
+
 // WHY: extracted so the route → runKeyFinder wiring is unit-testable. The load-
 // bearing bit is `policy: config?._llmPolicy`. Without that, runKeyFinder's
 // policy fallback (`config.keyFinderTiers`) is always undefined → tier cascade
@@ -382,6 +403,9 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       availability: String(rule?.availability || '').trim(),
       required_level: String(rule?.required_level || '').trim(),
       variant_dependent: rule?.variant_dependent === true,
+      product_image_dependent: rule?.product_image_dependent === true,
+      uses_variant_inventory: rule ? ruleUsesVariantInventory(rule) : false,
+      uses_pif_priority_images: rule ? ruleUsesPifPriorityImages(rule) : false,
       budget,
       raw_budget,
       bundle_pool: pool,

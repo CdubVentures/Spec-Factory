@@ -20,6 +20,9 @@ export interface KeyFinderSummaryRow {
   readonly availability: string;
   readonly required_level: string;
   readonly variant_dependent: boolean;
+  readonly product_image_dependent: boolean;
+  readonly uses_variant_inventory: boolean;
+  readonly uses_pif_priority_images: boolean;
   /** calcKeyBudget(fieldRule, familySize, settings).attempts — what Loop mode would spend. */
   readonly budget: number | null;
   /** Fractional raw budget (before ceil). attempts = ceil(raw_budget) so this value
@@ -153,6 +156,9 @@ export interface KeyEntry {
   readonly availability: string;
   readonly required_level: string;
   readonly variant_dependent: boolean;
+  readonly product_image_dependent: boolean;
+  readonly uses_variant_inventory: boolean;
+  readonly uses_pif_priority_images: boolean;
   readonly budget: number | null;
   readonly raw_budget: number | null;
   readonly in_flight_as_primary: boolean;

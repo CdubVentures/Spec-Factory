@@ -198,6 +198,62 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.equal(byKey.wireless_technology.group, 'connectivity');
   });
 
+  it('surfaces prompt dependency flags for dependency-driven overview scheduling', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'prompt-deps-prod'), { recursive: true });
+    const compiledRules = {
+      fields: {
+        default_context: {
+          field_key: 'default_context',
+          difficulty: 'easy',
+          availability: 'always',
+          required_level: 'mandatory',
+          ui: { label: 'Default Context' },
+        },
+        explicitly_static: {
+          field_key: 'explicitly_static',
+          difficulty: 'easy',
+          availability: 'always',
+          required_level: 'mandatory',
+          ai_assist: { variant_inventory_usage: { enabled: false } },
+          ui: { label: 'Static Key' },
+        },
+        visual_context: {
+          field_key: 'visual_context',
+          difficulty: 'easy',
+          availability: 'always',
+          required_level: 'mandatory',
+          ai_assist: {
+            variant_inventory_usage: { enabled: false },
+            pif_priority_images: { enabled: true },
+          },
+          ui: { label: 'Visual Context' },
+        },
+        image_dependency: {
+          field_key: 'image_dependency',
+          difficulty: 'easy',
+          availability: 'always',
+          required_level: 'mandatory',
+          product_image_dependent: true,
+          ui: { label: 'Image Dependency' },
+        },
+      },
+    };
+    const specDb = makeSpecDbStub({ compiledRules });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', 'prompt-deps-prod', 'summary'], null, 'GET', {}, {});
+
+    const byKey = Object.fromEntries(responses[0].body.map((r) => [r.field_key, r]));
+    assert.equal(byKey.default_context.uses_variant_inventory, true);
+    assert.equal(byKey.default_context.uses_pif_priority_images, false);
+    assert.equal(byKey.default_context.product_image_dependent, false);
+    assert.equal(byKey.explicitly_static.uses_variant_inventory, false);
+    assert.equal(byKey.visual_context.uses_pif_priority_images, true);
+    assert.equal(byKey.image_dependency.product_image_dependent, true);
+  });
+
   it('computes per-key budget via calcKeyBudget using finder settings + variantCount', async (t) => {
     t.after(cleanupTmp);
     fs.mkdirSync(path.join(PRODUCT_ROOT, 'budget-prod'), { recursive: true });

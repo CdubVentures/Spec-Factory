@@ -23,6 +23,9 @@ const STUBS = {
       }
       return { data: globalThis.__pifVariantResult, isLoading: false };
     }
+    export function useQueryClient() {
+      return { prefetchQuery: () => Promise.resolve() };
+    }
   `,
   '../../api/client.ts': 'export const api = { get: async () => ({}) };',
   '../../shared/ui/finder/ColorSwatch.tsx': `

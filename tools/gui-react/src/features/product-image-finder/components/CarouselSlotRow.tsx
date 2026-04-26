@@ -59,6 +59,7 @@ export const CarouselSlotRow = memo(function CarouselSlotRow({
         runNumber: (img as GalleryImage | null)?.run_number ?? null,
       };
     }), [filledSlots, imageByFilename, category, productId]);
+  const openSlotImage = openSlotFilename ? imageByFilename.get(openSlotFilename) : null;
 
   const handleDropOnSlot = useCallback((slotKey: string, filename: string) => {
     slotMutation.mutate({ variant_key: variantKey, variant_id: variantId, slot: slotKey, filename });
@@ -99,7 +100,7 @@ export const CarouselSlotRow = memo(function CarouselSlotRow({
       )}
       {openSlotFilename && (
         <SlotImageLightbox
-          src={imageServeUrl(category, productId, openSlotFilename)}
+          src={imageServeUrl(category, productId, openSlotFilename, openSlotImage?.bytes)}
           alt={openSlotFilename}
           onClose={() => setOpenSlotFilename(null)}
         />
