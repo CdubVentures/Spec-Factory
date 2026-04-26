@@ -117,29 +117,53 @@ function isProductImageDependent(rule = {}) {
   return rule?.product_image_dependent === true;
 }
 
-export function resolveProductImageIdentityFacts({
+function readDependencyRuleEntries(specDb) {
+  const fields = readCompiledRulesFields(specDb);
+  return Object.entries(fields)
+    .filter(([, rule]) => isProductImageDependent(rule))
+    .sort(([a], [b]) => a.localeCompare(b));
+}
+
+function resolveDependencyItem({ specDb, productId, product, variantId, fieldKey, rule }) {
+  const dbFact = readDbResolvedFact({ specDb, productId, fieldKey, variantId });
+  const rawValue = dbFact.found ? dbFact.value : readProductJsonFieldValue(product, fieldKey);
+  const ready = hasMeaningfulValue(rawValue);
+  return {
+    field_key: fieldKey,
+    label: labelForRule(fieldKey, rule),
+    value: ready ? stringifyValue(rawValue) : '',
+    ready,
+  };
+}
+
+export function resolveProductImageDependencyStatus({
   specDb,
   product = {},
   variant = {},
 } = {}) {
   const productId = product?.product_id || product?.id || '';
   const variantId = variant?.variant_id || variant?.variantId || '';
-  const fields = readCompiledRulesFields(specDb);
-  const facts = [];
+  const items = readDependencyRuleEntries(specDb).map(([fieldKey, rule]) =>
+    resolveDependencyItem({ specDb, productId, product, variantId, fieldKey, rule }));
+  const resolvedItems = items.filter((item) => item.ready);
+  const missingItems = items.filter((item) => !item.ready);
 
-  for (const [fieldKey, rule] of Object.entries(fields).sort(([a], [b]) => a.localeCompare(b))) {
-    if (!isProductImageDependent(rule)) continue;
-    const dbFact = readDbResolvedFact({ specDb, productId, fieldKey, variantId });
-    const rawValue = dbFact.found ? dbFact.value : readProductJsonFieldValue(product, fieldKey);
-    if (!hasMeaningfulValue(rawValue)) continue;
-    facts.push({
-      fieldKey,
-      label: labelForRule(fieldKey, rule),
-      value: stringifyValue(rawValue),
-    });
-  }
+  return {
+    ready: missingItems.length === 0,
+    required_keys: items.map((item) => item.field_key),
+    resolved_keys: resolvedItems.map((item) => item.field_key),
+    missing_keys: missingItems.map((item) => item.field_key),
+    items,
+    facts: resolvedItems.map((item) => ({
+      fieldKey: item.field_key,
+      label: item.label,
+      value: item.value,
+    })),
+  };
+}
 
-  return facts;
+export function resolveProductImageIdentityFacts(opts = {}) {
+  return resolveProductImageDependencyStatus(opts).facts;
 }
 
 export function formatProductImageIdentityFactsBlock(facts = [], { mode = 'discovery' } = {}) {
@@ -163,6 +187,6 @@ export function formatProductImageIdentityFactsBlock(facts = [], { mode = 'disco
   return [
     'Product image identity facts:',
     ...lines,
-    'Use these facts as search and source-identity filters for the exact product. Prefer sources and images matching them, but do not omit otherwise exact-product images when a fact is not visually testable from pixels.',
+    'Use these facts as required identity filters when they are source-visible or pixel-visible. Reject candidates that clearly conflict. If a fact is not visible from the image, use source page evidence before accepting the candidate.',
   ].join('\n');
 }

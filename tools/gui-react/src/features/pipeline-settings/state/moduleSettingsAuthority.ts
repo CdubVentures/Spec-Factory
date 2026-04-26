@@ -11,6 +11,7 @@
 
 import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
+import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract.ts';
 import {
   MODULE_SETTINGS_SCOPE_BY_ID,
   type ModuleSettingsModuleId,
@@ -42,6 +43,26 @@ function buildUrl(scope: ModuleSettingsScope, category: string, moduleId: string
 function buildQueryKey(scope: ModuleSettingsScope, category: string, moduleId: string) {
   const scopeSegment = scope === 'global' ? 'global' : category;
   return ['module-settings', scopeSegment, moduleId] as const;
+}
+
+function buildOptimisticModuleSettingsResponse(args: {
+  readonly category: string;
+  readonly moduleId: string;
+  readonly scope: ModuleSettingsScope;
+  readonly settings: Record<string, string>;
+  readonly previousData: ModuleSettingsResponse | undefined;
+}): ModuleSettingsResponse {
+  const { category, moduleId, scope, settings, previousData } = args;
+  return {
+    ...previousData,
+    category: scope === 'category' ? category : previousData?.category,
+    scope,
+    module: previousData?.module ?? moduleId,
+    settings: {
+      ...(previousData?.settings ?? {}),
+      ...settings,
+    },
+  };
 }
 
 /**
@@ -87,13 +108,29 @@ export function useModuleSettingsAuthority({
     enabled: scope === 'global' ? Boolean(moduleId) : Boolean(category && moduleId),
   });
 
-  const mutation = useMutation({
-    mutationFn: (settings: Record<string, string>) =>
-      api.put<ModuleSettingsResponse>(buildUrl(scope, category, moduleId), { settings }),
-    onSuccess: (result) => {
-      queryClient.setQueryData(queryKey, result);
-    },
-  });
+  const mutation = useMutation(
+    createSettingsOptimisticMutationContract<
+      Record<string, string>,
+      ModuleSettingsResponse,
+      ModuleSettingsResponse,
+      ModuleSettingsResponse
+    >({
+      queryClient,
+      queryKey,
+      mutationFn: (settings) =>
+        api.put<ModuleSettingsResponse>(buildUrl(scope, category, moduleId), { settings }),
+      toOptimisticData: (settings, previousData) =>
+        buildOptimisticModuleSettingsResponse({
+          category,
+          moduleId,
+          scope,
+          settings,
+          previousData,
+        }),
+      toAppliedData: (response) => response,
+      toPersistedResult: (response) => response,
+    }),
+  );
 
   return {
     settings: data?.settings ?? {},

@@ -85,6 +85,7 @@ export function buildKeyFinderCommonOpts({
   onPhaseChange = null,
   onLlmCallComplete = null,
   onPassengersRegistered = null,
+  forceSolo = false,
   // WHY: threaded through so the pill shape emitted by runKeyFinderLoop reaches
   // updateLoopProgress on the ops registry. Without this the Loop sidebar card
   // never renders publish/callBudget and the user sees no budget/target info.
@@ -109,6 +110,7 @@ export function buildKeyFinderCommonOpts({
     onPhaseChange,
     onLlmCallComplete,
     onPassengersRegistered,
+    forceSolo,
     onLoopProgress,
   };
 }
@@ -770,6 +772,8 @@ export function registerKeyFinderRoutes(ctx) {
         const body = await readJsonBody(req).catch(() => ({}));
         const fieldKey = String(body?.field_key || '').trim();
         const mode = String(body?.mode || 'run').trim();
+        const forceSolo = body?.force_solo === true || body?.forceSolo === true;
+        const isPifDependencyRun = String(body?.reason || '') === 'pif_dependency';
 
         if (!fieldKey) return jsonRes(res, 400, { error: 'field_key is required in POST body' });
         if (isReservedFieldKey(fieldKey)) {
@@ -833,6 +837,7 @@ export function registerKeyFinderRoutes(ctx) {
           emitArgs: {
             event: eventName,
             category,
+            domains: isPifDependencyRun ? ['key-finder', 'product-image-finder', 'review', 'product', 'publisher'] : null,
             entities: { productIds: [productId], fieldKeys: [fieldKey] },
             meta: { productId, field_key: fieldKey, fieldKey },
           },
@@ -840,6 +845,7 @@ export function registerKeyFinderRoutes(ctx) {
             const product = buildOrchestratorProduct({ productId, category, productRow });
             const commonOpts = buildKeyFinderCommonOpts({
               product, fieldKey, category, specDb, appDb, config,
+              forceSolo,
               logger, signal, broadcastWs,
               // Canonical telemetry bundle — maps the six standard callbacks
               // to the operations registry. Matches RDF / SKU / CEF shape.
@@ -857,6 +863,7 @@ export function registerKeyFinderRoutes(ctx) {
                   broadcastWs,
                   event: `${ROUTE_PREFIX}-run`,
                   category,
+                  domains: isPifDependencyRun ? ['key-finder', 'product-image-finder', 'review', 'product', 'publisher'] : null,
                   entities: { productIds: [productId], fieldKeys: [fieldKey, ...passengerFieldKeys] },
                   meta: { productId, field_key: fieldKey, fieldKey, passenger_field_keys: passengerFieldKeys, fieldKeys: [fieldKey, ...passengerFieldKeys], phase: 'registered' },
                 });

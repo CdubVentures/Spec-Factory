@@ -10,6 +10,7 @@ import type {
   ExtractionPluginEntry,
 } from '../../types.ts';
 import { statusBadgeClass, formatBytes, truncateUrl, formatMs, getRefetchInterval, METRIC_TIPS } from '../../helpers.ts';
+import { runtimeAssetUrl } from '../../assetUrls.ts';
 import { Tip } from '../../../../shared/ui/feedback/Tip.tsx';
 import { relativeTime } from '../../../../utils/formatting.ts';
 
@@ -93,10 +94,11 @@ function ArtifactRow({ pluginKey, entries, runId }: { pluginKey: string; entries
                 className="h-10 w-14 rounded sf-border-soft border overflow-hidden sf-row-hoverable transition-colors"
               >
                 <img
-                  src={`/api/v1/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(fname)}`}
+                  src={runtimeAssetUrl(runId, fname, { variant: 'thumb' })}
                   alt={fname}
                   className="w-full h-full object-cover"
                   loading="lazy"
+                  decoding="async"
                 />
               </button>
             ))}
@@ -125,9 +127,10 @@ function ArtifactRow({ pluginKey, entries, runId }: { pluginKey: string; entries
           <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             {isImage ? (
               <img
-                src={`/api/v1/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(previewFile)}`}
+                src={runtimeAssetUrl(runId, previewFile, { variant: 'preview' })}
                 alt={previewFile}
                 className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl"
+                decoding="async"
               />
             ) : (
               <video

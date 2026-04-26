@@ -116,6 +116,7 @@ const CAROUSEL_BUILDER_PHASE = Object.freeze({
         { name: 'VIEW_LINE', description: 'e.g. "View: \\"top\\" — Bird\'s-eye shot looking directly down..."', required: true },
         { name: 'PRODUCT_IMAGE_IDENTITY_FACTS', description: 'Resolved Field Studio product_image_dependent facts for this product/variant. Empty when no enabled facts are resolved.', required: false },
         { name: 'COUNT_LINE', description: 'e.g. "You are evaluating 4 candidate images for this view."', required: true },
+        { name: 'VARIANT_IDENTITY_GATE', description: 'Strict near-sibling variant rejection gate applied before view quality ranking.', required: true },
         { name: 'CRITERIA', description: 'Per-category/per-view eval criteria text inserted into the full prompt template', required: true },
       ], userMessageInfo: [
         { field: 'images[]', description: 'Base64-encoded thumbnail images as content parts (vision input)' },
@@ -125,6 +126,7 @@ const CAROUSEL_BUILDER_PHASE = Object.freeze({
         { name: 'IDENTITY', description: 'e.g. "Product: Logitech G502 X Plus — the \\"black\\" color variant"', required: true },
         { name: 'PRODUCT_IMAGE_IDENTITY_FACTS', description: 'Resolved Field Studio product_image_dependent facts for this product/variant. Empty when no enabled facts are resolved.', required: false },
         { name: 'COUNT_LINE', description: 'e.g. "You are evaluating 6 hero/marketing image candidates."', required: true },
+        { name: 'VARIANT_IDENTITY_GATE', description: 'Strict near-sibling variant rejection gate applied before hero quality ranking.', required: true },
         { name: 'CRITERIA', description: 'Per-category hero eval criteria text inserted into the full prompt template', required: true },
         { name: 'HERO_COUNT', description: 'e.g. "3" — from heroCount setting', required: true },
       ], userMessageInfo: [
@@ -220,6 +222,7 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
         { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
         { name: 'VARIANT_DESC', description: 'e.g. the "black" color variant — or the "COD BO6" edition', required: true, category: 'deterministic' },
         { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
+        { name: 'DISCOVERY_IDENTITY_GATE', description: 'Global exact-product/source-confidence/acceptance-checklist gate for PIF view discovery. Includes extra family and variant collision rules only when that context exists.', required: true, category: 'deterministic' },
         { name: 'VARIANT_TYPE_WORD', description: '"color" or "edition"', required: false, category: 'deterministic' },
         { name: 'PRIORITY_VIEWS', description: 'e.g. "PRIORITY (search first):\\n  1. \\"top\\" — Bird\'s-eye shot... (min 800w x 600h)\\n  2. \\"left\\" — Side profile..." — includes per-view min dimensions when viewQualityMap is set', required: true, category: 'deterministic' },
         { name: 'ADDITIONAL_VIEWS', description: 'e.g. "\\nADDITIONAL:\\n  - \\"bottom\\" — Underside view..." — empty when all views are priority. Also includes per-view min dimensions.', required: false, category: 'deterministic' },

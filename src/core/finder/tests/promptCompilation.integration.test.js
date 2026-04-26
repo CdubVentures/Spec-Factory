@@ -242,10 +242,10 @@ describe('every finder phase exposes prompt_templates for the LLM Config GUI', (
 
   test('PIF image prompt settings expose full-template required variables', () => {
     const expectedRequiredBySetting = {
-      viewPromptOverride: ['BRAND', 'MODEL', 'VARIANT_DESC', 'PRIORITY_VIEWS', 'ALL_VIEW_KEYS', 'IMAGE_REQUIREMENTS'],
+      viewPromptOverride: ['BRAND', 'MODEL', 'VARIANT_DESC', 'DISCOVERY_IDENTITY_GATE', 'PRIORITY_VIEWS', 'ALL_VIEW_KEYS', 'IMAGE_REQUIREMENTS'],
       heroPromptOverride: ['HERO_INSTRUCTIONS'],
-      evalPromptOverride: ['IDENTITY', 'VIEW_LINE', 'COUNT_LINE', 'CRITERIA'],
-      heroEvalPromptOverride: ['IDENTITY', 'COUNT_LINE', 'CRITERIA', 'HERO_COUNT'],
+      evalPromptOverride: ['IDENTITY', 'VIEW_LINE', 'COUNT_LINE', 'VARIANT_IDENTITY_GATE', 'CRITERIA'],
+      heroEvalPromptOverride: ['IDENTITY', 'COUNT_LINE', 'VARIANT_IDENTITY_GATE', 'CRITERIA', 'HERO_COUNT'],
     };
     const fullTemplateSettings = [
       ['image-finder', 'viewPromptOverride'],

@@ -2,7 +2,7 @@ import { useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import { useDataChangeMutation } from '../../data-change/index.js';
-import { useUiStore } from '../../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../../stores/uiCategoryStore.ts';
 import {
   useReviewStore, selectSelectedField, selectSelectedProductId,
   useActiveCell, useDrawerOpen, useCellMode, useEditingValue,
@@ -60,7 +60,7 @@ function candidateSourceLabel(candidate: ReviewCandidate | null | undefined): st
 }
 
 export function ReviewPage() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const { getLabel } = useFieldLabels(category);
   // State selectors (each re-renders only when its field changes)
   const activeCell = useActiveCell();

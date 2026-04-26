@@ -6,6 +6,7 @@ import type { CatalogRow } from '../../types/product.ts';
 import {
   useBulkFire,
   dispatchCefRun,
+  dispatchPifDependencyRun,
   dispatchPifLoop,
   dispatchPifEval,
   dispatchRdfRun,
@@ -91,6 +92,7 @@ export function waitForOperationsTerminal(
 
 export type PipelineStageKind =
   | 'cef'
+  | 'pif-dep'
   | 'pif-loop'
   | 'pif-eval'
   | 'rdf-run'
@@ -106,6 +108,7 @@ export interface PipelineStage {
 export const PIPELINE_STAGES: readonly PipelineStage[] = Object.freeze([
   { id: 'cef_1', label: 'CEF run (1 of 2)', kind: 'cef' },
   { id: 'cef_2', label: 'CEF run (2 of 2)', kind: 'cef' },
+  { id: 'pif_dep', label: 'PIF dependency keys', kind: 'pif-dep' },
   { id: 'pif_loop', label: 'PIF loop', kind: 'pif-loop' },
   { id: 'pif_eval', label: 'PIF eval', kind: 'pif-eval' },
   { id: 'rdf_run', label: 'RDF run', kind: 'rdf-run' },
@@ -152,6 +155,7 @@ export async function dispatchPipelineStage({
 }): Promise<BulkDispatchResult> {
   switch (stage.kind) {
     case 'cef': return dispatchCefRun(category, products, fire, options);
+    case 'pif-dep': return dispatchPifDependencyRun(category, products, fire, options);
     case 'pif-loop': return dispatchPifLoop(category, products, fire, options);
     case 'pif-eval': return dispatchPifEval(category, products, fire, options);
     case 'rdf-run': return dispatchRdfRun(category, products, fire, options);

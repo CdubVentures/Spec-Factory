@@ -4,7 +4,7 @@ import type {
   ScalarVariantProgressGen,
   KeyTierProgressGen,
 } from '../../../types/product.generated.ts';
-import { scoreToLetter, computeScoreCard } from '../scoreCard.ts';
+import { scoreToLetter, getScoreCard } from '../scoreCard.ts';
 import type {
   ColumnFilterState,
   PifFilter,
@@ -88,7 +88,7 @@ export function gradeBucketOf(letter: string): GradeBucket {
 
 export function matchesScore(row: CatalogRow, grades: readonly GradeBucket[]): boolean {
   if (grades.length === 0) return true;
-  const letter = computeScoreCard(row).letter;
+  const letter = getScoreCard(row).letter;
   return grades.includes(gradeBucketOf(letter));
 }
 
@@ -102,18 +102,21 @@ function fieldsRatio(row: CatalogRow): number {
   return row.fieldsTotal > 0 ? row.fieldsFilled / row.fieldsTotal : 0;
 }
 
+// WHY: Predicates ordered by cost-when-active, lightest first, so JS &&
+// short-circuits the cheap rejections before paying for variant scans.
+// matchesScore is cheap because Phase 1 cached computeScoreCard via WeakMap.
 export function matchesColumnFilters(row: CatalogRow, filters: ColumnFilterState): boolean {
   return (
     matchesBrand(row, filters.brand) &&
     matchesCef(row, filters.cef) &&
-    matchesPif(row, filters.pif) &&
-    matchesScalar(row.rdfVariants, filters.rdf) &&
-    matchesScalar(row.skuVariants, filters.sku) &&
-    matchesKeys(row, filters.keys) &&
-    matchesScore(row, filters.score) &&
     matchesRange(row.coverage, filters.coverage) &&
     matchesRange(row.confidence, filters.confidence) &&
-    matchesRange(row.fieldsFilled, filters.fields)
+    matchesRange(row.fieldsFilled, filters.fields) &&
+    matchesScore(row, filters.score) &&
+    matchesScalar(row.rdfVariants, filters.rdf) &&
+    matchesScalar(row.skuVariants, filters.sku) &&
+    matchesPif(row, filters.pif) &&
+    matchesKeys(row, filters.keys)
   );
 }
 

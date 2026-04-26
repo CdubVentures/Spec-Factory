@@ -157,7 +157,7 @@ export const PromptTemplateEditor = memo(function PromptTemplateEditor({
 
       {/* Missing required variables warning */}
       {missingRequired.length > 0 && (
-        <div className="px-3 py-2 rounded text-[11px] font-medium" style={{ background: 'var(--sf-warning-bg, #3a2e00)', color: 'var(--sf-warning-text, #fbbf24)' }}>
+        <div className="px-3 py-2 rounded text-[11px] font-medium" style={{ background: 'var(--sf-warning-bg)', color: 'var(--sf-warning-text)' }}>
           Missing required variable{missingRequired.length > 1 ? 's' : ''}: {missingRequired.map(v => `{{${v}}}`).join(', ')}
         </div>
       )}
@@ -245,7 +245,7 @@ const VariableRow = memo(function VariableRow({ variable }: VariableRowProps) {
       </span>
       <span className="sf-text-muted">
         {variable.description}
-        {variable.required && <span className="ml-1 font-bold" style={{ color: 'var(--sf-warning-text, #fbbf24)' }}>*</span>}
+        {variable.required && <span className="ml-1 font-bold" style={{ color: 'var(--sf-warning-text)' }}>*</span>}
       </span>
     </div>
   );
@@ -272,7 +272,7 @@ function VariableGroup({ title, subtitle, variables, defaultOpen = false }: Vari
         {variables.map((v) => <VariableRow key={v.name} variable={v} />)}
         {variables.some((v) => v.required) && (
           <div className="text-[10px] sf-text-muted mt-1">
-            <span className="font-bold" style={{ color: 'var(--sf-warning-text, #fbbf24)' }}>*</span> = required (removing will show a warning)
+            <span className="font-bold" style={{ color: 'var(--sf-warning-text)' }}>*</span> = required (removing will show a warning)
           </div>
         )}
       </div>

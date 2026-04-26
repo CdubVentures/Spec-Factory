@@ -93,6 +93,10 @@ test('SQL catalog builder: returns CatalogRow[] from SQL products table', async 
     fieldsFilled: 0,
     fieldsTotal: 0,
     cefRunCount: 0,
+    pifDependencyReady: true,
+    pifDependencyRequiredKeys: [],
+    pifDependencyResolvedKeys: [],
+    pifDependencyMissingKeys: [],
     pifVariants: [], // no variants on this product → empty array (different from "variants exist but no PIF run")
     skuVariants: [],
     rdfVariants: [],

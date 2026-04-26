@@ -18,15 +18,12 @@ export {
 } from './billingTransforms.ts';
 
 export {
-  useBillingSummaryQuery,
-  useBillingPriorSummaryQuery,
-  useBillingDailyQuery,
-  useBillingByModelQuery,
-  useBillingByReasonQuery,
-  useBillingByCategoryQuery,
+  useBillingDashboardQuery,
   useBillingEntriesQuery,
   useBillingModelCostsQuery,
 } from './billingQueries.ts';
+
+export type { BillingDashboardResponse } from './billingQueries.ts';
 
 export {
   buildModelCostDashboard,

@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
-import { useUiStore } from '../../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../../stores/uiCategoryStore.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePersistedJson, usePersistedTab } from '../../../stores/tabStore.ts';
 import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
@@ -20,10 +20,21 @@ import type { MutationResult, BulkPreviewStatus, BulkPreviewRow, BulkImportResul
 import { PRODUCT_STATUS_VALUES, cleanVariantToken, isFabricatedVariantToken, isHeaderRow } from './productHelpers.ts';
 import { relativeTime } from '../../../utils/formatting.ts';
 import { PRODUCT_TABLE_COLUMNS } from './productTableColumns.tsx';
+import {
+  cancelSharedProductCacheQueries,
+  patchSharedProductCaches,
+  removeSharedProductCaches,
+  restoreSharedProductCaches,
+  type SharedProductCacheSnapshot,
+} from './productCacheOptimism.ts';
+
+interface ProductCacheMutationContext {
+  readonly previousCaches: SharedProductCacheSnapshot;
+}
 
 // ── Component ──────────────────────────────────────────────────────
 export function ProductManager() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const queryClient = useQueryClient();
   // Drawer state
   const [drawerOpen, , setDrawerOpen] = usePersistedToggle(`catalog:products:drawerOpen:${category}`, false);
@@ -76,10 +87,11 @@ export function ProductManager() {
   );
   const [bulkResult, setBulkResult] = useState<BulkImportResult | null>(null);
   const hydratedEditPidRef = useRef('');
+  const productsQueryKey = ['catalog-products', category] as const;
 
   // ── Queries ────────────────────────────────────────────────────
   const { data: products = [], isLoading } = useQuery<CatalogProduct[]>({
-    queryKey: ['catalog-products', category],
+    queryKey: productsQueryKey,
     queryFn: () => api.get<CatalogProduct[]>(`/catalog/${category}/products`),
   });
 
@@ -92,22 +104,44 @@ export function ProductManager() {
   const addMut = useMutation({
     mutationFn: (body: { brand: string; base_model: string; variant: string }) =>
       api.post<MutationResult>(`/catalog/${category}/products`, body),
-    onSuccess: () => { invalidate(); closeDrawer(); },
+    onSuccess: () => { invalidate('catalog-product-add'); closeDrawer(); },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ pid, patch }: { pid: string; patch: Record<string, unknown> }) =>
       api.put<MutationResult>(`/catalog/${category}/products/${pid}`, patch),
+    onMutate: async ({ pid, patch }): Promise<ProductCacheMutationContext> => {
+      await cancelSharedProductCacheQueries(queryClient, category);
+      return {
+        previousCaches: patchSharedProductCaches(queryClient, category, pid, patch),
+      };
+    },
+    onError: (_error, _variables, context) => {
+      if (context) {
+        restoreSharedProductCaches(queryClient, category, context.previousCaches);
+      }
+    },
     onSuccess: () => {
-      invalidate();
+      invalidate('catalog-product-update');
       closeDrawer();
     },
   });
 
   const deleteMut = useMutation({
     mutationFn: (pid: string) => api.del<MutationResult>(`/catalog/${category}/products/${pid}`),
+    onMutate: async (pid): Promise<ProductCacheMutationContext> => {
+      await cancelSharedProductCacheQueries(queryClient, category);
+      return {
+        previousCaches: removeSharedProductCaches(queryClient, category, pid),
+      };
+    },
+    onError: (_error, _pid, context) => {
+      if (context) {
+        restoreSharedProductCaches(queryClient, category, context.previousCaches);
+      }
+    },
     onSuccess: () => {
-      invalidate();
+      invalidate('catalog-product-delete');
       closeDrawer();
     },
   });
@@ -116,7 +150,7 @@ export function ProductManager() {
     mutationFn: (payload: { brand: string; rows: Array<{ base_model: string; variant: string }> }) =>
       api.post<BulkImportResult>(`/catalog/${category}/products/bulk`, payload),
     onSuccess: (data) => {
-      invalidate();
+      invalidate('catalog-bulk-add');
       setBulkResult(data);
       if ((data?.created ?? 0) > 0) {
         setTimeout(() => setBulkResult(null), 10000);
@@ -124,8 +158,8 @@ export function ProductManager() {
     },
   });
 
-  function invalidate() {
-    invalidateFieldRulesQueries(queryClient, category);
+  function invalidate(event: string) {
+    invalidateFieldRulesQueries(queryClient, category, { event });
   }
 
   // ── Drawer helpers ─────────────────────────────────────────────

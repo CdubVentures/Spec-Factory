@@ -125,6 +125,13 @@ export interface CarouselSettings {
   viewBudget?: string[];
 }
 
+export interface ProductImageDependencyStatus {
+  ready: boolean;
+  required_keys: string[];
+  resolved_keys: string[];
+  missing_keys: string[];
+}
+
 export interface ResolvedSlot {
   slot: string;
   filename: string | null;
@@ -136,6 +143,8 @@ export interface CarouselSlide {
   slotLabel: string;
   source: 'user' | 'eval';
   src: string;
+  thumbSrc?: string;
+  fullSrc?: string;
   bytes: number;
   width: number;
   height: number;
@@ -199,6 +208,7 @@ export interface ProductImageFinderResult {
   carouselSettings?: CarouselSettings;
   carousel_slots?: Record<string, Record<string, string | null>>;
   evaluations?: EvalRecord[];
+  dependencyStatus?: ProductImageDependencyStatus;
 }
 
 /** 202 Accepted response — returned immediately by fire-and-forget POST handlers. */

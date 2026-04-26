@@ -30,7 +30,7 @@
 /* Empty state — dashed outline, muted dash glyph */
 .sf-conf-diamond-empty polygon {
   fill: transparent;
-  stroke: rgba(130, 140, 150, 0.55);
+  stroke: rgb(var(--sf-color-text-subtle-rgb) / 0.55);
   stroke-dasharray: 3 2;
 }
 .sf-conf-diamond-empty .sf-conf-diamond-text {

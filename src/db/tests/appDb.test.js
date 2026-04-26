@@ -608,6 +608,40 @@ describe('AppDb — billing getBillingRollup', () => {
     const rollup = db.getBillingRollup('2026-04');
     assert.equal(rollup.totals.calls, 1);
   });
+
+  it('default call (no options) computes all 5 buckets', () => {
+    db.insertBillingEntry(makeBillingEntry({ day: '2026-04-10', category: 'mouse', product_id: 'prod-1', provider: 'openai', model: 'gpt-5', reason: 'extract' }));
+    const rollup = db.getBillingRollup('2026-04');
+    assert.ok(rollup.by_day['2026-04-10']);
+    assert.ok(rollup.by_category['mouse']);
+    assert.ok(rollup.by_product['prod-1']);
+    assert.ok(rollup.by_model['openai:gpt-5']);
+    assert.ok(rollup.by_reason['extract']);
+  });
+
+  it('buckets option filters which bucket queries run', () => {
+    db.insertBillingEntry(makeBillingEntry({ day: '2026-04-10', category: 'mouse', product_id: 'prod-1', provider: 'openai', model: 'gpt-5', reason: 'extract' }));
+    const rollup = db.getBillingRollup('2026-04', '', {}, { buckets: new Set(['by_model']) });
+    // Requested bucket is populated.
+    assert.ok(rollup.by_model['openai:gpt-5']);
+    // Unrequested buckets are empty objects (not undefined).
+    assert.deepEqual(rollup.by_day, {});
+    assert.deepEqual(rollup.by_category, {});
+    assert.deepEqual(rollup.by_product, {});
+    assert.deepEqual(rollup.by_reason, {});
+    // Totals always computed (the dashboard summary needs them).
+    assert.equal(rollup.totals.calls, 1);
+  });
+
+  it('buckets option supports multiple buckets', () => {
+    db.insertBillingEntry(makeBillingEntry({ day: '2026-04-10', category: 'mouse', product_id: 'prod-1', provider: 'openai', model: 'gpt-5', reason: 'extract' }));
+    const rollup = db.getBillingRollup('2026-04', '', {}, { buckets: new Set(['by_model', 'by_reason', 'by_category']) });
+    assert.ok(rollup.by_model['openai:gpt-5']);
+    assert.ok(rollup.by_reason['extract']);
+    assert.ok(rollup.by_category['mouse']);
+    assert.deepEqual(rollup.by_day, {});
+    assert.deepEqual(rollup.by_product, {});
+  });
 });
 
 describe('AppDb — billing getBillingEntriesForMonth', () => {

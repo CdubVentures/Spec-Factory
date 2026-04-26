@@ -1,13 +1,19 @@
-import { useUiStore } from '../../stores/uiStore.ts';
+import { memo } from 'react';
+import { useShallow } from 'zustand/react/shallow';
+import { useUiCategoryStore } from '../../stores/uiCategoryStore.ts';
+import { selectSidebarCategoryState } from '../../stores/uiStoreSelectors.ts';
 import { useRuntimeStore } from '../../stores/runtimeStore.ts';
 import { OperationsTracker } from '../../features/operations/index.ts';
 
 const selectCls = 'w-full px-2 py-1.5 text-sm border rounded sf-sidebar-control sf-text-primary';
 
-export function Sidebar() {
-  const category = useUiStore((s) => s.category);
-  const categories = useUiStore((s) => s.categories);
-  const setCategory = useUiStore((s) => s.setCategory);
+// WHY: Memoized so AppShell re-renders (theme panel toggle, settings save,
+// etc.) don't cascade into the sidebar. Sidebar already manages its own
+// subscriptions to category + processStatus.
+export const Sidebar = memo(function SidebarInner() {
+  const { category, categories, setCategory } = useUiCategoryStore(
+    useShallow(selectSidebarCategoryState),
+  );
   const processStatus = useRuntimeStore((s) => s.processStatus);
 
   return (
@@ -40,4 +46,4 @@ export function Sidebar() {
       </div>
     </aside>
   );
-}
+});

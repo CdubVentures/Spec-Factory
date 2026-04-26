@@ -234,6 +234,22 @@ html[data-sf-theme-mode='dark'] {
   --sf-token-consumer-llm-bg: rgba(168, 85, 247, 0.18);
   --sf-token-consumer-llm-fg: #f0abfc;
   --sf-token-consumer-llm-border: rgba(168, 85, 247, 0.40);
+  /* Provider palette dark-mode: brighter fg, slightly stronger bg/border for contrast. */
+  --sf-token-provider-google-fg:     rgb(147 197 253);
+  --sf-token-provider-google-bg:     rgb(59 130 246 / 0.10);
+  --sf-token-provider-google-border: rgb(59 130 246 / 0.28);
+  --sf-token-provider-bing-fg:       rgb(103 232 249);
+  --sf-token-provider-bing-bg:       rgb(6 182 212 / 0.10);
+  --sf-token-provider-bing-border:   rgb(6 182 212 / 0.28);
+  --sf-token-provider-brave-fg:      rgb(253 224 71);
+  --sf-token-provider-brave-bg:      rgb(245 158 11 / 0.10);
+  --sf-token-provider-brave-border:  rgb(245 158 11 / 0.28);
+  --sf-token-provider-serper-fg:     rgb(94 234 212);
+  --sf-token-provider-serper-bg:     rgb(20 184 166 / 0.10);
+  --sf-token-provider-serper-border: rgb(20 184 166 / 0.28);
+  --sf-token-provider-unknown-fg:    rgb(156 163 175);
+  --sf-token-provider-unknown-bg:    rgb(156 163 175 / 0.08);
+  --sf-token-provider-unknown-border: rgb(156 163 175 / 0.20);
   --sf-color-surface-rgb: 10 19 48;
   --sf-color-surface-elevated-rgb: 17 31 65;
   --sf-color-panel-rgb: 13 24 52;
@@ -1848,6 +1864,23 @@ html[data-sf-radius] {
   --sf-token-tier-sources-bg:       #7c3aed; --sf-token-tier-sources-fg:       #ffffff;
   --sf-token-tier-groups-bg:        #f59e0b; --sf-token-tier-groups-fg:        #ffffff;
   --sf-token-tier-single-bg:        #059669; --sf-token-tier-single-fg:        #ffffff;
+  /* Search-provider palette \u2014 each provider's identity color set, light defaults.
+     Themable per theme; dark mode overridden in the theme-mode-dark block. */
+  --sf-token-provider-google-fg:     rgb(29 78 216);
+  --sf-token-provider-google-bg:     rgb(59 130 246 / 0.06);
+  --sf-token-provider-google-border: rgb(59 130 246 / 0.21);
+  --sf-token-provider-bing-fg:       rgb(8 145 178);
+  --sf-token-provider-bing-bg:       rgb(6 182 212 / 0.06);
+  --sf-token-provider-bing-border:   rgb(6 182 212 / 0.21);
+  --sf-token-provider-brave-fg:      rgb(146 64 14);
+  --sf-token-provider-brave-bg:      rgb(245 158 11 / 0.06);
+  --sf-token-provider-brave-border:  rgb(245 158 11 / 0.21);
+  --sf-token-provider-serper-fg:     rgb(15 118 110);
+  --sf-token-provider-serper-bg:     rgb(20 184 166 / 0.06);
+  --sf-token-provider-serper-border: rgb(20 184 166 / 0.21);
+  --sf-token-provider-unknown-fg:    rgb(107 114 128);
+  --sf-token-provider-unknown-bg:    rgb(107 114 128 / 0.06);
+  --sf-token-provider-unknown-border: rgb(107 114 128 / 0.18);
 }
 
 /* ── Scrollbars (theme-aware) ── */

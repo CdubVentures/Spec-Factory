@@ -10,8 +10,17 @@ import {
   type ExpandedState,
   type Row,
 } from '@tanstack/react-table';
-import { useState, useCallback, useEffect, useMemo, memo, Fragment, type ReactNode } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { useState, useCallback, useEffect, useMemo, useRef, memo, Fragment, type ReactNode } from 'react';
 import { resolvePersistedExpandMap, useTabStore } from '../../../stores/tabStore';
+
+/** Opt-in fixed-height row virtualization. Mutually exclusive with `renderExpandedRow`. */
+export interface DataTableVirtualizeOptions {
+  /** Fixed pixel height per row. Caller is responsible for matching CSS. */
+  rowHeight: number;
+  /** Number of rows to render outside the viewport. Defaults to 8. */
+  overscan?: number;
+}
 
 interface DataTableProps<T> {
   data: T[];
@@ -36,6 +45,16 @@ interface DataTableProps<T> {
   manualSorting?: boolean;
   /** Optional header-click hook for custom sort cycles. */
   onColumnHeaderSort?: (columnId: string) => void;
+  /**
+   * Opt-in fixed-height row virtualization. Renders only the rows visible in
+   * the viewport plus an overscan buffer; surrounding spacer rows preserve
+   * scrollbar geometry.
+   *
+   * Requires fixed row height (caller's responsibility to match CSS).
+   * Mutually exclusive with `renderExpandedRow` — combining them throws in
+   * development to surface the conflict instead of silently breaking layout.
+   */
+  virtualize?: DataTableVirtualizeOptions;
 }
 
 interface PersistedDataTableState {
@@ -145,7 +164,14 @@ function DataTableInner<T>({
   onSortingChange: controlledOnSortingChange,
   manualSorting = false,
   onColumnHeaderSort,
+  virtualize,
 }: DataTableProps<T>) {
+  // WHY: Virtualization assumes fixed row height; expandable rows have
+  // variable height. Combining them silently breaks scroll geometry. Surface
+  // the conflict at dev time rather than ship a broken table.
+  if (virtualize && renderExpandedRow) {
+    throw new Error('DataTable: `virtualize` and `renderExpandedRow` are mutually exclusive — virtualization requires fixed row height.');
+  }
   const initialSessionState = useMemo(
     () => readDataTableSessionState(persistKey),
     [persistKey],
@@ -234,6 +260,25 @@ function DataTableInner<T>({
     ? table.getVisibleFlatColumns().length
     : columns.length;
 
+  // WHY: Virtualizer needs the scroll container as its ref. Always create the
+  // ref + virtualizer (even when virtualize is unset) so the hook order is
+  // stable across renders; we just don't read its output unless virtualize is
+  // active. count=0 keeps the off-path nearly free.
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const allRows = table.getRowModel().rows;
+  const virtualizer = useVirtualizer({
+    count: virtualize ? allRows.length : 0,
+    getScrollElement: () => scrollRef.current,
+    estimateSize: () => virtualize?.rowHeight ?? 0,
+    overscan: virtualize?.overscan ?? 8,
+  });
+  const virtualItems = virtualize ? virtualizer.getVirtualItems() : [];
+  const totalSize = virtualize ? virtualizer.getTotalSize() : 0;
+  const paddingTop = virtualize && virtualItems.length > 0 ? virtualItems[0].start : 0;
+  const paddingBottom = virtualize && virtualItems.length > 0
+    ? totalSize - virtualItems[virtualItems.length - 1].end
+    : 0;
+
   return (
     <div>
       {searchable && (
@@ -245,7 +290,7 @@ function DataTableInner<T>({
           className="sf-input sf-primitive-input sf-table-search-input mb-2 w-full max-w-xs"
         />
       )}
-      <div className={`sf-table-shell sf-primitive-table-shell overflow-auto ${maxHeight}`}>
+      <div ref={scrollRef} className={`sf-table-shell sf-primitive-table-shell overflow-auto ${maxHeight}`}>
         <table className="min-w-full text-sm" style={{ tableLayout: 'fixed' }}>
           <colgroup>
             {table.getVisibleFlatColumns().map((col) => {
@@ -285,41 +330,80 @@ function DataTableInner<T>({
             ))}
           </thead>
           <tbody className="divide-y divide-sf-border-default">
-            {table.getRowModel().rows.map((row) => {
-              const isExpanded = row.getIsExpanded();
-              const expandedContent = isExpanded && renderExpandedRow ? renderExpandedRow(row.original) : null;
-              return (
-                <Fragment key={row.id}>
-                  <tr
-                    className={`sf-table-row ${onRowClick || onCellClick ? 'cursor-pointer' : ''} ${getRowClassName?.(row.original) || ''}`}
-                    onClick={onCellClick ? undefined : () => onRowClick?.(row.original)}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <td
-                        key={cell.id}
-                        className="px-2 py-1.5 whitespace-nowrap overflow-hidden"
-                        onClick={onCellClick ? (e) => {
-                          e.stopPropagation();
-                          onCellClick(row.original, cell.column.id, row.index);
-                        } : undefined}
-                      >
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
+            {virtualize ? (
+              <>
+                {paddingTop > 0 && (
+                  <tr aria-hidden="true">
+                    <td colSpan={totalVisibleCols} style={{ height: paddingTop, padding: 0, border: 0 }} />
                   </tr>
-                  {expandedContent && (
-                    <tr className="sf-table-expanded-row">
-                      <td colSpan={totalVisibleCols} className="px-3 py-2">
-                        {expandedContent}
-                      </td>
+                )}
+                {virtualItems.map((virtualRow) => {
+                  const row = allRows[virtualRow.index];
+                  return (
+                    <tr
+                      key={row.id}
+                      className={`sf-table-row ${onRowClick || onCellClick ? 'cursor-pointer' : ''} ${getRowClassName?.(row.original) || ''}`}
+                      style={{ height: virtualize.rowHeight }}
+                      onClick={onCellClick ? undefined : () => onRowClick?.(row.original)}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={cell.id}
+                          className="px-2 py-1.5 whitespace-nowrap overflow-hidden"
+                          onClick={onCellClick ? (e) => {
+                            e.stopPropagation();
+                            onCellClick(row.original, cell.column.id, row.index);
+                          } : undefined}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
                     </tr>
-                  )}
-                </Fragment>
-              );
-            })}
+                  );
+                })}
+                {paddingBottom > 0 && (
+                  <tr aria-hidden="true">
+                    <td colSpan={totalVisibleCols} style={{ height: paddingBottom, padding: 0, border: 0 }} />
+                  </tr>
+                )}
+              </>
+            ) : (
+              allRows.map((row) => {
+                const isExpanded = row.getIsExpanded();
+                const expandedContent = isExpanded && renderExpandedRow ? renderExpandedRow(row.original) : null;
+                return (
+                  <Fragment key={row.id}>
+                    <tr
+                      className={`sf-table-row ${onRowClick || onCellClick ? 'cursor-pointer' : ''} ${getRowClassName?.(row.original) || ''}`}
+                      onClick={onCellClick ? undefined : () => onRowClick?.(row.original)}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <td
+                          key={cell.id}
+                          className="px-2 py-1.5 whitespace-nowrap overflow-hidden"
+                          onClick={onCellClick ? (e) => {
+                            e.stopPropagation();
+                            onCellClick(row.original, cell.column.id, row.index);
+                          } : undefined}
+                        >
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                    {expandedContent && (
+                      <tr className="sf-table-expanded-row">
+                        <td colSpan={totalVisibleCols} className="px-3 py-2">
+                          {expandedContent}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })
+            )}
           </tbody>
         </table>
-        {table.getRowModel().rows.length === 0 && (
+        {allRows.length === 0 && (
           <div className="sf-table-empty-state text-center py-8 text-sm">No data</div>
         )}
       </div>

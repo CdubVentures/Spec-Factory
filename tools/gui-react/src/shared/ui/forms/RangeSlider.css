@@ -21,7 +21,7 @@
   appearance: none;
   width: 96px;
   height: 4px;
-  background: var(--sf-token-border, #e5e9ef);
+  background: var(--sf-token-border);
   border-radius: var(--sf-token-radius-xs);
   outline: none;
   cursor: pointer;
@@ -34,7 +34,7 @@
 }
 
 .sf-range-slider-input:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sf-token-accent, #4263eb) 35%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--sf-token-accent) 35%, transparent);
 }
 
 /* Webkit thumb */
@@ -44,8 +44,8 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--sf-token-accent, #4263eb);
-  border: 2px solid var(--sf-token-surface, #fff);
+  background: var(--sf-token-accent);
+  border: 2px solid var(--sf-token-surface);
   box-shadow: 0 1px 2px rgb(var(--sf-token-shadow-color-rgb) / 0.15);
   cursor: pointer;
   transition: transform 80ms ease;
@@ -59,8 +59,8 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--sf-token-accent, #4263eb);
-  border: 2px solid var(--sf-token-surface, #fff);
+  background: var(--sf-token-accent);
+  border: 2px solid var(--sf-token-surface);
   box-shadow: 0 1px 2px rgb(var(--sf-token-shadow-color-rgb) / 0.15);
   cursor: pointer;
 }
@@ -73,8 +73,8 @@
   height: 18px;
   padding: 0 5px;
   border-radius: var(--sf-token-radius-pill, 9px);
-  background: var(--sf-token-surface-alt, #f4f6f9);
-  border: 1px solid var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
+  background: var(--sf-token-surface-alt);
+  border: 1px solid var(--sf-token-border-soft, var(--sf-token-border));
   font-size: var(--sf-token-font-size-caption);
   font-weight: 700;
   font-variant-numeric: tabular-nums;

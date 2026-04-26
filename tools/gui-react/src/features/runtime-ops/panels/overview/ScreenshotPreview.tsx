@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { WorkerScreenshot } from '../../types.ts';
 import { formatBytes } from '../../helpers.ts';
+import { runtimeAssetUrl } from '../../assetUrls.ts';
 
 interface ScreenshotPreviewProps {
   screenshot: WorkerScreenshot;
@@ -10,7 +11,8 @@ interface ScreenshotPreviewProps {
 export function ScreenshotPreview({ screenshot, runId }: ScreenshotPreviewProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const src = `/api/v1/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(screenshot.filename)}`;
+  const thumbSrc = runtimeAssetUrl(runId, screenshot.filename, { variant: 'thumb' });
+  const previewSrc = runtimeAssetUrl(runId, screenshot.filename, { variant: 'preview' });
 
   return (
     <>
@@ -28,10 +30,11 @@ export function ScreenshotPreview({ screenshot, runId }: ScreenshotPreviewProps)
             </div>
           )}
           <img
-            src={src}
+            src={thumbSrc}
             alt={screenshot.filename}
             className="w-full h-full object-cover"
             loading="lazy"
+            decoding="async"
             onLoad={() => setIsLoading(false)}
             onError={() => setIsLoading(false)}
           />
@@ -48,9 +51,10 @@ export function ScreenshotPreview({ screenshot, runId }: ScreenshotPreviewProps)
         >
           <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
             <img
-              src={src}
+              src={previewSrc}
               alt={screenshot.filename}
               className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl"
+              decoding="async"
             />
             <div className="absolute bottom-0 left-0 right-0 sf-overlay-button-strong-bg sf-overlay-text-strong text-xs px-3 py-2 rounded flex items-center justify-between">
               <span className="font-mono">{screenshot.filename}</span>
@@ -69,4 +73,3 @@ export function ScreenshotPreview({ screenshot, runId }: ScreenshotPreviewProps)
     </>
   );
 }
-

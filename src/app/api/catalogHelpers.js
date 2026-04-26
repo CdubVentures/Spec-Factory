@@ -1,5 +1,6 @@
 import { isReservedFieldKey } from '../../core/finder/finderExclusions.js';
 import { isConcreteEvidence } from '../../features/key/index.js';
+import { resolveProductImageDependencyStatus } from '../../features/product-image/productImageIdentityDependencies.js';
 
 function assertFunction(name, value) {
   if (typeof value !== 'function') {
@@ -185,6 +186,23 @@ function buildKeyTierProgress(specDb, productId, gateKnobs) {
   return KEY_TIER_ORDER.map((t) => tiers[t]);
 }
 
+function buildPifDependencyStatus(specDb, category, productRow) {
+  const status = resolveProductImageDependencyStatus({
+    specDb,
+    product: {
+      ...productRow,
+      product_id: productRow.product_id,
+      category,
+    },
+  });
+  return {
+    pifDependencyReady: status.ready,
+    pifDependencyRequiredKeys: status.required_keys,
+    pifDependencyResolvedKeys: status.resolved_keys,
+    pifDependencyMissingKeys: status.missing_keys,
+  };
+}
+
 // Concrete-gate knob pair — read once per catalog refresh (category-scoped),
 // shared across all products. Mirrors readBundlingSettings in keyFinderRoutes.
 function readKeyFinderGateKnobs(specDb) {
@@ -257,6 +275,7 @@ function buildCatalogFromSql({ specDb, cleanVariant, category }) {
     const skuVariants = buildScalarVariants(specDb, pid, 'sku');
     const rdfVariants = buildScalarVariants(specDb, pid, 'release_date');
     const keyTierProgress = buildKeyTierProgress(specDb, pid, keyGateKnobs);
+    const pifDependencyStatus = buildPifDependencyStatus(specDb, category, row);
 
     seen.set(pid, {
       productId: pid,
@@ -273,6 +292,7 @@ function buildCatalogFromSql({ specDb, cleanVariant, category }) {
       fieldsFilled: fieldKeysWithData.size,
       fieldsTotal: totalFieldCount,
       cefRunCount: cefRuns.length,
+      ...pifDependencyStatus,
       pifVariants,
       skuVariants,
       rdfVariants,

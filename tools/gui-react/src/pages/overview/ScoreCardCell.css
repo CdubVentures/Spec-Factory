@@ -73,5 +73,5 @@
 .sf-scc-pill-a { --sf-scc-tone: var(--sf-token-state-success-fg); }
 .sf-scc-pill-b { --sf-scc-tone: var(--sf-token-accent); }
 .sf-scc-pill-c { --sf-scc-tone: var(--sf-token-state-warning-fg); }
-.sf-scc-pill-d { --sf-scc-tone: var(--sf-token-state-grade-d-fg, #fd7e14); }
+.sf-scc-pill-d { --sf-scc-tone: var(--sf-token-state-grade-d-fg); }
 .sf-scc-pill-f { --sf-scc-tone: var(--sf-token-state-error-fg); }

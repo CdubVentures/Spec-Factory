@@ -136,8 +136,8 @@ export async function createRuntimeOpsRunListHarness({
             },
           };
         `,
-        '../../../stores/uiStore': `
-          export function useUiStore(selector) {
+        '../../../stores/uiCategoryStore': `
+          export function useUiCategoryStore(selector) {
             return selector({ category: globalThis.__runtimeOpsRunQueryHarness.category });
           }
         `,

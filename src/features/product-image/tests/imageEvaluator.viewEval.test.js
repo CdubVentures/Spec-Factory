@@ -201,6 +201,17 @@ describe('buildViewEvalPrompt', () => {
     assert.ok(lower.includes('usable_as_carousel_extra'));
     assert.ok(lower.includes('query intent'));
   });
+
+  it('rejects visually distinct sibling variants before ranking view quality', () => {
+    const result = buildViewEvalPrompt(defaults);
+    const lower = result.toLowerCase();
+
+    assert.ok(lower.includes('variant identity gate'));
+    assert.ok(lower.includes('same model is not enough'));
+    assert.ok(lower.includes('visually distinct sibling'));
+    assert.ok(lower.includes('wrong_product'));
+    assert.ok(lower.includes('trust the pixels'));
+  });
 });
 
 /* ── buildHeroSelectionPrompt ───────────────────────────────────── */
@@ -340,6 +351,17 @@ describe('buildHeroSelectionPrompt', () => {
       'must require correct product identity');
   });
 
+  it('rejects hero candidates from visually distinct sibling variants', () => {
+    const result = buildHeroSelectionPrompt(defaults);
+    const lower = result.toLowerCase();
+
+    assert.ok(lower.includes('variant identity gate'));
+    assert.ok(lower.includes('same model is not enough'));
+    assert.ok(lower.includes('visually distinct sibling'));
+    assert.ok(lower.includes('wrong_product'));
+    assert.ok(lower.includes('trust the pixels'));
+  });
+
   // — Diversity as tiebreaker, not art direction —
 
   it('prefers diverse shots when picking multiple heroes', () => {
@@ -359,11 +381,23 @@ describe('buildHeroSelectionPrompt', () => {
     assert.ok(!lower.includes('well-framed'), 'should not impose framing requirements');
   });
 
-  it('accepts any image type — cutouts, lifestyle, renders, kits', () => {
+  it('keeps lifestyle shots, promotional renders, and kits eligible when they pass gates', () => {
     const result = buildHeroSelectionPrompt(defaults);
     const lower = result.toLowerCase();
-    assert.ok(!lower.includes('not cutout'), 'should not reject cutouts');
-    assert.ok(!lower.includes('not product image'), 'should not reject product images');
+    assert.ok(lower.includes('lifestyle'), 'should still allow lifestyle images');
+    assert.ok(lower.includes('promotional render'), 'should still allow promotional renders');
+    assert.ok(lower.includes('kit'), 'should still allow kit layouts');
+  });
+
+  it('rejects isolated cutouts and marketing-collateral lineups as heroes', () => {
+    const result = buildHeroSelectionPrompt(defaults);
+    const lower = result.toLowerCase();
+
+    assert.ok(lower.includes('isolated cutout'));
+    assert.ok(lower.includes('plain') || lower.includes('empty background'));
+    assert.ok(lower.includes('marketing collateral'));
+    assert.ok(lower.includes('target product') && lower.includes('dominant'));
+    assert.ok(lower.includes('small') && lower.includes('secondary'));
   });
 });
 

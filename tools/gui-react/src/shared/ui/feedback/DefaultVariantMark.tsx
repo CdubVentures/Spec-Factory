@@ -40,14 +40,14 @@ export const DefaultVariantMark = memo(function DefaultVariantMark({
             Suggests "pinned / anchor / default" without reusing star visual language. */}
         <path
           d="M6 1 L11 6 L6 11 L1 6 Z"
-          fill="var(--sf-token-accent-strong, #8b5cf6)"
-          stroke="var(--sf-token-accent-strong, #8b5cf6)"
+          fill="var(--sf-token-accent-strong)"
+          stroke="var(--sf-token-accent-strong)"
           strokeWidth="1"
           strokeLinejoin="round"
         />
         <path
           d="M6 3.5 L8.5 6 L6 8.5 L3.5 6 Z"
-          fill="var(--sf-surface-elevated, #ffffff)"
+          fill="var(--sf-surface-elevated)"
           opacity="0.35"
         />
       </svg>
@@ -59,7 +59,7 @@ export function DefaultVariantLegend() {
   return (
     <span
       className="inline-flex items-center gap-1.5 sf-text-caption"
-      style={{ fontSize: 10, color: 'var(--sf-muted, #6b7280)' }}
+      style={{ fontSize: 10, color: 'var(--sf-muted)' }}
     >
       <DefaultVariantMark size={10} />
       <span>= default variant</span>

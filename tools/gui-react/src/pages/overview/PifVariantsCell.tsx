@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { PifVariantProgressGen } from '../../types/product.generated.ts';
 import { useRunningVariantKeysAny } from '../../features/operations/hooks/useFinderOperations.ts';
 import { PifVariantPopover } from './PifVariantPopover.tsx';
@@ -7,6 +8,8 @@ export interface PifVariantsCellProps {
   readonly productId: string;
   readonly category: string;
   readonly variants: readonly PifVariantProgressGen[];
+  readonly pifDependencyReady?: boolean;
+  readonly pifDependencyMissingKeys?: readonly string[];
   readonly hexMap: ReadonlyMap<string, string>;
   readonly brand: string;
   readonly baseModel: string;
@@ -17,7 +20,16 @@ export interface PifVariantsCellProps {
  * Each cluster is color chip + 3-ring progress + fraction; clicking opens a
  * per-variant popover with Run View / Hero / Loop / Evaluate actions.
  */
-export function PifVariantsCell({ productId, category, variants, hexMap, brand, baseModel }: PifVariantsCellProps) {
+function PifVariantsCellInner({
+  productId,
+  category,
+  variants,
+  pifDependencyReady = true,
+  pifDependencyMissingKeys = [],
+  hexMap,
+  brand,
+  baseModel,
+}: PifVariantsCellProps) {
   // Subscribe once per product; each variant reads from the shared set so we
   // don't multiply store subscriptions across 5–10 variants × 359 products.
   const runningKeys = useRunningVariantKeysAny('pif', productId);
@@ -32,6 +44,8 @@ export function PifVariantsCell({ productId, category, variants, hexMap, brand, 
           productId={productId}
           category={category}
           variant={v}
+          pifDependencyReady={pifDependencyReady}
+          pifDependencyMissingKeys={pifDependencyMissingKeys}
           hexMap={hexMap}
           brand={brand}
           baseModel={baseModel}
@@ -41,3 +55,8 @@ export function PifVariantsCell({ productId, category, variants, hexMap, brand, 
     </span>
   );
 }
+
+// WHY: Memoized so a parent re-render of OverviewPage (e.g. filter changes,
+// active-row recompute) doesn't cascade into 350-600 cell re-renders. Parent
+// passes stable refs (hexMap useMemo, category from store, scalars from row).
+export const PifVariantsCell = memo(PifVariantsCellInner);

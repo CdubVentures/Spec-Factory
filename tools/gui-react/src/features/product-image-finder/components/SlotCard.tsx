@@ -19,7 +19,7 @@ export const SlotCard = memo(function SlotCard({ slot, img, source, category, pr
   const [isOver, setIsOver] = useState(false);
   // WHY: '__cleared__' is a sentinel meaning "user intentionally emptied this slot" — treat as no image.
   const filename = (slot.filename && slot.filename !== '__cleared__') ? slot.filename : null;
-  const src = filename ? imageServeUrl(category, productId, filename) : '';
+  const src = filename ? imageServeUrl(category, productId, filename, { variant: 'thumb' }) : '';
   const isHero = slot.slot.startsWith('hero_');
   const label = isHero ? slot.slot.replace('_', ' ').toUpperCase() : slot.slot.toUpperCase();
   const dims = img ? formatDims(img.width, img.height) : '';
@@ -52,6 +52,7 @@ export const SlotCard = memo(function SlotCard({ slot, img, source, category, pr
             alt={`${label} slot`}
             className={img?.bg_removed ? 'max-w-full max-h-full object-contain' : 'w-full h-full object-cover'}
             loading="lazy"
+            decoding="async"
           />
         </button>
       ) : (
@@ -64,6 +65,7 @@ export const SlotCard = memo(function SlotCard({ slot, img, source, category, pr
               alt={`${label} slot`}
               className={img?.bg_removed ? 'max-w-full max-h-full object-contain' : 'w-full h-full object-cover'}
               loading="lazy"
+              decoding="async"
             />
           ) : (
             <span className="text-[11px] font-bold uppercase tracking-wider sf-text-muted">{label}</span>

@@ -1,11 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createContext, memo, useCallback, useContext, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
-import { useUiStore } from '../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../stores/uiCategoryStore.ts';
 import { MetricCard } from '../../shared/ui/data-display/MetricCard.tsx';
 import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
 import { MiniGauge } from '../../shared/ui/data-display/MiniGauge.tsx';
-import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { pct } from '../../utils/formatting.ts';
 import { useFormatDateYMD } from '../../utils/dateTime.ts';
 import type { CatalogRow } from '../../types/product.ts';
@@ -23,6 +22,7 @@ import {
 } from './OverviewFilterBar.tsx';
 import { CommandConsole } from './CommandConsole.tsx';
 import { ActiveAndSelectedRow } from './ActiveAndSelectedRow.tsx';
+import { deriveFamilyCountByProductId } from './familyCount.ts';
 import { OverviewLastRunCell, OverviewLastRunHeaderToggle } from './OverviewLastRunCell.tsx';
 import { LiveOpsCell } from './LiveOpsCell.tsx';
 import { useRunningModulesByProductOrdered } from '../../features/operations/hooks/useFinderOperations.ts';
@@ -53,7 +53,34 @@ import { VariantMetricFilter } from './columnFilters/filters/VariantMetricFilter
 import { ScalarVariantFilter } from './columnFilters/filters/ScalarVariantFilter.tsx';
 import { KeysFilter } from './columnFilters/filters/KeysFilter.tsx';
 
-function SelectHeaderCell({ category, visibleIds }: { category: string; visibleIds: readonly string[] }) {
+// WHY: visibleIds changes on every search keystroke / filter / sort / live-ops
+// tick. Passing it as a prop on the select column would force the entire
+// columns useMemo to rebuild and tear down DataTable. Routing it through
+// context keeps the column def stable; only this header re-renders when
+// visibleIds changes.
+const VisibleIdsContext = createContext<readonly string[]>([]);
+
+// WHY: familyCountByProductId is derived from `catalog`, but with Phase 1's
+// staleTime: Infinity catalog rarely changes — yet leaving the map in the
+// columns useMemo deps still pulls catalog into a fresh column def whenever
+// React Query thinks the row identity drifted. Routing through context
+// keeps column defs stable; only the FamilySize cell re-renders on map change.
+const FamilyCountContext = createContext<ReadonlyMap<string, number>>(new Map());
+
+const FamilySizeCell = memo(function FamilySizeCell({ productId }: { productId: string }) {
+  const familyCountByProductId = useContext(FamilyCountContext);
+  const v = familyCountByProductId.get(productId);
+  return typeof v === 'number' && v > 0
+    ? <span className="text-xs">{v}</span>
+    : <span className="sf-text-subtle text-xs italic">—</span>;
+});
+
+// WHY: memo'd so DataTable re-renders (scroll, popover toggles, etc.) don't
+// cascade into 500 cell re-runs of useIsSelected. Each cell's Zustand
+// subscription triggers its own re-render only when its row's selection
+// state changes; the memo wrapper drops the parent-render path.
+const SelectHeaderCell = memo(function SelectHeaderCell({ category }: { category: string }) {
+  const visibleIds = useContext(VisibleIdsContext);
   const selectedSet = useOverviewSelectionStore((s) => s.byCategory[category]);
   const addMany = useOverviewSelectionStore((s) => s.addMany);
   const toggle = useOverviewSelectionStore((s) => s.toggle);
@@ -84,9 +111,9 @@ function SelectHeaderCell({ category, visibleIds }: { category: string; visibleI
       className="cursor-pointer"
     />
   );
-}
+});
 
-function SelectCell({ category, productId }: { category: string; productId: string }) {
+const SelectCell = memo(function SelectCell({ category, productId }: { category: string; productId: string }) {
   const isSelected = useIsSelected(category, productId);
   const toggle = useOverviewSelectionStore((s) => s.toggle);
   return (
@@ -99,11 +126,28 @@ function SelectCell({ category, productId }: { category: string; productId: stri
       className="cursor-pointer"
     />
   );
-}
+});
 
 // WHY: CEF mandatory-run bar — 2 runs required before the downstream header-control
 // module will let a product advance. Visual today, enforcement later.
 const CEF_REQUIRED_RUNS = 2;
+
+// WHY: Skeleton table body shown on the very first catalog fetch (or after a
+// category switch with no cached rows). Keeps page chrome — metric cards,
+// filter bar, command console — visible immediately so the page doesn't
+// flash a centered spinner over an empty void. Reuses shared design-system
+// classes (sf-shimmer + sf-skel-row); no one-off styling.
+const SKELETON_ROW_COUNT = 12;
+
+function OverviewTableSkeleton() {
+  return (
+    <div className="space-y-1 p-2" aria-hidden="true">
+      {Array.from({ length: SKELETON_ROW_COUNT }, (_, i) => (
+        <div key={i} className="sf-shimmer sf-skel-row" />
+      ))}
+    </div>
+  );
+}
 
 
 const INITIAL_FILTER_STATE: OverviewFilterState = Object.freeze({
@@ -143,7 +187,6 @@ function buildColumns(
   formatRdfValue: (value: string) => string,
   detailColsOpen: boolean,
   toggleDetailCols: () => void,
-  runningByProduct: ReadonlyMap<string, readonly string[]>,
 ): ColumnDef<CatalogRow, unknown>[] {
   // WHY: Overview owns one explicit Excel-style sort stack. Accessors on
   // display columns only mark those headers sortable; rows are ordered by
@@ -165,7 +208,7 @@ function buildColumns(
     {
       accessorKey: 'base_model',
       header: 'Base Model',
-      size: 180,
+      size: 170,
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? <span className="text-xs">{v}</span> : <span className="sf-text-subtle text-xs italic">—</span>;
@@ -174,11 +217,18 @@ function buildColumns(
     {
       accessorKey: 'variant',
       header: 'Variant',
-      size: 180,
+      size: 170,
       cell: ({ getValue }) => {
         const v = getValue() as string;
         return v ? <span className="text-xs">{v}</span> : <span className="sf-text-subtle text-xs italic">—</span>;
       },
+    },
+    {
+      id: 'familySize',
+      header: 'Family',
+      size: 50,
+      enableSorting: false,
+      cell: ({ row }) => <FamilySizeCell productId={row.original.productId} />,
     },
     {
       id: 'gap',
@@ -219,6 +269,8 @@ function buildColumns(
           productId={row.original.productId}
           category={category}
           variants={row.original.pifVariants}
+          pifDependencyReady={row.original.pifDependencyReady}
+          pifDependencyMissingKeys={row.original.pifDependencyMissingKeys}
           hexMap={hexMap}
           brand={row.original.brand}
           baseModel={row.original.base_model}
@@ -357,8 +409,12 @@ function buildColumns(
       size: 95,
     },
     {
+      // WHY: no accessorFn — DataTable uses manualSorting and the live cell
+      // subscribes to its own data via useFinderOperations. Removing the
+      // closure over runningByProduct keeps this column def stable across
+      // the 2–5s ops tick during a run.
       id: 'live',
-      accessorFn: (row) => runningByProduct.get(row.productId)?.length ?? 0,
+      enableSorting: false,
       header: () => (
         <span className="sf-cfh-row sf-cfh-row--left">
           <span className="sf-cfh-label">Live</span>
@@ -388,16 +444,21 @@ function buildColumns(
 }
 
 export function OverviewPage() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const formatDateYMD = useFormatDateYMD();
   const formatRdfValue = useCallback(
     (value: string) => formatDateYMD(value) || value,
     [formatDateYMD],
   );
 
-  const { data: catalog = [], isLoading } = useQuery({
+  const { data: catalog = [], isPending } = useQuery({
     queryKey: ['catalog', category],
     queryFn: () => api.parsedGet(`/catalog/${category}`, parseCatalogRows),
+    // WHY: Catalog mutations route through explicit invalidations (live
+    // update audit). The default 5s staleTime caused spurious refetches
+    // on focus/render that wiped table state without adding freshness;
+    // Infinity defers freshness to the invalidation paths.
+    staleTime: Infinity,
   });
 
   const { data: colorRegistry = [] } = useQuery<ColorRegistryEntry[]>({
@@ -452,13 +513,26 @@ export function OverviewPage() {
 
   const columnFilters = useColumnFilterStore(selectFilterState(category));
   const runningByProduct = useRunningModulesByProductOrdered(category);
+  const familyCountByProductId = useMemo(
+    () => deriveFamilyCountByProductId(catalog),
+    [catalog],
+  );
+
+  // WHY: input echo (filterState.search) updates synchronously so the
+  // SearchBox feels instant. The expensive filter+sort over the catalog
+  // runs against the deferred copy, letting React skip intermediate
+  // keystrokes when the user types quickly.
+  const deferredSearch = useDeferredValue(filterState.search);
 
   const visibleRows = useMemo(() => {
-    const filtered = catalog
-      .filter((r) => matchesSearch(r, filterState.search))
-      .filter((r) => matchesColumnFilters(r, columnFilters));
+    // WHY: single-pass predicate avoids two intermediate ~500-elem arrays
+    // per filter change; && short-circuits exactly the same way as chained
+    // .filter() calls.
+    const filtered = catalog.filter(
+      (r) => matchesSearch(r, deferredSearch) && matchesColumnFilters(r, columnFilters),
+    );
     return sortOverviewRows(filtered, tableSorting, runningByProduct);
-  }, [catalog, filterState.search, columnFilters, tableSorting, runningByProduct]);
+  }, [catalog, deferredSearch, columnFilters, tableSorting, runningByProduct]);
 
   const visibleIds = useMemo<readonly string[]>(
     () => visibleRows.map((r) => r.productId),
@@ -476,7 +550,7 @@ export function OverviewPage() {
         size: 48,
         header: () => (
           <div className="flex w-full items-center justify-center">
-            <SelectHeaderCell category={category} visibleIds={visibleIds} />
+            <SelectHeaderCell category={category} />
           </div>
         ),
         cell: ({ row }) => (
@@ -485,12 +559,12 @@ export function OverviewPage() {
           </div>
         ),
       },
-      ...buildColumns(hexMap, category, catalog, formatRdfValue, detailColsOpen, toggleDetailCols, runningByProduct),
+      ...buildColumns(hexMap, category, catalog, formatRdfValue, detailColsOpen, toggleDetailCols),
     ],
-    [hexMap, category, catalog, visibleIds, formatRdfValue, detailColsOpen, toggleDetailCols, runningByProduct],
+    [hexMap, category, catalog, formatRdfValue, detailColsOpen, toggleDetailCols],
   );
 
-  if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
+  const showSkeleton = isPending && catalog.length === 0;
 
   const avgConf = catalog.length > 0
     ? catalog.reduce((sum, r) => sum + r.confidence, 0) / catalog.length
@@ -524,16 +598,29 @@ export function OverviewPage() {
       </div>
 
       <div className="sf-table-shell">
-        <DataTable
-          data={visibleRows}
-          columns={columns}
-          persistKey={`overview:table:${category}`}
-          maxHeight="max-h-[calc(100vh-340px)]"
-          sorting={tableSorting}
-          onSortingChange={handleTableSortingChange}
-          manualSorting
-          onColumnHeaderSort={handleColumnHeaderSort}
-        />
+        {showSkeleton ? (
+          <OverviewTableSkeleton />
+        ) : (
+          <VisibleIdsContext.Provider value={visibleIds}>
+            <FamilyCountContext.Provider value={familyCountByProductId}>
+              <DataTable
+                data={visibleRows}
+                columns={columns}
+                persistKey={`overview:table:${category}`}
+                maxHeight="max-h-[calc(100vh-340px)]"
+                sorting={tableSorting}
+                onSortingChange={handleTableSortingChange}
+                manualSorting
+                onColumnHeaderSort={handleColumnHeaderSort}
+                // WHY: Catalogs run 350-600 products. Fixed-height row virtualization
+                // renders only the viewport (+ overscan) instead of all rows. Row
+                // height matches the cells' tallest variants — PIF/Scalar variant
+                // ring clusters dominate at ~72px including padding.
+                virtualize={{ rowHeight: 72, overscan: 10 }}
+              />
+            </FamilyCountContext.Provider>
+          </VisibleIdsContext.Provider>
+        )}
       </div>
     </div>
   );

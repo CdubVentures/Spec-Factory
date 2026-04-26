@@ -40,10 +40,10 @@
 }
 .sf-cfh-trigger:hover {
   outline: none !important;
-  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 10%, transparent) !important;
+  background: color-mix(in srgb, var(--sf-token-accent) 10%, transparent) !important;
 }
 .sf-cfh-trigger:focus-visible {
-  outline: 2px solid var(--sf-token-accent, #4263eb) !important;
+  outline: 2px solid var(--sf-token-accent) !important;
   outline-offset: 1px !important;
 }
 
@@ -58,7 +58,7 @@
 
 /* Default: faint, only hint of presence. Brighten on row hover or active. */
 .sf-cfh-icon {
-  color: var(--sf-token-text-muted, #9ca3af);
+  color: var(--sf-token-text-muted);
   opacity: 0.35;
   transition: opacity 120ms ease, color 120ms ease;
 }
@@ -67,11 +67,11 @@
 }
 .sf-cfh-trigger:hover .sf-cfh-icon {
   opacity: 1;
-  color: var(--sf-token-accent, #4263eb);
+  color: var(--sf-token-accent);
 }
 .sf-cfh-icon--active {
   opacity: 1 !important;
-  color: var(--sf-token-accent, #4263eb) !important;
+  color: var(--sf-token-accent) !important;
 }
 
 /* Active dot — tiny accent pip in the trigger corner */
@@ -82,8 +82,8 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: var(--sf-token-accent, #4263eb);
-  box-shadow: 0 0 0 1.5px var(--sf-token-surface, #fff);
+  background: var(--sf-token-accent);
+  box-shadow: 0 0 0 1.5px var(--sf-token-surface);
 }
 
 /* ── Panel body + footer ──────────────────────────────────────────────── */
@@ -103,7 +103,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 8px 14px 12px;
-  border-top: 1px solid var(--sf-token-border, #e5e9ef);
+  border-top: 1px solid var(--sf-token-border);
   margin-top: 4px;
 }
 
@@ -112,26 +112,26 @@
   font-weight: 600;
   padding: 4px 10px;
   border-radius: var(--sf-token-radius-md);
-  border: 1px solid var(--sf-token-border, #e5e9ef);
+  border: 1px solid var(--sf-token-border);
   background: transparent;
   color: rgb(var(--sf-color-text-primary-rgb));
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
 }
 .sf-cfh-btn:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 6%, transparent);
-  border-color: color-mix(in srgb, var(--sf-token-accent, #4263eb) 35%, transparent);
+  background: color-mix(in srgb, var(--sf-token-accent) 6%, transparent);
+  border-color: color-mix(in srgb, var(--sf-token-accent) 35%, transparent);
 }
 .sf-cfh-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 .sf-cfh-btn--done {
-  background: var(--sf-token-accent, #4263eb);
+  background: var(--sf-token-accent);
   color: var(--sf-token-on-accent-fg);
-  border-color: var(--sf-token-accent, #4263eb);
+  border-color: var(--sf-token-accent);
 }
 .sf-cfh-btn--done:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 88%, #000);
-  border-color: color-mix(in srgb, var(--sf-token-accent, #4263eb) 88%, #000);
+  background: var(--sf-token-accent-strong);
+  border-color: var(--sf-token-accent-strong);
 }

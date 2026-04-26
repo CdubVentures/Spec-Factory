@@ -1,7 +1,7 @@
 ﻿import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { usePersistedToggle } from "../../../stores/collapseStore.ts";
 import * as Tooltip from "@radix-ui/react-tooltip";
-import { useUiStore } from "../../../stores/uiStore.ts";
+import { useUiCategoryStore } from "../../../stores/uiCategoryStore.ts";
 import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
 import { autoSaveFingerprint } from "../../../stores/autoSaveFingerprint.ts";
 import {
@@ -282,7 +282,7 @@ export function MappingStudioTab({
         return Boolean(fp) && fp !== lastMapAutoSaveFingerprintRef.current;
       },
       getPayload: () => {
-        const cat = useUiStore.getState().category;
+        const cat = useUiCategoryStore.getState().category;
         const nextMap = assembleMap();
         return {
           url: `/api/v1/studio/${cat}/field-studio-map`,

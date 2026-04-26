@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../../../api/client.ts';
 import { useDataChangeMutation } from '../../data-change/index.js';
-import { useUiStore } from '../../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../../stores/uiCategoryStore.ts';
 import { coerceCategories } from '../../../utils/categoryStoreSync.js';
 
 import { btnPrimary } from '../../../shared/ui/buttonClasses.ts';
@@ -18,10 +18,10 @@ interface CreateCategoryResult {
 }
 
 export function CategoryManager() {
-  const categories = useUiStore((s) => s.categories);
-  const setCategories = useUiStore((s) => s.setCategories);
-  const activeCategory = useUiStore((s) => s.category);
-  const setCategory = useUiStore((s) => s.setCategory);
+  const categories = useUiCategoryStore((s) => s.categories);
+  const setCategories = useUiCategoryStore((s) => s.setCategories);
+  const activeCategory = useUiCategoryStore((s) => s.category);
+  const setCategory = useUiCategoryStore((s) => s.setCategory);
 
   const [newName, setNewName] = useState('');
 

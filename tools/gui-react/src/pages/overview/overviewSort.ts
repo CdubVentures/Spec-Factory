@@ -1,7 +1,7 @@
 import type { SortingState } from '@tanstack/react-table';
 import type { CatalogRow } from '../../types/product.ts';
 import type { KeyTierProgressGen } from '../../types/product.generated.ts';
-import { computeScoreCard } from './scoreCard.ts';
+import { getScoreCard } from './scoreCard.ts';
 
 const OVERVIEW_SORT_STORAGE_KEY_PREFIX = 'sf:overview:sort:';
 
@@ -195,7 +195,7 @@ function compareOverviewColumn(
     case 'rdfVariants': return compareNumber(a.rdfVariants.length, b.rdfVariants.length);
     case 'skuVariants': return compareNumber(a.skuVariants.length, b.skuVariants.length);
     case 'key': return compareKeyTiers(a.keyTierProgress, b.keyTierProgress);
-    case 'scoreCard': return compareNumber(computeScoreCard(a).score, computeScoreCard(b).score);
+    case 'scoreCard': return compareNumber(getScoreCard(a).score, getScoreCard(b).score);
     case 'coverage': return compareNumber(a.coverage, b.coverage);
     case 'confidence': return compareNumber(a.confidence, b.confidence);
     case 'fieldsFilled': return compareNumber(a.fieldsFilled, b.fieldsFilled);

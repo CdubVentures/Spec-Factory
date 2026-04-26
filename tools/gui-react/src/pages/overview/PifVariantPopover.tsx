@@ -37,6 +37,8 @@ export interface PifVariantPopoverProps {
   readonly productId: string;
   readonly category: string;
   readonly variant: PifVariantProgressGen;
+  readonly pifDependencyReady?: boolean;
+  readonly pifDependencyMissingKeys?: readonly string[];
   readonly hexMap: ReadonlyMap<string, string>;
   readonly brand: string;
   readonly baseModel: string;
@@ -64,7 +66,15 @@ const INDIVIDUAL_VIEWS: ReadonlyArray<{ readonly id: string; readonly label: str
  *                         resolved slots (same component the Indexing Lab uses)
  */
 export function PifVariantPopover({
-  productId, category, variant, hexMap, brand, baseModel, pulsing = false,
+  productId,
+  category,
+  variant,
+  pifDependencyReady = true,
+  pifDependencyMissingKeys = [],
+  hexMap,
+  brand,
+  baseModel,
+  pulsing = false,
 }: PifVariantPopoverProps) {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [carouselOpen, setCarouselOpen] = useState(false);
@@ -93,10 +103,8 @@ export function PifVariantPopover({
 
   // WHY: Same cache key the Indexing Lab uses. Lazy-enabled only when either
   // popup is open so we don't pay one fetch per row at table render time.
-  // staleTime:0 + refetchOnMount:'always' guarantees that re-opening after an
-  // eval round-trip pulls fresh slot assignments — the WS data-change handler
-  // also invalidates this key, so an open popup updates live as the lab
-  // shifts user-overrides or eval winners.
+  // WS invalidation keeps open popups fresh. A short stale window prevents
+  // every hover/reopen from refetching the full PIF payload.
   const popOpen = popoverOpen || carouselOpen;
   const { data: pifData } = useQuery<ProductImageFinderResult>({
     queryKey: ['product-image-finder', category, productId],
@@ -104,8 +112,7 @@ export function PifVariantPopover({
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
     ),
     enabled: popOpen && Boolean(category) && Boolean(productId),
-    staleTime: 0,
-    refetchOnMount: 'always',
+    staleTime: 30_000,
   });
 
   const variantKey = variant.variant_key || '';
@@ -126,6 +133,10 @@ export function PifVariantPopover({
   );
   const hasHeroes = evalTargets.has('hero');
   const hasEvalTargets = canonicalViews.length > 0 || hasHeroes;
+  const pifDependencyLocked = pifDependencyReady !== true;
+  const pifDependencyTitle = pifDependencyLocked
+    ? `PIF locked until Product Image Dependent key(s) are resolved: ${pifDependencyMissingKeys.join(', ') || 'unknown'}. Use Run Dep to run these keys solo.`
+    : 'PIF dependency keys are resolved.';
 
   // Carousel slides — bit-for-bit parity with Indexing Lab's CarouselSlotRow:
   //   buildGalleryImages → filter to variant → sortByPriorityAndSize
@@ -155,7 +166,9 @@ export function PifVariantPopover({
       return {
         slotLabel: isHero ? s.slot.replace('_', ' ').toUpperCase() : s.slot.toUpperCase(),
         source: s.source as 'user' | 'eval',
-        src: imageServeUrl(category, productId, s.filename!),
+        src: imageServeUrl(category, productId, s.filename!, { cacheBust: img?.bytes, variant: 'preview' }),
+        thumbSrc: imageServeUrl(category, productId, s.filename!, { cacheBust: img?.bytes, variant: 'thumb' }),
+        fullSrc: imageServeUrl(category, productId, s.filename!, img?.bytes),
         bytes: img?.bytes ?? 0,
         width: img?.width ?? 0,
         height: img?.height ?? 0,
@@ -169,25 +182,30 @@ export function PifVariantPopover({
   // spam-click to queue multiple runs/views and watch the active strip update
   // without having to re-open the popover each time.
   const handleRunPriority = useCallback(() => {
+    if (pifDependencyLocked) return;
     fire(runUrl, { variant_key: variantKey, variant_id: variantId, mode: 'view' }, { subType: 'priority-view', variantKey });
-  }, [fire, runUrl, variantKey, variantId]);
+  }, [fire, runUrl, variantKey, variantId, pifDependencyLocked]);
 
   const handleRunIndividualView = useCallback((view: string) => {
+    if (pifDependencyLocked) return;
     fire(runUrl, { variant_key: variantKey, variant_id: variantId, mode: 'view', view }, { subType: 'view-single', variantKey });
-  }, [fire, runUrl, variantKey, variantId]);
+  }, [fire, runUrl, variantKey, variantId, pifDependencyLocked]);
 
   const handleRunHero = useCallback(() => {
+    if (pifDependencyLocked) return;
     fire(runUrl, { variant_key: variantKey, variant_id: variantId, mode: 'hero' }, { subType: 'hero', variantKey });
-  }, [fire, runUrl, variantKey, variantId]);
+  }, [fire, runUrl, variantKey, variantId, pifDependencyLocked]);
 
   const handleRunLoop = useCallback(() => {
+    if (pifDependencyLocked) return;
     fire(loopUrl, { variant_key: variantKey, variant_id: variantId }, { subType: 'loop', variantKey });
-  }, [fire, loopUrl, variantKey, variantId]);
+  }, [fire, loopUrl, variantKey, variantId, pifDependencyLocked]);
 
   const handleEval = useCallback(() => {
+    if (pifDependencyLocked) return;
     if (!hasEvalTargets) return;
     fire(evalCarouselUrl, { variant_key: variantKey, variant_id: variantId }, { subType: 'evaluate', variantKey });
-  }, [fire, evalCarouselUrl, hasEvalTargets, variantKey, variantId]);
+  }, [fire, evalCarouselUrl, hasEvalTargets, variantKey, variantId, pifDependencyLocked]);
 
   const promptPreviewBody = useMemo(
     () => createPifPromptPreviewBody(promptPreview),
@@ -278,6 +296,9 @@ export function PifVariantPopover({
                   previewTitle="Preview the Priority View Run prompt"
                   onRun={handleRunPriority}
                   onPreview={() => setPromptPreview({ variantKey, mode: 'view', label: 'Priority View Run' })}
+                  disabledTitle={pifDependencyLocked ? pifDependencyTitle : undefined}
+                  disabled={pifDependencyLocked}
+                  previewDisabled={false}
                   primary
                 />
                 {INDIVIDUAL_VIEWS.map((v) => (
@@ -288,6 +309,9 @@ export function PifVariantPopover({
                     previewTitle={`Preview the ${v.label} Individual View Run prompt`}
                     onRun={() => handleRunIndividualView(v.id)}
                     onPreview={() => setPromptPreview({ variantKey, mode: 'view', view: v.id, label: `${v.label} Individual View Run` })}
+                    disabledTitle={pifDependencyLocked ? pifDependencyTitle : undefined}
+                    disabled={pifDependencyLocked}
+                    previewDisabled={false}
                   />
                 ))}
                 <RunPreviewCell
@@ -296,6 +320,9 @@ export function PifVariantPopover({
                   previewTitle="Preview the Hero Run prompt"
                   onRun={handleRunHero}
                   onPreview={() => setPromptPreview({ variantKey, mode: 'hero', label: 'Hero Run' })}
+                  disabledTitle={pifDependencyLocked ? pifDependencyTitle : undefined}
+                  disabled={pifDependencyLocked}
+                  previewDisabled={false}
                 />
               </div>
               <div className="sf-pif-popover-tail-grid">
@@ -305,14 +332,16 @@ export function PifVariantPopover({
                   previewTitle="Preview the Loop prompt sequence"
                   onRun={handleRunLoop}
                   onPreview={() => setPromptPreview(createPifLoopViewPreviewState(variantKey))}
-                  disabled={isLoopingThisVariant}
+                  disabledTitle={pifDependencyLocked ? pifDependencyTitle : undefined}
+                  disabled={pifDependencyLocked || isLoopingThisVariant}
+                  previewDisabled={false}
                 />
                 <button
                   type="button"
                   className="sf-frp-btn-secondary"
                   onClick={handleEval}
-                  disabled={!hasEvalTargets || isEvaluatingThisVariant}
-                  title="Carousel Builder: vision LLM picks winners"
+                  disabled={pifDependencyLocked || !hasEvalTargets || isEvaluatingThisVariant}
+                  title={pifDependencyLocked ? pifDependencyTitle : 'Carousel Builder: vision LLM picks winners'}
                 >
                   Evaluate
                 </button>

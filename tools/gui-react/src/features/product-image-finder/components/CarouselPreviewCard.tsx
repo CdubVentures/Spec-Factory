@@ -25,7 +25,14 @@ export const CarouselPreviewCard = memo(function CarouselPreviewCard({ slides, o
             <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 gap-px pif-mosaic-gap-bg">
               {previews.map((s, i) => (
                 <div key={i} className="flex items-center justify-center overflow-hidden sf-surface-bg">
-                  <img src={s.src} alt={s.slotLabel} className="w-full h-full object-cover" draggable={false} />
+                  <img
+                    src={s.thumbSrc ?? s.src}
+                    alt={s.slotLabel}
+                    className="w-full h-full object-cover"
+                    draggable={false}
+                    loading="lazy"
+                    decoding="async"
+                  />
                 </div>
               ))}
               {Array.from({ length: Math.max(0, 4 - previews.length) }).map((_, i) => (

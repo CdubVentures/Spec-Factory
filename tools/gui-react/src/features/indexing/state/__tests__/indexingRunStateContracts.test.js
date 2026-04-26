@@ -130,6 +130,56 @@ test('run view actions publish status and refresh both shared and run-scoped que
   );
 });
 
+test('refreshIndexingPageData scopes product-history invalidation when productId is provided', async () => {
+  const { refreshIndexingPageData } = await loadBundledModule(
+    'tools/gui-react/src/features/indexing/state/indexingRunViewActions.ts',
+    { prefix: 'indexing-run-view-actions-product-' },
+  );
+
+  // With productId: invalidates exact scoped key, NOT the broad prefix.
+  const scoped = createQueryClient();
+  await refreshIndexingPageData({
+    queryClient: scoped,
+    category: 'mouse',
+    selectedIndexLabRunId: 'run-x',
+    productId: 'p-42',
+  });
+  const scopedInvalidations = scoped.calls
+    .filter((c) => c.kind === 'invalidateQueries')
+    .map((c) => ({ key: JSON.stringify(c.queryKey), exact: c.exact }));
+  assert.equal(
+    scopedInvalidations.some((c) => c.key === JSON.stringify(['indexlab', 'product-history']) && !c.exact),
+    false,
+    'broad product-history prefix must NOT be invalidated when productId is known',
+  );
+  assert.deepEqual(
+    scopedInvalidations.find((c) => c.key === JSON.stringify(['indexlab', 'product-history', 'mouse', 'p-42'])),
+    { key: JSON.stringify(['indexlab', 'product-history', 'mouse', 'p-42']), exact: true },
+  );
+
+  // Without productId: falls back to category-scoped (still narrower than the
+  // bare prefix used previously).
+  const fallback = createQueryClient();
+  await refreshIndexingPageData({
+    queryClient: fallback,
+    category: 'mouse',
+    selectedIndexLabRunId: 'run-x',
+  });
+  const fallbackInvalidations = fallback.calls
+    .filter((c) => c.kind === 'invalidateQueries')
+    .map((c) => ({ key: JSON.stringify(c.queryKey), exact: c.exact }));
+  assert.equal(
+    fallbackInvalidations.some((c) => c.key === JSON.stringify(['indexlab', 'product-history']) && !c.exact),
+    false,
+    'broad product-history prefix must NOT be invalidated even without productId',
+  );
+  assert.equal(
+    fallbackInvalidations.some((c) => c.key === JSON.stringify(['indexlab', 'product-history', 'mouse'])),
+    true,
+    'category-scoped product-history key must be invalidated as fallback',
+  );
+});
+
 test('start-mutation callbacks restore previous run on error and prefer status run id on success', async () => {
   const { handleStartIndexLabMutationError, handleStartIndexLabMutationSuccess } = await loadBundledModule(
     'tools/gui-react/src/features/indexing/api/indexingRunMutationCallbacks.ts',

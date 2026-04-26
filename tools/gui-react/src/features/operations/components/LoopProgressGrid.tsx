@@ -3,13 +3,14 @@
 // the inline version OperationsTracker originally carried — extracted so the
 // Router can compose grid (PIF) + pill (keyFinder + future loops).
 
+import { memo } from 'react';
 import type { CarouselLoopProgress } from '../state/operationsStore.ts';
 
 type CarouselLoopProgressGridInput = CarouselLoopProgress & {
   readonly views: NonNullable<CarouselLoopProgress['views']>;
 };
 
-export function LoopProgressGrid({ lp }: { readonly lp: CarouselLoopProgressGridInput }) {
+export const LoopProgressGrid = memo(function LoopProgressGridInner({ lp }: { readonly lp: CarouselLoopProgressGridInput }) {
   const variantTotal = lp.variantTotal ?? 1;
   const variantIndex = lp.variantIndex ?? 0;
   const variantPos = variantTotal > 1 ? ` (${variantIndex + 1}/${variantTotal})` : '';
@@ -48,4 +49,4 @@ export function LoopProgressGrid({ lp }: { readonly lp: CarouselLoopProgressGrid
       </span>
     </div>
   );
-}
+});

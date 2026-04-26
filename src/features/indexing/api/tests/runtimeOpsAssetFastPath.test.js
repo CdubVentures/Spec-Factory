@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import { Writable } from 'node:stream';
+import sharp from 'sharp';
 
 import { registerRuntimeOpsRoutes } from '../runtimeOpsRoutes.js';
 import { initIndexLabDataBuilders } from '../builders/indexlabDataBuilders.js';
@@ -174,6 +175,102 @@ describe('runtimeOpsAssetFastPath', () => {
       assert.equal(res.statusCode, 200);
       assert.equal(res.headers['content-type'], 'image/png');
       assert.deepEqual(res.body, pngContent);
+    } finally {
+      await fs.rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('local run asset response includes cache validators and content length', async () => {
+    const { tempRoot, indexLabRoot, outputRoot, runId, pngContent } = await createAssetFixture();
+    try {
+      const handler = registerRuntimeOpsRoutes({
+        jsonRes,
+        toInt,
+        INDEXLAB_ROOT: indexLabRoot,
+        OUTPUT_ROOT: outputRoot,
+        config: {},
+        storage: { resolveOutputKey: (...p) => p.join('/'), resolveInputKey: (...p) => p.join('/'), readJsonOrNull: async () => null },
+        readRunSummaryEvents: async () => [],
+        readIndexLabRunMeta: async () => ({ run_id: runId, status: 'completed' }),
+        resolveIndexLabRunDirectory: async () => path.join(indexLabRoot, runId),
+        safeReadJson: async () => null,
+        safeJoin: (...args) => path.join(...args.map((a) => String(a || ''))),
+        path,
+      });
+
+      const res = createStreamingMockRes();
+      const result = await handler(
+        ['indexlab', 'run', runId, 'runtime', 'assets', 'shot1.png'],
+        new URLSearchParams(),
+        'GET',
+        { headers: {} },
+        res,
+      );
+      await waitForStream(res);
+
+      assert.equal(result, true);
+      assert.equal(res.statusCode, 200);
+      assert.equal(Number(res.headers['content-length']), pngContent.length);
+      assert.match(String(res.headers.etag), /^".+"$/);
+      assert.match(String(res.headers['cache-control']), /max-age/);
+    } finally {
+      await fs.rm(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  test('local run asset supports alpha-preserving thumbnail derivatives', async () => {
+    const { tempRoot, indexLabRoot, outputRoot, runId, runDir } = await createAssetFixture();
+    try {
+      const screenshotsDir = path.join(runDir, 'screenshots');
+      await sharp({
+        create: {
+          width: 1000,
+          height: 700,
+          channels: 4,
+          background: { r: 0, g: 0, b: 0, alpha: 0 },
+        },
+      })
+        .composite([{
+          input: Buffer.from('<svg width="700" height="400"><rect width="700" height="400" fill="#2563eb"/></svg>'),
+          left: 150,
+          top: 150,
+        }])
+        .png()
+        .toFile(path.join(screenshotsDir, 'valid-shot.png'));
+
+      const handler = registerRuntimeOpsRoutes({
+        jsonRes,
+        toInt,
+        INDEXLAB_ROOT: indexLabRoot,
+        OUTPUT_ROOT: outputRoot,
+        config: {},
+        storage: { resolveOutputKey: (...p) => p.join('/'), resolveInputKey: (...p) => p.join('/'), readJsonOrNull: async () => null },
+        readRunSummaryEvents: async () => [],
+        readIndexLabRunMeta: async () => ({ run_id: runId, status: 'completed' }),
+        resolveIndexLabRunDirectory: async () => path.join(indexLabRoot, runId),
+        safeReadJson: async () => null,
+        safeJoin: (...args) => path.join(...args.map((a) => String(a || ''))),
+        path,
+      });
+
+      const res = createStreamingMockRes();
+      const result = await handler(
+        ['indexlab', 'run', runId, 'runtime', 'assets', 'valid-shot.png'],
+        new URLSearchParams('variant=thumb'),
+        'GET',
+        { headers: {} },
+        res,
+      );
+      await waitForStream(res);
+
+      const meta = await sharp(res.body).metadata();
+
+      assert.equal(result, true);
+      assert.equal(res.statusCode, 200);
+      assert.equal(res.headers['content-type'], 'image/webp');
+      assert.ok(Math.max(meta.width, meta.height) <= 320);
+      assert.equal(meta.hasAlpha, true);
+      assert.match(String(res.headers['cache-control']), /max-age/);
     } finally {
       await fs.rm(tempRoot, { recursive: true, force: true });
     }

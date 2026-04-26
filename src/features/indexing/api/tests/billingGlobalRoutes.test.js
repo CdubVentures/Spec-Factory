@@ -84,39 +84,6 @@ describe('billing global routes', () => {
     handler = registerQueueBillingLearningRoutes(makeCtx(appDb));
   });
 
-  it('GET /billing/global/summary returns totals + counts', async () => {
-    const result = await handler(['billing', 'global', 'summary'], new URLSearchParams(), 'GET', {}, {});
-    assert.equal(result.status, 200);
-    assert.ok(result.data.totals);
-    assert.equal(typeof result.data.models_used, 'number');
-    assert.equal(typeof result.data.categories_used, 'number');
-  });
-
-  it('GET /billing/global/daily returns days + by_day_reason', async () => {
-    const result = await handler(['billing', 'global', 'daily'], new URLSearchParams('months=1'), 'GET', {}, {});
-    assert.equal(result.status, 200);
-    assert.ok(Array.isArray(result.data.days));
-    assert.ok(Array.isArray(result.data.by_day_reason));
-  });
-
-  it('GET /billing/global/by-model returns sorted array', async () => {
-    const result = await handler(['billing', 'global', 'by-model'], new URLSearchParams(), 'GET', {}, {});
-    assert.equal(result.status, 200);
-    assert.ok(Array.isArray(result.data.models));
-  });
-
-  it('GET /billing/global/by-reason returns sorted array', async () => {
-    const result = await handler(['billing', 'global', 'by-reason'], new URLSearchParams(), 'GET', {}, {});
-    assert.equal(result.status, 200);
-    assert.ok(Array.isArray(result.data.reasons));
-  });
-
-  it('GET /billing/global/by-category returns sorted array', async () => {
-    const result = await handler(['billing', 'global', 'by-category'], new URLSearchParams(), 'GET', {}, {});
-    assert.equal(result.status, 200);
-    assert.ok(Array.isArray(result.data.categories));
-  });
-
   it('GET /billing/global/entries returns paginated entries', async () => {
     const result = await handler(['billing', 'global', 'entries'], new URLSearchParams('limit=10&offset=0'), 'GET', {}, {});
     assert.equal(result.status, 200);
@@ -371,9 +338,136 @@ describe('billing global routes', () => {
     assert.equal(result, false);
   });
 
+  it('retired legacy endpoints (summary/daily/by-model/by-reason/by-category) no longer resolve', async () => {
+    // WHY: Per Subtractive Engineering Mandate — these route branches were
+    // collapsed into /billing/global/dashboard. They must no longer be served.
+    for (const part of ['summary', 'daily', 'by-model', 'by-reason', 'by-category']) {
+      const result = await handler(['billing', 'global', part], new URLSearchParams(), 'GET', {}, {});
+      assert.equal(result, false, `legacy route /billing/global/${part} should be retired`);
+    }
+  });
+
   it('existing /billing/{category}/monthly still works', async () => {
     const result = await handler(['billing', 'mouse', 'monthly'], new URLSearchParams(), 'GET', {}, {});
     assert.equal(result.status, 200);
     assert.ok(result.data.totals);
+  });
+
+  // ── /billing/global/dashboard — bundle endpoint ──
+
+  it('GET /billing/global/dashboard returns all filtered + unfiltered subsections + prior_summary in one payload', async () => {
+    const params = new URLSearchParams('month=2026-04&prior_month=2026-03');
+    const result = await handler(['billing', 'global', 'dashboard'], params, 'GET', {}, {});
+    assert.equal(result.status, 200);
+    assert.equal(result.data.month, '2026-04');
+    assert.equal(result.data.prior_month, '2026-03');
+    // filtered.*
+    assert.ok(result.data.filtered);
+    assert.ok(result.data.filtered.summary);
+    assert.equal(typeof result.data.filtered.summary.models_used, 'number');
+    assert.equal(typeof result.data.filtered.summary.categories_used, 'number');
+    assert.ok(result.data.filtered.prior_summary);
+    assert.equal(result.data.filtered.prior_summary.month, '2026-03');
+    assert.ok(Array.isArray(result.data.filtered.by_model));
+    assert.ok(Array.isArray(result.data.filtered.by_reason));
+    assert.ok(Array.isArray(result.data.filtered.by_category));
+    assert.ok(result.data.filtered.daily);
+    assert.ok(Array.isArray(result.data.filtered.daily.days));
+    assert.ok(Array.isArray(result.data.filtered.daily.by_day_reason));
+    // unfiltered.*
+    assert.ok(result.data.unfiltered);
+    assert.ok(Array.isArray(result.data.unfiltered.by_model));
+    assert.ok(Array.isArray(result.data.unfiltered.by_reason));
+    assert.ok(Array.isArray(result.data.unfiltered.by_category));
+  });
+
+  it('GET /billing/global/dashboard propagates filters to filtered.* but NOT to unfiltered.*', async () => {
+    const params = new URLSearchParams('month=2026-04&prior_month=2026-03&category=mouse');
+    const result = await handler(['billing', 'global', 'dashboard'], params, 'GET', {}, {});
+    assert.equal(result.status, 200);
+    // filtered.by_category should only have mouse (filter applied)
+    const filteredCategories = result.data.filtered.by_category.map((c) => c.key);
+    assert.deepEqual(filteredCategories, ['mouse']);
+    // unfiltered.by_category retains both mouse and keyboard
+    const unfilteredCategories = result.data.unfiltered.by_category.map((c) => c.key).sort();
+    assert.deepEqual(unfilteredCategories, ['keyboard', 'mouse']);
+  });
+
+  it('GET /billing/global/dashboard honors month and prior_month when explicitly passed', async () => {
+    const params = new URLSearchParams('month=2026-04&prior_month=2026-02');
+    const result = await handler(['billing', 'global', 'dashboard'], params, 'GET', {}, {});
+    assert.equal(result.status, 200);
+    assert.equal(result.data.month, '2026-04');
+    assert.equal(result.data.prior_month, '2026-02');
+    assert.equal(result.data.filtered.summary.month, '2026-04');
+    assert.equal(result.data.filtered.prior_summary.month, '2026-02');
+  });
+
+  it('GET /billing/global/dashboard threads months=N into getGlobalDaily', async () => {
+    let capturedDays = null;
+    const spyAppDb = {
+      ...appDb,
+      getGlobalDaily(opts) {
+        capturedDays = opts.days;
+        return { days: [], by_day_reason: [] };
+      },
+    };
+    const route = registerQueueBillingLearningRoutes(makeCtx(spyAppDb));
+    await route(['billing', 'global', 'dashboard'], new URLSearchParams('months=3'), 'GET', {}, {});
+    assert.equal(capturedDays, 3 * 31);
+    capturedDays = null;
+    await route(['billing', 'global', 'dashboard'], new URLSearchParams(), 'GET', {}, {});
+    assert.equal(capturedDays, 1 * 31, 'default months=1');
+  });
+
+  it('GET /billing/global/dashboard with empty month yields zero totals not nulls', async () => {
+    const params = new URLSearchParams('month=2025-01&prior_month=2024-12');
+    const result = await handler(['billing', 'global', 'dashboard'], params, 'GET', {}, {});
+    assert.equal(result.status, 200);
+    assert.equal(result.data.filtered.summary.totals.calls, 0);
+    assert.equal(result.data.filtered.summary.totals.cost_usd, 0);
+    assert.equal(result.data.filtered.summary.models_used, 0);
+    assert.equal(result.data.filtered.summary.categories_used, 0);
+    assert.equal(result.data.filtered.prior_summary.totals.calls, 0);
+    assert.deepEqual(result.data.filtered.by_model, []);
+    assert.deepEqual(result.data.filtered.by_reason, []);
+    assert.deepEqual(result.data.filtered.by_category, []);
+  });
+
+  it('GET /billing/global/dashboard returns 503 when appDb is missing', async () => {
+    const route = registerQueueBillingLearningRoutes(makeCtx(null));
+    const result = await route(['billing', 'global', 'dashboard'], new URLSearchParams(), 'GET', {}, {});
+    assert.equal(result.status, 503);
+  });
+
+  it('GET /billing/global/dashboard skips wasted bucket queries (by_day, by_product never requested)', async () => {
+    const calls = [];
+    const spyAppDb = {
+      ...appDb,
+      getBillingRollup(month, category, filters, options = {}) {
+        calls.push({ month, category, buckets: options.buckets ? Array.from(options.buckets).sort() : null });
+        return appDb.getBillingRollup(month, category, filters, options);
+      },
+    };
+    const route = registerQueueBillingLearningRoutes(makeCtx(spyAppDb));
+    await route(['billing', 'global', 'dashboard'], new URLSearchParams('month=2026-04&prior_month=2026-03&category=mouse'), 'GET', {}, {});
+
+    // 3 rollup calls: filtered, prior, unfiltered.
+    assert.equal(calls.length, 3);
+    // None of the calls request by_day or by_product (the wasted buckets).
+    for (const c of calls) {
+      assert.ok(c.buckets, 'every dashboard rollup call must pass a buckets option (no all-buckets fallback)');
+      assert.ok(!c.buckets.includes('by_day'), 'dashboard never needs by_day');
+      assert.ok(!c.buckets.includes('by_product'), 'dashboard never needs by_product');
+    }
+    // Filtered call requests by_model + by_reason + by_category.
+    const filtered = calls.find((c) => c.month === '2026-04' && c.category === 'mouse');
+    assert.deepEqual(filtered.buckets, ['by_category', 'by_model', 'by_reason']);
+    // Prior call only needs by_model + by_category for models_used/categories_used counts.
+    const prior = calls.find((c) => c.month === '2026-03');
+    assert.deepEqual(prior.buckets, ['by_category', 'by_model']);
+    // Unfiltered call requests the 3 chip buckets.
+    const unfiltered = calls.find((c) => c.month === '2026-04' && c.category === '');
+    assert.deepEqual(unfiltered.buckets, ['by_category', 'by_model', 'by_reason']);
   });
 });

@@ -22,6 +22,7 @@ function pifVariant(key: string): PifVariantProgressGen {
     loop_total: 0,
     hero_filled: 0,
     hero_target: 0,
+    image_count: 0,
   };
 }
 
@@ -41,6 +42,7 @@ function product(productId: string): CatalogRow {
     fieldsTotal: 0,
     cefRunCount: 0,
     pifVariants: [pifVariant('red'), pifVariant('blue')],
+    pifDependencyMissingKeys: ['connection'],
     skuVariants: [],
     rdfVariants: [],
     keyTierProgress: [],
@@ -74,6 +76,28 @@ function fireRecorder(calls: BulkFireParams[]): BulkFireFn {
 }
 
 describe('Overview pipeline stage dispatch', () => {
+  it('runs PIF dependencies as a dedicated forced-solo KF stage before PIF', async () => {
+    const calls: BulkFireParams[] = [];
+    const result = await dispatchPipelineStage({
+      stage: PIPELINE_STAGES.find((stage) => stage.kind === 'pif-dep')!,
+      category: 'mouse',
+      products: [product('p1')],
+      fire: fireRecorder(calls),
+      reservedKeys: new Set(),
+      options: { staggerMs: 0 },
+    });
+
+    assert.equal(
+      PIPELINE_STAGES.findIndex((stage) => stage.kind === 'pif-dep')
+        < PIPELINE_STAGES.findIndex((stage) => stage.kind === 'pif-loop'),
+      true,
+    );
+    assert.deepEqual(calls.map((call) => call.body), [
+      { field_key: 'connection', mode: 'run', force_solo: true, reason: 'pif_dependency' },
+    ]);
+    assert.deepEqual(result.operationIds, ['kf:p1:run:connection']);
+  });
+
   it('returns only operation ids accepted by the current stage', async () => {
     useOperationsStore.getState().upsert(op({
       id: 'old-pif-eval',

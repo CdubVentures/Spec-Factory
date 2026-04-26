@@ -397,23 +397,22 @@
     },
     {
       "ai_assist": {
-        "reasoning_note": ""
+        "reasoning_note": "Use buyer-facing host connection modes only; brand-specific wireless names and source wording map to canonical chips, not new enum values. Keep wired, wired mode, USB, USB 2.0/3.0, USB Type-C/USB-C, charging/data cable, 2.4G/2.4 GHz, wireless receiver, dongle/adapter, Logi Bolt, Unifying receiver, LIGHTSPEED, HyperSpeed, HyperPolling Wireless Dongle, SLIPSTREAM, Quantum Wireless/2.0, SpeedNova, Bluetooth LE/Low Energy, BLE, and BT out of public chips."
       },
       "delimiter": "",
       "field": "connectivity",
       "header_row": 0,
       "manual_values": [
-        "2.4GHz Dongle",
-        "2.4GHz WIFI Dongle",
+        "USB Wired",
         "2.4GHz RF Dongle",
-        "n/a"
+        "Bluetooth"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
+        "required_level": "mandatory",
+        "availability": "always",
+        "difficulty": "easy"
       },
       "row_end": 0,
       "row_start": 2,
@@ -442,7 +441,7 @@
     },
     {
       "ai_assist": {
-        "reasoning_note": ""
+        "reasoning_note": "Store only canonical count + type values. Add an unlisted <N> zone (rgb|led) only when direct evidence proves a real zone/programmable-LED count beyond the curated list; do not create chips from platform names or lighting-effect names. Keep Chroma RGB, Razer Chroma, LIGHTSYNC, PrismSync, iCUE, Aura Sync, RGB backlighting, RGB lighting zones, RGB LEDs, 16.8 million colors, individually programmable LEDs, underglow, light bar, status indicators, GameSense, and effect names out of chips."
       },
       "delimiter": "",
       "field": "lighting",
@@ -464,6 +463,10 @@
         "7 zone (rgb)",
         "8 zone (rgb)",
         "9 zone (rgb)",
+        "10 zone (rgb)",
+        "11 zone (rgb)",
+        "12 zone (rgb)",
+        "13 zone (rgb)",
         "none"
       ],
       "mode": "scratch",
@@ -750,16 +753,16 @@
     },
     {
       "ai_assist": {
-        "reasoning_note": ""
+        "reasoning_note": "Keep the four curated chips for now; do not add brand cable-technology names unless curated as generic/material classes or intentionally public chips. Keep source phrases such as SpeedFlex/Speedflex cable, Ascended Cable/Cord, Flex Cord/Flex Cord 3.0, EZcord/EZcord Pro, PhantomFlex, HyperFlex, and soft/resistance-free/low-drag/flexible alone out of public chips."
       },
       "delimiter": "",
       "field": "cable_type",
       "header_row": 0,
       "manual_values": [
         "braided",
-        "ultraweave",
+        "paracord",
         "rubber",
-        "paracord"
+        "ultraweave"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
@@ -775,21 +778,22 @@
     },
     {
       "ai_assist": {
-        "reasoning_note": ""
+        "reasoning_note": "Keep public chips to connector standards; do not create chips from marketing names, receiver names, cable branding, or generic USB wording. Normalize USB Type A/USB-A/Type-A/full-size USB to USB-A, USB Type C/USB-C/Type-C to USB-C, and PS2/PS/2/mini-DIN-6 to PS/2."
       },
       "delimiter": "",
       "field": "computer_side_connector",
       "header_row": 0,
       "manual_values": [
         "USB-A",
-        "USB-C"
+        "USB-C",
+        "PS/2"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
+        "required_level": "non_mandatory",
         "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
+        "difficulty": "medium"
       },
       "row_end": 0,
       "row_start": 2,
@@ -798,14 +802,15 @@
     },
     {
       "ai_assist": {
-        "reasoning_note": ""
+        "reasoning_note": "Normalize by the connector on the mouse body, not by cable marketing name, receiver/dongle connector, dock connector, or computer-side connector. Add Lightning as a known public chip for Apple Magic Mouse-era products."
       },
       "delimiter": "",
       "field": "mouse_side_connector",
       "header_row": 0,
       "manual_values": [
-        "Micro-B",
         "USB-C",
+        "Micro-B",
+        "Lightning",
         "n/a"
       ],
       "mode": "scratch",
@@ -1327,10 +1332,18 @@
     },
     "battery_hours": {
       "aliases": [
-        "battery_hours",
         "battery life",
         "battery life (hours)",
-        "battery runtime"
+        "battery runtime",
+        "battery duration",
+        "playtime",
+        "hours of use",
+        "use on a single charge",
+        "full charge",
+        "battery life (Bluetooth)",
+        "battery life (2.4 GHz)",
+        "battery life (HyperSpeed)",
+        "battery_hours"
       ],
       "availability": "sometimes",
       "canonical_key": "battery_hours",
@@ -1338,7 +1351,7 @@
       "constraints": [],
       "contract": {
         "range": {
-          "max": 500,
+          "max": 30000,
           "min": 0
         },
         "rounding": {
@@ -1408,22 +1421,39 @@
       "round": "int",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "manufacturer product pages",
+          "official support/spec pages",
+          "official datasheets",
+          "press releases",
+          "authorized retailer spec tables",
+          "professional reviews with advertised or measured battery sections"
         ],
         "domain_hints": [
-          "mousespecs.org",
+          "logitech.com",
+          "logitechg.com",
+          "razer.com",
+          "steelseries.com",
+          "gloriousgaming.com",
+          "support.roccat.com",
+          "turtlebeach.com",
           "rtings.com",
-          "eloshapes.com",
-          "bestbuy.com"
+          "bestbuy.com",
+          "mousespecs.org",
+          "eloshapes.com"
         ],
         "query_terms": [
           "battery life",
-          "battery hours",
-          "runtime",
-          "charge time",
-          "battery duration"
+          "battery runtime",
+          "battery duration",
+          "playtime",
+          "hours of use",
+          "single charge",
+          "full charge",
+          "Bluetooth battery life",
+          "2.4 GHz battery life",
+          "HyperSpeed battery life",
+          "battery life days",
+          "battery life months"
         ]
       },
       "selection_policy": {},
@@ -1449,11 +1479,34 @@
       "unit": "h",
       "value_form": "single",
       "value_form_sample": "scalar",
-      "variance_policy": "upper_bound"
+      "variance_policy": "upper_bound",
+      "variant_dependent": false,
+      "ai_assist": {
+        "reasoning_note": "Extract the manufacturer- or credible-source advertised maximum battery runtime for the exact mouse as a scalar hours value. Accept up to battery life/runtime/playtime/use-on-a-charge claims. If the source lists multiple modes or settings (2.4 GHz, Bluetooth, HyperSpeed, lighting on/off, polling rate, AA/AAA battery), emit the highest supported runtime that applies to the exact product because this field uses upper_bound; preserve the condition in evidence. Convert units to hours: days x 24, weeks x 168, months x 730, years x 8760; prefer explicit source hours when present. Do not use charge time, fast-charge minutes, battery capacity (mAh), standby/sleep time, or values from older/newer/sibling editions. For wired-only products or products with no defensible runtime evidence, return unk/no submitted value.",
+        "variant_inventory_usage": {
+          "enabled": true
+        },
+        "pif_priority_images": {
+          "enabled": false
+        }
+      }
     },
     "bluetooth": {
-      "aliases": [],
-      "availability": "sometimes",
+      "aliases": [
+        "Bluetooth Low Energy",
+        "Bluetooth LE",
+        "BLE",
+        "BT",
+        "Bluetooth Smart",
+        "Bluetooth 4.0",
+        "Bluetooth 5.0",
+        "Bluetooth 5.1",
+        "Bluetooth 5.2",
+        "Bluetooth 5.3",
+        "Bluetooth-enabled",
+        "Swift Pair"
+      ],
+      "availability": "always",
       "canonical_key": "bluetooth",
       "component": null,
       "constraints": [],
@@ -1545,29 +1598,41 @@
         ]
       },
       "priority": {
-        "availability": "sometimes",
+        "availability": "always",
         "difficulty": "easy",
-        "required_level": "non_mandatory"
+        "required_level": "mandatory"
       },
-      "required_level": "non_mandatory",
+      "required_level": "mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "brand product/spec/support pages",
+          "official manuals/datasheets",
+          "professional reviews",
+          "retailer spec tables/Q&A with manufacturer answers",
+          "specs databases as fallback/corroboration"
         ],
         "domain_hints": [
-          "eloshapes.com",
           "rtings.com",
+          "bestbuy.com",
+          "bhphotovideo.com",
+          "cdw.com",
           "mousespecs.org",
-          "bestbuy.com"
+          "eloshapes.com"
         ],
         "query_terms": [
           "Bluetooth",
+          "Bluetooth Low Energy",
+          "Bluetooth LE",
           "BLE",
-          "Bluetooth version",
-          "Bluetooth 5.0",
-          "Bluetooth connectivity"
+          "BT",
+          "Bluetooth connectivity",
+          "connection type",
+          "connectivity technology",
+          "wireless technology",
+          "USB receiver only",
+          "2.4 GHz only",
+          "no Bluetooth"
         ]
       },
       "selection_policy": {},
@@ -1591,17 +1656,43 @@
         "tooltip_source": null
       },
       "value_form": "scalar",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": false,
+      "ai_assist": {
+        "reasoning_note": "Return true only when the exact product/variant supports Bluetooth as a connection mode. Accept Bluetooth, Bluetooth Low Energy, Bluetooth LE, BLE, BT, Bluetooth Smart, or Bluetooth 4.x/5.x wording as true; version text is evidence only, not a separate value. Return false only when a credible product/spec/review source explicitly says no Bluetooth or enumerates all supported connection modes as wired/USB receiver/2.4 GHz/proprietary wireless only. Do not infer true from wireless, 2.4 GHz, USB receiver, dongle, LIGHTSPEED, HyperSpeed, or Wireless alone. If sources are generic, omit the exact variant, or conflict with sibling/edition evidence, return unk rather than guessing.",
+        "variant_inventory_usage": {
+          "enabled": true
+        },
+        "pif_priority_images": {
+          "enabled": false
+        }
+      }
     },
     "cable_type": {
-      "aliases": [],
-      "availability": "always",
+      "aliases": [
+        "rubber-coated cable -> rubber",
+        "soft rubber cable -> rubber",
+        "braided cable -> braided",
+        "braided sheathing -> braided",
+        "paracord cable -> paracord",
+        "paracord-like -> paracord when explicitly stated",
+        "shoelace cable -> paracord",
+        "lightweight paracord construction -> paracord",
+        "Ultraweave/Ultra-weave -> ultraweave",
+        "Ascended Cable -> paracord only when source says paracord material",
+        "SpeedFlex, Flex Cord, EZcord, PhantomFlex, HyperFlex -> marketing phrase unless material is also stated"
+      ],
+      "availability": "sometimes",
       "canonical_key": "cable_type",
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
-        "shape": "scalar",
+        "list_rules": {
+          "dedupe": true,
+          "sort": "asc",
+          "item_union": true
+        },
+        "shape": "list",
         "type": "string",
         "unit": null
       },
@@ -1624,7 +1715,9 @@
         "tier_preference": [
           "tier1",
           "tier2",
-          "tier3"
+          "tier3",
+          "tier5",
+          "tier4"
         ]
       },
       "field_key": "cable_type",
@@ -1648,19 +1741,31 @@
         "accept_if_evidence": true,
         "mark_needs_curation": true
       },
-      "output_shape": "scalar",
+      "output_shape": "list",
       "parse": {
-        "delimiters": [],
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";",
+          "+"
+        ],
         "range_separators": [],
         "unit": null
       },
       "parse_rules": {
-        "delimiters": [],
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";",
+          "+"
+        ],
         "separators": [],
         "unit": null
       },
       "priority": {
-        "availability": "always",
+        "availability": "sometimes",
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
@@ -1668,26 +1773,47 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review",
-          "spec_sheet"
+          "manufacturer product/spec/support pages",
+          "press releases",
+          "professional reviews",
+          "authorized retailer/spec listings",
+          "spec aggregators as fallback"
         ],
         "domain_hints": [
-          "mousespecs.org",
+          "official brand product/support pages",
+          "zowie.benq.com",
+          "mysupport.razer.com",
+          "coolermaster.com",
+          "gloriousgaming.com",
+          "steelseries.com",
+          "endgamegear.com",
+          "cherryxtrfy.com",
           "rtings.com",
-          "eloshapes.com",
-          "techpowerup.com"
+          "mousespecs.org",
+          "techpowerup.com",
+          "eloshapes.com"
         ],
         "query_terms": [
+          "cable",
           "cable type",
+          "cord type",
+          "cable material",
           "paracord",
+          "paracord-like",
           "braided cable",
           "rubber cable",
+          "rubber-coated cable",
+          "Ultraweave",
           "SpeedFlex",
-          "cable material"
+          "Ascended Cable",
+          "Flex Cord",
+          "EZcord",
+          "included cable",
+          "replacement cable"
         ]
       },
       "selection_policy": {},
-      "shape": "scalar",
+      "shape": "list",
       "type": "string",
       "ui": {
         "array_handling": "none",
@@ -1706,8 +1832,18 @@
         "tooltip_md": "Define 'Cable Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form": "set",
+      "value_form_sample": "list",
+      "variant_dependent": true,
+      "ai_assist": {
+        "reasoning_note": "Extract the cable sheath/flex class of the included cable(s), not connector, length, detachable status, wireless mode, or the separate paracord boolean alone. Prefer direct Cable/Cable Type/spec labels. Normalize exact terms: paracord/paracord-like/shoelace/lightweight paracord construction => paracord; rubber/rubber-coated/soft rubber cable => rubber; braided/double-sleeved/braided cable => braided; Cooler Master Ultraweave/Ultra-weave => ultraweave. Proprietary low-drag names such as SpeedFlex, Ascended, Flex Cord, EZcord, PhantomFlex, and HyperFlex need a material statement before mapping; do not create a new value from marketing alone. For products with multiple included/swappable cables, return every proven cable type. If sources only prove USB connectors, cable length, charging ability, or generic flexibility, return unk.",
+        "variant_inventory_usage": {
+          "enabled": true
+        },
+        "pif_priority_images": {
+          "enabled": false
+        }
+      }
     },
     "click_force": {
       "aliases": [],
@@ -2613,22 +2749,44 @@
       }
     },
     "computer_side_connector": {
-      "aliases": [],
-      "availability": "always",
+      "aliases": [
+        "USB Type-A",
+        "USB Type A",
+        "Type-A",
+        "USB-A port",
+        "USB 2.0 Type-A",
+        "USB Type-C",
+        "USB Type C",
+        "Type-C",
+        "USB-C port",
+        "USB-C Charge Cable",
+        "USB-C to USB-C",
+        "PS2",
+        "PS/2",
+        "6-pin mini-DIN",
+        "mini-DIN-6"
+      ],
+      "availability": "sometimes",
       "canonical_key": "computer_side_connector",
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
-        "shape": "scalar",
+        "list_rules": {
+          "dedupe": true,
+          "sort": "insert",
+          "item_union": false
+        },
+        "shape": "list",
         "type": "string",
         "unit": null
       },
       "data_type": "string",
-      "difficulty": "easy",
+      "difficulty": "medium",
       "display_name": "Computer-side Connector",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "standards-style connector label, e.g. USB-A, USB-C, PS/2; avoid marketing names and generic USB-only labels"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -2667,45 +2825,73 @@
         "accept_if_evidence": true,
         "mark_needs_curation": true
       },
-      "output_shape": "scalar",
+      "output_shape": "list",
       "parse": {
-        "delimiters": [],
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";",
+          "+"
+        ],
         "range_separators": [],
         "unit": null
       },
       "parse_rules": {
-        "delimiters": [],
+        "delimiters": [
+          ",",
+          "/",
+          "|",
+          ";",
+          "+"
+        ],
         "separators": [],
         "unit": null
       },
       "priority": {
-        "availability": "always",
-        "difficulty": "easy",
+        "availability": "sometimes",
+        "difficulty": "medium",
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review",
-          "spec_sheet"
+          "product specs",
+          "support/quick-start manuals",
+          "in-box/accessory lists",
+          "retailer spec tables",
+          "review/unboxing photos",
+          "clear product-in-box images"
         ],
         "domain_hints": [
-          "mousespecs.org",
+          "brand/manufacturer product and support pages",
+          "support.apple.com",
+          "apple.com",
+          "corsair.com",
+          "razer.com",
+          "logitechg.com",
+          "support.logi.com",
           "rtings.com",
           "techpowerup.com",
+          "bhphotovideo.com",
           "bestbuy.com"
         ],
         "query_terms": [
-          "USB connector",
-          "USB-A",
           "computer side connector",
-          "PC connector",
-          "dongle connector"
+          "USB Type-A mouse",
+          "USB Type-C mouse",
+          "USB receiver connector",
+          "wireless dongle USB-A",
+          "Type-A to Type-C cable",
+          "USB-C to USB-C charging/data cable",
+          "whats in the box",
+          "included adapter",
+          "PS/2 mouse connector"
         ]
       },
       "selection_policy": {},
-      "shape": "scalar",
+      "shape": "list",
       "type": "string",
       "ui": {
         "array_handling": "none",
@@ -2724,8 +2910,18 @@
         "tooltip_md": "Define 'Computer-side Connector' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
         "tooltip_source": null
       },
-      "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form": "set",
+      "value_form_sample": "list",
+      "variant_dependent": true,
+      "ai_assist": {
+        "reasoning_note": "Extract the physical connector(s) that can plug into the computer for the exact mouse/package: cable computer end, wireless receiver/dongle plug, and any included adapter that changes the computer-facing plug. Do not use the mouse-side port (for example a USB-C charging port) unless the source also proves the computer-facing end is USB-C. Generic USB receiver, USB cable, or USB port is not enough for USB-A/USB-C unless the source text or a clear tied image proves the connector shape/type. Return multiple values only when the exact package includes multiple PC-facing plugs/adapters; do not union across separate connector variants/SKUs, and return unk when the requested variant is not pinned. Included adapters count; optional or third-party adapters do not.",
+        "variant_inventory_usage": {
+          "enabled": true
+        },
+        "pif_priority_images": {
+          "enabled": true
+        }
+      }
     },
     "connection": {
       "ai_assist": {
@@ -2907,13 +3103,47 @@
       }
     },
     "connectivity": {
-      "aliases": [],
+      "aliases": [
+        "wired",
+        "wired mode",
+        "USB connection",
+        "USB wired",
+        "USB Type-C",
+        "USB-C",
+        "charging/data cable",
+        "2.4G",
+        "2.4 GHz",
+        "2.4GHz Wireless",
+        "RF 2.4 GHz",
+        "USB receiver",
+        "wireless receiver",
+        "receiver",
+        "dongle",
+        "adapter",
+        "LIGHTSPEED",
+        "Logi Bolt",
+        "Unifying receiver",
+        "HyperSpeed",
+        "HyperPolling Wireless Dongle",
+        "SLIPSTREAM",
+        "Quantum Wireless",
+        "Quantum 2.0",
+        "SpeedNova",
+        "Bluetooth",
+        "Bluetooth LE",
+        "Bluetooth Low Energy",
+        "BLE",
+        "BT"
+      ],
       "availability": "always",
       "canonical_key": "connectivity",
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
+        "list_rules": {
+          "sort": "insert",
+          "item_union": false
+        },
         "shape": "list",
         "type": "string",
         "unit": null
@@ -2923,14 +3153,11 @@
       "display_name": "Connectivity",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open_prefer_known",
+        "new_value_policy": {},
+        "policy": "closed",
         "source": "data_lists.connectivity"
       },
-      "enum_policy": "open_prefer_known",
+      "enum_policy": "closed",
       "enum_source": "data_lists.connectivity",
       "evidence": {
         "min_evidence_refs": 1,
@@ -2967,10 +3194,6 @@
       "group": "Connectivity & Power",
       "key": "connectivity",
       "min_evidence_refs": 1,
-      "new_value_policy": {
-        "accept_if_evidence": true,
-        "mark_needs_curation": true
-      },
       "output_shape": "list",
       "parse": {
         "delimiters": [
@@ -3003,21 +3226,36 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet"
+          "manufacturer product specs",
+          "official support/spec page",
+          "official product guide/manual PDF",
+          "authorized retailer spec table",
+          "professional review/spec table"
         ],
         "domain_hints": [
-          "eloshapes.com",
-          "mousespecs.org",
+          "logitech.com",
+          "razer.com",
+          "steelseries.com",
+          "corsair.com",
+          "keychron.com",
+          "zowie.benq.com",
+          "gloriousgaming.com",
           "rtings.com",
-          "bestbuy.com"
+          "bestbuy.com",
+          "newegg.com"
         ],
         "query_terms": [
           "connectivity",
+          "connection type",
           "wireless technology",
+          "2.4GHz",
+          "Bluetooth",
+          "USB wired mode",
           "dongle",
           "receiver",
-          "pairing"
+          "product guide",
+          "manual",
+          "specs"
         ]
       },
       "selection_policy": {},
@@ -3041,7 +3279,17 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "set",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "variant_dependent": true,
+      "ai_assist": {
+        "reasoning_note": "Extract the complete set of host connection modes for the exact product/edition/SKU, not only the default or most marketed mode. Map USB/USB-C/wired/data-cable mode to USB Wired only when the source says the mouse can operate over USB/wired mode; a charging-only cable is not enough. Map 2.4G/2.4 GHz/proprietary receiver or dongle modes, including LIGHTSPEED, HyperSpeed, SLIPSTREAM, Quantum, SpeedNova, Logi Bolt, Unifying, wireless receiver, and dongle language, to 2.4GHz RF Dongle; do not emit Wi-Fi unless the source explicitly describes Wi-Fi network connectivity. Map Bluetooth LE/BLE/BT to Bluetooth. Do not union across sibling wired/wireless/Bluetooth Edition/for Business variants; use the exact requested product evidence.",
+        "variant_inventory_usage": {
+          "enabled": true
+        },
+        "pif_priority_images": {
+          "enabled": false
+        }
+      }
     },
     "debounce": {
       "aliases": [],
@@ -5808,14 +6056,34 @@
       "value_form_sample": "list"
     },
     "lighting": {
-      "aliases": [],
-      "availability": "always",
+      "aliases": [
+        "Chroma RGB",
+        "Razer Chroma",
+        "LIGHTSYNC RGB",
+        "PrismSync RGB",
+        "iCUE RGB",
+        "Aura Sync RGB",
+        "RGB backlighting",
+        "RGB lighting zones",
+        "individually programmable LEDs",
+        "RGB LED array",
+        "underglow",
+        "gradient underglow",
+        "light bar",
+        "single-color lighting",
+        "single-color green lighting",
+        "no RGB lighting",
+        "lacks RGB lighting"
+      ],
+      "availability": "sometimes",
       "canonical_key": "lighting",
       "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
-          "dedupe": false
+          "dedupe": true,
+          "sort": "insert",
+          "item_union": false
         },
         "shape": "list",
         "type": "string",
@@ -5825,7 +6093,9 @@
       "difficulty": "easy",
       "display_name": "Lighting",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "none or <integer> zone (rgb|led)"
+        },
         "new_value_policy": {},
         "policy": "open_prefer_known",
         "source": null
@@ -5890,7 +6160,7 @@
         "unit": null
       },
       "priority": {
-        "availability": "always",
+        "availability": "sometimes",
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
@@ -5898,20 +6168,38 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review",
-          "product_page"
+          "official product pages",
+          "official support/FAQ pages",
+          "brand press releases/newsroom posts",
+          "official quick-start/spec sheets",
+          "professional reviews",
+          "authorized retailer spec tables"
         ],
         "domain_hints": [
+          "razer.com",
+          "logitechg.com",
+          "steelseries.com",
+          "corsair.com",
+          "asus.com",
+          "hyperx.com",
+          "gloriousgaming.com",
           "rtings.com",
-          "eloshapes.com",
-          "mousespecs.org",
-          "bestbuy.com"
+          "bestbuy.com",
+          "mousespecs.org"
         ],
         "query_terms": [
           "lighting",
-          "LED lighting",
+          "RGB lighting",
           "RGB zones",
-          "light effects"
+          "lighting zones",
+          "LED lighting",
+          "Chroma RGB",
+          "LIGHTSYNC RGB",
+          "PrismSync RGB",
+          "iCUE RGB",
+          "underglow",
+          "single-color lighting",
+          "no RGB lighting"
         ]
       },
       "selection_policy": {},
@@ -5935,7 +6223,17 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "set",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "variant_dependent": true,
+      "ai_assist": {
+        "reasoning_note": "Extract the mouse user-visible decorative/configurable lighting, not tiny DPI, battery, charging, or status indicators unless the manufacturer counts them in the lighting-zone total. Use (rgb) for Chroma/LIGHTSYNC/PrismSync/iCUE/Aura Sync/16.8M-color/customizable RGB wording; use (led) only for fixed or single-color lighting. Normalize manufacturer zones, individually programmable LEDs, and clearly counted RGB LED arrays to <N> zone (...); do not infer a zone count from generic RGB marketing alone. Keep to the exact model, edition, and SKU: family variants can differ, including Plus vs non-Plus, wired vs Pro, and translucent Phantom editions. For unresolved variant sets, use the exact requested/default/base product rather than unioning across editions. Images can support lit areas or no-lighting, but an unlit render is not negative evidence. Return none only with explicit no-RGB/no-lighting evidence or strong official visual/spec evidence; otherwise return unk.",
+        "variant_inventory_usage": {
+          "enabled": true
+        },
+        "pif_priority_images": {
+          "enabled": true
+        }
+      }
     },
     "lngth": {
       "aliases": [
@@ -6662,7 +6960,31 @@
       "value_form_sample": "scalar"
     },
     "mouse_side_connector": {
-      "aliases": [],
+      "aliases": [
+        "USB Type-C",
+        "USB Type C",
+        "USB C",
+        "Type-C",
+        "USB-C charging",
+        "USB-C charging/data port",
+        "USB-A to USB-C cable",
+        "USB Type A to USB Type C cable",
+        "SpeedFlex USB Type C",
+        "micro USB",
+        "Micro USB",
+        "micro-USB",
+        "USB Micro-B",
+        "Micro-B port",
+        "USB to Micro-USB cable",
+        "Lightning connector",
+        "Lightning port",
+        "Lightning to USB cable",
+        "fixed cable",
+        "integrated cable",
+        "permanently attached cable",
+        "wired-only",
+        "no USB port"
+      ],
       "availability": "always",
       "canonical_key": "mouse_side_connector",
       "component": null,
@@ -6736,19 +7058,37 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review",
-          "spec_sheet"
+          "official product tech specs",
+          "official setup guide/user manual PDF",
+          "official support FAQ",
+          "product front/bottom/port diagram images",
+          "professional review cable/port section",
+          "authorized retailer spec table as fallback"
         ],
         "domain_hints": [
-          "mousespecs.org",
+          "brand official product/support/manual pages",
+          "support.apple.com",
+          "support.logi.com",
+          "logitechg.com",
+          "razer.com",
+          "dl.razerzone.com",
+          "gloriousgaming.com",
+          "dell.com",
           "rtings.com",
-          "techpowerup.com"
+          "techpowerup.com",
+          "mousespecs.org"
         ],
         "query_terms": [
-          "mouse connector",
-          "USB-C mouse end",
-          "micro-USB",
-          "mouse side port"
+          "<product> USB-C port",
+          "<product> USB Type C port mouse",
+          "<product> micro USB port",
+          "<product> Micro USB charging cable",
+          "<product> Lightning port",
+          "<product> charging/data cable",
+          "<product> wired mode",
+          "<product> setup guide",
+          "<product> user manual",
+          "<product> mouse features"
         ]
       },
       "selection_policy": {},
@@ -6772,7 +7112,17 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": true,
+      "ai_assist": {
+        "reasoning_note": "Extract the connector or port on the mouse body used by a detachable cable for charging, data, or wired mode. Normalize by the mouse-end connector only: source phrases like USB Type A to USB Type C cable or USB-C charging/data cable mean USB-C only when the USB-C end plugs into the mouse; USB to Micro-USB or micro USB means Micro-B; Lightning to USB means Lightning. Use n/a only when the exact product has no detachable mouse-side port, such as a fixed/integrated wired cable, a replaceable-battery wireless mouse with no USB port, or a dock/pad-only design with no cable port. Do not use the computer-side plug, receiver/dongle connector, extension adapter, charging dock connector, Powerplay/Qi contacts, or generic cable_type as the value. If sources for the exact SKU/release disagree or mix old/new refreshes or wired/wireless siblings, return unk rather than unioning connector values.",
+        "variant_inventory_usage": {
+          "enabled": true
+        },
+        "pif_priority_images": {
+          "enabled": true
+        }
+      }
     },
     "nvidia_reflex": {
       "aliases": [],
@@ -7166,7 +7516,25 @@
       "value_form_sample": "scalar"
     },
     "paracord": {
-      "aliases": [],
+      "aliases": [
+        "paracord cable",
+        "paracord soft cable",
+        "paracord-like cable",
+        "paracord material",
+        "shoelace cable",
+        "Ascended Cable",
+        "Ascended Cord",
+        "HyperFlex USB Cable",
+        "HyperFlex 2 Cable",
+        "Superflex Paracord Cable",
+        "PhantomCord",
+        "Ultraweave cable",
+        "Speedflex cable",
+        "Flex Cord",
+        "EZcord",
+        "EZcord Pro",
+        "soft resilient cable"
+      ],
       "availability": "sometimes",
       "canonical_key": "paracord",
       "component": null,
@@ -7267,7 +7635,12 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review"
+          "official product page",
+          "official support/product guide",
+          "official accessory page that defines the included stock cable",
+          "professional review cable section",
+          "authorized retailer spec table",
+          "mouse spec database only as fallback/corroboration"
         ],
         "domain_hints": [
           "mousespecs.org",
@@ -7278,8 +7651,25 @@
         "query_terms": [
           "paracord",
           "paracord cable",
-          "lightweight cable",
-          "flexible cable"
+          "paracord-like cable",
+          "paracord material",
+          "stock cable",
+          "included cable",
+          "cable type",
+          "flexible cable",
+          "low-drag cable",
+          "shoelace cable",
+          "Ascended Cable",
+          "HyperFlex cable",
+          "HyperFlex 2 Cable",
+          "Superflex Paracord Cable",
+          "Speedflex cable",
+          "Ultraweave cable",
+          "PhantomCord",
+          "Flex Cord",
+          "EZcord",
+          "rubber cable",
+          "PVC cable"
         ]
       },
       "selection_policy": {},
@@ -7303,7 +7693,16 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "scalar",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "ai_assist": {
+        "reasoning_note": "Set true only for the stock/included cable supplied with the exact mouse/variant when a source explicitly identifies it as paracord/paracord-like, says the cable is made from paracord material, or ties the named stock cable to paracord material/design for that product. Count wired mice and wireless mice whose included USB cable is used for charging or wired play, but ignore aftermarket replacement/mod kits unless the source says that cable is factory-installed or included with the product. Do not treat generic flexible, braided, cloth, low-drag, or cable-length wording as true by itself; proprietary names such as Speedflex, Ultraweave, Flex Cord, EZcord, PhantomCord, Ascended, HyperFlex, or Superflex need either a paracord/material statement or a credible review/spec that explicitly calls the cable paracord-like. False requires positive evidence for a standard/rubber/PVC/non-paracord cable or an explicit non-paracord/non-braided claim; do not infer false from silence. Use exact model/edition/SKU and skip sibling wired/wireless pages unless the source states the same cable applies.",
+        "variant_inventory_usage": {
+          "enabled": true
+        },
+        "pif_priority_images": {
+          "enabled": false
+        }
+      }
     },
     "polling_rate": {
       "aliases": [
@@ -10816,7 +11215,33 @@
       "value_form_sample": "scalar"
     },
     "wireless_charging": {
-      "aliases": [],
+      "aliases": [
+        "wireless charging",
+        "wireless charge",
+        "wirelessly charge",
+        "Qi",
+        "Qi-certified",
+        "Qi wireless charging",
+        "inductive charging",
+        "wireless charging receiver",
+        "charging pad",
+        "charging mat",
+        "wireless charging mouse pad",
+        "POWERPLAY",
+        "POWERPLAY 2",
+        "POWERCORE module",
+        "PowerCore coin",
+        "Razer HyperFlux",
+        "HyperFlux V2",
+        "Firefly HyperFlux",
+        "Razer Wireless Charging Puck",
+        "Razer Mouse Dock Pro",
+        "Razer Charging Pad Chroma",
+        "CORSAIR MM1000",
+        "charging dock",
+        "pogo pins",
+        "contact charging"
+      ],
       "availability": "sometimes",
       "canonical_key": "wireless_charging",
       "component": null,
@@ -10917,21 +11342,36 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review",
-          "product_page"
+          "official product page",
+          "official support/FAQ",
+          "official manual/quick-start guide",
+          "official accessory compatibility page",
+          "retailer specification table",
+          "professional review/lab page"
         ],
         "domain_hints": [
+          "logitechg.com",
+          "support.logi.com",
+          "razer.com",
+          "mysupport.razer.com",
+          "corsair.com",
           "rtings.com",
-          "mousespecs.org",
           "bestbuy.com",
-          "eloshapes.com"
+          "mousespecs.org"
         ],
         "query_terms": [
           "wireless charging",
           "Qi charging",
-          "charging dock",
-          "POWERPLAY",
-          "wireless charge"
+          "Qi wireless charging receiver",
+          "POWERPLAY compatible",
+          "POWERPLAY 2 compatible",
+          "PowerCore module",
+          "Razer Wireless Charging Puck compatibility",
+          "Razer Mouse Dock Pro compatible",
+          "HyperFlux wireless charging",
+          "charging dock contacts",
+          "pogo pins",
+          "MM1000 Qi"
         ]
       },
       "selection_policy": {},
@@ -10955,7 +11395,16 @@
         "tooltip_source": null
       },
       "value_form": "scalar",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "ai_assist": {
+        "reasoning_note": "Return true when the exact mouse can charge or power itself wirelessly through inductive/Qi, magnetic-field, proprietary charging-mat, dock-plus-puck/module, or named systems such as Logitech POWERPLAY/POWERPLAY 2/PowerCore, CORSAIR Qi/MM1000, Razer HyperFlux/HyperFlux V2, or Razer Mouse Dock Pro + Wireless Charging Puck. Accessory sold separately still counts true when official compatibility applies to the exact mouse; aftermarket adapters or generic magnetic USB cables do not make the base product true. Do not count ordinary USB charging, replaceable batteries, charging cables, or a contact/pogo-pin cradle as wireless charging unless the source explicitly says inductive/Qi/wireless charging. Phrases like wireless mouse charging dock may mean a dock for a wireless mouse, so verify whether charging uses contacts/pins versus a puck/coil. For false, prefer an explicit no/unsupported statement or close official power/charging documentation plus no compatible-wireless-charger listing; otherwise return unk. Match the exact submodel/edition and do not transfer values between siblings.",
+        "variant_inventory_usage": {
+          "enabled": true
+        },
+        "pif_priority_images": {
+          "enabled": false
+        }
+      }
     }
   },
   "field_studio_source_path": "",

@@ -71,6 +71,10 @@ export interface CatalogRowGen {
   fieldsFilled: number;
   fieldsTotal: number;
   cefRunCount: number;
+  pifDependencyReady?: boolean;
+  pifDependencyRequiredKeys?: string[];
+  pifDependencyResolvedKeys?: string[];
+  pifDependencyMissingKeys?: string[];
   pifVariants: PifVariantProgressGen[];
   skuVariants: ScalarVariantProgressGen[];
   rdfVariants: ScalarVariantProgressGen[];

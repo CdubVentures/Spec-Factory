@@ -11,6 +11,13 @@ import { ActionTooltip } from '../../../shared/ui/feedback/ActionTooltip.tsx';
 import type { CarouselSlide } from '../types.ts';
 import { formatBytes, formatDims } from '../helpers/pifFormatUtils.ts';
 
+function isNearSelectedSlide(index: number, selectedIndex: number, slideCount: number): boolean {
+  if (slideCount <= 3) return true;
+  const previous = (selectedIndex - 1 + slideCount) % slideCount;
+  const next = (selectedIndex + 1) % slideCount;
+  return index === selectedIndex || index === previous || index === next;
+}
+
 /* ── Main popup ───────────────────────────────────────────────────── */
 
 export function CarouselPreviewPopup({
@@ -96,11 +103,13 @@ export function CarouselPreviewPopup({
                   }}
                 >
                   <img
-                    src={slide.src}
+                    src={slide.thumbSrc ?? slide.src}
                     alt={slide.slotLabel}
                     className="w-full h-full object-contain"
                     style={{ backgroundColor: 'transparent' }}
                     draggable={false}
+                    loading="lazy"
+                    decoding="async"
                   />
                 </button>
               );
@@ -120,12 +129,16 @@ export function CarouselPreviewPopup({
                     className="flex-[0_0_100%] min-w-0 flex items-center justify-center"
                     style={{ padding: 'clamp(1rem, 3vw, 3rem)' }}
                   >
-                    <img
-                      src={slide.src}
-                      alt={slide.slotLabel}
-                      className="max-w-full max-h-full object-contain select-none rounded"
-                      draggable={false}
-                    />
+                    {isNearSelectedSlide(i, selectedIndex, slides.length) && (
+                      <img
+                        src={slide.src}
+                        alt={slide.slotLabel}
+                        className="max-w-full max-h-full object-contain select-none rounded"
+                        draggable={false}
+                        loading={i === selectedIndex ? 'eager' : 'lazy'}
+                        decoding="async"
+                      />
+                    )}
                   </div>
                 ))}
               </div>

@@ -3,7 +3,7 @@ import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import { usePersistedTab } from '../../stores/tabStore.ts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
-import { useUiStore } from '../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../stores/uiCategoryStore.ts';
 import { useComponentReviewStore } from '../../stores/componentReviewStore.ts';
 import { useEnumReviewData } from './useEnumReviewData.ts';
 import { MetricRow } from '../../shared/ui/data-display/MetricRow.tsx';
@@ -18,7 +18,7 @@ const activeCls = 'sf-nav-item-active';
 const inactiveCls = 'sf-text-muted';
 
 export function ComponentReviewPage() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const subTabPersistKey = `componentReview:tab:sub:${category}`;
   // Individual selectors: only re-render when activeSubTab changes,
   // NOT when cellEditValue or other unrelated store slices change.

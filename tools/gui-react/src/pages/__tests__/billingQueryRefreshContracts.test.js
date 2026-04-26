@@ -122,8 +122,8 @@ function buildCommonStubs() {
         get: async () => ({})
       };
     `,
-    '../../stores/uiStore.ts': `
-      export function useUiStore(selector) {
+    '../../stores/uiCategoryStore.ts': `
+      export function useUiCategoryStore(selector) {
         return selector(globalThis.__queryHarness.uiState);
       }
     `,
@@ -181,23 +181,8 @@ function buildCommonStubs() {
 
       const BILLING_REFETCH = 30_000;
 
-      export function useBillingSummaryQuery() {
-        return useQuery({ queryKey: ['billing', 'summary'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
-      }
-      export function useBillingPriorSummaryQuery() {
-        return useQuery({ queryKey: ['billing', 'summary', 'prior'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
-      }
-      export function useBillingDailyQuery() {
-        return useQuery({ queryKey: ['billing', 'daily'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
-      }
-      export function useBillingByModelQuery() {
-        return useQuery({ queryKey: ['billing', 'by-model'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
-      }
-      export function useBillingByReasonQuery() {
-        return useQuery({ queryKey: ['billing', 'by-reason'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
-      }
-      export function useBillingByCategoryQuery() {
-        return useQuery({ queryKey: ['billing', 'by-category'], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
+      export function useBillingDashboardQuery(filters) {
+        return useQuery({ queryKey: ['billing', 'dashboard', filters], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
       }
       export function useBillingEntriesQuery() {
         return useQuery({ queryKey: ['billing', 'entries', {}], queryFn: async () => ({}), refetchInterval: BILLING_REFETCH });
@@ -299,7 +284,7 @@ function loadGuiModule(entryRelativePath) {
   return guiModulePromises.get(entryRelativePath);
 }
 
-test('BillingPage calls 6 global billing query hooks with 30s refresh', async () => {
+test('BillingPage calls the unified billing dashboard query at 30s refresh', async () => {
   globalThis.__queryHarness = {
     calls: [],
     persisted: {},
@@ -312,21 +297,23 @@ test('BillingPage calls 6 global billing query hooks with 30s refresh', async ()
   const Page = module.BillingPage;
   renderElement(Page());
 
-  // 5 direct queries from BillingPage (entries query lives inside BillingEntryTable child)
   const billingCalls = globalThis.__queryHarness.calls.filter(
     (c) => c.kind === 'query' && Array.isArray(c.queryKey) && c.queryKey[0] === 'billing',
   );
 
-  assert.ok(billingCalls.length >= 5, `expected at least 5 billing queries, got ${billingCalls.length}`);
+  // Exactly one dashboard call at 30s.
+  const dashboardCalls = billingCalls.filter((c) => c.queryKey[1] === 'dashboard');
+  assert.equal(dashboardCalls.length, 1, `expected exactly 1 dashboard query, got ${dashboardCalls.length}`);
+  assert.strictEqual(dashboardCalls[0].refetchInterval, 30_000, 'dashboard should poll every 30s');
 
-  const expectedKeys = ['summary', 'daily', 'by-model', 'by-reason', 'by-category', 'model-costs'];
-  for (const key of expectedKeys) {
-    const found = billingCalls.find(
-      (c) => Array.isArray(c.queryKey) && c.queryKey[1] === key,
-    );
-    assert.ok(found, `missing billing query with key ['billing', '${key}']`);
-    assert.strictEqual(found.refetchInterval, 30_000, `billing/${key} should have 30s refresh`);
+  // No legacy hook calls — they were collapsed into the dashboard query.
+  const retiredKeys = ['summary', 'daily', 'by-model', 'by-reason', 'by-category'];
+  for (const key of retiredKeys) {
+    const stale = billingCalls.find((c) => c.queryKey[1] === key);
+    assert.ok(!stale, `legacy billing query ['billing', '${key}'] should have been removed`);
   }
+
+  // model-costs IS still allowed (gated by dialog open; harness records it regardless of enabled).
 });
 
 function findAll(element, predicate) {

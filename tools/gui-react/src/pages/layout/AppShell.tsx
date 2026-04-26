@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
+import { useShallow } from 'zustand/react/shallow';
 import { TabNav } from './TabNav.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
-import { useUiStore } from '../../stores/uiStore.ts';
+import { useUiThemeStore, type UiThemeState } from '../../stores/uiThemeStore.ts';
+import { useUiSettingsStore, type UiSettingsState } from '../../stores/uiSettingsStore.ts';
 import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import {
   SF_THEME_RADIUS_PROFILES,
@@ -20,7 +22,21 @@ import {
   SF_DATE_FORMAT_OPTIONS,
   type SfTimezoneId,
   type SfDateFormatId,
-} from '../../stores/uiStore.ts';
+} from '../../stores/uiSettingsStore.ts';
+
+const selectAppShellTheme = (s: UiThemeState) => ({
+  themeColorProfile: s.themeColorProfile,
+  themeRadiusProfile: s.themeRadiusProfile,
+  setThemeColorProfile: s.setThemeColorProfile,
+  setThemeRadiusProfile: s.setThemeRadiusProfile,
+});
+
+const selectAppShellLocaleSettings = (s: UiSettingsState) => ({
+  userTimezone: s.userTimezone,
+  dateFormat: s.dateFormat,
+  setUserTimezone: s.setUserTimezone,
+  setDateFormat: s.setDateFormat,
+});
 
 import { useSettingsHydration } from './hooks/useSettingsHydration.ts';
 import { useCategorySync } from './hooks/useCategorySync.ts';
@@ -86,14 +102,18 @@ export function AppShell() {
   useOperationsHydration();
 
   // ── Theme ─────────────────────────────────────────────────────────
-  const themeColorProfile = useUiStore((s) => s.themeColorProfile);
-  const themeRadiusProfile = useUiStore((s) => s.themeRadiusProfile);
-  const setThemeColorProfile = useUiStore((s) => s.setThemeColorProfile);
-  const setThemeRadiusProfile = useUiStore((s) => s.setThemeRadiusProfile);
-  const userTimezone = useUiStore((s) => s.userTimezone);
-  const dateFormat = useUiStore((s) => s.dateFormat);
-  const setUserTimezone = useUiStore((s) => s.setUserTimezone);
-  const setDateFormat = useUiStore((s) => s.setDateFormat);
+  const {
+    themeColorProfile,
+    themeRadiusProfile,
+    setThemeColorProfile,
+    setThemeRadiusProfile,
+  } = useUiThemeStore(useShallow(selectAppShellTheme));
+  const {
+    userTimezone,
+    dateFormat,
+    setUserTimezone,
+    setDateFormat,
+  } = useUiSettingsStore(useShallow(selectAppShellLocaleSettings));
 
   // ── Local UI state ────────────────────────────────────────────────
   const isRunning = Boolean(processStatus?.running);

@@ -10,7 +10,7 @@
 // When closed, the portal stays mounted but the drawer is translate-x-full +
 // pointer-events-none, so the rest of the page is fully interactive.
 
-import { useEffect, useMemo, useState } from 'react';
+import { memo, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
@@ -132,7 +132,11 @@ function resolveFinderLabel(finderId: string): string {
   return p?.label || finderId;
 }
 
-export function DiscoveryHistoryDrawer() {
+// WHY: Mounted globally at AppShell so any popover can openDrawer regardless
+// of route. Memoized so unrelated AppShell re-renders (theme toggle, settings
+// save) don't re-render this 1000-line component when its zustand store
+// hasn't changed.
+export const DiscoveryHistoryDrawer = memo(function DiscoveryHistoryDrawerInner() {
   const { open, finderId, productId, category, closeDrawer } = useFinderDiscoveryHistoryStore();
 
   const [everOpened, setEverOpened] = useState(false);
@@ -152,7 +156,7 @@ export function DiscoveryHistoryDrawer() {
     />,
     document.body,
   );
-}
+});
 
 interface DrawerImplProps {
   open: boolean;

@@ -1,19 +1,14 @@
-/* ActiveAndSelectedRow — single row with two visual groups:
-   Active (left)         — products with any running op, regardless of selection.
-                            Badges glow accent and indicators pulse per worker.
-   Selected, idle (right) — products in the user's selection that are NOT running.
-                            Gray styling cues "Command Console will start ops here".
-
-   Lives between the Command Console and the OverviewFilterBar, replacing the
-   former SelectionStrip's slot. Renders null when both groups are empty. */
+/* ActiveAndSelectedRow: two visual groups.
+   Active shows currently running products.
+   Selected shows every checked product, including checked products that are also active. */
 
 .sf-aas-row {
   display: flex;
   align-items: center;
   gap: 12px;
   padding: 6px 10px;
-  background: var(--sf-token-surface, #fff);
-  border: 1px solid var(--sf-token-border, #e5e9ef);
+  background: var(--sf-token-surface);
+  border: 1px solid var(--sf-token-border);
   border-radius: var(--sf-token-radius-lg);
   min-width: 0;
   flex-wrap: wrap;
@@ -38,7 +33,7 @@
 }
 
 .sf-aas-group + .sf-aas-group {
-  border-left: 1px solid var(--sf-token-border, #e5e9ef);
+  border-left: 1px solid var(--sf-token-border);
   padding-left: 12px;
   margin-left: 4px;
 }
@@ -66,11 +61,11 @@
 }
 
 .sf-aas-count-active {
-  background: var(--sf-token-state-success-fg, #2b8a3e);
+  background: var(--sf-token-state-success-fg);
 }
 
 .sf-aas-count-idle {
-  background: var(--sf-token-accent, #4263eb);
+  background: var(--sf-token-accent);
 }
 
 .sf-aas-eyebrow-label {
@@ -94,7 +89,7 @@
   padding: 2px 2px;
   min-width: 0;
   scrollbar-width: thin;
-  scrollbar-color: var(--sf-token-border, #c4c8d2) transparent;
+  scrollbar-color: var(--sf-token-border) transparent;
   flex: 1 1 auto;
 }
 
@@ -105,7 +100,7 @@
   background: transparent;
 }
 .sf-aas-track::-webkit-scrollbar-thumb {
-  background: var(--sf-token-border, #c4c8d2);
+  background: var(--sf-token-border);
   border-radius: var(--sf-token-radius-sm);
 }
 
@@ -124,14 +119,14 @@
 }
 
 .sf-aas-badge-active {
-  background: color-mix(in srgb, var(--sf-token-state-success-fg, #2b8a3e) 10%, var(--sf-token-surface, #fff));
-  border: 1px solid color-mix(in srgb, var(--sf-token-state-success-fg, #2b8a3e) 55%, transparent);
+  background: color-mix(in srgb, var(--sf-token-state-success-fg) 10%, var(--sf-token-surface));
+  border: 1px solid color-mix(in srgb, var(--sf-token-state-success-fg) 55%, transparent);
   color: rgb(var(--sf-color-text-primary-rgb));
 }
 
 .sf-aas-badge-idle {
-  background: var(--sf-token-surface-alt, #f4f6f9);
-  border: 1px solid var(--sf-token-border, #e5e9ef);
+  background: var(--sf-token-surface-alt);
+  border: 1px solid var(--sf-token-border);
   color: rgb(var(--sf-color-text-subtle-rgb));
   opacity: 0.85;
 }
@@ -171,7 +166,7 @@
   gap: 3px;
   margin-left: 2px;
   padding-left: 6px;
-  border-left: 1px solid var(--sf-token-border, #e5e9ef);
+  border-left: 1px solid var(--sf-token-border);
 }
 
 .sf-aas-mod {
@@ -181,17 +176,38 @@
   width: 16px;
   height: 16px;
   border-radius: var(--sf-token-radius-sm);
-  background: var(--sf-token-surface, #fff);
+  background: var(--sf-token-surface);
   border: 1px solid currentColor;
   animation: sf-aas-pulse 1.4s ease-in-out infinite;
 }
 
-.sf-aas-mod-cef      { color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb)); }
-.sf-aas-mod-pif      { color: var(--sf-token-state-success-fg, #2b8a3e); }
-.sf-aas-mod-rdf      { color: var(--sf-token-state-warning-fg, #e67700); }
-.sf-aas-mod-skf      { color: var(--sf-token-state-sku-fg, #9e5fe0); }
-.sf-aas-mod-kf       { color: var(--sf-token-accent, #4263eb); }
-.sf-aas-mod-pipeline { color: var(--sf-token-state-info-fg, #1c7ed6); }
+/* WHY: When a finder mod icon is wrapped in IndexLabLink (a <button>), keep
+   the visual identical to the plain <span> form, then add a hover/focus cue
+   on the inner mod box. Icons can't underline like text, so we thicken the
+   currentColor border on the bottom — matches the "underline on hover" cue
+   the user expects from the column links above. */
+.sf-aas-mod-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.sf-aas-mod-link:hover .sf-aas-mod,
+.sf-aas-mod-link:focus-visible .sf-aas-mod {
+  border-bottom-width: 2.5px;
+}
+
+.sf-aas-mod-link:focus-visible {
+  outline: none;
+}
+
+.sf-aas-mod-cef      { color: var(--sf-token-accent-strong, var(--sf-token-accent)); }
+.sf-aas-mod-pif      { color: var(--sf-token-state-success-fg); }
+.sf-aas-mod-rdf      { color: var(--sf-token-state-warning-fg); }
+.sf-aas-mod-skf      { color: var(--sf-token-state-sku-fg); }
+.sf-aas-mod-kf       { color: var(--sf-token-accent); }
+.sf-aas-mod-pipeline { color: var(--sf-token-state-info-fg); }
 
 @keyframes sf-aas-pulse {
   0%, 100% { opacity: 1; transform: scale(1); }
@@ -218,7 +234,7 @@
 }
 
 .sf-aas-remove:hover {
-  background: var(--sf-token-state-danger-fg, #c92a2a);
+  background: var(--sf-token-state-danger-fg);
   color: var(--sf-token-on-accent-fg);
 }
 
@@ -228,8 +244,8 @@
   height: 22px;
   padding: 0 10px;
   background: transparent;
-  border: 1px solid var(--sf-token-state-danger-fg, #c92a2a);
-  color: var(--sf-token-state-danger-fg, #c92a2a);
+  border: 1px solid var(--sf-token-state-danger-fg);
+  color: var(--sf-token-state-danger-fg);
   border-radius: var(--sf-token-radius-sm);
   font-size: var(--sf-token-font-size-caption);
   font-weight: 600;
@@ -238,6 +254,6 @@
   transition: background 120ms ease, color 120ms ease;
 }
 .sf-aas-clear:hover {
-  background: var(--sf-token-state-danger-fg, #c92a2a);
+  background: var(--sf-token-state-danger-fg);
   color: var(--sf-token-on-accent-fg);
 }

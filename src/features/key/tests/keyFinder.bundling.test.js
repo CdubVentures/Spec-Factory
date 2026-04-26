@@ -568,6 +568,30 @@ test('mode="run" + alwaysSoloRun=false (legacy) → passengers pack', async (t) 
   assert.ok(capturedPassengers.length >= 2, `Run with alwaysSoloRun=false bundles; got ${capturedPassengers.join(', ')}`);
 });
 
+test('forceSolo=true suppresses passengers even when Run bundling is enabled', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setupForProduct('kfb-force-solo');
+  let capturedPassengers = null;
+
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: 'kfb-force-solo' },
+    fieldKey: 'polling_rate',
+    category: 'mouse',
+    mode: 'run',
+    forceSolo: true,
+    specDb, appDb: null, config: {},
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async (domainArgs) => {
+      capturedPassengers = domainArgs.passengers;
+      return responseWithPassengers('polling_rate', []);
+    },
+    _submitCandidateOverride: async () => ({ status: 'accepted' }),
+  });
+
+  assert.deepEqual(capturedPassengers, [], 'forced-solo runs never pack passengers');
+});
+
 test('onPassengersRegistered fires once with the packed passenger field_keys after registration', async (t) => {
   t.after(cleanupTmp);
   const { specDb } = setupForProduct('kfb-onreg');

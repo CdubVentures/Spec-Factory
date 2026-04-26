@@ -31,6 +31,7 @@ import {
 } from './builders/runtimeOpsScreenshotAssetHelpers.js';
 import { resolveVideoFilePath } from './runtimeOpsVideoHelpers.js';
 import { defaultIndexLabRoot } from '../../../core/config/runtimeArtifactRoots.js';
+import { serveLocalAsset } from '../../../core/media/imageVariantAssets.js';
 import { normalizeCostRates } from '../../../billing/costRates.js';
 
 function isRunStillActive(processStatus, runId = '') {
@@ -89,7 +90,7 @@ function isInvalidAssetFilename(filename, path) {
 // Asset fast-path: serves screenshot files without run resolution / event read
 // ---------------------------------------------------------------------------
 
-async function tryServeAssetFastPath({ runId, encodedFilename, directRunDir, OUTPUT_ROOT, storage, path, jsonRes, res }) {
+async function tryServeAssetFastPath({ runId, encodedFilename, directRunDir, OUTPUT_ROOT, storage, path, jsonRes, params, req, res }) {
   let filename = '';
   try {
     filename = decodeURIComponent(encodedFilename);
@@ -103,7 +104,6 @@ async function tryServeAssetFastPath({ runId, encodedFilename, directRunDir, OUT
   }
 
   const fs = await import('node:fs');
-  const mimeMap = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.webm': 'video/webm' };
 
   // Build candidate runDirs: direct local path + AppData default + S3 cache path
   // WHY: The server's currentIndexLabRoot (directRunDir) may differ from
@@ -134,12 +134,13 @@ async function tryServeAssetFastPath({ runId, encodedFilename, directRunDir, OUT
     for (const candidatePath of candidates) {
       try {
         await fs.promises.access(candidatePath);
-        const ext = path.extname(filename).toLowerCase();
-        const contentType = mimeMap[ext] || 'application/octet-stream';
-        res.writeHead(200, { 'Content-Type': contentType });
-        const stream = fs.createReadStream(candidatePath);
-        stream.pipe(res);
-        return true;
+        return serveLocalAsset({
+          sourcePath: candidatePath,
+          cacheDir: path.join(path.dirname(candidatePath), '.cache'),
+          variant: params?.get?.('variant'),
+          req,
+          res,
+        });
       } catch {
         // Try the next candidate.
       }
@@ -258,6 +259,8 @@ export function registerRuntimeOpsRoutes(ctx) {
         storage,
         path,
         jsonRes,
+        params,
+        req,
         res,
       });
       if (fastResult !== null) return fastResult;
@@ -545,13 +548,13 @@ export function registerRuntimeOpsRoutes(ctx) {
       if (!resolved) {
         return jsonRes(res, 404, { error: 'file_not_found' });
       }
-      const ext = path.extname(filename).toLowerCase();
-      const mimeMap = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.webm': 'video/webm' };
-      const contentType = mimeMap[ext] || 'application/octet-stream';
-      res.writeHead(200, { 'Content-Type': contentType });
-      const stream = fs.createReadStream(resolved);
-      stream.pipe(res);
-      return true;
+      return serveLocalAsset({
+        sourcePath: resolved,
+        cacheDir: path.join(path.dirname(resolved), '.cache'),
+        variant: params?.get?.('variant'),
+        req,
+        res,
+      });
     }
 
     return false;

@@ -1,10 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { useShallow } from 'zustand/react/shallow';
 import { readRuntimeSettingsSnapshot, useRuntimeSettingsReader } from '../features/pipeline-settings/index.ts';
 import { readSourceStrategySnapshot, sourceStrategyQueryKey, useSourceStrategyReader } from '../features/pipeline-settings/index.ts';
 import { readUiSettingsSnapshot, useUiSettingsAuthority } from './uiSettingsAuthority.ts';
 import { SETTINGS_AUTOSAVE_DEBOUNCE_MS } from './settingsManifest.ts';
-import { useUiStore } from './uiStore.ts';
+import { useUiCategoryStore } from './uiCategoryStore.ts';
+import { useUiSettingsStore, type UiSettingsState } from './uiSettingsStore.ts';
+
+const selectAuthoritySettingsState = (state: UiSettingsState) => ({
+  autoSaveAllEnabled: state.autoSaveAllEnabled,
+  autoSaveEnabled: state.autoSaveEnabled,
+  autoSaveMapEnabled: state.autoSaveMapEnabled,
+  runtimeAutoSaveEnabled: state.runtimeAutoSaveEnabled,
+  setAutoSaveAllEnabled: state.setAutoSaveAllEnabled,
+  setAutoSaveEnabled: state.setAutoSaveEnabled,
+  setAutoSaveMapEnabled: state.setAutoSaveMapEnabled,
+  setRuntimeAutoSaveEnabled: state.setRuntimeAutoSaveEnabled,
+});
 import { autoSaveFingerprint } from './autoSaveFingerprint.ts';
 import { useSettingsAuthorityStore } from './settingsAuthorityStore.ts';
 import { subscribeSettingsPropagation, type SettingsPropagationEvent } from './settingsPropagationContract.ts';
@@ -74,15 +87,17 @@ async function runCategoryScopedSettingsHydrationPipeline({
 
 export function useSettingsAuthorityBootstrap(): SettingsAuthoritySnapshot {
   const queryClient = useQueryClient();
-  const category = useUiStore((s) => s.category);
-  const autoSaveAllEnabled = useUiStore((s) => s.autoSaveAllEnabled);
-  const autoSaveEnabled = useUiStore((s) => s.autoSaveEnabled);
-  const autoSaveMapEnabled = useUiStore((s) => s.autoSaveMapEnabled);
-  const runtimeAutoSaveEnabled = useUiStore((s) => s.runtimeAutoSaveEnabled);
-  const setAutoSaveAllEnabled = useUiStore((s) => s.setAutoSaveAllEnabled);
-  const setAutoSaveEnabled = useUiStore((s) => s.setAutoSaveEnabled);
-  const setAutoSaveMapEnabled = useUiStore((s) => s.setAutoSaveMapEnabled);
-  const setRuntimeAutoSaveEnabled = useUiStore((s) => s.setRuntimeAutoSaveEnabled);
+  const category = useUiCategoryStore((s) => s.category);
+  const {
+    autoSaveAllEnabled,
+    autoSaveEnabled,
+    autoSaveMapEnabled,
+    runtimeAutoSaveEnabled,
+    setAutoSaveAllEnabled,
+    setAutoSaveEnabled,
+    setAutoSaveMapEnabled,
+    setRuntimeAutoSaveEnabled,
+  } = useUiSettingsStore(useShallow(selectAuthoritySettingsState));
   const [uiSettingsPersistState, setUiSettingsPersistState] = useState<'idle' | 'saving' | 'error'>('idle');
   const [uiSettingsPersistMessage, setUiSettingsPersistMessage] = useState('');
 

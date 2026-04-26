@@ -10,6 +10,7 @@
 interface RunPreviewCellProps {
   readonly label: string;
   readonly runTitle: string;
+  readonly disabledTitle?: string;
   readonly previewTitle: string;
   readonly onRun: () => void;
   readonly onPreview: () => void;
@@ -21,6 +22,7 @@ interface RunPreviewCellProps {
 export function RunPreviewCell({
   label,
   runTitle,
+  disabledTitle,
   previewTitle,
   onRun,
   onPreview,
@@ -35,7 +37,7 @@ export function RunPreviewCell({
         className={primary ? 'sf-frp-btn-primary' : 'sf-frp-btn-secondary'}
         onClick={onRun}
         disabled={disabled}
-        title={runTitle}
+        title={disabled ? (disabledTitle ?? runTitle) : runTitle}
       >
         {label}
       </button>

@@ -14,7 +14,7 @@
   justify-content: space-between;
   gap: 10px;
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
+  border-bottom: 1px solid var(--sf-token-border-soft, var(--sf-token-border));
 }
 .sf-frp-title {
   font-size: var(--sf-token-font-size-body-sm);
@@ -70,11 +70,11 @@
   line-height: var(--sf-token-line-height-tight);
 }
 .sf-frp-btn-primary {
-  background: var(--sf-token-accent, #4263eb);
+  background: var(--sf-token-accent);
   color: var(--sf-token-on-accent-fg);
 }
 .sf-frp-btn-primary:hover:not(:disabled) {
-  background: var(--sf-token-accent-strong, #364fc7);
+  background: var(--sf-token-accent-strong);
 }
 .sf-frp-btn-primary:disabled {
   opacity: 0.55;
@@ -83,11 +83,11 @@
 
 .sf-frp-btn-secondary {
   background: transparent;
-  border-color: var(--sf-token-border, #e5e9ef);
+  border-color: var(--sf-token-border);
   color: rgb(var(--sf-color-text-primary-rgb));
 }
 .sf-frp-btn-secondary:hover:not(:disabled) {
-  background: var(--sf-token-surface-alt, #f4f6f9);
+  background: var(--sf-token-surface-alt);
 }
 .sf-frp-btn-secondary:disabled {
   opacity: 0.55;

@@ -10,6 +10,13 @@ import { matchVariant } from './variantMatch.js';
 import { resolveViewEvalPromptInputs } from './productImagePreviewPrompt.js';
 import { formatProductImageIdentityFactsBlock } from './productImageIdentityDependencies.js';
 
+const VARIANT_IDENTITY_GATE = `Variant identity gate:
+- Same model is not enough. The candidate must match the target color/edition variant before view quality is ranked.
+- If the candidate is a visually distinct sibling colorway or edition, reject it as "wrong_product" even when the view, resolution, and composition are good.
+- For close variants, compare visible body/shell color, accent controls, wheel color, cable or receiver color when visible, speckle/artwork pattern, shell transparency, logos, and readable bottom-label/SKU evidence.
+- If source text, alt text, or filename says the target variant but the pixels clearly show a sibling variant, trust the pixels and reject.
+- If pixels are ambiguous between close sibling variants, do not select the image as the winner unless it is the best source-verified match.`;
+
 /* ── Thumbnail pipeline (Phase 1) ───────────────────────────────── */
 
 /**
@@ -51,6 +58,8 @@ export const VIEW_EVAL_DEFAULT_TEMPLATE = `{{IDENTITY}}
 {{PRODUCT_IMAGE_IDENTITY_FACTS}}
 {{VIEW_LINE}}
 {{COUNT_LINE}}
+
+{{VARIANT_IDENTITY_GATE}}
 
 Images are labeled Image 1, Image 2, etc. matching the order of image content parts.
 Each label includes the original dimensions and file size — use these to judge resolution quality since the thumbnails shown are downscaled.
@@ -150,6 +159,7 @@ export function buildViewEvalPrompt({
   return resolvePromptTemplate(template, {
     IDENTITY: identity,
     PRODUCT_IMAGE_IDENTITY_FACTS: formatProductImageIdentityFactsBlock(productImageIdentityFacts, { mode: 'eval' }),
+    VARIANT_IDENTITY_GATE,
     VIEW_LINE: viewLine,
     COUNT_LINE: countLine,
     CRITERIA: criteria,
@@ -169,6 +179,8 @@ export function buildViewEvalPrompt({
 export const HERO_EVAL_DEFAULT_TEMPLATE = `{{IDENTITY}}
 {{PRODUCT_IMAGE_IDENTITY_FACTS}}
 {{COUNT_LINE}}
+
+{{VARIANT_IDENTITY_GATE}}
 
 Images are labeled Image 1, Image 2, etc. matching the order of image content parts.
 These are hero images for a product page. Any style of image is acceptable as long as it is clean and source-safe.
@@ -223,7 +235,7 @@ export function buildHeroSelectionPrompt({
 
   const defaultCriteria = `Hero image evaluation criteria:
 
-Your job is a LEGAL and QUALITY gatekeeper, not an art director. Any image type is acceptable — cutouts, lifestyle desk shots, promotional renders, studio multi-color lineups, unboxing kit layouts, dramatic RGB scenes — as long as it passes these gates:
+Your job is a LEGAL and QUALITY gatekeeper, not an art director. Lifestyle desk shots, official promotional renders, studio lineups, kit layouts, and dramatic RGB scenes are acceptable only when they pass these gates:
 
 1. SOURCE SAFETY (copyright gate — most important):
    - ACCEPT: Manufacturer promotional images, official product pages, press kit photos, retailer CDN images (Amazon A+ content, Best Buy). These are brand assets meant for redistribution.
@@ -233,11 +245,17 @@ Your job is a LEGAL and QUALITY gatekeeper, not an art director. Any image type 
 2. CLEANLINESS (usability gate):
    - REJECT: Watermarks (Getty, Shutterstock, iStock, Alamy), "SAMPLE" text, copyright overlays.
    - REJECT: Sale stickers, "NEW" badges, retailer branding baked into the image, promotional text overlays.
+   - REJECT: Marketing collateral with large baked-in logos, headlines, product names, specs, prices, campaign copy, or decorative text.
 
-3. IDENTITY (correct product gate):
+3. HERO FIT (product-page usability gate):
+   - REJECT: Pure isolated cutouts or single-product renders on a plain, transparent, solid, or empty background. Those are view images, not heroes.
+   - REJECT: Lineups or kit layouts where the target product is small, secondary, cropped, or hard to inspect.
+   - ACCEPT: Official lifestyle/contextual shots, styled promotional renders, desk setups, or kit/lineup compositions only when the target product is dominant and the image works as a clean product-page hero.
+
+4. IDENTITY (correct product gate):
    - The correct model and correct color/edition variant must be visible and identifiable. Wrong product or wrong color → skip.
 
-4. IMAGE QUALITY:
+5. IMAGE QUALITY:
    - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled for evaluation.
    - Must not be blurry, heavily compressed, or look like a low-res screenshot.`;
 
@@ -248,6 +266,7 @@ Your job is a LEGAL and QUALITY gatekeeper, not an art director. Any image type 
   return resolvePromptTemplate(template, {
     IDENTITY: identity,
     PRODUCT_IMAGE_IDENTITY_FACTS: formatProductImageIdentityFactsBlock(productImageIdentityFacts, { mode: 'eval' }),
+    VARIANT_IDENTITY_GATE,
     COUNT_LINE: countLine,
     CRITERIA: criteria,
     HERO_COUNT: String(heroCount),

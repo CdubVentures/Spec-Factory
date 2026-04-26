@@ -29,49 +29,47 @@ describe('deriveActiveAndSelectedGroups', () => {
 
   it('returns both groups empty when no actives and no selection', () => {
     const result = deriveActiveAndSelectedGroups(rows, new Set(), undefined);
-    deepStrictEqual(result.active.map(r => r.productId), []);
-    deepStrictEqual(result.selectedIdle.map(r => r.productId), []);
+    deepStrictEqual(result.active.map((r) => r.productId), []);
+    deepStrictEqual(result.selected.map((r) => r.productId), []);
   });
 
   it('lists active products even when none are selected', () => {
     const result = deriveActiveAndSelectedGroups(rows, new Set(['a', 'c']), undefined);
-    deepStrictEqual(result.active.map(r => r.productId).sort(), ['a', 'c']);
-    deepStrictEqual(result.selectedIdle.map(r => r.productId), []);
+    deepStrictEqual(result.active.map((r) => r.productId).sort(), ['a', 'c']);
+    deepStrictEqual(result.selected.map((r) => r.productId), []);
   });
 
-  it('lists selected-idle products when none are active', () => {
+  it('lists selected products when none are active', () => {
     const result = deriveActiveAndSelectedGroups(rows, new Set(), new Set(['b', 'd']));
-    deepStrictEqual(result.active.map(r => r.productId), []);
-    deepStrictEqual(result.selectedIdle.map(r => r.productId).sort(), ['b', 'd']);
+    deepStrictEqual(result.active.map((r) => r.productId), []);
+    deepStrictEqual(result.selected.map((r) => r.productId).sort(), ['b', 'd']);
   });
 
-  it('hides a selected-and-active product from the selected-idle group', () => {
+  it('shows a selected-and-active product in both Active and Selected groups', () => {
     const result = deriveActiveAndSelectedGroups(rows, new Set(['a', 'b']), new Set(['b', 'c']));
-    deepStrictEqual(result.active.map(r => r.productId).sort(), ['a', 'b']);
-    deepStrictEqual(result.selectedIdle.map(r => r.productId), ['c']);
+    deepStrictEqual(result.active.map((r) => r.productId).sort(), ['a', 'b']);
+    deepStrictEqual(result.selected.map((r) => r.productId), ['b', 'c']);
   });
 
-  it('migrates a product from active to selected-idle when its op terminates', () => {
-    // Before terminal: A active and selected → in Active, hidden from Selected-idle
+  it('keeps selected membership stable when an op starts or terminates', () => {
     const before = deriveActiveAndSelectedGroups(rows, new Set(['a']), new Set(['a', 'b']));
-    deepStrictEqual(before.active.map(r => r.productId), ['a']);
-    deepStrictEqual(before.selectedIdle.map(r => r.productId), ['b']);
+    deepStrictEqual(before.active.map((r) => r.productId), ['a']);
+    deepStrictEqual(before.selected.map((r) => r.productId).sort(), ['a', 'b']);
 
-    // After terminal: activeIds drops 'a' → A migrates into Selected-idle (still selected)
     const after = deriveActiveAndSelectedGroups(rows, new Set(), new Set(['a', 'b']));
-    deepStrictEqual(after.active.map(r => r.productId), []);
-    deepStrictEqual(after.selectedIdle.map(r => r.productId).sort(), ['a', 'b']);
+    deepStrictEqual(after.active.map((r) => r.productId), []);
+    deepStrictEqual(after.selected.map((r) => r.productId).sort(), ['a', 'b']);
   });
 
   it('skips ids that no longer have a matching CatalogRow', () => {
     const result = deriveActiveAndSelectedGroups(rows, new Set(['a', 'missing-1']), new Set(['missing-2', 'b']));
-    deepStrictEqual(result.active.map(r => r.productId), ['a']);
-    deepStrictEqual(result.selectedIdle.map(r => r.productId), ['b']);
+    deepStrictEqual(result.active.map((r) => r.productId), ['a']);
+    deepStrictEqual(result.selected.map((r) => r.productId), ['b']);
   });
 
   it('treats undefined selectedIds the same as an empty Set', () => {
     const result = deriveActiveAndSelectedGroups(rows, new Set(['a']), undefined);
-    strictEqual(result.selectedIdle.length, 0);
-    deepStrictEqual(result.active.map(r => r.productId), ['a']);
+    strictEqual(result.selected.length, 0);
+    deepStrictEqual(result.active.map((r) => r.productId), ['a']);
   });
 });

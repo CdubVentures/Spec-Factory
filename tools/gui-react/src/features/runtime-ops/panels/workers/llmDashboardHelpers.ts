@@ -177,9 +177,9 @@ export function modelRingColor(model: string): string {
   if (m.includes('haiku'))  return 'var(--sf-token-state-success-fg)';
   if (m.includes('sonnet')) return 'var(--sf-token-state-info-fg)';
   if (m.includes('opus'))   return 'var(--sf-token-accent)';
-  if (m.includes('flash-lite') || m.includes('flash_lite')) return 'var(--sf-teal-fg, #5eead4)';
+  if (m.includes('flash-lite') || m.includes('flash_lite')) return 'var(--sf-teal-fg)';
   if (m.includes('flash') || m.includes('gemini')) return 'var(--sf-token-state-info-fg)';
-  if (m.includes('deepseek')) return 'var(--sf-purple-fg, #d8b4fe)';
+  if (m.includes('deepseek')) return 'var(--sf-purple-fg)';
   if (m.includes('gpt'))   return 'var(--sf-token-state-warning-fg)';
   return 'var(--sf-token-text-subtle)';
 }

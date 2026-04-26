@@ -1,31 +1,28 @@
 import type { SearchWorkerAttempt, RuntimeOpsWorkerRow } from '../../types.ts';
 
 // ── Provider colors (theme-aware) ────────────────────────────────────────────
+// WHY: Each provider's palette resolves through --sf-token-provider-* tokens
+// (defined in theme.css with light + dark variants). The lookup returns
+// var() references; light/dark switching happens automatically via the
+// --sf-theme-mode CSS cascade \u2014 no JS branching required.
 
-export const PROVIDER_COLORS: Record<string, { text: string; bg: string; border: string }> = {
-  google: { text: 'rgb(29 78 216)',  bg: 'rgb(59 130 246 / 0.06)',  border: 'rgb(59 130 246 / 0.21)' },
-  bing:   { text: 'rgb(8 145 178)',  bg: 'rgb(6 182 212 / 0.06)',   border: 'rgb(6 182 212 / 0.21)' },
-  brave:  { text: 'rgb(146 64 14)',  bg: 'rgb(245 158 11 / 0.06)',  border: 'rgb(245 158 11 / 0.21)' },
-  serper: { text: 'rgb(15 118 110)', bg: 'rgb(20 184 166 / 0.06)',  border: 'rgb(20 184 166 / 0.21)' },
-};
+const PROVIDER_KEYS = ['google', 'bing', 'brave', 'serper'] as const;
+type ProviderKey = typeof PROVIDER_KEYS[number] | 'unknown';
 
-export const PROVIDER_COLORS_DARK: Record<string, { text: string; bg: string; border: string }> = {
-  google: { text: 'rgb(147 197 253)', bg: 'rgb(59 130 246 / 0.1)',   border: 'rgb(59 130 246 / 0.28)' },
-  bing:   { text: 'rgb(103 232 249)', bg: 'rgb(6 182 212 / 0.1)',    border: 'rgb(6 182 212 / 0.28)' },
-  brave:  { text: 'rgb(253 224 71)',  bg: 'rgb(245 158 11 / 0.1)',   border: 'rgb(245 158 11 / 0.28)' },
-  serper: { text: 'rgb(94 234 212)',  bg: 'rgb(20 184 166 / 0.1)',   border: 'rgb(20 184 166 / 0.28)' },
-};
+function tokenSet(key: ProviderKey): { text: string; bg: string; border: string } {
+  return {
+    text:   `var(--sf-token-provider-${key}-fg)`,
+    bg:     `var(--sf-token-provider-${key}-bg)`,
+    border: `var(--sf-token-provider-${key}-border)`,
+  };
+}
 
 export function getProviderColors(provider: string): { text: string; bg: string; border: string } {
   const p = provider.toLowerCase();
-  const isDark = typeof document !== 'undefined' && document.documentElement.getAttribute('data-sf-theme-mode') === 'dark';
-  const map = isDark ? PROVIDER_COLORS_DARK : PROVIDER_COLORS;
-  for (const key of Object.keys(map)) {
-    if (p.includes(key)) return map[key];
+  for (const key of PROVIDER_KEYS) {
+    if (p.includes(key)) return tokenSet(key);
   }
-  return isDark
-    ? { text: 'rgb(156 163 175)', bg: 'rgb(156 163 175 / 0.08)', border: 'rgb(156 163 175 / 0.2)' }
-    : { text: 'rgb(107 114 128)', bg: 'rgb(107 114 128 / 0.06)', border: 'rgb(107 114 128 / 0.18)' };
+  return tokenSet('unknown');
 }
 
 // ── Status helpers ───────────────────────────────────────────────────────────

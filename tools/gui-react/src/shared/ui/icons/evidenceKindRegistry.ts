@@ -49,17 +49,19 @@ export const EVIDENCE_KIND_LABELS: Record<EvidenceKind, string> = {
 //   pink = lab
 //   orange-soft = reasoning
 //   red = weak / negative / identity-only
+// WHY: Each evidence kind maps to a categorical chart-palette slot or a
+// semantic state class. All themable via theme.css \u2014 no Tailwind drift.
 export const EVIDENCE_KIND_COLOR_CLASS: Record<EvidenceKind, string> = {
-  direct_quote: 'text-emerald-600 dark:text-emerald-400',
-  structured_metadata: 'text-emerald-600 dark:text-emerald-400',
-  byline_timestamp: 'text-teal-600 dark:text-teal-400',
-  artifact_metadata: 'text-amber-600 dark:text-amber-400',
-  visual_inspection: 'text-purple-600 dark:text-purple-400',
-  lab_measurement: 'text-pink-600 dark:text-pink-400',
-  comparative_rebadge: 'text-amber-600 dark:text-amber-400',
-  inferred_reasoning: 'text-orange-500 dark:text-orange-400',
-  absence_of_evidence: 'text-red-600 dark:text-red-400',
-  identity_only: 'text-red-600 dark:text-red-400 opacity-60',
+  direct_quote:        'sf-status-text-success',
+  structured_metadata: 'sf-status-text-success',
+  byline_timestamp:    'sf-status-text-info',
+  artifact_metadata:   'sf-status-text-warning',
+  visual_inspection:   'sf-text-timeout',
+  lab_measurement:     'text-[var(--sf-token-chart-1)]',
+  comparative_rebadge: 'sf-status-text-warning',
+  inferred_reasoning:  'sf-status-text-warning',
+  absence_of_evidence: 'sf-status-text-danger',
+  identity_only:       'sf-status-text-danger opacity-60',
 };
 
 // Only verbatim-quote kinds get the Copy-Quote affordance. For reasoning /

@@ -1,4 +1,4 @@
-import { forwardRef, useMemo, useRef, useState, type ChangeEvent } from 'react';
+import { forwardRef, useDeferredValue, useMemo, useRef, useState, type ChangeEvent } from 'react';
 import { IndexingPanelHeader, type IndexingPanelId } from '../../../shared/ui/finder/IndexingPanelHeader.tsx';
 import { HeaderActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { AmbiguityMeter } from '../../../shared/ui/data-display/AmbiguityMeter.tsx';
@@ -55,6 +55,10 @@ export function PickerPanel({
   catalogLoading,
 }: PickerPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
+  // WHY: input echo stays instant (uses searchQuery) while the heavy
+  // filter recomputation runs against the deferred value, so React can
+  // skip intermediate keystrokes when the user types fast.
+  const deferredSearchQuery = useDeferredValue(searchQuery);
   const searchInputRef = useRef<HTMLInputElement>(null);
   useSlashFocus(searchInputRef);
 
@@ -70,8 +74,8 @@ export function PickerPanel({
     ? { isStale: false, lastKnownId: '' }
     : rawStale;
   const filtered = useMemo(
-    () => deriveFilteredCatalog({ catalogRows, singleBrand, singleModel, searchQuery }),
-    [catalogRows, singleBrand, singleModel, searchQuery],
+    () => deriveFilteredCatalog({ catalogRows, singleBrand, singleModel, searchQuery: deferredSearchQuery }),
+    [catalogRows, singleBrand, singleModel, deferredSearchQuery],
   );
 
   const activeStep: 1 | 2 | 3 = !singleBrand ? 1 : !singleModel ? 2 : 3;

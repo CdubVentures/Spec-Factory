@@ -13,6 +13,7 @@ import { DebugJsonDetails } from '../../../../shared/ui/data-display/DebugJsonDe
 import { HeroBand } from '../../../../shared/ui/data-display/HeroBand.tsx';
 import { RuntimeIdxBadgeStrip } from '../../components/RuntimeIdxBadgeStrip.tsx';
 import { HeroStat, HeroStatGrid } from '../../components/HeroStat.tsx';
+import { runtimeAssetUrl } from '../../assetUrls.ts';
 import {
   computeUniqueUrls,
   queryPassName,
@@ -646,7 +647,7 @@ export function PrefetchSearchResultsPanel({ results, searchResultDetails, searc
       {/* SERP Screenshot Overlay */}
       {serpScreenshot && runId && (
         <SerpScreenshotOverlay
-          src={`/api/v1/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(serpScreenshot)}`}
+          src={runtimeAssetUrl(runId, serpScreenshot, { variant: 'preview' })}
           filename={serpScreenshot}
           onClose={() => setSerpScreenshot(null)}
         />

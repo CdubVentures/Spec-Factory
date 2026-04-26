@@ -66,40 +66,57 @@ export function registerQueueBillingLearningRoutes(ctx) {
       const access = String(params.get('access') || '').trim();
       const billingFilters = { category, model, reason, access };
 
-      if (parts[2] === 'summary') {
+      if (parts[2] === 'dashboard') {
+        // WHY: Bundle endpoint — collapses 9 page-load queries into one. Computes
+        // current filtered + prior filtered + current unfiltered rollups + daily
+        // in a single response. unfiltered.* drives FilterBar chip counts and
+        // must NOT have filters applied.
         const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
-        const rollup = appDb.getBillingRollup(month, category, billingFilters);
-        return jsonRes(res, 200, {
-          month,
-          totals: rollup.totals,
-          models_used: Object.keys(rollup.by_model).length,
-          categories_used: Object.keys(rollup.by_category).length,
-        });
-      }
-
-      if (parts[2] === 'daily') {
+        const priorMonth = String(params.get('prior_month') || '').trim() || (() => {
+          const [y, m] = month.split('-').map((n) => Number.parseInt(n, 10));
+          const d = new Date(y, m - 2, 1);
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        })();
         const months = toInt(params.get('months'), 1);
         const days = Math.max(1, months * 31);
-        const data = appDb.getGlobalDaily({ days, ...billingFilters });
-        return jsonRes(res, 200, data);
-      }
 
-      if (parts[2] === 'by-model') {
-        const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
-        const rollup = appDb.getBillingRollup(month, category, billingFilters);
-        return jsonRes(res, 200, { month, models: objToSortedArray(rollup.by_model) });
-      }
+        // WHY: Skip wasted bucket queries — dashboard never reads by_day or
+        // by_product. Saves 6 SQL queries per request (3 calls × 2 wasted buckets).
+        const FILTERED_BUCKETS = new Set(['by_model', 'by_reason', 'by_category']);
+        // Prior only needs bucket counts for models_used / categories_used.
+        const PRIOR_BUCKETS = new Set(['by_model', 'by_category']);
+        const filteredRollup = appDb.getBillingRollup(month, category, billingFilters, { buckets: FILTERED_BUCKETS });
+        const priorRollup = appDb.getBillingRollup(priorMonth, category, billingFilters, { buckets: PRIOR_BUCKETS });
+        const noFilters = { category: '', model: '', reason: '', access: '' };
+        const unfilteredRollup = appDb.getBillingRollup(month, '', noFilters, { buckets: FILTERED_BUCKETS });
+        const daily = appDb.getGlobalDaily({ days, ...billingFilters });
 
-      if (parts[2] === 'by-reason') {
-        const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
-        const rollup = appDb.getBillingRollup(month, category, billingFilters);
-        return jsonRes(res, 200, { month, reasons: objToSortedArray(rollup.by_reason) });
-      }
+        function asSummary(monthLabel, rollup) {
+          return {
+            month: monthLabel,
+            totals: rollup.totals,
+            models_used: Object.keys(rollup.by_model).length,
+            categories_used: Object.keys(rollup.by_category).length,
+          };
+        }
 
-      if (parts[2] === 'by-category') {
-        const month = String(params.get('month') || '').trim() || new Date().toISOString().slice(0, 7);
-        const rollup = appDb.getBillingRollup(month, category, billingFilters);
-        return jsonRes(res, 200, { month, categories: objToSortedArray(rollup.by_category) });
+        return jsonRes(res, 200, {
+          month,
+          prior_month: priorMonth,
+          filtered: {
+            summary: asSummary(month, filteredRollup),
+            prior_summary: asSummary(priorMonth, priorRollup),
+            by_model: objToSortedArray(filteredRollup.by_model),
+            by_reason: objToSortedArray(filteredRollup.by_reason),
+            by_category: objToSortedArray(filteredRollup.by_category),
+            daily,
+          },
+          unfiltered: {
+            by_model: objToSortedArray(unfilteredRollup.by_model),
+            by_reason: objToSortedArray(unfilteredRollup.by_reason),
+            by_category: objToSortedArray(unfilteredRollup.by_category),
+          },
+        });
       }
 
       if (parts[2] === 'entries') {

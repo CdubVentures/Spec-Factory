@@ -49,7 +49,9 @@ export const CarouselSlotRow = memo(function CarouselSlotRow({
       return {
         slotLabel: isHero ? s.slot.replace('_', ' ').toUpperCase() : s.slot.toUpperCase(),
         source: s.source as 'user' | 'eval',
-        src: imageServeUrl(category, productId, s.filename!),
+        src: imageServeUrl(category, productId, s.filename!, { cacheBust: img?.bytes, variant: 'preview' }),
+        thumbSrc: imageServeUrl(category, productId, s.filename!, { cacheBust: img?.bytes, variant: 'thumb' }),
+        fullSrc: imageServeUrl(category, productId, s.filename!, img?.bytes),
         bytes: img?.bytes ?? 0,
         width: img?.width ?? 0,
         height: img?.height ?? 0,

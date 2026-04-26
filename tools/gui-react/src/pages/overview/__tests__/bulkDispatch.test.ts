@@ -5,6 +5,7 @@ import { useOperationsStore, type Operation } from '../../../features/operations
 import {
   dispatchKfAll,
   dispatchKfPickedKeys,
+  dispatchPifDependencyRun,
   dispatchPifEval,
   dispatchRdfLoop,
   dispatchRdfRun,
@@ -159,6 +160,33 @@ describe('Overview bulk dispatch contracts', () => {
       { variant_key: 'color:blue', variant_id: 'id-color:blue' },
     ]);
     assert.equal(result.scheduled, 2);
+  });
+
+  it('dispatchPifDependencyRun runs only missing Product Image Dependent keys as forced-solo KF runs', async () => {
+    const row: CatalogRow = {
+      ...product('p1'),
+      pifDependencyMissingKeys: ['connection', 'layout_standard'],
+    };
+    const readyRow: CatalogRow = {
+      ...product('p2'),
+      pifDependencyMissingKeys: [],
+    };
+    const calls: BulkFireParams[] = [];
+
+    const result = await dispatchPifDependencyRun('mouse', [row, readyRow], fireRecorder(calls), { staggerMs: 0 });
+
+    assert.deepEqual(calls.map((call) => [call.productId, call.fieldKey]), [
+      ['p1', 'connection'],
+      ['p1', 'layout_standard'],
+    ]);
+    assert.deepEqual(calls.map((call) => call.body), [
+      { field_key: 'connection', mode: 'run', force_solo: true, reason: 'pif_dependency' },
+      { field_key: 'layout_standard', mode: 'run', force_solo: true, reason: 'pif_dependency' },
+    ]);
+    assert.deepEqual(result.operationIds, [
+      'kf:p1:run:connection',
+      'kf:p1:run:layout_standard',
+    ]);
   });
 
   it('chains KeyFinder Loop per product with filtering, priority sort, and terminal waits', async () => {

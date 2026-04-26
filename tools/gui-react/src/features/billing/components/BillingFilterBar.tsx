@@ -68,11 +68,11 @@ export function BillingFilterBar({ filters, onFilterChange, categories, models, 
         <span className="sf-filter-label">Access</span>
         <button className={chipClass(filters.access === '')} onClick={() => setAccess('')}>All</button>
         <button className={chipClass(filters.access === 'lab')} onClick={() => setAccess('lab')}>
-          <span className="sf-filter-dot" style={{ background: 'var(--sf-token-state-info-fg, #38bdf8)' }} />
+          <span className="sf-filter-dot" style={{ background: 'var(--sf-token-state-info-fg)' }} />
           Lab
         </button>
         <button className={chipClass(filters.access === 'api')} onClick={() => setAccess('api')}>
-          <span className="sf-filter-dot" style={{ background: 'var(--sf-token-text-subtle, #64748b)' }} />
+          <span className="sf-filter-dot" style={{ background: 'var(--sf-token-text-subtle)' }} />
           API
         </button>
       </div>

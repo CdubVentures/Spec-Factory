@@ -9,6 +9,7 @@
 // A header line carries loop_id (truncated), optional variantLabel chip, and
 // a final_status chip when the loop has terminated. PIF keeps LoopProgressGrid.
 
+import { memo } from 'react';
 import type { PillLoopProgress } from '../state/operationsStore.ts';
 
 const STATUS_LABELS: Record<NonNullable<PillLoopProgress['final_status']>, string> = {
@@ -100,7 +101,7 @@ export function BucketsRow({ buckets }: { readonly buckets: ReadonlyArray<PillBu
   );
 }
 
-export function LoopProgressPill({ lp }: { readonly lp: PillLoopProgress }) {
+export const LoopProgressPill = memo(function LoopProgressPillInner({ lp }: { readonly lp: PillLoopProgress }) {
   const { publish, callBudget, final_status, loop_id, variantLabel } = lp;
   const pctUsed = callBudget.budget > 0
     ? Math.min(100, Math.round((callBudget.used / callBudget.budget) * 100))
@@ -162,4 +163,4 @@ export function LoopProgressPill({ lp }: { readonly lp: PillLoopProgress }) {
       </span>
     </div>
   );
-}
+});

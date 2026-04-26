@@ -327,7 +327,7 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
   const deleteDisabled = entry.running || !hasAnyData;
 
   return (
-    <tr className="border-b sf-border-soft hover:bg-[var(--sf-token-accent-light,#edf2ff)]">
+    <tr className="border-b sf-border-soft hover:bg-[var(--sf-token-accent-light)]">
       <td className="px-3 py-2 align-middle">
         <code className="text-[12.5px] font-medium sf-text-primary">{entry.field_key}</code>
       </td>

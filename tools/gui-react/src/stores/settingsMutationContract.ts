@@ -3,6 +3,7 @@ import type { QueryClient, QueryKey } from '@tanstack/react-query';
 export interface SettingsOptimisticMutationContext<TQueryData> {
   previousData: TQueryData | undefined;
   hadPreviousData: boolean;
+  mutationId: number;
 }
 
 interface CreateSettingsOptimisticMutationContractOptions<
@@ -60,16 +61,27 @@ export function createSettingsOptimisticMutationContract<
   onError,
   rollbackOnError = true,
 }: CreateSettingsOptimisticMutationContractOptions<TPayload, TResponse, TQueryData, TPersisted>) {
+  let latestMutationId = 0;
+
+  function isLatestMutation(context: SettingsOptimisticMutationContext<TQueryData> | undefined): boolean {
+    return context !== undefined && context.mutationId === latestMutationId;
+  }
+
   return {
     mutationFn,
     onMutate: async (payload: TPayload): Promise<SettingsOptimisticMutationContext<TQueryData>> => {
+      latestMutationId += 1;
+      const mutationId = latestMutationId;
       await queryClient.cancelQueries({ queryKey });
       const previousData = queryClient.getQueryData<TQueryData>(queryKey);
       const optimisticData = toOptimisticData(payload, previousData);
-      queryClient.setQueryData(queryKey, optimisticData);
+      if (mutationId === latestMutationId) {
+        queryClient.setQueryData(queryKey, optimisticData);
+      }
       return {
         previousData,
         hadPreviousData: previousData !== undefined,
+        mutationId,
       };
     },
     onSuccess: (
@@ -77,6 +89,7 @@ export function createSettingsOptimisticMutationContract<
       payload: TPayload,
       context: SettingsOptimisticMutationContext<TQueryData> | undefined,
     ) => {
+      if (!isLatestMutation(context)) return;
       const previousData = context?.previousData;
       const appliedData = toAppliedData(response, payload, previousData);
       queryClient.setQueryData(queryKey, appliedData);
@@ -88,6 +101,7 @@ export function createSettingsOptimisticMutationContract<
       _payload: TPayload,
       context: SettingsOptimisticMutationContext<TQueryData> | undefined,
     ) => {
+      if (!isLatestMutation(context)) return;
       if (rollbackOnError) {
         rollbackQueryData(queryClient, queryKey, context);
       }
@@ -95,4 +109,3 @@ export function createSettingsOptimisticMutationContract<
     },
   } as const;
 }
-

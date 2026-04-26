@@ -1,9 +1,9 @@
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { deriveLlmKeyGateErrors, deriveSerperKeyGateError } from '../../../hooks/llmKeyGateHelpers.js';
 import { useSerperCreditQuery } from '../../../hooks/useSerperCreditQuery.ts';
 import { api } from '../../../api/client.ts';
-import { useUiStore } from '../../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../../stores/uiCategoryStore.ts';
 import { useRuntimeStore } from '../../runtime-ops/state/runtimeStore.ts';
 import { useIndexLabStore } from '../state/indexlabStore.ts';
 import { useCollapseStore } from '../../../stores/collapseStore.ts';
@@ -55,7 +55,7 @@ import { FINDER_PANELS } from '../state/finderPanelRegistry.generated.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 
 export function IndexingPage() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const clearProcessOutput = useRuntimeStore((s) => s.clearProcessOutput);
   const setRuntimeProcessStatus = useRuntimeStore((s) => s.setProcessStatus);
   const liveIndexLabByRun = useIndexLabStore((s) => s.byRun);
@@ -106,7 +106,11 @@ export function IndexingPage() {
   const { data: processStatus } = useQuery({
     queryKey: ['processStatus'],
     queryFn: () => api.get<ProcessStatus>('/process/status'),
-    refetchInterval: 1500
+    // WHY: poll fast (2s) only while a process is actually running, slow
+    // (10s) when idle. Function-form reads the current cached value so
+    // the cadence adapts without an extra subscription.
+    refetchInterval: (query) =>
+      deriveProcessStatusFlags(query.state.data).isProcessRunning ? 2000 : 10_000,
   });
   const { isProcessRunning, processStatusRunId } = useMemo(
     () => deriveProcessStatusFlags(processStatus),
@@ -116,7 +120,9 @@ export function IndexingPage() {
   const { data: indexingLlmConfig, isPending: indexingLlmConfigPending } = useQuery({
     queryKey: ['indexing', 'llm-config'],
     queryFn: () => api.get<IndexingLlmConfigResponse>('/indexing/llm-config'),
-    refetchInterval: 15_000
+    // WHY: LLM config rarely changes mid-session; previous 15s cadence
+    // was unnecessary noise. Mutations invalidate this key explicitly.
+    refetchInterval: 30_000,
   });
 
   const { data: serperCredit, isPending: serperCreditPending } = useSerperCreditQuery();
@@ -215,6 +221,7 @@ export function IndexingPage() {
     category,
     selectedIndexLabRunId,
     setRuntimeProcessStatus,
+    productId: singleProductId,
   });
 
   const runControlPayload = useMemo(() => {
@@ -257,9 +264,12 @@ export function IndexingPage() {
     runtimeSettingsLoading,
   });
 
-  const togglePanel = (panel: IndexingTopPanelCollapseId) => {
+  const togglePanel = useCallback((panel: IndexingTopPanelCollapseId) => {
     collapseToggle(`indexing:panel:${panel}`, getIndexingPanelCollapsedDefault(panel));
-  };
+  }, [collapseToggle]);
+  const togglePicker = useCallback(() => togglePanel('picker'), [togglePanel]);
+  const togglePipeline = useCallback(() => togglePanel('pipeline'), [togglePanel]);
+  const stopProcess = useCallback(() => stopMut.mutate(), [stopMut]);
 
   // WHY: Tab bar hosts Pipeline (fixed first tab) + the finder registry.
   // Active id is persisted per product + category so a returning user
@@ -278,9 +288,9 @@ export function IndexingPage() {
 
   const linkedPanel = (INDEXING_TAB_META[activeTabId]?.iconClass ?? 'picker') as IndexingPanelId;
 
-  const pickerPanelProps = {
+  const pickerPanelProps = useMemo(() => ({
     collapsed: panelCollapsed.picker,
-    onToggle: () => togglePanel('picker'),
+    onToggle: togglePicker,
     busy,
     catalogRows,
     singleBrand,
@@ -295,11 +305,17 @@ export function IndexingPage() {
     onPushRecent: pushRecent,
     linkedPanel,
     catalogLoading: catalogPending,
-  };
+  }), [
+    panelCollapsed.picker, togglePicker, busy, catalogRows,
+    singleBrand, setSingleBrand, singleModel, setSingleModel,
+    singleProductId, setSingleProductId, selectedCatalogProduct,
+    selectedAmbiguityMeter, recentSelections, pushRecent,
+    linkedPanel, catalogPending,
+  ]);
 
-  const pipelinePanelProps = {
+  const pipelinePanelProps = useMemo(() => ({
     collapsed: panelCollapsed.pipeline,
-    onToggle: () => togglePanel('pipeline'),
+    onToggle: togglePipeline,
     busy,
     processRunning,
     runtimeSettingsReady,
@@ -307,11 +323,16 @@ export function IndexingPage() {
     onRunIndexLab: handleRunIndexLab,
     llmKeyGateErrors,
     keyGateLoading,
-    onStopProcess: () => stopMut.mutate(),
+    onStopProcess: stopProcess,
     stopPending: stopMut.isPending,
     productId: singleProductId,
     category,
-  };
+  }), [
+    panelCollapsed.pipeline, togglePipeline, busy, processRunning,
+    runtimeSettingsReady, canRunSingle, handleRunIndexLab,
+    llmKeyGateErrors, keyGateLoading, stopProcess, stopMut.isPending,
+    singleProductId, category,
+  ]);
 
   return (
     <div className="space-y-4 flex flex-col">

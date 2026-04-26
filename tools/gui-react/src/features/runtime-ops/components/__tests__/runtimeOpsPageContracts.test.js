@@ -85,8 +85,8 @@ async function loadRuntimeOpsPageModule() {
           get: async () => ({}),
         };
       `,
-      '../../../stores/uiStore': `
-        export function useUiStore(selector) {
+      '../../../stores/uiCategoryStore': `
+        export function useUiCategoryStore(selector) {
           return selector({ category: 'mouse' });
         }
       `,

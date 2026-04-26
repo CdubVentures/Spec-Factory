@@ -33,7 +33,7 @@ import type { KpiCard, DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePersistedExpandMap } from '../../../stores/tabStore.ts';
 import { useFireAndForget } from '../../operations/hooks/useFireAndForget.ts';
-import { useIsModuleRunning, useRunningVariantKeys } from '../../operations/hooks/useFinderOperations.ts';
+import { useIsModuleRunning, useRunningFieldKeys, useRunningVariantKeys } from '../../operations/hooks/useFinderOperations.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
@@ -41,6 +41,7 @@ import { useColorEditionFinderQuery } from '../../color-edition-finder/index.ts'
 import type { ColorRegistryEntry } from '../../color-edition-finder/index.ts';
 import {
   useProductImageFinderQuery,
+  useProductImageDependenciesQuery,
   useDeleteProductImageFinderAllMutation,
   useDeleteProductImageFinderRunMutation,
   useDeleteProductImageFinderRunsBatchMutation,
@@ -50,7 +51,7 @@ import {
   useClearCarouselWinnersMutation,
   useDeleteEvalRecordMutation,
 } from '../api/productImageFinderQueries.ts';
-import type { ProductImageEntry, GalleryImage } from '../types.ts';
+import type { ProductImageDependencyStatus, ProductImageEntry, GalleryImage } from '../types.ts';
 import { pifHowItWorksSections } from '../pifHowItWorksContent.ts';
 import { ImageLightbox } from './ImageLightbox.tsx';
 import { imageServeUrl } from '../helpers/pifImageUrls.ts';
@@ -81,6 +82,13 @@ import { groupHistory, type FinderRun } from '../../../shared/ui/finder/discover
 interface ProductImageFinderPanelProps {
   productId: string;
   category: string;
+}
+
+function formatDependencyLockTitle(status: ProductImageDependencyStatus | undefined): string {
+  if (!status) return 'Checking Product Image Dependent keys before PIF can run.';
+  if (status.ready) return 'Product Image Dependent keys are resolved; PIF can run.';
+  const missing = status.missing_keys.join(', ') || 'unknown';
+  return `PIF locked until Product Image Dependent key(s) are resolved: ${missing}. Use Run Dep to run these keys solo.`;
 }
 
 export function ProductImageFinderPanel({ productId, category }: ProductImageFinderPanelProps) {
@@ -118,6 +126,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
 
   // PIF data
   const { data: pifData, isLoading, isError } = useProductImageFinderQuery(category, productId);
+  const { data: dependencyStatus } = useProductImageDependenciesQuery(category, productId);
 
   const promptPreviewBody = useMemo(
     () => createPifPromptPreviewBody(activePromptModal),
@@ -171,6 +180,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
 
   // Operations tracker — focused selectors only re-render when PIF-specific state changes
   const isRunning = useIsModuleRunning('pif', productId);
+  const runningDependencyKeys = useRunningFieldKeys('kf', productId);
   const loopingVariants = useRunningVariantKeys('pif', productId, 'loop');
   const evaluatingVariants = useRunningVariantKeys('pif', productId, 'evaluate');
 
@@ -232,38 +242,62 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
 
   // ── Fire-and-forget (each call is independent — safe to spam) ──
   const fire = useFireAndForget({ type: 'pif', category, productId });
+  const fireKeyFinder = useFireAndForget({ type: 'kf', category, productId });
   const pifRunUrl = `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
   const pifLoopUrl = `${pifRunUrl}/loop`;
   const pifEvalCarouselUrl = `${pifRunUrl}/evaluate-carousel`;
+  const keyFinderRunUrl = `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
 
   const findVariantId = useCallback((variantKey: string) =>
     variants.find((v) => v.key === variantKey)?.variant_id, [variants]);
 
+  const effectiveDependencyStatus = dependencyStatus ?? pifData?.dependencyStatus;
+  const pifDependencyLocked = effectiveDependencyStatus?.ready !== true;
+  const pifDependencyTitle = formatDependencyLockTitle(effectiveDependencyStatus);
+  const missingDependencyKeys = effectiveDependencyStatus?.missing_keys ?? [];
+  const dependencyRunBusy = missingDependencyKeys.some((fieldKey) => runningDependencyKeys.has(fieldKey));
+
+  const handleRunDependencies = useCallback(() => {
+    for (const fieldKey of missingDependencyKeys) {
+      if (runningDependencyKeys.has(fieldKey)) continue;
+      fireKeyFinder(
+        keyFinderRunUrl,
+        { field_key: fieldKey, mode: 'run', force_solo: true, reason: 'pif_dependency' },
+        { fieldKey },
+      );
+    }
+  }, [fireKeyFinder, keyFinderRunUrl, missingDependencyKeys, runningDependencyKeys]);
+
   const handleRunVariantPriorityView = useCallback((variantKey: string) => {
+    if (pifDependencyLocked) return;
     fire(pifRunUrl, { variant_key: variantKey, variant_id: findVariantId(variantKey), mode: 'view' }, { subType: 'priority-view', variantKey });
-  }, [fire, pifRunUrl, findVariantId]);
+  }, [fire, pifRunUrl, findVariantId, pifDependencyLocked]);
 
   const handleRunVariantIndividualView = useCallback((variantKey: string, view: string) => {
+    if (pifDependencyLocked) return;
     fire(pifRunUrl, { variant_key: variantKey, variant_id: findVariantId(variantKey), mode: 'view', view }, { subType: 'view-single', variantKey });
-  }, [fire, pifRunUrl, findVariantId]);
+  }, [fire, pifRunUrl, findVariantId, pifDependencyLocked]);
 
   const handleRunVariantHero = useCallback((variantKey: string) => {
+    if (pifDependencyLocked) return;
     fire(pifRunUrl, { variant_key: variantKey, variant_id: findVariantId(variantKey), mode: 'hero' }, { subType: 'hero', variantKey });
-  }, [fire, pifRunUrl, findVariantId]);
+  }, [fire, pifRunUrl, findVariantId, pifDependencyLocked]);
 
   const handleLoopAll = useCallback(() => {
+    if (pifDependencyLocked) return;
     for (const v of variants) {
       if (!loopingVariants.has(v.key)) {
         fire(pifLoopUrl, { variant_key: v.key, variant_id: v.variant_id }, { subType: 'loop', variantKey: v.key });
       }
     }
-  }, [fire, pifLoopUrl, variants, loopingVariants]);
+  }, [fire, pifLoopUrl, variants, loopingVariants, pifDependencyLocked]);
 
   const handleLoopVariant = useCallback((variantKey: string) => {
+    if (pifDependencyLocked) return;
     if (!loopingVariants.has(variantKey)) {
       fire(pifLoopUrl, { variant_key: variantKey, variant_id: findVariantId(variantKey) }, { subType: 'loop', variantKey });
     }
-  }, [fire, pifLoopUrl, loopingVariants, findVariantId]);
+  }, [fire, pifLoopUrl, loopingVariants, findVariantId, pifDependencyLocked]);
 
   // WHY: Build a PIF-native variant→views map from accumulated images.
   // This is keyed by the actual variant_key stored on PIF images, not the
@@ -280,6 +314,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   }, [pifData]);
 
   const fireEvalForVariant = useCallback((variantKey: string): number => {
+    if (pifDependencyLocked) return 0;
     // WHY: Look up views from PIF's own image data, not by filtering on the
     // CEF-derived variant key. This decouples eval from CEF state — eval works
     // even if CEF is mid-run or variant keys have drifted.
@@ -293,7 +328,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
     fire(pifEvalCarouselUrl, { variant_key: variantKey, variant_id: vid }, { subType: 'evaluate', variantKey });
 
     return 1;
-  }, [fire, pifEvalCarouselUrl, pifVariantViewMap, findVariantId]);
+  }, [fire, pifEvalCarouselUrl, pifVariantViewMap, findVariantId, pifDependencyLocked]);
 
   const handleEvalAll = useCallback(() => {
     for (const v of variants) {
@@ -466,19 +501,33 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           <>
             <HeaderActionButton
               intent="locked"
+              label="Run Dep"
+              onClick={handleRunDependencies}
+              disabled={!effectiveDependencyStatus || missingDependencyKeys.length === 0}
+              busy={dependencyRunBusy}
+              title={!effectiveDependencyStatus
+                ? 'Checking Product Image Dependent keys.'
+                : missingDependencyKeys.length === 0
+                ? (effectiveDependencyStatus?.required_keys.length ? 'Product Image Dependent keys are already resolved.' : 'This category has no Product Image Dependent keys.')
+                : `Run missing Product Image Dependent key(s) solo: ${missingDependencyKeys.join(', ')}`}
+              width={ACTION_BUTTON_WIDTH.standardHeader}
+            />
+            <HeaderActionButton
+              intent="locked"
               label="Eval All"
               onClick={handleEvalAll}
-              disabled={!hasCefData || imageCount === 0}
+              disabled={pifDependencyLocked || !hasCefData || imageCount === 0}
               busy={evaluatingVariants.size > 0}
-              title="Carousel Builder: evaluate all variants"
+              title={pifDependencyLocked ? pifDependencyTitle : 'Carousel Builder: evaluate all variants'}
               width={ACTION_BUTTON_WIDTH.standardHeader}
             />
             <HeaderActionButton
               intent="locked"
               label="Loop"
               onClick={handleLoopAll}
-              disabled={!hasCefData}
+              disabled={pifDependencyLocked || !hasCefData}
               busy={variants.length > 0 && variants.every((v) => loopingVariants.has(v.key))}
+              title={pifDependencyLocked ? pifDependencyTitle : 'Loop all variants: views then heroes until carousel complete'}
               width={ACTION_BUTTON_WIDTH.standardHeader}
             />
             <span className="inline-block h-5 w-px mx-0.5 bg-current opacity-20" aria-hidden />
@@ -610,6 +659,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                     isOpen={!!pifImageGroupExpand[group.key]}
                     onToggle={() => togglePifImageGroupExpand(group.key)}
                     heroEnabled={heroEnabled}
+                    pifDependencyLocked={pifDependencyLocked}
+                    pifDependencyTitle={pifDependencyTitle}
                     loopingVariant={loopingVariants.has(group.key)}
                     evaluatingVariant={evaluatingVariants.has(group.key)}
                     histCounts={group.variant_id ? histCountsByVariantId.get(group.variant_id) ?? null : null}

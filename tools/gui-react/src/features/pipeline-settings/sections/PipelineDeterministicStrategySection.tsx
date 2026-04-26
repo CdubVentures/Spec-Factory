@@ -2,7 +2,7 @@
 // Simple ordered list of template strings with add/remove/edit.
 
 import { useState, useCallback } from 'react';
-import { useUiStore } from '../../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../../stores/uiCategoryStore.ts';
 import { useSpecSeedsAuthority } from '../state/specSeedsAuthority.ts';
 
 const TEMPLATE_VARIABLES = ['{product}', '{brand}', '{model}', '{variant}', '{category}'];
@@ -43,7 +43,7 @@ function TemplateRow({ value, index, onChange, onRemove, disabled }: TemplateRow
 }
 
 export function PipelineDeterministicStrategySection() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
 
   const {
     seeds,

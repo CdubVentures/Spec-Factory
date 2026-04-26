@@ -86,7 +86,7 @@ export function ViewBudgetEditor({ entry, value, allSettings, category, isSaving
               className="block h-full rounded-full transition-all duration-300"
               style={{
                 width: `${(activeCount / totalViews) * 100}%`,
-                background: 'var(--sf-accent, #4263eb)',
+                background: 'var(--sf-accent)',
               }}
             />
           </span>

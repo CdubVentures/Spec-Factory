@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { ScalarVariantProgressGen } from '../../types/product.generated.ts';
 import type { LlmOverridePhaseId } from '../../features/llm-config/types/llmPhaseOverrideTypes.generated.ts';
 import { useRunningVariantKeysAny } from '../../features/operations/hooks/useFinderOperations.ts';
@@ -44,7 +45,7 @@ export interface ScalarVariantsCellProps {
  * Overview scalar-finder cell (SKU + RDF). Each variant becomes its own
  * clickable popover trigger with Run / Loop actions scoped to that variant.
  */
-export function ScalarVariantsCell({
+function ScalarVariantsCellInner({
   productId, category, variants, hexMap,
   moduleType, finderId, historyFinderId, historyRoutePrefix, phaseId, title, labelPrefix, runUrl,
   valueLabel, formatLabel, formatValue, linkTabId, brand, baseModel,
@@ -83,3 +84,7 @@ export function ScalarVariantsCell({
     </span>
   );
 }
+
+// WHY: Memoized so OverviewPage re-renders don't cascade into every RDF/SKU cell.
+// Parent stabilizes formatLabel/formatValue via useCallback and hexMap via useMemo.
+export const ScalarVariantsCell = memo(ScalarVariantsCellInner);

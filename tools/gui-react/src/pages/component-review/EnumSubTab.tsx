@@ -237,6 +237,11 @@ export function EnumSubTab({
     () => data.fields.map((field) => field.field),
     [data.fields],
   );
+  // WHY: Sort once per data change instead of on every render.
+  const sortedFields = useMemo(
+    () => [...data.fields].sort((a, b) => a.field.localeCompare(b.field)),
+    [data.fields],
+  );
   const enumFieldPersistKey = `componentReview:enumField:${category}`;
   const [persistedEnumField, setPersistedEnumField] = usePersistedTab<string>(
     enumFieldPersistKey,
@@ -432,6 +437,12 @@ export function EnumSubTab({
     [data.fields, selectedEnumField],
   );
 
+  // WHY: Lifted from an IIFE in the render body so we don't refilter every render.
+  const selectedFieldPipelineCount = useMemo(
+    () => selectedFieldData?.values.filter((v) => hasActionablePending(v) && v.source === 'pipeline').length ?? 0,
+    [selectedFieldData],
+  );
+
   const resolvedSelectedValueIndex = useMemo(() => {
     if (!selectedFieldData) return null;
     const token = String(selectedEnumValue || '').trim().toLowerCase();
@@ -556,7 +567,7 @@ export function EnumSubTab({
             <p className="text-xs font-medium sf-text-muted">Fields ({data.fields.length})</p>
           </div>
           <div className="p-1 space-y-0.5">
-            {[...data.fields].sort((a, b) => a.field.localeCompare(b.field)).map((field) => (
+            {sortedFields.map((field) => (
               <FieldListItem
                 key={field.field}
                 field={field}
@@ -590,7 +601,7 @@ export function EnumSubTab({
                     {getLabel(selectedFieldData.field)} - {selectedFieldData.values.length} values
                   </p>
                   {(() => {
-                    const pipelineCount = selectedFieldData.values.filter((v) => hasActionablePending(v) && v.source === 'pipeline').length;
+                    const pipelineCount = selectedFieldPipelineCount;
                     const otherCount = selectedFieldData.metrics.flags - pipelineCount;
                     return (
                       <div className="flex items-center gap-1.5">

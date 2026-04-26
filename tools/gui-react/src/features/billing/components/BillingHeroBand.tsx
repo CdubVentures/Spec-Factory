@@ -180,8 +180,8 @@ export function BillingHeroBand({
               value={usd(totals.cost_usd, 2)}
               trend={deltas.cost_usd}
               sparkValues={costSeries}
-              sparkStroke="var(--sf-cost-accent, #818cf8)"
-              sparkFill="var(--sf-cost-accent, #818cf8)"
+              sparkStroke="var(--sf-cost-accent)"
+              sparkFill="var(--sf-cost-accent)"
             />
             <HeroKpi
               label="Calls"
@@ -189,14 +189,14 @@ export function BillingHeroBand({
               value={compactNumber(totals.calls)}
               trend={deltas.calls}
               sparkValues={callsSeries}
-              sparkStroke="var(--sf-cost-accent, #818cf8)"
+              sparkStroke="var(--sf-cost-accent)"
             />
             <HeroKpi
               label="Avg / Call"
               ico="⊘"
               value={usd(avg, 4)}
               sparkValues={avgSeries}
-              sparkStroke="var(--sf-token-text-subtle, #94a3b8)"
+              sparkStroke="var(--sf-token-text-subtle)"
             />
             <HeroKpi
               label="Top Type"
@@ -204,7 +204,7 @@ export function BillingHeroBand({
               value={topReasonEntry?.label ?? '—'}
               unit={topReason ? usd(topReason.cost_usd, 2) : undefined}
               subline={topReason ? `${topReasonPct.toFixed(1)}% of spend` : undefined}
-              sparkStroke={topReasonEntry ? chartColor(topReasonEntry.color) : 'var(--sf-token-text-subtle, #94a3b8)'}
+              sparkStroke={topReasonEntry ? chartColor(topReasonEntry.color) : 'var(--sf-token-text-subtle)'}
               sparkFill={topReasonEntry ? chartColor(topReasonEntry.color) : undefined}
               sparkValues={topReason ? buildReasonSeries(days, topReason.key, byReason) : []}
               valueClass="sf-hero-kpi-value-compact"
@@ -227,14 +227,14 @@ export function BillingHeroBand({
               value={compactNumber(totals.sent_tokens)}
               subline={totals.prompt_tokens > 0 ? `${((totals.sent_tokens / totals.prompt_tokens) * 100).toFixed(1)}% of input` : undefined}
               sparkValues={promptSeries}
-              sparkStroke="var(--sf-tok-prompt, #22d3ee)"
+              sparkStroke="var(--sf-tok-prompt)"
             />
             <HeroKpi
               label="Usage"
               ico="◈"
               value={compactNumber(Math.max(0, totals.prompt_tokens - totals.sent_tokens))}
               subline={totals.prompt_tokens > 0 ? `${(((totals.prompt_tokens - totals.sent_tokens) / totals.prompt_tokens) * 100).toFixed(1)}% of input` : undefined}
-              sparkStroke="var(--sf-tok-usage, #f59e0b)"
+              sparkStroke="var(--sf-tok-usage)"
             />
             <HeroKpi
               label="Input"
@@ -242,8 +242,8 @@ export function BillingHeroBand({
               value={compactNumber(totals.prompt_tokens)}
               trend={deltas.prompt_tokens}
               sparkValues={promptSeries}
-              sparkStroke="var(--sf-tok-accent, #22d3ee)"
-              sparkFill="var(--sf-tok-accent, #22d3ee)"
+              sparkStroke="var(--sf-tok-accent)"
+              sparkFill="var(--sf-tok-accent)"
             />
             <HeroKpi
               label="Output"
@@ -251,7 +251,7 @@ export function BillingHeroBand({
               value={compactNumber(totals.completion_tokens)}
               trend={deltas.completion_tokens}
               sparkValues={completionSeries}
-              sparkStroke="var(--sf-tok-completion, #a78bfa)"
+              sparkStroke="var(--sf-tok-completion)"
             />
           </div>
         </div>

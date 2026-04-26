@@ -25,12 +25,9 @@
 
 | Method | Path | Purpose |
 |--------|------|---------|
-| GET | `/api/v1/billing/global/summary?month=` | KPI totals + model/category counts |
-| GET | `/api/v1/billing/global/daily?months=1` | Daily time-series for charts |
-| GET | `/api/v1/billing/global/by-model?month=` | Cost grouped by provider:model |
-| GET | `/api/v1/billing/global/by-reason?month=` | Cost grouped by call type (reason) |
-| GET | `/api/v1/billing/global/by-category?month=` | Cost grouped by product category |
+| GET | `/api/v1/billing/global/dashboard?category=&model=&reason=&access=&month=&prior_month=&months=1` | Bundle endpoint — current-month filtered + unfiltered rollups + prior-month summary + daily breakdown in one payload (drives the BillingPage) |
 | GET | `/api/v1/billing/global/entries?limit=&offset=&category=&model=&reason=` | Paginated raw entries |
+| GET | `/api/v1/billing/global/model-costs?month=` | Registry-owned model cost catalog (gated by Model Costs dialog) |
 | GET | `/api/v1/billing/{category}/monthly` | Per-category rollup (legacy) |
 
 ## Flow
@@ -39,9 +36,9 @@
 2. `costLedger.appendCostLedgerEntry({ config, appDb, entry })` dual-writes:
    - SQL: `appDb.insertBillingEntry()` into global `app.sqlite`
    - JSONL: append to `.workspace/global/billing/ledger/{month}.jsonl`
-3. Frontend queries `/api/v1/billing/global/*` endpoints.
-4. Route handlers call `appDb.getBillingRollup()`, `appDb.getGlobalDaily()`, or `appDb.getGlobalEntries()`.
-5. GUI renders KPIs, charts, and data table.
+3. Frontend issues a single `GET /api/v1/billing/global/dashboard` request (plus `entries` per page change and `model-costs` when the dialog opens).
+4. The dashboard route calls `appDb.getBillingRollup()` three times (filtered, prior-month, unfiltered) using the `buckets` option to skip wasted GROUP BY queries, plus `appDb.getGlobalDaily()`.
+5. GUI renders KPIs, charts, donuts, bars, and the call-log table from the bundle payload.
 
 ## Rebuild Contract
 
@@ -79,17 +76,17 @@ sequenceDiagram
     participant AppDb as AppDb<br/>(src/db/appDb.js — app.sqlite)
     participant JSONL as JSONL Ledger<br/>(.workspace/global/billing/ledger/)
   end
-  BillingPage->>Routes: GET /api/v1/billing/global/summary
-  Routes->>AppDb: getBillingRollup(month)
-  AppDb-->>Routes: { totals, by_day, by_model, by_reason, by_category }
-  Routes-->>BillingPage: { month, totals, models_used, categories_used }
+  BillingPage->>Routes: GET /api/v1/billing/global/dashboard
+  Routes->>AppDb: getBillingRollup(month, category, filters, { buckets }) ×3 + getGlobalDaily()
+  AppDb-->>Routes: filtered + prior + unfiltered rollups + daily
+  Routes-->>BillingPage: { month, prior_month, filtered: {...}, unfiltered: {...} }
 ```
 
 ## Validated Against
 
 | Source | Path | What was verified |
 |--------|------|-------------------|
-| source | `src/features/indexing/api/queueBillingLearningRoutes.js` | 6 global + 1 legacy billing endpoints |
+| source | `src/features/indexing/api/queueBillingLearningRoutes.js` | 3 global (dashboard, entries, model-costs) + 1 legacy `/billing/{category}/monthly` |
 | source | `src/billing/costLedger.js` | dual-write (SQL + JSONL) |
 | source | `src/db/appDb.js` | billing methods on global AppDb |
 | source | `src/db/appDbSchema.js` | `billing_entries` table DDL |

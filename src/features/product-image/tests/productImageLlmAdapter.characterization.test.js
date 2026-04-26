@@ -90,7 +90,77 @@ describe('buildProductImageFinderPrompt — characterization', () => {
     });
     assert.ok(result.includes('Product image identity facts'));
     assert.ok(result.includes('connection: wired'));
-    assert.ok(result.includes('source-identity filters'));
+    assert.ok(result.includes('required identity filters'));
+    assert.ok(result.includes('Reject candidates that clearly conflict'));
+  });
+
+  it('includes a global discovery identity gate before view definitions', () => {
+    const result = buildProductImageFinderPrompt({
+      product: PRODUCT,
+      variantLabel: 'black',
+      priorityViews: PRIORITY_VIEWS,
+      additionalViews: ADDITIONAL_VIEWS,
+    });
+    const gateIdx = result.indexOf('DISCOVERY IDENTITY GATE');
+    const viewIdx = result.indexOf('VIEW DEFINITIONS');
+
+    assert.ok(gateIdx > 0, 'discovery identity gate must be present');
+    assert.ok(viewIdx > gateIdx, 'identity gate must come before view definitions');
+    assert.ok(result.includes('Same brand or same product family is not enough'));
+    assert.ok(result.includes('Search query intent, filename, alt text, page label, and gallery order are not identity proof'));
+    assert.ok(result.includes('source page title'));
+    assert.ok(result.includes('visible product design'));
+  });
+
+  it('adds family ambiguity rules only when sibling model context exists', () => {
+    const noFamily = buildProductImageFinderPrompt({
+      product: PRODUCT,
+      variantLabel: 'black',
+      priorityViews: PRIORITY_VIEWS,
+      additionalViews: ADDITIONAL_VIEWS,
+      familyModelCount: 1,
+      siblingsExcluded: [],
+    });
+    assert.ok(!noFamily.includes('FAMILY AMBIGUITY RULE'));
+
+    const withFamily = buildProductImageFinderPrompt({
+      product: PRODUCT,
+      variantLabel: 'black',
+      priorityViews: PRIORITY_VIEWS,
+      additionalViews: ADDITIONAL_VIEWS,
+      familyModelCount: 3,
+      siblingsExcluded: ['G502 X Lightspeed'],
+    });
+    assert.ok(withFamily.includes('FAMILY AMBIGUITY RULE'));
+    assert.ok(withFamily.includes('Reject images from sibling models'));
+    assert.ok(withFamily.includes('wired/wireless status'));
+  });
+
+  it('adds variant collision rules only when sibling variants exist', () => {
+    const singleVariant = buildProductImageFinderPrompt({
+      product: PRODUCT,
+      variantKey: 'color:black',
+      variantLabel: 'black',
+      priorityViews: PRIORITY_VIEWS,
+      additionalViews: ADDITIONAL_VIEWS,
+      allVariants: [{ key: 'color:black', label: 'black', type: 'color' }],
+    });
+    assert.ok(!singleVariant.includes('VARIANT COLLISION RULE'));
+
+    const multiVariant = buildProductImageFinderPrompt({
+      product: PRODUCT,
+      variantKey: 'color:black',
+      variantLabel: 'black',
+      priorityViews: PRIORITY_VIEWS,
+      additionalViews: ADDITIONAL_VIEWS,
+      allVariants: [
+        { key: 'color:black', label: 'black', type: 'color' },
+        { key: 'color:white', label: 'white', type: 'color' },
+      ],
+    });
+    assert.ok(multiVariant.includes('VARIANT COLLISION RULE'));
+    assert.ok(multiVariant.includes('retailer naming conflicts'));
+    assert.ok(multiVariant.includes('discovery_log.notes'));
   });
 
   it('treats promptOverride as a full prompt template override', () => {
@@ -175,6 +245,11 @@ describe('buildProductImageFinderPrompt — characterization', () => {
   it('includes search strategy section', () => {
     const result = buildProductImageFinderPrompt({ product: PRODUCT, variantLabel: 'black', priorityViews: PRIORITY_VIEWS, additionalViews: ADDITIONAL_VIEWS });
     assert.ok(result.includes('Search strategy'));
+    assert.ok(result.includes('regional and international retailer'));
+    assert.ok(result.includes('image-search leads'));
+    assert.ok(!result.includes('Amazon'));
+    assert.ok(!result.includes('Best Buy'));
+    assert.ok(!result.includes('Newegg'));
   });
 
   it('renders priority views in caller-supplied order', () => {
@@ -257,27 +332,33 @@ describe('buildHeroImageFinderPrompt — characterization', () => {
     assert.ok(result.includes('IDENTITY'));
   });
 
-  it('treats hero discovery as broad lead-image candidate gathering', () => {
+  it('uses a concise hero discovery contract with strict cutout rejection', () => {
     const result = buildHeroImageFinderPrompt({ product: PRODUCT, variantLabel: 'black' });
-    assert.ok(result.includes('product-page hero image'));
-    assert.ok(result.includes('studio'));
-    assert.ok(result.includes('cutout'));
-    assert.ok(result.includes('lifestyle'));
-    assert.ok(result.includes('kit layout'));
-    assert.ok(result.includes('Corsair-style product cards'));
-    assert.ok(result.includes('card crop'));
-    assert.ok(result.includes('original source image'));
-    assert.ok(result.includes('Ordinary flat catalog view-slot shots'));
-    assert.ok(result.includes('technical/detail documentation'));
-    assert.ok(!result.includes('These are NOT cutout/studio shots'));
-    assert.ok(!result.includes('White or plain background studio cutouts'));
+    assert.ok(result.includes('lifestyle and contextual product images'));
+    assert.ok(result.includes('IN CONTEXT'));
+    assert.ok(result.includes('These are NOT ordinary cutout/studio shots'));
+    assert.ok(result.includes('ACCEPTANCE CLASSES'));
+    assert.ok(result.includes('lifestyle_context'));
+    assert.ok(result.includes('official_hero_scene'));
+    assert.ok(result.includes('ordinary cutouts, plain PDP renders, or isolated angle/top/front/side product shots'));
+    assert.ok(result.includes('If only cutouts are available, return 0 images'));
+    assert.ok(!result.includes('polished official studio hero image'));
+    assert.ok(!result.includes('stylized marketing render'));
     assert.ok(!result.includes('cannot find a contextual lifestyle shot'));
-    assert.ok(!result.includes('feet/skate'));
+  });
+
+  it('uses broad retailer/source guidance instead of naming specific retailers', () => {
+    const result = buildHeroImageFinderPrompt({ product: PRODUCT, variantLabel: 'black' });
+    assert.ok(result.includes('regional and international retailer'));
+    assert.ok(result.includes('image-search leads'));
+    assert.ok(result.includes('older or regional pages'));
+    assert.ok(!result.includes('Amazon'));
+    assert.ok(!result.includes('Best Buy'));
   });
 
   it('includes hard rejects section', () => {
     const result = buildHeroImageFinderPrompt({ product: PRODUCT, variantLabel: 'black' });
-    assert.ok(result.includes('DO NOT RETURN'));
+    assert.ok(result.includes('HARD REJECTS'));
     assert.ok(result.includes('watermark') || result.includes('Watermarks'));
   });
 
@@ -325,7 +406,7 @@ describe('buildHeroImageFinderPrompt — characterization', () => {
       promptOverride: 'CUSTOM HERO TEMPLATE {{BRAND}} {{MODEL}}\n{{HERO_INSTRUCTIONS}}\n{{DISCOVERY_LOG_SHAPE}}',
     });
     assert.ok(result.startsWith('CUSTOM HERO TEMPLATE Logitech G502 X Plus'));
-    assert.ok(result.includes('GOOD HERO CANDIDATES'));
+    assert.ok(result.includes('WHAT MAKES A GOOD HERO IMAGE'));
     assert.ok(result.includes('discovery_log'));
     assert.ok(!result.includes('{{BRAND}}'));
     assert.ok(!result.includes('{{HERO_INSTRUCTIONS}}'));

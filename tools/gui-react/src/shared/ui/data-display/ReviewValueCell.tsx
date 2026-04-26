@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { memo, type ReactNode } from 'react';
 import { trafficColor, trafficTextColor } from '../../../utils/colors.ts';
 import { pct } from '../../../utils/formatting.ts';
 import { hasKnownValue, formatCellValue } from '../../../utils/fieldNormalize.ts';
@@ -36,7 +36,10 @@ function joinClassNames(parts: Array<string | false | null | undefined>): string
   return parts.filter(Boolean).join(' ');
 }
 
-export function ReviewValueCell({
+// WHY: Memoized so a parent re-render (e.g. typing in a sibling editing cell)
+// doesn't cascade through every cell. Default shallow equality is sufficient
+// because props are scalars + a stable `state` ref from the row's properties.
+function ReviewValueCellInner({
   state,
   hasRun = true,
   selected = false,
@@ -99,12 +102,12 @@ export function ReviewValueCell({
         </span>
       </CellTooltip>
       {showConfidence && state.selected.confidence > 0 && known && (
-        <span className="text-gray-300 dark:text-gray-600 flex-shrink-0 text-[8px] leading-none">·</span>
+        <span className="sf-text-subtle flex-shrink-0 text-[8px] leading-none">·</span>
       )}
       <span
         className={joinClassNames([
           'truncate text-[11px]',
-          hasShared ? 'text-purple-700 dark:text-purple-300' : known ? trafficTextColor(color) : 'text-gray-400',
+          hasShared ? 'sf-text-timeout' : known ? trafficTextColor(color) : 'sf-status-text-muted',
           valueClassName,
         ])}
         title={rawText}
@@ -112,16 +115,16 @@ export function ReviewValueCell({
         {displayText}
       </span>
       {showOverrideBadge && Boolean(state.overridden) && (
-        <span className="text-[9px] text-orange-500 font-bold flex-shrink-0" title="Overridden">
+        <span className="text-[9px] sf-status-text-warning font-bold flex-shrink-0" title="Overridden">
           OVR
         </span>
       )}
       {hasShared && (
-        <span className="px-1 py-0.5 rounded text-[8px] font-bold bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 shrink-0" title="Shared AI review pending">AI</span>
+        <span className="px-1 py-0.5 rounded text-[8px] font-bold sf-callout-timeout shrink-0" title="Shared AI review pending">AI</span>
       )}
       {showLinkedProductBadge && normalizedLinkedProductCount > 0 && (
         <span
-          className="px-1 py-0.5 rounded text-[8px] font-bold bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 shrink-0"
+          className="px-1 py-0.5 rounded text-[8px] font-bold sf-callout-info shrink-0"
           title={`${normalizedLinkedProductCount} linked product${normalizedLinkedProductCount !== 1 ? 's' : ''}`}
         >
           LP {normalizedLinkedProductCount}
@@ -129,14 +132,14 @@ export function ReviewValueCell({
       )}
       {showSourceCountBadge && normalizedSourceCount > 0 && (
         <span
-          className="px-1 py-0.5 rounded text-[8px] font-bold bg-cyan-100 dark:bg-cyan-900/50 text-cyan-700 dark:text-cyan-300 shrink-0"
+          className="px-1 py-0.5 rounded text-[8px] font-bold sf-callout-info shrink-0"
           title={`${normalizedSourceCount} candidate source${normalizedSourceCount !== 1 ? 's' : ''}`}
         >
           SC {normalizedSourceCount}
         </span>
       )}
       {flagCount > 0 && (
-        <span className="inline-flex items-center gap-0.5 text-[9px] text-amber-600 dark:text-amber-400 flex-shrink-0" title={`${flagCount} flag${flagCount > 1 ? 's' : ''}`}>
+        <span className="inline-flex items-center gap-0.5 text-[9px] sf-status-text-warning flex-shrink-0" title={`${flagCount} flag${flagCount > 1 ? 's' : ''}`}>
           <FlagIcon className="w-2.5 h-2.5" />
           <span>{flagCount}</span>
         </span>
@@ -144,3 +147,5 @@ export function ReviewValueCell({
     </div>
   );
 }
+
+export const ReviewValueCell = memo(ReviewValueCellInner);

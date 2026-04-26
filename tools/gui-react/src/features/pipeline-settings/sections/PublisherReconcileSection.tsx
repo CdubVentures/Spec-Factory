@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
-import { useUiStore } from '../../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../../stores/uiCategoryStore.ts';
 import { useOperationsStore } from '../../operations/state/operationsStore.ts';
 import { useDataChangeMutation } from '../../data-change/index.js';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
@@ -22,7 +22,7 @@ interface ReconcileResult {
 }
 
 export default function PublisherReconcileSection() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const [lastResult, setLastResult] = useState<ReconcilePreview | null>(null);
 
   const { data: preview, isLoading, isError } = useQuery({

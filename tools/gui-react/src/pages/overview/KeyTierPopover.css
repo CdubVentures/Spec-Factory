@@ -30,10 +30,10 @@
   height: 3px;
   border-radius: var(--sf-token-radius-xs);
 }
-.sf-ktp-legend-sw-done { background: var(--sf-token-state-success-fg, #2b8a3e); }
-.sf-ktp-legend-sw-part { background: var(--sf-token-state-warning-fg, #e67700); }
+.sf-ktp-legend-sw-done { background: var(--sf-token-state-success-fg); }
+.sf-ktp-legend-sw-part { background: var(--sf-token-state-warning-fg); }
 .sf-ktp-legend-star {
-  color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb));
+  color: var(--sf-token-accent-strong, var(--sf-token-accent));
   display: inline-block;
   vertical-align: middle;
 }
@@ -63,7 +63,7 @@
 }
 
 .sf-ktp-group + .sf-ktp-group {
-  border-top: 1px dashed var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
+  border-top: 1px dashed var(--sf-token-border-soft, var(--sf-token-border));
   padding-top: 8px;
 }
 
@@ -92,19 +92,19 @@
   gap: 10px;
   padding: 5px 8px;
   border-radius: var(--sf-token-radius-sm);
-  background: var(--sf-token-surface-alt, #fafbfc);
-  border: 1px solid var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
+  background: var(--sf-token-surface-alt);
+  border: 1px solid var(--sf-token-border-soft, var(--sf-token-border));
   transition: background 120ms ease;
 }
 .sf-ktp-row:hover {
-  background: var(--sf-token-surface-soft, #f4f6f9);
+  background: var(--sf-token-surface-soft);
 }
 
 .sf-ktp-row-done {
-  border-left: 3px solid var(--sf-token-state-success-fg, #2b8a3e);
+  border-left: 3px solid var(--sf-token-state-success-fg);
 }
 .sf-ktp-row-part {
-  border-left: 3px solid var(--sf-token-state-warning-fg, #e67700);
+  border-left: 3px solid var(--sf-token-state-warning-fg);
 }
 
 .sf-ktp-row-busy {
@@ -134,7 +134,7 @@
 }
 .sf-ktp-row-star {
   flex-shrink: 0;
-  color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb));
+  color: var(--sf-token-accent-strong, var(--sf-token-accent));
 }
 
 .sf-ktp-row-actions {
@@ -154,21 +154,21 @@
   transition: background 120ms ease, border-color 120ms ease;
 }
 .sf-ktp-btn-primary {
-  background: var(--sf-token-accent, #4263eb);
+  background: var(--sf-token-accent);
   color: var(--sf-token-on-accent-fg);
 }
 .sf-ktp-btn-primary:hover:not(:disabled) {
-  background: var(--sf-token-accent-strong, #364fc7);
+  background: var(--sf-token-accent-strong);
 }
 .sf-ktp-btn-secondary {
   background: transparent;
-  border-color: var(--sf-token-border, #e5e9ef);
+  border-color: var(--sf-token-border);
   color: rgb(var(--sf-color-text-primary-rgb));
 }
 .sf-ktp-btn-secondary:hover:not(:disabled) {
-  background: var(--sf-token-surface, #fff);
-  border-color: var(--sf-token-accent, #4263eb);
-  color: var(--sf-token-accent, #4263eb);
+  background: var(--sf-token-surface);
+  border-color: var(--sf-token-accent);
+  color: var(--sf-token-accent);
 }
 .sf-ktp-btn:disabled {
   opacity: 0.55;

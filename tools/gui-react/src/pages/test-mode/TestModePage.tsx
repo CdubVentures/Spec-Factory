@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
-import { useUiStore } from '../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../stores/uiCategoryStore.ts';
 import { btnPrimary } from '../../shared/ui/buttonClasses.ts';
 import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 
@@ -18,7 +18,7 @@ interface CachedAuditResponse {
 }
 
 export function TestModePage() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const queryClient = useQueryClient();
   const auditQueryKey = ['field-contract-audit', category];
 

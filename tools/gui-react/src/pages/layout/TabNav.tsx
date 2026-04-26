@@ -1,6 +1,7 @@
+import { memo } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { useUiStore } from '../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../stores/uiCategoryStore.ts';
 import { GLOBAL_TABS, CATALOG_TABS, OPS_TABS, SETTINGS_TABS, type TabDef } from '../../registries/pageRegistry.ts';
 import { useSerperCreditQuery, creditChipClass, formatCredit } from '../../hooks/useSerperCreditQuery.ts';
 import { hasLlmKeyGateErrors, deriveSerperKeyGateError } from '../../hooks/llmKeyGateHelpers.js';
@@ -61,13 +62,14 @@ const gearIcon = (
   </svg>
 );
 
-export function TabNav() {
-  const category = useUiStore((s) => s.category);
+// WHY: Memoized so AppShell re-renders don't cascade into the tab bar.
+// TabNav owns its own llm-config + serper subscriptions.
+export const TabNav = memo(function TabNavInner() {
+  const category = useUiCategoryStore((s) => s.category);
   const { data: serper } = useSerperCreditQuery();
   const { data: llmConfig } = useQuery({
     queryKey: ['indexing', 'llm-config'],
     queryFn: () => api.get<IndexingLlmConfigResponse>('/indexing/llm-config'),
-    refetchInterval: 15_000,
     staleTime: 10_000,
   });
   const llmKeysMissing = hasLlmKeyGateErrors(llmConfig?.routing_snapshot);
@@ -117,4 +119,4 @@ export function TabNav() {
       </div>
     </nav>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, type ReactNode } from 'react';
+import { memo, useCallback, useMemo, useState, type ReactNode } from 'react';
 import type { CatalogRow } from '../../types/product.ts';
 import { useReservedKeysQuery } from '../../features/key-finder/api/keyFinderQueries.ts';
 import {
@@ -8,6 +8,7 @@ import {
 import {
   useBulkFire,
   dispatchCefRun,
+  dispatchPifDependencyRun,
   dispatchPifLoop,
   dispatchPifEval,
   dispatchRdfRun,
@@ -165,7 +166,7 @@ function StopGlyph() {
 //    control such as a popover trigger. Used by the KF chip's Keys ▼ dropdown
 //    so we can mount it inline without forking FinderChip.
 type FinderChipAction =
-  | { readonly label: string; readonly primary?: boolean; readonly onClick: () => void }
+  | { readonly label: string; readonly primary?: boolean; readonly onClick: () => void; readonly disabled?: boolean; readonly title?: string }
   | { readonly kind: 'render'; readonly key: string; readonly render: (disabled: boolean) => ReactNode };
 interface FinderChipProps {
   readonly moduleKey: 'cef' | 'pif' | 'rdf' | 'sku' | 'kf';
@@ -187,13 +188,14 @@ function FinderChip({ moduleKey, label, icon, actions, disabled }: FinderChipPro
           if ('kind' in a && a.kind === 'render') {
             return <span key={a.key}>{a.render(disabled)}</span>;
           }
-          const action = a as { label: string; primary?: boolean; onClick: () => void };
+          const action = a as { label: string; primary?: boolean; onClick: () => void; disabled?: boolean; title?: string };
           return (
             <button
               key={action.label}
               type="button"
               className={`sf-cc-btn ${action.primary ? 'sf-cc-btn-primary' : 'sf-cc-btn-secondary'}`}
-              disabled={disabled}
+              disabled={disabled || action.disabled}
+              title={action.title}
               onClick={action.onClick}
             >
               {action.label}
@@ -209,6 +211,7 @@ function FinderChip({ moduleKey, label, icon, actions, disabled }: FinderChipPro
 const STAGE_SHORT_LABELS: Readonly<Record<string, string>> = {
   cef_1: 'CEF\u2081',
   cef_2: 'CEF\u2082',
+  pif_dep: 'Dep',
   pif_loop: 'PIF',
   pif_eval: 'Eval',
   rdf_run: 'RDF',
@@ -282,7 +285,10 @@ function pipelineStatusText(state: PipelineState): string | null {
 }
 
 // ── Main component ────────────────────────────────────────────────────
-export function CommandConsole({ category, allRows }: CommandConsoleProps) {
+// WHY: Memoized so OverviewPage re-renders (filters, columns rebuild) don't
+// cascade into the 600-line console subtree. Re-renders only when category
+// or allRows reference changes (allRows = catalog query result, stable).
+export const CommandConsole = memo(function CommandConsoleInner({ category, allRows }: CommandConsoleProps) {
   const selectedIds = useOverviewSelectionStore((s) => s.byCategory[category]);
   const selectedSize = useSelectionSize(category);
   const clear = useOverviewSelectionStore((s) => s.clear);
@@ -332,6 +338,18 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
   const pipelineRunning = pipeline.state.status === 'running';
   const noneSelected = selectedSize === 0;
   const bulkDisabled = noneSelected || pipelineRunning;
+  const pifMissingDependencyProducts = useMemo(
+    () => selectedProducts.filter((row) => (row.pifDependencyMissingKeys ?? []).length > 0),
+    [selectedProducts],
+  );
+  const pifMissingDependencyKeys = useMemo(
+    () => [...new Set(pifMissingDependencyProducts.flatMap((row) => row.pifDependencyMissingKeys ?? []))].sort(),
+    [pifMissingDependencyProducts],
+  );
+  const pifDependencyLocked = pifMissingDependencyProducts.length > 0;
+  const pifDependencyTitle = pifDependencyLocked
+    ? `PIF locked for ${pifMissingDependencyProducts.length} selected product(s). Run Dep will run these key(s) solo: ${pifMissingDependencyKeys.join(', ')}.`
+    : 'PIF dependency keys are resolved for the selected products.';
 
   // WHY: Pre-flight collision warn before each per-finder dispatch. Active
   // semantics match bulkDispatch.ts:129 (queued OR running). The dialog is
@@ -353,18 +371,28 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
   }, [category, selectedProducts, fire, confirmActiveDispatch]);
 
   const handlePifLoop = useCallback(() => {
+    if (pifDependencyLocked) return;
     if (!confirmActiveDispatch('pif', 'PIF')) return;
     const count = selectedProducts.reduce((n, r) => n + r.pifVariants.length, 0);
     if (!confirmLargeBatch(count, selectedProducts.length)) return;
     dispatchPifLoop(category, selectedProducts, fire);
-  }, [category, selectedProducts, fire, confirmActiveDispatch]);
+  }, [category, selectedProducts, fire, confirmActiveDispatch, pifDependencyLocked]);
 
   const handlePifEval = useCallback(() => {
+    if (pifDependencyLocked) return;
     if (!confirmActiveDispatch('pif', 'PIF')) return;
     const estimate = estimatePifEvalOperationCount(selectedProducts);
     if (!confirmLargeBatch(estimate, selectedProducts.length)) return;
     void dispatchPifEval(category, selectedProducts, fire);
-  }, [category, selectedProducts, fire, confirmActiveDispatch]);
+  }, [category, selectedProducts, fire, confirmActiveDispatch, pifDependencyLocked]);
+
+  const handlePifDependencyRun = useCallback(() => {
+    if (pifMissingDependencyProducts.length === 0) return;
+    if (!confirmActiveDispatch('kf', 'PIF dependencies')) return;
+    const opCount = pifMissingDependencyProducts.reduce((n, row) => n + (row.pifDependencyMissingKeys ?? []).length, 0);
+    if (!confirmLargeBatch(opCount, pifMissingDependencyProducts.length)) return;
+    void dispatchPifDependencyRun(category, pifMissingDependencyProducts, fire);
+  }, [category, pifMissingDependencyProducts, fire, confirmActiveDispatch]);
 
   const handleRdfRun = useCallback(() => {
     if (!confirmActiveDispatch('rdf', 'RDF')) return;
@@ -422,7 +450,8 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
   const handleStartPipeline = useCallback(() => {
     if (pipelineRunning || selectedProducts.length === 0) return;
     const variantOps = selectedProducts.reduce((n, r) => n + r.pifVariants.length, 0);
-    const estimate = selectedProducts.length * 2 + variantOps * 9 + selectedProducts.length * 40;
+    const pifDepOps = selectedProducts.reduce((n, r) => n + (r.pifDependencyMissingKeys ?? []).length, 0);
+    const estimate = selectedProducts.length * 2 + pifDepOps + variantOps * 9 + selectedProducts.length * 40;
     if (!confirmLargeBatch(estimate, selectedProducts.length)) return;
     void pipeline.start(selectedProducts);
   }, [pipelineRunning, selectedProducts, pipeline]);
@@ -527,8 +556,17 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
         <FinderChip
           moduleKey="pif" label="PIF" icon={<PifIcon />} disabled={bulkDisabled}
           actions={[
-            { label: 'Loop', primary: true, onClick: handlePifLoop },
-            { label: 'Eval', onClick: handlePifEval },
+            {
+              label: 'Run Dep',
+              primary: true,
+              onClick: handlePifDependencyRun,
+              disabled: pifMissingDependencyProducts.length === 0,
+              title: pifMissingDependencyProducts.length === 0
+                ? 'No missing PIF dependency keys for the selected products.'
+                : pifDependencyTitle,
+            },
+            { label: 'Loop', onClick: handlePifLoop, disabled: pifDependencyLocked, title: pifDependencyTitle },
+            { label: 'Eval', onClick: handlePifEval, disabled: pifDependencyLocked, title: pifDependencyTitle },
           ]}
         />
         <FinderChip
@@ -683,4 +721,4 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
       )}
     </aside>
   );
-}
+});

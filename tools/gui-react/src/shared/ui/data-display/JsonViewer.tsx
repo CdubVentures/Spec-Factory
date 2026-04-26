@@ -13,13 +13,13 @@ function JsonNode({ data, depth, maxDepth }: { data: unknown; depth: number; max
     return <span className="sf-status-text-muted">null</span>;
   }
   if (typeof data === 'boolean') {
-    return <span className="text-purple-600 dark:text-purple-400">{String(data)}</span>;
+    return <span className="sf-text-timeout">{String(data)}</span>;
   }
   if (typeof data === 'number') {
-    return <span className="text-blue-600 dark:text-blue-400">{data}</span>;
+    return <span className="sf-text-key">{data}</span>;
   }
   if (typeof data === 'string') {
-    return <span className="text-green-700 dark:text-green-400">"{data}"</span>;
+    return <span className="sf-status-text-success">"{data}"</span>;
   }
 
   if (Array.isArray(data)) {
@@ -57,7 +57,7 @@ function JsonNode({ data, depth, maxDepth }: { data: unknown; depth: number; max
           <div className="ml-4">
             {entries.map(([key, val], i) => (
               <div key={key}>
-                <span className="text-red-700 dark:text-red-400">"{key}"</span>:{' '}
+                <span className="sf-status-text-danger">"{key}"</span>:{' '}
                 <JsonNode data={val} depth={depth + 1} maxDepth={maxDepth} />
                 {i < entries.length - 1 && ','}
               </div>

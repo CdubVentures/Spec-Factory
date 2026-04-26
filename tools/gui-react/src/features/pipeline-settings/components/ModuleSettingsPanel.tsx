@@ -6,7 +6,7 @@
 // FINDER_SETTINGS_REGISTRY. Adding a new finder = one entry in src/core/finder/finderModuleRegistry.js
 // + regenerate; no edits here.
 
-import { useUiStore } from '../../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../../stores/uiCategoryStore.ts';
 import {
   MODULE_SETTINGS_SCOPE_BY_ID,
   type ModuleSettingsModuleId,
@@ -14,7 +14,7 @@ import {
 import { FinderSettingsRenderer } from './FinderSettingsRenderer.tsx';
 
 export function ModuleSettingsPanel({ moduleId }: { moduleId: ModuleSettingsModuleId }) {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const scope = MODULE_SETTINGS_SCOPE_BY_ID[moduleId] ?? 'category';
 
   if (scope === 'category' && !category) {

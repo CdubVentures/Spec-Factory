@@ -14,7 +14,7 @@ export function PublishedMarkIcon({ className }: { className?: string }) {
         cy="5"
         r="4"
         fill="none"
-        stroke="var(--sf-success, #22c55e)"
+        stroke="var(--sf-success)"
         strokeWidth="1.5"
       />
       <text
@@ -23,7 +23,7 @@ export function PublishedMarkIcon({ className }: { className?: string }) {
         textAnchor="middle"
         fontSize="6"
         fontWeight="700"
-        fill="var(--sf-success, #22c55e)"
+        fill="var(--sf-success)"
       >
         P
       </text>

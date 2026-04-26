@@ -332,6 +332,7 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
                 src={previewSrc}
                 alt="Preview"
                 className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl"
+                decoding="async"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
             )}

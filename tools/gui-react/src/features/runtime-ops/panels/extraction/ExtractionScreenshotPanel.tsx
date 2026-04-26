@@ -4,6 +4,7 @@ import { HeroStat } from '../../components/HeroStat.tsx';
 import { Chip } from '../../../../shared/ui/feedback/Chip.tsx';
 import { FormatBadge } from '../../../../shared/ui/icons/FormatBadge.tsx';
 import type { ExtractionPluginData, ExtractionPluginEntry } from '../../types.ts';
+import { runtimeAssetUrl } from '../../assetUrls.ts';
 
 interface ScreenshotRecord extends ExtractionPluginEntry {
   has_stitched: boolean;
@@ -25,7 +26,7 @@ const SCREENSHOT_CONFIG: ArtifactPanelConfig = {
   locationPrefix: 'screenshots/',
   previewType: 'image',
   assetUrl: (runId, _entry, filename) =>
-    filename ? `/api/v1/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(filename)}` : '',
+    filename ? runtimeAssetUrl(runId, filename, { variant: 'preview' }) : '',
   extraColumns: ['stitched'],
   renderExtraCell: (entry, col) => {
     if (col !== 'stitched') return null;

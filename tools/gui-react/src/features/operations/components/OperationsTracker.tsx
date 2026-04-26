@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useCallback, useState, useRef } from 'react';
+import { useEffect, useMemo, useCallback, useState, useRef, memo } from 'react';
 import { useOperationsStore, type Operation } from '../state/operationsStore.ts';
 import { LoopProgressRouter } from './LoopProgressRouter.tsx';
 import { variantHexPartsForOp } from '../state/opVariantSwatch.ts';
@@ -8,8 +8,12 @@ import { selectOperationPreviewStreamText } from '../state/operationStreamPrevie
 import {
   cancelActiveOperations,
   formatStopAllActiveOperationsMessage,
-  selectActiveOperationIds,
 } from '../state/operationBulkCancel.ts';
+import {
+  selectActiveOperationCount,
+  selectOperationById,
+  selectVisibleOperationsMap,
+} from '../state/operationsTrackerSelectors.ts';
 import { ColorSwatch, useFinderColorHexMap } from '../../../shared/ui/finder';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePersistedNullableTab } from '../../../stores/tabStore.ts';
@@ -18,6 +22,8 @@ import {
   MODULE_STYLES,
   MODULE_LABELS,
 } from '../state/operationTypeRegistry.generated.ts';
+import { IndexLabLink } from '../../../pages/overview/IndexLabLink.tsx';
+import { resolveModuleTabId } from '../../../pages/overview/activeBadgeModuleTabMap.ts';
 import { OperationDetailModal } from './OperationDetailModal.tsx';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
@@ -133,11 +139,15 @@ function StreamPanel({ text }: { readonly text: string }) {
 
 /* ── Single operation card ─────────────────────────────────────────── */
 
-function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
+// WHY: Memoized so a WS upsert that clones the operations Map only re-renders
+// the OpCard whose op actually changed. Parent passes stable handler refs
+// (useCallback) and binds `op` inside the card so memo's shallow equality
+// catches unchanged-prop renders.
+const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confirming }: {
   readonly op: Operation;
-  readonly onClick: () => void;
-  readonly onDismiss: (e: React.MouseEvent) => void;
-  readonly onStop: (e: React.MouseEvent) => void;
+  readonly onClick: (op: Operation) => void;
+  readonly onDismiss: (e: React.MouseEvent, op: Operation) => void;
+  readonly onStop: (e: React.MouseEvent, op: Operation) => void;
   readonly confirming: boolean;
 }) {
   const streamText = useOperationsStore((s) => selectOperationPreviewStreamText({
@@ -166,7 +176,7 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
         ${isDone || isCancelled ? 'opacity-60' : ''}
         ${isError ? 'border-[var(--sf-token-state-error-border)] bg-[var(--sf-token-state-error-bg)]' : ''}
       `}
-      onClick={onClick}
+      onClick={() => onClick(op)}
       role="button"
       tabIndex={0}
     >
@@ -174,7 +184,7 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
       {op.status !== 'running' && op.status !== 'queued' && (
         <button
           type="button"
-          onClick={onDismiss}
+          onClick={(e) => onDismiss(e, op)}
           className="absolute -top-[6px] -right-[6px] w-[15px] h-[15px] flex items-center justify-center rounded-full text-[8px] font-bold leading-none sf-text-subtle bg-[rgb(var(--sf-color-surface-elevated-rgb))] border border-[rgb(var(--sf-color-border-subtle-rgb)/0.5)] opacity-0 group-hover:opacity-100 hover:text-[var(--sf-state-danger-fg)] hover:border-[var(--sf-state-danger-fg)] transition-all z-10"
           title="Dismiss"
         >
@@ -184,9 +194,34 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
 
       {/* Row 1: module chip + variant swatch (PIF/RDF) OR field_key chip (KF) + product label + elapsed */}
       <span className="flex items-center gap-1.5 min-w-0">
-        <span className={`inline-flex items-center px-1 text-[8px] font-bold font-mono uppercase tracking-[0.04em] rounded-[2px] border border-current leading-[1.5] shrink-0 ${chipCls}`}>
-          {label}
-        </span>
+        {(() => {
+          const moduleTabId = resolveModuleTabId(op.type);
+          const chip = (
+            <span className={`inline-flex items-center px-1 text-[8px] font-bold font-mono uppercase tracking-[0.04em] rounded-[2px] border border-current leading-[1.5] shrink-0 ${chipCls}`}>
+              {label}
+            </span>
+          );
+          // WHY: For the 5 finder modules, the chip becomes a deep-link into
+          // the Indexing Lab (same destination the Overview column popovers
+          // use). IndexLabLink stops propagation so the parent card's
+          // onClick (which opens the OperationDetailModal) does not fire.
+          // brand/baseModel are passed empty — IndexingPage's catalog
+          // derivation self-heals both from productId on mount.
+          if (!moduleTabId) return chip;
+          return (
+            <IndexLabLink
+              category={op.category}
+              productId={op.productId}
+              brand=""
+              baseModel=""
+              tabId={moduleTabId}
+              title={`Open ${label} in Indexing Lab`}
+              className="shrink-0"
+            >
+              {chip}
+            </IndexLabLink>
+          );
+        })()}
         {variantHexParts.length > 0 && (
           <span title={op.variantKey} className="shrink-0 flex items-center">
             <ColorSwatch hexParts={variantHexParts} />
@@ -220,7 +255,7 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
         {(op.status === 'running' || op.status === 'queued') && (
           <button
             type="button"
-            onClick={onStop}
+            onClick={(e) => onStop(e, op)}
             className={`flex items-center justify-center rounded-[3px] text-[8px] font-bold leading-none shrink-0 border transition-all ${
               confirming
                 ? 'h-[16px] px-1.5 text-[var(--sf-state-danger-fg)] border-[var(--sf-state-danger-fg)] bg-[var(--sf-state-danger-bg)]'
@@ -282,16 +317,28 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
       )}
     </div>
   );
-}
+});
 
 /* ── Main tracker widget ───────────────────────────────────────────── */
 
 export function OperationsTracker() {
-  const operations = useOperationsStore((s) => s.operations);
   const [isOpen, toggleOpen] = usePersistedToggle('sidebar:ops-tracker', true);
   const [selectedOpId, setSelectedOpId] = usePersistedNullableTab<string>(
     'sidebar:ops-tracker:selectedOp',
     null,
+  );
+  const operations = useOperationsStore(
+    useCallback(
+      (s) => selectVisibleOperationsMap(s.operations, isOpen),
+      [isOpen],
+    ),
+  );
+  const activeCount = useOperationsStore((s) => selectActiveOperationCount(s.operations));
+  const selectedOp = useOperationsStore(
+    useCallback(
+      (s) => selectOperationById(s.operations, selectedOpId),
+      [selectedOpId],
+    ),
   );
   const [confirmCancelId, setConfirmCancelId] = useState<string | null>(null);
   const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -303,12 +350,10 @@ export function OperationsTracker() {
     writeSortMode(mode);
   }, []);
 
-  const sorted = useMemo(() => sortOperations(operations, sortMode), [operations, sortMode]);
-  const activeCount = useMemo(() => selectActiveOperationIds(sorted).length, [sorted]);
-  const selectedOp = useMemo(() => {
-    if (!selectedOpId) return null;
-    return operations.get(selectedOpId) ?? null;
-  }, [operations, selectedOpId]);
+  const sorted = useMemo(
+    () => (isOpen ? sortOperations(operations, sortMode) : []),
+    [isOpen, operations, sortMode],
+  );
 
   // WHY: Force re-render every second to update elapsed timers while ops are running.
   const [, setTick] = useState(0);
@@ -353,10 +398,11 @@ export function OperationsTracker() {
     if (typeof window !== 'undefined' && !window.confirm(formatStopAllActiveOperationsMessage(activeCount))) return;
 
     setIsStoppingAll(true);
-    void cancelActiveOperations(sorted, (operationId) =>
+    const currentSorted = sortOperations(useOperationsStore.getState().operations, sortMode);
+    void cancelActiveOperations(currentSorted, (operationId) =>
       api.post(`/operations/${encodeURIComponent(operationId)}/cancel`, {}),
     ).finally(() => setIsStoppingAll(false));
-  }, [activeCount, isStoppingAll, sorted]);
+  }, [activeCount, isStoppingAll, sortMode]);
 
   return (
     <div className={`flex flex-col ${isOpen ? 'flex-1' : 'flex-none'}`} style={{ minHeight: 0 }}>
@@ -427,7 +473,7 @@ export function OperationsTracker() {
             </div>
           ) : (
             sorted.map((op) => (
-              <OpCard key={op.id} op={op} onClick={() => handleCardClick(op)} onDismiss={(e) => handleDismiss(e, op)} onStop={(e) => handleStop(e, op)} confirming={confirmCancelId === op.id} />
+              <OpCard key={op.id} op={op} onClick={handleCardClick} onDismiss={handleDismiss} onStop={handleStop} confirming={confirmCancelId === op.id} />
             ))
           )}
         </div>

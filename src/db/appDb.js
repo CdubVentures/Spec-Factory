@@ -442,9 +442,15 @@ export class AppDb {
     return { sql: clauses.length ? ' AND ' + clauses.join(' AND ') : '', params };
   }
 
-  getBillingRollup(month, category = '', filters = {}) {
+  // WHY: `options.buckets` (Set<string>) lets callers skip GROUP BY queries they
+  // don't need. Default = all 5 buckets, preserving every existing caller's
+  // contract. The dashboard route passes a smaller set to avoid 6+ wasted
+  // SQL queries per 30s poll cycle.
+  getBillingRollup(month, category = '', filters = {}, options = {}) {
     const f = this._billingFilters({ category, ...filters });
     const baseParams = [month, ...f.params];
+    const ALL_BUCKETS = ['by_day', 'by_category', 'by_product', 'by_model', 'by_reason'];
+    const want = options.buckets instanceof Set ? options.buckets : new Set(ALL_BUCKETS);
 
     const totals = this.db.prepare(`
       SELECT COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
@@ -456,59 +462,69 @@ export class AppDb {
     `).get(...baseParams) || { calls: 0, cost_usd: 0, prompt_tokens: 0, completion_tokens: 0, cached_prompt_tokens: 0, sent_tokens: 0 };
 
     const by_day = {};
-    for (const row of this.db.prepare(`
-      SELECT day, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
-             COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
-             COALESCE(SUM(completion_tokens), 0) as completion_tokens,
-             COALESCE(SUM(cached_prompt_tokens), 0) as cached_prompt_tokens,
-             COALESCE(SUM(sent_tokens), 0) as sent_tokens
-      FROM billing_entries WHERE month = ?${f.sql} GROUP BY day
-    `).all(...baseParams)) {
-      by_day[row.day] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, cached_prompt_tokens: row.cached_prompt_tokens, sent_tokens: row.sent_tokens, calls: row.calls };
+    if (want.has('by_day')) {
+      for (const row of this.db.prepare(`
+        SELECT day, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
+               COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
+               COALESCE(SUM(completion_tokens), 0) as completion_tokens,
+               COALESCE(SUM(cached_prompt_tokens), 0) as cached_prompt_tokens,
+               COALESCE(SUM(sent_tokens), 0) as sent_tokens
+        FROM billing_entries WHERE month = ?${f.sql} GROUP BY day
+      `).all(...baseParams)) {
+        by_day[row.day] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, cached_prompt_tokens: row.cached_prompt_tokens, sent_tokens: row.sent_tokens, calls: row.calls };
+      }
     }
 
     const by_category = {};
-    for (const row of this.db.prepare(`
-      SELECT category, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
-             COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
-             COALESCE(SUM(completion_tokens), 0) as completion_tokens,
-             COALESCE(SUM(sent_tokens), 0) as sent_tokens
-      FROM billing_entries WHERE month = ?${f.sql} GROUP BY category
-    `).all(...baseParams)) {
-      by_category[row.category || ''] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, sent_tokens: row.sent_tokens, calls: row.calls };
+    if (want.has('by_category')) {
+      for (const row of this.db.prepare(`
+        SELECT category, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
+               COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
+               COALESCE(SUM(completion_tokens), 0) as completion_tokens,
+               COALESCE(SUM(sent_tokens), 0) as sent_tokens
+        FROM billing_entries WHERE month = ?${f.sql} GROUP BY category
+      `).all(...baseParams)) {
+        by_category[row.category || ''] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, sent_tokens: row.sent_tokens, calls: row.calls };
+      }
     }
 
     const by_product = {};
-    for (const row of this.db.prepare(`
-      SELECT product_id, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
-             COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
-             COALESCE(SUM(completion_tokens), 0) as completion_tokens,
-             COALESCE(SUM(sent_tokens), 0) as sent_tokens
-      FROM billing_entries WHERE month = ?${f.sql} GROUP BY product_id
-    `).all(...baseParams)) {
-      by_product[row.product_id || ''] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, sent_tokens: row.sent_tokens, calls: row.calls };
+    if (want.has('by_product')) {
+      for (const row of this.db.prepare(`
+        SELECT product_id, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
+               COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
+               COALESCE(SUM(completion_tokens), 0) as completion_tokens,
+               COALESCE(SUM(sent_tokens), 0) as sent_tokens
+        FROM billing_entries WHERE month = ?${f.sql} GROUP BY product_id
+      `).all(...baseParams)) {
+        by_product[row.product_id || ''] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, sent_tokens: row.sent_tokens, calls: row.calls };
+      }
     }
 
     const by_model = {};
-    for (const row of this.db.prepare(`
-      SELECT provider || ':' || model as model_key, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
-             COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
-             COALESCE(SUM(completion_tokens), 0) as completion_tokens,
-             COALESCE(SUM(sent_tokens), 0) as sent_tokens
-      FROM billing_entries WHERE month = ?${f.sql} GROUP BY model_key
-    `).all(...baseParams)) {
-      by_model[row.model_key] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, sent_tokens: row.sent_tokens, calls: row.calls };
+    if (want.has('by_model')) {
+      for (const row of this.db.prepare(`
+        SELECT provider || ':' || model as model_key, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
+               COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
+               COALESCE(SUM(completion_tokens), 0) as completion_tokens,
+               COALESCE(SUM(sent_tokens), 0) as sent_tokens
+        FROM billing_entries WHERE month = ?${f.sql} GROUP BY model_key
+      `).all(...baseParams)) {
+        by_model[row.model_key] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, sent_tokens: row.sent_tokens, calls: row.calls };
+      }
     }
 
     const by_reason = {};
-    for (const row of this.db.prepare(`
-      SELECT reason, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
-             COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
-             COALESCE(SUM(completion_tokens), 0) as completion_tokens,
-             COALESCE(SUM(sent_tokens), 0) as sent_tokens
-      FROM billing_entries WHERE month = ?${f.sql} GROUP BY reason
-    `).all(...baseParams)) {
-      by_reason[row.reason || ''] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, sent_tokens: row.sent_tokens, calls: row.calls };
+    if (want.has('by_reason')) {
+      for (const row of this.db.prepare(`
+        SELECT reason, COUNT(*) as calls, COALESCE(SUM(cost_usd), 0) as cost_usd,
+               COALESCE(SUM(prompt_tokens), 0) as prompt_tokens,
+               COALESCE(SUM(completion_tokens), 0) as completion_tokens,
+               COALESCE(SUM(sent_tokens), 0) as sent_tokens
+        FROM billing_entries WHERE month = ?${f.sql} GROUP BY reason
+      `).all(...baseParams)) {
+        by_reason[row.reason || ''] = { cost_usd: row.cost_usd, prompt_tokens: row.prompt_tokens, completion_tokens: row.completion_tokens, sent_tokens: row.sent_tokens, calls: row.calls };
+      }
     }
 
     return {

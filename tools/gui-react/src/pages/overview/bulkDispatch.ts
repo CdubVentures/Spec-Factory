@@ -161,6 +161,20 @@ function isKfLoopActive(productId: string): boolean {
   return false;
 }
 
+function isKfFieldActive(productId: string, fieldKey: string): boolean {
+  for (const op of useOperationsStore.getState().operations.values()) {
+    if (
+      op.type === 'kf' &&
+      op.productId === productId &&
+      op.fieldKey === fieldKey &&
+      activeStatus(op.status)
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function waitForTurn(delayMs: number, signal?: AbortSignal): Promise<boolean> {
   if (signal?.aborted) return Promise.resolve(false);
   if (delayMs <= 0) return Promise.resolve(true);
@@ -252,6 +266,33 @@ export function dispatchPifLoop(
 }
 
 // ── PIF eval — per collected view + per variant hero ──────────────────────
+export function dispatchPifDependencyRun(
+  category: string,
+  products: readonly CatalogRow[],
+  fire: BulkFireFn,
+  optionsInput?: DispatchOptionsInput,
+): Promise<BulkDispatchResult> {
+  const options = resolveOptions(optionsInput);
+  const tasks: Array<{ row: CatalogRow; fieldKey: string }> = [];
+  for (const row of products) {
+    const missing = row.pifDependencyMissingKeys ?? [];
+    for (const fieldKey of missing) {
+      if (!fieldKey || isKfFieldActive(row.productId, fieldKey)) continue;
+      tasks.push({ row, fieldKey });
+    }
+  }
+  return dispatchTasks(tasks, options, ({ row, fieldKey }) =>
+    fire({
+      type: 'kf',
+      productId: row.productId,
+      productLabel: productLabel(row),
+      url: `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.productId)}`,
+      body: { field_key: fieldKey, mode: 'run', force_solo: true, reason: 'pif_dependency' },
+      fieldKey,
+    }),
+  );
+}
+
 interface PifImageRow { readonly variant_key: string; readonly view: string }
 interface PifDataShape { readonly images?: readonly PifImageRow[] }
 

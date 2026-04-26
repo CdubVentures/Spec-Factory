@@ -136,6 +136,7 @@ async function resolveIdentityForPrompt({ config, product, specDb, logger }) {
  * @param {object} [opts.logger]
  * @param {string} [opts.productRoot]
  * @param {string|null} [opts.loop_id]     Phase 3b — stamped onto the persisted run's response.loop_id when present. Shared by every iteration of a single runKeyFinderLoop call.
+ * @param {boolean} [opts.forceSolo]       Force an unbundled run regardless of alwaysSoloRun / bundling settings.
  * @param {object|null} [opts.tierBundleOverride]  Phase 3b — when non-null, skip the internal resolvePhaseModelByTier call and use this bundle. Shape: { name, model, thinking, webSearch, thinkingEffort, useReasoning, reasoningModel }. Loop snapshots once at entry and threads here.
  * @param {Function|null} [opts._callLlmOverride]       test seam
  * @param {Function|null} [opts._submitCandidateOverride] test seam
@@ -149,6 +150,7 @@ export async function runKeyFinder(opts) {
     broadcastWs = null, signal, logger = null,
     productRoot,
     loop_id = null,
+    forceSolo = false,
     tierBundleOverride = null,
     mode = 'run',
     // WHY: Telemetry callbacks mirror finderRoutes/RDF/SKU. Drive the active-
@@ -256,7 +258,7 @@ export async function runKeyFinder(opts) {
   // per-key-finder-roadmap.html. Per-key Run is always solo when
   // alwaysSoloRun=true (default) regardless of bundlingEnabled — that's the
   // focused-key-run contract. Loop-mode ignores the knob and always packs.
-  const passengers = (settings.alwaysSoloRun && mode === 'run')
+  const passengers = (forceSolo || (settings.alwaysSoloRun && mode === 'run'))
     ? []
     : buildPassengers({
       primary: { fieldKey, fieldRule },

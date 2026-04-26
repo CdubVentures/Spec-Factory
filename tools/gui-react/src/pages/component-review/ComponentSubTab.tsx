@@ -197,6 +197,42 @@ export function ComponentSubTab({
     [data.items],
   );
 
+  // WHY: Single pass over (items × property_columns) so the columns useMemo
+  // does O(1) Map lookups instead of 4 × O(N) scans per property column.
+  // Preserves "first match wins" semantics for variancePolicy + constraints.
+  interface PropertyColumnAggregate {
+    aiCount: number;
+    flagCount: number;
+    variancePolicy: string | null;
+    constraints: readonly string[];
+  }
+  const propertyAggregates = useMemo<ReadonlyMap<string, PropertyColumnAggregate>>(() => {
+    const map = new Map<string, { aiCount: number; flagCount: number; variancePolicy: string | null; constraints: readonly string[] }>();
+    for (const propKey of data.property_columns) {
+      map.set(propKey, { aiCount: 0, flagCount: 0, variancePolicy: null, constraints: [] });
+    }
+    for (const item of mergedItems) {
+      for (const propKey of data.property_columns) {
+        const agg = map.get(propKey);
+        if (!agg) continue;
+        const state = item.properties[propKey];
+        if (item._isSynthetic || hasActionablePending(state)) {
+          agg.aiCount += 1;
+        }
+        if (!item._isSynthetic && state?.needs_review && !hasActionablePending(state)) {
+          agg.flagCount += 1;
+        }
+        if (agg.variancePolicy === null && state?.variance_policy) {
+          agg.variancePolicy = state.variance_policy;
+        }
+        if (agg.constraints.length === 0 && (state?.constraints?.length ?? 0) > 0) {
+          agg.constraints = state!.constraints!;
+        }
+      }
+    }
+    return map;
+  }, [data.property_columns, mergedItems]);
+
   // Individual selectors: only re-render when these specific slices change.
   // Critically, cellEditValue changes (typing) do NOT trigger a re-render here.
   const selectedEntity = useComponentReviewStore((s) => s.selectedEntity);
@@ -476,25 +512,16 @@ export function ComponentSubTab({
     ];
 
     for (const propKey of data.property_columns) {
-      const propAICount = mergedItems.filter((item) => (
-        item._isSynthetic || hasActionablePending(item.properties[propKey])
-      )).length;
-      const propFlagCount = mergedItems.filter((item) => {
-        if (item._isSynthetic) return false;
-        const state = item.properties[propKey];
-        return Boolean(state?.needs_review) && !hasActionablePending(state);
-      }).length;
-
-      const firstState = mergedItems.find((item) => item.properties[propKey]?.variance_policy)?.properties[propKey];
-      const variancePolicy = firstState?.variance_policy ?? null;
+      const aggregate = propertyAggregates.get(propKey);
+      const propAICount = aggregate?.aiCount ?? 0;
+      const propFlagCount = aggregate?.flagCount ?? 0;
+      const variancePolicy = aggregate?.variancePolicy ?? null;
       const varianceLabel = variancePolicy === 'upper_bound' ? 'Upper'
         : variancePolicy === 'lower_bound' ? 'Lower'
         : variancePolicy === 'authoritative' ? 'Equal'
         : variancePolicy === 'range' ? '+/-'
         : null;
-
-      const firstConstraintState = mergedItems.find((item) => (item.properties[propKey]?.constraints?.length ?? 0) > 0)?.properties[propKey];
-      const constraints = firstConstraintState?.constraints ?? [];
+      const constraints = aggregate?.constraints ?? [];
 
       cols.push({
         id: `prop_${propKey}`,
@@ -630,6 +657,7 @@ export function ComponentSubTab({
   }, [
     data.property_columns,
     mergedItems,
+    propertyAggregates,
     pendingAIByComponent,
     runComponentAiMut,
     selectedCell,

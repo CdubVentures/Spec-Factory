@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useStorageRuns } from '../state/useStorageRuns.ts';
 import { useDeleteRun, useBulkDeleteRuns, useDeleteUrl, usePurgeProductHistory } from '../state/useStorageActions.ts';
-import { useUiStore } from '../../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../../stores/uiCategoryStore.ts';
 import { groupRunsByProduct } from '../helpers.ts';
 import { StorageOverviewBar } from './StorageOverviewBar.tsx';
 import { ProductTable } from './tables/ProductTable.tsx';
@@ -10,7 +10,7 @@ import { DeleteConfirmModal } from './DeleteConfirmModal.tsx';
 import { AlertBanner } from '@/shared/ui/feedback/AlertBanner';
 
 export function StorageManagerPanel() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const categoryScope = category === 'all' ? undefined : category;
 
   const runsQuery = useStorageRuns(true, categoryScope);

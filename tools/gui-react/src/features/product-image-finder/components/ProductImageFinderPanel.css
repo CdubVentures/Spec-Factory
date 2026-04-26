@@ -15,8 +15,8 @@
   border-radius: 50%;
   flex-shrink: 0;
 }
-.pif-source-dot--eval { background-color: var(--sf-state-success-fg, #16a34a); }
-.pif-source-dot--user { background-color: var(--sf-state-info-fg, #38bdf8); }
+.pif-source-dot--eval { background-color: var(--sf-state-success-fg); }
+.pif-source-dot--user { background-color: var(--sf-state-info-fg); }
 
 /* Reasoning / run-number metadata badges */
 .pif-meta-badge {
@@ -65,10 +65,10 @@
 
 /* Process All button states */
 .pif-process-btn {
-  color: var(--sf-accent, #4263eb);
+  color: var(--sf-token-accent);
   opacity: 0.7;
 }
 .pif-process-btn--busy {
-  color: var(--sf-muted);
+  color: var(--sf-token-text-muted);
   opacity: 0.8;
 }

@@ -13,6 +13,7 @@ import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { registerOperation, getOperationSignal, countRunningOperations, updateStage, updateModelInfo, updateProgressText, updateLoopProgress, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../../../core/operations/index.js';
 import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
+import { serveLocalAsset } from '../../../core/media/imageVariantAssets.js';
 import { readImageDimensions, buildVariantList, imageStem, runProductImageFinder, runCarouselLoop } from '../productImageFinder.js';
 import { evaluateCarousel } from '../carouselStrategy.js';
 import { resolveViewBudget, resolveViewConfig, CANONICAL_VIEW_KEYS } from '../productImageLlmAdapter.js';
@@ -27,6 +28,7 @@ import { fullResetProductImages } from '../productImageFullReset.js';
 import { runEvalView, runEvalHero, runEvalCarouselLoop } from '../carouselBuild.js';
 import { writeCarouselSlot, clearCarouselWinners, resolveCarouselSlots, deleteEvalRecord, extractEvalState } from '../imageEvaluator.js';
 import { compilePifPreviewPrompt } from '../productImagePreviewPrompt.js';
+import { resolveProductImageDependencyStatus } from '../productImageIdentityDependencies.js';
 
 /**
  * Materialize per-variant carousel progress into the pif_variant_progress table.
@@ -119,6 +121,40 @@ function writePifVariantProgress({ specDb, category, productId, carouselProgress
       imageCount,
     });
   }
+}
+
+function dependencyProduct({ productRow, category, productId }) {
+  return {
+    ...(productRow || {}),
+    product_id: productRow?.product_id || productId,
+    category,
+  };
+}
+
+function resolvePifDependencyStatus({ specDb, category, productId, productRow }) {
+  return resolveProductImageDependencyStatus({
+    specDb,
+    product: dependencyProduct({ productRow, category, productId }),
+  });
+}
+
+function dependencyLockMessage(status) {
+  const missing = status?.missing_keys || [];
+  if (missing.length === 0) return 'PIF dependencies are ready.';
+  return `PIF is locked until Product Image Dependent key(s) are resolved: ${missing.join(', ')}.`;
+}
+
+function resolveMissingPifDependencyResponse({ specDb, category, productId, productRow }) {
+  const dependencyStatus = resolvePifDependencyStatus({ specDb, category, productId, productRow });
+  if (dependencyStatus.ready) return null;
+  return {
+    status: 409,
+    body: {
+    error: 'pif_dependency_missing',
+    message: dependencyLockMessage(dependencyStatus),
+    dependency_status: dependencyStatus,
+    },
+  };
 }
 
 export function registerProductImageFinderRoutes(ctx) {
@@ -229,6 +265,12 @@ export function registerProductImageFinderRoutes(ctx) {
         carouselSettings: { viewAttemptBudget, viewAttemptBudgets, heroAttemptBudget, heroEnabled, viewBudget },
         carousel_slots: typeof row.carousel_slots === 'string' ? JSON.parse(row.carousel_slots || '{}') : (row.carousel_slots || {}),
         evaluations,
+        dependencyStatus: resolvePifDependencyStatus({
+          specDb: ctx.getSpecDb(row.category),
+          category: row.category,
+          productId: row.product_id,
+          productRow: ctx.getSpecDb(row.category)?.getProduct?.(row.product_id),
+        }),
       };
     },
 
@@ -253,14 +295,24 @@ export function registerProductImageFinderRoutes(ctx) {
     const category = parts[1] || '';
     const productId = parts[2] || '';
 
+    // GET /product-image-finder/:category/:productId/dependencies — PIF identity lock status.
+    // Works before any PIF summary row exists so the UI can show Run Dep first.
+    if (method === 'GET' && category && productId && parts[3] === 'dependencies' && !parts[4]) {
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+      const productRow = specDb.getProduct?.(productId);
+      if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+      return jsonRes(res, 200, resolvePifDependencyStatus({ specDb, category, productId, productRow }));
+    }
+
     // Serve original image: GET /product-image-finder/:category/:productId/images/originals/:filename
     if (method === 'GET' && category && productId && parts[3] === 'images' && parts[4] === 'originals' && parts[5]) {
-      return serveImageFile(res, jsonRes, productId, path.join('images', 'originals'), parts[5]);
+      return serveImageFile(req, res, jsonRes, params, productId, path.join('images', 'originals'), parts[5]);
     }
 
     // Serve master image: GET /product-image-finder/:category/:productId/images/:filename
     if (method === 'GET' && category && productId && parts[3] === 'images' && parts[4]) {
-      return serveImageFile(res, jsonRes, productId, 'images', parts[4]);
+      return serveImageFile(req, res, jsonRes, params, productId, 'images', parts[4]);
     }
 
     // ── Process single image (RMBG background removal) ─────────────
@@ -630,6 +682,8 @@ export function registerProductImageFinderRoutes(ctx) {
 
         const productRow = specDb.getProduct(productId);
         if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+        const dependencyLock = resolveMissingPifDependencyResponse({ specDb, category, productId, productRow });
+        if (dependencyLock) return jsonRes(res, dependencyLock.status, dependencyLock.body);
 
         const body = await readJsonBody(req).catch(() => ({}));
         const variantKey = body?.variant_key || null;
@@ -758,6 +812,8 @@ export function registerProductImageFinderRoutes(ctx) {
 
         const productRow = specDb.getProduct(productId);
         if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+        const dependencyLock = resolveMissingPifDependencyResponse({ specDb, category, productId, productRow });
+        if (dependencyLock) return jsonRes(res, dependencyLock.status, dependencyLock.body);
 
         const body = await readJsonBody(req).catch(() => ({}));
         const variantKey = body?.variant_key || '';
@@ -850,6 +906,8 @@ export function registerProductImageFinderRoutes(ctx) {
 
         const productRow = specDb.getProduct(productId);
         if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+        const dependencyLock = resolveMissingPifDependencyResponse({ specDb, category, productId, productRow });
+        if (dependencyLock) return jsonRes(res, dependencyLock.status, dependencyLock.body);
 
         const body = await readJsonBody(req).catch(() => ({}));
         const variantKey = body?.variant_key || '';
@@ -934,6 +992,8 @@ export function registerProductImageFinderRoutes(ctx) {
 
         const productRow = specDb.getProduct(productId);
         if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+        const dependencyLock = resolveMissingPifDependencyResponse({ specDb, category, productId, productRow });
+        if (dependencyLock) return jsonRes(res, dependencyLock.status, dependencyLock.body);
 
         const body = await readJsonBody(req).catch(() => ({}));
         const variantKey = body?.variant_key || '';
@@ -1126,6 +1186,8 @@ export function registerProductImageFinderRoutes(ctx) {
 
         const productRow = specDb.getProduct(productId);
         if (!productRow) return jsonRes(res, 404, { error: 'product not found', product_id: productId, category });
+        const dependencyLock = resolveMissingPifDependencyResponse({ specDb, category, productId, productRow });
+        if (dependencyLock) return jsonRes(res, dependencyLock.status, dependencyLock.body);
 
         // Read optional variant_key, mode, and view from body.
         const body = await readJsonBody(req).catch(() => ({}));
@@ -1378,18 +1440,20 @@ export function registerProductImageFinderRoutes(ctx) {
     return genericHandler(parts, params, method, req, res);
   };
 
-  function serveImageFile(res, jsonRes, productId, subDir, filename) {
+  async function serveImageFile(req, res, jsonRes, params, productId, subDir, filename) {
     if (!/^[\w\-]+\.\w+$/.test(filename)) return jsonRes(res, 400, { error: 'invalid filename' });
     const productRoot = defaultProductRoot();
     const filePath = path.join(productRoot, productId, subDir, filename);
     if (!fs.existsSync(filePath)) return jsonRes(res, 404, { error: 'image not found' });
 
-    const ext = path.extname(filename).toLowerCase();
-    const mimeMap = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.avif': 'image/avif' };
-    const contentType = mimeMap[ext] || 'application/octet-stream';
-    const stat = fs.statSync(filePath);
-    res.writeHead(200, { 'Content-Type': contentType, 'Content-Length': stat.size, 'Cache-Control': 'no-cache', 'ETag': `"${stat.mtimeMs.toString(36)}-${stat.size.toString(36)}"` });
-    fs.createReadStream(filePath).pipe(res);
-    return true;
+    const cacheScope = subDir.includes('originals') ? 'originals' : 'master';
+    const cacheDir = path.join(productRoot, productId, 'images', '.cache', cacheScope);
+    return serveLocalAsset({
+      sourcePath: filePath,
+      cacheDir,
+      variant: params?.get?.('variant'),
+      req,
+      res,
+    });
   }
 }

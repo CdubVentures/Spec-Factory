@@ -1,9 +1,6 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  AreaChart, Area, ResponsiveContainer, XAxis, YAxis,
-  Tooltip as RechartsTooltip, CartesianGrid,
-} from 'recharts';
+import { ThroughputAreaChart } from './ThroughputAreaChart.tsx';
 import { api } from '../../../../api/client.ts';
 import { usePersistedScroll } from '../../../../hooks/usePersistedScroll.ts';
 import type { RuntimeOpsSummaryResponse, RuntimeOpsMetricsRailData, LlmWorkerResponse } from '../../types.ts';
@@ -193,16 +190,7 @@ export function OverviewTab({
             <Tip text="Live docs/min and fields/min over time. Shows whether the run is accelerating or stalling." />
           </div>
           {throughputHistory.length > 1 ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={throughputHistory}>
-                <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.08} />
-                <XAxis dataKey="ts" tick={false} />
-                <YAxis tick={{ fontSize: 10 }} width={32} />
-                <RechartsTooltip labelFormatter={() => ''} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
-                <Area type="monotone" dataKey="fields" stroke="var(--sf-token-accent)" fill="var(--sf-token-accent-bg, rgba(59,130,246,0.15))" strokeWidth={2} name="Fields / min" />
-                <Area type="monotone" dataKey="docs" stroke="var(--sf-token-state-success-fg)" fill="var(--sf-token-state-success-bg)" strokeWidth={2} name="Docs / min" />
-              </AreaChart>
-            </ResponsiveContainer>
+            <ThroughputAreaChart throughputHistory={throughputHistory} />
           ) : (
             <div className="h-[180px] flex items-center justify-center sf-text-subtle text-xs">
               Accumulating throughput data...

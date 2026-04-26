@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { memo, useMemo } from 'react';
 import type { CatalogRow } from '../../types/product.ts';
 import {
   useOverviewSelectionStore,
@@ -13,6 +13,8 @@ import {
   MiniIcon,
 } from '../../features/operations/components/moduleIcons.tsx';
 import { deriveActiveAndSelectedGroups } from './activeAndSelectedRowDerivation.ts';
+import { IndexLabLink } from './IndexLabLink.tsx';
+import { resolveModuleTabId } from './activeBadgeModuleTabMap.ts';
 import './ActiveAndSelectedRow.css';
 
 export interface ActiveAndSelectedRowProps {
@@ -21,11 +23,12 @@ export interface ActiveAndSelectedRowProps {
 }
 
 interface ActiveBadgeProps {
+  readonly category: string;
   readonly row: CatalogRow;
   readonly runningModules: ReadonlySet<string>;
 }
 
-function ActiveBadge({ row, runningModules }: ActiveBadgeProps) {
+function ActiveBadge({ category, row, runningModules }: ActiveBadgeProps) {
   const labelMain = row.base_model || row.identifier || row.productId;
   const labelSub = row.variant ? row.variant : '';
   const tooltipParts = [
@@ -40,31 +43,56 @@ function ActiveBadge({ row, runningModules }: ActiveBadgeProps) {
         {labelSub && <span className="sf-aas-variant">{labelSub}</span>}
       </span>
       <span className="sf-aas-mods">
-        {MODULE_ORDER.filter((m) => runningModules.has(m)).map((m) => (
-          <span
-            key={m}
-            className={`sf-aas-mod sf-aas-mod-${m}`}
-            aria-label={`${MODULE_LABEL[m] ?? m} running`}
-          >
-            <MiniIcon mod={m} />
-          </span>
-        ))}
+        {MODULE_ORDER.filter((m) => runningModules.has(m)).map((m) => {
+          const label = MODULE_LABEL[m] ?? m;
+          const tabId = resolveModuleTabId(m);
+          if (!tabId) {
+            return (
+              <span
+                key={m}
+                className={`sf-aas-mod sf-aas-mod-${m}`}
+                aria-label={`${label} running`}
+              >
+                <MiniIcon mod={m} />
+              </span>
+            );
+          }
+          return (
+            <IndexLabLink
+              key={m}
+              category={category}
+              productId={row.productId}
+              brand={row.brand}
+              baseModel={row.base_model}
+              tabId={tabId}
+              className="sf-aas-mod-link"
+              title={`Open ${label} in Indexing Lab`}
+            >
+              <span
+                className={`sf-aas-mod sf-aas-mod-${m}`}
+                aria-label={`${label} running`}
+              >
+                <MiniIcon mod={m} />
+              </span>
+            </IndexLabLink>
+          );
+        })}
       </span>
     </span>
   );
 }
 
-interface SelectedIdleBadgeProps {
+interface SelectedBadgeProps {
   readonly row: CatalogRow;
   readonly onRemove: () => void;
 }
 
-function SelectedIdleBadge({ row, onRemove }: SelectedIdleBadgeProps) {
+function SelectedBadge({ row, onRemove }: SelectedBadgeProps) {
   const labelMain = row.base_model || row.identifier || row.productId;
   const labelSub = row.variant ? row.variant : '';
   const tooltip = [
     `${row.brand}${row.base_model ? ` ${row.base_model}` : ''}${row.variant ? ` \u00B7 ${row.variant}` : ''}`,
-    'Selected — Command Console will start ops on this product.',
+    'Selected - Command Console commands and Delete target this product.',
   ].join('\n');
   return (
     <span className="sf-aas-badge sf-aas-badge-idle" title={tooltip}>
@@ -88,7 +116,7 @@ function SelectedIdleBadge({ row, onRemove }: SelectedIdleBadgeProps) {
 
 const EMPTY_SET: ReadonlySet<string> = new Set();
 
-export function ActiveAndSelectedRow({ category, allRows }: ActiveAndSelectedRowProps) {
+function ActiveAndSelectedRowInner({ category, allRows }: ActiveAndSelectedRowProps) {
   const selectedSet = useOverviewSelectionStore((s) => s.byCategory[category]);
   const toggle = useOverviewSelectionStore((s) => s.toggle);
   const clear = useOverviewSelectionStore((s) => s.clear);
@@ -100,11 +128,9 @@ export function ActiveAndSelectedRow({ category, allRows }: ActiveAndSelectedRow
     [allRows, activeIds, selectedSet],
   );
 
-  // WHY: Always render the row container — even when empty — so the strip's
-  // appearance/disappearance doesn't push the table down/up and shift the
-  // popover triggers. The empty-state class flattens the visuals (no border,
-  // no eyebrow) but keeps the reserved height so layout stays stable.
-  const isEmpty = groups.active.length === 0 && groups.selectedIdle.length === 0;
+  // WHY: Always render the row container, even when empty, so the strip's
+  // appearance/disappearance does not shift table popover triggers.
+  const isEmpty = groups.active.length === 0 && groups.selected.length === 0;
 
   return (
     <div
@@ -123,6 +149,7 @@ export function ActiveAndSelectedRow({ category, allRows }: ActiveAndSelectedRow
             {groups.active.map((row) => (
               <ActiveBadge
                 key={row.productId}
+                category={category}
                 row={row}
                 runningModules={runningByProduct.get(row.productId) ?? EMPTY_SET}
               />
@@ -131,15 +158,15 @@ export function ActiveAndSelectedRow({ category, allRows }: ActiveAndSelectedRow
         </div>
       )}
 
-      {groups.selectedIdle.length > 0 && (
+      {groups.selected.length > 0 && (
         <div className="sf-aas-group sf-aas-group-idle">
           <div className="sf-aas-eyebrow">
-            <span className="sf-aas-count sf-aas-count-idle">{groups.selectedIdle.length}</span>
-            <span className="sf-aas-eyebrow-label">selected, idle</span>
+            <span className="sf-aas-count sf-aas-count-idle">{groups.selected.length}</span>
+            <span className="sf-aas-eyebrow-label">selected</span>
           </div>
           <div className="sf-aas-track">
-            {groups.selectedIdle.map((row) => (
-              <SelectedIdleBadge
+            {groups.selected.map((row) => (
+              <SelectedBadge
                 key={row.productId}
                 row={row}
                 onRemove={() => toggle(category, row.productId)}
@@ -159,3 +186,7 @@ export function ActiveAndSelectedRow({ category, allRows }: ActiveAndSelectedRow
     </div>
   );
 }
+
+// WHY: Memoized so unrelated OverviewPage re-renders do not cascade into the
+// active/selected strip.
+export const ActiveAndSelectedRow = memo(ActiveAndSelectedRowInner);

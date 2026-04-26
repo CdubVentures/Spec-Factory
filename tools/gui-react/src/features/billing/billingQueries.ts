@@ -3,12 +3,10 @@ import { api } from '../../api/client.ts';
 import type {
   BillingSummaryResponse,
   BillingDailyResponse,
-  BillingByModelResponse,
-  BillingByReasonResponse,
-  BillingByCategoryResponse,
   BillingEntriesResponse,
   BillingModelCostsResponse,
   BillingFilterState,
+  BillingGroupedItem,
 } from './billingTypes.ts';
 
 const BILLING_REFETCH = 30_000;
@@ -29,15 +27,6 @@ function withFilters(base: string, filters: BillingFilterState): string {
   return qs ? `${base}${base.includes('?') ? '&' : '?'}${qs}` : base;
 }
 
-export function useBillingSummaryQuery(filters: BillingFilterState) {
-  return useQuery<BillingSummaryResponse>({
-    queryKey: ['billing', 'summary', filters],
-    queryFn: () => api.get<BillingSummaryResponse>(withFilters('/billing/global/summary', filters)),
-    refetchInterval: BILLING_REFETCH,
-    placeholderData: keepPreviousData,
-  });
-}
-
 // WHY: Prior-month comparison for hero-band trend badges. Returns YYYY-MM one
 // calendar month behind the current date in local time.
 function priorMonth(now: Date = new Date()): string {
@@ -47,48 +36,34 @@ function priorMonth(now: Date = new Date()): string {
   return `${y}-${m}`;
 }
 
-export function useBillingPriorSummaryQuery(filters: BillingFilterState) {
-  const month = priorMonth();
-  const base = `/billing/global/summary?month=${month}`;
-  return useQuery<BillingSummaryResponse>({
-    queryKey: ['billing', 'summary', 'prior', month, filters],
-    queryFn: () => api.get<BillingSummaryResponse>(withFilters(base, filters)),
-    refetchInterval: BILLING_REFETCH,
-    placeholderData: keepPreviousData,
-  });
+// WHY: Bundle hook — collapses 9 page-load queries (summary + prior summary +
+// daily + 3× filtered rollups + 3× unfiltered chip rollups) into one request
+// to /billing/global/dashboard. priorMonth() stays client-side so month-boundary
+// behavior matches the user's local timezone.
+export interface BillingDashboardResponse {
+  month: string;
+  prior_month: string;
+  filtered: {
+    summary: BillingSummaryResponse;
+    prior_summary: BillingSummaryResponse;
+    by_model: BillingGroupedItem[];
+    by_reason: BillingGroupedItem[];
+    by_category: BillingGroupedItem[];
+    daily: BillingDailyResponse;
+  };
+  unfiltered: {
+    by_model: BillingGroupedItem[];
+    by_reason: BillingGroupedItem[];
+    by_category: BillingGroupedItem[];
+  };
 }
 
-export function useBillingDailyQuery(filters: BillingFilterState) {
-  return useQuery<BillingDailyResponse>({
-    queryKey: ['billing', 'daily', filters],
-    queryFn: () => api.get<BillingDailyResponse>(withFilters('/billing/global/daily?months=1', filters)),
-    refetchInterval: BILLING_REFETCH,
-    placeholderData: keepPreviousData,
-  });
-}
-
-export function useBillingByModelQuery(filters: BillingFilterState) {
-  return useQuery<BillingByModelResponse>({
-    queryKey: ['billing', 'by-model', filters],
-    queryFn: () => api.get<BillingByModelResponse>(withFilters('/billing/global/by-model', filters)),
-    refetchInterval: BILLING_REFETCH,
-    placeholderData: keepPreviousData,
-  });
-}
-
-export function useBillingByReasonQuery(filters: BillingFilterState) {
-  return useQuery<BillingByReasonResponse>({
-    queryKey: ['billing', 'by-reason', filters],
-    queryFn: () => api.get<BillingByReasonResponse>(withFilters('/billing/global/by-reason', filters)),
-    refetchInterval: BILLING_REFETCH,
-    placeholderData: keepPreviousData,
-  });
-}
-
-export function useBillingByCategoryQuery(filters: BillingFilterState) {
-  return useQuery<BillingByCategoryResponse>({
-    queryKey: ['billing', 'by-category', filters],
-    queryFn: () => api.get<BillingByCategoryResponse>(withFilters('/billing/global/by-category', filters)),
+export function useBillingDashboardQuery(filters: BillingFilterState) {
+  const prior = priorMonth();
+  const base = `/billing/global/dashboard?prior_month=${prior}&months=1`;
+  return useQuery<BillingDashboardResponse>({
+    queryKey: ['billing', 'dashboard', filters],
+    queryFn: () => api.get<BillingDashboardResponse>(withFilters(base, filters)),
     refetchInterval: BILLING_REFETCH,
     placeholderData: keepPreviousData,
   });

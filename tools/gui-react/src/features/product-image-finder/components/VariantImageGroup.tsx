@@ -34,6 +34,8 @@ interface VariantImageGroupProps {
   readonly isOpen: boolean;
   readonly onToggle: () => void;
   readonly heroEnabled: boolean;
+  readonly pifDependencyLocked: boolean;
+  readonly pifDependencyTitle: string;
   readonly loopingVariant: boolean;
   readonly evaluatingVariant: boolean;
   /** Per-variant URL/query counts for the Hist button label. Null when the
@@ -77,6 +79,8 @@ export const VariantImageGroup = memo(function VariantImageGroup({
   isOpen,
   onToggle,
   heroEnabled,
+  pifDependencyLocked,
+  pifDependencyTitle,
   loopingVariant,
   evaluatingVariant,
   histCounts,
@@ -203,6 +207,8 @@ export const VariantImageGroup = memo(function VariantImageGroup({
                   label: 'Priority',
                   runTitle: 'Priority View Run — one LLM call across all viewConfig priority views',
                   previewTitle: 'Preview the Priority View Run prompt',
+                  disabledTitle: pifDependencyTitle,
+                  runDisabled: pifDependencyLocked,
                   onRun: () => onRunPriorityView(group.key),
                   onPreview: () => onOpenPromptModal(group.key, 'view'),
                 },
@@ -211,6 +217,8 @@ export const VariantImageGroup = memo(function VariantImageGroup({
                   label: v.label,
                   runTitle: `Individual View Run — ${v.label}`,
                   previewTitle: `Preview the ${v.label} Individual View Run prompt`,
+                  disabledTitle: pifDependencyTitle,
+                  runDisabled: pifDependencyLocked,
                   onRun: () => onRunIndividualView(group.key, v.id),
                   onPreview: () => onOpenPromptModal(group.key, 'view', v.id),
                 })),
@@ -219,6 +227,8 @@ export const VariantImageGroup = memo(function VariantImageGroup({
                   label: 'Hero',
                   runTitle: 'Hero Run — lifestyle/contextual images',
                   previewTitle: 'Preview the Hero Run prompt',
+                  disabledTitle: pifDependencyTitle,
+                  runDisabled: pifDependencyLocked,
                   onRun: () => onRunHero(group.key),
                   onPreview: () => onOpenPromptModal(group.key, 'hero'),
                 }] : []),
@@ -229,7 +239,8 @@ export const VariantImageGroup = memo(function VariantImageGroup({
               label="Loop"
               onClick={() => onLoopVariant(group.key)}
               busy={loopingVariant}
-              title="Loop: views then heroes until carousel complete"
+              disabled={pifDependencyLocked}
+              title={pifDependencyLocked ? pifDependencyTitle : 'Loop: views then heroes until carousel complete'}
               width={ACTION_BUTTON_WIDTH.standardRow}
             />
             <RowActionButton
@@ -237,8 +248,8 @@ export const VariantImageGroup = memo(function VariantImageGroup({
               label="Eval"
               onClick={() => onEvalVariant(group.key)}
               busy={evaluatingVariant}
-              disabled={group.images.length === 0}
-              title="Carousel Builder: evaluate images and pick best per view"
+              disabled={pifDependencyLocked || group.images.length === 0}
+              title={pifDependencyLocked ? pifDependencyTitle : 'Carousel Builder: evaluate images and pick best per view'}
               width={ACTION_BUTTON_WIDTH.standardRow}
             />
             <RowActionButton

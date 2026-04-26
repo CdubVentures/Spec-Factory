@@ -99,8 +99,8 @@ test('publisher reconcile preview relies on data-change invalidation instead of 
     '../../../api/client.ts': `
       export const api = { get: async () => ({}), post: async () => ({ result: {} }) };
     `,
-    '../../../stores/uiStore.ts': `
-      export function useUiStore(selector) {
+    '../../../stores/uiCategoryStore.ts': `
+      export function useUiCategoryStore(selector) {
         return selector({ category: globalThis.__publisherPollingHarness.category });
       }
     `,
@@ -131,8 +131,8 @@ test('publisher candidate list relies on data-change invalidation instead of pol
     '../../api/client.ts': `
       export const api = { get: async () => ({ rows: [], stats: {} }) };
     `,
-    '../../stores/uiStore.ts': `
-      export function useUiStore(selector) {
+    '../../stores/uiCategoryStore.ts': `
+      export function useUiCategoryStore(selector) {
         return selector({ category: globalThis.__publisherPollingHarness.category });
       }
     `,

@@ -1,14 +1,14 @@
 import { useEffect } from 'react';
-import { useUiStore } from '../../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../../stores/uiCategoryStore.ts';
 import { useRuntimeStore } from '../../../stores/runtimeStore.ts';
 import { useCategoriesQuery } from '../../../hooks/useCategoriesQuery.ts';
 import { useProcessStatusQuery } from '../../../hooks/useProcessStatusQuery.ts';
 import { coerceCategories, resolveActiveCategory } from '../../../utils/categoryStoreSync.js';
 
 export function useCategorySync() {
-  const setCategories = useUiStore((s) => s.setCategories);
-  const setCategory = useUiStore((s) => s.setCategory);
-  const category = useUiStore((s) => s.category);
+  const setCategories = useUiCategoryStore((s) => s.setCategories);
+  const setCategory = useUiCategoryStore((s) => s.setCategory);
+  const category = useUiCategoryStore((s) => s.category);
   const setProcessStatus = useRuntimeStore((s) => s.setProcessStatus);
 
   const categoriesQuery = useCategoriesQuery();

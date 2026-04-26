@@ -1,13 +1,14 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../../../api/client.ts";
-import { useUiStore } from "../../../stores/uiStore.ts";
+import { useUiCategoryStore } from "../../../stores/uiCategoryStore.ts";
 import { usePersistedToggle } from "../../../stores/collapseStore.ts";
 import { usePersistedTab, usePersistedExpandMap } from "../../../stores/tabStore.ts";
 import { DataTable } from "../../../shared/ui/data-display/DataTable.tsx";
 import { Spinner } from "../../../shared/ui/feedback/Spinner.tsx";
 import { inputCls, labelCls } from "./studioConstants.ts";
 import { invalidateFieldRulesQueries } from "../state/invalidateFieldRulesQueries.ts";
+import { patchCachedBrand, removeCachedBrand } from "./brandCacheOptimism.ts";
 import type { ColumnDef } from "@tanstack/react-table";
 import type { BrandImpactAnalysis, Brand, BrandMutationResult } from "../../../types/product.ts";
 
@@ -73,6 +74,10 @@ interface BrandBulkImportResult {
   results?: BrandBulkImportResultRow[];
 }
 
+interface BrandCacheMutationContext {
+  readonly previousBrands?: Brand[];
+}
+
 function slugify(str: string): string {
   if (!str) return "";
   return str
@@ -112,8 +117,8 @@ function isBrandHeaderRow(name: string): boolean {
 }
 
 export function BrandManager() {
-  const categories = useUiStore((s) => s.categories);
-  const selectedCategory = useUiStore((s) => s.category);
+  const categories = useUiCategoryStore((s) => s.categories);
+  const selectedCategory = useUiCategoryStore((s) => s.category);
   const queryClient = useQueryClient();
   const [filterCategory, setFilterCategory] = usePersistedTab<string>(
     "catalog:brands:filterCategory",
@@ -187,8 +192,9 @@ export function BrandManager() {
     false,
   );
   const hydratedEditSlugRef = useRef("");
+  const brandsQueryKey = ["brands", "_all"] as const;
   const { data: brands = [], isLoading } = useQuery<Brand[]>({
-    queryKey: ["brands", "_all"],
+    queryKey: brandsQueryKey,
     queryFn: () => api.get<Brand[]>("/brands"),
   });
   const { data: impactData } = useQuery<BrandImpactAnalysis>({
@@ -208,9 +214,9 @@ export function BrandManager() {
   const isWebsiteChange = Boolean(editSlug && formWebsite !== origWebsite);
   const hasAnyChange =
     isRename || isAliasChange || isCategoryChange || isWebsiteChange;
-  function invalidate() {
+  function invalidate(event: string) {
     queryClient.invalidateQueries({ queryKey: ["brands"] });
-    invalidateFieldRulesQueries(queryClient, selectedCategory);
+    invalidateFieldRulesQueries(queryClient, selectedCategory, { event });
   }
   const addMut = useMutation({
     mutationFn: (body: {
@@ -220,7 +226,7 @@ export function BrandManager() {
       website: string;
     }) => api.post<BrandMutationResult>("/brands", body),
     onSuccess: () => {
-      invalidate();
+      invalidate("brand-add");
       closeDrawer();
     },
   });
@@ -232,8 +238,22 @@ export function BrandManager() {
       slug: string;
       patch: Record<string, unknown>;
     }) => api.put<BrandMutationResult>(`/brands/${slug}`, patch),
+    onMutate: async ({ slug, patch }): Promise<BrandCacheMutationContext> => {
+      await queryClient.cancelQueries({ queryKey: brandsQueryKey });
+      const previousBrands = queryClient.getQueryData<Brand[]>(brandsQueryKey);
+      queryClient.setQueryData<Brand[]>(
+        brandsQueryKey,
+        (current) => patchCachedBrand(current, slug, patch),
+      );
+      return { previousBrands };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousBrands) {
+        queryClient.setQueryData(brandsQueryKey, context.previousBrands);
+      }
+    },
     onSuccess: (data) => {
-      invalidate();
+      invalidate(isRename ? "brand-rename" : "brand-update");
       closeDrawer();
       if (data?.cascaded_products !== undefined) {
         setRenameResult(data);
@@ -244,8 +264,22 @@ export function BrandManager() {
   const deleteMut = useMutation({
     mutationFn: (slug: string) =>
       api.del<BrandMutationResult>(`/brands/${slug}`),
+    onMutate: async (slug): Promise<BrandCacheMutationContext> => {
+      await queryClient.cancelQueries({ queryKey: brandsQueryKey });
+      const previousBrands = queryClient.getQueryData<Brand[]>(brandsQueryKey);
+      queryClient.setQueryData<Brand[]>(
+        brandsQueryKey,
+        (current) => removeCachedBrand(current, slug),
+      );
+      return { previousBrands };
+    },
+    onError: (_error, _slug, context) => {
+      if (context?.previousBrands) {
+        queryClient.setQueryData(brandsQueryKey, context.previousBrands);
+      }
+    },
     onSuccess: () => {
-      invalidate();
+      invalidate("brand-delete");
       closeDrawer();
     },
   });
@@ -253,7 +287,7 @@ export function BrandManager() {
     mutationFn: (payload: { category: string; names: string[] }) =>
       api.post<BrandBulkImportResult>("/brands/bulk", payload),
     onSuccess: (data) => {
-      invalidate();
+      invalidate("brand-bulk-add");
       setBulkResult(data);
       setTimeout(() => setBulkResult(null), 10000);
     },
@@ -432,7 +466,21 @@ export function BrandManager() {
   const inlineCategoryMut = useMutation({
     mutationFn: ({ slug, categories: cats }: { slug: string; categories: string[] }) =>
       api.put<BrandMutationResult>(`/brands/${slug}`, { categories: cats }),
-    onSuccess: () => invalidate(),
+    onMutate: async ({ slug, categories: cats }): Promise<BrandCacheMutationContext> => {
+      await queryClient.cancelQueries({ queryKey: brandsQueryKey });
+      const previousBrands = queryClient.getQueryData<Brand[]>(brandsQueryKey);
+      queryClient.setQueryData<Brand[]>(
+        brandsQueryKey,
+        (current) => patchCachedBrand(current, slug, { categories: cats }),
+      );
+      return { previousBrands };
+    },
+    onError: (_error, _variables, context) => {
+      if (context?.previousBrands) {
+        queryClient.setQueryData(brandsQueryKey, context.previousBrands);
+      }
+    },
+    onSuccess: () => invalidate("brand-update"),
   });
   const handleInlineCategoryAdd = useCallback((brand: Brand, cat: string) => {
     if (brand.categories.includes(cat)) return;

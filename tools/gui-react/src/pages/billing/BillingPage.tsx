@@ -1,13 +1,8 @@
 import { useMemo, useCallback, useState } from 'react';
-import { useUiStore } from '../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../stores/uiCategoryStore.ts';
 import { usePersistedTab, usePersistedNumber } from '../../stores/tabStore.ts';
 import {
-  useBillingSummaryQuery,
-  useBillingPriorSummaryQuery,
-  useBillingDailyQuery,
-  useBillingByModelQuery,
-  useBillingByReasonQuery,
-  useBillingByCategoryQuery,
+  useBillingDashboardQuery,
   useBillingModelCostsQuery,
 } from '../../features/billing/billingQueries.ts';
 import type { BillingFilterState } from '../../features/billing/billingTypes.ts';
@@ -60,7 +55,7 @@ function SectionHeading({ label, meta, tok }: { label: string; meta?: string; to
 }
 
 export function BillingPage() {
-  const categories = useUiStore((s) => s.categories);
+  const categories = useUiCategoryStore((s) => s.categories);
 
   const [category, setCategory] = usePersistedTab<string>('billing:filter:category', '');
   const [reason, setReason] = usePersistedTab<string>('billing:filter:reason', '');
@@ -76,40 +71,47 @@ export function BillingPage() {
 
   const noFilters = useMemo<BillingFilterState>(() => ({ category: '', reason: '', model: '', access: '' }), []);
 
-  // WHY: Unfiltered aggregations drive BOTH chip stability AND chip counts.
-  const allModels = useBillingByModelQuery(noFilters);
-  const allReasons = useBillingByReasonQuery(noFilters);
-  const allCategories = useBillingByCategoryQuery(noFilters);
+  // WHY: Bundle query — single round-trip drives every section. Loading/stale
+  // flags collapse to one source since all sections fetch together at 30s.
+  const dashboard = useBillingDashboardQuery(persistedFilters);
+  const f = dashboard.data?.filtered;
+  const u = dashboard.data?.unfiltered;
+  const month = dashboard.data?.month ?? '';
+  const isLoading = dashboard.isLoading;
+  const isStale = dashboard.isPlaceholderData;
+
+  // Inline ad-hoc shapes where children expect { month, items[] } wrappers.
+  const allModels = u ? { month, models: u.by_model } : undefined;
+  const allReasons = u ? { month, reasons: u.by_reason } : undefined;
+  const allCategories = u ? { month, categories: u.by_category } : undefined;
+  const byModel = f ? { month, models: f.by_model } : undefined;
+  const byReason = f ? { month, reasons: f.by_reason } : undefined;
+  const byCategory = f ? { month, categories: f.by_category } : undefined;
+
   const modelKeys = useMemo(
-    () => (allModels.data?.models ?? []).map((m) => m.key),
-    [allModels.data],
+    () => (u?.by_model ?? []).map((m) => m.key),
+    [u],
   );
   const reasonKeys = useMemo(
-    () => (allReasons.data?.reasons ?? []).map((r) => r.key),
-    [allReasons.data],
+    () => (u?.by_reason ?? []).map((r) => r.key),
+    [u],
   );
   const filters = useMemo<BillingFilterState>(
     () => resolveBillingFilterState(persistedFilters, { categories, models: modelKeys, reasons: reasonKeys }),
     [persistedFilters, categories, modelKeys, reasonKeys],
   );
   const chipCounts = useMemo(
-    () => computeFilterChipCounts(allModels.data, allReasons.data, allCategories.data),
-    [allModels.data, allReasons.data, allCategories.data],
+    () => computeFilterChipCounts(allModels, allReasons, allCategories),
+    [allModels, allReasons, allCategories],
   );
 
-  const summary = useBillingSummaryQuery(filters);
-  const priorSummary = useBillingPriorSummaryQuery(filters);
-  const daily = useBillingDailyQuery(filters);
-  const byModel = useBillingByModelQuery(filters);
-  const byReason = useBillingByReasonQuery(filters);
-  const byCategory = useBillingByCategoryQuery(filters);
   const modelCosts = useBillingModelCostsQuery(filters, modelCostsOpen);
 
-  const totalCost = summary.data?.totals?.cost_usd ?? 0;
-  const totalTokens = (summary.data?.totals?.prompt_tokens ?? 0) + (summary.data?.totals?.completion_tokens ?? 0);
+  const totalCost = f?.summary?.totals?.cost_usd ?? 0;
+  const totalTokens = (f?.summary?.totals?.prompt_tokens ?? 0) + (f?.summary?.totals?.completion_tokens ?? 0);
 
-  const runsLabel = summary.data
-    ? `${summary.data.totals.calls} calls · ${summary.data.models_used} models · ${summary.data.categories_used} categories`
+  const runsLabel = f?.summary
+    ? `${f.summary.totals.calls} calls · ${f.summary.models_used} models · ${f.summary.categories_used} categories`
     : '';
 
   const handleFilterChange = useCallback((next: BillingFilterState) => {
@@ -124,11 +126,11 @@ export function BillingPage() {
     handleFilterChange(noFilters);
   }, [handleFilterChange, noFilters]);
 
-  const categoryCallout = byCategory.data?.categories?.length ? (
+  const categoryCallout = byCategory?.categories?.length ? (
     <div className="sf-bar-callout">
       <span className="sf-bar-callout-title">📊 Avg cost per product</span>
       <div className="sf-bar-callout-items">
-        {byCategory.data.categories.map((c) => {
+        {byCategory.categories.map((c) => {
           // WHY: Rollup doesn't expose per-category product counts to the frontend,
           // so treat "avg cost per call" as the second-tier metric here.
           const perCall = c.calls > 0 ? c.cost_usd / c.calls : 0;
@@ -146,14 +148,14 @@ export function BillingPage() {
     <div className="space-y-4">
       {/* Dual hero: Cost + Tokens */}
       <BillingHeroBand
-        summary={summary.data}
-        priorSummary={priorSummary.data}
-        daily={daily.data}
-        byReason={byReason.data}
-        dateRangeLabel={summary.data?.month ?? ''}
+        summary={f?.summary}
+        priorSummary={f?.prior_summary}
+        daily={f?.daily}
+        byReason={byReason}
+        dateRangeLabel={f?.summary?.month ?? ''}
         runsLabel={runsLabel}
-        isLoading={summary.isLoading}
-        isStale={summary.isPlaceholderData}
+        isLoading={isLoading}
+        isStale={isStale}
       />
 
       <div className="sf-billing-action-strip">
@@ -196,12 +198,12 @@ export function BillingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <DailyCostChart data={daily.data} isLoading={daily.isLoading} isStale={daily.isPlaceholderData} />
+          <DailyCostChart data={f?.daily} isLoading={isLoading} isStale={isStale} />
         </div>
         <BillingMetricDonut
-          data={byReason.data}
-          isLoading={byReason.isLoading}
-          isStale={byReason.isPlaceholderData}
+          data={byReason}
+          isLoading={isLoading}
+          isStale={isStale}
           metric="cost"
           totalValue={totalCost}
         />
@@ -210,19 +212,19 @@ export function BillingPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <HorizontalBarSection
           title="Cost by Model"
-          subtitle={`Top ${Math.min(6, byModel.data?.models?.length ?? 0)} of ${byModel.data?.models?.length ?? 0} models`}
-          items={byModel.data?.models?.slice(0, 6)}
-          isLoading={byModel.isLoading}
-          isStale={byModel.isPlaceholderData}
+          subtitle={`Top ${Math.min(6, byModel?.models?.length ?? 0)} of ${byModel?.models?.length ?? 0} models`}
+          items={byModel?.models?.slice(0, 6)}
+          isLoading={isLoading}
+          isStale={isStale}
           metric="cost"
           getProviderTag={modelProviderTag}
         />
         <HorizontalBarSection
           title="Cost by Category"
           subtitle="Per-domain spend"
-          items={byCategory.data?.categories}
-          isLoading={byCategory.isLoading}
-          isStale={byCategory.isPlaceholderData}
+          items={byCategory?.categories}
+          isLoading={isLoading}
+          isStale={isStale}
           metric="cost"
           formatLabel={capitalize}
           metaCallout={categoryCallout}
@@ -234,13 +236,13 @@ export function BillingPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <div className="lg:col-span-2">
-          <DailyTokenChart data={daily.data} isLoading={daily.isLoading} isStale={daily.isPlaceholderData} />
+          <DailyTokenChart data={f?.daily} isLoading={isLoading} isStale={isStale} />
         </div>
-        <PromptCachePanel summary={summary.data} isLoading={summary.isLoading} />
+        <PromptCachePanel summary={f?.summary} isLoading={isLoading} />
         <BillingMetricDonut
-          data={byReason.data}
-          isLoading={byReason.isLoading}
-          isStale={byReason.isPlaceholderData}
+          data={byReason}
+          isLoading={isLoading}
+          isStale={isStale}
           metric="tokens"
           totalValue={totalTokens}
         />
@@ -250,9 +252,9 @@ export function BillingPage() {
         <HorizontalBarSection
           title="Tokens by Model"
           subtitle="Prompt / Completion / Cached composition"
-          items={byModel.data?.models?.slice(0, 6)}
-          isLoading={byModel.isLoading}
-          isStale={byModel.isPlaceholderData}
+          items={byModel?.models?.slice(0, 6)}
+          isLoading={isLoading}
+          isStale={isStale}
           metric="tokens"
           segmented
           getProviderTag={modelProviderTag}
@@ -260,9 +262,9 @@ export function BillingPage() {
         <HorizontalBarSection
           title="Tokens by Category"
           subtitle="Per-domain volume"
-          items={byCategory.data?.categories}
-          isLoading={byCategory.isLoading}
-          isStale={byCategory.isPlaceholderData}
+          items={byCategory?.categories}
+          isLoading={isLoading}
+          isStale={isStale}
           metric="tokens"
           segmented
           formatLabel={capitalize}

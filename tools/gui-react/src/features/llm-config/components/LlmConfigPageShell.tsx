@@ -27,12 +27,12 @@ const DEFAULT_PHASE_ICON: ReactNode = <circle cx="12" cy="12" r="8" />;
 
 /* ── SVG group badges — small pill overlays in top-right of each sidebar button ── */
 
-// WHY: Badge colors match the group's semantic intent:
-// indexing = blue (pipeline flow), discovery = purple (exploration)
+// WHY: Badge colors flow through theme tokens:
+// indexing = state-info (blue, pipeline flow), discovery = state-timeout (purple, exploration)
 const GROUP_BADGE_CONFIG: Record<string, { color: string; bg: string; icon: ReactNode; label: string }> = {
   indexing: {
-    color: 'rgb(59, 130, 246)',
-    bg: 'rgb(59, 130, 246, 0.12)',
+    color: 'var(--sf-token-state-info-fg)',
+    bg: 'var(--sf-token-state-info-bg)',
     label: 'Pipeline',
     icon: (
       <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -41,8 +41,8 @@ const GROUP_BADGE_CONFIG: Record<string, { color: string; bg: string; icon: Reac
     ),
   },
   discovery: {
-    color: 'rgb(168, 85, 247)',
-    bg: 'rgb(168, 85, 247, 0.12)',
+    color: 'var(--sf-token-state-timeout-fg)',
+    bg: 'var(--sf-token-state-timeout-bg)',
     label: 'Feature',
     icon: (
       <svg viewBox="0 0 12 12" width="10" height="10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

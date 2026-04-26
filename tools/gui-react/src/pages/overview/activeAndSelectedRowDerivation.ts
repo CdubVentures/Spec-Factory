@@ -2,18 +2,17 @@ import type { CatalogRow } from '../../types/product.ts';
 
 export interface ActiveAndSelectedGroups {
   readonly active: readonly CatalogRow[];
-  readonly selectedIdle: readonly CatalogRow[];
+  readonly selected: readonly CatalogRow[];
 }
 
 /**
  * Split a catalog into the Active row's two visible groups.
  *
- * - Active: products with any running op (regardless of selection).
- * - Selected, idle: products in the user's selection that are NOT currently active —
- *   a selected-and-active product appears only in Active during its run, then
- *   migrates back to Selected-idle on terminal status (selection persists).
+ * - Active: products with any running op, regardless of selection.
+ * - Selected: every checked product. Selected-and-active products intentionally
+ *   appear in both groups so the strip matches Command Console targeting.
  *
- * Pure function — given the same inputs, returns the same groups. No global
+ * Pure function: given the same inputs, returns the same groups. No global
  * state; the React hook layer reads activeIds / selectedIds and passes them in.
  */
 export function deriveActiveAndSelectedGroups(
@@ -27,13 +26,12 @@ export function deriveActiveAndSelectedGroups(
     const row = byId.get(id);
     if (row) active.push(row);
   }
-  const selectedIdle: CatalogRow[] = [];
+  const selected: CatalogRow[] = [];
   if (selectedIds) {
     for (const id of selectedIds) {
-      if (activeIds.has(id)) continue;
       const row = byId.get(id);
-      if (row) selectedIdle.push(row);
+      if (row) selected.push(row);
     }
   }
-  return { active, selectedIdle };
+  return { active, selected };
 }

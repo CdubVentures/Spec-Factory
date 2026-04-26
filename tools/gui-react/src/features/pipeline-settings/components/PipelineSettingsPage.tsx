@@ -3,7 +3,7 @@ import {
   useSourceStrategyAuthority,
   type SourceEntry,
 } from '../state/sourceStrategyAuthority.ts';
-import { useUiStore } from '../../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../../stores/uiCategoryStore.ts';
 import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore.ts';
 import { PIPELINE_SECTION_IDS, PipelineSettingsPageShell, type PipelineSectionId } from './PipelineSettingsPageShell.tsx';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
@@ -73,7 +73,7 @@ function isRuntimeCategorySection(id: PipelineSectionId): id is SettingsCategory
 }
 
 export function PipelineSettingsPage() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const sourceStrategySettingsReady = useSettingsAuthorityStore(
     (s) => s.snapshot.sourceStrategyReady,
   );

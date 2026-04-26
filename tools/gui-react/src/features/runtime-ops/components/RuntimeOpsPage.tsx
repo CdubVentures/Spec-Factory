@@ -3,12 +3,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import { wsManager } from '../../../api/ws.ts';
 import type { ProcessStatus } from '../../../types/events.ts';
-import { useUiStore } from '../../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../../stores/uiCategoryStore.ts';
 import { usePersistedNullableTab, usePersistedTab } from '../../../stores/tabStore.ts';
 import { useIndexLabStore } from '../../indexing/state/indexlabStore.ts';
 import { buildIndexLabRunsQueryKey, buildIndexLabRunsRequestPath } from '../../indexing/state/indexlabRunsQuery.ts';
 import type { IndexLabRunSummary, IndexLabRunsResponse } from '../../indexing/types.ts';
 import { resolveRunActiveScope } from '../selectors/runActivityScopeHelpers.js';
+import { createRuntimeOpsInvalidationScheduler } from '../state/runtimeOpsInvalidationScheduler.ts';
 import { PipelineStepperBar } from './PipelineStepperBar.tsx';
 import { MetricsRail } from '../panels/overview/MetricsRail.tsx';
 import { OverviewTab } from '../panels/overview/OverviewTab.tsx';
@@ -134,7 +135,7 @@ function resolveStorageState(status: ProcessStatus | undefined): 'live' | 'store
 }
 
 export function RuntimeOpsPage() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const categoryScope = category;
   const selectedRunId = useIndexLabStore((s) => s.pickerRunId);
   const setSelectedRunId = useIndexLabStore((s) => s.setPickerRunId);
@@ -234,12 +235,16 @@ export function RuntimeOpsPage() {
   const queryClient = useQueryClient();
   useEffect(() => {
     if (!effectiveRunId) return;
+    const scheduler = createRuntimeOpsInvalidationScheduler({ queryClient });
     const unsub = wsManager.onMessage((channel) => {
       if (channel === 'indexlab-event') {
-        queryClient.invalidateQueries({ queryKey: ['runtime-ops', effectiveRunId] });
+        scheduler.schedule(effectiveRunId);
       }
     });
-    return unsub;
+    return () => {
+      unsub();
+      scheduler.dispose();
+    };
   }, [effectiveRunId, queryClient]);
 
   const selectedRun = useMemo(

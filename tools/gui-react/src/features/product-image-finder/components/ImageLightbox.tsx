@@ -81,12 +81,12 @@ export function ImageLightbox({ img, src, category, productId, onClose }: ImageL
         {dims && <span className="text-[12px] sf-overlay-text-muted font-mono">{dims}px</span>}
         <span className="text-[12px] sf-overlay-text-muted">{img.variant_label || img.variant_key}</span>
         {img.url && (
-          <a href={img.url} target="_blank" rel="noopener noreferrer" className="text-[12px] text-blue-400 hover:underline font-mono">
+          <a href={img.url} target="_blank" rel="noopener noreferrer" className="text-[12px] text-[var(--sf-token-state-info-fg)] hover:underline font-mono">
             {(() => { try { return new URL(img.url).hostname; } catch { return 'source'; } })()}
           </a>
         )}
         {img.source_page && img.source_page !== img.url && (
-          <a href={img.source_page} target="_blank" rel="noopener noreferrer" className="text-[12px] text-blue-300/60 hover:underline font-mono">
+          <a href={img.source_page} target="_blank" rel="noopener noreferrer" className="text-[12px] text-[var(--sf-token-state-info-fg)] opacity-60 hover:opacity-100 hover:underline font-mono">
             source page
           </a>
         )}

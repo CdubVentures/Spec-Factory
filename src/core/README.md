@@ -16,6 +16,7 @@ This boundary is the canonical home for low-level configuration and model-routin
 - `src/core/events/dataChangeContract.js`: `createDataChangePayload`, `emitDataChange`, `isDataChangePayload`, `dataChangeMatchesCategory`, `DATA_CHANGE_EVENT_DOMAIN_MAP`, `DATA_CHANGE_EVENT_NAMES`.
 - `src/core/events/dataPropagationCounters.js`: `resetDataPropagationCounters`, `recordDataChangeBroadcast`, `recordQueueCleanupOutcome`, `getDataPropagationCountersSnapshot`.
 - `src/core/events/settingsPersistenceCounters.js`: `resetSettingsPersistenceCounters`, `recordSettingsWriteAttempt`, `recordSettingsWriteOutcome`, `recordSettingsStaleRead`, `recordSettingsMigration`, `getSettingsPersistenceCountersSnapshot`.
+- `src/core/media/imageVariantAssets.js`: `serveLocalAsset()` for cache-aware full/thumb/preview local media responses.
 - `src/core/storage/storage.js`: `createStorage(config)`, `toPosixKey(...parts)`.
 
 ## Dependencies
@@ -28,4 +29,5 @@ This boundary is the canonical home for low-level configuration and model-routin
 - Prompt builders stay pure; provider selection, HTTP concerns, and caching stay inside `src/core/llm/**`.
 - Secrets and provider credentials must not leak out of this boundary through logs or higher-level contracts.
 - `src/core/events/eventRegistry.js`: the SSOT for live-update event-to-domain and domain-to-query-template coverage.
+- `src/core/media/imageVariantAssets.js`: derived image variants are display caches only; source files remain the quality-preserving canonical assets.
 - `src/core/events/dataChangeContract.js`: shared mutation broadcast infrastructure consumed by all features — not feature-specific.

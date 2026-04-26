@@ -12,6 +12,9 @@ interface UseIndexingRunViewHandlersInput {
   category: string;
   selectedIndexLabRunId: string;
   setRuntimeProcessStatus: (status: ProcessStatus) => void;
+  /** Currently-picked product. Threaded into refreshAll so post-run
+   *  invalidation of product-history is scoped to this product only. */
+  productId: string;
 }
 
 export function useIndexingRunViewHandlers(input: UseIndexingRunViewHandlersInput) {
@@ -20,6 +23,7 @@ export function useIndexingRunViewHandlers(input: UseIndexingRunViewHandlersInpu
     category,
     selectedIndexLabRunId,
     setRuntimeProcessStatus,
+    productId,
   } = input;
 
   const publishProcessStatus = useCallback(
@@ -38,8 +42,9 @@ export function useIndexingRunViewHandlers(input: UseIndexingRunViewHandlersInpu
       queryClient,
       category,
       selectedIndexLabRunId,
+      productId,
     }),
-    [queryClient, category, selectedIndexLabRunId],
+    [queryClient, category, selectedIndexLabRunId, productId],
   );
 
   const removeRunScopedQueries = useCallback(

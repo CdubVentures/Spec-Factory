@@ -3,7 +3,7 @@ import { usePersistedTab, usePersistedNumber } from '../../stores/tabStore.ts';
 import { useQuery } from '@tanstack/react-query';
 import type { ColumnDef } from '@tanstack/react-table';
 import { api } from '../../api/client.ts';
-import { useUiStore } from '../../stores/uiStore.ts';
+import { useUiCategoryStore } from '../../stores/uiCategoryStore.ts';
 import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
 import { Chip } from '../../shared/ui/feedback/Chip.tsx';
 import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
@@ -466,7 +466,7 @@ const STATUS_FILTERS: StatusFilter[] = ['all', 'candidate', 'resolved', 'strippe
 // ── Main page ────────────────────────────────────────────────────────
 
 export function PublisherPage() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const formatDate = useFormatDateTime();
   const tzLabel = useTimezoneLabel();
 

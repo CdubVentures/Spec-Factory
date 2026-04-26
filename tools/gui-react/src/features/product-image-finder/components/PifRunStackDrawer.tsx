@@ -15,7 +15,9 @@ export interface PifRunStackAction {
   readonly id: string;
   readonly label: string;
   readonly runTitle?: string;
+  readonly disabledTitle?: string;
   readonly previewTitle?: string;
+  readonly runDisabled?: boolean;
   readonly onRun: () => void;
   readonly onPreview: () => void;
 }
@@ -58,7 +60,8 @@ export function PifRunStackDrawer({
                 intent="spammable"
                 label={action.label}
                 onClick={action.onRun}
-                title={action.runTitle ?? action.label}
+                disabled={action.runDisabled}
+                title={action.runDisabled ? (action.disabledTitle ?? action.runTitle ?? action.label) : (action.runTitle ?? action.label)}
                 width={ACTION_BUTTON_WIDTH.standardRow}
               />
               <button

@@ -18,12 +18,14 @@ const VIDEO_ICON = (
   </svg>
 );
 
+// WHY: Each format gets a categorical chart-palette color (themable per theme).
+// JPEG/PNG/WebP/WebM each get a distinct slot from --sf-token-chart-*.
 const FORMAT_META: Record<string, { icon: ReactNode; color: string }> = {
-  jpeg: { icon: IMAGE_ICON, color: 'text-amber-500' },
-  jpg:  { icon: IMAGE_ICON, color: 'text-amber-500' },
-  png:  { icon: IMAGE_ICON, color: 'text-sky-500' },
-  webp: { icon: IMAGE_ICON, color: 'text-emerald-500' },
-  webm: { icon: VIDEO_ICON, color: 'text-violet-500' },
+  jpeg: { icon: IMAGE_ICON, color: 'text-[var(--sf-token-chart-4)]' },
+  jpg:  { icon: IMAGE_ICON, color: 'text-[var(--sf-token-chart-4)]' },
+  png:  { icon: IMAGE_ICON, color: 'text-[var(--sf-token-chart-2)]' },
+  webp: { icon: IMAGE_ICON, color: 'text-[var(--sf-token-chart-3)]' },
+  webm: { icon: VIDEO_ICON, color: 'text-[var(--sf-token-chart-7)]' },
 };
 
 interface FormatBadgeProps {

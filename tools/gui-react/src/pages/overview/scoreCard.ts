@@ -76,6 +76,22 @@ export function computeScoreCard(row: CatalogRow): ScoreCardResult {
   };
 }
 
+// WHY: computeScoreCard is pure but called per-row in the filter predicate
+// (matchesScore), per-pair in the sort comparator (compareOverviewColumn —
+// O(n log n) calls), and per visible cell render. For a 500-product catalog
+// with score sort + filter active that's ~5,500 invocations per interaction.
+// WeakMap keyed on the row reference lets us compute once per render cycle;
+// rows turn over with the catalog query so entries collect automatically.
+const scoreCardCache = new WeakMap<CatalogRow, ScoreCardResult>();
+
+export function getScoreCard(row: CatalogRow): ScoreCardResult {
+  const cached = scoreCardCache.get(row);
+  if (cached) return cached;
+  const fresh = computeScoreCard(row);
+  scoreCardCache.set(row, fresh);
+  return fresh;
+}
+
 /**
  * School-style grade bands. 13 letters across 0–100, widest bucket at F
  * so products with genuinely nothing fall all the way to the bottom.

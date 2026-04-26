@@ -76,12 +76,12 @@
 
 /* Per-module color tokens — same palette as the ActiveAndSelectedRow strip
    so the two surfaces read as one design system. */
-.sf-live-item-cef      { color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb)); }
-.sf-live-item-pif      { color: var(--sf-token-state-success-fg, #2b8a3e); }
-.sf-live-item-rdf      { color: var(--sf-token-state-warning-fg, #e67700); }
-.sf-live-item-skf      { color: var(--sf-token-state-sku-fg, #9e5fe0); }
-.sf-live-item-kf       { color: var(--sf-token-accent, #4263eb); }
-.sf-live-item-pipeline { color: var(--sf-token-state-info-fg, #1c7ed6); }
+.sf-live-item-cef      { color: var(--sf-token-accent-strong, var(--sf-token-accent)); }
+.sf-live-item-pif      { color: var(--sf-token-state-success-fg); }
+.sf-live-item-rdf      { color: var(--sf-token-state-warning-fg); }
+.sf-live-item-skf      { color: var(--sf-token-state-sku-fg); }
+.sf-live-item-kf       { color: var(--sf-token-accent); }
+.sf-live-item-pipeline { color: var(--sf-token-state-info-fg); }
 
 @keyframes sf-live-spin {
   to { transform: rotate(360deg); }

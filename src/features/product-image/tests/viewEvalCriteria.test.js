@@ -144,6 +144,16 @@ describe('resolveHeroEvalCriteria', () => {
     }
   });
 
+  it('all category hero criteria reject cutouts and marketing collateral as heroes', () => {
+    for (const cat of KNOWN_CATEGORIES) {
+      const lower = resolveHeroEvalCriteria(cat).toLowerCase();
+      assert.ok(lower.includes('isolated cutout'), `${cat} hero criteria must reject isolated cutouts`);
+      assert.ok(lower.includes('marketing collateral'), `${cat} hero criteria must reject marketing collateral`);
+      assert.ok(lower.includes('target product') && lower.includes('dominant'), `${cat} hero criteria must require dominant target product`);
+      assert.ok(lower.includes('small') && lower.includes('secondary'), `${cat} hero criteria must reject small/secondary target products`);
+    }
+  });
+
   it('generic hero criteria contain disqualification gates', () => {
     const lower = GENERIC_HERO_EVAL_CRITERIA.toLowerCase();
     assert.ok(lower.includes('watermark'), 'generic hero criteria must mention watermarks');
@@ -155,6 +165,20 @@ describe('resolveHeroEvalCriteria', () => {
     const lower = GENERIC_HERO_EVAL_CRITERIA.toLowerCase();
     const hasDiversity = lower.includes('different') && (lower.includes('perspective') || lower.includes('angle') || lower.includes('composition') || lower.includes('shot'));
     assert.ok(hasDiversity, 'generic hero criteria must require different perspectives/shots');
+  });
+
+  it('generic hero criteria reject cutouts and marketing collateral as heroes', () => {
+    const lower = GENERIC_HERO_EVAL_CRITERIA.toLowerCase();
+    assert.ok(lower.includes('isolated cutout'), 'generic hero criteria must reject isolated cutouts');
+    assert.ok(lower.includes('marketing collateral'), 'generic hero criteria must reject marketing collateral');
+    assert.ok(lower.includes('target product') && lower.includes('dominant'), 'generic hero criteria must require dominant target product');
+    assert.ok(lower.includes('small') && lower.includes('secondary'), 'generic hero criteria must reject small/secondary target products');
+  });
+
+  it('hero eval source safety uses broad retailer guidance instead of named retailer examples', () => {
+    assert.ok(GENERIC_HERO_EVAL_CRITERIA.includes('regional/international retailer'));
+    assert.ok(!GENERIC_HERO_EVAL_CRITERIA.includes('Amazon'));
+    assert.ok(!GENERIC_HERO_EVAL_CRITERIA.includes('Best Buy'));
   });
 });
 

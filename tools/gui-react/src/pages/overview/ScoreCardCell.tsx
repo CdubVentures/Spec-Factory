@@ -1,5 +1,6 @@
+import { memo } from 'react';
 import type { CatalogRow } from '../../types/product.ts';
-import { computeScoreCard, type LetterGrade, type ScoreCardResult } from './scoreCard.ts';
+import { getScoreCard, type LetterGrade, type ScoreCardResult } from './scoreCard.ts';
 import './ScoreCardCell.css';
 
 const GRADE_TONE: Readonly<Record<LetterGrade, 'a' | 'b' | 'c' | 'd' | 'f'>> = {
@@ -25,8 +26,8 @@ function buildTooltip(r: ScoreCardResult): string {
   ].join('\n');
 }
 
-export function ScoreCardCell({ row }: { row: CatalogRow }) {
-  const result = computeScoreCard(row);
+function ScoreCardCellInner({ row }: { row: CatalogRow }) {
+  const result = getScoreCard(row);
   const tone = GRADE_TONE[result.letter];
   return (
     <span className={`sf-scc-pill sf-scc-pill-${tone}`} title={buildTooltip(result)}>
@@ -40,3 +41,8 @@ export function ScoreCardCell({ row }: { row: CatalogRow }) {
     </span>
   );
 }
+
+// WHY: row reference is stable across catalog renders (same query result
+// object), so memo with default reference equality on the row prop dedupes
+// the ~500-row × per-render computeScoreCard tax.
+export const ScoreCardCell = memo(ScoreCardCellInner);

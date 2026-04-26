@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 
 import {
   formatProductImageIdentityFactsBlock,
+  resolveProductImageDependencyStatus,
   resolveProductImageIdentityFacts,
 } from '../productImageIdentityDependencies.js';
 
@@ -61,6 +62,53 @@ test('resolveProductImageIdentityFacts reads only enabled Field Studio dependenc
   );
 });
 
+test('resolveProductImageDependencyStatus reports required, resolved, and missing keys from the same dependency source', () => {
+  const specDb = makeSpecDb({
+    compiledRules: {
+      fields: {
+        connection: { field_key: 'connection', product_image_dependent: true, ui: { label: 'Connection' } },
+        layout_standard: { field_key: 'layout_standard', product_image_dependent: true },
+        weight_g: { field_key: 'weight_g', product_image_dependent: false },
+      },
+    },
+    rowsByKey: {
+      'connection:product': [{ status: 'resolved', value: 'wireless', confidence: 98 }],
+      'layout_standard:product': [{ status: 'candidate', value: 'ANSI', confidence: 84 }],
+      'weight_g:product': [{ status: 'resolved', value: 62, confidence: 90 }],
+    },
+  });
+
+  const status = resolveProductImageDependencyStatus({
+    specDb,
+    product: { product_id: 'p1', category: 'keyboard' },
+  });
+
+  assert.equal(status.ready, false);
+  assert.deepEqual(status.required_keys, ['connection', 'layout_standard']);
+  assert.deepEqual(status.resolved_keys, ['connection']);
+  assert.deepEqual(status.missing_keys, ['layout_standard']);
+  assert.deepEqual(status.facts.map((fact) => [fact.fieldKey, fact.value]), [['connection', 'wireless']]);
+});
+
+test('resolveProductImageDependencyStatus is ready when a category has no product-image-dependent keys', () => {
+  const specDb = makeSpecDb({
+    compiledRules: {
+      fields: {
+        weight_g: { field_key: 'weight_g', product_image_dependent: false },
+      },
+    },
+  });
+
+  const status = resolveProductImageDependencyStatus({
+    specDb,
+    product: { product_id: 'p1', category: 'mouse' },
+  });
+
+  assert.equal(status.ready, true);
+  assert.deepEqual(status.required_keys, []);
+  assert.deepEqual(status.missing_keys, []);
+});
+
 test('resolveProductImageIdentityFacts omits unresolved and unknown values but can fall back to product JSON fields', () => {
   const specDb = makeSpecDb({
     compiledRules: {
@@ -104,7 +152,8 @@ test('formatProductImageIdentityFactsBlock renders discovery and eval guardrail 
   assert.match(discovery, /Product image identity facts/i);
   assert.match(discovery, /connection: wired/i);
   assert.match(discovery, /form_factor: TKL \(80%\)/i);
-  assert.match(discovery, /search and source-identity filters/i);
+  assert.match(discovery, /required identity filters/i);
+  assert.match(discovery, /Reject candidates that clearly conflict/i);
 
   const evalBlock = formatProductImageIdentityFactsBlock(facts, { mode: 'eval' });
   assert.match(evalBlock, /Product image identity guardrails/i);

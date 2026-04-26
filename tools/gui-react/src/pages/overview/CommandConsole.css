@@ -16,8 +16,8 @@
 }
 
 .sf-cc-panel {
-  background: var(--sf-token-surface, #fff);
-  border: 1px solid var(--sf-token-border, #e5e9ef);
+  background: var(--sf-token-surface);
+  border: 1px solid var(--sf-token-border);
   border-radius: var(--sf-token-radius-lg);
   padding: 10px 14px;
   display: grid;
@@ -42,13 +42,13 @@
   overflow-y: hidden;
   min-width: 0;
   scrollbar-width: thin;
-  scrollbar-color: var(--sf-token-border, #c4c8d2) transparent;
+  scrollbar-color: var(--sf-token-border) transparent;
 }
 
 .sf-cc-models-track::-webkit-scrollbar { height: 6px; }
 .sf-cc-models-track::-webkit-scrollbar-track { background: transparent; }
 .sf-cc-models-track::-webkit-scrollbar-thumb {
-  background: var(--sf-token-border, #c4c8d2);
+  background: var(--sf-token-border);
   border-radius: var(--sf-token-radius-sm);
 }
 
@@ -64,7 +64,7 @@
   display: inline-block;
   width: 1px;
   height: 14px;
-  background: var(--sf-token-border, #e5e9ef);
+  background: var(--sf-token-border);
   margin: 0 3px;
   flex-shrink: 0;
 }
@@ -85,8 +85,8 @@
   padding: 0 6px 0 4px;
   height: var(--sf-cc-btn-height);
   border-radius: var(--sf-token-radius-pill);
-  background: var(--sf-token-surface-alt, #f4f6f9);
-  border: 1px solid var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
+  background: var(--sf-token-surface-alt);
+  border: 1px solid var(--sf-token-border-soft, var(--sf-token-border));
   font-size: var(--sf-token-font-size-caption);
   font-weight: 600;
   line-height: var(--sf-token-line-height-none);
@@ -105,7 +105,7 @@
   height: 16px;
   padding: 0 5px;
   border-radius: var(--sf-token-radius-pill);
-  background: var(--sf-token-accent, #4263eb);
+  background: var(--sf-token-accent);
   color: var(--sf-token-on-accent-fg);
   font-weight: 700;
   font-size: var(--sf-token-font-size-caption);
@@ -113,7 +113,7 @@
 }
 
 .sf-cc-selection-badge.is-empty .sf-cc-selection-count {
-  background: var(--sf-token-border, #e5e9ef);
+  background: var(--sf-token-border);
   color: rgb(var(--sf-color-text-subtle-rgb));
 }
 
@@ -125,16 +125,16 @@
 
 .sf-cc-btn-clear {
   background: transparent;
-  border-color: var(--sf-token-state-danger-fg, #c92a2a);
-  color: var(--sf-token-state-danger-fg, #c92a2a);
+  border-color: var(--sf-token-state-danger-fg);
+  color: var(--sf-token-state-danger-fg);
   padding: 0 10px;
 }
 .sf-cc-btn-clear:hover:not(:disabled) {
-  background: var(--sf-token-state-danger-fg, #c92a2a);
+  background: var(--sf-token-state-danger-fg);
   color: var(--sf-token-on-accent-fg);
 }
 .sf-cc-btn-clear:disabled {
-  border-color: var(--sf-token-border, #e5e9ef);
+  border-color: var(--sf-token-border);
   color: rgb(var(--sf-color-text-subtle-rgb));
 }
 
@@ -175,7 +175,7 @@
 .sf-cc-chip:last-child { padding-right: 0; }
 
 .sf-cc-chip + .sf-cc-chip {
-  border-left: 1px solid var(--sf-token-border-soft, var(--sf-token-border, #eef1f5));
+  border-left: 1px solid var(--sf-token-border-soft, var(--sf-token-border));
 }
 
 .sf-cc-chip-head {
@@ -203,11 +203,11 @@
   line-height: var(--sf-token-line-height-none);
 }
 
-.sf-cc-chip-cef .sf-cc-chip-icon { color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb)); }
-.sf-cc-chip-pif .sf-cc-chip-icon { color: var(--sf-token-state-success-fg, #2b8a3e); }
-.sf-cc-chip-rdf .sf-cc-chip-icon { color: var(--sf-token-state-warning-fg, #e67700); }
-.sf-cc-chip-sku .sf-cc-chip-icon { color: var(--sf-token-state-sku-fg, #9e5fe0); }
-.sf-cc-chip-kf  .sf-cc-chip-icon { color: var(--sf-token-accent, #4263eb); }
+.sf-cc-chip-cef .sf-cc-chip-icon { color: var(--sf-token-accent-strong, var(--sf-token-accent)); }
+.sf-cc-chip-pif .sf-cc-chip-icon { color: var(--sf-token-state-success-fg); }
+.sf-cc-chip-rdf .sf-cc-chip-icon { color: var(--sf-token-state-warning-fg); }
+.sf-cc-chip-sku .sf-cc-chip-icon { color: var(--sf-token-state-sku-fg); }
+.sf-cc-chip-kf  .sf-cc-chip-icon { color: var(--sf-token-accent); }
 
 .sf-cc-chip-actions {
   display: inline-flex;
@@ -266,7 +266,7 @@
 .sf-cc-stepper-bar {
   height: 20px;
   border-radius: var(--sf-token-radius-sm);
-  background: var(--sf-token-border, #e5e9ef);
+  background: var(--sf-token-border);
   overflow: hidden;
   position: relative;
 }
@@ -274,22 +274,22 @@
 .sf-cc-stepper-bar-fill {
   height: 100%;
   border-radius: var(--sf-token-radius-sm);
-  background: var(--sf-token-accent, #4263eb);
+  background: var(--sf-token-accent);
   transition: width 220ms ease;
 }
 
 .sf-cc-stepper-seg-done .sf-cc-stepper-bar-fill {
-  background: var(--sf-token-state-success-fg, #2b8a3e);
+  background: var(--sf-token-state-success-fg);
 }
 .sf-cc-stepper-seg-active .sf-cc-stepper-bar {
-  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 22%, transparent);
+  background: color-mix(in srgb, var(--sf-token-accent) 22%, transparent);
 }
 .sf-cc-stepper-seg-active .sf-cc-stepper-bar-fill {
-  background: var(--sf-token-accent, #4263eb);
+  background: var(--sf-token-accent);
   animation: sf-cc-pulse 1.4s ease-in-out infinite;
 }
 .sf-cc-stepper-seg-error .sf-cc-stepper-bar-fill {
-  background: var(--sf-token-state-danger-fg, #c92a2a);
+  background: var(--sf-token-state-danger-fg);
 }
 .sf-cc-stepper-seg-cancelled .sf-cc-stepper-bar-fill {
   background: rgb(var(--sf-color-text-subtle-rgb));
@@ -363,33 +363,33 @@
 .sf-cc-btn:active:not(:disabled) { transform: translateY(1px); }
 
 .sf-cc-btn-primary {
-  background: var(--sf-token-accent, #4263eb);
+  background: var(--sf-token-accent);
   color: var(--sf-token-on-accent-fg);
-  border-color: var(--sf-token-accent, #4263eb);
+  border-color: var(--sf-token-accent);
 }
 .sf-cc-btn-primary:hover:not(:disabled) {
-  background: var(--sf-token-accent-strong, #364fc7);
-  border-color: var(--sf-token-accent-strong, #364fc7);
+  background: var(--sf-token-accent-strong);
+  border-color: var(--sf-token-accent-strong);
 }
 
 .sf-cc-btn-secondary {
-  background: var(--sf-token-surface-alt, #f4f6f9);
-  border-color: var(--sf-token-border, #e5e9ef);
+  background: var(--sf-token-surface-alt);
+  border-color: var(--sf-token-border);
   color: rgb(var(--sf-color-text-primary-rgb));
 }
 .sf-cc-btn-secondary:hover:not(:disabled) {
-  background: var(--sf-token-surface, #fff);
-  border-color: var(--sf-token-accent, #4263eb);
-  color: var(--sf-token-accent, #4263eb);
+  background: var(--sf-token-surface);
+  border-color: var(--sf-token-accent);
+  color: var(--sf-token-accent);
 }
 
 .sf-cc-btn-danger {
   background: transparent;
-  border-color: var(--sf-token-state-danger-fg, #c92a2a);
-  color: var(--sf-token-state-danger-fg, #c92a2a);
+  border-color: var(--sf-token-state-danger-fg);
+  color: var(--sf-token-state-danger-fg);
 }
 .sf-cc-btn-danger:hover:not(:disabled) {
-  background: var(--sf-token-state-danger-fg, #c92a2a);
+  background: var(--sf-token-state-danger-fg);
   color: var(--sf-token-on-accent-fg);
 }
 
@@ -426,7 +426,7 @@
   align-items: center;
   gap: 6px;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--sf-token-border-soft, #e5e7eb);
+  border-bottom: 1px solid var(--sf-token-border-soft);
 }
 .sf-cc-keys-toggle {
   display: inline-flex;
@@ -442,16 +442,16 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--sf-token-surface-alt, #f3f4f6);
+  background: var(--sf-token-surface-alt);
   font-size: var(--sf-token-font-size-nano);
   font-weight: 700;
-  color: var(--sf-token-text-muted, #6b7280);
+  color: var(--sf-token-text-muted);
   cursor: help;
 }
 .sf-cc-keys-loading {
   padding: 16px 4px;
   text-align: center;
-  color: var(--sf-token-text-muted, #6b7280);
+  color: var(--sf-token-text-muted);
   font-style: italic;
 }
 .sf-cc-keys-filter-row {
@@ -463,21 +463,21 @@
   flex: 1;
   height: 24px;
   padding: 0 8px;
-  border: 1px solid var(--sf-token-border-soft, #e5e7eb);
+  border: 1px solid var(--sf-token-border-soft);
   border-radius: var(--sf-token-radius-sm);
   font-size: var(--sf-token-font-size-label);
   font-family: inherit;
-  background: var(--sf-token-surface, #fff);
-  color: var(--sf-token-text-primary, #111827);
+  background: var(--sf-token-surface);
+  color: var(--sf-token-text-primary);
 }
 .sf-cc-keys-filter:focus {
   outline: none;
-  border-color: var(--sf-token-accent, #4263eb);
+  border-color: var(--sf-token-accent);
 }
 .sf-cc-btn-link {
   background: transparent;
   border: none;
-  color: var(--sf-token-accent, #4263eb);
+  color: var(--sf-token-accent);
   font-size: var(--sf-token-font-size-caption);
   font-weight: 600;
   padding: 2px 4px;
@@ -493,14 +493,14 @@
   display: flex;
   flex-direction: column;
   gap: 1px;
-  border: 1px solid var(--sf-token-border-soft, #e5e7eb);
+  border: 1px solid var(--sf-token-border-soft);
   border-radius: var(--sf-token-radius-sm);
-  background: var(--sf-token-surface, #fff);
+  background: var(--sf-token-surface);
 }
 .sf-cc-keys-empty {
   padding: 12px;
   text-align: center;
-  color: var(--sf-token-text-muted, #6b7280);
+  color: var(--sf-token-text-muted);
   font-style: italic;
 }
 .sf-cc-keys-row {
@@ -510,21 +510,21 @@
   gap: 8px;
   padding: 5px 8px;
   cursor: pointer;
-  border-bottom: 1px solid var(--sf-token-border-soft, #f3f4f6);
+  border-bottom: 1px solid var(--sf-token-border-soft);
 }
 .sf-cc-keys-row:last-child {
   border-bottom: none;
 }
 .sf-cc-keys-row:hover {
-  background: var(--sf-token-accent-light, #edf2ff);
+  background: var(--sf-token-accent-light);
 }
 .sf-cc-keys-row.is-picked {
-  background: var(--sf-token-accent-light, #edf2ff);
+  background: var(--sf-token-accent-light);
 }
 .sf-cc-keys-row-name {
   font-family: var(--sf-token-font-family-mono);
   font-size: var(--sf-token-font-size-label);
-  color: var(--sf-token-text-primary, #111827);
+  color: var(--sf-token-text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -545,10 +545,10 @@
   justify-content: space-between;
   gap: 8px;
   padding-top: 8px;
-  border-top: 1px solid var(--sf-token-border-soft, #e5e7eb);
+  border-top: 1px solid var(--sf-token-border-soft);
 }
 .sf-cc-keys-footer-meta {
   font-size: var(--sf-token-font-size-caption);
-  color: var(--sf-token-text-muted, #6b7280);
+  color: var(--sf-token-text-muted);
   font-variant-numeric: tabular-nums;
 }

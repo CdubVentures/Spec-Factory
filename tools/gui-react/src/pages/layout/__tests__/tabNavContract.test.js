@@ -57,7 +57,12 @@ async function loadTabNavModule() {
         export const Fragment = Symbol.for('fragment');
       `,
       '@tanstack/react-query': `
-        export function useQuery() {
+        export function useQuery(options = {}) {
+          const harness = globalThis.__tabNavHarness || {};
+          harness.queryCalls?.push({
+            queryKey: options.queryKey,
+            refetchInterval: options.refetchInterval,
+          });
           return { data: undefined, isLoading: false, isFetching: false };
         }
       `,
@@ -81,8 +86,8 @@ async function loadTabNavModule() {
           };
         }
       `,
-      '../../stores/uiStore': `
-        export function useUiStore(selector) {
+      '../../stores/uiCategoryStore': `
+        export function useUiCategoryStore(selector) {
           const harness = globalThis.__tabNavHarness || {};
           return selector({ category: harness.category || 'mouse' });
         }
@@ -141,4 +146,23 @@ test('TabNav renders Categories, Brands, and Billing as navigable links in the g
   assert.equal(brandsLink?.props?.href, '/brands');
   assert.ok(billingLink, 'expected Billing nav link in global group');
   assert.equal(billingLink?.props?.href, '/billing');
+});
+
+test('TabNav relies on data-change invalidation instead of polling LLM config', async () => {
+  globalThis.__tabNavHarness = {
+    category: 'mouse',
+    currentPath: '/',
+    queryCalls: [],
+  };
+  const { TabNav } = await loadTabNavModule();
+  renderElement(TabNav());
+
+  const llmConfigCall = globalThis.__tabNavHarness.queryCalls.find(
+    (call) => Array.isArray(call.queryKey)
+      && call.queryKey[0] === 'indexing'
+      && call.queryKey[1] === 'llm-config',
+  );
+
+  assert.ok(llmConfigCall, 'expected TabNav to query LLM config');
+  assert.equal(llmConfigCall.refetchInterval, undefined);
 });

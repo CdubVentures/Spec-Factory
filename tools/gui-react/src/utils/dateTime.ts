@@ -17,12 +17,12 @@
 // SQLite emits TZ-less UTC strings that those paths treat as local time.
 // See docs/07-patterns/anti-patterns.md.
 // Adding a new timezone or date format option: extend SF_TIMEZONE_OPTIONS /
-// SF_DATE_FORMAT_OPTIONS in stores/uiStore.ts plus the switch in formatDate +
-// formatDateYMD. One-file-rule — no other changes required.
+// SF_DATE_FORMAT_OPTIONS in stores/uiSettingsStore.ts plus the switch in
+// formatDate + formatDateYMD. One-file-rule — no other changes required.
 
 import { useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useUiStore } from '../stores/uiStore.ts';
+import { useUiSettingsStore } from '../stores/uiSettingsStore.ts';
 
 export type DateFormat = 'MM-DD-YY' | 'MM-DD-YYYY' | 'YYYY-MM-DD' | 'DD-MM-YY';
 
@@ -206,7 +206,7 @@ const selectDateSettings = (s: { userTimezone: string; dateFormat: DateFormat })
 });
 
 function useDateSettings(): DateSettings {
-  return useUiStore(useShallow(selectDateSettings));
+  return useUiSettingsStore(useShallow(selectDateSettings));
 }
 
 export function useFormatDate(): (iso: Nullable) => string {
@@ -249,7 +249,7 @@ export function useTimezoneLabel(): string {
 // settings imperatively; components pick up new settings on next re-render.
 
 function readDateSettings(): DateSettings {
-  const s = useUiStore.getState();
+  const s = useUiSettingsStore.getState();
   return { timeZone: s.userTimezone, dateFormat: s.dateFormat };
 }
 

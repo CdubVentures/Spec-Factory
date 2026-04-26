@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import type { KeyTierProgressGen } from '../../types/product.generated.ts';
 import { buildRingDasharray } from './pifRingMath.ts';
 import { useIsModuleRunning } from '../../features/operations/hooks/useFinderOperations.ts';
@@ -38,7 +39,7 @@ function isKnownTier(t: string): t is KeyTierName {
  * tier's SVG pulses; individual key rows inside the popover pulse on their
  * own when that specific field_key is in flight.
  */
-export function KeyTierRings({ productId, category, tiers, brand, baseModel }: KeyTierRingsProps) {
+function KeyTierRingsInner({ productId, category, tiers, brand, baseModel }: KeyTierRingsProps) {
   const anyKfRunning = useIsModuleRunning('kf', productId);
   if (!tiers.length) {
     return <span className="sf-text-subtle text-xs italic">—</span>;
@@ -132,3 +133,7 @@ export function KeyTierRings({ productId, category, tiers, brand, baseModel }: K
     </span>
   );
 }
+
+// WHY: Memoized so OverviewPage re-renders don't cascade into every Keys cell.
+// Parent passes stable refs (tiers from row.original; category/brand/baseModel scalars).
+export const KeyTierRings = memo(KeyTierRingsInner);

@@ -48,11 +48,11 @@
   text-overflow: ellipsis;
 }
 
-.sf-olr-line-cef { color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb)); }
-.sf-olr-line-pif { color: var(--sf-token-state-success-fg, #2b8a3e); }
-.sf-olr-line-rdf { color: var(--sf-token-state-warning-fg, #e67700); }
-.sf-olr-line-skf { color: var(--sf-token-state-sku-fg, #9e5fe0); }
-.sf-olr-line-kf  { color: var(--sf-token-accent, #4263eb); }
+.sf-olr-line-cef { color: var(--sf-token-accent-strong, var(--sf-token-accent)); }
+.sf-olr-line-pif { color: var(--sf-token-state-success-fg); }
+.sf-olr-line-rdf { color: var(--sf-token-state-warning-fg); }
+.sf-olr-line-skf { color: var(--sf-token-state-sku-fg); }
+.sf-olr-line-kf  { color: var(--sf-token-accent); }
 
 /* Header chevron — same path geometry as the Links column for visual parity. */
 .sf-olr-header-toggle {
@@ -75,8 +75,8 @@
 .sf-olr-header-toggle:hover,
 .sf-olr-header-toggle:focus-visible {
   opacity: 1;
-  border-color: color-mix(in srgb, var(--sf-token-accent, #4263eb) 45%, transparent);
-  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 6%, transparent);
+  border-color: color-mix(in srgb, var(--sf-token-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--sf-token-accent) 6%, transparent);
   outline: none;
 }
 

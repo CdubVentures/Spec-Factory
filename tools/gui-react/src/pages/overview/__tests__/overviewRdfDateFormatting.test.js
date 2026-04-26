@@ -100,8 +100,8 @@ test('Overview RDF cells route release dates through the user date formatter', a
       '../../api/client.ts': `
         export const api = { parsedGet: async () => [], get: async () => [] };
       `,
-      '../../stores/uiStore.ts': `
-        export function useUiStore(selector) {
+      '../../stores/uiCategoryStore.ts': `
+        export function useUiCategoryStore(selector) {
           return selector({ category: 'mouse' });
         }
       `,

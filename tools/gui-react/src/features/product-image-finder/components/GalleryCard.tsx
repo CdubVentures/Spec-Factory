@@ -19,7 +19,9 @@ export const GalleryCard = memo(function GalleryCard({
   img, category, productId, onOpen, onDelete, onProcess, isProcessing, carouselSource,
 }: GalleryCardProps) {
   const [errored, setErrored] = useState(false);
-  const src = img.filename ? imageServeUrl(category, productId, img.filename, img.bytes) : '';
+  const src = img.filename
+    ? imageServeUrl(category, productId, img.filename, { cacheBust: img.bytes, variant: 'thumb' })
+    : '';
   const dims = formatDims(img.width, img.height);
 
   const passesQuality = img.quality_pass !== false;
@@ -43,6 +45,7 @@ export const GalleryCard = memo(function GalleryCard({
             className={img.bg_removed ? 'max-w-full max-h-full object-contain' : 'w-full h-full object-cover'}
             onError={() => setErrored(true)}
             loading="lazy"
+            decoding="async"
           />
         ) : (
           <span className="text-[10px] font-bold uppercase tracking-wider sf-text-muted">

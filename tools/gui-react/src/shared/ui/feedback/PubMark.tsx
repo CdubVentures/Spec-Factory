@@ -27,8 +27,8 @@ export const PubMark = memo(function PubMark({ published = true, size = 12 }: Pu
         width: size,
         height: size,
         borderRadius: '50%',
-        border: '1.5px solid var(--sf-success, #22c55e)',
-        color: 'var(--sf-success, #22c55e)',
+        border: '1.5px solid var(--sf-success)',
+        color: 'var(--sf-success)',
         fontSize: size * 0.58,
         fontWeight: 700,
         lineHeight: 1,
@@ -46,7 +46,7 @@ export const PubMark = memo(function PubMark({ published = true, size = 12 }: Pu
  */
 export function PubLegend() {
   return (
-    <span className="inline-flex items-center gap-1.5 sf-text-caption" style={{ fontSize: 10, color: 'var(--sf-muted, #6b7280)' }}>
+    <span className="inline-flex items-center gap-1.5 sf-text-caption" style={{ fontSize: 10, color: 'var(--sf-muted)' }}>
       <PubMark size={10} />
       <span>= published</span>
     </span>

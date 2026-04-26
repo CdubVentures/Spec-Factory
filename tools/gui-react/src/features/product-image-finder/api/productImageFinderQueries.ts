@@ -4,6 +4,7 @@ import { useDataChangeMutation } from '../../data-change/index.js';
 import { removeImageFromResult } from '../selectors/pifSelectors.ts';
 import type {
   ProductImageFinderResult,
+  ProductImageDependencyStatus,
   AcceptedResponse,
   ProductImageFinderDeleteResponse,
 } from '../types.ts';
@@ -17,6 +18,16 @@ export function useProductImageFinderQuery(category: string, productId: string) 
     queryKey: productImageFinderQueryKey(category, productId),
     queryFn: () => api.get<ProductImageFinderResult>(
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
+    ),
+    enabled: Boolean(category) && Boolean(productId),
+  });
+}
+
+export function useProductImageDependenciesQuery(category: string, productId: string) {
+  return useQuery<ProductImageDependencyStatus>({
+    queryKey: [...productImageFinderQueryKey(category, productId), 'dependencies'] as const,
+    queryFn: () => api.get<ProductImageDependencyStatus>(
+      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/dependencies`,
     ),
     enabled: Boolean(category) && Boolean(productId),
   });

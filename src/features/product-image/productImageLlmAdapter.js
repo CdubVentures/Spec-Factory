@@ -124,6 +124,62 @@ export function resolveViewBudget(viewBudgetSetting, category) {
   return CATEGORY_VIEW_BUDGET_DEFAULTS[category] || [...GENERIC_VIEW_BUDGET_DEFAULT];
 }
 
+function hasSiblingVariantContext(allVariants = [], currentVariantKey = '') {
+  if (!Array.isArray(allVariants) || allVariants.length === 0) return false;
+  return allVariants.some((variant) => variant && typeof variant === 'object' && variant.key !== currentVariantKey);
+}
+
+function buildDiscoveryIdentityGate({
+  familyModelCount = 1,
+  siblingsExcluded = [],
+  allVariants = [],
+  currentVariantKey = '',
+} = {}) {
+  const hasFamilyContext = Number(familyModelCount) > 1 || (siblingsExcluded || []).length > 0;
+  const hasVariantContext = hasSiblingVariantContext(allVariants, currentVariantKey);
+  const sections = [
+    `DISCOVERY IDENTITY GATE:
+- Return only images for the exact target product and target variant.
+- Same brand or same product family is not enough.
+- Search query intent, filename, alt text, page label, and gallery order are not identity proof.
+- Use source page title, selected variant, structured data, official gallery grouping, and visible product design to confirm identity.`,
+  ];
+
+  if (hasFamilyContext) {
+    sections.push(`FAMILY AMBIGUITY RULE:
+- This product has sibling models in the same family. Reject images from sibling models even when they look similar or have the correct view.
+- Check model-size/version tokens, wired/wireless status, product page title, URL slug, selected variant, and visible design before accepting.`);
+  }
+
+  if (hasVariantContext) {
+    sections.push(`VARIANT COLLISION RULE:
+- This product has multiple variants. Do not accept a sibling color/edition as the target variant.
+- If retailer naming conflicts with the target label, do not decide from the phrase alone. Use source evidence plus visible product design.
+- If source evidence clearly identifies a different sibling variant, omit the image and mention the naming collision in discovery_log.notes.`);
+  }
+
+  sections.push(`SOURCE CONFIDENCE ORDER:
+When identity signals conflict, prefer:
+1. Official manufacturer product page or structured variant data
+2. Manufacturer CDN image tied to a product/variant gallery
+3. Reputable retailer page title + selected variant + gallery image
+4. Review page with exact product title and matching visual product
+5. Image filename or alt text
+6. Search query or search result title`);
+
+  sections.push(`REQUIRED ACCEPTANCE CHECKLIST:
+- exact product/model match
+- not a sibling model
+- not a sibling color/edition unless source evidence proves it is an accepted alias for the target
+- product-image-dependent facts do not conflict
+- clean product shot
+- direct image URL
+- meets minimum dimensions for its actual view
+- view classified from pixels`);
+
+  return sections.join('\n\n');
+}
+
 /**
  * Generic default descriptions for any category not in CATEGORY_VIEW_DEFAULTS.
  */
@@ -454,11 +510,17 @@ export const CATEGORY_VIEW_EVAL_CRITERIA = Object.freeze({
 /**
  * Generic hero eval criteria — fallback for unknown categories.
  */
+const HERO_FIT_GATE = `HERO FIT (product-page usability gate):
+- REJECT: Pure isolated cutouts or single-product renders on a plain, transparent, solid, or empty background. Those are view images, not heroes.
+- REJECT: Marketing collateral with large baked-in logos, headlines, product names, specs, prices, campaign copy, or decorative text.
+- REJECT: Lineups or kit layouts where the target product is small, secondary, cropped, or hard to inspect.
+- ACCEPT: Official lifestyle/contextual shots, styled promotional renders, desk setups, or kit/lineup compositions only when the target product is dominant and the image works as a clean product-page hero.`;
+
 export const GENERIC_HERO_EVAL_CRITERIA = `Hero image evaluation — you are a LEGAL and QUALITY gatekeeper, not an art director.
-Any image type is acceptable (cutouts, lifestyle, renders, studio lineups, kit layouts, themed scenes) as long as it passes these gates:
+Lifestyle shots, official promotional renders, studio lineups, kit layouts, and themed scenes are acceptable only when they pass these gates:
 
 1. SOURCE SAFETY (copyright gate — most important):
-   - ACCEPT: Manufacturer promotional images, official product pages, press kit photos, retailer CDN images (Amazon A+, Best Buy).
+   - ACCEPT: Manufacturer promotional images, official product pages, press kit photos, and regional/international retailer CDN or promotional images.
    - REJECT: Photos taken by review sites, tech publications, YouTubers, or bloggers (PC Gamer, Tom's Hardware, RTINGS, TechPowerUp, The Verge, LTT, TechRadar, etc.). These are copyrighted editorial content.
    - How to tell: Editorial photos show lab environments, test equipment, desk clutter, hands holding the product, inconsistent overhead lighting. Manufacturer promo images have polished studio lighting, consistent brand aesthetics, clean backgrounds, or stylized scenes.
 
@@ -466,9 +528,11 @@ Any image type is acceptable (cutouts, lifestyle, renders, studio lineups, kit l
    - REJECT: Watermarks (Getty, Shutterstock, iStock, Alamy), "SAMPLE" text, copyright overlays.
    - REJECT: Sale stickers, "NEW" badges, retailer branding baked into the image, promotional text overlays.
 
+${HERO_FIT_GATE}
+
 3. IDENTITY (correct product gate):
    - Must be the correct model and correct color/edition variant, visible and identifiable. Wrong product or wrong color → skip.
-   - Multi-color lineup shots (multiple colorways of the same model) are acceptable.
+   - Multi-color lineup shots (multiple colorways of the same model) are acceptable only when the target product remains dominant.
 
 4. IMAGE QUALITY:
    - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
@@ -481,7 +545,7 @@ When picking multiple heroes, prefer different shots over near-duplicates of the
  */
 export const CATEGORY_HERO_EVAL_CRITERIA = Object.freeze({
   mouse: `Hero image evaluation for MOUSE — you are a LEGAL and QUALITY gatekeeper, not an art director.
-Any image type is acceptable (cutouts, desk glamour shots, promotional renders, RGB scenes, themed editions, kit layouts) as long as it passes these gates:
+Desk glamour shots, official promotional renders, RGB scenes, themed editions, and kit layouts are acceptable only when they pass these gates:
 
 1. SOURCE SAFETY (copyright gate — most important):
    - ACCEPT: Manufacturer promotional images, official product pages, press kit photos, retailer CDN images.
@@ -490,14 +554,16 @@ Any image type is acceptable (cutouts, desk glamour shots, promotional renders, 
 
 2. CLEANLINESS: REJECT watermarks, "SAMPLE" text, sale stickers, "NEW" badges, retailer branding baked into the image.
 
-3. IDENTITY: Must be the correct mouse model and correct color/edition variant. Wrong product or wrong color → skip. Multi-color lineup shots (multiple colorways of the same model) are acceptable.
+${HERO_FIT_GATE}
+
+3. IDENTITY: Must be the correct mouse model and correct color/edition variant. Wrong product or wrong color → skip. Multi-color lineup shots (multiple colorways of the same model) are acceptable only when the target product remains dominant.
 
 4. IMAGE QUALITY: Higher resolution preferred (check dimensions in image labels). Must not be blurry, heavily compressed, or a low-res screenshot.
 
 When picking multiple heroes, prefer different shots over near-duplicates of the same angle.`,
 
   keyboard: `Hero image evaluation for KEYBOARD — you are a LEGAL and QUALITY gatekeeper, not an art director.
-Any image type is acceptable (cutouts, desk shots, promotional renders, RGB scenes, kit layouts) as long as it passes these gates:
+Desk shots, official promotional renders, RGB scenes, and kit layouts are acceptable only when they pass these gates:
 
 1. SOURCE SAFETY (copyright gate — most important):
    - ACCEPT: Manufacturer promotional images, official product pages, press kit photos, retailer CDN images.
@@ -506,14 +572,16 @@ Any image type is acceptable (cutouts, desk shots, promotional renders, RGB scen
 
 2. CLEANLINESS: REJECT watermarks, "SAMPLE" text, sale stickers, "NEW" badges, retailer branding baked into the image.
 
-3. IDENTITY: Must be the correct keyboard model and correct color/edition variant. Wrong product or wrong color → skip. Multi-color lineup shots (multiple colorways of the same model) are acceptable.
+${HERO_FIT_GATE}
+
+3. IDENTITY: Must be the correct keyboard model and correct color/edition variant. Wrong product or wrong color → skip. Multi-color lineup shots (multiple colorways of the same model) are acceptable only when the target product remains dominant.
 
 4. IMAGE QUALITY: Higher resolution preferred (check dimensions in image labels). Must not be blurry, heavily compressed, or a low-res screenshot.
 
 When picking multiple heroes, prefer different shots over near-duplicates of the same angle.`,
 
   monitor: `Hero image evaluation for MONITOR — you are a LEGAL and QUALITY gatekeeper, not an art director.
-Any image type is acceptable (cutouts, desk setups, promotional renders, screen-on lifestyle shots) as long as it passes these gates:
+Desk setups, official promotional renders, and screen-on lifestyle shots are acceptable only when they pass these gates:
 
 1. SOURCE SAFETY (copyright gate — most important):
    - ACCEPT: Manufacturer promotional images, official product pages, press kit photos, retailer CDN images.
@@ -522,7 +590,9 @@ Any image type is acceptable (cutouts, desk setups, promotional renders, screen-
 
 2. CLEANLINESS: REJECT watermarks, "SAMPLE" text, sale stickers, "NEW" badges, retailer branding baked into the image.
 
-3. IDENTITY: Must be the correct monitor model and correct color/edition variant. Wrong product or wrong color → skip. Multi-color lineup shots (multiple colorways of the same model) are acceptable.
+${HERO_FIT_GATE}
+
+3. IDENTITY: Must be the correct monitor model and correct color/edition variant. Wrong product or wrong color → skip. Multi-color lineup shots (multiple colorways of the same model) are acceptable only when the target product remains dominant.
 
 4. IMAGE QUALITY: Higher resolution preferred (check dimensions in image labels). Must not be blurry, heavily compressed, or a low-res screenshot.
 
@@ -532,10 +602,11 @@ When picking multiple heroes, prefer different shots over near-duplicates of the
 - Resolution: Check original dimensions in image labels — higher resolution preferred. Thumbnails are downscaled.
 - Product must be clearly visible and identifiable — full pad visible in desk context or close-up showing surface texture and branding.
 - Identity: Must be the correct mousepad model and correct color/edition variant. Wrong product or wrong color → skip.
-- Multi-color lineup shots (multiple colorways of the same model) are acceptable.
+- Multi-color lineup shots (multiple colorways of the same model) are acceptable only when the target product remains dominant.
 - Source: Only brand/manufacturer/retailer photography. Reject editorial review site photos (copyrighted).
 - Watermarks: Getty, Shutterstock, retailer logos, "SAMPLE" text, copyright overlays → skip, do not select.
 - Badges / overlays: Sale stickers, "NEW" badges, retailer branding, promotional text → skip, do not select.
+${HERO_FIT_GATE}
 - Desk context with the mousepad as the prominent surface is ideal.
 - Cropped is OK if branding and surface design remain visible.
 - Image quality: Sharp, well-composed, good lighting, no heavy compression artifacts.
@@ -650,6 +721,7 @@ export const PIF_VIEW_DEFAULT_TEMPLATE = `Find high-resolution product images fo
 {{IDENTITY_WARNING}}
 {{SIBLING_VARIANTS}}
 {{PRODUCT_IMAGE_IDENTITY_FACTS}}
+{{DISCOVERY_IDENTITY_GATE}}
 
 VIEW DEFINITIONS — classify every image with one of these exact view names:
 
@@ -663,7 +735,8 @@ Every image you return MUST use one of these view names: {{ALL_VIEW_KEYS}}
 {{IMAGE_REQUIREMENTS}}
 
 {{PREVIOUS_DISCOVERY}}Search strategy:
-- Search broadly: manufacturer product pages, Amazon, Best Buy, Newegg, retailer CDNs, press kits, review sites with high-res product galleries
+- Search broadly: manufacturer product pages, press kits, retailer/distributor CDNs, regional and international retailer galleries, marketplace image assets, image-search leads, and review pages only as leads to official or product-gallery images
+- Older or regional pages may retain legacy edition images that current local retailer pages no longer show
 - Look for the specific {{VARIANT_TYPE_WORD}} variant page or color selector
 - Prioritize the highest-resolution version you can find from ANY reliable source
 
@@ -730,6 +803,12 @@ export function buildProductImageFinderPrompt({
     : '';
 
   const allViewKeys = CANONICAL_VIEW_KEYS.join(', ');
+  const discoveryIdentityGate = buildDiscoveryIdentityGate({
+    familyModelCount,
+    siblingsExcluded,
+    allVariants,
+    currentVariantKey: variantKey,
+  });
 
   const imageRequirements = `Image requirements:
 - Clean product shot — the product isolated on a white or plain background, or a clean studio/press shot
@@ -771,6 +850,7 @@ export function buildProductImageFinderPrompt({
       whatToSkip: 'images',
     }),
     PRODUCT_IMAGE_IDENTITY_FACTS: formatProductImageIdentityFactsBlock(productImageIdentityFacts, { mode: 'discovery' }),
+    DISCOVERY_IDENTITY_GATE: discoveryIdentityGate,
     PRIORITY_VIEWS: prioritySection,
     ADDITIONAL_VIEWS: additionalSection,
     ADDITIONAL_GUIDANCE: additionalViews.length > 0
@@ -901,21 +981,34 @@ export function buildHeroImageFinderPrompt({
     scopeLabel,
   });
 
-  const heroInstructions = `Find strong product-page hero image candidates for: ${brand} ${model} — ${variantDesc}
+  const heroInstructions = `Find high-quality lifestyle and contextual product images for: ${brand} ${model} — ${variantDesc}
 
-Use manufacturer product pages and premium retailer galleries as the visual target. Think Corsair-style product cards and hero sections: composed product imagery with desk/setup context, polished lighting, brand-quality studio treatment, bundle/edition context, or a clean product family/lineup. The image should feel like something used as a lead product card, homepage feature, or article thumbnail.
+You are looking for images that show this product IN CONTEXT — placed on a desk, in a gaming setup, on a workspace surface, or in any real-world environment. The background and setting are intentional and valuable. These are NOT ordinary cutout/studio shots.
 
-GOOD HERO CANDIDATES:
-- Exact product is clear and visually important in the frame
-- Polished studio shots, clean cutouts, lifestyle/setup scenes, kit or contents layouts, product lineups, dramatic marketing renders, and retailer/manufacturer promotional images are all acceptable
-- A tight card crop is acceptable when the original source image reads like a composed hero/card image
-- Other products or peripherals may appear when they provide setup, bundle, edition, or product-family context and do not obscure the target product
-- High-resolution, landscape-oriented preferred, but final selection and stricter quality/legal filtering happen in eval
+ACCEPTANCE CLASSES:
+1. lifestyle_context - the product is in a real or realistic scene, such as a desk setup, workspace, mousepad, keyboard/monitor context, textured surface, RGB glow, or room/environment lighting.
+2. official_hero_scene - official manufacturer or authorized-retailer media that is text-free, high-resolution, polished, and clearly useful as a 16:9 product-page hero/card image. It still needs scene or composition value: visible surface, environmental lighting, contextual objects, deliberate kit/lineup arrangement, or a background that adds visual value.
 
-DO NOT RETURN:
-- Images that are mainly technical/detail documentation, underside/spec-label closeups, or feature callouts
-- Ordinary flat catalog view-slot shots that do not feel composed as a lead image
-- Watermarked images, text-heavy promo banners, user photos, low-quality editorial photos, or images where the product is too small or unclear
+WHAT MAKES A GOOD HERO IMAGE:
+- Product placed in a real environment — desk setup, gaming station, workspace, lifestyle setting
+- The environment/background is part of the image's value (moody lighting, RGB glow, natural surfaces)
+- Other peripherals may be visible (keyboard, monitor, mousepad) as long as the target product is clearly identifiable in the scene
+- Official manufacturer lifestyle photography, regional and international retailer lifestyle/promotional media, press kit contextual shots, and image-search leads that resolve to source-backed direct image URLs
+- Official hero/card scenes are acceptable when they have meaningful scene or composition value
+- High-resolution, landscape-oriented preferred (will be cropped to 16:9 later)
+- Dramatic or atmospheric lighting that shows the product in its intended environment
+
+HARD REJECTS — do NOT return any image that has:
+- ordinary cutouts, plain PDP renders, or isolated angle/top/front/side product shots
+- Product isolated on a solid/gradient background with no environment context
+- Text overlays, watermarks, logos, price tags, or advertising copy of any kind
+- Busy promotional banners, box art, or marketing collateral with graphics/text
+- User photos, unboxing images, or screenshots
+- The product too small or not clearly identifiable in the scene
+- Generic category banners or brand-only imagery
+- Small thumbnails or low-resolution images
+
+QUALITY OVER QUANTITY: Return ONLY images you are confident fit lifestyle_context or official_hero_scene. If only cutouts are available, return 0 images.
 
 Image requirements:
 - Minimum resolution: ${minWidth}px wide, ${minHeight}px tall — bigger is always better
@@ -925,7 +1018,8 @@ Image requirements:
 Allowed sources (in priority order):
 1. Manufacturer's official product page gallery images for this ${variantType === 'edition' ? 'edition' : 'color'}
 2. Manufacturer's press/media page or press kit photography/renders
-3. Authorized retailer product galleries and promotional media (Amazon A+ content, Best Buy)
+3. Authorized, regional, and international retailer/distributor product galleries and promotional media, including older or regional pages that may retain legacy official assets
+Image-search leads are useful when they resolve to direct image URLs with source-page evidence for the exact product and variant.
 Do NOT use images from editorial review sites when they are original review photography; those are copyrighted editorial content.`;
 
   const template = templateOverride || promptOverride || PIF_HERO_DEFAULT_TEMPLATE;

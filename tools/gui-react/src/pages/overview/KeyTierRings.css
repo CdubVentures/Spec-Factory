@@ -40,7 +40,7 @@
   line-height: var(--sf-token-line-height-none);
 }
 .sf-ktr-mandatory {
-  color: var(--sf-token-accent, #5f3dc4);
+  color: var(--sf-token-accent);
   font-size: var(--sf-token-font-size-label);
 }
 
@@ -53,7 +53,7 @@
 
 .sf-ktr-track {
   fill: none;
-  stroke: rgba(130, 140, 150, 0.22);
+  stroke: rgb(var(--sf-color-text-subtle-rgb) / 0.22);
   stroke-width: 5;
 }
 
@@ -73,7 +73,7 @@
 .sf-ktr-fill-inner.part { stroke: var(--sf-token-state-warning-fg); }
 
 /* Empty tier (no keys in this tier for the category) — mute both rings. */
-.sf-ktr-empty .sf-ktr-track { stroke: rgba(130, 140, 150, 0.12); }
+.sf-ktr-empty .sf-ktr-track { stroke: rgb(var(--sf-color-text-subtle-rgb) / 0.12); }
 .sf-ktr-empty .sf-ktr-label { color: rgb(var(--sf-color-text-dim-rgb, var(--sf-color-text-subtle-rgb))); }
 
 .sf-ktr-frac {

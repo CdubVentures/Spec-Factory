@@ -2,7 +2,8 @@ import { useEffect, useRef } from "react";
 import { usePersistedTab } from "../../../stores/tabStore.ts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShallow } from "zustand/react/shallow";
-import { useUiStore } from "../../../stores/uiStore.ts";
+import { useUiCategoryStore } from "../../../stores/uiCategoryStore.ts";
+import { useUiSettingsStore } from "../../../stores/uiSettingsStore.ts";
 import { useRuntimeStore } from "../../runtime-ops/state/runtimeStore.ts";
 import { useOperationsStore } from "../../operations/state/operationsStore.ts";
 import { selectStudioOperationsState } from "../state/studioOperationsSelectors.ts";
@@ -35,7 +36,7 @@ import type { StudioConfig } from "../../../types/studio.ts";
 
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
 export function StudioPage() {
-  const category = useUiStore((s) => s.category);
+  const category = useUiCategoryStore((s) => s.category);
   const [activeTab, setActiveTab] = usePersistedTab<StudioTabId>(
     "studio:tab:main",
     "mapping",
@@ -50,12 +51,12 @@ export function StudioPage() {
     useShallow((s) => selectStudioOperationsState(s, category)),
   );
   const queryClient = useQueryClient();
-  const autoSaveAllEnabled = useUiStore((s) => s.autoSaveAllEnabled);
-  const setAutoSaveAllEnabled = useUiStore((s) => s.setAutoSaveAllEnabled);
-  const autoSaveEnabled = useUiStore((s) => s.autoSaveEnabled);
-  const setAutoSaveEnabled = useUiStore((s) => s.setAutoSaveEnabled);
-  const autoSaveMapEnabled = useUiStore((s) => s.autoSaveMapEnabled);
-  const setAutoSaveMapEnabled = useUiStore((s) => s.setAutoSaveMapEnabled);
+  const autoSaveAllEnabled = useUiSettingsStore((s) => s.autoSaveAllEnabled);
+  const setAutoSaveAllEnabled = useUiSettingsStore((s) => s.setAutoSaveAllEnabled);
+  const autoSaveEnabled = useUiSettingsStore((s) => s.autoSaveEnabled);
+  const setAutoSaveEnabled = useUiSettingsStore((s) => s.setAutoSaveEnabled);
+  const autoSaveMapEnabled = useUiSettingsStore((s) => s.autoSaveMapEnabled);
+  const setAutoSaveMapEnabled = useUiSettingsStore((s) => s.setAutoSaveMapEnabled);
 
   // WHY: processRunning drives artifact polling — true when IndexLab OR compile/validate is running
   const anyRunning = Boolean(processStatus.running) || opsState.anyStudioOpRunning;

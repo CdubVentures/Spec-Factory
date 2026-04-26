@@ -24,12 +24,12 @@
    wash only — no outline, no transition — so it reads instantly without a
    black/blue ring or fade. Keyboard focus still gets an outline for a11y. */
 .sf-popover-trigger:hover {
-  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 8%, transparent);
+  background: color-mix(in srgb, var(--sf-token-accent) 8%, transparent);
 }
 .sf-popover-trigger:focus-visible {
-  outline: 2px solid var(--sf-token-accent, #4263eb);
+  outline: 2px solid var(--sf-token-accent);
   outline-offset: 3px;
-  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 8%, transparent);
+  background: color-mix(in srgb, var(--sf-token-accent) 8%, transparent);
 }
 
 /* ── Pulse indicator ─────────────────────────────────────────────────────
@@ -49,9 +49,9 @@
   border: 1px solid var(--sf-token-border-default);
   border-radius: var(--sf-token-radius-xl);
   box-shadow:
-    0 1px 2px rgb(0 0 0 / 0.04),
-    0 6px 16px rgb(0 0 0 / 0.10),
-    0 16px 32px rgb(0 0 0 / 0.08);
+    0 1px 2px rgb(var(--sf-token-shadow-color-rgb) / 0.04),
+    0 6px 16px rgb(var(--sf-token-shadow-color-rgb) / 0.10),
+    0 16px 32px rgb(var(--sf-token-shadow-color-rgb) / 0.08);
   padding: 14px 16px 14px;
   min-width: 260px;
   max-width: 360px;

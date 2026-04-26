@@ -27,9 +27,33 @@ interface RefreshIndexingPageDataInput {
   queryClient: QueryClient;
   category: string;
   selectedIndexLabRunId: string;
+  /** When provided, scopes the product-history invalidation to that single
+   *  product instead of every product in the category. */
+  productId?: string;
+}
+
+function buildProductHistoryInvalidation(
+  queryClient: QueryClient,
+  category: string,
+  productId: string,
+): Promise<unknown> {
+  // WHY: previously this invalidated the bare ['indexlab','product-history']
+  // prefix, which forced every product's history cache in the project to
+  // refetch after a single run. When we know the product that ran, scope
+  // to exactly that key; otherwise scope to the current category at minimum.
+  if (productId) {
+    return queryClient.invalidateQueries({
+      queryKey: ['indexlab', 'product-history', category, productId],
+      exact: true,
+    });
+  }
+  return queryClient.invalidateQueries({
+    queryKey: ['indexlab', 'product-history', category],
+  });
 }
 
 export async function refreshIndexingPageData(input: RefreshIndexingPageDataInput): Promise<void> {
+  const productId = String(input.productId || '').trim();
   const refreshes: Array<Promise<unknown>> = [
     input.queryClient.invalidateQueries({ queryKey: ['processStatus'], exact: true }),
     input.queryClient.invalidateQueries({ queryKey: ['searxng', 'status'], exact: true }),
@@ -38,7 +62,7 @@ export async function refreshIndexingPageData(input: RefreshIndexingPageDataInpu
     input.queryClient.invalidateQueries({ queryKey: ['indexing', 'domain-checklist'] }),
     input.queryClient.invalidateQueries({ queryKey: ['catalog', input.category, 'indexing'], exact: true }),
     input.queryClient.invalidateQueries({ queryKey: ['indexlab', 'runs'] }),
-    input.queryClient.invalidateQueries({ queryKey: ['indexlab', 'product-history'] }),
+    buildProductHistoryInvalidation(input.queryClient, input.category, productId),
     input.queryClient.invalidateQueries({ queryKey: ['runtime-ops'] }),
     input.queryClient.invalidateQueries({ queryKey: ['indexlab', 'run'] }),
   ];

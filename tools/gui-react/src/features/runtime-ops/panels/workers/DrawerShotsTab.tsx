@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../../api/client.ts';
 import type { WorkerScreenshot, RuntimeOpsWorkerLastFrameResponse } from '../../types.ts';
 import { formatBytes } from '../../helpers.ts';
+import { runtimeAssetUrl } from '../../assetUrls.ts';
 import { relativeTime } from '../../../../utils/formatting.ts';
 
 interface DrawerShotsTabProps {
@@ -86,10 +87,11 @@ export function DrawerShotsTab({ screenshots, runId, workerId, isRunning }: Draw
             >
               <div className="relative">
                 <img
-                  src={`/api/v1/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(s.filename)}`}
+                  src={runtimeAssetUrl(runId, s.filename, { variant: 'thumb' })}
                   alt={s.filename}
                   className="w-full rounded-t"
                   loading="lazy"
+                  decoding="async"
                 />
                 <div className="absolute top-1 right-1 sf-chip-neutral px-1 py-0.5 rounded sf-text-nano opacity-80">
                   {s.width}&times;{s.height} &middot; {formatBytes(s.bytes)}
@@ -119,9 +121,10 @@ export function DrawerShotsTab({ screenshots, runId, workerId, isRunning }: Draw
           />
           <div className="relative z-10 max-w-[90vw] max-h-[90vh]">
             <img
-              src={`/api/v1/indexlab/run/${runId}/runtime/assets/${encodeURIComponent(screenshots[lightboxIndex].filename)}`}
+              src={runtimeAssetUrl(runId, screenshots[lightboxIndex].filename, { variant: 'preview' })}
               alt={screenshots[lightboxIndex].filename}
               className="max-w-full max-h-[90vh] object-contain rounded"
+              decoding="async"
             />
             <div className="absolute bottom-2 left-2 sf-chip-neutral px-2 py-1 rounded text-xs">
               {screenshots[lightboxIndex].width}&times;{screenshots[lightboxIndex].height} &middot; {formatBytes(screenshots[lightboxIndex].bytes)}
