@@ -32,6 +32,10 @@ interface DataTableProps<T> {
    *  the Overview Live header). */
   sorting?: SortingState;
   onSortingChange?: (next: SortingState) => void;
+  /** Optional manual sorting mode for surfaces that sort data before passing it in. */
+  manualSorting?: boolean;
+  /** Optional header-click hook for custom sort cycles. */
+  onColumnHeaderSort?: (columnId: string) => void;
 }
 
 interface PersistedDataTableState {
@@ -139,6 +143,8 @@ function DataTableInner<T>({
   getCanExpand,
   sorting: controlledSorting,
   onSortingChange: controlledOnSortingChange,
+  manualSorting = false,
+  onColumnHeaderSort,
 }: DataTableProps<T>) {
   const initialSessionState = useMemo(
     () => readDataTableSessionState(persistKey),
@@ -220,6 +226,7 @@ function DataTableInner<T>({
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    manualSorting,
     ...(renderExpandedRow ? { getExpandedRowModel: getExpandedRowModel() } : {}),
   });
 
@@ -253,12 +260,17 @@ function DataTableInner<T>({
                   if (header.isPlaceholder) return null;
                   const colSize = header.column.columnDef.size;
                   const isGroupHeader = header.subHeaders.length > 0;
-                  const sortHandler = isGroupHeader ? undefined : header.column.getToggleSortingHandler();
+                  const canSort = !isGroupHeader && header.column.getCanSort();
+                  const sortHandler = !canSort
+                    ? undefined
+                    : onColumnHeaderSort
+                      ? () => onColumnHeaderSort(header.column.id)
+                      : header.column.getToggleSortingHandler();
                   return (
                     <th
                       key={header.id}
                       colSpan={header.colSpan > 1 ? header.colSpan : undefined}
-                      className={`sf-table-head-cell ${isGroupHeader ? 'text-center' : 'cursor-pointer select-none'}`}
+                      className={`sf-table-head-cell ${isGroupHeader ? 'text-center' : ''} ${canSort ? 'cursor-pointer select-none' : ''}`}
                       style={!isGroupHeader && colSize ? { width: colSize, minWidth: colSize } : undefined}
                       onClick={sortHandler}
                     >

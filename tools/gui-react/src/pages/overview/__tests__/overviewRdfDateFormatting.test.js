@@ -121,7 +121,7 @@ test('Overview RDF cells route release dates through the user date formatter', a
         export function parseCatalogRows(value) { return value; }
       `,
       '../../features/operations/hooks/useFinderOperations.ts': `
-        export function useRunningProductIds() { return new Set(); }
+        export function useRunningModulesByProductOrdered() { return new Map(); }
       `,
       './CefRunPopover.tsx': componentStub('CefRunPopover'),
       './PifVariantsCell.tsx': componentStub('PifVariantsCell'),
@@ -135,6 +135,7 @@ test('Overview RDF cells route release dates through the user date formatter', a
         export function OverviewLastRunCell(props) { return { type: 'OverviewLastRunCell', props: props || {} }; }
         export function OverviewLastRunHeaderToggle(props) { return { type: 'OverviewLastRunHeaderToggle', props: props || {} }; }
       `,
+      './LiveOpsCell.tsx': componentStub('LiveOpsCell'),
       './overviewSelectionStore.ts': `
         export function useOverviewSelectionStore(selector) {
           return selector({ byCategory: {}, addMany: () => {}, toggle: () => {} });

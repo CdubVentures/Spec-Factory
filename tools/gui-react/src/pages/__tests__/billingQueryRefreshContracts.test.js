@@ -151,6 +151,9 @@ function buildCommonStubs() {
       export function pct(value) { return String(value ?? ''); }
       export function relativeTime(value) { return String(value ?? ''); }
     `,
+    '../../utils/dateTime.ts': `
+      export function useFormatDateYMD() { return (value) => String(value || ''); }
+    `,
     recharts: `
       export const BarChart = 'BarChart';
       export const Bar = 'Bar';
@@ -233,6 +236,53 @@ function buildCommonStubs() {
     '../../features/billing/components/HorizontalBarSection.tsx': componentStub.replace(/__stub__/g, 'HorizontalBarSection'),
     '../../features/billing/components/BillingEntryTable.tsx': componentStub.replace(/__stub__/g, 'BillingEntryTable'),
     '../../features/billing/components/BillingModelCostDialog.tsx': componentStub.replace(/__stub__/g, 'BillingModelCostDialog'),
+    '../../features/catalog/api/catalogParsers.ts': `
+      export function parseCatalogRows(value) { return value; }
+    `,
+    '../../features/operations/hooks/useFinderOperations.ts': `
+      export function useRunningModulesByProductOrdered() { return new Map(); }
+    `,
+    '../../stores/collapseStore.ts': `
+      export function usePersistedToggle() { return [false, () => {}]; }
+    `,
+    './CefRunPopover.tsx': componentStub.replace(/__stub__/g, 'CefRunPopover'),
+    './PifVariantsCell.tsx': componentStub.replace(/__stub__/g, 'PifVariantsCell'),
+    './ScalarVariantsCell.tsx': componentStub.replace(/__stub__/g, 'ScalarVariantsCell'),
+    './KeyTierRings.tsx': componentStub.replace(/__stub__/g, 'KeyTierRings'),
+    './ScoreCardCell.tsx': componentStub.replace(/__stub__/g, 'ScoreCardCell'),
+    './OverviewFilterBar.tsx': componentStub.replace(/__stub__/g, 'OverviewFilterBar'),
+    './CommandConsole.tsx': componentStub.replace(/__stub__/g, 'CommandConsole'),
+    './ActiveAndSelectedRow.tsx': componentStub.replace(/__stub__/g, 'ActiveAndSelectedRow'),
+    './LiveOpsCell.tsx': componentStub.replace(/__stub__/g, 'LiveOpsCell'),
+    './OverviewLastRunCell.tsx': `
+      export function OverviewLastRunCell(props) { return { type: 'OverviewLastRunCell', props: props || {} }; }
+      export function OverviewLastRunHeaderToggle(props) { return { type: 'OverviewLastRunHeaderToggle', props: props || {} }; }
+    `,
+    './overviewSelectionStore.ts': `
+      export function useOverviewSelectionStore(selector) {
+        return selector({ byCategory: {}, addMany: () => {}, toggle: () => {} });
+      }
+      export function useIsSelected() { return false; }
+    `,
+    './columnFilters/columnFilterStore.ts': `
+      export function selectFilterState() { return () => ({}); }
+      export function useColumnFilterStore(selector) {
+        return typeof selector === 'function' ? selector({}) : {};
+      }
+      export function isColumnActive() { return false; }
+    `,
+    './columnFilters/columnFilterPredicates.ts': `
+      export function matchesColumnFilters() { return true; }
+    `,
+    './columnFilters/ColumnFiltersStatusPill.tsx': componentStub.replace(/__stub__/g, 'ColumnFiltersStatusPill'),
+    './columnFilters/ColumnFilterHeader.tsx': componentStub.replace(/__stub__/g, 'ColumnFilterHeader'),
+    './columnFilters/filters/BrandFilter.tsx': componentStub.replace(/__stub__/g, 'BrandFilter'),
+    './columnFilters/filters/CefFilter.tsx': componentStub.replace(/__stub__/g, 'CefFilter'),
+    './columnFilters/filters/ScoreFilter.tsx': componentStub.replace(/__stub__/g, 'ScoreFilter'),
+    './columnFilters/filters/NumericRangeFilter.tsx': componentStub.replace(/__stub__/g, 'NumericRangeFilter'),
+    './columnFilters/filters/VariantMetricFilter.tsx': componentStub.replace(/__stub__/g, 'VariantMetricFilter'),
+    './columnFilters/filters/ScalarVariantFilter.tsx': componentStub.replace(/__stub__/g, 'ScalarVariantFilter'),
+    './columnFilters/filters/KeysFilter.tsx': componentStub.replace(/__stub__/g, 'KeysFilter'),
   };
 }
 

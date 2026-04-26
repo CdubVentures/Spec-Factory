@@ -1,3 +1,4 @@
+import type { MouseEvent } from 'react';
 import type { CatalogRow } from '../../types/product.ts';
 import { pullFormatDateTime } from '../../utils/dateTime.ts';
 import './OverviewLastRunCell.css';
@@ -42,11 +43,16 @@ interface OverviewLastRunHeaderToggleProps {
 }
 
 export function OverviewLastRunHeaderToggle({ open, onToggle }: OverviewLastRunHeaderToggleProps) {
+  const handleClick = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    onToggle();
+  };
+
   return (
     <button
       type="button"
       className="sf-olr-header-toggle"
-      onClick={onToggle}
+      onClick={handleClick}
       aria-expanded={open}
       aria-label={open ? 'Hide last-run column' : 'Show last-run column'}
       title={open ? 'Hide last-run timestamps' : 'Show per-worker last-run timestamps (CEF/PIF/RDF/SKU/KF)'}
@@ -59,7 +65,6 @@ export function OverviewLastRunHeaderToggle({ open, onToggle }: OverviewLastRunH
       >
         <path d="M7 4l6 6-6 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
-      {open ? <span className="sf-olr-header-label">Last Run</span> : null}
     </button>
   );
 }

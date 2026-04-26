@@ -20,14 +20,13 @@ import { ScoreCardCell } from './ScoreCardCell.tsx';
 import {
   OverviewFilterBar,
   type OverviewFilterState,
-  type OverviewSortKey,
 } from './OverviewFilterBar.tsx';
 import { CommandConsole } from './CommandConsole.tsx';
 import { ActiveAndSelectedRow } from './ActiveAndSelectedRow.tsx';
 import { OverviewLastRunCell, OverviewLastRunHeaderToggle } from './OverviewLastRunCell.tsx';
 import { LiveOpsCell } from './LiveOpsCell.tsx';
 import { useRunningModulesByProductOrdered } from '../../features/operations/hooks/useFinderOperations.ts';
-import { compareBySort } from './overviewSort.ts';
+import { getOverviewLastRunMs, sortOverviewRows, toggleOverviewSortStack } from './overviewSort.ts';
 import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import {
   useOverviewSelectionStore,
@@ -103,7 +102,6 @@ const CEF_REQUIRED_RUNS = 2;
 
 const INITIAL_FILTER_STATE: OverviewFilterState = Object.freeze({
   search: '',
-  sortBy: 'default' as OverviewSortKey,
 });
 
 function matchesSearch(row: CatalogRow, query: string): boolean {
@@ -136,11 +134,9 @@ function buildColumns(
   toggleDetailCols: () => void,
   runningByProduct: ReadonlyMap<string, readonly string[]>,
 ): ColumnDef<CatalogRow, unknown>[] {
-  // WHY: Single source of truth for sort = filterState.sortBy + Live header
-  // cycle. TanStack's per-column sort would silently override our page-level
-  // compareBySort and is also persisted to localStorage, so a stale click
-  // could outlive the session. Disable everywhere to keep it Excel-style:
-  // last click on a sort surface wins, no ghost from prior sessions.
+  // WHY: Overview owns one explicit Excel-style sort stack. Accessors on
+  // display columns only mark those headers sortable; rows are ordered by
+  // overviewSort.ts before DataTable renders them.
   return [
     {
       accessorKey: 'brand',
@@ -280,6 +276,7 @@ function buildColumns(
     },
     {
       id: 'key',
+      accessorFn: (row) => row.keyTierProgress,
       header: () => (
         <ColumnFilterHeader category={category} filterKey="keys" label="Keys">
           <KeysFilter category={category} />
@@ -298,6 +295,7 @@ function buildColumns(
     },
     {
       id: 'scoreCard',
+      accessorFn: (row) => row.productId,
       header: () => (
         <ColumnFilterHeader category={category} filterKey="score" label="Score">
           <ScoreFilter category={category} />
@@ -349,39 +347,27 @@ function buildColumns(
     },
     {
       id: 'live',
-      // WHY: Real TanStack-sortable column so shift-click composes Live with
-      // other columns (Excel-style multi-sort). The custom sortingFn ranks
-      // by running-op count primarily, then by joined module signature so
-      // rows with the same feature set cluster naturally. Cell self-
-      // subscribes to the ops store so it ticks live regardless of the
-      // catalog poll cadence.
+      accessorFn: (row) => runningByProduct.get(row.productId)?.length ?? 0,
       header: () => (
         <span className="sf-cfh-row sf-cfh-row--left">
           <span className="sf-cfh-label">Live</span>
         </span>
       ),
       size: 90,
-      sortingFn: (rowA, rowB) => {
-        const ma = runningByProduct.get(rowA.original.productId) ?? [];
-        const mb = runningByProduct.get(rowB.original.productId) ?? [];
-        // TanStack flips for desc, so internal ordering is asc-by-default
-        // (fewer running first). Users get the intuitive "click for ▼ =
-        // most active first" via TanStack's standard toggle.
-        if (ma.length !== mb.length) return ma.length - mb.length;
-        const sa = ma.join(',');
-        const sb = mb.join(',');
-        if (sa !== sb) return sa.localeCompare(sb);
-        return 0; // multi-sort tiebreak: defer to next sort column or input order
-      },
       cell: ({ row }) => (
         <LiveOpsCell category={category} productId={row.original.productId} />
       ),
     },
     {
       id: 'lastRun',
-      enableSorting: false,
-      size: detailColsOpen ? 200 : 36,
-      header: () => <OverviewLastRunHeaderToggle open={detailColsOpen} onToggle={toggleDetailCols} />,
+      accessorFn: (row) => getOverviewLastRunMs(row),
+      size: detailColsOpen ? 200 : 112,
+      header: () => (
+        <span className="sf-cfh-row sf-cfh-row--left">
+          <span className="sf-cfh-label">Last Run</span>
+          <OverviewLastRunHeaderToggle open={detailColsOpen} onToggle={toggleDetailCols} />
+        </span>
+      ),
       cell: ({ row }) => (detailColsOpen
         ? <OverviewLastRunCell row={row.original} />
         : null
@@ -419,15 +405,9 @@ export function OverviewPage() {
   // so they slide open/closed together — clicking either chevron flips both.
   const [detailColsOpen, toggleDetailCols] = usePersistedToggle('overview:detail-cols:open', false);
 
-  // WHY: TanStack column sorting is lifted out of DataTable so Excel-style
-  // "last click wins" works across both sort surfaces. Clicking a column
-  // header clears filterState.sortBy; clicking the Live header clears tableSorting.
   const [tableSorting, setTableSorting] = useState<SortingState>([]);
-  const handleTableSortingChange = useCallback((next: SortingState) => {
-    setTableSorting(next);
-    if (next.length > 0) {
-      setFilterState((s) => (s.sortBy === 'default' ? s : { ...s, sortBy: 'default' }));
-    }
+  const handleColumnHeaderSort = useCallback((columnId: string) => {
+    setTableSorting((current) => toggleOverviewSortStack(current, columnId));
   }, []);
 
   const columnFilters = useColumnFilterStore(selectFilterState(category));
@@ -437,21 +417,16 @@ export function OverviewPage() {
     const filtered = catalog
       .filter((r) => matchesSearch(r, filterState.search))
       .filter((r) => matchesColumnFilters(r, columnFilters));
-    const { sortBy } = filterState;
-    return filtered.slice().sort((a, b) => compareBySort(a, b, sortBy));
-  }, [catalog, filterState, columnFilters]);
+    return sortOverviewRows(filtered, tableSorting, runningByProduct);
+  }, [catalog, filterState.search, columnFilters, tableSorting, runningByProduct]);
 
   const visibleIds = useMemo<readonly string[]>(
     () => visibleRows.map((r) => r.productId),
     [visibleRows],
   );
 
-  // WHY: Chip-driven sort presets (confidence/coverage/fields) flow through
-  // the page-level compareBySort. When the user picks a chip, clear the
-  // TanStack column sort so the chip's intent wins.
   const handleFilterChange = useCallback((next: OverviewFilterState) => {
     setFilterState(next);
-    if (next.sortBy !== 'default') setTableSorting([]);
   }, []);
 
   const columns = useMemo<ColumnDef<CatalogRow, unknown>[]>(
@@ -515,7 +490,9 @@ export function OverviewPage() {
           persistKey={`overview:table:${category}`}
           maxHeight="max-h-[calc(100vh-340px)]"
           sorting={tableSorting}
-          onSortingChange={handleTableSortingChange}
+          onSortingChange={setTableSorting}
+          manualSorting
+          onColumnHeaderSort={handleColumnHeaderSort}
         />
       </div>
     </div>
