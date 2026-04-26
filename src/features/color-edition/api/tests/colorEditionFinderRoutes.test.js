@@ -232,6 +232,38 @@ describe('colorEditionFinderRoutes', () => {
         'CEF-only candidates MUST be deleted on delete-all via source-aware cleanup',
       );
     });
+
+    // WHY: "Delete All" in the CEF drawer must FULL-RESET the product —
+    // matches what RDF/SKU/KF do for their domain (where deleting runs
+    // erases everything, since URL/query history lives inside runs).
+    // For CEF that means cascading the variant_registry too, which in
+    // turn cascades to PIF (images/evals/carousel) and every
+    // variantFieldProducer (RDF/SKU per-variant entries).
+    it('deletes all variants on delete-all (full reset cascade)', async () => {
+      const removedVariants = [];
+      const { ctx, specDb } = makeCtx();
+      // Stub variants table: 2 active variants that the cascade should remove
+      specDb.variants = {
+        listActive: () => [
+          { variant_id: 'v_black', variant_key: 'color:black', color_atoms: ['black'], variant_label: 'Black' },
+          { variant_id: 'v_white', variant_key: 'color:white', color_atoms: ['white'], variant_label: 'White' },
+        ],
+        listByProduct: () => [],
+        get: (_pid, vid) => ({ variant_id: vid, variant_key: `key-${vid}`, color_atoms: [] }),
+        remove: (_pid, vid) => { removedVariants.push(vid); },
+      };
+      // Stub remaining specDb methods deleteVariant cascade touches
+      specDb.deleteFieldCandidatesByVariantId = () => {};
+      specDb.getFieldCandidatesByProductAndField = () => [];
+      specDb.deleteFieldCandidateByValue = () => {};
+      const handler = registerColorEditionFinderRoutes(ctx);
+      await handler(['color-edition-finder', 'mouse', 'mouse-001'], new Map(), 'DELETE', {}, {});
+      assert.deepEqual(
+        removedVariants.sort(),
+        ['v_black', 'v_white'],
+        'CEF Delete All must cascade-delete every active variant',
+      );
+    });
   });
 
   describe('GET published.color_names / edition_details derived from variants', () => {

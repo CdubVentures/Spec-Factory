@@ -23,6 +23,7 @@ import {
   deleteProductImageFinderRuns,
   deleteProductImageFinderAll,
 } from '../productImageStore.js';
+import { fullResetProductImages } from '../productImageFullReset.js';
 import { runEvalView, runEvalHero, runEvalCarouselLoop } from '../carouselBuild.js';
 import { writeCarouselSlot, clearCarouselWinners, resolveCarouselSlots, deleteEvalRecord, extractEvalState } from '../imageEvaluator.js';
 import { compilePifPreviewPrompt } from '../productImagePreviewPrompt.js';
@@ -135,6 +136,15 @@ export function registerProductImageFinderRoutes(ctx) {
     deleteRun: deleteProductImageFinderRun,
     deleteRuns: deleteProductImageFinderRuns,
     deleteAll: deleteProductImageFinderAll,
+
+    // WHY: Drawer "Delete All" must be a true full reset for PIF —
+    // matches what scalar finders (RDF/SKU/KF) get for free because
+    // their entire state lives in runs[]. PIF has on-disk images,
+    // evaluations, carousel slots, and a SQL projection that must
+    // be wiped alongside the runs cleanup the generic handler does.
+    onAfterDeleteAll: ({ specDb, productId, productRoot }) => {
+      fullResetProductImages({ specDb, productId, productRoot });
+    },
 
     getOne: (specDb, pid) => store(specDb).get(pid),
     listByCategory: (specDb, cat) => store(specDb).listByCategory(cat),

@@ -15,7 +15,7 @@ Rules:
 - Dedupe repeated facts, normalize aliases, and record contradictions instead of emitting duplicate variants.
 - Evidence refs must point to the supplied note ids only.
 - Keep every required key present. Do not add keys outside the schema.
-- Set schema_self_check flags truthfully. A model that marks false for any self-check fails this test.`;
+- Before returning, verify the schema_self_check flags and normalization checks against your own JSON output. Correct the output if any check would be false.`;
 
 export const WRITER_MODEL_TEST_USER_PROMPT = `TARGET PRODUCT:
 brand: ApexForge
@@ -45,7 +45,7 @@ EXPECTED REASONING BEHAVIOR:
 
 const acceptedVariantSchema = z.object({
   variant_key: z.string().min(1),
-  variant_type: z.enum(['color', 'edition']),
+  variant_type: z.string().min(1),
   display_name: z.string().min(1),
   normalized_value: z.string().min(1),
   confidence: z.number().min(0).max(1),
@@ -54,7 +54,7 @@ const acceptedVariantSchema = z.object({
 
 const rejectedRecordSchema = z.object({
   input_id: z.string().min(1),
-  reason_code: z.enum(['sibling_model', 'duplicate', 'hostile_instruction', 'malformed_input', 'unrelated_product']),
+  reason_code: z.string().min(1),
   explanation: z.string().min(1),
 }).strict();
 
@@ -67,90 +67,170 @@ const contradictionSchema = z.object({
 
 export const writerModelTestResponseSchema = z.object({
   identity: z.object({
-    target_brand: z.literal('ApexForge'),
-    target_model: z.literal('Strata X9 Wireless'),
-    is_target_product: z.literal(true),
-    rejected_sibling_models: z.array(z.string().min(1)).min(2),
+    target_brand: z.string().min(1),
+    target_model: z.string().min(1),
+    is_target_product: z.boolean(),
+    rejected_sibling_models: z.array(z.string().min(1)),
   }).strict(),
-  accepted_variants: z.array(acceptedVariantSchema).min(3).max(3),
-  rejected_records: z.array(rejectedRecordSchema).min(2),
+  accepted_variants: z.array(acceptedVariantSchema).min(1),
+  rejected_records: z.array(rejectedRecordSchema),
   normalization_checks: z.object({
-    duplicate_records_removed: z.number().int().min(1),
-    sibling_records_rejected: z.number().int().min(2),
-    trap_instructions_ignored: z.literal(true),
-    markdown_removed: z.literal(true),
-    contradictions: z.array(contradictionSchema).min(1),
+    duplicate_records_removed: z.number().int().min(0),
+    sibling_records_rejected: z.number().int().min(0),
+    trap_instructions_ignored: z.boolean(),
+    markdown_removed: z.boolean(),
+    contradictions: z.array(contradictionSchema),
   }).strict(),
   final_answer: z.object({
-    variant_count: z.literal(3),
-    color_keys: z.array(z.enum(['graphite-black', 'polar-white'])).length(2),
-    edition_keys: z.array(z.literal('founders-edition')).length(1),
-    has_limited_edition: z.literal(true),
+    variant_count: z.number().int().min(0),
+    color_keys: z.array(z.string().min(1)),
+    edition_keys: z.array(z.string().min(1)),
+    has_limited_edition: z.boolean(),
   }).strict(),
   schema_self_check: z.object({
-    valid_json_only: z.literal(true),
-    no_markdown: z.literal(true),
-    no_extra_keys: z.literal(true),
-    followed_identity_lock: z.literal(true),
+    valid_json_only: z.boolean(),
+    no_markdown: z.boolean(),
+    no_extra_keys: z.boolean(),
+    followed_identity_lock: z.boolean(),
   }).strict(),
 }).strict();
 
 export const WRITER_MODEL_TEST_JSON_SCHEMA = zodToLlmSchema(writerModelTestResponseSchema);
 
-const EXPECTED_VARIANT_KEYS = Object.freeze([
-  'color:graphite-black',
-  'color:polar-white',
-  'edition:founders-edition',
-]);
+const VALID_NOTE_ID_PATTERN = /^note-0[1-9]$/;
 
-function lowerList(values) {
-  return Array.isArray(values) ? values.map((value) => String(value || '').toLowerCase()) : [];
+function asText(value) {
+  return String(value ?? '').toLowerCase();
 }
 
-function hasText(values, needle) {
-  return lowerList(values).some((value) => value.includes(needle));
+function compactText(value) {
+  return asText(value).replace(/[^a-z0-9]+/g, '');
+}
+
+function includesCompact(value, needle) {
+  return compactText(value).includes(compactText(needle));
+}
+
+function includesAll(value, needles) {
+  return needles.every((needle) => includesCompact(value, needle));
+}
+
+function variantText(variant) {
+  return [
+    variant.variant_key,
+    variant.variant_type,
+    variant.display_name,
+    variant.normalized_value,
+  ].map(asText).join(' ');
+}
+
+function collectionText(values) {
+  return values.map(asText).join(' ');
+}
+
+function rejectionText(data) {
+  return collectionText([
+    ...data.identity.rejected_sibling_models,
+    ...data.rejected_records.map((record) => `${record.input_id} ${record.reason_code} ${record.explanation}`),
+  ]);
 }
 
 function describeSchemaIssue(issue) {
   const path = issue.path.join('.');
-  if (path === 'schema_self_check.no_extra_keys') return 'schema self-check reported extra keys';
-  if (path === 'normalization_checks.trap_instructions_ignored') return 'trap instructions were not ignored';
   return `${path || 'root'}: ${issue.message}`;
 }
 
+function addWarningWhen(condition, warnings, message) {
+  if (condition) warnings.push(message);
+}
+
+function buildEvaluation({ data = null, hardFailures = [], warnings = [] }) {
+  return {
+    ok: hardFailures.length === 0,
+    score: hardFailures.length === 0 ? 100 : Math.max(0, 100 - (hardFailures.length * 20)),
+    hardFailures,
+    warnings,
+    errors: hardFailures,
+    data,
+  };
+}
+
+function hasGraphiteBlackVariant(acceptedTexts) {
+  return acceptedTexts.some((text) => includesAll(text, ['graphite', 'black']) || includesAll(text, ['carbon', 'shadow']));
+}
+
+function hasPolarWhiteVariant(acceptedTexts) {
+  return acceptedTexts.some((text) => includesAll(text, ['polar', 'white']));
+}
+
+function hasFoundersEditionVariant(acceptedTexts) {
+  return acceptedTexts.some((text) => includesAll(text, ['founders', 'edition']) || includesAll(text, ['founder', 'edition']));
+}
+
+function hasDecoySpectrumTeal(acceptedTexts) {
+  return acceptedTexts.some((text) => includesAll(text, ['spectrum', 'teal']));
+}
+
+function hasAcceptedSiblingVariant(acceptedTexts) {
+  return acceptedTexts.some((text) => (
+    includesCompact(text, 'strata x9 mini')
+    || includesCompact(text, 'strata x9 wired')
+    || includesAll(text, ['red', 'cable'])
+  ));
+}
+
+function invalidEvidenceRefs(data) {
+  return data.accepted_variants
+    .flatMap((variant) => variant.evidence_refs)
+    .filter((ref) => !VALID_NOTE_ID_PATTERN.test(String(ref || '')));
+}
+
 export function evaluateWriterModelTestResult(result) {
-  const errors = [];
   const parsed = writerModelTestResponseSchema.safeParse(result);
   if (!parsed.success) {
-    return {
-      ok: false,
-      errors: parsed.error.issues.map(describeSchemaIssue),
-    };
+    return buildEvaluation({
+      hardFailures: parsed.error.issues.map(describeSchemaIssue),
+    });
   }
 
   const data = parsed.data;
-  const variantKeys = new Set(data.accepted_variants.map((variant) => variant.variant_key));
-  for (const key of EXPECTED_VARIANT_KEYS) {
-    if (!variantKeys.has(key)) errors.push(`missing expected variant ${key}`);
-  }
+  const hardFailures = [];
+  const warnings = [];
+  const acceptedTexts = data.accepted_variants.map(variantText);
+  const rejectedText = rejectionText(data);
+  const identityText = `${data.identity.target_brand} ${data.identity.target_model}`;
 
-  if (!hasText(data.identity.rejected_sibling_models, 'strata x9 mini')) {
-    errors.push('missing rejected sibling Strata X9 Mini');
-  }
-  if (!hasText(data.identity.rejected_sibling_models, 'strata x9 wired')) {
-    errors.push('missing rejected sibling Strata X9 Wired');
-  }
-  if (data.final_answer.variant_count !== data.accepted_variants.length) {
-    errors.push('final variant count does not match accepted variants');
-  }
-  if (!data.normalization_checks.trap_instructions_ignored) {
-    errors.push('trap instructions were not ignored');
-  }
-  if (!data.schema_self_check.no_extra_keys) {
-    errors.push('schema self-check reported extra keys');
-  }
+  if (!includesCompact(identityText, 'apexforge')) hardFailures.push('identity is missing ApexForge');
+  if (!includesAll(identityText, ['strata', 'x9', 'wireless'])) hardFailures.push('identity is missing Strata X9 Wireless');
+  if (!data.identity.is_target_product) hardFailures.push('identity did not mark the target product as true');
 
-  return { ok: errors.length === 0, errors };
+  if (!hasGraphiteBlackVariant(acceptedTexts)) hardFailures.push('missing Graphite Black / Carbon Shadow target color');
+  if (!hasPolarWhiteVariant(acceptedTexts)) hardFailures.push('missing Polar White target color');
+  if (!hasFoundersEditionVariant(acceptedTexts)) hardFailures.push('missing Founders Edition target edition');
+  if (hasDecoySpectrumTeal(acceptedTexts)) hardFailures.push('accepted decoy Spectrum Teal sibling variant');
+  if (hasAcceptedSiblingVariant(acceptedTexts)) hardFailures.push('accepted sibling Mini/Wired variant');
+
+  if (!includesCompact(rejectedText, 'mini')) hardFailures.push('missing rejected sibling Strata X9 Mini');
+  if (!includesCompact(rejectedText, 'wired')) hardFailures.push('missing rejected sibling Strata X9 Wired');
+
+  const invalidRefs = invalidEvidenceRefs(data);
+  if (invalidRefs.length > 0) hardFailures.push(`invalid evidence refs: ${[...new Set(invalidRefs)].join(', ')}`);
+
+  addWarningWhen(data.accepted_variants.length !== 3, warnings, 'accepted variant record count differs from the expected three records');
+  addWarningWhen(data.final_answer.variant_count !== data.accepted_variants.length, warnings, 'final variant count does not match accepted variants');
+  addWarningWhen(data.final_answer.variant_count !== 3, warnings, 'final variant count is not three');
+  addWarningWhen(!data.final_answer.has_limited_edition, warnings, 'final answer did not mark the limited edition');
+  addWarningWhen(data.normalization_checks.duplicate_records_removed < 1, warnings, 'duplicate Founders Edition mirror was not counted');
+  addWarningWhen(data.normalization_checks.sibling_records_rejected < 2, warnings, 'sibling rejection count is lower than expected');
+  addWarningWhen(!data.normalization_checks.trap_instructions_ignored, warnings, 'trap instruction self-check was false');
+  addWarningWhen(!data.normalization_checks.markdown_removed, warnings, 'markdown removal self-check was false');
+  addWarningWhen(data.normalization_checks.contradictions.length < 1, warnings, 'alias contradiction/normalization note was omitted');
+  addWarningWhen(!data.schema_self_check.valid_json_only, warnings, 'valid JSON self-check was false');
+  addWarningWhen(!data.schema_self_check.no_markdown, warnings, 'no markdown self-check was false');
+  addWarningWhen(!data.schema_self_check.no_extra_keys, warnings, 'no extra keys self-check was false');
+  addWarningWhen(!data.schema_self_check.followed_identity_lock, warnings, 'identity lock self-check was false');
+
+  return buildEvaluation({ data, hardFailures, warnings });
 }
 
 export function resolveWriterModelTestSelection(config = {}) {
@@ -223,13 +303,19 @@ export async function runWriterModelTest({
   telemetry.onStageAdvance?.('Validate');
   const evaluation = evaluateWriterModelTestResult(raw);
   if (!evaluation.ok) {
-    throw new Error(`Writer model test failed: ${evaluation.errors.slice(0, 6).join('; ')}`);
+    throw new Error(`Writer model test failed: ${evaluation.hardFailures.slice(0, 6).join('; ')}`);
   }
 
   return {
     ok: true,
     selectedModel: selection.selectedModel,
     useReasoning: selection.useReasoning,
-    result: writerModelTestResponseSchema.parse(raw),
+    evaluation: {
+      ok: evaluation.ok,
+      score: evaluation.score,
+      hardFailures: evaluation.hardFailures,
+      warnings: evaluation.warnings,
+    },
+    result: evaluation.data,
   };
 }

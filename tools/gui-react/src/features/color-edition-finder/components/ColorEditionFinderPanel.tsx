@@ -380,7 +380,13 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
           descriptionOverrides={{
             run: `This will delete discovery source (run #${deleteTarget.runNumber ?? ''}). Deletes all candidates (evidence) in all fields. Touches CEF table & JSON and field_candidates table & JSON.`,
             loop: `This will delete all runs in this loop. Deletes all candidates (evidence) in all fields. Touches CEF table & JSON and field_candidates table & JSON.`,
-            all: `This will delete all ${deleteTarget.count ?? 0} run(s) and all discovery sources. Deletes all candidates (evidence) in all fields. Touches CEF table & JSON and field_candidates table & JSON.`,
+            // WHY: Server-side onAfterDeleteAll cascade now invokes
+            // deleteAllVariants alongside the runs cleanup. That cascade
+            // wipes every variant + everything downstream — PIF
+            // images/runs/evals/carousel and every variantFieldProducer
+            // (RDF/SKU per-variant entries). Description must reflect
+            // the full blast radius so users aren't surprised.
+            all: `This will permanently wipe everything for this product\u2019s CEF data: all ${deleteTarget.count ?? 0} run(s) and discovery history (URLs + queries), every CEF candidate, every published color/edition, every variant in the registry, plus every variant-scoped artifact downstream — PIF images/runs/evals/carousel and all RDF/SKU per-variant entries. This cannot be undone.`,
           }}
         />
       )}

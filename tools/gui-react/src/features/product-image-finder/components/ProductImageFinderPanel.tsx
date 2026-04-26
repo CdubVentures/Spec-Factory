@@ -735,6 +735,13 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           moduleLabel="PIF"
           confirmLabel={deleteTarget.kind === 'carousel-clear-variant' ? 'Clear' : undefined}
           pendingLabel={deleteTarget.kind === 'carousel-clear-variant' ? 'Clearing...' : undefined}
+          descriptionOverrides={{
+            // WHY: Server-side onAfterDeleteAll cascade now wipes image
+            // files, evaluations, carousel slots, and the SQL projection
+            // alongside the runs cleanup. Description must reflect the
+            // true scope so users aren't surprised by the disk wipe.
+            'all': 'This will permanently wipe everything for this product\u2019s PIF data: every run and its discovery history (URLs + queries), every image file on disk (master + originals), all eval records, and every carousel slot selection. CEF variants are preserved. This cannot be undone.',
+          }}
         />
       )}
 

@@ -660,6 +660,20 @@ export function createFinderRouteHandler(finderConfig) {
           upsertSummary(specDb, summaryRow);
         }
 
+        // WHY: Full-reset cascade hook — fires only on delete-all path so
+        // single-run delete keeps its narrower semantics. Used by PIF/CEF
+        // to wipe variant_registry, image files, evaluations, carousel slots,
+        // and projection rows alongside the runs cleanup above.
+        if (finderConfig.onAfterDeleteAll) {
+          finderConfig.onAfterDeleteAll({
+            specDb,
+            productId,
+            productRoot: defaultProductRoot(),
+            broadcastWs,
+            category,
+          });
+        }
+
         emitDataChange({
           broadcastWs,
           event: `${routePrefix}-deleted`,

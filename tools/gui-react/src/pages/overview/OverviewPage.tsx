@@ -27,7 +27,7 @@ import { ActiveAndSelectedRow } from './ActiveAndSelectedRow.tsx';
 import { OverviewLastRunCell, OverviewLastRunHeaderToggle } from './OverviewLastRunCell.tsx';
 import { LiveOpsCell } from './LiveOpsCell.tsx';
 import { useRunningModulesByProductOrdered } from '../../features/operations/hooks/useFinderOperations.ts';
-import { compareBySort } from './overviewSort.ts';
+import { compareBySort, cycleLiveSort } from './overviewSort.ts';
 import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import {
   useOverviewSelectionStore,
@@ -100,6 +100,33 @@ function SelectCell({ category, productId }: { category: string; productId: stri
 // module will let a product advance. Visual today, enforcement later.
 const CEF_REQUIRED_RUNS = 2;
 
+interface LiveHeaderCellProps {
+  readonly sortBy: OverviewFilterState['sortBy'];
+  readonly onCycle: () => void;
+}
+
+function LiveHeaderCell({ sortBy, onCycle }: LiveHeaderCellProps) {
+  const indicator = sortBy === 'live' ? '\u25BC'             // ▼ count desc
+                  : sortBy === 'live-grouped' ? '\u29FE'     // ⧾ grouped
+                  : '';
+  const title = sortBy === 'live' ? 'Sorted by live ops (most active first). Click to group by feature set.'
+              : sortBy === 'live-grouped' ? 'Grouped by running feature set. Click to clear.'
+              : 'Click to sort by live operations.';
+  const active = sortBy === 'live' || sortBy === 'live-grouped';
+  return (
+    <button
+      type="button"
+      className={`sf-cfh-row sf-cfh-row--left sf-live-header${active ? ' sf-live-header--active' : ''}`}
+      onClick={onCycle}
+      title={title}
+      aria-label={title}
+    >
+      <span className="sf-cfh-label">Live</span>
+      {indicator && <span className="sf-live-header-indicator" aria-hidden>{indicator}</span>}
+    </button>
+  );
+}
+
 const INITIAL_FILTER_STATE: OverviewFilterState = Object.freeze({
   search: '',
   sortBy: 'default' as OverviewSortKey,
@@ -133,6 +160,8 @@ function buildColumns(
   formatRdfValue: (value: string) => string,
   detailColsOpen: boolean,
   toggleDetailCols: () => void,
+  liveSortBy: OverviewFilterState['sortBy'],
+  cycleLive: () => void,
 ): ColumnDef<CatalogRow, unknown>[] {
   return [
     {
@@ -342,14 +371,11 @@ function buildColumns(
     },
     {
       id: 'live',
-      // WHY: Plain label matches Coverage/Conf/Fields/Score typography without
-      // wiring an empty filter popover. Cell self-subscribes to the ops store
-      // so it ticks live regardless of the catalog poll cadence.
-      header: () => (
-        <span className="sf-cfh-row sf-cfh-row--left">
-          <span className="sf-cfh-label">Live</span>
-        </span>
-      ),
+      // WHY: Header click cycles the FilterBar's sortBy: off → 'live' (count
+      // desc) → 'live-grouped' (cluster by running feature set) → off. Cell
+      // self-subscribes to the ops store so it ticks live regardless of the
+      // catalog poll cadence.
+      header: () => <LiveHeaderCell sortBy={liveSortBy} onCycle={cycleLive} />,
       enableSorting: false,
       size: 90,
       cell: ({ row }) => (
@@ -414,6 +440,10 @@ export function OverviewPage() {
     [visibleRows],
   );
 
+  const cycleLive = useCallback(() => {
+    setFilterState((s) => ({ ...s, sortBy: cycleLiveSort(s.sortBy) }));
+  }, []);
+
   const columns = useMemo<ColumnDef<CatalogRow, unknown>[]>(
     () => [
       {
@@ -430,9 +460,9 @@ export function OverviewPage() {
           </div>
         ),
       },
-      ...buildColumns(hexMap, category, catalog, formatRdfValue, detailColsOpen, toggleDetailCols),
+      ...buildColumns(hexMap, category, catalog, formatRdfValue, detailColsOpen, toggleDetailCols, filterState.sortBy, cycleLive),
     ],
-    [hexMap, category, catalog, visibleIds, formatRdfValue, detailColsOpen, toggleDetailCols],
+    [hexMap, category, catalog, visibleIds, formatRdfValue, detailColsOpen, toggleDetailCols, filterState.sortBy, cycleLive],
   );
 
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;

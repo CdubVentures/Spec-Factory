@@ -49,6 +49,7 @@ function makeFinderConfig(overrides = {}) {
     parseVariantKey: overrides.parseVariantKey || false,
     loop: overrides.loop || undefined,
     customStages: overrides.customStages || undefined,
+    onAfterDeleteAll: overrides.onAfterDeleteAll || undefined,
   };
 }
 
@@ -204,6 +205,48 @@ describe('createFinderRouteHandler — generic', () => {
     assert.ok(allDeleted);
     // Candidates cleaned for each fieldKey
     assert.equal(specDb._candidateDeleteCalls.length, 2);
+  });
+
+  // ── onAfterDeleteAll cascade hook ─────────────────────────────────
+  // WHY: PIF/CEF "Delete All" must wipe everything (variants, images,
+  // evals, projections), not just runs. The hook fires only on delete-all
+  // so single-run delete keeps its narrower semantics.
+
+  it('DELETE all invokes onAfterDeleteAll hook with full context', async () => {
+    let hookCalls = [];
+    const { ctx } = makeCtx();
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      onAfterDeleteAll: (opts) => { hookCalls.push(opts); },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1'], new Map(), 'DELETE', {}, {});
+    assert.equal(hookCalls.length, 1, 'onAfterDeleteAll must fire exactly once on delete-all');
+    assert.equal(hookCalls[0].productId, 'p1');
+    assert.equal(hookCalls[0].category, 'cat');
+    assert.ok(hookCalls[0].specDb, 'hook receives specDb');
+    assert.ok('productRoot' in hookCalls[0], 'hook receives productRoot');
+  });
+
+  it('DELETE single run does NOT invoke onAfterDeleteAll hook', async () => {
+    let hookFired = false;
+    const { ctx } = makeCtx();
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteRun: () => ({ run_count: 1, selected: {}, last_ran_at: '' }),
+      onAfterDeleteAll: () => { hookFired = true; },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'runs', '3'], new Map(), 'DELETE', {}, {});
+    assert.equal(hookFired, false, 'onAfterDeleteAll must NOT fire on single-run delete');
+  });
+
+  it('DELETE batch runs does NOT invoke onAfterDeleteAll hook', async () => {
+    let hookFired = false;
+    const { ctx } = makeCtx();
+    ctx.readJsonBody = async () => ({ runNumbers: [1, 2] });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteRuns: () => ({ run_count: 0, selected: {}, last_ran_at: '' }),
+      onAfterDeleteAll: () => { hookFired = true; },
+    }))(ctx);
+    await handler(['test-finder', 'cat', 'p1', 'runs', 'batch'], new Map(), 'DELETE', {}, {});
+    assert.equal(hookFired, false, 'onAfterDeleteAll must NOT fire on batch run delete');
   });
 
   // ── DELETE batch runs ────────────────────────────────────────────

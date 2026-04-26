@@ -54,6 +54,19 @@ export function registerColorEditionFinderRoutes(ctx) {
       }
     },
 
+    // WHY: Drawer "Delete All" must be a true full reset for CEF —
+    // matches what scalar finders (RDF/SKU/KF) get for free because
+    // their entire state lives in runs[]. CEF additionally owns the
+    // variant_registry, which `skipSelectedOnDelete` preserves through
+    // run deletion. Cascading variant deletion here also cleans up every
+    // downstream variantArtifactProducer (PIF images/evals/carousel) and
+    // variantFieldProducer (RDF/SKU per-variant entries) via deleteVariant.
+    onAfterDeleteAll: ({ specDb, productId, productRoot }) => {
+      if (specDb.variants) {
+        deleteAllVariants({ specDb, productId, productRoot });
+      }
+    },
+
     buildGetResponse: (row, selected, runs, { specDb, productId } = {}) => {
       // WHY: Published values come from the summary table (DB).
       // Candidate rows are evidence (which sources submitted what), not the published truth.
