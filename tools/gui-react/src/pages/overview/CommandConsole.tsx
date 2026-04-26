@@ -28,6 +28,12 @@ import { useActiveModulesByProduct } from '../../features/operations/hooks/useFi
 import { selectActiveProductsForType, formatActiveWarnMessage } from './commandConsoleActiveCheck.ts';
 import { CommandConsoleModelStrip } from './CommandConsoleModelStrip.tsx';
 import { CommandConsoleKeysDropdown } from './CommandConsoleKeysDropdown.tsx';
+import {
+  useSmartSelectSize,
+  SMART_SELECT_SIZE_MIN,
+  SMART_SELECT_SIZE_MAX,
+} from './useSmartSelectSize.ts';
+import { RangeSlider } from '../../shared/ui/forms/RangeSlider.tsx';
 import './CommandConsole.css';
 
 export interface CommandConsoleProps {
@@ -252,17 +258,17 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
     [reservedResp],
   );
 
-  const SMART_SELECT_SIZE = 20;
+  const { size: smartSelectSize, setSize: setSmartSelectSize } = useSmartSelectSize();
 
   const handleSmartSelectLowest = useCallback(() => {
-    const picks = pickBottomQuartileSample(allRows, SMART_SELECT_SIZE);
+    const picks = pickBottomQuartileSample(allRows, smartSelectSize);
     if (picks.length === 0) return;
     setMany(category, picks);
-  }, [allRows, setMany, category]);
+  }, [allRows, setMany, category, smartSelectSize]);
 
   const handleSmartSelectNext = useCallback(() => {
     const current = history.getHistory();
-    const { selected, updatedHistory } = pickNextBatch(allRows, SMART_SELECT_SIZE, current);
+    const { selected, updatedHistory } = pickNextBatch(allRows, smartSelectSize, current);
     if (selected.length === 0) {
       if (typeof window !== 'undefined') {
         window.alert('All low-coverage products have been selected in the last 24h. Clear history or wait for the window to roll.');
@@ -271,7 +277,7 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
     }
     setMany(category, selected);
     history.setHistory(updatedHistory);
-  }, [allRows, setMany, category, history]);
+  }, [allRows, setMany, category, history, smartSelectSize]);
 
   const pipeline = usePipelineController(category);
   const pipelineRunning = pipeline.state.status === 'running';
@@ -395,23 +401,31 @@ export function CommandConsole({ category, allRows }: CommandConsoleProps) {
         </span>
         <span className="sf-cc-smart">
           <span className="sf-cc-eyebrow">Smart</span>
+          <RangeSlider
+            value={smartSelectSize}
+            min={SMART_SELECT_SIZE_MIN}
+            max={SMART_SELECT_SIZE_MAX}
+            onChange={setSmartSelectSize}
+            ariaLabel="Smart-select sample size"
+            title={`Smart-select sample size (${SMART_SELECT_SIZE_MIN}\u2013${SMART_SELECT_SIZE_MAX}). Persists across sessions.`}
+          />
           <button
             type="button"
             className="sf-cc-btn sf-cc-btn-secondary"
             onClick={handleSmartSelectLowest}
             disabled={allRows.length === 0}
-            title="Pick 20 products at random from the bottom quartile by coverage."
+            title={`Pick ${smartSelectSize} products at random from the bottom quartile by coverage.`}
           >
-            20 lowest
+            {smartSelectSize} lowest
           </button>
           <button
             type="button"
             className="sf-cc-btn sf-cc-btn-secondary"
             onClick={handleSmartSelectNext}
             disabled={allRows.length === 0}
-            title="Pick 20 more, excluding anything picked in the last 24 hours."
+            title={`Pick ${smartSelectSize} more, excluding anything picked in the last 24 hours.`}
           >
-            Next 20
+            Next {smartSelectSize}
           </button>
         </span>
       </div>

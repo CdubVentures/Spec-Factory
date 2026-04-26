@@ -57,6 +57,9 @@ export interface LlmPolicy {
   keyFinderTiers: Record<string, number>;
   labQueueDelayMs: number;
   timeoutMs: number;
+  operationStreamingMode: string;
+  operationStreamingMaxActiveOps: number;
+  operationStreamingFlushMs: number;
 }
 
 export const FLAT_TO_GROUP: Record<string, { group: LlmPolicyGroup; field: string }> = {
@@ -86,6 +89,9 @@ export const FLAT_TO_GROUP: Record<string, { group: LlmPolicyGroup; field: strin
 export const FLAT_TOP_LEVEL: Record<string, string> = {
   llmLabQueueDelayMs: 'labQueueDelayMs',
   llmTimeoutMs: 'timeoutMs',
+  llmOperationStreamingMode: 'operationStreamingMode',
+  llmOperationStreamingMaxActiveOps: 'operationStreamingMaxActiveOps',
+  llmOperationStreamingFlushMs: 'operationStreamingFlushMs',
 };
 
 export const LLM_POLICY_MANAGED_KEYS = [
@@ -112,6 +118,9 @@ export const LLM_POLICY_MANAGED_KEYS = [
   'llmReasoningMode',
   'llmLabQueueDelayMs',
   'llmTimeoutMs',
+  'llmOperationStreamingMode',
+  'llmOperationStreamingMaxActiveOps',
+  'llmOperationStreamingFlushMs',
   'llmPhaseOverridesJson',
   'llmProviderRegistryJson',
   'keyFinderTierSettingsJson',
@@ -181,5 +190,8 @@ export function assembleLlmPolicyFromFlat(source: Record<string, unknown>): LlmP
     keyFinderTiers: safeJsonParse(source.keyFinderTierSettingsJson, {}),
     labQueueDelayMs: readNum(source, 'llmLabQueueDelayMs', 1000),
     timeoutMs: readNum(source, 'llmTimeoutMs', 30000),
+    operationStreamingMode: readStr(source, 'llmOperationStreamingMode', "adaptive"),
+    operationStreamingMaxActiveOps: readNum(source, 'llmOperationStreamingMaxActiveOps', 10),
+    operationStreamingFlushMs: readNum(source, 'llmOperationStreamingFlushMs', 250),
   };
 }

@@ -1,4 +1,4 @@
-export const SF_THEME_COLOR_PROFILES = ['light', 'sand', 'rose', 'arctic', 'arcade', 'felt', 'hightech', 'redline', 'metallic', 'dark', 'ember', 'forest', 'obsidian', 'slate', 'funhaus', 'nightclub', 'cosmos', 'shooters', 'wasteland', 'solarized', 'snowstorm', 'dawn', 'tokyoday'] as const;
+export const SF_THEME_COLOR_PROFILES = ['light', 'sand', 'rose', 'arctic', 'arcade', 'felt', 'hightech', 'redline', 'metallic', 'dark', 'ember', 'forest', 'obsidian', 'slate', 'funhaus', 'nightclub', 'cosmos', 'shooters', 'wasteland', 'solarized', 'snowstorm', 'dawn', 'tokyoday', 'dracula', 'monokai', 'onedark', 'githubdark', 'tokyonight', 'nightowl'] as const;
 export const SF_THEME_RADIUS_PROFILES = ['tight', 'standard', 'relaxed', 'pill-heavy'] as const;
 export const SF_THEME_DENSITY_PROFILES = ['standard'] as const;
 
@@ -22,7 +22,7 @@ const colorSet = new Set<string>(SF_THEME_COLOR_PROFILES);
 const radiusSet = new Set<string>(SF_THEME_RADIUS_PROFILES);
 const densitySet = new Set<string>(SF_THEME_DENSITY_PROFILES);
 
-const DARK_PROFILE_IDS: ReadonlySet<string> = new Set<string>(['dark', 'ember', 'forest', 'obsidian', 'slate', 'funhaus', 'nightclub', 'cosmos', 'shooters', 'wasteland']);
+const DARK_PROFILE_IDS: ReadonlySet<string> = new Set<string>(['dark', 'ember', 'forest', 'obsidian', 'slate', 'funhaus', 'nightclub', 'cosmos', 'shooters', 'wasteland', 'dracula', 'monokai', 'onedark', 'githubdark', 'tokyonight', 'nightowl']);
 
 // WHY: Mid-tone themes are visually between pure-light and dark — light text/dark text contrast preserved
 // but the surface is decisively off-white (saturated grey/cream/lavender), not stark white.
@@ -70,6 +70,12 @@ export const SF_THEME_COLOR_META: Record<SfThemeColorProfileId, SfThemeColorMeta
   snowstorm:{ label: 'Snow Storm',swatchColors:['#eceff4', '#d8dee9', '#5e81ac'] },
   dawn:     { label: 'Dawn',     swatchColors: ['#fffaf3', '#f2e9e1', '#286983'] },
   tokyoday: { label: 'Tokyo Day',swatchColors: ['#e1e2e7', '#c1c8d3', '#2e7de9'] },
+  dracula:  { label: 'Dracula',  swatchColors: ['#282a36', '#44475a', '#ff79c6'] },
+  monokai:  { label: 'Monokai',  swatchColors: ['#272822', '#3e3d32', '#f92672'] },
+  onedark:  { label: 'One Dark', swatchColors: ['#282c34', '#3e4451', '#61afef'] },
+  githubdark:{label: 'GitHub Dark',swatchColors:['#0d1117', '#161b22', '#58a6ff'] },
+  tokyonight:{label: 'Tokyo Night',swatchColors:['#1a1b26', '#24283b', '#7aa2f7'] },
+  nightowl: { label: 'Night Owl',swatchColors: ['#011627', '#0b2942', '#82aaff'] },
 };
 
 function toNormalizedText(value: unknown): string {

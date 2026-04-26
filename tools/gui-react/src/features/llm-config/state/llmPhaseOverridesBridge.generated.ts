@@ -127,9 +127,10 @@ function stripComposite(key: string): string {
   return i > 0 ? key.slice(i + 1) : key;
 }
 
-// WHY: Writer has no global-model inheritance, no fallback, no webSearch, and
-// its jsonStrict is locked to true (writer always enforces the schema). All
-// limits default to the global plan/timeout/context/reasoning settings.
+// WHY: Writer has no global-model inheritance and no webSearch, and its
+// jsonStrict is locked to true (writer always enforces the schema). Fallback
+// inherits the global fallback unless explicitly overridden. All limits default
+// to the global plan/timeout/context/reasoning settings.
 function resolveWriterPhaseModel(
   overrides: LlmPhaseOverrides,
   globalDraft: GlobalDraftSlice,
@@ -137,17 +138,20 @@ function resolveWriterPhaseModel(
   const wo: Partial<LlmPhaseOverride> = overrides.writer ?? {};
   const baseModel = wo.baseModel ?? '';
   const reasoningModel = wo.reasoningModel || globalDraft.llmModelReasoning || '';
+  const fallbackModel = wo.fallbackModel || globalDraft.llmPlanFallbackModel || '';
+  const fallbackReasoningModel = wo.fallbackReasoningModel || globalDraft.llmReasoningFallbackModel || '';
   const useReasoning = wo.useReasoning ?? false;
+  const fallbackUseReasoning = wo.fallbackUseReasoning ?? false;
   return {
     baseModel,
     reasoningModel,
-    fallbackModel: '',
-    fallbackReasoningModel: '',
-    fallbackUseReasoning: false,
-    fallbackThinking: false,
-    fallbackThinkingEffort: '',
+    fallbackModel,
+    fallbackReasoningModel,
+    fallbackUseReasoning,
+    fallbackThinking: wo.fallbackThinking ?? false,
+    fallbackThinkingEffort: wo.fallbackThinkingEffort ?? '',
     fallbackWebSearch: false,
-    effectiveFallbackModel: '',
+    effectiveFallbackModel: fallbackUseReasoning ? fallbackReasoningModel : fallbackModel,
     useReasoning,
     maxOutputTokens: wo.maxOutputTokens ?? globalDraft.llmMaxOutputTokensPlan,
     timeoutMs: wo.timeoutMs ?? globalDraft.llmTimeoutMs,

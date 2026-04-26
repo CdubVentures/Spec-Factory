@@ -43,10 +43,11 @@ export const LLM_PHASE_UI_GLOBAL_PROMPTS = Object.freeze({
 export const LLM_PHASE_DEFS = Object.freeze([
   // WHY: Writer is a global first-class phase — the dedicated JSON formatter
   // invoked whenever any other phase runs with jsonStrict=false. It has no
-  // global-model inheritance (it IS the writer), no fallback, no JSON-strict
-  // knob (always enforces schema), no webSearch. Ordering puts it at the top
-  // of the UI (below Global, above Indexing Pipeline).
-  { id: 'writer',        uiId: 'writer',           label: 'Writer',         subtitle: 'JSON Strict Disabled Formatter', tip: 'Dedicated model that formats research output into JSON schema when any other phase runs with JSON Strict off. Global — applies to all two-phase calls.', roles: ['write'], group: 'writer', globalModel: null, groupToggle: null, globalTokens: null, globalTimeout: null, globalContextTokens: null, globalReasoningBudget: null, globalFallbackModel: null, globalFallbackReasoningModel: null,
+  // global-model inheritance (it IS the writer), no JSON-strict knob (always
+  // enforces schema), no webSearch. Fallback inherits the global fallback by
+  // default and can be overridden in the Writer panel. Ordering puts it at the
+  // top of the UI (below Global, above Indexing Pipeline).
+  { id: 'writer',        uiId: 'writer',           label: 'Writer',         subtitle: 'JSON Strict Disabled Formatter', tip: 'Dedicated model that formats research output into JSON schema when any other phase runs with JSON Strict off. Global — applies to all two-phase calls.', roles: ['write'], group: 'writer', globalModel: null, groupToggle: null, globalTokens: null, globalTimeout: null, globalContextTokens: null, globalReasoningBudget: null, globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel',
     billing: { group: 'Writer', reasons: [{ reason: 'writer_formatting', label: 'Writer', color: 'var(--sf-billing-writer-1, #495057)' }] } },
   { id: 'needset',       uiId: 'needset',          label: 'Needset',        subtitle: 'Base Model', tip: 'Base Model shared with Search Planner. Opt-in reasoning toggle overrides with shared Reasoning Model.', roles: ['plan'],     sharedWith: ['search-planner'],  group: 'indexing', globalModel: 'llmModelPlan', groupToggle: 'llmPlanUseReasoning', globalTokens: 'llmMaxOutputTokensPlan',   globalTimeout: 'llmTimeoutMs', globalContextTokens: 'llmMaxTokens', globalReasoningBudget: 'llmReasoningBudget', globalFallbackModel: 'llmPlanFallbackModel', globalFallbackReasoningModel: 'llmReasoningFallbackModel',
     billing: { group: 'Pipeline', reasons: [{ reason: 'needset_search_planner', label: 'NeedSet', color: 'var(--sf-billing-pipeline-1, #748ffc)' }] } },

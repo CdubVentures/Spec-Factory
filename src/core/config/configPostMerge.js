@@ -123,17 +123,27 @@ export function resolvePhaseOverrides(merged) {
   for (const def of LLM_PHASE_DEFS) {
     const phaseOverride = overrides[def.id] || {};
 
-    // WHY: Writer is a global phase with no inherited global model, no fallback,
-    // no jsonStrict knob, no webSearch. Resolves its own _resolvedWriter* flat keys.
+    // WHY: Writer is a global phase with no inherited primary model, no
+    // jsonStrict knob, no webSearch. Fallback inherits the global fallback by
+    // default and can be overridden by writer.* phase override fields.
     if (def.id === 'writer') {
       const baseModel = phaseOverride.baseModel || '';
       const reasoningModel = phaseOverride.reasoningModel || merged.llmModelReasoning || '';
       const useReasoning = phaseOverride.useReasoning ?? false;
+      const fallbackModel = phaseOverride.fallbackModel || merged[def.globalFallbackModel] || '';
+      const fallbackReasoningModel = phaseOverride.fallbackReasoningModel || merged[def.globalFallbackReasoningModel] || '';
+      const fallbackUseReasoning = phaseOverride.fallbackUseReasoning ?? false;
       const effectiveWriter = useReasoning ? reasoningModel : baseModel;
+      const effectiveFallback = fallbackUseReasoning ? fallbackReasoningModel : fallbackModel;
       const writerCaps = capabilitiesFromLookup(merged._registryLookup, effectiveWriter);
       const writerGated = gateCapabilities(
         { thinking: phaseOverride.thinking, thinkingEffort: phaseOverride.thinkingEffort, webSearch: false },
         writerCaps,
+      );
+      const fallbackCaps = capabilitiesFromLookup(merged._registryLookup, effectiveFallback);
+      const fallbackGated = gateCapabilities(
+        { thinking: phaseOverride.fallbackThinking, thinkingEffort: phaseOverride.fallbackThinkingEffort, webSearch: false },
+        fallbackCaps,
       );
       merged._resolvedWriterBaseModel         = baseModel;
       merged._resolvedWriterReasoningModel    = reasoningModel;
@@ -145,6 +155,12 @@ export function resolvePhaseOverrides(merged) {
       merged._resolvedWriterThinking          = writerGated.thinking;
       merged._resolvedWriterThinkingEffort    = writerGated.thinkingEffort;
       merged._resolvedWriterDisableLimits     = phaseOverride.disableLimits ?? false;
+      merged._resolvedWriterFallbackModel          = fallbackModel;
+      merged._resolvedWriterFallbackReasoningModel = fallbackReasoningModel;
+      merged._resolvedWriterFallbackUseReasoning   = fallbackUseReasoning;
+      merged._resolvedWriterFallbackThinking       = fallbackGated.thinking;
+      merged._resolvedWriterFallbackThinkingEffort = fallbackGated.thinkingEffort;
+      merged._resolvedWriterFallbackWebSearch      = false;
       continue;
     }
 

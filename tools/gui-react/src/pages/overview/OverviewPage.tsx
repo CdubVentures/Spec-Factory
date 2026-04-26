@@ -25,6 +25,9 @@ import {
 import { CommandConsole } from './CommandConsole.tsx';
 import { ActiveAndSelectedRow } from './ActiveAndSelectedRow.tsx';
 import { OverviewLastRunCell, OverviewLastRunHeaderToggle } from './OverviewLastRunCell.tsx';
+import { LiveOpsCell } from './LiveOpsCell.tsx';
+import { useRunningModulesByProductOrdered } from '../../features/operations/hooks/useFinderOperations.ts';
+import { compareBySort } from './overviewSort.ts';
 import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import {
   useOverviewSelectionStore,
@@ -113,23 +116,6 @@ function matchesSearch(row: CatalogRow, query: string): boolean {
     row.variant.toLowerCase().includes(q) ||
     row.identifier.toLowerCase().includes(q) ||
     String(row.id).includes(q)
-  );
-}
-
-function compareBySort(a: CatalogRow, b: CatalogRow, sortBy: OverviewSortKey): number {
-  switch (sortBy) {
-    case 'confidence': return (b.confidence - a.confidence) || defaultCompare(a, b);
-    case 'coverage':   return (b.coverage - a.coverage) || defaultCompare(a, b);
-    case 'fields':     return (b.fieldsFilled - a.fieldsFilled) || defaultCompare(a, b);
-    default:           return defaultCompare(a, b);
-  }
-}
-
-function defaultCompare(a: CatalogRow, b: CatalogRow): number {
-  return (
-    a.brand.localeCompare(b.brand) ||
-    a.base_model.localeCompare(b.base_model) ||
-    a.variant.localeCompare(b.variant)
   );
 }
 
@@ -355,6 +341,22 @@ function buildColumns(
       size: 95,
     },
     {
+      id: 'live',
+      // WHY: Plain label matches Coverage/Conf/Fields/Score typography without
+      // wiring an empty filter popover. Cell self-subscribes to the ops store
+      // so it ticks live regardless of the catalog poll cadence.
+      header: () => (
+        <span className="sf-cfh-row sf-cfh-row--left">
+          <span className="sf-cfh-label">Live</span>
+        </span>
+      ),
+      enableSorting: false,
+      size: 90,
+      cell: ({ row }) => (
+        <LiveOpsCell category={category} productId={row.original.productId} />
+      ),
+    },
+    {
       id: 'lastRun',
       enableSorting: false,
       size: detailColsOpen ? 200 : 36,
@@ -397,14 +399,15 @@ export function OverviewPage() {
   const [detailColsOpen, toggleDetailCols] = usePersistedToggle('overview:detail-cols:open', false);
 
   const columnFilters = useColumnFilterStore(selectFilterState(category));
+  const runningByProduct = useRunningModulesByProductOrdered(category);
 
   const visibleRows = useMemo(() => {
     const filtered = catalog
       .filter((r) => matchesSearch(r, filterState.search))
       .filter((r) => matchesColumnFilters(r, columnFilters));
     const { sortBy } = filterState;
-    return filtered.slice().sort((a, b) => compareBySort(a, b, sortBy));
-  }, [catalog, filterState, columnFilters]);
+    return filtered.slice().sort((a, b) => compareBySort(a, b, sortBy, runningByProduct));
+  }, [catalog, filterState, columnFilters, runningByProduct]);
 
   const visibleIds = useMemo<readonly string[]>(
     () => visibleRows.map((r) => r.productId),

@@ -88,4 +88,42 @@ describe('createStreamBatcher', () => {
       { operationId: 'op-parallel', callId: 'hero-1', lane: 'hero', label: 'Hero', channel: 'reasoning', text: 'hero a' },
     ]);
   });
+
+  it('drops stream chunks when operation streaming mode is off', () => {
+    const spy = makeBroadcastSpy();
+    const batcher = createStreamBatcher({
+      operationId: 'op-off',
+      broadcastWs: spy,
+      config: { llmOperationStreamingMode: 'off' },
+    });
+
+    batcher.push('hidden');
+    batcher.flush();
+    batcher.dispose();
+
+    assert.equal(spy.calls.length, 0);
+  });
+
+  it('suppresses adaptive stream chunks only while active operation count is above threshold', () => {
+    const spy = makeBroadcastSpy();
+    let activeOperationCount = 11;
+    const batcher = createStreamBatcher({
+      operationId: 'op-adaptive',
+      broadcastWs: spy,
+      config: {
+        llmOperationStreamingMode: 'adaptive',
+        llmOperationStreamingMaxActiveOps: 10,
+      },
+      getActiveOperationCount: () => activeOperationCount,
+    });
+
+    batcher.push('dropped');
+    activeOperationCount = 10;
+    batcher.push('visible');
+    batcher.flush();
+    batcher.dispose();
+
+    assert.equal(spy.calls.length, 1);
+    assert.deepEqual(spy.calls[0].data, { operationId: 'op-adaptive', text: 'visible' });
+  });
 });

@@ -60,6 +60,10 @@ function buildHandler(configOverrides = {}, persistenceOverrides = {}) {
     llmCostOutputPer1M: 10,
     llmCostCachedInputPer1M: 0.125,
     llmTimeoutMs: 30000,
+    llmLabQueueDelayMs: 300,
+    llmOperationStreamingMode: 'adaptive',
+    llmOperationStreamingMaxActiveOps: 10,
+    llmOperationStreamingFlushMs: 250,
     _registryLookup: buildRegistryLookup(defaultRegistryJson),
     ...configOverrides,
   };
@@ -120,6 +124,10 @@ test('GET /llm-policy returns assembled composite with correct structure', async
   assert.equal(policy.models.reasoning, 'deepseek-reasoner');
   assert.equal(policy.tokens.plan, 4096);
   assert.equal(policy.reasoning.enabled, false);
+  assert.equal(policy.labQueueDelayMs, 300);
+  assert.equal(policy.operationStreamingMode, 'adaptive');
+  assert.equal(policy.operationStreamingMaxActiveOps, 10);
+  assert.equal(policy.operationStreamingFlushMs, 250);
   assert.deepStrictEqual(policy.phaseOverrides, {});
   assert.ok(Array.isArray(policy.providerRegistry));
 });
@@ -160,6 +168,10 @@ test('PUT /llm-policy applies composite and returns updated policy', async () =>
     providerRegistry: JSON.parse(makeProviderRegistryJson()),
     budget: { costInputPer1M: 1.25, costOutputPer1M: 10, costCachedInputPer1M: 0.125 },
     timeoutMs: 30000,
+    labQueueDelayMs: 300,
+    operationStreamingMode: 'adaptive',
+    operationStreamingMaxActiveOps: 10,
+    operationStreamingFlushMs: 250,
   });
 
   assert.equal(res.status, 200);
@@ -186,11 +198,19 @@ test('PUT /llm-policy persists flat keys to canonical sections', async () => {
     providerRegistry: JSON.parse(makeProviderRegistryJson()),
     budget: { costInputPer1M: 1.25, costOutputPer1M: 10, costCachedInputPer1M: 0.125 },
     timeoutMs: 30000,
+    labQueueDelayMs: 300,
+    operationStreamingMode: 'adaptive',
+    operationStreamingMaxActiveOps: 10,
+    operationStreamingFlushMs: 250,
   });
 
   const persisted = ctx.getPersistedRuntime();
   assert.ok(persisted);
   assert.equal(persisted.llmModelPlan, 'gemini-2.5-flash');
+  assert.equal(persisted.llmLabQueueDelayMs, 300);
+  assert.equal(persisted.llmOperationStreamingMode, 'adaptive');
+  assert.equal(persisted.llmOperationStreamingMaxActiveOps, 10);
+  assert.equal(persisted.llmOperationStreamingFlushMs, 250);
 });
 
 test('PUT /llm-policy submits only LLM flat keys as patch (no stale base)', async () => {
@@ -232,6 +252,10 @@ test('PUT /llm-policy emits data change broadcast', async () => {
     providerRegistry: JSON.parse(makeProviderRegistryJson()),
     budget: { costInputPer1M: 0, costOutputPer1M: 0, costCachedInputPer1M: 0 },
     timeoutMs: 0,
+    labQueueDelayMs: 0,
+    operationStreamingMode: 'off',
+    operationStreamingMaxActiveOps: 1,
+    operationStreamingFlushMs: 50,
   });
 
   const broadcasts = ctx.getBroadcasts();

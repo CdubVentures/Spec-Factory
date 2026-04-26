@@ -18,6 +18,7 @@ import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import {
   registerOperation,
   getOperationSignal,
+  countRunningOperations,
   markPassengersRegistered,
   completeOperation,
   failOperation,
@@ -811,7 +812,7 @@ export function registerKeyFinderRoutes(ctx) {
           status: 'queued',
         };
         op = registerOperation(opArgs);
-        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+        batcher = createStreamBatcher({ operationId: op.id, broadcastWs, config, getActiveOperationCount: countRunningOperations });
         const signal = getOperationSignal(op.id);
 
         // Acquire the per-(pid, fieldKey) lock BEFORE dispatching asyncWork.

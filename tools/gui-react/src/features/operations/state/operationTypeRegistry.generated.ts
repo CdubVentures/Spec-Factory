@@ -13,7 +13,8 @@ export type OperationType =
   | 'pipeline'
   | 'publisher-reconcile'
   | 'compile'
-  | 'validate';
+  | 'validate'
+  | 'writer-test';
 
 export const MODULE_STYLES: Readonly<Record<string, string>> = {
   'cef': 'sf-chip-accent',
@@ -25,6 +26,7 @@ export const MODULE_STYLES: Readonly<Record<string, string>> = {
   'publisher-reconcile': 'sf-chip-success',
   'compile': 'sf-chip-success',
   'validate': 'sf-chip-neutral',
+  'writer-test': 'sf-chip-info',
 };
 
 export const MODULE_LABELS: Readonly<Record<string, string>> = {
@@ -37,4 +39,5 @@ export const MODULE_LABELS: Readonly<Record<string, string>> = {
   'publisher-reconcile': 'PUB',
   'compile': 'CMP',
   'validate': 'VAL',
+  'writer-test': 'WRT',
 };

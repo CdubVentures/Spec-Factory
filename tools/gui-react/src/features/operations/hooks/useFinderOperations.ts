@@ -267,6 +267,73 @@ export function useActiveModulesByProduct(category: string): ReadonlyMap<string,
   return useMemo(() => deserializeModulesByProduct(serialized), [serialized]);
 }
 
+/**
+ * Per-product ordered list of currently-running module types, ordered by call
+ * time (queuedAt ?? startedAt) ascending. Used by the Overview catalog's "Live"
+ * column to stack feature spinners in the order ops were dispatched.
+ *
+ * Format: `pid:cef,pif,kf|pid2:rdf` — outer products sorted alphabetically for
+ * stable Zustand equality; inner module list preserves call order with first-
+ * occurrence dedupe.
+ */
+export function selectRunningModulesByProductOrdered(
+  ops: ReadonlyMap<string, Operation>,
+  category: string,
+): string {
+  // Collect running ops scoped to category.
+  const runningOps: Operation[] = [];
+  for (const op of ops.values()) {
+    if (op.status !== 'running') continue;
+    if (!op.productId) continue;
+    if (category && op.category !== category) continue;
+    runningOps.push(op);
+  }
+  // Sort by queuedAt ?? startedAt ascending — call order, oldest first.
+  runningOps.sort((a, b) => {
+    const ta = a.queuedAt ?? a.startedAt;
+    const tb = b.queuedAt ?? b.startedAt;
+    if (ta < tb) return -1;
+    if (ta > tb) return 1;
+    return 0;
+  });
+  // Per-product ordered module list with first-occurrence dedupe.
+  const byPid = new Map<string, string[]>();
+  for (const op of runningOps) {
+    let list = byPid.get(op.productId);
+    if (!list) { list = []; byPid.set(op.productId, list); }
+    if (!list.includes(op.type)) list.push(op.type);
+  }
+  return [...byPid.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([pid, mods]) => `${pid}:${mods.join(',')}`)
+    .join('|');
+}
+
+export function parseOrderedModulesByProduct(serialized: string): ReadonlyMap<string, readonly string[]> {
+  const map = new Map<string, readonly string[]>();
+  if (!serialized) return map;
+  for (const token of serialized.split('|')) {
+    if (!token) continue;
+    const colonIdx = token.indexOf(':');
+    if (colonIdx <= 0) continue;
+    const pid = token.slice(0, colonIdx);
+    const mods = token.slice(colonIdx + 1).split(',').filter(Boolean);
+    if (mods.length > 0) map.set(pid, mods);
+  }
+  return map;
+}
+
+export function useRunningModulesByProductOrdered(category: string): ReadonlyMap<string, readonly string[]> {
+  const serialized = useOperationsStore(
+    useCallback(
+      (s: { operations: ReadonlyMap<string, Operation> }) =>
+        selectRunningModulesByProductOrdered(s.operations, category),
+      [category],
+    ),
+  );
+  return useMemo(() => parseOrderedModulesByProduct(serialized), [serialized]);
+}
+
 function deserializeModulesByProduct(serialized: string): ReadonlyMap<string, ReadonlySet<string>> {
   const map = new Map<string, ReadonlySet<string>>();
   if (!serialized) return map;

@@ -55,6 +55,13 @@ export const LLM_POLICY_FLAT_KEYS = Object.freeze([
   ...Object.values(TOP_LEVEL_KEYS),
   ...Object.values(JSON_KEYS),
 ]);
+const LLM_POLICY_ENTRY_BY_KEY = Object.freeze(
+  Object.fromEntries(
+    RUNTIME_SETTINGS_REGISTRY
+      .filter((entry) => entry.policyGroup)
+      .map((entry) => [entry.key, entry])
+  )
+);
 
 function safeJsonParse(value, fallback) {
   if (value === undefined || value === null || value === '') return fallback;
@@ -76,10 +83,26 @@ function readBool(source, key) {
   return Boolean(source?.[key] ?? false);
 }
 
+function readTopLevelValue(source, flatKey) {
+  const entry = LLM_POLICY_ENTRY_BY_KEY[flatKey];
+  if (!entry) return source?.[flatKey];
+  if (entry.type === 'int' || entry.type === 'float') return readNumber(source, flatKey);
+  if (entry.type === 'bool') return readBool(source, flatKey);
+  return readString(source, flatKey);
+}
+
 function assembleGroup(source, groupMap, reader) {
   const result = {};
   for (const [field, flatKey] of Object.entries(groupMap)) {
     result[field] = reader(source, flatKey);
+  }
+  return result;
+}
+
+function assembleTopLevelFields(source) {
+  const result = {};
+  for (const [field, flatKey] of Object.entries(TOP_LEVEL_KEYS)) {
+    result[field] = readTopLevelValue(source, flatKey);
   }
   return result;
 }
@@ -104,7 +127,7 @@ export function assembleLlmPolicy(source = {}) {
       safeJsonParse(source[JSON_KEYS.keyFinderTiers], { ...KEY_FINDER_TIERS_DEFAULT }),
     ),
     budget: assembleGroup(source, LLM_POLICY_GROUPS.budget, readNumber),
-    timeoutMs: readNumber(source, TOP_LEVEL_KEYS.timeoutMs),
+    ...assembleTopLevelFields(source),
   };
 }
 
@@ -113,6 +136,18 @@ function disassembleGroup(policy, groupName, groupMap) {
   const group = policy?.[groupName] || {};
   for (const [field, flatKey] of Object.entries(groupMap)) {
     result[flatKey] = group[field] ?? '';
+  }
+  return result;
+}
+
+function defaultForFlatKey(flatKey) {
+  return LLM_POLICY_ENTRY_BY_KEY[flatKey]?.default ?? '';
+}
+
+function disassembleTopLevelFields(policy) {
+  const result = {};
+  for (const [field, flatKey] of Object.entries(TOP_LEVEL_KEYS)) {
+    result[flatKey] = policy?.[field] ?? defaultForFlatKey(flatKey);
   }
   return result;
 }
@@ -129,7 +164,7 @@ export function disassembleLlmPolicy(policy = {}) {
     ...disassembleGroup(policy, 'tokens', LLM_POLICY_GROUPS.tokens),
     ...disassembleGroup(policy, 'reasoning', LLM_POLICY_GROUPS.reasoning),
     ...disassembleGroup(policy, 'budget', LLM_POLICY_GROUPS.budget),
-    [TOP_LEVEL_KEYS.timeoutMs]: policy.timeoutMs ?? 0,
+    ...disassembleTopLevelFields(policy),
     [JSON_KEYS.phaseOverrides]: JSON.stringify(policy.phaseOverrides ?? {}),
     [JSON_KEYS.providerRegistry]: JSON.stringify(policy.providerRegistry ?? []),
     [JSON_KEYS.keyFinderTiers]: JSON.stringify(policy.keyFinderTiers ?? { ...KEY_FINDER_TIERS_DEFAULT }),

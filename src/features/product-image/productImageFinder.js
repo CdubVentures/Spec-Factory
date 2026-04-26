@@ -331,6 +331,8 @@ async function runSingleVariant({
   promptOverride = '',
   scopeLabel = '',
   mode = 'view',
+  llmCallLabel = '',
+  llmCallExtras = {},
   onPhaseChange = null,
   alreadyDownloadedUrls = new Set(),
 }) {
@@ -388,6 +390,9 @@ async function runSingleVariant({
       previousDiscovery: previousDiscovery || { urlsChecked: [], queriesRun: [] },
       scopeLabel,
       promptOverride,
+      mode,
+      llmCallLabel,
+      llmCallExtras,
     }));
   } catch (err) {
     logger?.error?.('pif_llm_failed', { product_id: product.product_id, variant: variant.key, error: err.message });
@@ -710,6 +715,7 @@ export async function runProductImageFinder({
     onModelResolved: wrappedOnModelResolved,
     onStreamChunk,
     onQueueWait,
+    onLlmCallComplete,
     signal,
     onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
   });
@@ -742,7 +748,7 @@ export async function runProductImageFinder({
 
   // Per-variant body: discovery + carousel strategy + LLM call + download/RMBG + persist.
   // Called by runPerVariant for each variant; return value is aggregated below.
-  async function produceForVariant(variant) {
+  async function produceForVariant(variant, variantIndex = 0) {
     // Universal discovery-log history — scope: variant + run_scope_key.
     // Pre-runScope runs without the key are skipped (no backfill heuristic).
     const previousDiscovery = accumulateDiscoveryLog(previousPifRuns, {
@@ -806,8 +812,15 @@ export async function runProductImageFinder({
 
     const variantStartedAt = new Date().toISOString();
     const variantStartMs = Date.now();
+    const llmCallLabel = mode === 'hero' ? 'Discovery Hero' : 'Discovery';
+    const llmCallExtras = {
+      callId: `pif:${product.product_id}:${variant.variant_id || variant.key}:${mode}:${variantIndex}`,
+      variant: variant.label,
+      mode,
+    };
 
     onLlmCallComplete?.({
+      ...llmCallExtras,
       prompt: { system: systemPrompt, user: userMsg },
       response: null,
       model: _mt.actualModel,
@@ -816,9 +829,7 @@ export async function runProductImageFinder({
       webSearch: _mt.actualWebSearch,
       effortLevel: _mt.actualEffortLevel,
       accessMode: _mt.actualAccessMode,
-      variant: variant.label,
-      mode,
-      label: mode === 'hero' ? 'Discovery Hero' : 'Discovery',
+      label: llmCallLabel,
     });
 
     const result = await runSingleVariant({
@@ -829,6 +840,8 @@ export async function runProductImageFinder({
       promptOverride: mode === 'hero' ? heroPromptOverride : viewPromptOverride,
       scopeLabel: runScopeLabel,
       mode,
+      llmCallLabel,
+      llmCallExtras,
       onPhaseChange: onStageAdvance,
       alreadyDownloadedUrls,
     });
@@ -837,8 +850,10 @@ export async function runProductImageFinder({
 
     const selected = { images: result.images };
     const responsePayload = { mode, run_scope_key: runScopeKey, started_at: variantStartedAt, duration_ms: variantDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
+    const resultCallExtras = { ...llmCallExtras, callId: `${llmCallExtras.callId}:result` };
 
     onLlmCallComplete?.({
+      ...resultCallExtras,
       prompt: { system: systemPrompt, user: userMsg },
       response: responsePayload,
       model: _mt.actualModel,
@@ -847,10 +862,8 @@ export async function runProductImageFinder({
       webSearch: _mt.actualWebSearch,
       effortLevel: _mt.actualEffortLevel,
       accessMode: _mt.actualAccessMode,
-      variant: variant.label,
-      mode,
       usage: result.usage,
-      label: mode === 'hero' ? 'Discovery Hero' : 'Discovery',
+      label: llmCallLabel,
     });
 
     const merged = mergeProductImageDiscovery({
@@ -1197,6 +1210,7 @@ export async function runCarouselLoop({
       onModelResolved: wrappedOnModelResolved,
       onStreamChunk: emitCallStream,
       onQueueWait,
+      onLlmCallComplete,
       signal,
       onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
     });
@@ -1263,6 +1277,13 @@ export async function runCarouselLoop({
       promptOverride: callMode === 'hero' ? heroPromptOverride : viewPromptOverride,
       scopeLabel: runScopeLabel,
       mode: callMode,
+      llmCallLabel: callContext.label,
+      llmCallExtras: {
+        callId: callContext.callId,
+        lane: callContext.lane,
+        variant: variant.label,
+        mode: callMode,
+      },
       onPhaseChange: onStageAdvance,
     });
 
@@ -1270,12 +1291,13 @@ export async function runCarouselLoop({
     const callFocusView = callMode === 'view' ? (focusView || null) : null;
     const responsePayload = { mode: callMode, run_scope_key: runScopeKey, loop_id: loopId, focus_view: callFocusView, started_at: callStartedAt, duration_ms: callDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
     const infrastructureFailure = resolveLoopLlmInfrastructureFailure(result);
+    const resultCallId = `${callContext.callId}:result`;
 
     if (infrastructureFailure) {
       const error = markFatalLoopError(new Error(`PIF loop LLM unavailable: ${infrastructureFailure}`));
       emitCallStream({ content: `\n-- LLM unavailable: ${infrastructureFailure} --\n` });
       onLlmCallComplete?.({
-        callId: callContext.callId,
+        callId: resultCallId,
         prompt: { system: systemPrompt, user: userMsg },
         response: responsePayload,
         model: _mtLoop.actualModel,
@@ -1306,7 +1328,7 @@ export async function runCarouselLoop({
 
     // Smart update — fills response into the pending prompt entry
     onLlmCallComplete?.({
-      callId: callContext.callId,
+      callId: resultCallId,
       prompt: { system: systemPrompt, user: userMsg },
       response: responsePayload,
       model: _mtLoop.actualModel,

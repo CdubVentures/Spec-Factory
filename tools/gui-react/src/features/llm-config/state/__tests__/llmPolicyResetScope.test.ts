@@ -38,6 +38,9 @@ function makeDefaults() {
     keyFinderTiers: {},
     labQueueDelayMs: 1000,
     timeoutMs: 30000,
+    operationStreamingMode: 'adaptive',
+    operationStreamingMaxActiveOps: 10,
+    operationStreamingFlushMs: 250,
   };
 }
 
@@ -57,6 +60,9 @@ function makeCurrentWithEdits() {
     keyFinderTiers: { tierA: 1 },
     labQueueDelayMs: 5000,
     timeoutMs: 600000,
+    operationStreamingMode: 'always',
+    operationStreamingMaxActiveOps: 50,
+    operationStreamingFlushMs: 1000,
   };
 }
 
@@ -92,7 +98,7 @@ describe('buildLlmGlobalDefaultsResetPatch', () => {
     assert.equal(patch.reasoning.mode, current.reasoning.mode);
   });
 
-  it('does not touch providers, models, API keys, or phase overrides', () => {
+  it('does not touch providers, models, API keys, phase overrides, or operation streaming', () => {
     const defaults = makeDefaults();
     const current = makeCurrentWithEdits();
     const patch = buildLlmGlobalDefaultsResetPatch(defaults, current) as any;
@@ -102,6 +108,9 @@ describe('buildLlmGlobalDefaultsResetPatch', () => {
     assert.equal(patch.apiKeys, undefined);
     assert.equal(patch.phaseOverrides, undefined);
     assert.equal(patch.budget, undefined);
+    assert.equal(patch.operationStreamingMode, undefined);
+    assert.equal(patch.operationStreamingMaxActiveOps, undefined);
+    assert.equal(patch.operationStreamingFlushMs, undefined);
   });
 });
 
@@ -200,6 +209,9 @@ describe('buildLlmResetAllPatch', () => {
     assert.equal(patch.timeoutMs, defaults.timeoutMs);
     assert.equal(patch.reasoning.budget, defaults.reasoning.budget);
     assert.equal(patch.labQueueDelayMs, defaults.labQueueDelayMs);
+    assert.equal(patch.operationStreamingMode, defaults.operationStreamingMode);
+    assert.equal(patch.operationStreamingMaxActiveOps, defaults.operationStreamingMaxActiveOps);
+    assert.equal(patch.operationStreamingFlushMs, defaults.operationStreamingFlushMs);
   });
 
   it('clears phaseOverrides', () => {

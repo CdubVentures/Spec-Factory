@@ -134,6 +134,7 @@ export function createVariantScalarFieldProducer(cfg) {
       onModelResolved: wrappedOnModelResolved,
       onStreamChunk,
       onQueueWait,
+      onLlmCallComplete,
       signal,
       onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
     });
@@ -162,6 +163,7 @@ export function createVariantScalarFieldProducer(cfg) {
         siblingsExcluded, familyModelCount, ambiguityLevel,
         _mt, ranAt,
         onLlmCallComplete,
+        _callLlmOverride,
         promptOverride,
         evidenceCache,
         allVariants,
@@ -178,7 +180,7 @@ export function createVariantScalarFieldProducer(cfg) {
       urlHistoryEnabled, queryHistoryEnabled,
       siblingsExcluded, familyModelCount, ambiguityLevel,
       _mt, ranAt,
-      onLlmCallComplete, promptOverride,
+      onLlmCallComplete, _callLlmOverride, promptOverride,
       evidenceCache,
       allVariants,
     } = ctx;
@@ -206,14 +208,16 @@ export function createVariantScalarFieldProducer(cfg) {
       // variants in the run continue to be processed (per variantFieldLoop
       // semantics).
       let llmResult, usage, durationMs, callStartedAt;
+      const llmCallExtras = { callId: `${fieldKey}:${variant.variant_id || variant.key}:${_i}`, variant: variant.label };
       try {
         const wrapperResult = await withLlmCallTracking({
           label: 'Discovery',
           prompt: { system: systemPrompt, user: userMsg },
           modelTracking: _mt,
           onLlmCallComplete,
-          extras: { variant: variant.label },
-          callFn: () => callLlm(domainArgs),
+          extras: llmCallExtras,
+          emitCompleted: !callLlm.emitsLlmCallComplete,
+          callFn: () => callLlm({ ...domainArgs, llmCallExtras }),
         });
         llmResult = wrapperResult.result;
         usage = wrapperResult.usage;

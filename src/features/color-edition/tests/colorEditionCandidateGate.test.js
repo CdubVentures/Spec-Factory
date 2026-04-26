@@ -489,7 +489,7 @@ describe('CEF candidate gate integration', () => {
   });
 
   // --- 11. LLM error → rejected, no persistence ---
-  it('LLM error returns rejected with llm_error reason, no DB writes', async () => {
+  it('LLM error returns rejected with llm_error reason and persists failed run details', async () => {
     const pid = 'mouse-llm-err';
     ensureProductJson(pid);
 
@@ -506,9 +506,16 @@ describe('CEF candidate gate integration', () => {
     assert.equal(result.rejections[0].reason_code, 'llm_error');
     assert.ok(result.rejections[0].message.includes('Connection timed out'));
 
-    // No CEF summary row (LLM error returns early, no persistence)
+    // Rejected CEF run persists so the UI/history does not show a blank failure.
     const cefRow = specDb.getColorEditionFinder(pid);
-    assert.equal(cefRow, null, 'no summary row on LLM error');
+    assert.ok(cefRow, 'summary row exists on LLM error');
+    assert.equal(cefRow.run_count, 1);
+
+    const cefRuns = specDb.listColorEditionFinderRuns(pid);
+    assert.equal(cefRuns.length, 1);
+    assert.equal(cefRuns[0].response.status, 'rejected');
+    assert.equal(cefRuns[0].response.rejections[0].reason_code, 'llm_error');
+    assert.match(cefRuns[0].response.rejections[0].message, /Connection timed out/);
 
     // No candidates
     const candidates = specDb.getAllFieldCandidatesByProduct(pid);

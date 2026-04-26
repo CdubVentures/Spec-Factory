@@ -453,6 +453,7 @@ export const VARIANT_IDENTITY_CHECK_SPEC = {
  */
 export function createVariantIdentityCheckCallLlm(deps) {
   return createPhaseCallLlm(deps, VARIANT_IDENTITY_CHECK_SPEC, (domainArgs) => ({
+    llmCallLabel: 'Identity Check',
     user: JSON.stringify({
       brand: domainArgs.product?.brand || '',
       model: domainArgs.product?.model || '',

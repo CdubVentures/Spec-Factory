@@ -1,6 +1,18 @@
 import { describe, it, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { fireAndForget } from '../fireAndForget.js';
+import {
+  MAX_ACTIVE_OPERATIONS,
+  _resetActiveOperationGateForTest,
+  fireAndForget,
+} from '../fireAndForget.js';
+import {
+  _resetForTest as resetOperationsRegistryForTest,
+  completeOperation as registryCompleteOperation,
+  dismissOperation,
+  failOperation as registryFailOperation,
+  listOperations,
+  registerOperation,
+} from '../operationsRegistry.js';
 
 function makeJsonCapture() {
   const calls = [];
@@ -37,7 +49,28 @@ function flush() {
   return new Promise((resolve) => setTimeout(resolve, 20));
 }
 
+function makeDeferred() {
+  let resolve;
+  const promise = new Promise((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+const VALID_OP = {
+  type: 'pif',
+  category: 'mouse',
+  productId: 'mouse-001',
+  productLabel: 'Corsair M75 Air',
+  stages: ['Discovery', 'Download', 'Processing', 'Complete'],
+};
+
 describe('fireAndForget', () => {
+  beforeEach(() => {
+    _resetActiveOperationGateForTest();
+    resetOperationsRegistryForTest();
+  });
+
   it('returns 202 with operationId before asyncWork completes', () => {
     const { jsonRes, calls } = makeJsonCapture();
     const tracker = makeTracker();
@@ -90,7 +123,7 @@ describe('fireAndForget', () => {
       op,
       asyncWork: async () => ({
         rejected: true,
-        rejections: [{ reason_code: 'llm_error', message: 'LLM call failed' }],
+        rejections: [{ reason_code: 'llm_error', message: 'Provider route circuit open' }],
       }),
       completeOperation: tracker.completeOperation,
       failOperation: tracker.failOperation,
@@ -99,7 +132,7 @@ describe('fireAndForget', () => {
     await flush();
     assert.equal(tracker.failed.length, 1);
     assert.equal(tracker.failed[0].id, 'op-3');
-    assert.equal(tracker.failed[0].error, 'LLM call failed');
+    assert.equal(tracker.failed[0].error, 'Provider route circuit open');
     assert.equal(tracker.completed.length, 0);
   });
 
@@ -371,5 +404,204 @@ describe('fireAndForget', () => {
     await flush();
     assert.equal(tracker.completed.length, 1);
     assert.equal(tracker.failed.length, 0);
+  });
+
+  it('caps active top-level operations at 100 and queues overflow', async () => {
+    const { jsonRes } = makeJsonCapture();
+    const tracker = makeTracker();
+    const blockers = Array.from({ length: MAX_ACTIVE_OPERATIONS + 1 }, makeDeferred);
+    const statuses = new Map();
+    const started = [];
+    const queued = [];
+
+    for (let i = 0; i < MAX_ACTIVE_OPERATIONS + 1; i += 1) {
+      const id = `op-cap-${i}`;
+      statuses.set(id, 'running');
+      fireAndForget({
+        res: {},
+        jsonRes,
+        op: { id },
+        asyncWork: async () => {
+          started.push(id);
+          await blockers[i].promise;
+          return { rejected: false };
+        },
+        completeOperation: tracker.completeOperation,
+        failOperation: tracker.failOperation,
+        queueOperation: ({ id: queuedId }) => {
+          queued.push(queuedId);
+          statuses.set(queuedId, 'queued');
+        },
+        setOperationStatus: ({ id: statusId, status }) => statuses.set(statusId, status),
+        getOperationStatus: (statusId) => statuses.get(statusId),
+      });
+    }
+
+    await flush();
+
+    assert.equal(started.length, MAX_ACTIVE_OPERATIONS);
+    assert.deepEqual(queued, [`op-cap-${MAX_ACTIVE_OPERATIONS}`]);
+    assert.equal(statuses.get(`op-cap-${MAX_ACTIVE_OPERATIONS}`), 'queued');
+
+    blockers[0].resolve();
+    await flush();
+
+    assert.equal(started.length, MAX_ACTIVE_OPERATIONS + 1);
+    assert.equal(statuses.get(`op-cap-${MAX_ACTIVE_OPERATIONS}`), 'running');
+
+    for (let i = 1; i < blockers.length; i += 1) blockers[i].resolve();
+    await flush();
+  });
+
+  it('does not start a queued operation that was cancelled before a slot opens', async () => {
+    const { jsonRes } = makeJsonCapture();
+    const tracker = makeTracker();
+    const blockers = Array.from({ length: MAX_ACTIVE_OPERATIONS }, makeDeferred);
+    const statuses = new Map();
+    const started = [];
+    const batcher = makeBatcher();
+    let settledCount = 0;
+
+    for (let i = 0; i < MAX_ACTIVE_OPERATIONS; i += 1) {
+      const id = `op-running-${i}`;
+      statuses.set(id, 'running');
+      fireAndForget({
+        res: {},
+        jsonRes,
+        op: { id },
+        asyncWork: async () => {
+          started.push(id);
+          await blockers[i].promise;
+          return { rejected: false };
+        },
+        completeOperation: tracker.completeOperation,
+        failOperation: tracker.failOperation,
+        setOperationStatus: ({ id: statusId, status }) => statuses.set(statusId, status),
+        getOperationStatus: (statusId) => statuses.get(statusId),
+      });
+    }
+
+    statuses.set('op-cancelled-before-start', 'running');
+    fireAndForget({
+      res: {},
+      jsonRes,
+      op: { id: 'op-cancelled-before-start' },
+      batcher,
+      asyncWork: async () => {
+        started.push('op-cancelled-before-start');
+        return { rejected: false };
+      },
+      completeOperation: tracker.completeOperation,
+      failOperation: tracker.failOperation,
+      queueOperation: ({ id }) => statuses.set(id, 'queued'),
+      setOperationStatus: ({ id, status }) => statuses.set(id, status),
+      getOperationStatus: (id) => statuses.get(id),
+      onSettled: () => { settledCount += 1; },
+    });
+
+    await flush();
+    statuses.set('op-cancelled-before-start', 'cancelled');
+
+    blockers[0].resolve();
+    await flush();
+
+    assert.equal(started.includes('op-cancelled-before-start'), false);
+    assert.equal(batcher.disposed, true);
+    assert.equal(settledCount, 1);
+
+    for (let i = 1; i < blockers.length; i += 1) blockers[i].resolve();
+    await flush();
+  });
+
+  it('marks overflow registry operations queued until an active slot opens', async () => {
+    const { jsonRes } = makeJsonCapture();
+    const blockers = Array.from({ length: MAX_ACTIVE_OPERATIONS + 1 }, makeDeferred);
+    const started = [];
+    const ids = [];
+
+    for (let i = 0; i < MAX_ACTIVE_OPERATIONS + 1; i += 1) {
+      const op = registerOperation({ ...VALID_OP, productId: `mouse-${i}` });
+      ids.push(op.id);
+      fireAndForget({
+        res: {},
+        jsonRes,
+        op,
+        asyncWork: async () => {
+          started.push(op.id);
+          await blockers[i].promise;
+          return { rejected: false };
+        },
+        completeOperation: registryCompleteOperation,
+        failOperation: registryFailOperation,
+      });
+    }
+
+    await flush();
+
+    const queuedId = ids[MAX_ACTIVE_OPERATIONS];
+    assert.equal(started.length, MAX_ACTIVE_OPERATIONS);
+    assert.equal(listOperations().find((op) => op.id === queuedId)?.status, 'queued');
+
+    blockers[0].resolve();
+    await flush();
+
+    assert.equal(started.includes(queuedId), true);
+    assert.equal(listOperations().find((op) => op.id === queuedId)?.status, 'running');
+
+    for (let i = 1; i < blockers.length; i += 1) blockers[i].resolve();
+    await flush();
+  });
+
+  it('skips a queued registry operation that is dismissed before a slot opens', async () => {
+    const { jsonRes } = makeJsonCapture();
+    const blockers = Array.from({ length: MAX_ACTIVE_OPERATIONS }, makeDeferred);
+    const started = [];
+    const batcher = makeBatcher();
+    let settledCount = 0;
+
+    for (let i = 0; i < MAX_ACTIVE_OPERATIONS; i += 1) {
+      const op = registerOperation({ ...VALID_OP, productId: `mouse-running-${i}` });
+      fireAndForget({
+        res: {},
+        jsonRes,
+        op,
+        asyncWork: async () => {
+          started.push(op.id);
+          await blockers[i].promise;
+          return { rejected: false };
+        },
+        completeOperation: registryCompleteOperation,
+        failOperation: registryFailOperation,
+      });
+    }
+
+    const queuedOp = registerOperation({ ...VALID_OP, productId: 'mouse-dismissed' });
+    fireAndForget({
+      res: {},
+      jsonRes,
+      op: queuedOp,
+      batcher,
+      asyncWork: async () => {
+        started.push(queuedOp.id);
+        return { rejected: false };
+      },
+      completeOperation: registryCompleteOperation,
+      failOperation: registryFailOperation,
+      onSettled: () => { settledCount += 1; },
+    });
+
+    await flush();
+    assert.equal(listOperations().find((op) => op.id === queuedOp.id)?.status, 'queued');
+
+    dismissOperation({ id: queuedOp.id });
+    blockers[0].resolve();
+    await flush();
+
+    assert.equal(started.includes(queuedOp.id), false);
+    assert.equal(batcher.disposed, true);
+    assert.equal(settledCount, 1);
+
+    for (let i = 1; i < blockers.length; i += 1) blockers[i].resolve();
+    await flush();
   });
 });

@@ -288,6 +288,11 @@ const HERO_EVAL_SPEC = {
  */
 export function createImageEvaluatorCallLlm(deps) {
   return createPhaseCallLlm(deps, VIEW_EVAL_SPEC, (domainArgs) => ({
+    llmCallLabel: `Evaluate ${String(domainArgs.view || '').charAt(0).toUpperCase()}${String(domainArgs.view || '').slice(1)}`.trim(),
+    llmCallExtras: {
+      variant: domainArgs.variantLabel || '',
+      mode: 'view-eval',
+    },
     user: {
       text: domainArgs.userText || '',
       images: domainArgs.images || [],
@@ -300,6 +305,11 @@ export function createImageEvaluatorCallLlm(deps) {
  */
 export function createHeroEvalCallLlm(deps) {
   return createPhaseCallLlm(deps, HERO_EVAL_SPEC, (domainArgs) => ({
+    llmCallLabel: 'Evaluate Hero',
+    llmCallExtras: {
+      variant: domainArgs.variantLabel || '',
+      mode: 'hero-eval',
+    },
     user: {
       text: domainArgs.userText || '',
       images: domainArgs.images || [],

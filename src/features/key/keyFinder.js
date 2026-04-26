@@ -400,12 +400,14 @@ export async function runKeyFinder(opts) {
     modelTracking,
     onLlmCallComplete,
     extras: { tier: tierName, reason: `key_finding_${tierName}` },
+    emitCompleted: Boolean(_callLlmOverride),
     callFn: async () => {
       if (_callLlmOverride) return _callLlmOverride(domainArgs, mapped);
       const llmDeps = buildLlmCallDeps({
         config, logger, signal,
         onModelResolved: modelTracking.wrappedOnModelResolved,
         onStreamChunk, onQueueWait, onPhaseChange,
+        onLlmCallComplete,
         onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
       });
       const callLlm = createKeyFinderCallLlm(llmDeps, { name: tierName, ...tierBundle });

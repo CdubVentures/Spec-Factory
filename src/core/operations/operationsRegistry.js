@@ -59,7 +59,7 @@ let _seq = 0;
 // registration or terminal transition leaves the count above MAX_OPS, the
 // oldest terminal op (done | error | cancelled) is evicted. Running ops are
 // never evicted — concurrency is not capped here.
-const MAX_OPS = 50;
+const MAX_OPS = 250;
 
 function broadcast(operation, action = 'upsert') {
   if (!_broadcastWs) return;
@@ -155,6 +155,28 @@ export function setStatus({ id, status }) {
   if (op.status === status) return;
   op.status = status;
   broadcast(op);
+}
+
+/**
+ * Mark an operation as queued before its async worker has started.
+ * Intended for operation-level concurrency gates only; normal domain flows
+ * should register queued ops directly or use setStatus for queued -> running.
+ */
+export function queueOperation({ id }) {
+  const op = ops.get(id);
+  if (!op) return;
+  if (op.status === 'queued') return;
+  if (op.status !== 'running') return;
+  op.status = 'queued';
+  broadcast(op);
+}
+
+export function getOperationStatus(id) {
+  return ops.get(id)?.status || null;
+}
+
+export function countRunningOperations() {
+  return [...ops.values()].filter((op) => op.status === 'running').length;
 }
 
 /**

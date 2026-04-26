@@ -39,6 +39,7 @@ export async function withLlmCallTracking({
   onLlmCallComplete,
   callFn,
   extras = {},
+  emitCompleted = true,
 }) {
   const resolvedInitialModel = initialModel || modelTracking?.configModel || '';
   const caps = tierCapabilities || EMPTY_TIER_CAPS;
@@ -67,21 +68,23 @@ export async function withLlmCallTracking({
   const result = callResult?.result;
   const usage = callResult?.usage ?? null;
 
-  onLlmCallComplete?.({
-    ...extras,
-    label,
-    prompt,
-    response: result,
-    model: modelTracking.actualModel || resolvedInitialModel,
-    isFallback: modelTracking.actualFallbackUsed,
-    thinking: modelTracking.actualThinking,
-    webSearch: modelTracking.actualWebSearch,
-    effortLevel: modelTracking.actualEffortLevel,
-    accessMode: modelTracking.actualAccessMode,
-    usage,
-    started_at: startedAt,
-    duration_ms: durationMs,
-  });
+  if (emitCompleted) {
+    onLlmCallComplete?.({
+      ...extras,
+      label,
+      prompt,
+      response: result,
+      model: modelTracking.actualModel || resolvedInitialModel,
+      isFallback: modelTracking.actualFallbackUsed,
+      thinking: modelTracking.actualThinking,
+      webSearch: modelTracking.actualWebSearch,
+      effortLevel: modelTracking.actualEffortLevel,
+      accessMode: modelTracking.actualAccessMode,
+      usage,
+      started_at: startedAt,
+      duration_ms: durationMs,
+    });
+  }
 
   return { result, usage, durationMs, startedAt };
 }

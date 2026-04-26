@@ -13,6 +13,7 @@ export {
   failOperation,
   cancelOperation,
   getOperationSignal,
+  countRunningOperations,
   dismissOperation,
   listOperations,
   acquireKeyLock,

@@ -18,6 +18,11 @@ export interface RuntimeSettingDefaults {
   crawleeRequestHandlerTimeoutSecs: number;
   crawlVideoRecordingEnabled: boolean;
   crawlVideoRecordingSize: string;
+  crawl4aiEnabled: boolean;
+  crawl4aiPythonBin: string;
+  crawl4aiTableExtractEnabled: boolean;
+  crawl4aiTimeoutMs: number;
+  crawl4aiMaxConcurrent: number;
   stealthEnabled: boolean;
   deepseekApiKey: string;
   searchProfileQueryCap: number;
@@ -62,6 +67,9 @@ export interface RuntimeSettingDefaults {
   llmReasoningMode: boolean;
   llmLabQueueDelayMs: number;
   llmTimeoutMs: number;
+  llmOperationStreamingMode: string;
+  llmOperationStreamingMaxActiveOps: number;
+  llmOperationStreamingFlushMs: number;
   localInputRoot: string;
   localOutputRoot: string;
   maxRunSeconds: number;
@@ -128,6 +136,11 @@ export interface RuntimeSettingDefaults {
   crawleeProxyRetryEnabled: boolean;
   crawleeProxyMaxRetries: number;
   crawleeProxyUrlsJson: string;
+  brightDataUnlockerEnabled: boolean;
+  brightDataApiKey: string;
+  brightDataZone: string;
+  brightDataTimeoutMs: number;
+  brightDataMaxRetries: number;
   autoScrollPostLoadWaitMs: number;
   cookieConsentEnabled: boolean;
   cookieConsentTimeoutMs: number;
@@ -143,6 +156,7 @@ export interface RuntimeSettingDefaults {
   domExpansionMaxClicks: number;
   domExpansionSettleMs: number;
   domExpansionBudgetMs: number;
+  resourceBlockingEnabled: boolean;
   cssOverrideEnabled: boolean;
   cssOverrideRemoveFixed: boolean;
   cssOverrideBlockedDomains: string;
@@ -150,6 +164,8 @@ export interface RuntimeSettingDefaults {
   capturePageScreenshotStabilizeEnabled: boolean;
   capturePageScreenshotStabilizeTimeoutMs: number;
   capturePageScreenshotStitchEnabled: boolean;
+  capturePageReadinessTimeoutMs: number;
+  capturePageReadinessSecondChanceMs: number;
   keyFinderTierSettingsJson: string;
 }
 

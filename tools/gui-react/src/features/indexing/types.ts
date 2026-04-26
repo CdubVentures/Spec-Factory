@@ -442,7 +442,7 @@ export interface IndexingLlmConfigResponse {
     model?: string;
     token_cap?: number;
   }>>;
-  phase_schemas?: Record<string, { system_prompt: string; hero_system_prompt?: string; response_schema: Record<string, unknown> } | null>;
+  phase_schemas?: Record<string, { system_prompt: string; user_message?: string; hero_system_prompt?: string; response_schema: Record<string, unknown> } | null>;
   pricing_meta?: {
     as_of?: string | null;
     sources?: Record<string, string>;

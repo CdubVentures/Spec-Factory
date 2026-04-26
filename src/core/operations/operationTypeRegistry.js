@@ -14,6 +14,7 @@ export const OPERATION_TYPES = Object.freeze([
   { type: 'publisher-reconcile', label: 'PUB', chipStyle: 'sf-chip-success' },
   { type: 'compile',             label: 'CMP', chipStyle: 'sf-chip-success' },
   { type: 'validate',            label: 'VAL', chipStyle: 'sf-chip-neutral' },
+  { type: 'writer-test',         label: 'WRT', chipStyle: 'sf-chip-info' },
 ]);
 
 export const OPERATION_TYPE_MAP = Object.freeze(

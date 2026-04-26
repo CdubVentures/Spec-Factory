@@ -11,7 +11,6 @@
   -webkit-tap-highlight-color: transparent;
   border-radius: 6px;
   background: transparent;
-  transition: outline-color 120ms ease, background 120ms ease;
 }
 /* Force pointer across every descendant — finder cells (rings-cluster,
    diamond-strip, etc.) set `cursor: default` for their own legacy reasons;
@@ -21,23 +20,16 @@
   cursor: pointer;
 }
 /* Unified hover affordance for every Popover-wrapped SVG cell on Overview
-   (CEF diamonds, PIF rings, SKU/RDF diamonds, Keys rings). Mirrors the
-   per-variant PIF cluster style: soft accent ring + 6% accent wash.
-   `outline + outline-offset` (not box-shadow) keeps the ring 3px clear of
-   the trigger box — diamond polygons reach the SVG edge, so a flush ring
-   visually touches the points. Outline never affects layout. PIF's per-
-   trigger overrides stay more specific and continue to win where present. */
+   (CEF diamonds, PIF rings, SKU/RDF diamonds, Keys rings). Snap background
+   wash only — no outline, no transition — so it reads instantly without a
+   black/blue ring or fade. Keyboard focus still gets an outline for a11y. */
 .sf-popover-trigger:hover {
-  outline: 1px solid color-mix(in srgb, var(--sf-token-accent, #4263eb) 55%, transparent);
-  outline-offset: 3px;
-  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 6%, transparent);
+  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 8%, transparent);
 }
-/* Keyboard focus needs a stronger ring than hover (focus-indicator contrast
-   bar). Same offset as hover so layout never shifts on focus/blur. */
 .sf-popover-trigger:focus-visible {
   outline: 2px solid var(--sf-token-accent, #4263eb);
   outline-offset: 3px;
-  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 6%, transparent);
+  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 8%, transparent);
 }
 
 /* ── Pulse indicator ─────────────────────────────────────────────────────

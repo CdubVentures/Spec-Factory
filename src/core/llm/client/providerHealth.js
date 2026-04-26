@@ -3,20 +3,34 @@ function toInt(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+export const DEFAULT_PROVIDER_FAILURE_THRESHOLD = 300;
+export const DEFAULT_PROVIDER_CIRCUIT_OPEN_MS = 60_000;
+
+export function normalizeProviderHealthKey(value) {
+  if (value && typeof value === 'object') {
+    const provider = String(value.provider || value.id || value.name || 'default').trim().toLowerCase();
+    const accessMode = String(value.accessMode || value.access_mode || '').trim().toLowerCase();
+    const baseUrl = normalizeProviderBaseUrl(value.baseUrl || value.base_url || '').toLowerCase();
+    const model = String(value.model || '').trim().toLowerCase();
+    return [provider, accessMode, baseUrl, model].filter(Boolean).join('|') || 'default';
+  }
+  return String(value || 'default').toLowerCase();
+}
+
 export class LlmProviderHealth {
   constructor({
-    failureThreshold = 5,
-    openMs = 60_000,
+    failureThreshold = DEFAULT_PROVIDER_FAILURE_THRESHOLD,
+    openMs = DEFAULT_PROVIDER_CIRCUIT_OPEN_MS,
     now = () => Date.now()
   } = {}) {
-    this.failureThreshold = Math.max(1, toInt(failureThreshold, 5));
-    this.openMs = Math.max(1_000, toInt(openMs, 60_000));
+    this.failureThreshold = Math.max(1, toInt(failureThreshold, DEFAULT_PROVIDER_FAILURE_THRESHOLD));
+    this.openMs = Math.max(1_000, toInt(openMs, DEFAULT_PROVIDER_CIRCUIT_OPEN_MS));
     this.now = now;
     this.providers = new Map();
   }
 
   _ensureProvider(name) {
-    const key = String(name || 'default').toLowerCase();
+    const key = normalizeProviderHealthKey(name);
     if (!this.providers.has(key)) {
       this.providers.set(key, {
         state: 'closed',
@@ -73,7 +87,7 @@ export class LlmProviderHealth {
     if (providerName) {
       const p = this._ensureProvider(providerName);
       return {
-        provider: providerName,
+        provider: normalizeProviderHealthKey(providerName),
         state: p.state,
         failure_count: p.failureCount,
         success_count: p.successCount,

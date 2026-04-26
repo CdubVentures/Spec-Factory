@@ -230,6 +230,23 @@ test('withLlmCallTracking when callFn throws: pending emitted, error bubbles, NO
   assert.equal(emissions[0].response, null, 'pending row preserved');
 });
 
+test('withLlmCallTracking can delegate completion to routed phase telemetry', async () => {
+  const { emissions, onLlmCallComplete } = makeRecorder();
+  await withLlmCallTracking({
+    label: 'Discovery',
+    prompt: { system: '', user: '' },
+    initialModel: 'gpt-5.4',
+    tierCapabilities: { thinking: false, webSearch: false, effortLevel: '' },
+    modelTracking: makeModelTrackingStub(),
+    onLlmCallComplete,
+    emitCompleted: false,
+    callFn: async () => ({ result: { ok: true }, usage: { total_tokens: 7 } }),
+  });
+
+  assert.equal(emissions.length, 1, 'delegated mode emits only the pending row');
+  assert.equal(emissions[0].response, null);
+});
+
 test('withLlmCallTracking callFn returns undefined usage → completed emits usage: null', async () => {
   const { emissions, onLlmCallComplete } = makeRecorder();
   await withLlmCallTracking({

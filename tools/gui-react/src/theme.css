@@ -1177,6 +1177,317 @@ html[data-sf-theme='wasteland'] {
   --sf-color-run-ai-rgb: 192 132 252;
 }
 
+/* ══════════════════════════════════════════════════════════════════════
+   ICONIC THEMES — community-favorite editor palettes ported to UI
+   (Dracula, Monokai, One Dark, GitHub Dark, Tokyo Night, Night Owl)
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* Dracula — official spec from draculatheme.com, signature pink/purple */
+html[data-sf-theme='dracula'] {
+  --sf-token-surface-canvas-start: #21222c;
+  --sf-token-surface-canvas-end: #282a36;
+  --sf-token-surface-base: #282a36;
+  --sf-token-surface-elevated: #343746;
+  --sf-token-surface-panel: #21222c;
+  --sf-token-border-default: #44475a;
+  --sf-token-border-subtle: #6272a4;
+  --sf-token-text-primary: #f8f8f2;
+  --sf-token-text-muted: #bcc2d6;
+  --sf-token-text-subtle: #6272a4;
+  --sf-token-text-inverse: #282a36;
+  --sf-token-accent: #ff79c6;
+  --sf-token-accent-strong: #bd93f9;
+  --sf-token-state-run-ai-fg: #bd93f9;
+  --sf-token-state-item-accept-fg: #8be9fd;
+  --sf-token-state-shared-confirm-fg: #ffb86c;
+  --sf-token-state-shared-accept-fg: #8be9fd;
+  --sf-token-state-confirm-fg: #ffb86c;
+  --sf-token-state-confirm-bg: rgba(255, 184, 108, 0.16);
+  --sf-token-state-confirm-border: rgba(255, 184, 108, 0.4);
+  --sf-token-state-warning-fg: #f1fa8c;
+  --sf-token-state-warning-bg: rgba(241, 250, 140, 0.14);
+  --sf-token-state-warning-border: rgba(241, 250, 140, 0.36);
+  --sf-token-state-success-fg: #50fa7b;
+  --sf-token-state-success-bg: rgba(80, 250, 123, 0.14);
+  --sf-token-state-success-border: rgba(80, 250, 123, 0.36);
+  --sf-token-state-info-fg: #8be9fd;
+  --sf-token-state-info-bg: rgba(139, 233, 253, 0.14);
+  --sf-token-state-info-border: rgba(139, 233, 253, 0.32);
+  --sf-token-state-error-fg: #ff5555;
+  --sf-token-state-error-bg: rgba(255, 85, 85, 0.16);
+  --sf-token-state-error-border: rgba(255, 85, 85, 0.38);
+  --sf-token-state-key-fg: #ff79c6;
+  --sf-token-state-key-bg: rgba(255, 121, 198, 0.14);
+  --sf-token-state-key-border: rgba(255, 121, 198, 0.32);
+  --sf-color-surface-rgb: 40 42 54;
+  --sf-color-surface-elevated-rgb: 52 55 70;
+  --sf-color-panel-rgb: 33 34 44;
+  --sf-color-border-default-rgb: 68 71 90;
+  --sf-color-border-subtle-rgb: 98 114 164;
+  --sf-color-text-primary-rgb: 248 248 242;
+  --sf-color-text-muted-rgb: 188 194 214;
+  --sf-color-text-subtle-rgb: 98 114 164;
+  --sf-color-text-inverse-rgb: 40 42 54;
+  --sf-color-accent-rgb: 255 121 198;
+  --sf-color-accent-strong-rgb: 189 147 249;
+  --sf-color-run-ai-rgb: 189 147 249;
+}
+
+/* Monokai — original Sublime/TextMate classic, iconic green/pink */
+html[data-sf-theme='monokai'] {
+  --sf-token-surface-canvas-start: #1e1f1a;
+  --sf-token-surface-canvas-end: #272822;
+  --sf-token-surface-base: #272822;
+  --sf-token-surface-elevated: #3e3d32;
+  --sf-token-surface-panel: #1e1f1a;
+  --sf-token-border-default: #49483e;
+  --sf-token-border-subtle: #75715e;
+  --sf-token-text-primary: #f8f8f2;
+  --sf-token-text-muted: #cfcfc2;
+  --sf-token-text-subtle: #75715e;
+  --sf-token-text-inverse: #272822;
+  --sf-token-accent: #f92672;
+  --sf-token-accent-strong: #ae81ff;
+  --sf-token-state-run-ai-fg: #ae81ff;
+  --sf-token-state-item-accept-fg: #66d9ef;
+  --sf-token-state-shared-confirm-fg: #fd971f;
+  --sf-token-state-shared-accept-fg: #66d9ef;
+  --sf-token-state-confirm-fg: #fd971f;
+  --sf-token-state-confirm-bg: rgba(253, 151, 31, 0.16);
+  --sf-token-state-confirm-border: rgba(253, 151, 31, 0.4);
+  --sf-token-state-warning-fg: #e6db74;
+  --sf-token-state-warning-bg: rgba(230, 219, 116, 0.14);
+  --sf-token-state-warning-border: rgba(230, 219, 116, 0.36);
+  --sf-token-state-success-fg: #a6e22e;
+  --sf-token-state-success-bg: rgba(166, 226, 46, 0.14);
+  --sf-token-state-success-border: rgba(166, 226, 46, 0.36);
+  --sf-token-state-info-fg: #66d9ef;
+  --sf-token-state-info-bg: rgba(102, 217, 239, 0.14);
+  --sf-token-state-info-border: rgba(102, 217, 239, 0.32);
+  --sf-token-state-error-fg: #f92672;
+  --sf-token-state-error-bg: rgba(249, 38, 114, 0.16);
+  --sf-token-state-error-border: rgba(249, 38, 114, 0.38);
+  --sf-token-state-key-fg: #ae81ff;
+  --sf-token-state-key-bg: rgba(174, 129, 255, 0.14);
+  --sf-token-state-key-border: rgba(174, 129, 255, 0.32);
+  --sf-color-surface-rgb: 39 40 34;
+  --sf-color-surface-elevated-rgb: 62 61 50;
+  --sf-color-panel-rgb: 30 31 26;
+  --sf-color-border-default-rgb: 73 72 62;
+  --sf-color-border-subtle-rgb: 117 113 94;
+  --sf-color-text-primary-rgb: 248 248 242;
+  --sf-color-text-muted-rgb: 207 207 194;
+  --sf-color-text-subtle-rgb: 117 113 94;
+  --sf-color-text-inverse-rgb: 39 40 34;
+  --sf-color-accent-rgb: 249 38 114;
+  --sf-color-accent-strong-rgb: 174 129 255;
+  --sf-color-run-ai-rgb: 174 129 255;
+}
+
+/* One Dark — Atom's signature theme, soft blue accent on charcoal */
+html[data-sf-theme='onedark'] {
+  --sf-token-surface-canvas-start: #21252b;
+  --sf-token-surface-canvas-end: #282c34;
+  --sf-token-surface-base: #282c34;
+  --sf-token-surface-elevated: #2c313a;
+  --sf-token-surface-panel: #21252b;
+  --sf-token-border-default: #3e4451;
+  --sf-token-border-subtle: #545862;
+  --sf-token-text-primary: #abb2bf;
+  --sf-token-text-muted: #828997;
+  --sf-token-text-subtle: #5c6370;
+  --sf-token-text-inverse: #282c34;
+  --sf-token-accent: #61afef;
+  --sf-token-accent-strong: #c678dd;
+  --sf-token-state-run-ai-fg: #c678dd;
+  --sf-token-state-item-accept-fg: #61afef;
+  --sf-token-state-shared-confirm-fg: #d19a66;
+  --sf-token-state-shared-accept-fg: #61afef;
+  --sf-token-state-confirm-fg: #d19a66;
+  --sf-token-state-confirm-bg: rgba(209, 154, 102, 0.16);
+  --sf-token-state-confirm-border: rgba(209, 154, 102, 0.4);
+  --sf-token-state-warning-fg: #e5c07b;
+  --sf-token-state-warning-bg: rgba(229, 192, 123, 0.14);
+  --sf-token-state-warning-border: rgba(229, 192, 123, 0.36);
+  --sf-token-state-success-fg: #98c379;
+  --sf-token-state-success-bg: rgba(152, 195, 121, 0.14);
+  --sf-token-state-success-border: rgba(152, 195, 121, 0.36);
+  --sf-token-state-info-fg: #56b6c2;
+  --sf-token-state-info-bg: rgba(86, 182, 194, 0.14);
+  --sf-token-state-info-border: rgba(86, 182, 194, 0.32);
+  --sf-token-state-error-fg: #e06c75;
+  --sf-token-state-error-bg: rgba(224, 108, 117, 0.16);
+  --sf-token-state-error-border: rgba(224, 108, 117, 0.38);
+  --sf-token-state-key-fg: #c678dd;
+  --sf-token-state-key-bg: rgba(198, 120, 221, 0.14);
+  --sf-token-state-key-border: rgba(198, 120, 221, 0.32);
+  --sf-color-surface-rgb: 40 44 52;
+  --sf-color-surface-elevated-rgb: 44 49 58;
+  --sf-color-panel-rgb: 33 37 43;
+  --sf-color-border-default-rgb: 62 68 81;
+  --sf-color-border-subtle-rgb: 84 88 98;
+  --sf-color-text-primary-rgb: 171 178 191;
+  --sf-color-text-muted-rgb: 130 137 151;
+  --sf-color-text-subtle-rgb: 92 99 112;
+  --sf-color-text-inverse-rgb: 40 44 52;
+  --sf-color-accent-rgb: 97 175 239;
+  --sf-color-accent-strong-rgb: 198 120 221;
+  --sf-color-run-ai-rgb: 198 120 221;
+}
+
+/* GitHub Dark — official GitHub palette, blue accent on near-black */
+html[data-sf-theme='githubdark'] {
+  --sf-token-surface-canvas-start: #010409;
+  --sf-token-surface-canvas-end: #0d1117;
+  --sf-token-surface-base: #0d1117;
+  --sf-token-surface-elevated: #161b22;
+  --sf-token-surface-panel: #010409;
+  --sf-token-border-default: #30363d;
+  --sf-token-border-subtle: #484f58;
+  --sf-token-text-primary: #c9d1d9;
+  --sf-token-text-muted: #8b949e;
+  --sf-token-text-subtle: #6e7681;
+  --sf-token-text-inverse: #0d1117;
+  --sf-token-accent: #58a6ff;
+  --sf-token-accent-strong: #79c0ff;
+  --sf-token-state-run-ai-fg: #bc8cff;
+  --sf-token-state-item-accept-fg: #58a6ff;
+  --sf-token-state-shared-confirm-fg: #db6d28;
+  --sf-token-state-shared-accept-fg: #58a6ff;
+  --sf-token-state-confirm-fg: #db6d28;
+  --sf-token-state-confirm-bg: rgba(219, 109, 40, 0.16);
+  --sf-token-state-confirm-border: rgba(219, 109, 40, 0.4);
+  --sf-token-state-warning-fg: #d29922;
+  --sf-token-state-warning-bg: rgba(210, 153, 34, 0.14);
+  --sf-token-state-warning-border: rgba(210, 153, 34, 0.36);
+  --sf-token-state-success-fg: #3fb950;
+  --sf-token-state-success-bg: rgba(63, 185, 80, 0.14);
+  --sf-token-state-success-border: rgba(63, 185, 80, 0.36);
+  --sf-token-state-info-fg: #58a6ff;
+  --sf-token-state-info-bg: rgba(88, 166, 255, 0.14);
+  --sf-token-state-info-border: rgba(88, 166, 255, 0.32);
+  --sf-token-state-error-fg: #f85149;
+  --sf-token-state-error-bg: rgba(248, 81, 73, 0.16);
+  --sf-token-state-error-border: rgba(248, 81, 73, 0.38);
+  --sf-token-state-key-fg: #bc8cff;
+  --sf-token-state-key-bg: rgba(188, 140, 255, 0.14);
+  --sf-token-state-key-border: rgba(188, 140, 255, 0.32);
+  --sf-color-surface-rgb: 13 17 23;
+  --sf-color-surface-elevated-rgb: 22 27 34;
+  --sf-color-panel-rgb: 1 4 9;
+  --sf-color-border-default-rgb: 48 54 61;
+  --sf-color-border-subtle-rgb: 72 79 88;
+  --sf-color-text-primary-rgb: 201 209 217;
+  --sf-color-text-muted-rgb: 139 148 158;
+  --sf-color-text-subtle-rgb: 110 118 129;
+  --sf-color-text-inverse-rgb: 13 17 23;
+  --sf-color-accent-rgb: 88 166 255;
+  --sf-color-accent-strong-rgb: 121 192 255;
+  --sf-color-run-ai-rgb: 188 140 255;
+}
+
+/* Tokyo Night — Storm variant, soft blue/magenta on deep navy */
+html[data-sf-theme='tokyonight'] {
+  --sf-token-surface-canvas-start: #16161e;
+  --sf-token-surface-canvas-end: #1a1b26;
+  --sf-token-surface-base: #1a1b26;
+  --sf-token-surface-elevated: #24283b;
+  --sf-token-surface-panel: #16161e;
+  --sf-token-border-default: #292e42;
+  --sf-token-border-subtle: #545c7e;
+  --sf-token-text-primary: #c0caf5;
+  --sf-token-text-muted: #a9b1d6;
+  --sf-token-text-subtle: #565f89;
+  --sf-token-text-inverse: #1a1b26;
+  --sf-token-accent: #7aa2f7;
+  --sf-token-accent-strong: #bb9af7;
+  --sf-token-state-run-ai-fg: #bb9af7;
+  --sf-token-state-item-accept-fg: #7aa2f7;
+  --sf-token-state-shared-confirm-fg: #ff9e64;
+  --sf-token-state-shared-accept-fg: #7aa2f7;
+  --sf-token-state-confirm-fg: #ff9e64;
+  --sf-token-state-confirm-bg: rgba(255, 158, 100, 0.16);
+  --sf-token-state-confirm-border: rgba(255, 158, 100, 0.4);
+  --sf-token-state-warning-fg: #e0af68;
+  --sf-token-state-warning-bg: rgba(224, 175, 104, 0.14);
+  --sf-token-state-warning-border: rgba(224, 175, 104, 0.36);
+  --sf-token-state-success-fg: #9ece6a;
+  --sf-token-state-success-bg: rgba(158, 206, 106, 0.14);
+  --sf-token-state-success-border: rgba(158, 206, 106, 0.36);
+  --sf-token-state-info-fg: #7dcfff;
+  --sf-token-state-info-bg: rgba(125, 207, 255, 0.14);
+  --sf-token-state-info-border: rgba(125, 207, 255, 0.32);
+  --sf-token-state-error-fg: #f7768e;
+  --sf-token-state-error-bg: rgba(247, 118, 142, 0.16);
+  --sf-token-state-error-border: rgba(247, 118, 142, 0.38);
+  --sf-token-state-key-fg: #bb9af7;
+  --sf-token-state-key-bg: rgba(187, 154, 247, 0.14);
+  --sf-token-state-key-border: rgba(187, 154, 247, 0.32);
+  --sf-color-surface-rgb: 26 27 38;
+  --sf-color-surface-elevated-rgb: 36 40 59;
+  --sf-color-panel-rgb: 22 22 30;
+  --sf-color-border-default-rgb: 41 46 66;
+  --sf-color-border-subtle-rgb: 84 92 126;
+  --sf-color-text-primary-rgb: 192 202 245;
+  --sf-color-text-muted-rgb: 169 177 214;
+  --sf-color-text-subtle-rgb: 86 95 137;
+  --sf-color-text-inverse-rgb: 26 27 38;
+  --sf-color-accent-rgb: 122 162 247;
+  --sf-color-accent-strong-rgb: 187 154 247;
+  --sf-color-run-ai-rgb: 187 154 247;
+}
+
+/* Night Owl — Sarah Drasner's beloved theme, deep navy with soft pastels */
+html[data-sf-theme='nightowl'] {
+  --sf-token-surface-canvas-start: #001122;
+  --sf-token-surface-canvas-end: #011627;
+  --sf-token-surface-base: #011627;
+  --sf-token-surface-elevated: #0b2942;
+  --sf-token-surface-panel: #001122;
+  --sf-token-border-default: #1d3b53;
+  --sf-token-border-subtle: #5f7e97;
+  --sf-token-text-primary: #d6deeb;
+  --sf-token-text-muted: #a1aab5;
+  --sf-token-text-subtle: #637777;
+  --sf-token-text-inverse: #011627;
+  --sf-token-accent: #82aaff;
+  --sf-token-accent-strong: #c792ea;
+  --sf-token-state-run-ai-fg: #c792ea;
+  --sf-token-state-item-accept-fg: #82aaff;
+  --sf-token-state-shared-confirm-fg: #f78c6c;
+  --sf-token-state-shared-accept-fg: #82aaff;
+  --sf-token-state-confirm-fg: #f78c6c;
+  --sf-token-state-confirm-bg: rgba(247, 140, 108, 0.16);
+  --sf-token-state-confirm-border: rgba(247, 140, 108, 0.4);
+  --sf-token-state-warning-fg: #ecc48d;
+  --sf-token-state-warning-bg: rgba(236, 196, 141, 0.14);
+  --sf-token-state-warning-border: rgba(236, 196, 141, 0.36);
+  --sf-token-state-success-fg: #addb67;
+  --sf-token-state-success-bg: rgba(173, 219, 103, 0.14);
+  --sf-token-state-success-border: rgba(173, 219, 103, 0.36);
+  --sf-token-state-info-fg: #7fdbca;
+  --sf-token-state-info-bg: rgba(127, 219, 202, 0.14);
+  --sf-token-state-info-border: rgba(127, 219, 202, 0.32);
+  --sf-token-state-error-fg: #ef5350;
+  --sf-token-state-error-bg: rgba(239, 83, 80, 0.16);
+  --sf-token-state-error-border: rgba(239, 83, 80, 0.38);
+  --sf-token-state-key-fg: #c792ea;
+  --sf-token-state-key-bg: rgba(199, 146, 234, 0.14);
+  --sf-token-state-key-border: rgba(199, 146, 234, 0.32);
+  --sf-color-surface-rgb: 1 22 39;
+  --sf-color-surface-elevated-rgb: 11 41 66;
+  --sf-color-panel-rgb: 0 17 34;
+  --sf-color-border-default-rgb: 29 59 83;
+  --sf-color-border-subtle-rgb: 95 126 151;
+  --sf-color-text-primary-rgb: 214 222 235;
+  --sf-color-text-muted-rgb: 161 170 181;
+  --sf-color-text-subtle-rgb: 99 119 119;
+  --sf-color-text-inverse-rgb: 1 22 39;
+  --sf-color-accent-rgb: 130 170 255;
+  --sf-color-accent-strong-rgb: 199 146 234;
+  --sf-color-run-ai-rgb: 199 146 234;
+}
+
 html[data-sf-radius='tight'] {
   --sf-token-radius-sm: 0.1875rem;
   --sf-token-radius-md: 0.3125rem;

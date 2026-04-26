@@ -213,6 +213,7 @@ export const SKU_FINDER_SPEC = {
  */
 export function createSkuFinderCallLlm(deps) {
   return createPhaseCallLlm(deps, SKU_FINDER_SPEC, (domainArgs) => ({
+    llmCallExtras: domainArgs.llmCallExtras || {},
     user: JSON.stringify({
       brand: domainArgs.product?.brand || '',
       model: domainArgs.product?.model || '',

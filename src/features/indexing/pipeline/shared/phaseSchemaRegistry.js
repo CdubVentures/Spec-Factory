@@ -11,6 +11,11 @@ import { SERP_SELECT_URLS_SYSTEM_PROMPT } from '../resultProcessing/serpSelector
 import { FINDER_PHASE_SCHEMAS, FINDER_SCALAR_DEFAULT_TEMPLATES } from './phaseSchemaRegistry.generated.js';
 import { buildScalarFinderPromptTemplates } from '../../../../core/finder/scalarFinderPromptContract.js';
 import { buildKeyFinderPromptTemplates } from '../../../key/keyFinderPromptContract.js';
+import {
+  WRITER_MODEL_TEST_JSON_SCHEMA,
+  WRITER_MODEL_TEST_SYSTEM_PROMPT,
+  WRITER_MODEL_TEST_USER_PROMPT,
+} from '../../../../core/llm/writerModelTest.js';
 import { buildVariantIdentityCheckPrompt, CEF_DISCOVERY_DEFAULT_TEMPLATE } from '../../../color-edition/colorEditionLlmAdapter.js';
 import { variantIdentityCheckResponseSchema } from '../../../color-edition/colorEditionSchema.js';
 import { buildViewEvalPrompt, buildHeroSelectionPrompt, VIEW_EVAL_DEFAULT_TEMPLATE, HERO_EVAL_DEFAULT_TEMPLATE } from '../../../product-image/imageEvaluator.js';
@@ -28,6 +33,11 @@ import {
   VIEW_PROMPT_ROLES,
 } from '../../../product-image/viewPromptDefaults.js';
 const NON_FINDER_PHASES = Object.freeze({
+  'writer': {
+    system_prompt: WRITER_MODEL_TEST_SYSTEM_PROMPT,
+    user_message: WRITER_MODEL_TEST_USER_PROMPT,
+    response_schema: WRITER_MODEL_TEST_JSON_SCHEMA,
+  },
   'needset': {
     system_prompt: PLANNER_SYSTEM_PROMPT,
     response_schema: zodToLlmSchema(plannerResponseZodSchema),

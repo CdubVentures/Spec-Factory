@@ -218,6 +218,7 @@ export const RELEASE_DATE_FINDER_SPEC = {
  */
 export function createReleaseDateFinderCallLlm(deps) {
   return createPhaseCallLlm(deps, RELEASE_DATE_FINDER_SPEC, (domainArgs) => ({
+    llmCallExtras: domainArgs.llmCallExtras || {},
     user: JSON.stringify({
       brand: domainArgs.product?.brand || '',
       model: domainArgs.product?.model || '',

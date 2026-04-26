@@ -18,6 +18,16 @@ test('P01 health: new provider starts in closed state', () => {
   assert.equal(snap.state, 'closed');
 });
 
+test('P01 health: default failure threshold tolerates PIF parallel bursts', () => {
+  const health = new LlmProviderHealth();
+  for (let i = 0; i < 299; i += 1) {
+    health.recordFailure('openai', 'synthetic upstream failure');
+  }
+  assert.equal(health.canRequest('openai'), true);
+  health.recordFailure('openai', 'synthetic upstream failure');
+  assert.equal(health.canRequest('openai'), false);
+});
+
 test('P01 health: opens circuit after failure threshold', () => {
   const health = new LlmProviderHealth({ failureThreshold: 3 });
   health.recordFailure('openai', 'timeout');
@@ -57,6 +67,34 @@ test('P01 health: tracks multiple providers independently', () => {
   health.recordSuccess('deepseek');
   assert.equal(health.canRequest('openai'), false);
   assert.equal(health.canRequest('deepseek'), true);
+});
+
+test('P01 health: route identity isolates access mode, endpoint, and model', () => {
+  const health = new LlmProviderHealth({ failureThreshold: 1 });
+  const labWriter = {
+    provider: 'lab-openai',
+    accessMode: 'lab',
+    baseUrl: 'http://localhost:5001',
+    model: 'gpt-5.4-mini',
+  };
+  const labResearch = {
+    provider: 'lab-openai',
+    accessMode: 'lab',
+    baseUrl: 'http://localhost:5001',
+    model: 'gpt-5.5',
+  };
+  const apiWriter = {
+    provider: 'openai',
+    accessMode: 'api',
+    baseUrl: 'https://api.openai.com',
+    model: 'gpt-5.4-mini',
+  };
+
+  health.recordFailure(labWriter, 'timeout');
+
+  assert.equal(health.canRequest(labWriter), false, 'failed lab writer route opens');
+  assert.equal(health.canRequest(labResearch), true, 'same provider different model stays closed');
+  assert.equal(health.canRequest(apiWriter), true, 'same model through API stays closed');
 });
 
 test('P01 health: snapshot all providers', () => {
@@ -107,6 +145,7 @@ test('P01 integration: getProviderHealth returns LlmProviderHealth singleton', (
   assert.equal(typeof health.canRequest, 'function');
   assert.equal(typeof health.recordSuccess, 'function');
   assert.equal(typeof health.recordFailure, 'function');
+  assert.equal(health.failureThreshold, 300);
 });
 
 test('P01 integration: getProviderHealth returns same instance on repeated calls', () => {
@@ -121,18 +160,21 @@ test('P01 integration: getProviderHealth returns same instance on repeated calls
 
 test('P01 injection: callLlmProvider uses injected providerHealth instead of singleton', async () => {
   const injected = new LlmProviderHealth({ failureThreshold: 1 });
-  // WHY: selectLlmProvider resolves all providers to name='openai',
-  // so we trip the circuit for 'openai' on the injected instance.
-  injected.recordFailure('openai', 'forced');
+  const route = {
+    provider: 'openai',
+    accessMode: 'api',
+    baseUrl: 'https://api.openai.com',
+    model: 'test-model',
+    apiKey: 'sk-test-fake'
+  };
+  injected.recordFailure(route, 'forced');
 
   // callLlmProvider should throw circuit-open using the injected health, not the singleton
   await assert.rejects(
     () => callLlmProvider({
-      model: 'test-model',
+      route,
       system: 'test',
       user: 'test',
-      apiKey: 'sk-test-fake',
-      provider: 'openai',
       providerHealth: injected
     }),
     (err) => {
@@ -143,12 +185,19 @@ test('P01 injection: callLlmProvider uses injected providerHealth instead of sin
 
   // The module-level singleton should NOT have been affected
   const singleton = getProviderHealth();
-  assert.equal(singleton.canRequest('openai'), true);
+  assert.equal(singleton.canRequest(route), true);
 });
 
 test('P01 injection: callLlmProvider falls back to singleton when providerHealth omitted', async (t) => {
   const originalFetch = globalThis.fetch;
   const singleton = getProviderHealth();
+  const route = {
+    provider: 'fallback-test-provider',
+    accessMode: 'api',
+    baseUrl: 'https://api.openai.com',
+    model: 'test-model',
+    apiKey: 'sk-test-fake'
+  };
   let fetchCalls = 0;
   globalThis.fetch = async () => {
     fetchCalls += 1;
@@ -162,7 +211,7 @@ test('P01 injection: callLlmProvider falls back to singleton when providerHealth
   };
   t.after(() => {
     globalThis.fetch = originalFetch;
-    singleton.recordSuccess('openai');
+    singleton.recordSuccess(route);
   });
   // Without providerHealth param, the singleton is used — canRequest should return true
   // for a provider that hasn't failed on the singleton.
@@ -170,11 +219,9 @@ test('P01 injection: callLlmProvider falls back to singleton when providerHealth
   // by confirming the error is NOT about circuit-open but about the actual API call.
   await assert.rejects(
     () => callLlmProvider({
-      model: 'test-model',
+      route,
       system: 'test',
-      user: 'test',
-      apiKey: 'sk-test-fake',
-      provider: 'fallback-test-provider'
+      user: 'test'
       // no providerHealth — should use singleton
     }),
     (err) => {
@@ -185,4 +232,35 @@ test('P01 injection: callLlmProvider falls back to singleton when providerHealth
     }
   );
   assert.equal(fetchCalls, 1);
+});
+
+test('P01 injection: callLlmProvider does not count local abort as provider failure', async (t) => {
+  const originalFetch = globalThis.fetch;
+  const health = new LlmProviderHealth({ failureThreshold: 1 });
+  const route = {
+    provider: 'lab-openai',
+    accessMode: 'lab',
+    baseUrl: 'http://localhost:5001',
+    model: 'gpt-5.5',
+    apiKey: 'session'
+  };
+  globalThis.fetch = async () => {
+    throw new Error('This operation was aborted');
+  };
+  t.after(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  await assert.rejects(
+    () => callLlmProvider({
+      route,
+      system: 'test',
+      user: 'test',
+      providerHealth: health
+    }),
+    /This operation was aborted/
+  );
+
+  assert.equal(health.canRequest(route), true);
+  assert.equal(health.snapshot(route).failure_count, 0);
 });

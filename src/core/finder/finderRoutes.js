@@ -9,7 +9,7 @@
  */
 
 import { emitDataChange } from '../events/dataChangeContract.js';
-import { registerOperation, getOperationSignal, completeOperation, failOperation, cancelOperation, fireAndForget } from '../operations/index.js';
+import { registerOperation, getOperationSignal, countRunningOperations, completeOperation, failOperation, cancelOperation, fireAndForget } from '../operations/index.js';
 import { buildOperationTelemetry } from '../operations/buildOperationTelemetry.js';
 import { createStreamBatcher } from '../llm/streamBatcher.js';
 import { defaultProductRoot } from '../config/runtimeArtifactRoots.js';
@@ -447,7 +447,7 @@ export function createFinderRouteHandler(finderConfig) {
           if (wantsVariantKey) opArgs.variantKey = variantKey || '';
           op = registerOperation(opArgs);
 
-          batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+          batcher = createStreamBatcher({ operationId: op.id, broadcastWs, config, getActiveOperationCount: countRunningOperations });
           const signal = getOperationSignal(op.id);
 
           return fireAndForget({

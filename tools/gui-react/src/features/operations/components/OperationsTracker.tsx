@@ -31,6 +31,14 @@ function formatElapsed(startedAt: string, endedAt: string | null): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+function formatStatusText(op: Operation): string {
+  const elapsed = formatElapsed(op.startedAt, op.endedAt);
+  if (op.status === 'done') return `done ${elapsed}`;
+  if (op.status === 'error') return `failed ${elapsed}`;
+  if (op.status === 'cancelled') return `cancelled ${elapsed}`;
+  return elapsed;
+}
+
 /* ── Stage pipeline renderer ───────────────────────────────────────── */
 
 function StagePipeline({ stages, currentIndex, status }: {
@@ -193,7 +201,7 @@ function OpCard({ op, onClick, onDismiss, onStop, confirming }: {
             : op.status === 'cancelled' ? 'sf-text-subtle'
             : 'sf-text-success'
           }`}>
-            {op.status === 'done' ? 'done' : op.status === 'error' ? 'failed' : op.status === 'cancelled' ? 'cancelled' : formatElapsed(op.startedAt, op.endedAt)}
+            {formatStatusText(op)}
           </span>
           {op.queueDelayMs != null && op.queueDelayMs > 0 && (
             <span className="text-[6px] font-mono sf-text-subtle leading-none">q {op.queueDelayMs >= 1000 ? `${(op.queueDelayMs / 1000).toFixed(1)}s` : `${op.queueDelayMs}ms`}</span>

@@ -10,7 +10,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
-import { registerOperation, getOperationSignal, updateStage, updateModelInfo, updateProgressText, updateLoopProgress, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../../../core/operations/index.js';
+import { registerOperation, getOperationSignal, countRunningOperations, updateStage, updateModelInfo, updateProgressText, updateLoopProgress, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../../../core/operations/index.js';
 import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { readImageDimensions, buildVariantList, imageStem, runProductImageFinder, runCarouselLoop } from '../productImageFinder.js';
@@ -641,7 +641,7 @@ export function registerProductImageFinderRoutes(ctx) {
           variantKey: variantKey || '',
           stages: ['Discovery', 'Download', 'Processing', 'Complete'],
         });
-        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+        batcher = createStreamBatcher({ operationId: op.id, broadcastWs, config, getActiveOperationCount: countRunningOperations });
         const signal = getOperationSignal(op.id);
 
         return fireAndForget({
@@ -764,7 +764,7 @@ export function registerProductImageFinderRoutes(ctx) {
         });
         updateProgressText({ id: op.id, text: 'carousel eval loop' });
 
-        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+        batcher = createStreamBatcher({ operationId: op.id, broadcastWs, config, getActiveOperationCount: countRunningOperations });
         const signal = getOperationSignal(op.id);
 
         return fireAndForget({
@@ -858,7 +858,7 @@ export function registerProductImageFinderRoutes(ctx) {
         });
         updateProgressText({ id: op.id, text: `${view} view` });
 
-        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+        batcher = createStreamBatcher({ operationId: op.id, broadcastWs, config, getActiveOperationCount: countRunningOperations });
         const signal = getOperationSignal(op.id);
 
         return fireAndForget({
@@ -940,7 +940,7 @@ export function registerProductImageFinderRoutes(ctx) {
         });
         updateProgressText({ id: op.id, text: 'hero selection' });
 
-        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+        batcher = createStreamBatcher({ operationId: op.id, broadcastWs, config, getActiveOperationCount: countRunningOperations });
         const signal = getOperationSignal(op.id);
 
         return fireAndForget({
@@ -1134,7 +1134,7 @@ export function registerProductImageFinderRoutes(ctx) {
           stages,
         });
         if (view) updateProgressText({ id: op.id, text: `${view} view` });
-        batcher = createStreamBatcher({ operationId: op.id, broadcastWs });
+        batcher = createStreamBatcher({ operationId: op.id, broadcastWs, config, getActiveOperationCount: countRunningOperations });
         const signal = getOperationSignal(op.id);
 
         return fireAndForget({

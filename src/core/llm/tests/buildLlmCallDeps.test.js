@@ -42,6 +42,12 @@ describe('buildLlmCallDeps', () => {
     assert.equal(deps.onStreamChunk, cb);
   });
 
+  it('threads onLlmCallComplete through to returned deps', () => {
+    const cb = () => {};
+    const deps = buildLlmCallDeps({ config: {}, logger: null, onLlmCallComplete: cb });
+    assert.equal(deps.onLlmCallComplete, cb);
+  });
+
   it('onStreamChunk defaults to undefined when not provided', () => {
     const deps = buildLlmCallDeps({ config: {}, logger: null });
     assert.equal(deps.onStreamChunk, undefined);

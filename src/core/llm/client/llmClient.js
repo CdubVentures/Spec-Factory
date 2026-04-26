@@ -5,13 +5,17 @@ import {
 } from '../../../billing/costRates.js';
 import { selectLlmProvider } from '../providers/index.js';
 import { providerFromModelToken } from '../providerMeta.js';
-import { LlmProviderHealth } from './providerHealth.js';
+import {
+  DEFAULT_PROVIDER_CIRCUIT_OPEN_MS,
+  DEFAULT_PROVIDER_FAILURE_THRESHOLD,
+  LlmProviderHealth
+} from './providerHealth.js';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const _providerHealth = new LlmProviderHealth({
-  failureThreshold: 5,
-  openMs: 60_000
+  failureThreshold: DEFAULT_PROVIDER_FAILURE_THRESHOLD,
+  openMs: DEFAULT_PROVIDER_CIRCUIT_OPEN_MS
 });
 
 export function getProviderHealth() {
@@ -42,10 +46,18 @@ function shouldRetryWithoutJsonSchema(error) {
 
 function shouldCountAsProviderFailure(error) {
   const token = String(error?.message || '').toLowerCase();
+  const name = String(error?.name || '').toLowerCase();
+  const code = String(error?.code || '').toLowerCase();
   if (!token) {
-    return true;
+    return name !== 'aborterror' && code !== 'err_aborted';
   }
   if (
+    name === 'aborterror' ||
+    code === 'err_aborted' ||
+    token.includes('operation was aborted') ||
+    token.includes('operation cancelled') ||
+    token.includes('request aborted') ||
+    token.includes('request cancelled') ||
     token.includes('structured output failed schema validation') ||
     token.includes('content was not valid json') ||
     token.includes('response missing message content') ||
@@ -584,6 +596,12 @@ export async function callLlmProvider({
   const inferredName = providerFromModelToken(model) || providerClient.name;
   const providerLabel = isLab ? `lab-${inferredName}` : inferredName;
   const usageProvider = String(route._registryEntry?.providerId || providerLabel || '').trim();
+  const providerHealthRoute = Object.freeze({
+    provider: usageProvider || providerLabel,
+    accessMode: isLab ? 'lab' : 'api',
+    baseUrl: baseUrlNormalized,
+    model
+  });
   const health = providerHealth || _providerHealth;
   // WHY: Registry-routed calls pass the provider TYPE ("openai-compatible"), not
   // the provider NAME ("deepseek"), so the legacy `inferredProvider === 'deepseek'`
@@ -793,8 +811,8 @@ export async function callLlmProvider({
     return usageSummary;
   };
 
-  if (!health.canRequest(providerLabel)) {
-    const snap = health.snapshot(providerLabel);
+  if (!health.canRequest(providerHealthRoute)) {
+    const snap = health.snapshot(providerHealthRoute);
     const safeMessage = `Provider '${providerLabel}' circuit open (${snap.failure_count} consecutive failures). Retry after cooldown.`;
     logger?.warn?.('llm_provider_circuit_open', {
       ...callContext,
@@ -850,7 +868,7 @@ export async function callLlmProvider({
     });
     if (rawTextMode) return first.content;
     const parsed = parseStructuredResult(first.content);
-    health.recordSuccess(providerLabel);
+    health.recordSuccess(providerHealthRoute);
     logger?.info?.('llm_call_completed', {
       ...callContext,
       purpose: reason,
@@ -868,7 +886,7 @@ export async function callLlmProvider({
   } catch (firstError) {
     if (!jsonSchema || !shouldRetryWithoutJsonSchema(firstError)) {
       if (shouldCountAsProviderFailure(firstError)) {
-        health.recordFailure(providerLabel, firstError);
+        health.recordFailure(providerHealthRoute, firstError);
       }
       const causeMsg = firstError.cause?.message ? ` (${firstError.cause.message})` : '';
       const safeMessage = sanitizeText(firstError.message + causeMsg, [apiKey]);
@@ -895,7 +913,7 @@ export async function callLlmProvider({
       });
       if (rawTextMode) return retry.content;
       const parsed = parseStructuredResult(retry.content, { fallbackExtraction: true });
-      health.recordSuccess(providerLabel);
+      health.recordSuccess(providerHealthRoute);
       logger?.info?.('llm_call_completed', {
         ...callContext,
         purpose: reason,
@@ -912,7 +930,7 @@ export async function callLlmProvider({
       return parsed;
     } catch (retryError) {
       if (shouldCountAsProviderFailure(retryError)) {
-        health.recordFailure(providerLabel, retryError);
+        health.recordFailure(providerHealthRoute, retryError);
       }
       const causeMsg = retryError.cause?.message ? ` (${retryError.cause.message})` : '';
       const safeMessage = sanitizeText(retryError.message + causeMsg, [apiKey]);

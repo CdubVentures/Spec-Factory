@@ -303,6 +303,56 @@ export const LlmGlobalSection = memo(function LlmGlobalSection({
         </div>
       </SettingGroupBlock>
 
+      {/* Section 5: Operation Streaming */}
+      <SettingGroupBlock
+        title="Operation Streaming"
+        collapsible
+        storageKey="sf:llm-global:operation-streaming"
+      >
+        <div className="sf-text-caption mb-2" style={{ color: 'var(--sf-muted)', opacity: 0.8 }}>
+          Controls live token previews in the Operations tracker.
+        </div>
+        <div className="grid grid-cols-3 gap-x-3.5 gap-y-2.5">
+          <div className="flex flex-col gap-1">
+            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Mode</label>
+            <select
+              className={inputCls}
+              value={runtimeDraft.llmOperationStreamingMode}
+              onChange={(event) => updateDraft('llmOperationStreamingMode', event.target.value as RuntimeDraft['llmOperationStreamingMode'])}
+              aria-label="operation streaming mode"
+            >
+              <option value="adaptive">Adaptive</option>
+              <option value="always">Always</option>
+              <option value="off">Off</option>
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Max Active Ops</label>
+            <NumberStepper
+              className="w-full"
+              value={String(runtimeDraft.llmOperationStreamingMaxActiveOps)}
+              min={getNumberBounds('llmOperationStreamingMaxActiveOps').min}
+              max={getNumberBounds('llmOperationStreamingMaxActiveOps').max}
+              step={getNumberBounds('llmOperationStreamingMaxActiveOps').int === false ? 0.01 : 1}
+              ariaLabel="operation streaming max active operations"
+              onChange={(next) => onNumberChange('llmOperationStreamingMaxActiveOps', next, getNumberBounds('llmOperationStreamingMaxActiveOps'))}
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="sf-text-caption" style={{ color: 'var(--sf-muted)' }}>Flush Interval (ms)</label>
+            <NumberStepper
+              className="w-full"
+              value={String(runtimeDraft.llmOperationStreamingFlushMs)}
+              min={getNumberBounds('llmOperationStreamingFlushMs').min}
+              max={getNumberBounds('llmOperationStreamingFlushMs').max}
+              step={getNumberBounds('llmOperationStreamingFlushMs').int === false ? 0.01 : 50}
+              ariaLabel="operation streaming flush interval ms"
+              onChange={(next) => onNumberChange('llmOperationStreamingFlushMs', next, getNumberBounds('llmOperationStreamingFlushMs'))}
+            />
+          </div>
+        </div>
+      </SettingGroupBlock>
+
     </>
   );
 });

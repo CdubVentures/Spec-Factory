@@ -9,11 +9,13 @@ Own repo-wide infrastructure for LLM provider/client/prompt plumbing: model reso
 - `providerRegistryDefaults.js` -- `mergeDefaultApiModelsIntoRegistry` for backfilling default API model entries without touching Lab providers
 - `llmModelValidation.js` -- model token validation
 - `llmPolicySchema.js` -- LLM policy schema definitions
+- `operationStreamingPolicy.js` -- live operation stream preview policy resolution
 - `llmRouteHelpers.js` -- `llmProviderFromModel`, `resolveLlmRoleDefaults`, `resolveLlmKnobDefaults`, `resolvePricingForModel`, `resolveTokenProfileForModel`, `collectLlmModels`, `deriveTrafficLightCounts`
 - `buildLlmCallDeps.js` -- `buildLlmCallDeps` (dependency injection for LLM calls)
 - `labQueue.js` -- `enqueueLabCall` (serial queue for lab-proxied LLM calls)
 - `createRouteLlmLogger.js` -- `createRouteLlmLogger` (per-route LLM logging)
 - `zodToLlmSchema.js` -- Zod-to-LLM schema conversion
+- `writerModelTest.js` -- Writer phase compatibility prompt, schema, semantic evaluator, and runner
 - `client/` -- LLM client implementations
 - `providers/` -- provider-specific adapters
 - `prompts/` -- universal prompt fragments shared across finders (identity warning, siblings exclusion, evidence contract, value confidence rubric, discovery-history header). See `prompts/README.md` for the public API.

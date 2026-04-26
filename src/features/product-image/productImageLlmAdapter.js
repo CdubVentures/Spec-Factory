@@ -810,6 +810,12 @@ export const PRODUCT_IMAGE_FINDER_SPEC = {
  */
 export function createProductImageFinderCallLlm(deps) {
   return createPhaseCallLlm(deps, PRODUCT_IMAGE_FINDER_SPEC, (domainArgs) => ({
+    llmCallLabel: domainArgs.llmCallLabel || (domainArgs.mode === 'hero' ? 'Discovery Hero' : 'Discovery'),
+    llmCallExtras: {
+      ...(domainArgs.llmCallExtras || {}),
+      variant: domainArgs.variantLabel || '',
+      mode: domainArgs.mode || 'view',
+    },
     user: JSON.stringify({
       brand: domainArgs.product?.brand || '',
       model: domainArgs.product?.model || '',
@@ -966,6 +972,12 @@ export const HERO_IMAGE_FINDER_SPEC = {
  */
 export function createHeroImageFinderCallLlm(deps) {
   return createPhaseCallLlm(deps, HERO_IMAGE_FINDER_SPEC, (domainArgs) => ({
+    llmCallLabel: domainArgs.llmCallLabel || 'Discovery Hero',
+    llmCallExtras: {
+      ...(domainArgs.llmCallExtras || {}),
+      variant: domainArgs.variantLabel || '',
+      mode: 'hero',
+    },
     user: JSON.stringify({
       brand: domainArgs.product?.brand || '',
       model: domainArgs.product?.model || '',

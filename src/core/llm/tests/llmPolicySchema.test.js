@@ -37,6 +37,10 @@ test('assembleLlmPolicy + disassembleLlmPolicy round-trip identity', () => {
     llmCostOutputPer1M: 10,
     llmCostCachedInputPer1M: 0.125,
     llmTimeoutMs: 30000,
+    llmLabQueueDelayMs: 1000,
+    llmOperationStreamingMode: 'adaptive',
+    llmOperationStreamingMaxActiveOps: 10,
+    llmOperationStreamingFlushMs: 250,
     keyFinderTierSettingsJson: JSON.stringify({
       easy:      { model: '', useReasoning: false, reasoningModel: '', thinking: false, thinkingEffort: '', webSearch: false },
       medium:    { model: '', useReasoning: false, reasoningModel: '', thinking: false, thinkingEffort: '', webSearch: false },
@@ -115,6 +119,34 @@ test('disassembleLlmPolicy flattens composite to flat keys', () => {
   assert.equal(flat.llmTimeoutMs, 30000);
 });
 
+test('top-level resource policy fields round-trip through registry keys', () => {
+  const policy = assembleLlmPolicy({
+    llmTimeoutMs: 45000,
+    llmLabQueueDelayMs: 750,
+    llmOperationStreamingMode: 'adaptive',
+    llmOperationStreamingMaxActiveOps: 10,
+    llmOperationStreamingFlushMs: 250,
+  });
+
+  assert.equal(policy.timeoutMs, 45000);
+  assert.equal(policy.labQueueDelayMs, 750);
+  assert.equal(policy.operationStreamingMode, 'adaptive');
+  assert.equal(policy.operationStreamingMaxActiveOps, 10);
+  assert.equal(policy.operationStreamingFlushMs, 250);
+
+  const flat = disassembleLlmPolicy(policy);
+  assert.equal(flat.llmTimeoutMs, 45000);
+  assert.equal(flat.llmLabQueueDelayMs, 750);
+  assert.equal(flat.llmOperationStreamingMode, 'adaptive');
+  assert.equal(flat.llmOperationStreamingMaxActiveOps, 10);
+  assert.equal(flat.llmOperationStreamingFlushMs, 250);
+
+  assert.ok(LLM_POLICY_FLAT_KEYS.includes('llmLabQueueDelayMs'));
+  assert.ok(LLM_POLICY_FLAT_KEYS.includes('llmOperationStreamingMode'));
+  assert.ok(LLM_POLICY_FLAT_KEYS.includes('llmOperationStreamingMaxActiveOps'));
+  assert.ok(LLM_POLICY_FLAT_KEYS.includes('llmOperationStreamingFlushMs'));
+});
+
 test('DEFAULT_LLM_POLICY has correct structure', () => {
   assert.ok(DEFAULT_LLM_POLICY);
   assert.equal(typeof DEFAULT_LLM_POLICY.models, 'object');
@@ -124,6 +156,10 @@ test('DEFAULT_LLM_POLICY has correct structure', () => {
   assert.equal(typeof DEFAULT_LLM_POLICY.reasoning, 'object');
   assert.equal(typeof DEFAULT_LLM_POLICY.budget, 'object');
   assert.equal(typeof DEFAULT_LLM_POLICY.timeoutMs, 'number');
+  assert.equal(typeof DEFAULT_LLM_POLICY.labQueueDelayMs, 'number');
+  assert.equal(typeof DEFAULT_LLM_POLICY.operationStreamingMode, 'string');
+  assert.equal(typeof DEFAULT_LLM_POLICY.operationStreamingMaxActiveOps, 'number');
+  assert.equal(typeof DEFAULT_LLM_POLICY.operationStreamingFlushMs, 'number');
   assert.deepStrictEqual(DEFAULT_LLM_POLICY.phaseOverrides, {});
   assert.ok(Array.isArray(DEFAULT_LLM_POLICY.providerRegistry));
 });

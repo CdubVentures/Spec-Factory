@@ -1,13 +1,42 @@
-// WHY: Batches LLM streaming deltas and flushes via broadcastWs at a fixed
-// interval (~100ms). Prevents WebSocket flood from per-token broadcasts
-// (~100/sec) while maintaining smooth streaming appearance (~10 msg/sec).
+// WHY: Batches LLM streaming deltas and flushes via broadcastWs. The provider
+// request still streams upstream; this policy gates only high-volume GUI token
+// previews so concurrent operations do not flood WebSocket/UI rendering.
 
-export function createStreamBatcher({ operationId, broadcastWs, intervalMs = 100 }) {
+import {
+  resolveOperationStreamingPolicy,
+  shouldEmitOperationStream,
+} from './operationStreamingPolicy.js';
+
+export function createStreamBatcher({
+  operationId,
+  broadcastWs,
+  intervalMs,
+  config = {},
+  getActiveOperationCount = () => 0,
+}) {
+  const streamingPolicy = resolveOperationStreamingPolicy(config);
+  const flushIntervalMs = Number.isFinite(Number(intervalMs)) ? Number(intervalMs) : streamingPolicy.flushMs;
   let buffer = '';
   const callBuffers = new Map();
   let disposed = false;
 
+  function canStream() {
+    return shouldEmitOperationStream({
+      policy: streamingPolicy,
+      activeOperationCount: getActiveOperationCount(),
+    });
+  }
+
+  function dropBuffers() {
+    buffer = '';
+    callBuffers.clear();
+  }
+
   function flush() {
+    if (!canStream()) {
+      dropBuffers();
+      return;
+    }
     if (buffer) {
       broadcastWs('llm-stream', { operationId, text: buffer });
       buffer = '';
@@ -26,7 +55,7 @@ export function createStreamBatcher({ operationId, broadcastWs, intervalMs = 100
     }
   }
 
-  const timer = setInterval(flush, intervalMs);
+  const timer = setInterval(flush, flushIntervalMs);
   // WHY: unref prevents the timer from keeping the process alive on shutdown
   if (timer.unref) timer.unref();
 
@@ -35,6 +64,7 @@ export function createStreamBatcher({ operationId, broadcastWs, intervalMs = 100
       if (disposed) return;
       const chunk = typeof text === 'string' ? text : '';
       if (!chunk) return;
+      if (!canStream()) return;
       const callId = typeof meta?.callId === 'string' ? meta.callId : '';
       if (!callId) {
         buffer += chunk;

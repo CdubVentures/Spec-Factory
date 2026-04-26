@@ -144,9 +144,11 @@ function reconcileEditionSlugsFromRegistry(editions, existingRegistry, identityC
   return changed ? reconciled : editions;
 }
 
-function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed, thinking, webSearch, rejections, raw, productRoot }) {
+function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed, thinking, webSearch, rejections, raw, productRoot, prompt = {}, startedAt = null, durationMs = null }) {
   const now = new Date();
   const ranAt = now.toISOString();
+  const runPrompt = prompt || {};
+  const runResponse = { status: 'rejected', raw, rejections };
 
   // WHY: Rejected runs MUST persist to JSON (durable SSOT) to prevent
   // run_number collisions and SQL/JSON desync.
@@ -158,14 +160,16 @@ function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed,
       last_ran_at: ranAt,
     },
     run: {
+      ...(startedAt ? { started_at: startedAt } : {}),
+      ...(Number.isFinite(durationMs) ? { duration_ms: durationMs } : {}),
       model,
       fallback_used: fallbackUsed,
       thinking: Boolean(thinking),
       web_search: Boolean(webSearch),
       status: 'rejected',
       selected: {},
-      prompt: {},
-      response: { status: 'rejected', raw, rejections },
+      prompt: runPrompt,
+      response: runResponse,
     },
   });
 
@@ -175,13 +179,15 @@ function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed,
     product_id: product.product_id,
     run_number: latestRun.run_number,
     ran_at: ranAt,
+    started_at: startedAt || undefined,
+    duration_ms: Number.isFinite(durationMs) ? durationMs : undefined,
     model,
     fallback_used: fallbackUsed,
     thinking: Boolean(thinking),
     web_search: Boolean(webSearch),
     selected: {},
-    prompt: {},
-    response: { status: 'rejected', raw, rejections },
+    prompt: runPrompt,
+    response: runResponse,
   });
 
   // Update SQL summary with correct run_count (includes rejected)
@@ -195,7 +201,7 @@ function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed,
     run_count: merged.run_count,
   });
 
-  return { colors: [], editions: {}, default_color: '', fallbackUsed: false, rejected: true, rejections };
+  return { colors: [], editions: {}, default_color: '', fallbackUsed: Boolean(fallbackUsed), rejected: true, rejections };
 }
 
 /**
@@ -261,6 +267,7 @@ export async function runColorEditionFinder({
       onModelResolved: wrappedOnModelResolved,
       onStreamChunk,
       onQueueWait,
+      onLlmCallComplete,
       onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
       signal,
     }),
@@ -294,6 +301,7 @@ export async function runColorEditionFinder({
       prompt: { system: systemPrompt, user: userMessage },
       modelTracking,
       onLlmCallComplete,
+      emitCompleted: Boolean(_callLlmOverride),
       callFn: async () => {
         const r = await callLlm({ colorNames, colors: allColors, product, previousRuns, previousDiscovery, familyModelCount, ambiguityLevel, siblingModels });
         response = r.result;
@@ -351,7 +359,21 @@ export async function runColorEditionFinder({
       product_id: product.product_id,
       error: err.message,
     });
-    return { colors: [], editions: {}, default_color: '', fallbackUsed: false, rejected: true, rejections: [{ reason_code: 'llm_error', message: err.message }] };
+    return storeFailureAndReturn({
+      specDb,
+      product,
+      existing,
+      model: modelTracking.actualModel,
+      fallbackUsed: modelTracking.actualFallbackUsed,
+      thinking: modelTracking.actualThinking,
+      webSearch: modelTracking.actualWebSearch,
+      rejections: [{ reason_code: 'llm_error', message: err.message }],
+      raw: { error: err.message },
+      productRoot,
+      prompt: { system: systemPrompt, user: userMessage },
+      startedAt: cefStartedAt,
+      durationMs: Date.now() - cefStartMs,
+    });
   }
 
   // --- Candidate gate: validate ALL fields before any writes ---
@@ -504,6 +526,7 @@ export async function runColorEditionFinder({
           config, logger,
           onModelResolved: modelTracking.wrappedOnModelResolved,
           onStreamChunk, onQueueWait, signal,
+          onLlmCallComplete,
           onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
         });
         callIdentityCheck = createVariantIdentityCheckCallLlm(llmDeps);
@@ -519,6 +542,7 @@ export async function runColorEditionFinder({
         prompt: { system: identityCheckPrompt, user: identityCheckUser },
         modelTracking,
         onLlmCallComplete,
+        emitCompleted: Boolean(_callIdentityCheckOverride),
         callFn: () => callIdentityCheck({
           product, existingRegistry,
           newColors: gateColors, newColorNames: colorNamesMap, newEditions: gateEditions,

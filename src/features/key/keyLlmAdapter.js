@@ -600,6 +600,7 @@ export function createKeyFinderCallLlm(deps, tierOrBundle = 'medium') {
     const userImages = buildPifPriorityImageUserImages(domainArgs.pifPriorityImageContext);
     const mapped = {
       user: userImages.length > 0 ? { text: userText, images: userImages } : userText,
+      llmCallExtras: { tier: tierName, reason: spec.reason },
     };
     if (modelOverride) mapped.modelOverride = modelOverride;
     if (capabilityOverride) mapped.capabilityOverride = capabilityOverride;

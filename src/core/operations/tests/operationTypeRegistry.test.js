@@ -27,6 +27,7 @@ describe('OPERATION_TYPES', () => {
     const types = new Set(OPERATION_TYPES.map(t => t.type));
     assert.ok(types.has('pipeline'), 'pipeline type missing');
     assert.ok(types.has('publisher-reconcile'), 'publisher-reconcile type missing');
+    assert.ok(types.has('writer-test'), 'writer-test type missing');
   });
 
   it('does NOT include finder module types (those live in finderModuleRegistry)', () => {

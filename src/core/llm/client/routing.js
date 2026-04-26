@@ -494,6 +494,9 @@ export async function callLlmWithRouting({
   onModelResolved,
   onStreamChunk,
   onQueueWait,
+  onLlmCallComplete,
+  llmCallLabel = 'Discovery',
+  llmCallExtras = {},
   signal,
 }) {
   const resolvedRole = role || routeRoleFromReason(reason);
@@ -663,6 +666,61 @@ export async function callLlmWithRouting({
 
   const effectiveSharedParams = { ...sharedParams, costRates: effectiveCostRates };
 
+  const resolveTrackedCallId = (label) => {
+    const baseCallId = typeof llmCallExtras.callId === 'string' ? llmCallExtras.callId : '';
+    if (!baseCallId) return '';
+    if (label === `${llmCallLabel} Research`) return `${baseCallId}:research`;
+    if (label === `${llmCallLabel} Research Fallback`) return `${baseCallId}:research-fallback`;
+    if (label === 'Writer Formatting') return `${baseCallId}:writer`;
+    if (label === 'Writer Formatting Fallback') return `${baseCallId}:writer-fallback`;
+    if (label === `${llmCallLabel} Fallback`) return `${baseCallId}:fallback`;
+    return baseCallId;
+  };
+
+  const emitTrackedCall = ({ label, prompt, response, route, isFallback = false, usage = null, startedAt = null, durationMs = null, error = null }) => {
+    if (typeof onLlmCallComplete !== 'function') return;
+    const callId = resolveTrackedCallId(label);
+    onLlmCallComplete({
+      ...llmCallExtras,
+      ...(callId ? { callId } : {}),
+      label,
+      prompt,
+      response,
+      model: route?.model || '',
+      isFallback: Boolean(isFallback),
+      thinking: false,
+      webSearch: false,
+      effortLevel: extractEffortFromModelName(route?.model || '') || '',
+      accessMode: route?._registryEntry?.accessMode || route?.accessMode || 'api',
+      usage,
+      ...(startedAt ? { started_at: startedAt } : {}),
+      ...(Number.isFinite(durationMs) ? { duration_ms: durationMs } : {}),
+      ...(error ? { error } : {}),
+    });
+  };
+
+  const callProviderWithUsage = async (params) => {
+    const originalOnUsage = params.onUsage;
+    let capturedUsage = null;
+    const startedAt = new Date().toISOString();
+    const startedMs = Date.now();
+    const result = await callLlmProvider({
+      ...params,
+      onUsage: async (usage) => {
+        capturedUsage = usage;
+        if (typeof originalOnUsage === 'function') {
+          await originalOnUsage(usage);
+        }
+      },
+    });
+    return {
+      result,
+      usage: capturedUsage,
+      startedAt,
+      durationMs: Date.now() - startedMs,
+    };
+  };
+
   // Dispatch-type seam: cortex providers use a different transport
   if (primary._registryEntry?.providerType === 'cortex') {
     throw new Error('cortex provider dispatch not yet re-implemented — route via openai-compatible provider or remove cortex entry');
@@ -714,23 +772,6 @@ export async function callLlmWithRouting({
     };
   };
 
-  // WHY: Shared single-call fallback (for jsonStrict=true or no schema).
-  const dispatchFallback = (error) => {
-    if (!fallback) throw error;
-    logger?.warn?.('llm_route_fallback', {
-      reason,
-      role: resolvedRole,
-      primary_provider: primary.provider || null,
-      primary_model: primary.model || null,
-      primary_base_url: primary.baseUrl || null,
-      fallback_provider: fallback.provider || null,
-      fallback_model: fallback.model || null,
-      fallback_base_url: fallback.baseUrl || null,
-      message: error.message
-    });
-    return wrapLabQueue(fallback, () => callLlmProvider(buildFallbackCallParams()));
-  };
-
   // WHY: Research-phase fallback. When jsonStrict=false and primary research
   // fails, the fallback model also runs research (no schema, rawTextMode) so the
   // writer phase can proceed with fallback-produced findings. Writer model is
@@ -744,7 +785,7 @@ export async function callLlmWithRouting({
       fallback_model: fallback.model || null,
       message: error.message
     });
-    return wrapLabQueue(fallback, () => callLlmProvider(buildFallbackCallParams({
+    return wrapLabQueue(fallback, () => callProviderWithUsage(buildFallbackCallParams({
       jsonSchema: null,
       rawTextMode: true,
     })));
@@ -758,8 +799,18 @@ export async function callLlmWithRouting({
   if (useWriterPhase) {
     onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch), effortLevel: resolveEffortLabel({ model: primary.model, effortLevel: phaseThinkingEffort, thinking: phaseThinking }) });
     let researchText;
+    const researchPrompt = { system, user };
+    const researchLabel = `${llmCallLabel} Research`;
+    const researchFallbackLabel = `${llmCallLabel} Research Fallback`;
+    emitTrackedCall({
+      label: researchLabel,
+      prompt: researchPrompt,
+      response: null,
+      route: primary,
+      isFallback: false,
+    });
     try {
-      researchText = await wrapLabQueue(primary, () => callLlmProvider({
+      const researchCall = await wrapLabQueue(primary, () => callProviderWithUsage({
         ...effectiveSharedParams,
         jsonSchema: null,
         rawTextMode: true,
@@ -769,6 +820,17 @@ export async function callLlmWithRouting({
         },
         providerHealth,
       }));
+      researchText = researchCall.result;
+      emitTrackedCall({
+        label: researchLabel,
+        prompt: researchPrompt,
+        response: researchText,
+        route: primary,
+        isFallback: false,
+        usage: researchCall.usage,
+        startedAt: researchCall.startedAt,
+        durationMs: researchCall.durationMs,
+      });
     } catch (error) {
       // WHY: Fallback mirrors primary's two-phase behavior — research (no schema)
       // with the fallback model, then the same writer phase continues.
@@ -778,13 +840,57 @@ export async function callLlmWithRouting({
         phase: phase || null,
         message: error.message,
       });
-      researchText = await dispatchFallbackResearch(error);
+      emitTrackedCall({
+        label: researchLabel,
+        prompt: researchPrompt,
+        response: { status: 'failed', phase: 'research', error: error.message },
+        route: primary,
+        isFallback: false,
+        error: error.message,
+      });
+      if (!fallback) throw error;
+      emitTrackedCall({
+        label: researchFallbackLabel,
+        prompt: researchPrompt,
+        response: null,
+        route: fallback,
+        isFallback: true,
+      });
+      try {
+        const fallbackResearchCall = await dispatchFallbackResearch(error);
+        researchText = fallbackResearchCall.result;
+        emitTrackedCall({
+          label: researchFallbackLabel,
+          prompt: researchPrompt,
+          response: researchText,
+          route: fallback,
+          isFallback: true,
+          usage: fallbackResearchCall.usage,
+          startedAt: fallbackResearchCall.startedAt,
+          durationMs: fallbackResearchCall.durationMs,
+        });
+      } catch (fallbackError) {
+        emitTrackedCall({
+          label: fallback ? researchFallbackLabel : researchLabel,
+          prompt: researchPrompt,
+          response: { status: 'failed', phase: 'research', error: fallbackError.message },
+          route: fallback || primary,
+          isFallback: Boolean(fallback),
+          error: fallbackError.message,
+        });
+        throw fallbackError;
+      }
     }
 
     onPhaseChange?.('writer');
 
     // Phase 2: Format — dedicated global writer model (or primary if no writer configured), WITH schema
     const writerRoute = resolveWriterRoute(config, { role: resolvedRole }) || primary;
+    const writerFallbackRoute = resolveLlmFallbackRoute(config, {
+      reason: 'writer_formatting',
+      role: resolvedRole,
+      phase: 'writer',
+    });
     const writerSystem = [
       'You are a JSON formatter. Convert the research findings below into the required JSON schema.',
       'Do not perform additional research. Only extract, normalize, and format the findings.',
@@ -796,17 +902,13 @@ export async function callLlmWithRouting({
       researchText,
     ].join('\n');
 
-    const effectiveWriterCostRates = buildEffectiveCostRates(writerRoute._registryEntry, costRates);
-
     // WHY: Writer is global — reads _resolvedWriter* keys, not per-source-phase.
     const writerReasoning = Boolean(config._resolvedWriterUseReasoning);
     const writerThinking = Boolean(config._resolvedWriterThinking);
     const writerThinkingEffort = String(config._resolvedWriterThinkingEffort || '');
-    const writerBakedEffort = extractEffortFromModelName(writerRoute.model);
-    const writerRequestOptions = {
-      ...(writerThinking && !writerBakedEffort ? { reasoning_effort: writerThinkingEffort || 'medium' } : {}),
-    };
-    const effectiveWriterRequestOptions = Object.keys(writerRequestOptions).length > 0 ? writerRequestOptions : null;
+    const writerFallbackReasoning = Boolean(config._resolvedWriterFallbackUseReasoning);
+    const writerFallbackThinking = Boolean(config._resolvedWriterFallbackThinking);
+    const writerFallbackThinkingEffort = String(config._resolvedWriterFallbackThinkingEffort || '');
 
     // WHY: Writer owns its own limits — decoupled from source phase. disableLimits,
     // maxOutputTokens, timeoutMs, reasoningBudget, maxContextTokens all come from
@@ -830,40 +932,115 @@ export async function callLlmWithRouting({
       : (writerReasoningBudget > 0 ? writerReasoningBudget : resolvedReasoningBudget);
     const writerResolvedMaxContextTokens = writerDisableLimits ? 0 : writerMaxContextTokens;
 
-    return wrapLabQueue(writerRoute, () => callLlmProvider({
-      ...sharedParams,
-      system: writerSystem,
-      user,
-      jsonSchema,
-      costRates: effectiveWriterCostRates,
-      requestOptions: effectiveWriterRequestOptions,
-      reasoningMode: Boolean(writerReasoning),
-      route: {
-        model: writerRoute.model, apiKey: writerRoute.apiKey, baseUrl: writerRoute.baseUrl,
-        provider: writerRoute.provider, accessMode: writerRoute._registryEntry?.accessMode || '',
-      },
-      maxTokens: Number(writerResolvedMaxTokens || 0),
-      timeoutMs: writerResolvedTimeoutMs,
-      reasoningBudget: Number(writerResolvedReasoningBudget || 0),
-      maxContextTokens: Number(writerResolvedMaxContextTokens || 0),
-      providerHealth,
-      usageContext: {
-        ...sharedParams.usageContext,
-        phase: 'writer',
-        reason: 'writer_formatting',
-        source_phase: phase || null,
-        writer_phase: true,
-        research_model: primary.model,
-        effort_level: writerBakedEffort || (writerThinking ? (writerThinkingEffort || 'medium') : ''),
-        web_search_enabled: false,
-      },
-    }));
+    const writerPrompt = { system: writerSystem, user };
+    const writerLabel = 'Writer Formatting';
+    const writerFallbackLabel = 'Writer Formatting Fallback';
+
+    const buildWriterCallParams = (routeToUse, { isFallback = false } = {}) => {
+      const routeBakedEffort = extractEffortFromModelName(routeToUse.model);
+      const activeReasoning = isFallback ? writerFallbackReasoning : writerReasoning;
+      const activeThinking = isFallback ? writerFallbackThinking : writerThinking;
+      const activeThinkingEffort = isFallback ? writerFallbackThinkingEffort : writerThinkingEffort;
+      const writerRequestOptions = {
+        ...(activeThinking && !routeBakedEffort ? { reasoning_effort: activeThinkingEffort || 'medium' } : {}),
+      };
+      const effectiveWriterRequestOptions = Object.keys(writerRequestOptions).length > 0 ? writerRequestOptions : null;
+      return {
+        ...sharedParams,
+        system: writerSystem,
+        user,
+        jsonSchema,
+        costRates: buildEffectiveCostRates(routeToUse._registryEntry, costRates),
+        requestOptions: effectiveWriterRequestOptions,
+        reasoningMode: Boolean(activeReasoning),
+        route: {
+          model: routeToUse.model, apiKey: routeToUse.apiKey, baseUrl: routeToUse.baseUrl,
+          provider: routeToUse.provider, accessMode: routeToUse._registryEntry?.accessMode || '',
+        },
+        maxTokens: Number(writerResolvedMaxTokens || 0),
+        timeoutMs: writerResolvedTimeoutMs,
+        reasoningBudget: Number(writerResolvedReasoningBudget || 0),
+        maxContextTokens: Number(writerResolvedMaxContextTokens || 0),
+        providerHealth,
+        usageContext: {
+          ...sharedParams.usageContext,
+          phase: 'writer',
+          reason: 'writer_formatting',
+          source_phase: phase || null,
+          writer_phase: true,
+          research_model: primary.model,
+          effort_level: routeBakedEffort || (activeThinking ? (activeThinkingEffort || 'medium') : ''),
+          web_search_enabled: false,
+          ...(isFallback ? {
+            fallback_attempt: true,
+            fallback_from_model: writerRoute.model || null,
+          } : {}),
+        },
+      };
+    };
+
+    const dispatchWriter = async ({ routeToUse, label, isFallback = false }) => {
+      emitTrackedCall({
+        label,
+        prompt: writerPrompt,
+        response: null,
+        route: routeToUse,
+        isFallback,
+      });
+      try {
+        const writerCall = await wrapLabQueue(routeToUse, () => callProviderWithUsage(buildWriterCallParams(routeToUse, { isFallback })));
+        emitTrackedCall({
+          label,
+          prompt: writerPrompt,
+          response: writerCall.result,
+          route: routeToUse,
+          isFallback,
+          usage: writerCall.usage,
+          startedAt: writerCall.startedAt,
+          durationMs: writerCall.durationMs,
+        });
+        return writerCall.result;
+      } catch (error) {
+        emitTrackedCall({
+          label,
+          prompt: writerPrompt,
+          response: { status: 'failed', phase: 'writer', error: error.message },
+          route: routeToUse,
+          isFallback,
+          error: error.message,
+        });
+        throw error;
+      }
+    };
+
+    try {
+      return await dispatchWriter({ routeToUse: writerRoute, label: writerLabel, isFallback: false });
+    } catch (error) {
+      if (!writerFallbackRoute) throw error;
+      logger?.warn?.('llm_writer_formatting_failed_falling_back', {
+        reason,
+        role: resolvedRole,
+        phase: phase || null,
+        writer_model: writerRoute.model || null,
+        fallback_model: writerFallbackRoute.model || null,
+        message: error.message,
+      });
+      return dispatchWriter({ routeToUse: writerFallbackRoute, label: writerFallbackLabel, isFallback: true });
+    }
   }
 
   // Existing single-call behavior (jsonStrict: true or no jsonSchema)
   onModelResolved?.({ model: primary.model, provider: primary.provider, isFallback: false, accessMode: primary._registryEntry?.accessMode || 'api', thinking: Boolean(phaseThinking), webSearch: Boolean(phaseWebSearch), effortLevel: resolveEffortLabel({ model: primary.model, effortLevel: phaseThinkingEffort, thinking: phaseThinking }) });
+  const singlePrompt = { system, user };
+  emitTrackedCall({
+    label: llmCallLabel,
+    prompt: singlePrompt,
+    response: null,
+    route: primary,
+    isFallback: false,
+  });
   try {
-    return await wrapLabQueue(primary, () => callLlmProvider({
+    const primaryCall = await wrapLabQueue(primary, () => callProviderWithUsage({
       ...effectiveSharedParams,
       route: {
         model: primary.model, apiKey: primary.apiKey, baseUrl: primary.baseUrl,
@@ -871,7 +1048,70 @@ export async function callLlmWithRouting({
       },
       providerHealth
     }));
+    emitTrackedCall({
+      label: llmCallLabel,
+      prompt: singlePrompt,
+      response: primaryCall.result,
+      route: primary,
+      isFallback: false,
+      usage: primaryCall.usage,
+      startedAt: primaryCall.startedAt,
+      durationMs: primaryCall.durationMs,
+    });
+    return primaryCall.result;
   } catch (error) {
-    return dispatchFallback(error);
+    emitTrackedCall({
+      label: llmCallLabel,
+      prompt: singlePrompt,
+      response: { status: 'failed', phase: 'single', error: error.message },
+      route: primary,
+      isFallback: false,
+      error: error.message,
+    });
+    if (!fallback) {
+      throw error;
+    }
+    logger?.warn?.('llm_route_fallback', {
+      reason,
+      role: resolvedRole,
+      primary_provider: primary.provider || null,
+      primary_model: primary.model || null,
+      primary_base_url: primary.baseUrl || null,
+      fallback_provider: fallback.provider || null,
+      fallback_model: fallback.model || null,
+      fallback_base_url: fallback.baseUrl || null,
+      message: error.message,
+    });
+    try {
+      emitTrackedCall({
+        label: `${llmCallLabel} Fallback`,
+        prompt: singlePrompt,
+        response: null,
+        route: fallback,
+        isFallback: true,
+      });
+      const fallbackCall = await wrapLabQueue(fallback, () => callProviderWithUsage(buildFallbackCallParams()));
+      emitTrackedCall({
+        label: `${llmCallLabel} Fallback`,
+        prompt: singlePrompt,
+        response: fallbackCall.result,
+        route: fallback,
+        isFallback: true,
+        usage: fallbackCall.usage,
+        startedAt: fallbackCall.startedAt,
+        durationMs: fallbackCall.durationMs,
+      });
+      return fallbackCall.result;
+    } catch (fallbackError) {
+      emitTrackedCall({
+        label: `${llmCallLabel} Fallback`,
+        prompt: singlePrompt,
+        response: { status: 'failed', phase: 'single', error: fallbackError.message },
+        route: fallback,
+        isFallback: true,
+        error: fallbackError.message,
+      });
+      throw fallbackError;
+    }
   }
 }

@@ -7,9 +7,10 @@ This boundary is the single source of truth for settings defaults, typed route c
 - `settingsContract.js`: document metadata constants, runtime/UI/storage key sets and value types, route-contract exports, `SETTINGS_AUTHORITY_PRECEDENCE`, `UI_SETTINGS_DEFAULTS`, and `validateUserSettingsSnapshot()`.
 - `userSettingsService.js`: `loadUserSettingsSync()`, `loadUserSettings()`, `persistUserSettingsSections()`, `drainPersistQueue()`, snapshot helpers, config-application helpers, and `deriveSettingsArtifactsFromUserSettings()`.
 - `runtimeSettingsRouteContract.js`: canonical runtime route-contract constants.
+- `writerModelTestHandler.js`: `POST /llm-policy/writer-test` active-operation route for validating the selected Writer model.
 
 ## Dependencies
-- Allowed: `src/shared/settingsDefaults.js`, `src/core/events/settingsPersistenceCounters.js`, Node `fs/path`, and `ajv`.
+- Allowed: `src/shared/settingsDefaults.js`, `src/core/events/settingsPersistenceCounters.js`, `src/core/llm`, `src/core/operations`, Node `fs/path`, and `ajv`.
 - Forbidden: feature-specific settings schemas or persistence formats that diverge from this contract.
 
 ## Domain Invariants

@@ -117,6 +117,41 @@ test('config: explicit plan and reasoning overrides remain independent', () => {
   assert.equal(cfg.llmModelReasoning, 'test-reasoning-model');
 });
 
+test('config: writer phase resolves fallback override into writer flat keys', () => {
+  const cfg = makeResolvedConfig({
+    llmPlanFallbackModel: 'global-fallback',
+    llmReasoningFallbackModel: 'global-reasoning-fallback',
+    llmPhaseOverridesJson: JSON.stringify({
+      writer: {
+        baseModel: 'writer-primary',
+        fallbackModel: 'writer-fallback',
+        fallbackReasoningModel: 'writer-reasoning-fallback',
+        fallbackUseReasoning: true,
+        fallbackWebSearch: true,
+      },
+    }),
+  });
+
+  assert.equal(cfg._resolvedWriterFallbackModel, 'writer-fallback');
+  assert.equal(cfg._resolvedWriterFallbackReasoningModel, 'writer-reasoning-fallback');
+  assert.equal(cfg._resolvedWriterFallbackUseReasoning, true);
+  assert.equal(cfg._resolvedWriterFallbackWebSearch, false);
+});
+
+test('config: writer fallback inherits global fallback when no writer override is set', () => {
+  const cfg = makeResolvedConfig({
+    llmPlanFallbackModel: 'global-fallback',
+    llmReasoningFallbackModel: 'global-reasoning-fallback',
+    llmPhaseOverridesJson: JSON.stringify({
+      writer: { baseModel: 'writer-primary' },
+    }),
+  });
+
+  assert.equal(cfg._resolvedWriterFallbackModel, 'global-fallback');
+  assert.equal(cfg._resolvedWriterFallbackReasoningModel, 'global-reasoning-fallback');
+  assert.equal(cfg._resolvedWriterFallbackUseReasoning, false);
+});
+
 test('config: surviving triage token cap remains on the public surface', () => {
   const cfg = makeResolvedConfig();
 

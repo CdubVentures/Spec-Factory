@@ -805,6 +805,66 @@ test('callLlmWithRouting: jsonStrict true (default) does single call with schema
   }
 });
 
+test('callLlmWithRouting: single-call telemetry keeps failed primary before fallback', async () => {
+  const originalFetch = global.fetch;
+  const emissions = [];
+  let callCount = 0;
+
+  global.fetch = async (_url, opts) => {
+    callCount++;
+    const body = JSON.parse(opts.body);
+    if (callCount === 1) {
+      return {
+        ok: false,
+        status: 503,
+        async text() { return 'primary unavailable'; },
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      async text() {
+        return JSON.stringify({
+          choices: [{ message: { content: '{"editions": 1, "colors": 2}' } }],
+          model: body.model,
+          usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+        });
+      },
+    };
+  };
+
+  try {
+    const config = twoPhaseConfig();
+
+    const result = await callLlmWithRouting({
+      config,
+      phase: 'colorfinder',
+      system: 'Find all color editions.',
+      user: 'Product X',
+      jsonSchema: TEST_SCHEMA,
+      llmCallLabel: 'Discovery',
+      llmCallExtras: { callId: 'op-llm-1' },
+      onLlmCallComplete: (call) => emissions.push(call),
+    });
+
+    assert.equal(callCount, 2, 'primary then fallback');
+    assert.deepEqual(result, { editions: 1, colors: 2 });
+    assert.deepEqual(
+      emissions.map((e) => [e.callId, e.label, e.response === null, e.isFallback]),
+      [
+        ['op-llm-1', 'Discovery', true, false],
+        ['op-llm-1', 'Discovery', false, false],
+        ['op-llm-1:fallback', 'Discovery Fallback', true, true],
+        ['op-llm-1:fallback', 'Discovery Fallback', false, true],
+      ],
+    );
+    assert.equal(emissions[1].response.status, 'failed');
+    assert.match(emissions[1].response.error, /primary unavailable/);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
 test('callLlmWithRouting: jsonStrict false Phase 1 failure triggers fallback research then writer', async () => {
   const originalFetch = global.fetch;
   const fetchCalls = [];

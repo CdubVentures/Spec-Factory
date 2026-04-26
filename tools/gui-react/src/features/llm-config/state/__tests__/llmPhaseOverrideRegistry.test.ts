@@ -347,8 +347,32 @@ describe('resolvePhaseModel — writer phase (global formatter)', () => {
     strictEqual(result?.thinking, true);
     strictEqual(result?.thinkingEffort, 'high');
     strictEqual(result?.jsonStrict, true, 'writer always enforces schema');
-    strictEqual(result?.fallbackModel, '', 'writer has no fallback');
+    strictEqual(result?.fallbackModel, 'deepseek-v4-flash', 'writer fallback inherits global base fallback');
+    strictEqual(result?.fallbackReasoningModel, 'gemini-2.5-pro', 'writer fallback inherits global reasoning fallback');
+    strictEqual(result?.effectiveFallbackModel, 'deepseek-v4-flash');
     strictEqual(result?.webSearch, false, 'writer has no web search');
+  });
+
+  it('writer fallback resolves from top-level writer override', () => {
+    const overrides = {
+      writer: {
+        baseModel: 'base-w',
+        fallbackModel: 'writer-fb',
+        fallbackReasoningModel: 'writer-reason-fb',
+        fallbackUseReasoning: true,
+        fallbackThinking: true,
+        fallbackThinkingEffort: 'xhigh',
+        fallbackWebSearch: true,
+      },
+    };
+    const result = resolvePhaseModel(overrides as never, 'writer' as never, globalDraft);
+    strictEqual(result?.fallbackModel, 'writer-fb');
+    strictEqual(result?.fallbackReasoningModel, 'writer-reason-fb');
+    strictEqual(result?.fallbackUseReasoning, true);
+    strictEqual(result?.fallbackThinking, true);
+    strictEqual(result?.fallbackThinkingEffort, 'xhigh');
+    strictEqual(result?.fallbackWebSearch, false, 'writer fallback never web-searches while formatting JSON');
+    strictEqual(result?.effectiveFallbackModel, 'writer-reason-fb');
   });
 
   it('writer with useReasoning=true swaps effectiveModel to reasoningModel', () => {

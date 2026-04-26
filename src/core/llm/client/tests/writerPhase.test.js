@@ -37,6 +37,17 @@ function makeRegistry() {
         { id: 'mwr', modelId: 'model-writer-reason', role: 'reasoning' },
       ],
     },
+    {
+      id: 'prov-writer-fallback',
+      name: 'Writer Fallback',
+      type: 'openai-compatible',
+      baseUrl: 'https://writer-fallback.test',
+      apiKey: 'key-wf',
+      models: [
+        { id: 'mwf', modelId: 'model-writer-fallback', role: 'fallback' },
+        { id: 'mwfr', modelId: 'model-writer-fallback-reason', role: 'reasoning' },
+      ],
+    },
   ];
 }
 
@@ -381,5 +392,272 @@ describe('global writer — research fallback → writer chain', () => {
       assert.ok(calls[2].url.includes('writer.test'), 'writer uses global writer route');
       assert.deepEqual(result, { ok: true });
     } finally { global.fetch = original; }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 7. Writer fallback + visible phase tracking
+// ---------------------------------------------------------------------------
+
+describe('global writer - writer fallback and phase call telemetry', () => {
+  it('writer primary failure retries writer fallback without redoing research', async () => {
+    const original = global.fetch;
+    const calls = [];
+    let count = 0;
+    global.fetch = async (url, opts) => {
+      count++;
+      const body = JSON.parse(opts.body);
+      calls.push({ url, body });
+      if (count === 1) {
+        return {
+          ok: true, status: 200,
+          async text() {
+            return JSON.stringify({
+              choices: [{ message: { content: 'Research: fallback writer should format this' } }],
+              model: body.model,
+              usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+            });
+          },
+        };
+      }
+      if (count === 2) {
+        return { ok: false, status: 503, async text() { return 'writer unavailable'; } };
+      }
+      return {
+        ok: true, status: 200,
+        async text() {
+          return JSON.stringify({
+            choices: [{ message: { content: '{"ok":true}' } }],
+            model: body.model,
+            usage: { prompt_tokens: 11, completion_tokens: 21, total_tokens: 32 },
+          });
+        },
+      };
+    };
+
+    try {
+      const config = baseConfig({
+        ...phaseFlatKeys('ColorFinder'),
+        _resolvedWriterBaseModel: 'model-writer',
+        _resolvedWriterUseReasoning: false,
+      });
+      const result = await callLlmWithRouting({
+        config, phase: 'colorFinder', reason: 'color_finder', role: 'triage',
+        system: 's', user: 'u',
+        jsonSchema: TEST_SCHEMA,
+      });
+
+      assert.equal(count, 3, 'research once, writer primary once, writer fallback once');
+      assert.equal(calls[0].body.response_format, undefined, 'research has no schema');
+      assert.ok(calls[1].body.response_format, 'writer primary has schema');
+      assert.ok(calls[2].body.response_format, 'writer fallback has schema');
+      assert.ok(calls[1].url.includes('writer.test'), 'primary writer route used first');
+      assert.ok(calls[2].url.includes('fallback.test'), 'writer fallback route used after writer failure');
+      const fallbackSystem = calls[2].body.messages.find((m) => m.role === 'system')?.content || '';
+      assert.ok(fallbackSystem.includes('Research: fallback writer should format this'),
+        'writer fallback reuses the existing research text');
+      assert.deepEqual(result, { ok: true });
+    } finally {
+      global.fetch = original;
+    }
+  });
+
+  it('writer primary failure uses writer-specific fallback reasoning route', async () => {
+    const original = global.fetch;
+    const calls = [];
+    let count = 0;
+    global.fetch = async (url, opts) => {
+      count++;
+      const body = JSON.parse(opts.body);
+      calls.push({ url, body });
+      if (count === 1) {
+        return {
+          ok: true, status: 200,
+          async text() {
+            return JSON.stringify({
+              choices: [{ message: { content: 'Research: writer fallback reasoning route should format this' } }],
+              model: body.model,
+              usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+            });
+          },
+        };
+      }
+      if (count === 2) {
+        return { ok: false, status: 503, async text() { return 'writer unavailable'; } };
+      }
+      return {
+        ok: true, status: 200,
+        async text() {
+          return JSON.stringify({
+            choices: [{ message: { content: '{"ok":true}' } }],
+            model: body.model,
+            usage: { prompt_tokens: 11, completion_tokens: 21, total_tokens: 32 },
+          });
+        },
+      };
+    };
+
+    try {
+      const config = baseConfig({
+        ...phaseFlatKeys('ColorFinder'),
+        _resolvedWriterBaseModel: 'model-writer',
+        _resolvedWriterUseReasoning: false,
+        _resolvedWriterFallbackModel: 'model-writer-fallback',
+        _resolvedWriterFallbackReasoningModel: 'model-writer-fallback-reason',
+        _resolvedWriterFallbackUseReasoning: true,
+        _resolvedWriterFallbackThinking: true,
+        _resolvedWriterFallbackThinkingEffort: 'high',
+      });
+      const result = await callLlmWithRouting({
+        config, phase: 'colorFinder', reason: 'color_finder', role: 'triage',
+        system: 's', user: 'u',
+        jsonSchema: TEST_SCHEMA,
+      });
+
+      assert.equal(count, 3, 'research once, writer primary once, writer fallback once');
+      assert.ok(calls[2].url.includes('writer-fallback.test'), 'writer-specific fallback route used');
+      assert.equal(calls[2].body.model, 'model-writer-fallback-reason');
+      assert.equal(calls[2].body.request_options?.reasoning_effort, 'high');
+      assert.deepEqual(result, { ok: true });
+    } finally {
+      global.fetch = original;
+    }
+  });
+
+  it('two-phase telemetry surfaces research completion, writer failure, and writer fallback', async () => {
+    const original = global.fetch;
+    const emissions = [];
+    let count = 0;
+    global.fetch = async (_url, opts) => {
+      count++;
+      const body = JSON.parse(opts.body);
+      if (count === 1) {
+        return {
+          ok: true, status: 200,
+          async text() {
+            return JSON.stringify({
+              choices: [{ message: { content: 'Research: colors found' } }],
+              model: body.model,
+              usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+            });
+          },
+        };
+      }
+      if (count === 2) {
+        return { ok: false, status: 503, async text() { return 'writer unavailable'; } };
+      }
+      return {
+        ok: true, status: 200,
+        async text() {
+          return JSON.stringify({
+            choices: [{ message: { content: '{"ok":true}' } }],
+            model: body.model,
+            usage: { prompt_tokens: 11, completion_tokens: 21, total_tokens: 32 },
+          });
+        },
+      };
+    };
+
+    try {
+      const config = baseConfig({
+        ...phaseFlatKeys('ColorFinder'),
+        _resolvedWriterBaseModel: 'model-writer',
+        _resolvedWriterUseReasoning: false,
+      });
+      await callLlmWithRouting({
+        config, phase: 'colorFinder', reason: 'color_finder', role: 'triage',
+        system: 's', user: 'u',
+        jsonSchema: TEST_SCHEMA,
+        llmCallLabel: 'Discovery',
+        onLlmCallComplete: (call) => emissions.push(call),
+      });
+
+      assert.deepEqual(
+        emissions.map((e) => [e.label, e.response === null, e.isFallback]),
+        [
+          ['Discovery Research', true, false],
+          ['Discovery Research', false, false],
+          ['Writer Formatting', true, false],
+          ['Writer Formatting', false, false],
+          ['Writer Formatting Fallback', true, true],
+          ['Writer Formatting Fallback', false, true],
+        ],
+      );
+      assert.equal(emissions[0].response, null);
+      assert.equal(emissions[1].response, 'Research: colors found');
+      assert.equal(emissions[3].response.status, 'failed');
+      assert.match(emissions[3].response.error, /writer unavailable/);
+      assert.deepEqual(emissions[5].response, { ok: true });
+    } finally {
+      global.fetch = original;
+    }
+  });
+
+  it('two-phase telemetry keeps failed primary research before fallback research', async () => {
+    const original = global.fetch;
+    const emissions = [];
+    let count = 0;
+    global.fetch = async (_url, opts) => {
+      count++;
+      const body = JSON.parse(opts.body);
+      if (count === 1) {
+        return { ok: false, status: 500, async text() { return 'primary research unavailable'; } };
+      }
+      if (count === 2) {
+        return {
+          ok: true, status: 200,
+          async text() {
+            return JSON.stringify({
+              choices: [{ message: { content: 'Research: fallback colors found' } }],
+              model: body.model,
+              usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+            });
+          },
+        };
+      }
+      return {
+        ok: true, status: 200,
+        async text() {
+          return JSON.stringify({
+            choices: [{ message: { content: '{"ok":true}' } }],
+            model: body.model,
+            usage: { prompt_tokens: 11, completion_tokens: 21, total_tokens: 32 },
+          });
+        },
+      };
+    };
+
+    try {
+      const config = baseConfig({
+        ...phaseFlatKeys('ColorFinder'),
+        _resolvedWriterBaseModel: 'model-writer',
+        _resolvedWriterUseReasoning: false,
+      });
+      await callLlmWithRouting({
+        config, phase: 'colorFinder', reason: 'color_finder', role: 'triage',
+        system: 's', user: 'u',
+        jsonSchema: TEST_SCHEMA,
+        llmCallLabel: 'Discovery',
+        onLlmCallComplete: (call) => emissions.push(call),
+      });
+
+      assert.deepEqual(
+        emissions.map((e) => [e.label, e.response === null, e.isFallback]),
+        [
+          ['Discovery Research', true, false],
+          ['Discovery Research', false, false],
+          ['Discovery Research Fallback', true, true],
+          ['Discovery Research Fallback', false, true],
+          ['Writer Formatting', true, false],
+          ['Writer Formatting', false, false],
+        ],
+      );
+      assert.equal(emissions[1].response.status, 'failed');
+      assert.match(emissions[1].response.error, /primary research unavailable/);
+      assert.equal(emissions[3].response, 'Research: fallback colors found');
+      assert.deepEqual(emissions[5].response, { ok: true });
+    } finally {
+      global.fetch = original;
+    }
   });
 });

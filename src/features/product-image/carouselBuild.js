@@ -180,6 +180,7 @@ export async function runEvalView({
     };
     const llmDeps = buildLlmCallDeps({
       config, logger, onModelResolved: wrappedOnModelResolved, onStreamChunk, onQueueWait, signal,
+      onLlmCallComplete,
       onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
     });
     callLlm = createImageEvaluatorCallLlm(llmDeps);
@@ -504,6 +505,7 @@ export async function runEvalHero({
     };
     const llmDeps = buildLlmCallDeps({
       config, logger, onModelResolved: wrappedOnModelResolved, onStreamChunk, onQueueWait, signal,
+      onLlmCallComplete,
       onUsage: appDb ? buildBillingOnUsage({ config, appDb, category: product.category, productId: product.product_id }) : undefined,
     });
     heroCall = createHeroEvalCallLlm(llmDeps);

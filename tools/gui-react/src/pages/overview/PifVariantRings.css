@@ -153,6 +153,9 @@
 /* Per-variant cluster split into two distinct click targets:
    - color swatch  → Popover for Run/Hero/Loop/Eval
    - rings + count → CarouselPreviewPopup */
+/* WHY: Hover affordance lives on the wrapping `.sf-popover-trigger` (see
+   Popover.css). Inner border kept transparent only to preserve the 1px
+   layout box that earlier hover-border rules established. */
 .sf-pif-rings-color-trigger {
   display: inline-flex;
   flex-direction: column;
@@ -164,12 +167,6 @@
   border: 1px solid transparent;
   padding: 1px;
   border-radius: 4px;
-  transition: border-color 120ms ease, background 120ms ease;
-}
-.sf-pif-rings-color-trigger:hover,
-.sf-pif-rings-color-trigger:focus-visible {
-  border-color: color-mix(in srgb, var(--sf-token-accent, #4263eb) 55%, transparent);
-  background: color-mix(in srgb, var(--sf-token-accent, #4263eb) 6%, transparent);
 }
 
 .sf-pif-rings-carousel-trigger {

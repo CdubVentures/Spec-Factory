@@ -46,7 +46,9 @@ interface LlmPhaseSectionProps {
   registry: LlmProviderEntry[];
   globalDraft: GlobalDraftSlice;
   apiKeyFilter?: (provider: LlmProviderEntry) => boolean;
-  phaseSchema?: { system_prompt: string; hero_system_prompt?: string; identity_check_prompt?: string; response_schema: Record<string, unknown>; hero_response_schema?: Record<string, unknown>; identity_check_response_schema?: Record<string, unknown>; view_prompts?: Record<string, string>; eval_criteria_defaults?: Record<string, Record<string, string>>; eval_criteria_categories?: readonly string[]; view_prompt_defaults?: Record<string, Record<string, Record<'loop' | 'priority' | 'additional', string>>>; view_prompt_categories?: readonly string[]; view_prompt_roles?: readonly ('loop' | 'priority' | 'additional')[]; prompt_templates?: readonly PromptTemplateDef[] } | null;
+  phaseSchema?: { system_prompt: string; user_message?: string; hero_system_prompt?: string; identity_check_prompt?: string; response_schema: Record<string, unknown>; hero_response_schema?: Record<string, unknown>; identity_check_response_schema?: Record<string, unknown>; view_prompts?: Record<string, string>; eval_criteria_defaults?: Record<string, Record<string, string>>; eval_criteria_categories?: readonly string[]; view_prompt_defaults?: Record<string, Record<string, Record<'loop' | 'priority' | 'additional', string>>>; view_prompt_categories?: readonly string[]; view_prompt_roles?: readonly ('loop' | 'priority' | 'additional')[]; prompt_templates?: readonly PromptTemplateDef[] } | null;
+  onRunWriterTest?: () => void;
+  writerTestDisabled?: boolean;
 }
 
 export const LlmPhaseSection = memo(function LlmPhaseSection({
@@ -59,6 +61,8 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
   globalDraft,
   apiKeyFilter,
   phaseSchema,
+  onRunWriterTest,
+  writerTestDisabled,
 }: LlmPhaseSectionProps) {
   const overrideKey = uiPhaseIdToOverrideKey(phaseId);
   const resolved = overrideKey
@@ -261,8 +265,22 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
       />
     </SettingGroupBlock>
 
-    {/* ── Fallback (error recovery — independent of writer) ── */}
-    {phaseId !== 'writer' && (
+    {/* ── Fallback (error recovery) ── */}
+    {phaseId === 'writer' && onRunWriterTest && (
+      <SettingGroupBlock title="Writer Test" collapsible storageKey={`sf:llm-phase:${phaseId}:test`}>
+        <SettingRow label="Model Test" tip="Runs the visible Writer test prompt against the selected Writer model and validates strict JSON behavior.">
+          <button
+            type="button"
+            onClick={onRunWriterTest}
+            disabled={writerTestDisabled}
+            className="sf-primary-button px-3 py-1.5 sf-text-label disabled:opacity-50"
+          >
+            Run Test
+          </button>
+        </SettingRow>
+      </SettingGroupBlock>
+    )}
+
     <SettingGroupBlock title="Fallback" collapsible storageKey={`sf:llm-phase:${phaseId}:fallback`}>
       <SettingRow label="Model" tip="Fallback model when the primary fails. Leave on default to inherit global fallback.">
         <div className="flex items-center gap-1.5">
@@ -334,7 +352,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
           </select>
         </SettingRow>
       )}
-      {fallbackModelCapabilities.webSearch && (
+      {phaseId !== 'writer' && fallbackModelCapabilities.webSearch && (
         <SettingRow label="Web Search" tip="Send web_search flag to the fallback model.">
           <SettingToggle
             checked={phaseOverrides[overrideKey]?.fallbackWebSearch ?? false}
@@ -343,7 +361,6 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
         </SettingRow>
       )}
     </SettingGroupBlock>
-    )}
 
     {phaseSchema && (
       <SettingGroupBlock title="LLM Call Contract">
@@ -401,6 +418,14 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
                 <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">System Prompt</div>
                 <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
                   {String(phaseSchema.system_prompt)}
+                </pre>
+              </div>
+            )}
+            {phaseSchema.user_message && (
+              <div>
+                <div className="sf-text-nano font-bold tracking-wider uppercase sf-text-muted mb-1">User Message</div>
+                <pre className="sf-pre-block sf-text-caption font-mono rounded p-3 overflow-auto whitespace-pre-wrap leading-relaxed select-text cursor-text">
+                  {String(phaseSchema.user_message)}
                 </pre>
               </div>
             )}

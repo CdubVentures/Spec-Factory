@@ -32,6 +32,7 @@ import type { LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.generated
 import { useLlmPolicyAuthority } from '../state/useLlmPolicyAuthority.ts';
 import { DEFAULT_LLM_POLICY } from '../state/llmPolicyDefaults.ts';
 import { flattenLlmPolicy, routeFlatKeyUpdate } from '../state/llmPolicyAdapter.ts';
+import { useFireAndForget } from '../../operations/hooks/useFireAndForget.ts';
 import {
   buildLlmGlobalDefaultsResetPatch,
   buildLlmPhaseOverrideResetPatch,
@@ -262,6 +263,14 @@ export function LlmConfigPage() {
   ]);
 
   const inputCls = 'sf-input w-full py-2 sf-text-label leading-5 focus:outline-none focus:ring-2 focus:ring-accent/25 disabled:opacity-60';
+  const fireWriterModelTest = useFireAndForget({
+    type: 'writer-test',
+    category: 'settings',
+    productId: 'writer-model-test',
+  });
+  const runWriterModelTest = useCallback(() => {
+    fireWriterModelTest('/llm-policy/writer-test', {}, { subType: 'model-check' });
+  }, [fireWriterModelTest]);
 
   const globalPrompts = useGlobalPromptsAuthority();
   const [resetScope, setResetScope] = useState<'panel' | 'all' | null>(null);
@@ -402,6 +411,8 @@ export function LlmConfigPage() {
           globalDraft={globalDraft}
           apiKeyFilter={apiKeyFilter}
           phaseSchema={indexingLlmConfig?.phase_schemas?.[activePhase] ?? null}
+          onRunWriterTest={activePhase === 'writer' ? runWriterModelTest : undefined}
+          writerTestDisabled={!runtimeSettingsReady}
         />
       </Suspense>
     );

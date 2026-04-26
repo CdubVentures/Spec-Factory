@@ -11,6 +11,7 @@ import {
   failOperation,
   cancelOperation,
   getOperationSignal,
+  countRunningOperations,
   listOperations,
   _resetForTest,
 } from '../operationsRegistry.js';
@@ -29,6 +30,9 @@ const VALID_OP = {
   productLabel: 'Corsair M75 Air',
   stages: ['LLM', 'Validate'],
 };
+
+const MAX_RETAINED_OPERATIONS = 250;
+const PIF_BURST_OPERATIONS = 200;
 
 // ── registerOperation ────────────────────────────────────────────────
 
@@ -637,11 +641,25 @@ describe('concurrent operations', () => {
     assert.equal(o1.status, 'running');
     assert.equal(o2.status, 'done');
   });
+
+  it('counts only running operations for resource policy decisions', () => {
+    const running = registerOperation({ ...VALID_OP, productId: 'p-running' });
+    const done = registerOperation({ ...VALID_OP, productId: 'p-done' });
+    const failed = registerOperation({ ...VALID_OP, productId: 'p-failed' });
+    const cancelled = registerOperation({ ...VALID_OP, productId: 'p-cancelled' });
+
+    completeOperation({ id: done.id });
+    failOperation({ id: failed.id, error: 'boom' });
+    cancelOperation({ id: cancelled.id });
+
+    assert.equal(countRunningOperations(), 1);
+    assert.ok(listOperations().some((operation) => operation.id === running.id));
+  });
 });
 
-// ── 50-op cap (auto-eviction of oldest terminal) ─────────────────────
+// ── operation cap (auto-eviction of oldest terminal) ─────────────────────
 
-describe('50-op cap', () => {
+describe('operation cap', () => {
   beforeEach(() => _resetForTest());
 
   function registerDone(productId) {
@@ -650,30 +668,35 @@ describe('50-op cap', () => {
     return id;
   }
 
-  it('keeps all 50 when at cap', () => {
-    for (let i = 0; i < 50; i++) registerDone(`p-${i}`);
-    assert.equal(listOperations().length, 50);
+  it('keeps all operations when at cap', () => {
+    for (let i = 0; i < MAX_RETAINED_OPERATIONS; i += 1) registerDone(`p-${i}`);
+    assert.equal(listOperations().length, MAX_RETAINED_OPERATIONS);
   });
 
-  it('evicts oldest terminal when adding the 51st', () => {
+  it('retains a 200-operation PIF burst in the tracker', () => {
+    for (let i = 0; i < PIF_BURST_OPERATIONS; i += 1) registerDone(`pif-${i}`);
+    assert.equal(listOperations().length, PIF_BURST_OPERATIONS);
+  });
+
+  it('evicts oldest terminal when adding one past the cap', () => {
     const ids = [];
-    for (let i = 0; i < 50; i++) ids.push(registerDone(`p-${i}`));
+    for (let i = 0; i < MAX_RETAINED_OPERATIONS; i += 1) ids.push(registerDone(`p-${i}`));
     const newId = registerOperation({ ...VALID_OP, productId: 'p-new' }).id;
 
     const ops = listOperations();
-    assert.equal(ops.length, 50, 'cap holds');
+    assert.equal(ops.length, MAX_RETAINED_OPERATIONS, 'cap holds');
     assert.ok(!ops.find(o => o.id === ids[0]), 'oldest done evicted');
     assert.ok(ops.find(o => o.id === newId), 'new op survives');
   });
 
   it('never evicts a running op even when over cap', () => {
-    // All 55 running — nothing terminal → cannot evict
+    // All running — nothing terminal → cannot evict
     const runningIds = [];
-    for (let i = 0; i < 55; i++) {
+    for (let i = 0; i < MAX_RETAINED_OPERATIONS + 5; i += 1) {
       runningIds.push(registerOperation({ ...VALID_OP, productId: `p-${i}` }).id);
     }
     const ops = listOperations();
-    assert.equal(ops.length, 55);
+    assert.equal(ops.length, MAX_RETAINED_OPERATIONS + 5);
     for (const id of runningIds) {
       assert.ok(ops.find(o => o.id === id), `running op ${id} preserved`);
     }
@@ -682,12 +705,12 @@ describe('50-op cap', () => {
   it('skips running ops and evicts oldest terminal', () => {
     const runId = registerOperation({ ...VALID_OP, productId: 'p-run-first' }).id;
     const doneIds = [];
-    for (let i = 1; i < 50; i++) doneIds.push(registerDone(`p-${i}`));
-    // Total: 50 (1 running + 49 done). Register 51st → must evict oldest terminal, not the running one.
+    for (let i = 1; i < MAX_RETAINED_OPERATIONS; i += 1) doneIds.push(registerDone(`p-${i}`));
+    // At cap (1 running + terminal ops). Register one more -> evict oldest terminal, not the running one.
     const newId = registerOperation({ ...VALID_OP, productId: 'p-new' }).id;
 
     const ops = listOperations();
-    assert.equal(ops.length, 50);
+    assert.equal(ops.length, MAX_RETAINED_OPERATIONS);
     assert.ok(ops.find(o => o.id === runId), 'running op preserved');
     assert.ok(!ops.find(o => o.id === doneIds[0]), 'oldest terminal evicted');
     assert.ok(ops.find(o => o.id === newId));
@@ -697,7 +720,7 @@ describe('50-op cap', () => {
     const spy = makeBroadcastSpy();
     initOperationsRegistry({ broadcastWs: spy });
     const doneIds = [];
-    for (let i = 0; i < 50; i++) doneIds.push(registerDone(`p-${i}`));
+    for (let i = 0; i < MAX_RETAINED_OPERATIONS; i += 1) doneIds.push(registerDone(`p-${i}`));
     spy.calls.length = 0;
     registerOperation({ ...VALID_OP, productId: 'p-trigger' });
 
@@ -707,44 +730,50 @@ describe('50-op cap', () => {
   });
 
   it('evicts on completion when over cap with mix', () => {
-    // 51 running (over cap, nothing to evict yet)
+    // Over cap with running ops only: nothing to evict yet.
     const runIds = [];
-    for (let i = 0; i < 51; i++) runIds.push(registerOperation({ ...VALID_OP, productId: `p-${i}` }).id);
-    assert.equal(listOperations().length, 51);
-    // Complete one → it becomes terminal → cap enforcement evicts it
+    for (let i = 0; i < MAX_RETAINED_OPERATIONS + 1; i += 1) {
+      runIds.push(registerOperation({ ...VALID_OP, productId: `p-${i}` }).id);
+    }
+    assert.equal(listOperations().length, MAX_RETAINED_OPERATIONS + 1);
+    // Complete one -> it becomes terminal -> cap enforcement evicts it.
     completeOperation({ id: runIds[0] });
     const ops = listOperations();
-    assert.equal(ops.length, 50, 'cap restored after completion triggers eviction');
+    assert.equal(ops.length, MAX_RETAINED_OPERATIONS, 'cap restored after completion triggers eviction');
     assert.ok(!ops.find(o => o.id === runIds[0]), 'the now-terminal op was evicted');
   });
 
   it('evicts on failure when over cap', () => {
     const runIds = [];
-    for (let i = 0; i < 51; i++) runIds.push(registerOperation({ ...VALID_OP, productId: `p-${i}` }).id);
+    for (let i = 0; i < MAX_RETAINED_OPERATIONS + 1; i += 1) {
+      runIds.push(registerOperation({ ...VALID_OP, productId: `p-${i}` }).id);
+    }
     failOperation({ id: runIds[0], error: 'boom' });
-    assert.equal(listOperations().length, 50);
+    assert.equal(listOperations().length, MAX_RETAINED_OPERATIONS);
   });
 
   it('evicts on cancel when over cap', () => {
     const runIds = [];
-    for (let i = 0; i < 51; i++) runIds.push(registerOperation({ ...VALID_OP, productId: `p-${i}` }).id);
+    for (let i = 0; i < MAX_RETAINED_OPERATIONS + 1; i += 1) {
+      runIds.push(registerOperation({ ...VALID_OP, productId: `p-${i}` }).id);
+    }
     cancelOperation({ id: runIds[0] });
-    assert.equal(listOperations().length, 50);
+    assert.equal(listOperations().length, MAX_RETAINED_OPERATIONS);
   });
 
   it('cap holds across repeated overflow', () => {
-    for (let i = 0; i < 50; i++) registerDone(`p-${i}`);
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < MAX_RETAINED_OPERATIONS; i += 1) registerDone(`p-${i}`);
+    for (let i = 0; i < 10; i += 1) {
       const id = registerOperation({ ...VALID_OP, productId: `x-${i}` }).id;
       completeOperation({ id });
     }
-    assert.equal(listOperations().length, 50);
+    assert.equal(listOperations().length, MAX_RETAINED_OPERATIONS);
   });
 
-  it('no eviction when count is at or below 50', () => {
+  it('no eviction when count is at or below cap', () => {
     const spy = makeBroadcastSpy();
     initOperationsRegistry({ broadcastWs: spy });
-    for (let i = 0; i < 50; i++) registerDone(`p-${i}`);
+    for (let i = 0; i < MAX_RETAINED_OPERATIONS; i += 1) registerDone(`p-${i}`);
     const removes = spy.calls.filter(c => c.channel === 'operations' && c.data.action === 'remove');
     assert.equal(removes.length, 0, 'no remove broadcasts at or below cap');
   });
