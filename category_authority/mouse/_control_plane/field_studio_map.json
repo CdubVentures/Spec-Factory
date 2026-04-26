@@ -410,9 +410,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "required_level": "mandatory",
         "availability": "always",
-        "difficulty": "easy"
+        "difficulty": "easy",
+        "required_level": "mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -791,9 +791,9 @@
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "required_level": "non_mandatory",
         "availability": "sometimes",
-        "difficulty": "medium"
+        "difficulty": "medium",
+        "required_level": "non_mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -1331,6 +1331,15 @@
       "value_form_sample": "scalar"
     },
     "battery_hours": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the manufacturer- or credible-source advertised maximum battery runtime for the exact mouse as a scalar hours value. Accept up to battery life/runtime/playtime/use-on-a-charge claims. If the source lists multiple modes or settings (2.4 GHz, Bluetooth, HyperSpeed, lighting on/off, polling rate, AA/AAA battery), emit the highest supported runtime that applies to the exact product because this field uses upper_bound; preserve the condition in evidence. Convert units to hours: days x 24, weeks x 168, months x 730, years x 8760; prefer explicit source hours when present. Do not use charge time, fast-charge minutes, battery capacity (mAh), standby/sleep time, or values from older/newer/sibling editions. For wired-only products or products with no defensible runtime evidence, return unk/no submitted value.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "battery life",
         "battery life (hours)",
@@ -1480,18 +1489,18 @@
       "value_form": "single",
       "value_form_sample": "scalar",
       "variance_policy": "upper_bound",
-      "variant_dependent": false,
-      "ai_assist": {
-        "reasoning_note": "Extract the manufacturer- or credible-source advertised maximum battery runtime for the exact mouse as a scalar hours value. Accept up to battery life/runtime/playtime/use-on-a-charge claims. If the source lists multiple modes or settings (2.4 GHz, Bluetooth, HyperSpeed, lighting on/off, polling rate, AA/AAA battery), emit the highest supported runtime that applies to the exact product because this field uses upper_bound; preserve the condition in evidence. Convert units to hours: days x 24, weeks x 168, months x 730, years x 8760; prefer explicit source hours when present. Do not use charge time, fast-charge minutes, battery capacity (mAh), standby/sleep time, or values from older/newer/sibling editions. For wired-only products or products with no defensible runtime evidence, return unk/no submitted value.",
-        "variant_inventory_usage": {
-          "enabled": true
-        },
-        "pif_priority_images": {
-          "enabled": false
-        }
-      }
+      "variant_dependent": false
     },
     "bluetooth": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Return true only when the exact product/variant supports Bluetooth as a connection mode. Accept Bluetooth, Bluetooth Low Energy, Bluetooth LE, BLE, BT, Bluetooth Smart, or Bluetooth 4.x/5.x wording as true; version text is evidence only, not a separate value. Return false only when a credible product/spec/review source explicitly says no Bluetooth or enumerates all supported connection modes as wired/USB receiver/2.4 GHz/proprietary wireless only. Do not infer true from wireless, 2.4 GHz, USB receiver, dongle, LIGHTSPEED, HyperSpeed, or Wireless alone. If sources are generic, omit the exact variant, or conflict with sibling/edition evidence, return unk rather than guessing.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "Bluetooth Low Energy",
         "Bluetooth LE",
@@ -1657,18 +1666,18 @@
       },
       "value_form": "scalar",
       "value_form_sample": "scalar",
-      "variant_dependent": false,
-      "ai_assist": {
-        "reasoning_note": "Return true only when the exact product/variant supports Bluetooth as a connection mode. Accept Bluetooth, Bluetooth Low Energy, Bluetooth LE, BLE, BT, Bluetooth Smart, or Bluetooth 4.x/5.x wording as true; version text is evidence only, not a separate value. Return false only when a credible product/spec/review source explicitly says no Bluetooth or enumerates all supported connection modes as wired/USB receiver/2.4 GHz/proprietary wireless only. Do not infer true from wireless, 2.4 GHz, USB receiver, dongle, LIGHTSPEED, HyperSpeed, or Wireless alone. If sources are generic, omit the exact variant, or conflict with sibling/edition evidence, return unk rather than guessing.",
-        "variant_inventory_usage": {
-          "enabled": true
-        },
-        "pif_priority_images": {
-          "enabled": false
-        }
-      }
+      "variant_dependent": false
     },
     "cable_type": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the cable sheath/flex class of the included cable(s), not connector, length, detachable status, wireless mode, or the separate paracord boolean alone. Prefer direct Cable/Cable Type/spec labels. Normalize exact terms: paracord/paracord-like/shoelace/lightweight paracord construction => paracord; rubber/rubber-coated/soft rubber cable => rubber; braided/double-sleeved/braided cable => braided; Cooler Master Ultraweave/Ultra-weave => ultraweave. Proprietary low-drag names such as SpeedFlex, Ascended, Flex Cord, EZcord, PhantomFlex, and HyperFlex need a material statement before mapping; do not create a new value from marketing alone. For products with multiple included/swappable cables, return every proven cable type. If sources only prove USB connectors, cable length, charging ability, or generic flexibility, return unk.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "rubber-coated cable -> rubber",
         "soft rubber cable -> rubber",
@@ -1689,8 +1698,8 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "sort": "asc",
-          "item_union": true
+          "item_union": true,
+          "sort": "asc"
         },
         "shape": "list",
         "type": "string",
@@ -1834,16 +1843,7 @@
       },
       "value_form": "set",
       "value_form_sample": "list",
-      "variant_dependent": true,
-      "ai_assist": {
-        "reasoning_note": "Extract the cable sheath/flex class of the included cable(s), not connector, length, detachable status, wireless mode, or the separate paracord boolean alone. Prefer direct Cable/Cable Type/spec labels. Normalize exact terms: paracord/paracord-like/shoelace/lightweight paracord construction => paracord; rubber/rubber-coated/soft rubber cable => rubber; braided/double-sleeved/braided cable => braided; Cooler Master Ultraweave/Ultra-weave => ultraweave. Proprietary low-drag names such as SpeedFlex, Ascended, Flex Cord, EZcord, PhantomFlex, and HyperFlex need a material statement before mapping; do not create a new value from marketing alone. For products with multiple included/swappable cables, return every proven cable type. If sources only prove USB connectors, cable length, charging ability, or generic flexibility, return unk.",
-        "variant_inventory_usage": {
-          "enabled": true
-        },
-        "pif_priority_images": {
-          "enabled": false
-        }
-      }
+      "variant_dependent": true
     },
     "click_force": {
       "aliases": [],
@@ -2671,8 +2671,16 @@
           "beige",
           "black",
           "blue",
+          "bronze",
           "brown",
+          "burgundy",
+          "champagne",
+          "charcoal",
+          "clear",
+          "copper",
           "coral",
+          "cream",
+          "crimson",
           "cyan",
           "dark-blue",
           "dark-brown",
@@ -2693,11 +2701,15 @@
           "dark-teal",
           "dark-violet",
           "dark-yellow",
+          "electric-blue",
           "emerald",
+          "frosted",
           "fuchsia",
           "gold",
+          "graphite",
           "gray",
           "green",
+          "gunmetal",
           "indigo",
           "ivory",
           "lavender",
@@ -2727,10 +2739,14 @@
           "lime",
           "magenta",
           "maroon",
+          "mint",
           "navy",
+          "neon-green",
+          "off-white",
           "olive",
           "orange",
           "pink",
+          "platinum",
           "purple",
           "red",
           "rose",
@@ -2738,8 +2754,11 @@
           "silver",
           "sky",
           "slate",
+          "smoke",
           "stone",
           "teal",
+          "titanium",
+          "transparent",
           "turquoise",
           "violet",
           "white",
@@ -2749,6 +2768,15 @@
       }
     },
     "computer_side_connector": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Extract the physical connector(s) that can plug into the computer for the exact mouse/package: cable computer end, wireless receiver/dongle plug, and any included adapter that changes the computer-facing plug. Do not use the mouse-side port (for example a USB-C charging port) unless the source also proves the computer-facing end is USB-C. Generic USB receiver, USB cable, or USB port is not enough for USB-A/USB-C unless the source text or a clear tied image proves the connector shape/type. Return multiple values only when the exact package includes multiple PC-facing plugs/adapters; do not union across separate connector variants/SKUs, and return unk when the requested variant is not pinned. Included adapters count; optional or third-party adapters do not.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "USB Type-A",
         "USB Type A",
@@ -2773,8 +2801,8 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "sort": "insert",
-          "item_union": false
+          "item_union": false,
+          "sort": "insert"
         },
         "shape": "list",
         "type": "string",
@@ -2912,16 +2940,7 @@
       },
       "value_form": "set",
       "value_form_sample": "list",
-      "variant_dependent": true,
-      "ai_assist": {
-        "reasoning_note": "Extract the physical connector(s) that can plug into the computer for the exact mouse/package: cable computer end, wireless receiver/dongle plug, and any included adapter that changes the computer-facing plug. Do not use the mouse-side port (for example a USB-C charging port) unless the source also proves the computer-facing end is USB-C. Generic USB receiver, USB cable, or USB port is not enough for USB-A/USB-C unless the source text or a clear tied image proves the connector shape/type. Return multiple values only when the exact package includes multiple PC-facing plugs/adapters; do not union across separate connector variants/SKUs, and return unk when the requested variant is not pinned. Included adapters count; optional or third-party adapters do not.",
-        "variant_inventory_usage": {
-          "enabled": true
-        },
-        "pif_priority_images": {
-          "enabled": true
-        }
-      }
+      "variant_dependent": true
     },
     "connection": {
       "ai_assist": {
@@ -3103,6 +3122,15 @@
       }
     },
     "connectivity": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the complete set of host connection modes for the exact product/edition/SKU, not only the default or most marketed mode. Map USB/USB-C/wired/data-cable mode to USB Wired only when the source says the mouse can operate over USB/wired mode; a charging-only cable is not enough. Map 2.4G/2.4 GHz/proprietary receiver or dongle modes, including LIGHTSPEED, HyperSpeed, SLIPSTREAM, Quantum, SpeedNova, Logi Bolt, Unifying, wireless receiver, and dongle language, to 2.4GHz RF Dongle; do not emit Wi-Fi unless the source explicitly describes Wi-Fi network connectivity. Map Bluetooth LE/BLE/BT to Bluetooth. Do not union across sibling wired/wireless/Bluetooth Edition/for Business variants; use the exact requested product evidence.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "wired",
         "wired mode",
@@ -3141,8 +3169,8 @@
       "constraints": [],
       "contract": {
         "list_rules": {
-          "sort": "insert",
-          "item_union": false
+          "item_union": false,
+          "sort": "insert"
         },
         "shape": "list",
         "type": "string",
@@ -3280,16 +3308,7 @@
       },
       "value_form": "set",
       "value_form_sample": "list",
-      "variant_dependent": true,
-      "ai_assist": {
-        "reasoning_note": "Extract the complete set of host connection modes for the exact product/edition/SKU, not only the default or most marketed mode. Map USB/USB-C/wired/data-cable mode to USB Wired only when the source says the mouse can operate over USB/wired mode; a charging-only cable is not enough. Map 2.4G/2.4 GHz/proprietary receiver or dongle modes, including LIGHTSPEED, HyperSpeed, SLIPSTREAM, Quantum, SpeedNova, Logi Bolt, Unifying, wireless receiver, and dongle language, to 2.4GHz RF Dongle; do not emit Wi-Fi unless the source explicitly describes Wi-Fi network connectivity. Map Bluetooth LE/BLE/BT to Bluetooth. Do not union across sibling wired/wireless/Bluetooth Edition/for Business variants; use the exact requested product evidence.",
-        "variant_inventory_usage": {
-          "enabled": true
-        },
-        "pif_priority_images": {
-          "enabled": false
-        }
-      }
+      "variant_dependent": true
     },
     "debounce": {
       "aliases": [],
@@ -6056,6 +6075,15 @@
       "value_form_sample": "list"
     },
     "lighting": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Extract the mouse user-visible decorative/configurable lighting, not tiny DPI, battery, charging, or status indicators unless the manufacturer counts them in the lighting-zone total. Use (rgb) for Chroma/LIGHTSYNC/PrismSync/iCUE/Aura Sync/16.8M-color/customizable RGB wording; use (led) only for fixed or single-color lighting. Normalize manufacturer zones, individually programmable LEDs, and clearly counted RGB LED arrays to <N> zone (...); do not infer a zone count from generic RGB marketing alone. Keep to the exact model, edition, and SKU: family variants can differ, including Plus vs non-Plus, wired vs Pro, and translucent Phantom editions. For unresolved variant sets, use the exact requested/default/base product rather than unioning across editions. Images can support lit areas or no-lighting, but an unlit render is not negative evidence. Return none only with explicit no-RGB/no-lighting evidence or strong official visual/spec evidence; otherwise return unk.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "Chroma RGB",
         "Razer Chroma",
@@ -6082,8 +6110,8 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
-          "sort": "insert",
-          "item_union": false
+          "item_union": false,
+          "sort": "insert"
         },
         "shape": "list",
         "type": "string",
@@ -6224,16 +6252,7 @@
       },
       "value_form": "set",
       "value_form_sample": "list",
-      "variant_dependent": true,
-      "ai_assist": {
-        "reasoning_note": "Extract the mouse user-visible decorative/configurable lighting, not tiny DPI, battery, charging, or status indicators unless the manufacturer counts them in the lighting-zone total. Use (rgb) for Chroma/LIGHTSYNC/PrismSync/iCUE/Aura Sync/16.8M-color/customizable RGB wording; use (led) only for fixed or single-color lighting. Normalize manufacturer zones, individually programmable LEDs, and clearly counted RGB LED arrays to <N> zone (...); do not infer a zone count from generic RGB marketing alone. Keep to the exact model, edition, and SKU: family variants can differ, including Plus vs non-Plus, wired vs Pro, and translucent Phantom editions. For unresolved variant sets, use the exact requested/default/base product rather than unioning across editions. Images can support lit areas or no-lighting, but an unlit render is not negative evidence. Return none only with explicit no-RGB/no-lighting evidence or strong official visual/spec evidence; otherwise return unk.",
-        "variant_inventory_usage": {
-          "enabled": true
-        },
-        "pif_priority_images": {
-          "enabled": true
-        }
-      }
+      "variant_dependent": true
     },
     "lngth": {
       "aliases": [
@@ -6960,6 +6979,15 @@
       "value_form_sample": "scalar"
     },
     "mouse_side_connector": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Extract the connector or port on the mouse body used by a detachable cable for charging, data, or wired mode. Normalize by the mouse-end connector only: source phrases like USB Type A to USB Type C cable or USB-C charging/data cable mean USB-C only when the USB-C end plugs into the mouse; USB to Micro-USB or micro USB means Micro-B; Lightning to USB means Lightning. Use n/a only when the exact product has no detachable mouse-side port, such as a fixed/integrated wired cable, a replaceable-battery wireless mouse with no USB port, or a dock/pad-only design with no cable port. Do not use the computer-side plug, receiver/dongle connector, extension adapter, charging dock connector, Powerplay/Qi contacts, or generic cable_type as the value. If sources for the exact SKU/release disagree or mix old/new refreshes or wired/wireless siblings, return unk rather than unioning connector values.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "USB Type-C",
         "USB Type C",
@@ -7113,16 +7141,7 @@
       },
       "value_form": "single",
       "value_form_sample": "scalar",
-      "variant_dependent": true,
-      "ai_assist": {
-        "reasoning_note": "Extract the connector or port on the mouse body used by a detachable cable for charging, data, or wired mode. Normalize by the mouse-end connector only: source phrases like USB Type A to USB Type C cable or USB-C charging/data cable mean USB-C only when the USB-C end plugs into the mouse; USB to Micro-USB or micro USB means Micro-B; Lightning to USB means Lightning. Use n/a only when the exact product has no detachable mouse-side port, such as a fixed/integrated wired cable, a replaceable-battery wireless mouse with no USB port, or a dock/pad-only design with no cable port. Do not use the computer-side plug, receiver/dongle connector, extension adapter, charging dock connector, Powerplay/Qi contacts, or generic cable_type as the value. If sources for the exact SKU/release disagree or mix old/new refreshes or wired/wireless siblings, return unk rather than unioning connector values.",
-        "variant_inventory_usage": {
-          "enabled": true
-        },
-        "pif_priority_images": {
-          "enabled": true
-        }
-      }
+      "variant_dependent": true
     },
     "nvidia_reflex": {
       "aliases": [],
@@ -7516,6 +7535,15 @@
       "value_form_sample": "scalar"
     },
     "paracord": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Set true only for the stock/included cable supplied with the exact mouse/variant when a source explicitly identifies it as paracord/paracord-like, says the cable is made from paracord material, or ties the named stock cable to paracord material/design for that product. Count wired mice and wireless mice whose included USB cable is used for charging or wired play, but ignore aftermarket replacement/mod kits unless the source says that cable is factory-installed or included with the product. Do not treat generic flexible, braided, cloth, low-drag, or cable-length wording as true by itself; proprietary names such as Speedflex, Ultraweave, Flex Cord, EZcord, PhantomCord, Ascended, HyperFlex, or Superflex need either a paracord/material statement or a credible review/spec that explicitly calls the cable paracord-like. False requires positive evidence for a standard/rubber/PVC/non-paracord cable or an explicit non-paracord/non-braided claim; do not infer false from silence. Use exact model/edition/SKU and skip sibling wired/wireless pages unless the source states the same cable applies.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "paracord cable",
         "paracord soft cable",
@@ -7693,16 +7721,7 @@
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "scalar",
-      "value_form_sample": "scalar",
-      "ai_assist": {
-        "reasoning_note": "Set true only for the stock/included cable supplied with the exact mouse/variant when a source explicitly identifies it as paracord/paracord-like, says the cable is made from paracord material, or ties the named stock cable to paracord material/design for that product. Count wired mice and wireless mice whose included USB cable is used for charging or wired play, but ignore aftermarket replacement/mod kits unless the source says that cable is factory-installed or included with the product. Do not treat generic flexible, braided, cloth, low-drag, or cable-length wording as true by itself; proprietary names such as Speedflex, Ultraweave, Flex Cord, EZcord, PhantomCord, Ascended, HyperFlex, or Superflex need either a paracord/material statement or a credible review/spec that explicitly calls the cable paracord-like. False requires positive evidence for a standard/rubber/PVC/non-paracord cable or an explicit non-paracord/non-braided claim; do not infer false from silence. Use exact model/edition/SKU and skip sibling wired/wireless pages unless the source states the same cable applies.",
-        "variant_inventory_usage": {
-          "enabled": true
-        },
-        "pif_priority_images": {
-          "enabled": false
-        }
-      }
+      "value_form_sample": "scalar"
     },
     "polling_rate": {
       "aliases": [
@@ -11215,6 +11234,15 @@
       "value_form_sample": "scalar"
     },
     "wireless_charging": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Return true when the exact mouse can charge or power itself wirelessly through inductive/Qi, magnetic-field, proprietary charging-mat, dock-plus-puck/module, or named systems such as Logitech POWERPLAY/POWERPLAY 2/PowerCore, CORSAIR Qi/MM1000, Razer HyperFlux/HyperFlux V2, or Razer Mouse Dock Pro + Wireless Charging Puck. Accessory sold separately still counts true when official compatibility applies to the exact mouse; aftermarket adapters or generic magnetic USB cables do not make the base product true. Do not count ordinary USB charging, replaceable batteries, charging cables, or a contact/pogo-pin cradle as wireless charging unless the source explicitly says inductive/Qi/wireless charging. Phrases like wireless mouse charging dock may mean a dock for a wireless mouse, so verify whether charging uses contacts/pins versus a puck/coil. For false, prefer an explicit no/unsupported statement or close official power/charging documentation plus no compatible-wireless-charger listing; otherwise return unk. Match the exact submodel/edition and do not transfer values between siblings.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "wireless charging",
         "wireless charge",
@@ -11395,16 +11423,7 @@
         "tooltip_source": null
       },
       "value_form": "scalar",
-      "value_form_sample": "scalar",
-      "ai_assist": {
-        "reasoning_note": "Return true when the exact mouse can charge or power itself wirelessly through inductive/Qi, magnetic-field, proprietary charging-mat, dock-plus-puck/module, or named systems such as Logitech POWERPLAY/POWERPLAY 2/PowerCore, CORSAIR Qi/MM1000, Razer HyperFlux/HyperFlux V2, or Razer Mouse Dock Pro + Wireless Charging Puck. Accessory sold separately still counts true when official compatibility applies to the exact mouse; aftermarket adapters or generic magnetic USB cables do not make the base product true. Do not count ordinary USB charging, replaceable batteries, charging cables, or a contact/pogo-pin cradle as wireless charging unless the source explicitly says inductive/Qi/wireless charging. Phrases like wireless mouse charging dock may mean a dock for a wireless mouse, so verify whether charging uses contacts/pins versus a puck/coil. For false, prefer an explicit no/unsupported statement or close official power/charging documentation plus no compatible-wireless-charger listing; otherwise return unk. Match the exact submodel/edition and do not transfer values between siblings.",
-        "variant_inventory_usage": {
-          "enabled": true
-        },
-        "pif_priority_images": {
-          "enabled": false
-        }
-      }
+      "value_form_sample": "scalar"
     }
   },
   "field_studio_source_path": "",

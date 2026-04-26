@@ -5,7 +5,10 @@ import type { ProductReviewPayload, ProductsIndexResponse } from '../../../types
 
 interface ProductIdentityFields {
   productId: string;
+  id: number;
+  identifier: string;
   brand: string;
+  brand_identifier?: string;
   model: string;
   base_model: string;
   variant: string;
@@ -57,6 +60,92 @@ function deriveReviewBrands(products: readonly ProductReviewPayload[]): string[]
     .sort((left, right) => left.localeCompare(right));
 }
 
+function compareProductIdentity(
+  left: ProductIdentityFields,
+  right: ProductIdentityFields,
+): number {
+  return left.brand.localeCompare(right.brand)
+    || left.base_model.localeCompare(right.base_model)
+    || left.variant.localeCompare(right.variant)
+    || left.productId.localeCompare(right.productId);
+}
+
+function dedupeCreatedProducts<TProduct extends ProductIdentityFields>(
+  products: readonly TProduct[],
+): TProduct[] {
+  const seen = new Set<string>();
+  const output: TProduct[] = [];
+  for (const product of products) {
+    const productId = String(product.productId || '').trim();
+    if (!productId || seen.has(productId)) continue;
+    seen.add(productId);
+    output.push(product);
+  }
+  return output;
+}
+
+function insertProducts<TProduct extends ProductIdentityFields>(
+  current: readonly TProduct[],
+  createdProducts: readonly TProduct[],
+): TProduct[] {
+  const currentIds = new Set(current.map((product) => product.productId));
+  return [
+    ...current,
+    ...createdProducts.filter((product) => !currentIds.has(product.productId)),
+  ].sort(compareProductIdentity);
+}
+
+function buildCatalogRow(product: CatalogProduct): CatalogRow {
+  return {
+    productId: product.productId,
+    id: product.id,
+    identifier: product.identifier,
+    brand: product.brand,
+    ...(product.brand_identifier !== undefined ? { brand_identifier: product.brand_identifier } : {}),
+    model: product.model,
+    base_model: product.base_model,
+    variant: product.variant,
+    status: product.status,
+    confidence: 0,
+    coverage: 0,
+    fieldsFilled: 0,
+    fieldsTotal: 0,
+    cefRunCount: 0,
+    pifVariants: [],
+    skuVariants: [],
+    rdfVariants: [],
+    keyTierProgress: [],
+    cefLastRunAt: '',
+    pifLastRunAt: '',
+    rdfLastRunAt: '',
+    skuLastRunAt: '',
+    kfLastRunAt: '',
+  };
+}
+
+function buildReviewProduct(category: string, product: CatalogProduct): ProductReviewPayload {
+  return {
+    product_id: product.productId,
+    category,
+    identity: {
+      id: product.id,
+      identifier: product.identifier,
+      brand: product.brand,
+      model: product.model,
+      variant: product.variant,
+    },
+    fields: {},
+    metrics: {
+      confidence: 0,
+      coverage: 0,
+      missing: 0,
+      has_run: false,
+      updated_at: '',
+    },
+    hasRun: false,
+  };
+}
+
 function patchReviewProductsIndex(
   data: ProductsIndexResponse | undefined,
   productId: string,
@@ -78,6 +167,45 @@ function patchReviewProductsIndex(
       },
     };
   });
+  return {
+    ...data,
+    products,
+    brands: deriveReviewBrands(products),
+    total: products.length,
+  };
+}
+
+function insertReviewProducts(
+  data: ProductsIndexResponse | undefined,
+  category: string,
+  createdProducts: readonly CatalogProduct[],
+): ProductsIndexResponse | undefined {
+  if (!data) return data;
+  const currentIds = new Set(data.products.map((product) => product.product_id));
+  const insertedProducts = createdProducts
+    .filter((product) => !currentIds.has(product.productId))
+    .map((product) => buildReviewProduct(category, product));
+  const products = [...data.products, ...insertedProducts].sort((left, right) =>
+    compareProductIdentity({
+      productId: left.product_id,
+      id: left.identity.id,
+      identifier: left.identity.identifier,
+      brand: left.identity.brand,
+      model: left.identity.model,
+      base_model: left.identity.model,
+      variant: left.identity.variant,
+      status: 'active',
+    }, {
+      productId: right.product_id,
+      id: right.identity.id,
+      identifier: right.identity.identifier,
+      brand: right.identity.brand,
+      model: right.identity.model,
+      base_model: right.identity.model,
+      variant: right.identity.variant,
+      status: 'active',
+    }),
+  );
   return {
     ...data,
     products,
@@ -208,6 +336,43 @@ export function patchSharedProductCaches(
   queryClient.setQueryData<ProductsIndexResponse | undefined>(
     queryKeys.reviewProductsIndex,
     (current) => patchReviewProductsIndex(current, productId, patch),
+  );
+  return snapshot;
+}
+
+export function insertSharedProductCaches(
+  queryClient: QueryClient,
+  category: string,
+  products: readonly CatalogProduct[],
+): SharedProductCacheSnapshot {
+  const queryKeys = buildSharedProductCacheQueryKeys(category);
+  const snapshot = readSharedProductCacheSnapshot(queryClient, category);
+  const createdProducts = dedupeCreatedProducts(products);
+  if (createdProducts.length === 0) return snapshot;
+  const catalogRows = createdProducts.map(buildCatalogRow);
+  patchLoadedArrayQuery<CatalogProduct>(
+    queryClient,
+    queryKeys.catalogProducts,
+    (current) => insertProducts(current, createdProducts),
+  );
+  patchLoadedArrayQuery<CatalogRow>(
+    queryClient,
+    queryKeys.overviewCatalog,
+    (current) => insertProducts(current, catalogRows),
+  );
+  patchLoadedArrayQuery<CatalogRow>(
+    queryClient,
+    queryKeys.indexingCatalog,
+    (current) => insertProducts(current, catalogRows),
+  );
+  patchLoadedArrayQuery<CatalogProduct>(
+    queryClient,
+    queryKeys.reviewCatalog,
+    (current) => insertProducts(current, createdProducts),
+  );
+  queryClient.setQueryData<ProductsIndexResponse | undefined>(
+    queryKeys.reviewProductsIndex,
+    (current) => insertReviewProducts(current, category, createdProducts),
   );
   return snapshot;
 }

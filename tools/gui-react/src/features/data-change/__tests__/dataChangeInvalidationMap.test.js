@@ -32,6 +32,60 @@ test('review drawer regression: review events invalidate candidates query family
   assert.equal(hasQueryKey(keys, ['product', 'mouse']), true);
 });
 
+test('entity-scoped review events invalidate the exact candidate field query', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'candidate-deleted',
+      domains: ['review', 'product'],
+      entities: {
+        productIds: ['mouse-razer-viper'],
+        fieldKeys: ['weight'],
+      },
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse', 'mouse-razer-viper', 'weight']), true);
+  assert.equal(hasQueryKey(keys, ['product', 'mouse', 'mouse-razer-viper']), true);
+});
+
+test('entity-scoped product events invalidate product-specific published fields and history', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'product-image-finder-run',
+      entities: {
+        productIds: ['mouse-razer-viper'],
+      },
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['publisher', 'published', 'mouse', 'mouse-razer-viper']), true);
+  assert.equal(hasQueryKey(keys, ['indexlab', 'product-history', 'mouse', 'mouse-razer-viper']), true);
+});
+
+test('entity-scoped review events invalidate every product and field pair', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'review-manual-override',
+      entities: {
+        productIds: ['p1', 'p2'],
+        fieldKeys: ['weight', 'dpi'],
+      },
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse', 'p1', 'weight']), true);
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse', 'p1', 'dpi']), true);
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse', 'p2', 'weight']), true);
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse', 'p2', 'dpi']), true);
+});
+
 test('CEF run completion invalidates review grid so new candidates appear live', () => {
   const keys = resolveDataChangeInvalidationQueryKeys({
     message: { type: 'data-change', event: 'color-edition-finder-run' },
@@ -177,6 +231,22 @@ test('runtime settings event invalidates runtime settings query key', () => {
   assert.equal(hasQueryKey(keys, ['runtime-settings']), true);
 });
 
+test('runtime settings event invalidates all finder families and prompt previews', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'runtime-settings-updated',
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['key-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['product-image-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['release-date-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['sku-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['prompt-preview']), true);
+});
+
 test('user settings event invalidates ui settings query key', () => {
   const keys = resolveDataChangeInvalidationQueryKeys({
     message: {
@@ -254,6 +324,24 @@ test('module settings event invalidates module-settings query family', () => {
   });
 
   assert.equal(hasQueryKey(keys, ['module-settings']), true);
+});
+
+test('module settings event invalidates finder panels that consume module settings', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'module-settings-updated',
+      category: 'mouse',
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['module-settings']), true);
+  assert.equal(hasQueryKey(keys, ['key-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['product-image-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['release-date-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['sku-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['prompt-preview']), true);
 });
 
 test('field key order saves invalidate all order consumers from explicit domains payload', () => {

@@ -54,6 +54,34 @@ export function registerCatalogRoutes(ctx) {
     return 0;
   }
 
+  function buildCatalogProductFallback(productId, product) {
+    if (!productId || !product || typeof product !== 'object') return null;
+    return {
+      productId,
+      id: Number(product.id || 0),
+      identifier: String(product.identifier || '').trim(),
+      brand: String(product.brand || '').trim(),
+      brand_identifier: String(product.brand_identifier || '').trim(),
+      model: String(product.model || product.base_model || '').trim(),
+      base_model: String(product.base_model || product.model || '').trim(),
+      variant: String(product.variant || '').trim(),
+      status: String(product.status || '').trim() || 'active',
+      added_at: String(product.added_at || product.created_at || '').trim(),
+      added_by: String(product.added_by || '').trim(),
+      ...(product.updated_at ? { updated_at: String(product.updated_at).trim() } : {}),
+    };
+  }
+
+  async function findCatalogProduct(specDb, productId, fallbackProduct = null) {
+    if (!specDb || !productId) return null;
+    const products = await listProducts({ specDb });
+    if (Array.isArray(products)) {
+      const product = products.find((row) => row.productId === productId);
+      if (product) return product;
+    }
+    return buildCatalogProductFallback(productId, fallbackProduct);
+  }
+
   const productRoot = config?.productRoot || defaultProductRoot();
 
   return async function handleCatalogRoutes(parts, params, method, req, res) {
@@ -80,13 +108,14 @@ export function registerCatalogRoutes(ctx) {
         if (rows.length > 5000) {
           return jsonRes(res, 400, { ok: false, error: 'too_many_rows', max_rows: 5000 });
         }
+        const specDb = resolveSpecDb(category);
         const result = await catalogAddProductsBulk({
           config,
           category,
           brand: body.brand || '',
           rows,
           storage,
-          specDb: resolveSpecDb(category),
+          specDb,
           appDb,
           productRoot,
         });
@@ -97,10 +126,22 @@ export function registerCatalogRoutes(ctx) {
               upsertCatalogProductRow(bulkSpecDb, category, row.productId, row);
             }
           }
+          const createdProductIds = (result.results || [])
+            .filter((row) => row.status === 'created' && row.productId)
+            .map((row) => row.productId);
+          result.products = (await Promise.all(
+            createdProductIds.map((productId) => {
+              const sourceRow = (result.results || []).find((row) => row.productId === productId);
+              return findCatalogProduct(bulkSpecDb, productId, sourceRow);
+            }),
+          )).filter(Boolean);
           emitDataChange({
             broadcastWs,
             event: 'catalog-bulk-add',
             category,
+            entities: {
+              productIds: createdProductIds,
+            },
             meta: {
               count: Number(result?.created || 0),
             },
@@ -118,18 +159,24 @@ export function registerCatalogRoutes(ctx) {
       // POST /api/v1/catalog/{cat}/products  { brand, base_model, variant? }
       if (!parts[3] && method === 'POST') {
         const body = await readJsonBody(req);
+        const specDb = resolveSpecDb(category);
         const result = await catalogAddProduct({
           config, category,
           brand: body.brand,
           base_model: body.base_model || '',
           variant: body.variant || '',
           storage,
-          specDb: resolveSpecDb(category),
+          specDb,
           appDb,
           productRoot,
         });
         if (result?.ok) {
-          upsertCatalogProductRow(resolveSpecDb(category), category, result.productId, result.product);
+          const syncedSpecDb = resolveSpecDb(category);
+          upsertCatalogProductRow(syncedSpecDb, category, result.productId, result.product);
+          const product = await findCatalogProduct(syncedSpecDb, result.productId, result.product);
+          if (product) {
+            result.product = product;
+          }
           emitDataChange({
             broadcastWs,
             event: 'catalog-product-add',

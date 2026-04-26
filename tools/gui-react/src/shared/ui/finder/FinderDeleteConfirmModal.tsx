@@ -35,6 +35,10 @@ function resolveTitle(target: DeleteTarget, moduleLabel: string): string {
     case 'key-delete-group': return `Delete all data for ${target.count ?? 0} key(s) in "${target.label ?? ''}"?`;
     case 'key-unpublish-all': return `Unresolve all ${target.count ?? 0} published key(s)?`;
     case 'key-delete-all': return `Delete all data for ${target.count ?? 0} key(s) in this product?`;
+    case 'field-row-unpublish': return `Unpublish "${target.fieldKey ?? ''}" for all products?`;
+    case 'field-row-delete': return `Delete all "${target.fieldKey ?? ''}" row data?`;
+    case 'product-nonvariant-unpublish': return `Unpublish ${target.count ?? 0} key(s) for "${target.label ?? target.productId ?? ''}"?`;
+    case 'product-nonvariant-delete': return `Delete all non-variant key data for "${target.label ?? target.productId ?? ''}"?`;
     case 'field-variant-unpublish': return `Unpublish ${target.fieldKey ?? ''} for "${target.label ?? target.variantId ?? ''}"?`;
     case 'field-variant-delete': return `Delete all ${target.fieldKey ?? ''} data for "${target.label ?? target.variantId ?? ''}"?`;
     case 'field-all-variants-unpublish': return `Unpublish ${target.fieldKey ?? ''} for all ${target.count ?? 0} variant(s)?`;
@@ -80,6 +84,14 @@ function resolveDefaultDescription(target: DeleteTarget, moduleLabel: string): s
       return `Demote every currently published value across every group back to a candidate. Candidates, runs, and discovery history are preserved per key. Reversible.`;
     case 'key-delete-all':
       return `Permanently wipe every trace of ${target.count ?? 0} key(s) across every group: published values, candidates, evidence, URL/query history, and every primary run. Fresh slate for each. This cannot be undone.`;
+    case 'field-row-unpublish':
+      return `Demote "${target.fieldKey ?? 'this field'}" for all ${target.count ?? 0} active product(s). Candidates, runs, URL history, and query history are preserved. Reversible.`;
+    case 'field-row-delete':
+      return `Permanently wipe "${target.fieldKey ?? 'this field'}" for all ${target.count ?? 0} active product(s): published values, all candidates, evidence, URL/query history, and every primary run. Fresh slate. This cannot be undone.`;
+    case 'product-nonvariant-unpublish':
+      return `Demote every non-variant published key for "${target.label ?? target.productId ?? 'this product'}" back to candidates. Candidates, runs, URL history, and query history are preserved. Reversible.`;
+    case 'product-nonvariant-delete':
+      return `Permanently wipe every trace of ${target.count ?? 0} non-variant key(s) for "${target.label ?? target.productId ?? 'this product'}": published values, all candidates, evidence, URL/query history, and every primary run. Fresh slate. This cannot be undone.`;
     case 'field-variant-unpublish':
       return `Demote the published ${target.fieldKey ?? 'field'} value for "${target.label ?? target.variantId ?? ''}" back to a candidate. Candidates and run history are preserved — a future Run can re-resolve. Reversible.`;
     case 'field-variant-delete':

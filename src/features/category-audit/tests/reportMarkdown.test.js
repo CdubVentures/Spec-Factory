@@ -86,6 +86,7 @@ test('renderMarkdown places auditor-task section before summary and includes ret
   assert.match(md, /Downloadable text file/i);
   assert.match(md, /<category>-keyfinder-field-studio-changes\.txt/);
   assert.match(md, /FIELD STUDIO CHANGE FILE/i);
+  assert.match(md, /<sort_order>-<field_key>/);
   assert.match(md, /Mapping Studio:/);
   assert.match(md, /Component Source Mapping:/);
   assert.match(md, /Enum Data Lists:/);

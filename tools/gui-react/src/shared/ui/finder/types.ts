@@ -27,6 +27,8 @@ export interface DeleteTarget {
     | 'key-unpublish' | 'key-delete'
     | 'key-unpublish-group' | 'key-delete-group'
     | 'key-unpublish-all' | 'key-delete-all'
+    | 'field-row-unpublish' | 'field-row-delete'
+    | 'product-nonvariant-unpublish' | 'product-nonvariant-delete'
     | 'field-variant-unpublish' | 'field-variant-delete'
     | 'field-all-variants-unpublish' | 'field-all-variants-delete';
   readonly runNumber?: number;
@@ -38,6 +40,7 @@ export interface DeleteTarget {
   readonly filename?: string;
   readonly filenames?: readonly string[];
   readonly variantId?: string;
+  readonly productId?: string;
   readonly variantKey?: string;
   /** field_key for single-key operations (key-unresolve, key-delete). */
   readonly fieldKey?: string;

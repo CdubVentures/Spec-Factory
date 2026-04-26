@@ -17,6 +17,10 @@ function withAuthoritySnapshot(templates) {
   ]);
 }
 
+const finderModuleQueryTemplates = Object.freeze(
+  FINDER_MODULES.map((mod) => Object.freeze([mod.routePrefix, CATEGORY_TOKEN])),
+);
+
 export const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   studio: withAuthoritySnapshot([
     ['studio', CATEGORY_TOKEN],
@@ -130,8 +134,8 @@ export const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['ui-settings'],
     ['runtime-settings'],
     ['indexing', 'llm-config'],
-    ['key-finder', CATEGORY_TOKEN],
-    ['prompt-preview', 'key', CATEGORY_TOKEN],
+    ...finderModuleQueryTemplates,
+    ['prompt-preview'],
   ]),
   storage: Object.freeze([
     ['storage'],
@@ -157,6 +161,8 @@ export const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   ]),
   'module-settings': Object.freeze([
     ['module-settings'],
+    ...finderModuleQueryTemplates,
+    ['prompt-preview'],
   ]),
 });
 

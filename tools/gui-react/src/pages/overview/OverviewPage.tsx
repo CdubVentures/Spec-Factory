@@ -454,16 +454,20 @@ export function OverviewPage() {
   const { data: catalog = [], isPending } = useQuery({
     queryKey: ['catalog', category],
     queryFn: () => api.parsedGet(`/catalog/${category}`, parseCatalogRows),
-    // WHY: Catalog mutations route through explicit invalidations (live
-    // update audit). The default 5s staleTime caused spurious refetches
-    // on focus/render that wiped table state without adding freshness;
-    // Infinity defers freshness to the invalidation paths.
-    staleTime: Infinity,
+    // WHY: inherits global staleTime (5s). Earlier attempt at Infinity
+    // assumed WS data-change invalidation always reaches this exact key,
+    // but key-resolution events don't reliably target ['catalog', category]
+    // (the indexing-suffixed twin gets invalidated by refreshIndexingPageData
+    // — this one doesn't). Infinity caused stale Keys column SVGs that
+    // never updated until full page reload. Default cadence keeps it fresh.
   });
 
   const { data: colorRegistry = [] } = useQuery<ColorRegistryEntry[]>({
     queryKey: ['colors'],
     queryFn: () => api.get<ColorRegistryEntry[]>('/colors'),
+    // WHY: color registry rarely changes mid-session; explicit mutations
+    // invalidate this key. Same pattern as the catalog query.
+    staleTime: Infinity,
   });
 
   const hexMap = useMemo<ReadonlyMap<string, string>>(
@@ -566,11 +570,27 @@ export function OverviewPage() {
 
   const showSkeleton = isPending && catalog.length === 0;
 
-  const avgConf = catalog.length > 0
-    ? catalog.reduce((sum, r) => sum + r.confidence, 0) / catalog.length
-    : 0;
-  const keysResolved = catalog.reduce((sum, r) => sum + r.fieldsFilled, 0);
-  const keysTotal = catalog.reduce((sum, r) => sum + r.fieldsTotal, 0);
+  // WHY: avgConf/keysResolved/keysTotal are three O(n) reductions over the
+  // catalog. Memoizing keeps them stable across non-catalog renders so the
+  // metric cards don't recompute on every search keystroke / filter tick.
+  const { avgConf, keysResolved, keysTotal } = useMemo(() => {
+    if (catalog.length === 0) {
+      return { avgConf: 0, keysResolved: 0, keysTotal: 0 };
+    }
+    let confSum = 0;
+    let resolved = 0;
+    let total = 0;
+    for (const r of catalog) {
+      confSum += r.confidence;
+      resolved += r.fieldsFilled;
+      total += r.fieldsTotal;
+    }
+    return {
+      avgConf: confSum / catalog.length,
+      keysResolved: resolved,
+      keysTotal: total,
+    };
+  }, [catalog]);
 
   return (
     <div className="space-y-6 sf-text-primary">

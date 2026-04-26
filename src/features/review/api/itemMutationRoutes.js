@@ -17,8 +17,16 @@ import {
 import { submitCandidate } from '../../publisher/candidate-gate/submitCandidate.js';
 import { clearPublishedField } from '../../publisher/publish/clearPublishedField.js';
 import { writeManualOverride } from '../../publisher/publish/writeManualOverride.js';
+import { wipePublisherStateForUnpub } from '../../publisher/publish/wipePublisherStateForUnpub.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { clearScalarFinderVariant, deleteScalarFinderVariantRuns } from '../../../core/finder/scalarFinderVariantCleaner.js';
+import { isReservedFieldKey } from '../../../core/finder/finderExclusions.js';
+import * as keyFinderRegistry from '../../../core/operations/keyFinderRegistry.js';
+import {
+  unselectKeyFinderField,
+  scrubFieldFromKeyFinder,
+} from '../../key/index.js';
+import { deleteAllCandidatesForField as deleteReviewCandidatesForField } from '../domain/deleteCandidate.js';
 
 // Re-export for characterization tests and any external consumers
 export {
@@ -30,6 +38,298 @@ export {
 function safeReadJson(filePath) {
   try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
   catch { return null; }
+}
+
+function writeJson(filePath, data) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function productJsonPath(productRoot, productId) {
+  return path.join(productRoot, productId, 'product.json');
+}
+
+function listActiveProductIds(specDb) {
+  const rows = typeof specDb?.getAllProducts === 'function'
+    ? specDb.getAllProducts('active') || []
+    : [];
+  return rows
+    .map((row) => String(row?.product_id || '').trim())
+    .filter(Boolean);
+}
+
+function isVariantOwnedField(specDb, fieldKey) {
+  const fieldRule = specDb?.getCompiledRules?.()?.fields?.[fieldKey];
+  return isVariantOwnedFieldRule(fieldKey, fieldRule);
+}
+
+function isVariantOwnedFieldRule(fieldKey, fieldRule) {
+  if (isReservedFieldKey(fieldKey)) return true;
+  return fieldRule?.variant_dependent === true;
+}
+
+function findBusyFieldRowProducts(productIds, fieldKey) {
+  return productIds.filter((productId) => keyFinderRegistry.count(productId, fieldKey).total > 0);
+}
+
+function listNonVariantFieldKeys(specDb) {
+  const fields = specDb?.getCompiledRules?.()?.fields || {};
+  return Object.entries(fields)
+    .filter(([fieldKey, fieldRule]) => !isVariantOwnedFieldRule(fieldKey, fieldRule))
+    .map(([fieldKey]) => fieldKey);
+}
+
+function findBusyProductFieldKeys(productId, fieldKeys) {
+  return fieldKeys.filter((fieldKey) => keyFinderRegistry.count(productId, fieldKey).total > 0);
+}
+
+function clearProductFieldJson({ productRoot, productId, fieldKey }) {
+  const filePath = productJsonPath(productRoot, productId);
+  const productJson = safeReadJson(filePath);
+  if (!productJson) return { changed: false };
+  let changed = false;
+  if (productJson.fields?.[fieldKey]) {
+    delete productJson.fields[fieldKey];
+    changed = true;
+  }
+  if (productJson.candidates?.[fieldKey]) {
+    delete productJson.candidates[fieldKey];
+    changed = true;
+  }
+  if (!changed) return { changed: false };
+  productJson.updated_at = new Date().toISOString();
+  writeJson(filePath, productJson);
+  return { changed: true };
+}
+
+function unpublishFieldRowProduct({ specDb, productRoot, productId, fieldKey }) {
+  const filePath = productJsonPath(productRoot, productId);
+  const productJson = safeReadJson(filePath);
+  let clearResult = { status: 'unchanged', scope: 'scalar' };
+
+  if (productJson) {
+    clearResult = clearPublishedField({
+      specDb,
+      productId,
+      fieldKey,
+      productJson,
+    });
+    if (clearResult.status === 'cleared') {
+      writeJson(filePath, productJson);
+    }
+  }
+
+  if (clearResult.status !== 'cleared') {
+    if (typeof specDb.demoteResolvedCandidates === 'function') {
+      specDb.demoteResolvedCandidates(productId, fieldKey);
+    }
+    wipePublisherStateForUnpub({ specDb, productId, fieldKey });
+  }
+
+  const selected = unselectKeyFinderField({ productId, productRoot, fieldKey });
+  return {
+    productId,
+    published_status: clearResult.status,
+    key_selected_cleared: selected.cleared === true,
+  };
+}
+
+function deleteFieldRowProduct({ specDb, category, config, productRoot, productId, fieldKey }) {
+  const unpublishResult = unpublishFieldRowProduct({ specDb, productRoot, productId, fieldKey });
+  const candidateResult = deleteReviewCandidatesForField({
+    specDb,
+    category,
+    productId,
+    fieldKey,
+    config,
+    productRoot,
+  });
+  clearProductFieldJson({ productRoot, productId, fieldKey });
+
+  const { deletedRuns } = scrubFieldFromKeyFinder({ productId, productRoot, fieldKey });
+  if (deletedRuns.length > 0 && typeof specDb.deleteFinderRun === 'function') {
+    for (const runNumber of deletedRuns) {
+      specDb.deleteFinderRun('keyFinder', productId, runNumber);
+    }
+  }
+
+  return {
+    productId,
+    published_status: unpublishResult.published_status,
+    deleted_candidates: candidateResult.deleted,
+    deleted_runs: deletedRuns,
+  };
+}
+
+async function handleReviewFieldRowActionEndpoint({
+  parts,
+  method,
+  res,
+  context,
+}) {
+  const isUnpublish = method === 'POST' && parts[2] === 'field-row' && parts[3] && parts[4] === 'unpublish-all';
+  const isDelete = method === 'DELETE' && parts[2] === 'field-row' && parts[3] && !parts[4];
+  if (!isUnpublish && !isDelete) return false;
+
+  const {
+    jsonRes,
+    getSpecDb,
+    broadcastWs,
+    productRoot,
+    config,
+  } = context || {};
+  const category = parts[1];
+  const fieldKey = String(parts[3] || '').trim();
+  const specDb = getSpecDb(category);
+  if (!specDb) {
+    jsonRes(res, 404, { error: 'no_spec_db', message: `No SpecDb for ${category}` });
+    return true;
+  }
+  if (isVariantOwnedField(specDb, fieldKey)) {
+    jsonRes(res, 400, {
+      error: 'variant_field_row_action_not_allowed',
+      message: `${fieldKey} is variant-owned and cannot be reset from the scalar Review row action.`,
+    });
+    return true;
+  }
+
+  const productIds = listActiveProductIds(specDb);
+  const busyProductIds = findBusyFieldRowProducts(productIds, fieldKey);
+  if (busyProductIds.length > 0) {
+    jsonRes(res, 409, {
+      error: 'key_busy',
+      field_key: fieldKey,
+      busy_product_ids: busyProductIds,
+      message: 'Run or Loop is in flight for this key on at least one product. Wait for it to finish or stop it first.',
+    });
+    return true;
+  }
+
+  const root = productRoot || defaultProductRoot();
+  const results = productIds.map((productId) => (
+    isUnpublish
+      ? unpublishFieldRowProduct({ specDb, productRoot: root, productId, fieldKey })
+      : deleteFieldRowProduct({ specDb, category, config, productRoot: root, productId, fieldKey })
+  ));
+  const deletedRunsByProduct = Object.fromEntries(
+    results.map((result) => [result.productId, result.deleted_runs || []]),
+  );
+  const eventType = isUnpublish ? 'key-finder-unpublished' : 'key-finder-field-deleted';
+
+  return sendDataChangeResponse({
+    jsonRes,
+    res,
+    broadcastWs,
+    eventType,
+    category,
+    entities: { productIds, fieldKeys: [fieldKey] },
+    broadcastExtra: {
+      scope: 'review-field-row',
+      field: fieldKey,
+      fieldKey,
+      field_key: fieldKey,
+      product_count: productIds.length,
+      ...(isDelete ? { deleted_runs_by_product: deletedRunsByProduct } : {}),
+    },
+    payload: {
+      status: isUnpublish ? 'unpublished' : 'deleted',
+      field: fieldKey,
+      product_count: productIds.length,
+      results,
+      ...(isDelete ? { deleted_runs_by_product: deletedRunsByProduct } : {}),
+    },
+  });
+}
+
+async function handleReviewProductNonVariantActionEndpoint({
+  parts,
+  method,
+  res,
+  context,
+}) {
+  const isUnpublish = method === 'POST'
+    && parts[2] === 'product'
+    && parts[3]
+    && parts[4] === 'non-variant-keys'
+    && parts[5] === 'unpublish-all';
+  const isDelete = method === 'DELETE'
+    && parts[2] === 'product'
+    && parts[3]
+    && parts[4] === 'non-variant-keys'
+    && !parts[5];
+  if (!isUnpublish && !isDelete) return false;
+
+  const {
+    jsonRes,
+    getSpecDb,
+    broadcastWs,
+    productRoot,
+    config,
+  } = context || {};
+  const category = parts[1];
+  const productId = String(parts[3] || '').trim();
+  const specDb = getSpecDb(category);
+  if (!specDb) {
+    jsonRes(res, 404, { error: 'no_spec_db', message: `No SpecDb for ${category}` });
+    return true;
+  }
+
+  const activeProductIds = listActiveProductIds(specDb);
+  if (!activeProductIds.includes(productId)) {
+    jsonRes(res, 404, {
+      error: 'product_not_found',
+      product_id: productId,
+      message: `No active Review product found for ${productId}.`,
+    });
+    return true;
+  }
+
+  const fieldKeys = listNonVariantFieldKeys(specDb);
+  const busyFieldKeys = findBusyProductFieldKeys(productId, fieldKeys);
+  if (busyFieldKeys.length > 0) {
+    jsonRes(res, 409, {
+      error: 'key_busy',
+      product_id: productId,
+      busy_field_keys: busyFieldKeys,
+      message: 'Run or Loop is in flight for at least one non-variant key on this product. Wait for it to finish or stop it first.',
+    });
+    return true;
+  }
+
+  const root = productRoot || defaultProductRoot();
+  const results = fieldKeys.map((fieldKey) => ({
+    fieldKey,
+    ...(isUnpublish
+      ? unpublishFieldRowProduct({ specDb, productRoot: root, productId, fieldKey })
+      : deleteFieldRowProduct({ specDb, category, config, productRoot: root, productId, fieldKey })),
+  }));
+  const deletedRunsByField = Object.fromEntries(
+    results.map((result) => [result.fieldKey, result.deleted_runs || []]),
+  );
+  const eventType = isUnpublish ? 'key-finder-unpublished' : 'key-finder-field-deleted';
+
+  return sendDataChangeResponse({
+    jsonRes,
+    res,
+    broadcastWs,
+    eventType,
+    category,
+    entities: { productIds: [productId], fieldKeys },
+    broadcastExtra: {
+      scope: 'review-product-non-variant-keys',
+      productId,
+      product_id: productId,
+      field_count: fieldKeys.length,
+      ...(isDelete ? { deleted_runs_by_field: deletedRunsByField } : {}),
+    },
+    payload: {
+      status: isUnpublish ? 'unpublished' : 'deleted',
+      product_id: productId,
+      field_count: fieldKeys.length,
+      field_keys: fieldKeys,
+      results,
+      ...(isDelete ? { deleted_runs_by_field: deletedRunsByField } : {}),
+    },
+  });
 }
 
 async function handleReviewItemOverrideMutationEndpoint({
@@ -344,6 +644,12 @@ export async function handleReviewItemMutationRoute({
 }) {
   if (!Array.isArray(parts) || parts[0] !== 'review' || !parts[1]) {
     return false;
+  }
+  if (parts[2] === 'field-row') {
+    return handleReviewFieldRowActionEndpoint({ parts, method, req, res, context });
+  }
+  if (parts[2] === 'product') {
+    return handleReviewProductNonVariantActionEndpoint({ parts, method, req, res, context });
   }
   if (parts[2] === 'clear-published') {
     return handleReviewItemClearPublishedEndpoint({ parts, method, req, res, context });

@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-25T22:23:56.912Z",
+  "generated_at": "2026-04-26T21:25:42.189Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -184,19 +184,54 @@
     },
     "battery_hours": {
       "context_keywords": [
+        "battery duration",
         "battery life",
+        "battery life (2.4 GHz)",
+        "battery life (Bluetooth)",
         "battery life (hours)",
+        "battery life (HyperSpeed)",
         "battery runtime",
-        "battery_hours"
+        "battery_hours",
+        "full charge",
+        "hours of use",
+        "playtime",
+        "use on a single charge"
       ],
       "patterns": [],
       "type": "number"
     },
     "bluetooth": {
+      "context_keywords": [
+        "BLE",
+        "Bluetooth 4.0",
+        "Bluetooth 5.0",
+        "Bluetooth 5.1",
+        "Bluetooth 5.2",
+        "Bluetooth 5.3",
+        "Bluetooth LE",
+        "Bluetooth Low Energy",
+        "Bluetooth Smart",
+        "Bluetooth-enabled",
+        "BT",
+        "Swift Pair"
+      ],
       "patterns": [],
       "type": "boolean"
     },
     "cable_type": {
+      "context_keywords": [
+        "Ascended Cable -> paracord only when source says paracord material",
+        "braided cable -> braided",
+        "braided sheathing -> braided",
+        "lightweight paracord construction -> paracord",
+        "paracord cable -> paracord",
+        "paracord-like -> paracord when explicitly stated",
+        "rubber-coated cable -> rubber",
+        "shoelace cable -> paracord",
+        "soft rubber cable -> rubber",
+        "SpeedFlex, Flex Cord, EZcord, PhantomFlex, HyperFlex -> marketing phrase unless material is also stated",
+        "Ultraweave/Ultra-weave -> ultraweave"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -241,6 +276,23 @@
       "type": "string"
     },
     "computer_side_connector": {
+      "context_keywords": [
+        "6-pin mini-DIN",
+        "mini-DIN-6",
+        "PS/2",
+        "PS2",
+        "Type-A",
+        "Type-C",
+        "USB 2.0 Type-A",
+        "USB Type A",
+        "USB Type C",
+        "USB Type-A",
+        "USB Type-C",
+        "USB-A port",
+        "USB-C Charge Cable",
+        "USB-C port",
+        "USB-C to USB-C"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -274,6 +326,38 @@
       "type": "string"
     },
     "connectivity": {
+      "context_keywords": [
+        "2.4 GHz",
+        "2.4G",
+        "2.4GHz Wireless",
+        "adapter",
+        "BLE",
+        "Bluetooth",
+        "Bluetooth LE",
+        "Bluetooth Low Energy",
+        "BT",
+        "charging/data cable",
+        "dongle",
+        "HyperPolling Wireless Dongle",
+        "HyperSpeed",
+        "LIGHTSPEED",
+        "Logi Bolt",
+        "Quantum 2.0",
+        "Quantum Wireless",
+        "receiver",
+        "RF 2.4 GHz",
+        "SLIPSTREAM",
+        "SpeedNova",
+        "Unifying receiver",
+        "USB connection",
+        "USB receiver",
+        "USB Type-C",
+        "USB wired",
+        "USB-C",
+        "wired",
+        "wired mode",
+        "wireless receiver"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -413,6 +497,25 @@
       "type": "string"
     },
     "lighting": {
+      "context_keywords": [
+        "Aura Sync RGB",
+        "Chroma RGB",
+        "gradient underglow",
+        "iCUE RGB",
+        "individually programmable LEDs",
+        "lacks RGB lighting",
+        "light bar",
+        "LIGHTSYNC RGB",
+        "no RGB lighting",
+        "PrismSync RGB",
+        "Razer Chroma",
+        "RGB backlighting",
+        "RGB LED array",
+        "RGB lighting zones",
+        "single-color green lighting",
+        "single-color lighting",
+        "underglow"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -447,6 +550,30 @@
       "type": "boolean"
     },
     "mouse_side_connector": {
+      "context_keywords": [
+        "fixed cable",
+        "integrated cable",
+        "Lightning connector",
+        "Lightning port",
+        "Lightning to USB cable",
+        "micro USB",
+        "Micro-B port",
+        "micro-USB",
+        "no USB port",
+        "permanently attached cable",
+        "SpeedFlex USB Type C",
+        "Type-C",
+        "USB C",
+        "USB Micro-B",
+        "USB to Micro-USB cable",
+        "USB Type A to USB Type C cable",
+        "USB Type C",
+        "USB Type-C",
+        "USB-A to USB-C cable",
+        "USB-C charging",
+        "USB-C charging/data port",
+        "wired-only"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -463,6 +590,25 @@
       "type": "integer"
     },
     "paracord": {
+      "context_keywords": [
+        "Ascended Cable",
+        "Ascended Cord",
+        "EZcord",
+        "EZcord Pro",
+        "Flex Cord",
+        "HyperFlex 2 Cable",
+        "HyperFlex USB Cable",
+        "paracord cable",
+        "paracord material",
+        "paracord soft cable",
+        "paracord-like cable",
+        "PhantomCord",
+        "shoelace cable",
+        "soft resilient cable",
+        "Speedflex cable",
+        "Superflex Paracord Cable",
+        "Ultraweave cable"
+      ],
       "patterns": [],
       "type": "boolean"
     },
@@ -641,6 +787,33 @@
       "type": "number"
     },
     "wireless_charging": {
+      "context_keywords": [
+        "charging dock",
+        "charging mat",
+        "charging pad",
+        "contact charging",
+        "CORSAIR MM1000",
+        "Firefly HyperFlux",
+        "HyperFlux V2",
+        "inductive charging",
+        "pogo pins",
+        "PowerCore coin",
+        "POWERCORE module",
+        "POWERPLAY",
+        "POWERPLAY 2",
+        "Qi",
+        "Qi wireless charging",
+        "Qi-certified",
+        "Razer Charging Pad Chroma",
+        "Razer HyperFlux",
+        "Razer Mouse Dock Pro",
+        "Razer Wireless Charging Puck",
+        "wireless charge",
+        "wireless charging",
+        "wireless charging mouse pad",
+        "wireless charging receiver",
+        "wirelessly charge"
+      ],
       "patterns": [],
       "type": "boolean"
     }

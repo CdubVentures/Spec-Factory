@@ -1,4 +1,4 @@
-import { useMemo, useRef, useEffect, memo } from 'react';
+import { useMemo, useRef, useEffect, memo, useState } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { pct } from '../../../utils/formatting.ts';
@@ -7,7 +7,8 @@ import { ReviewValueCell } from '../../../shared/ui/data-display/ReviewValueCell
 import { useScrollStore, resolveScrollPosition } from '../../../stores/scrollStore.ts';
 import { useReviewStore, useEditingValue } from '../state/reviewStore.ts';
 import { useGridPan } from '../hooks/useGridPan.ts';
-import type { ReviewLayout, ProductReviewPayload, CellMode } from '../../../types/review.ts';
+import { deriveReviewFieldRowActionState, type ReviewFieldRowActionKind } from '../selectors/reviewFieldRowActions.ts';
+import type { ReviewLayout, ProductReviewPayload, CellMode, ReviewLayoutRow } from '../../../types/review.ts';
 
 interface ReviewMatrixProps {
   layout: ReviewLayout;
@@ -19,6 +20,8 @@ interface ReviewMatrixProps {
   onCancelEditing: () => void;
   onStartEditing: (productId: string, field: string, initialValue: string) => void;
   category: string;
+  onFieldRowAction?: (action: ReviewFieldRowActionKind, fieldKey: string) => void;
+  fieldRowActionPending?: boolean;
 }
 
 /** Reads editingValue from store — only this component re-renders per keystroke. */
@@ -43,6 +46,165 @@ const ROW_HEIGHT = 30;
 const FIELD_COL_WIDTH = 190;
 const HEADER_HEIGHT = 56;
 
+function VariantKeyIcon() {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.6"
+      className="sf-review-matrix-variant-icon"
+      aria-hidden="true"
+    >
+      <path d="M8 2.25v11.5M3.5 5.25h9M3.5 10.75h9" />
+      <path d="M5.75 2.25c1.2 1.55 1.8 3.47 1.8 5.75s-.6 4.2-1.8 5.75M10.25 2.25C9.05 3.8 8.45 5.72 8.45 8s.6 4.2 1.8 5.75" />
+      <circle cx="8" cy="8" r="5.75" />
+    </svg>
+  );
+}
+
+function MenuChevronIcon() {
+  return (
+    <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" className="sf-review-matrix-field-chevron" aria-hidden="true">
+      <path d="M3 4.5L6 7.5L9 4.5" />
+    </svg>
+  );
+}
+
+function FieldRowActionIcon({ action }: { readonly action: ReviewFieldRowActionKind }) {
+  if (action === 'unpublish-all') {
+    return (
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="sf-review-matrix-field-menu-icon" aria-hidden="true">
+        <path d="M3 8.5h10M6.5 5L3 8.5L6.5 12" />
+        <path d="M13 4v8" />
+      </svg>
+    );
+  }
+  return (
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" className="sf-review-matrix-field-menu-icon" aria-hidden="true">
+      <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 011.334-1.334h2.666a1.333 1.333 0 011.334 1.334V4" />
+      <path d="M4 4l.667 10h6.666L12 4M6.75 6.5v5M9.25 6.5v5" />
+    </svg>
+  );
+}
+
+interface FieldHeaderCellProps {
+  readonly row: ReviewLayoutRow;
+  readonly group: string;
+  readonly showGroup: boolean;
+  readonly onFieldRowAction?: (action: ReviewFieldRowActionKind, fieldKey: string) => void;
+  readonly actionPending: boolean;
+}
+
+function FieldHeaderCell({
+  row,
+  group,
+  showGroup,
+  onFieldRowAction,
+  actionPending,
+}: FieldHeaderCellProps) {
+  const [open, setOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const actionState = deriveReviewFieldRowActionState({
+    fieldKey: row.key,
+    variantDependent: row.field_rule.variant_dependent === true,
+  });
+  const hasActions = actionState.actions.length > 0 && typeof onFieldRowAction === 'function';
+
+  useEffect(() => {
+    if (!open) return undefined;
+    function handlePointerDown(event: PointerEvent) {
+      if (event.target instanceof Node && menuRef.current?.contains(event.target)) return;
+      setOpen(false);
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('pointerdown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [open]);
+
+  const fieldRuleTitle = (() => {
+    const r = row.field_rule;
+    const parts: string[] = [`Type: ${r.type}`];
+    if (r.required) parts.push('Required');
+    if (r.units) parts.push(`Units: ${r.units}`);
+    if (actionState.variantIconVisible) parts.push('Variant key');
+    return parts.join(' - ');
+  })();
+
+  return (
+    <div
+      className={`shrink-0 flex items-center gap-1 sf-review-matrix-field-cell px-2 sticky left-0 ${open ? 'sf-review-matrix-field-cell-open' : 'z-[5]'}`}
+      style={{ width: FIELD_COL_WIDTH, minWidth: FIELD_COL_WIDTH }}
+    >
+      {showGroup ? (
+        <span className="sf-text-micro sf-text-subtle uppercase w-14 truncate" title={group}>
+          {group}
+        </span>
+      ) : (
+        <span className="w-14" />
+      )}
+      <div ref={menuRef} className="sf-review-matrix-field-menu-root" onPointerDown={(event) => event.stopPropagation()}>
+        <button
+          type="button"
+          className={`sf-review-matrix-field-button ${hasActions ? 'sf-review-matrix-field-button-actionable' : ''}`}
+          title={row.label}
+          aria-label={`${row.label} field actions`}
+          aria-haspopup={hasActions ? 'menu' : undefined}
+          aria-expanded={hasActions ? open : undefined}
+          aria-disabled={!hasActions}
+          onClick={(event) => {
+            event.stopPropagation();
+            if (!hasActions) return;
+            setOpen((current) => !current);
+          }}
+        >
+          <span className="sf-review-matrix-field-label">{row.label}</span>
+          {actionState.variantIconVisible && <VariantKeyIcon />}
+          {hasActions && <MenuChevronIcon />}
+        </button>
+        {open && hasActions && (
+          <div className="sf-review-matrix-field-menu" role="menu">
+            {actionState.actions.map((action) => (
+              <button
+                key={action.kind}
+                type="button"
+                role="menuitem"
+                className={`sf-review-matrix-field-menu-item ${action.kind === 'delete-all' ? 'sf-review-matrix-field-menu-item-danger' : ''}`}
+                disabled={actionPending}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onFieldRowAction?.(action.kind, row.key);
+                  setOpen(false);
+                }}
+              >
+                <FieldRowActionIcon action={action.kind} />
+                <span>{action.label}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      {row.field_rule.required ? (
+        <span
+          className="ml-auto inline-block w-2 h-2 rounded-full sf-review-matrix-required-dot flex-shrink-0 cursor-help"
+          title={fieldRuleTitle}
+        />
+      ) : row.field_rule.units ? (
+        <span
+          className="ml-auto inline-block w-1.5 h-1.5 rounded-full sf-review-matrix-optional-dot flex-shrink-0 cursor-help"
+          title={fieldRuleTitle}
+        />
+      ) : null}
+    </div>
+  );
+}
+
 export const ReviewMatrix = memo(function ReviewMatrix({
   layout,
   products,
@@ -53,6 +215,8 @@ export const ReviewMatrix = memo(function ReviewMatrix({
   onCancelEditing,
   onStartEditing,
   category,
+  onFieldRowAction,
+  fieldRowActionPending = false,
 }: ReviewMatrixProps) {
   const rows = layout.rows;
   const parentRef = useRef<HTMLDivElement>(null);
@@ -184,39 +348,13 @@ export const ReviewMatrix = memo(function ReviewMatrix({
                       width: totalColWidth,
                     }}
                   >
-                    <div
-                      className="shrink-0 flex items-center gap-1 sf-review-matrix-field-cell px-2 sticky left-0 z-[5]"
-                      style={{ width: FIELD_COL_WIDTH, minWidth: FIELD_COL_WIDTH }}
-                    >
-                      {showGroup ? (
-                        <span className="sf-text-micro sf-text-subtle uppercase w-14 truncate" title={group}>
-                          {group}
-                        </span>
-                      ) : (
-                        <span className="w-14" />
-                      )}
-                      <span className="text-[11px] truncate" title={row.label}>
-                        {row.label}
-                      </span>
-                      {(() => {
-                        const r = row.field_rule;
-                        const parts: string[] = [];
-                        parts.push(`Type: ${r.type}`);
-                        if (r.required) parts.push('Required');
-                        if (r.units) parts.push(`Units: ${r.units}`);
-                        return r.required ? (
-                          <span
-                            className="ml-auto inline-block w-2 h-2 rounded-full sf-review-matrix-required-dot flex-shrink-0 cursor-help"
-                            title={parts.join(' · ')}
-                          />
-                        ) : r.units ? (
-                          <span
-                            className="ml-auto inline-block w-1.5 h-1.5 rounded-full sf-review-matrix-optional-dot flex-shrink-0 cursor-help"
-                            title={parts.join(' · ')}
-                          />
-                        ) : null;
-                      })()}
-                    </div>
+                    <FieldHeaderCell
+                      row={row}
+                      group={group}
+                      showGroup={showGroup}
+                      onFieldRowAction={onFieldRowAction}
+                      actionPending={fieldRowActionPending}
+                    />
 
                     <div style={{ width: colVirtualizer.getTotalSize(), position: 'relative', height: ROW_HEIGHT }}>
                       {colVirtualizer.getVirtualItems().map((vCol) => {
@@ -270,4 +408,3 @@ export const ReviewMatrix = memo(function ReviewMatrix({
     </Tooltip.Provider>
   );
 });
-

@@ -22,6 +22,7 @@ import { relativeTime } from '../../../utils/formatting.ts';
 import { PRODUCT_TABLE_COLUMNS } from './productTableColumns.tsx';
 import {
   cancelSharedProductCacheQueries,
+  insertSharedProductCaches,
   patchSharedProductCaches,
   removeSharedProductCaches,
   restoreSharedProductCaches,
@@ -104,7 +105,13 @@ export function ProductManager() {
   const addMut = useMutation({
     mutationFn: (body: { brand: string; base_model: string; variant: string }) =>
       api.post<MutationResult>(`/catalog/${category}/products`, body),
-    onSuccess: () => { invalidate('catalog-product-add'); closeDrawer(); },
+    onSuccess: (data) => {
+      if (data.product) {
+        insertSharedProductCaches(queryClient, category, [data.product]);
+      }
+      invalidate('catalog-product-add');
+      closeDrawer();
+    },
   });
 
   const updateMut = useMutation({
@@ -150,6 +157,9 @@ export function ProductManager() {
     mutationFn: (payload: { brand: string; rows: Array<{ base_model: string; variant: string }> }) =>
       api.post<BulkImportResult>(`/catalog/${category}/products/bulk`, payload),
     onSuccess: (data) => {
+      if (data.products && data.products.length > 0) {
+        insertSharedProductCaches(queryClient, category, data.products);
+      }
       invalidate('catalog-bulk-add');
       setBulkResult(data);
       if ((data?.created ?? 0) > 0) {

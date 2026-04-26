@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useEffect, useRef } from 'react';
+import { useMemo, useCallback, useEffect, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import { useDataChangeMutation } from '../../data-change/index.js';
@@ -26,9 +26,35 @@ import { useDebouncedCallback } from '../../../hooks/useDebounce.ts';
 import { readReviewGridSessionState, writeReviewGridSessionState } from '../state/reviewGridSessionState.ts';
 import type { ReviewLayout, ProductsIndexResponse, CandidateResponse, CandidateDeleteResponse, ReviewCandidate } from '../../../types/review.ts';
 import { parseCatalogProducts } from '../../catalog/api/catalogParsers.ts';
-import { deleteCandidateBySourceId, deleteAllCandidatesForField } from '../api/reviewApi.ts';
+import {
+  deleteCandidateBySourceId,
+  deleteAllCandidatesForField,
+  deleteReviewFieldRow,
+  unpublishReviewFieldRow,
+  type ReviewFieldRowActionResponse,
+} from '../api/reviewApi.ts';
 import { isVariantGeneratorField } from '../selectors/overrideFormState.ts';
+import { buildReviewFieldRowDeleteTarget, type ReviewFieldRowActionKind } from '../selectors/reviewFieldRowActions.ts';
+import { FinderDeleteConfirmModal } from '../../../shared/ui/finder/FinderDeleteConfirmModal.tsx';
+import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
+import {
+  cancelReviewCandidateCacheQueries,
+  cancelReviewFieldValueCacheQueries,
+  cancelReviewFieldRowCacheQueries,
+  clearPublishedReviewFieldFromCaches,
+  deleteReviewFieldRowFromCaches,
+  removeAllReviewCandidatesFromCaches,
+  removeReviewCandidateFromCaches,
+  restoreReviewCandidateCaches,
+  restoreReviewFieldValueCaches,
+  restoreReviewFieldRowCaches,
+  updateReviewFieldValueInCaches,
+  unpublishReviewFieldRowFromCaches,
+  type ReviewCandidateCacheSnapshot,
+  type ReviewFieldValueCacheSnapshot,
+  type ReviewFieldRowCacheSnapshot,
+} from '../state/reviewCandidateCache.ts';
 
 const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: 'brand', label: 'Brand' },
@@ -37,6 +63,21 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
   { value: 'coverage', label: 'Coverage' },
   { value: 'missing', label: 'Missing' },
 ];
+
+interface CandidateDeleteMutationContext {
+  readonly category: string;
+  readonly productId: string;
+  readonly field: string;
+  readonly snapshot: ReviewCandidateCacheSnapshot;
+}
+
+interface FieldRowMutationContext {
+  readonly snapshot: ReviewFieldRowCacheSnapshot;
+}
+
+interface FieldValueMutationContext {
+  readonly snapshot: ReviewFieldValueCacheSnapshot;
+}
 
 function hostFromUrl(url: string): string {
   try {
@@ -88,6 +129,7 @@ export function ReviewPage() {
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reviewGridHydratedRef = useRef<string>('');
   const categoryRef = useRef<string>(category);
+  const [fieldRowDeleteTarget, setFieldRowDeleteTarget] = useState<DeleteTarget | null>(null);
   const persistedGridState = useMemo(
     () => readReviewGridSessionState(category),
     [category],
@@ -291,16 +333,39 @@ export function ReviewPage() {
   }, [selectCell, startEditing]);
 
   // Manual override mutation (for inline edits)
-  const manualOverrideMut = useDataChangeMutation<unknown, Error, { productId: string; field: string; value: string; variantId?: string }>({
+  const manualOverrideMut = useDataChangeMutation<
+    unknown,
+    Error,
+    { productId: string; field: string; value: string; variantId?: string },
+    FieldValueMutationContext | undefined
+  >({
     event: 'review-manual-override',
     category,
     mutationFn: (body: { productId: string; field: string; value: string; variantId?: string }) =>
       api.post(`/review/${category}/manual-override`, body),
     options: {
+      onMutate: async ({ productId, field, value, variantId }) => {
+        if (variantId) return undefined;
+        const target = { category, productId, field };
+        await cancelReviewFieldValueCacheQueries(queryClient, target);
+        return {
+          snapshot: updateReviewFieldValueInCaches(queryClient, {
+            ...target,
+            value,
+            timestamp: new Date().toISOString(),
+            sourceMeta: {
+              source: 'user',
+              method: 'manual_override',
+              acceptedCandidateId: null,
+            },
+          }),
+        };
+      },
       onSuccess: () => {
       setSaveStatus('saved');
       },
-      onError: (err: unknown) => {
+      onError: (err: unknown, _variables, context) => {
+      if (context) restoreReviewFieldValueCaches(queryClient, context.snapshot);
       setSaveStatus('error');
       // WHY: silent failure was confusing — surface the API error so the user
       // sees exactly why override didn't land (validation, 400 shape, etc.).
@@ -310,79 +375,157 @@ export function ReviewPage() {
   });
 
   // Clear published mutation — demotes resolved row(s) + removes JSON projection.
-  const clearPublishedMut = useDataChangeMutation<unknown, Error, { productId: string; field: string; variantId?: string; allVariants?: boolean }>({
+  const clearPublishedMut = useDataChangeMutation<
+    unknown,
+    Error,
+    { productId: string; field: string; variantId?: string; allVariants?: boolean },
+    FieldValueMutationContext | undefined
+  >({
     event: 'review-clear-published',
     category,
     mutationFn: (body: { productId: string; field: string; variantId?: string; allVariants?: boolean }) =>
       api.post(`/review/${category}/clear-published`, body),
     options: {
-      onError: (err: unknown) => {
+      onMutate: async ({ productId, field, variantId, allVariants }) => {
+        if (variantId || allVariants) return undefined;
+        const target = { category, productId, field };
+        await cancelReviewFieldValueCacheQueries(queryClient, target);
+        return {
+          snapshot: clearPublishedReviewFieldFromCaches(queryClient, target),
+        };
+      },
+      onError: (err: unknown, _variables, context) => {
+        if (context) restoreReviewFieldValueCaches(queryClient, context.snapshot);
         console.error('clear published failed', err);
       },
     },
   });
 
   // Candidate deletion mutations
-  const deleteCandidateMut = useDataChangeMutation<CandidateDeleteResponse, Error, { sourceId: string }>({
+  const deleteCandidateMut = useDataChangeMutation<
+    CandidateDeleteResponse,
+    Error,
+    { sourceId: string },
+    CandidateDeleteMutationContext | undefined
+  >({
     event: 'candidate-deleted',
     category,
     mutationFn: ({ sourceId }: { sourceId: string }) =>
       deleteCandidateBySourceId(category, selectedProductId, selectedField, sourceId),
+    options: {
+      onMutate: async ({ sourceId }) => {
+        const target = {
+          category,
+          productId: selectedProductId,
+          field: selectedField,
+        };
+        if (!target.productId || !target.field) return undefined;
+        await cancelReviewCandidateCacheQueries(queryClient, target);
+        return {
+          ...target,
+          snapshot: removeReviewCandidateFromCaches(queryClient, {
+            ...target,
+            sourceId,
+          }),
+        };
+      },
+      onError: (_error, _variables, context) => {
+        if (!context) return;
+        restoreReviewCandidateCaches(
+          queryClient,
+          context.category,
+          context.productId,
+          context.field,
+          context.snapshot,
+        );
+      },
+    },
   });
 
-  const deleteAllCandidatesMut = useDataChangeMutation<CandidateDeleteResponse>({
+  const deleteAllCandidatesMut = useDataChangeMutation<
+    CandidateDeleteResponse,
+    Error,
+    void,
+    CandidateDeleteMutationContext | undefined
+  >({
     event: 'candidate-deleted',
     category,
     mutationFn: () =>
       deleteAllCandidatesForField(category, selectedProductId, selectedField),
-  });
-
-  // Optimistically update the products-index cache so the grid reflects changes instantly.
-  // Accepts optional source metadata to preserve provenance from candidates or mark as 'user'.
-  const optimisticUpdateField = useCallback((
-    productId: string,
-    field: string,
-    value: string,
-    sourceMeta?: { source?: string; method?: string; tier?: number | null; acceptedCandidateId?: string | null },
-  ) => {
-    // Only show OVR badge for manual entry, not for candidate acceptance
-    const isManualOverride = sourceMeta?.method === 'manual_override';
-    const now = new Date().toISOString();
-    queryClient.setQueryData<ProductsIndexResponse>(
-      ['reviewProductsIndex', category],
-      (old) => {
-        if (!old) return old;
+    options: {
+      onMutate: async () => {
+        const target = {
+          category,
+          productId: selectedProductId,
+          field: selectedField,
+        };
+        if (!target.productId || !target.field) return undefined;
+        await cancelReviewCandidateCacheQueries(queryClient, target);
         return {
-          ...old,
-          products: old.products.map((p) => {
-            if (p.product_id !== productId) return p;
-            const existing = p.fields[field] || { candidate_count: 0, candidates: [] };
-            return {
-              ...p,
-              fields: {
-                ...p.fields,
-                [field]: {
-                  ...existing,
-                  selected: {
-                    value,
-                    confidence: 1.0,
-                    status: 'ok',
-                    color: 'green' as const,
-                  },
-                  overridden: isManualOverride,
-                  source_timestamp: now,
-                  ...(sourceMeta?.source !== undefined ? { source: sourceMeta.source } : {}),
-                  ...(sourceMeta?.method !== undefined ? { method: sourceMeta.method } : {}),
-                  ...(sourceMeta?.tier !== undefined ? { tier: sourceMeta.tier } : {}),
-                  ...(sourceMeta?.acceptedCandidateId !== undefined ? { accepted_candidate_id: sourceMeta.acceptedCandidateId } : {}),
-                },
-              },
-            };
-          }),
+          ...target,
+          snapshot: removeAllReviewCandidatesFromCaches(queryClient, target),
         };
       },
-    );
-  }, [queryClient, category]);
+      onError: (_error, _variables, context) => {
+        if (!context) return;
+        restoreReviewCandidateCaches(
+          queryClient,
+          context.category,
+          context.productId,
+          context.field,
+          context.snapshot,
+        );
+      },
+    },
+  });
+
+  const fieldRowUnpublishMut = useDataChangeMutation<
+    ReviewFieldRowActionResponse,
+    Error,
+    { fieldKey: string },
+    FieldRowMutationContext
+  >({
+    event: 'key-finder-unpublished',
+    category,
+    mutationFn: ({ fieldKey }) => unpublishReviewFieldRow(category, fieldKey),
+    options: {
+      onMutate: async ({ fieldKey }) => {
+        const target = { category, field: fieldKey };
+        await cancelReviewFieldRowCacheQueries(queryClient, target);
+        return {
+          snapshot: unpublishReviewFieldRowFromCaches(queryClient, target),
+        };
+      },
+      onError: (_error, _variables, context) => {
+        if (!context) return;
+        restoreReviewFieldRowCaches(queryClient, context.snapshot);
+      },
+    },
+  });
+
+  const fieldRowDeleteMut = useDataChangeMutation<
+    ReviewFieldRowActionResponse,
+    Error,
+    { fieldKey: string },
+    FieldRowMutationContext
+  >({
+    event: 'key-finder-field-deleted',
+    category,
+    mutationFn: ({ fieldKey }) => deleteReviewFieldRow(category, fieldKey),
+    options: {
+      onMutate: async ({ fieldKey }) => {
+        const target = { category, field: fieldKey };
+        await cancelReviewFieldRowCacheQueries(queryClient, target);
+        return {
+          snapshot: deleteReviewFieldRowFromCaches(queryClient, target),
+        };
+      },
+      onError: (_error, _variables, context) => {
+        if (!context) return;
+        restoreReviewFieldRowCaches(queryClient, context.snapshot);
+      },
+    },
+  });
 
   // Core save logic — shared by debounced autosave and immediate commit.
   //
@@ -400,12 +543,6 @@ export function ReviewPage() {
       ? Object.entries(fieldState.variant_values).find(([, entry]) => entry.is_default === true)?.[0]
       : undefined;
 
-    optimisticUpdateField(
-      productId,
-      field,
-      value,
-      { source: 'user', method: 'manual_override', acceptedCandidateId: null },
-    );
     setSaveStatus('saving');
     manualOverrideMut.mutate({
       productId,
@@ -413,7 +550,7 @@ export function ReviewPage() {
       value,
       ...(defaultVariantId ? { variantId: defaultVariantId } : {}),
     });
-  }, [manualOverrideMut, setSaveStatus, optimisticUpdateField, queryClient, category]);
+  }, [manualOverrideMut, setSaveStatus, queryClient, category]);
 
   // Debounced autosave for inline editing (fires while user is still typing)
   const debouncedSave = useDebouncedCallback(saveEdit, 1500);
@@ -448,6 +585,32 @@ export function ReviewPage() {
   // Active product for drawer
   const activeProduct = products.find(p => p.product_id === selectedProductId);
   const activeFieldState = activeProduct?.fields[selectedField];
+  const fieldRowActionPending = fieldRowUnpublishMut.isPending || fieldRowDeleteMut.isPending;
+  const handleFieldRowAction = useCallback((action: ReviewFieldRowActionKind, fieldKey: string) => {
+    setFieldRowDeleteTarget(buildReviewFieldRowDeleteTarget({
+      action,
+      fieldKey,
+      productCount: indexData?.total ?? products.length,
+    }));
+  }, [indexData?.total, products.length]);
+  const handleConfirmFieldRowAction = useCallback(() => {
+    if (!fieldRowDeleteTarget?.fieldKey) return;
+    const fieldKey = fieldRowDeleteTarget.fieldKey;
+    const dismiss = () => setFieldRowDeleteTarget(null);
+    const onError = (err: unknown) => {
+      setFieldRowDeleteTarget(null);
+      const verb = fieldRowDeleteTarget.kind === 'field-row-unpublish' ? 'Unpublish' : 'Delete';
+      const message = err instanceof Error ? err.message : String(err || 'Unknown error');
+      window.alert(`${verb} failed: ${message}`);
+    };
+    if (fieldRowDeleteTarget.kind === 'field-row-unpublish') {
+      void fieldRowUnpublishMut.mutateAsync({ fieldKey }).then(dismiss).catch(onError);
+      return;
+    }
+    if (fieldRowDeleteTarget.kind === 'field-row-delete') {
+      void fieldRowDeleteMut.mutateAsync({ fieldKey }).then(dismiss).catch(onError);
+    }
+  }, [fieldRowDeleteTarget, fieldRowUnpublishMut, fieldRowDeleteMut]);
 
   if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
   if (!layout || !indexData || indexData.total === 0) {
@@ -496,6 +659,8 @@ export function ReviewPage() {
           onCancelEditing={handleCancelEditing}
           onStartEditing={handleStartEditing}
           category={category}
+          onFieldRowAction={handleFieldRowAction}
+          fieldRowActionPending={fieldRowActionPending}
         />
 
         {drawerOpen && activeProduct && activeFieldState && (() => {
@@ -520,17 +685,6 @@ export function ReviewPage() {
                 overridden: activeFieldState.overridden,
               }}
               onManualOverride={(value, variantId) => {
-                // Optimistic scalar cell update only when no variantId — the grid
-                // cell reflects product-level state; per-variant overrides are
-                // visible in the drawer and will update on invalidation.
-                if (!variantId) {
-                  optimisticUpdateField(
-                    selectedProductId,
-                    selectedField,
-                    value,
-                    { source: 'user', method: 'manual_override', acceptedCandidateId: null },
-                  );
-                }
                 manualOverrideMut.mutate({
                   productId: selectedProductId,
                   field: selectedField,
@@ -563,6 +717,16 @@ export function ReviewPage() {
           );
         })()}
       </div>
+      {fieldRowDeleteTarget && (
+        <FinderDeleteConfirmModal
+          target={fieldRowDeleteTarget}
+          onConfirm={handleConfirmFieldRowAction}
+          onCancel={() => setFieldRowDeleteTarget(null)}
+          isPending={fieldRowActionPending}
+          moduleLabel="Review Grid"
+          confirmLabel={fieldRowDeleteTarget.kind === 'field-row-unpublish' ? 'Unpublish' : 'Delete'}
+        />
+      )}
     </div>
   );
 }

@@ -38,8 +38,9 @@ Filename: \`<category>-keyfinder-field-studio-changes.txt\`
 # Use "No change" when the current value is already correct. Leave blanks only when the target value should be blank.
 # Apply in this order: Mapping Studio first, then Key Navigator.
 # Enum list values are edited in Mapping Studio. Key Navigator Enum Policy only links policy, source, and format.
+# Start each field section with the Key Navigator sort number, e.g. 10-connection.
 
-## <field_key> — <Keep | Minor revise | Major revise | Schema decision>
+## <sort_order>-<field_key> — <Keep | Minor revise | Major revise | Schema decision>
 
 Mapping Studio:
 
@@ -147,7 +148,7 @@ Search Hints & Aliases:
 
 ### <Group display name> (N keys)
 
-#### \`<field_key>\` — <Keep | Minor revise | Major revise | Schema decision>
+#### \`<sort_order>-<field_key>\` — <Keep | Minor revise | Major revise | Schema decision>
 
 - **Type / shape:** <type> · <scalar|list>
 - **Priority / scheduling:** <required_level / availability / difficulty changes, or "none">

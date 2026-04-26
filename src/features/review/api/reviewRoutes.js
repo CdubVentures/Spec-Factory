@@ -145,6 +145,8 @@ export function registerReviewRoutes(ctx) {
         getSpecDb,
         resolveGridFieldStateForMutation,
         broadcastWs,
+        config,
+        productRoot: storage?.productRoot || undefined,
       },
     });
     if (handledReviewItemMutation) return handledReviewItemMutation;

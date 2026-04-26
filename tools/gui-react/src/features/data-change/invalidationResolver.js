@@ -66,6 +66,48 @@ function resolveTemplatesForDomains(domains) {
   return templates.length > 0 ? templates : FALLBACK_QUERY_TEMPLATES;
 }
 
+function normalizeEntityToken(value) {
+  return String(value || '').trim();
+}
+
+function collectEntityTokens(value) {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.map(normalizeEntityToken).filter(Boolean))];
+}
+
+function resolveMessageEntities(message) {
+  const msg = message && typeof message === 'object' ? message : {};
+  const entities = msg.entities && typeof msg.entities === 'object' ? msg.entities : {};
+  return {
+    productIds: collectEntityTokens(entities.productIds),
+    fieldKeys: collectEntityTokens(entities.fieldKeys),
+  };
+}
+
+function resolveEntityScopedQueryKeys(message, categories) {
+  const { productIds, fieldKeys } = resolveMessageEntities(message);
+  if (productIds.length === 0 || categories.length === 0) return [];
+
+  const queryKeys = [];
+  for (const category of categories) {
+    for (const productId of productIds) {
+      queryKeys.push(['product', category, productId]);
+      queryKeys.push(['publisher', 'published', category, productId]);
+      queryKeys.push(['indexlab', 'product-history', category, productId]);
+
+      if (fieldKeys.length === 0) {
+        queryKeys.push(['candidates', category, productId]);
+        continue;
+      }
+
+      for (const fieldKey of fieldKeys) {
+        queryKeys.push(['candidates', category, productId, fieldKey]);
+      }
+    }
+  }
+  return queryKeys;
+}
+
 function materializeTemplate(template, categories) {
   if (!Array.isArray(template) || template.length === 0) return [];
   if (!template.includes(CATEGORY_TOKEN)) {
@@ -99,7 +141,10 @@ export function resolveDataChangeInvalidationQueryKeys({
   const domains = resolveDomainsFromMessage(message);
   const scopedCategories = collectDataChangeCategories({ categories, fallbackCategory });
   const templates = resolveTemplatesForDomains(domains);
-  const queryKeys = templates.flatMap((template) => materializeTemplate(template, scopedCategories));
+  const queryKeys = [
+    ...templates.flatMap((template) => materializeTemplate(template, scopedCategories)),
+    ...resolveEntityScopedQueryKeys(message, scopedCategories),
+  ];
   return dedupeQueryKeys(queryKeys);
 }
 

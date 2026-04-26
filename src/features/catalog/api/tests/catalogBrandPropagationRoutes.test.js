@@ -86,6 +86,7 @@ test('catalog routes: product add upserts products table', async () => {
   const specDb = {
     category: 'mouse',
     upsertProduct: (row) => { upsertRows.push(row); },
+    getAllProducts: () => upsertRows,
   };
 
   const handler = registerCatalogRoutes(makeCatalogCtx({
@@ -109,6 +110,8 @@ test('catalog routes: product add upserts products table', async () => {
   assert.equal(upsertRows.length, 1);
   assert.equal(upsertRows[0].product_id, 'mouse-razer-viper');
   assert.equal(upsertRows[0].brand, 'Razer');
+  assert.equal(result.body.product.productId, 'mouse-razer-viper');
+  assert.equal(result.body.product.identifier, 'id_123');
 });
 
 test('catalog routes: product identity update upserts same productId in specDb (immutable ID)', async () => {
@@ -249,14 +252,17 @@ test('catalog routes: single POST passes specDb to addProduct for dedup', async 
 test('catalog routes: bulk POST passes specDb and upserts each created product to SQL', async () => {
   let receivedSpecDb = 'NOT_SET';
   const upsertRows = [];
+  const emitted = [];
   const specDb = {
     category: 'mouse',
     upsertProduct: (row) => { upsertRows.push(row); },
+    getAllProducts: () => upsertRows,
   };
 
   const handler = registerCatalogRoutes(makeCatalogCtx({
     readJsonBody: async () => ({ brand: 'Razer', rows: [{ base_model: 'Viper' }] }),
     getSpecDb: (cat) => (cat === 'mouse' ? specDb : null),
+    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
     catalogAddProductsBulk: async ({ specDb: sd }) => {
       receivedSpecDb = sd;
       return {
@@ -266,10 +272,16 @@ test('catalog routes: bulk POST passes specDb and upserts each created product t
     },
   }));
 
-  await handler(['catalog', 'mouse', 'products', 'bulk'], new URLSearchParams(), 'POST', {}, {});
+  const result = await handler(['catalog', 'mouse', 'products', 'bulk'], new URLSearchParams(), 'POST', {}, {});
   assert.equal(receivedSpecDb, specDb, 'specDb must be forwarded to catalogAddProductsBulk');
   assert.equal(upsertRows.length, 1, 'bulk add must upsert each created product to SQL');
   assert.equal(upsertRows[0].product_id, 'mouse-new1');
+  assert.deepEqual(
+    result.body.products.map((row) => row.productId),
+    ['mouse-new1'],
+    'bulk add response must include hydrated created products for instant cache insertion',
+  );
+  assert.deepEqual(emitted[0]?.payload?.entities?.productIds, ['mouse-new1']);
 });
 
 test('brand routes: seed emits typed data-change contract', async () => {

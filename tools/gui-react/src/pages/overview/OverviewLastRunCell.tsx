@@ -1,4 +1,4 @@
-import type { MouseEvent } from 'react';
+import { memo, type MouseEvent } from 'react';
 import type { CatalogRow } from '../../types/product.ts';
 import { pullFormatDateTime } from '../../utils/dateTime.ts';
 import './OverviewLastRunCell.css';
@@ -23,7 +23,7 @@ function buildWorkerRows(row: CatalogRow): readonly WorkerRow[] {
   ];
 }
 
-export function OverviewLastRunCell({ row }: OverviewLastRunCellProps) {
+function OverviewLastRunCellInner({ row }: OverviewLastRunCellProps) {
   const rows = buildWorkerRows(row);
   return (
     <div className="sf-olr-stack">
@@ -36,6 +36,10 @@ export function OverviewLastRunCell({ row }: OverviewLastRunCellProps) {
     </div>
   );
 }
+
+// WHY: renders ~500 times per parent render when detail-cols are open;
+// row reference is stable across catalog renders.
+export const OverviewLastRunCell = memo(OverviewLastRunCellInner);
 
 interface OverviewLastRunHeaderToggleProps {
   readonly open: boolean;

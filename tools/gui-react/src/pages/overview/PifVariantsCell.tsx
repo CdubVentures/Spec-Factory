@@ -24,7 +24,7 @@ function PifVariantsCellInner({
   productId,
   category,
   variants,
-  pifDependencyReady = true,
+  pifDependencyReady,
   pifDependencyMissingKeys = [],
   hexMap,
   brand,

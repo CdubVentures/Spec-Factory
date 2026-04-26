@@ -6,8 +6,7 @@
  */
 
 import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../api/client.ts';
+import { useProductHistoryQuery } from '../api/productHistoryQuery.ts';
 import { Sparkline } from '../../runtime-ops/components/Sparkline.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { parseBackendMs } from '../../../utils/dateTime.ts';
@@ -73,13 +72,7 @@ export interface ProductHistoryKpiRowProps { productId: string; category: string
 export function ProductHistoryKpiRow({ productId, category }: ProductHistoryKpiRowProps) {
   const [selRunId] = usePersistedTab<string>(`indexing:history:run:${productId}`, '');
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['indexlab', 'product-history', category, productId],
-    queryFn: () => api.get<ProductHistoryResponse>(
-      `/indexlab/product-history?category=${encodeURIComponent(category)}&product_id=${encodeURIComponent(productId)}`
-    ),
-    enabled: Boolean(productId) && Boolean(category) && category !== 'all',
-  });
+  const { data, isLoading } = useProductHistoryQuery(category, productId);
 
   const selRun: ProductHistoryRunRow | undefined = useMemo(() => {
     if (!data?.runs.length) return undefined;

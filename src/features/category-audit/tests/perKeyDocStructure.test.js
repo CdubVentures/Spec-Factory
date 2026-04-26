@@ -182,6 +182,7 @@ test('per-key LLM audit prompt requires a Field Studio text file first', () => {
   const allText = JSON.stringify(section);
   assert.match(allText, /downloadable text file first/i);
   assert.match(allText, /mouse-design-field-studio-change\.txt/);
+  assert.match(allText, /## <sort_order>-<field_key>/);
   assert.match(allText, /Mapping Studio/);
   assert.match(allText, /Key Navigator/);
   assert.match(allText, /Live validation/);
@@ -193,6 +194,19 @@ test('per-key LLM audit prompt requires a Field Studio text file first', () => {
   assert.doesNotMatch(allText, /current runtime behavior, not the target recommendation/i);
   assert.doesNotMatch(allText, /do not treat that as endorsement/i);
   assert.doesNotMatch(allText, /Recommend closed when this key/i);
+});
+
+test('per-key LLM audit prompt uses navigator ordinal when available', () => {
+  const rule = makeRule({
+    enum: { policy: 'open_prefer_known', values: ['standard', 'limited edition'] },
+  });
+  const record = makeKeyRecord('design', rule);
+  const preview = composePerKeyPromptPreview(rule, 'design', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview, navigatorOrdinal: '07' });
+  const section = structure.sections.find((s) => s.id === 'llm-audit-prompt');
+  const allText = JSON.stringify(section);
+  assert.match(allText, /mouse-07-design-field-studio-change\.txt/);
+  assert.match(allText, /## 07-design/);
 });
 
 test('contract-schema table has a row for every FIELD_RULE_SCHEMA entry', () => {

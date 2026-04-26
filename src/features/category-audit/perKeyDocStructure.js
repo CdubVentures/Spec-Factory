@@ -386,8 +386,11 @@ function buildExampleBankSection(record, category) {
   };
 }
 
-function buildPerKeyLlmAuditPromptSection(record, category) {
-  const fileName = `${category}-${record.fieldKey}-field-studio-change.txt`;
+function buildPerKeyLlmAuditPromptSection(record, category, navigatorOrdinal = '') {
+  const fieldToken = navigatorOrdinal ? `${navigatorOrdinal}-${record.fieldKey}` : '<sort_order>-<field_key>';
+  const fileName = navigatorOrdinal
+    ? `${category}-${fieldToken}-field-studio-change.txt`
+    : `${category}-${record.fieldKey}-field-studio-change.txt`;
   return {
     id: 'llm-audit-prompt',
     title: 'Copy/paste LLM audit prompt',
@@ -408,7 +411,10 @@ Return a downloadable text file first named ${fileName}. If your interface suppo
 
 The text file must be concise and ordered exactly like Field Studio:
 
-# ${category.toUpperCase()} ${record.fieldKey} FIELD STUDIO CHANGE FILE
+# ${category.toUpperCase()} ${fieldToken} FIELD STUDIO CHANGE FILE
+# Keep the ${navigatorOrdinal ? `${navigatorOrdinal}-` : '<sort_order>-'} prefix so the returned file tracks Key Navigator order.
+
+## ${fieldToken} — <Keep | Minor revise | Major revise | Schema decision>
 
 Mapping Studio:
 
@@ -755,6 +761,7 @@ export function buildPerKeyDocStructure(keyRecord, {
   groups = [],
   componentInventory = [],
   preview,
+  navigatorOrdinal = '',
 }) {
   const sections = [
     buildHeaderSection(keyRecord, category, generatedAt, preview),
@@ -769,7 +776,7 @@ export function buildPerKeyDocStructure(keyRecord, {
     buildCrossFieldSection(keyRecord, allKeyRecords),
     buildSiblingsSection(keyRecord, siblingsInGroup),
     buildExampleBankSection(keyRecord, category),
-    buildPerKeyLlmAuditPromptSection(keyRecord, category),
+    buildPerKeyLlmAuditPromptSection(keyRecord, category, navigatorOrdinal),
     buildFullPromptSection(preview),
     buildPerSlotSection(preview),
     buildReservedOwnerSection(preview),
@@ -783,6 +790,7 @@ export function buildPerKeyDocStructure(keyRecord, {
       category,
       generatedAt,
       reserved: Boolean(preview?.reserved),
+      navigatorOrdinal,
     },
     sections,
   };

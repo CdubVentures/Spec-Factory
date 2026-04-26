@@ -46,4 +46,5 @@ export interface BulkImportResult {
   failed?: number;
   total_catalog?: number;
   results?: BulkImportResultRow[];
+  products?: CatalogProduct[];
 }

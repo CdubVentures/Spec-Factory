@@ -1,10 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  insertSharedProductCaches,
+  patchBrandCascadeProductCaches,
   patchCachedProduct,
   removeCachedProduct,
   patchSharedProductCaches,
   removeSharedProductCaches,
+  restoreBrandCascadeProductCaches,
   restoreSharedProductCaches,
 } from '../productCacheOptimism.ts';
 import type { CatalogProduct, CatalogRow } from '../../../../types/product.ts';
@@ -231,5 +234,171 @@ describe('product cache optimism', () => {
     assert.deepEqual(review.products.map((row) => row.product_id), ['p2']);
     assert.deepEqual(review.brands, ['Other']);
     assert.equal(review.total, 1);
+  });
+
+  it('inserts created products into every loaded product-derived query cache', () => {
+    const created = product({
+      productId: 'p3',
+      id: 3,
+      identifier: 'id-3',
+      brand: 'Aardvark',
+      model: 'Mouse Three',
+      base_model: 'Mouse Three',
+      variant: 'Blue',
+    });
+    const harness = createQueryClientHarness([
+      [['catalog-products', 'mouse'], [product({ productId: 'p1' })]],
+      [['catalog', 'mouse'], [catalogRow({ productId: 'p1' })]],
+      [['catalog', 'mouse', 'indexing'], [catalogRow({ productId: 'p1' })]],
+      [['catalog-review', 'mouse'], [product({ productId: 'p1' })]],
+      [['reviewProductsIndex', 'mouse'], reviewIndex({ products: reviewIndex().products.slice(0, 1), brands: ['Acme'], total: 1 })],
+    ]);
+
+    const snapshot = insertSharedProductCaches(
+      harness.queryClient as never,
+      'mouse',
+      [created],
+    );
+
+    assert.deepEqual(
+      (harness.get(['catalog-products', 'mouse']) as CatalogProduct[]).map((row) => row.productId),
+      ['p3', 'p1'],
+    );
+    const overview = harness.get(['catalog', 'mouse']) as CatalogRow[];
+    assert.equal(overview[0].productId, 'p3');
+    assert.equal(overview[0].confidence, 0);
+    assert.equal(overview[0].fieldsTotal, 0);
+    assert.deepEqual(overview[0].pifVariants, []);
+    assert.equal((harness.get(['catalog', 'mouse', 'indexing']) as CatalogRow[])[0].productId, 'p3');
+    assert.equal((harness.get(['catalog-review', 'mouse']) as CatalogProduct[])[0].productId, 'p3');
+
+    const review = harness.get(['reviewProductsIndex', 'mouse']) as ProductsIndexResponse;
+    assert.deepEqual(review.products.map((row) => row.product_id), ['p3', 'p1']);
+    assert.equal(review.products[0].identity.brand, 'Aardvark');
+    assert.equal(review.products[0].metrics.has_run, false);
+    assert.deepEqual(review.brands, ['Aardvark', 'Acme']);
+    assert.equal(review.total, 2);
+
+    restoreSharedProductCaches(harness.queryClient as never, 'mouse', snapshot);
+    assert.deepEqual(
+      (harness.get(['catalog-products', 'mouse']) as CatalogProduct[]).map((row) => row.productId),
+      ['p1'],
+    );
+  });
+
+  it('dedupes bulk-created products before inserting shared caches', () => {
+    const harness = createQueryClientHarness([
+      [['catalog-products', 'mouse'], [product({ productId: 'p1' })]],
+      [['catalog', 'mouse'], [catalogRow({ productId: 'p1' })]],
+      [['catalog', 'mouse', 'indexing'], [catalogRow({ productId: 'p1' })]],
+      [['catalog-review', 'mouse'], [product({ productId: 'p1' })]],
+      [['reviewProductsIndex', 'mouse'], reviewIndex({ products: reviewIndex().products.slice(0, 1), brands: ['Acme'], total: 1 })],
+    ]);
+
+    insertSharedProductCaches(
+      harness.queryClient as never,
+      'mouse',
+      [
+        product({ productId: 'p2', id: 2, brand: 'Acme', base_model: 'Mouse Two', model: 'Mouse Two' }),
+        product({ productId: 'p2', id: 2, brand: 'Acme', base_model: 'Mouse Two', model: 'Mouse Two' }),
+        product({ productId: 'p1', id: 1, brand: 'Acme', base_model: 'Mouse One', model: 'Mouse One' }),
+      ],
+    );
+
+    assert.deepEqual(
+      (harness.get(['catalog-products', 'mouse']) as CatalogProduct[]).map((row) => row.productId),
+      ['p1', 'p2'],
+    );
+    const review = harness.get(['reviewProductsIndex', 'mouse']) as ProductsIndexResponse;
+    assert.deepEqual(review.products.map((row) => row.product_id), ['p1', 'p2']);
+    assert.equal(review.total, 2);
+  });
+
+  it('patches brand rename across exact affected product caches and categories', () => {
+    const keyboardReview = reviewIndex({
+      products: [
+        {
+          ...reviewIndex().products[0],
+          product_id: 'k1',
+          category: 'keyboard',
+          identity: {
+            ...reviewIndex().products[0].identity,
+            brand: 'Acme',
+            model: 'Keyboard One',
+          },
+        },
+      ],
+      brands: ['Acme'],
+      total: 1,
+    });
+    const harness = createQueryClientHarness([
+      [['catalog-products', 'mouse'], [
+        product({ productId: 'p1', brand: 'Acme', brand_identifier: 'brand-1' }),
+        product({ productId: 'p2', id: 2, brand: 'Acme', brand_identifier: 'legacy-other' }),
+      ]],
+      [['catalog', 'mouse'], [
+        catalogRow({ productId: 'p1', brand: 'Acme', brand_identifier: 'brand-1' }),
+        catalogRow({ productId: 'p2', id: 2, brand: 'Acme', brand_identifier: 'legacy-other' }),
+      ]],
+      [['catalog', 'mouse', 'indexing'], [
+        catalogRow({ productId: 'p1', brand: 'Acme', brand_identifier: 'brand-1' }),
+        catalogRow({ productId: 'p2', id: 2, brand: 'Acme', brand_identifier: 'legacy-other' }),
+      ]],
+      [['catalog-review', 'mouse'], [
+        product({ productId: 'p1', brand: 'Acme', brand_identifier: 'brand-1' }),
+        product({ productId: 'p2', id: 2, brand: 'Acme', brand_identifier: 'legacy-other' }),
+      ]],
+      [['reviewProductsIndex', 'mouse'], reviewIndex()],
+      [['catalog-products', 'keyboard'], [
+        product({ productId: 'k1', id: 3, brand: 'Acme', brand_identifier: 'brand-1' }),
+      ]],
+      [['catalog', 'keyboard'], [
+        catalogRow({ productId: 'k1', id: 3, brand: 'Acme', brand_identifier: 'brand-1' }),
+      ]],
+      [['catalog', 'keyboard', 'indexing'], [
+        catalogRow({ productId: 'k1', id: 3, brand: 'Acme', brand_identifier: 'brand-1' }),
+      ]],
+      [['catalog-review', 'keyboard'], [
+        product({ productId: 'k1', id: 3, brand: 'Acme', brand_identifier: 'brand-1' }),
+      ]],
+      [['reviewProductsIndex', 'keyboard'], keyboardReview],
+    ]);
+
+    const snapshot = patchBrandCascadeProductCaches(
+      harness.queryClient as never,
+      {
+        newBrand: 'Acme Pro',
+        productsByCategory: {
+          mouse: ['p1'],
+          keyboard: ['k1'],
+        },
+      },
+    );
+
+    assert.deepEqual(
+      (harness.get(['catalog-products', 'mouse']) as CatalogProduct[]).map((row) => [row.productId, row.brand]),
+      [['p1', 'Acme Pro'], ['p2', 'Acme']],
+    );
+    assert.equal((harness.get(['catalog', 'mouse']) as CatalogRow[])[0].brand, 'Acme Pro');
+    assert.equal((harness.get(['catalog', 'mouse', 'indexing']) as CatalogRow[])[0].brand, 'Acme Pro');
+    assert.equal((harness.get(['catalog-review', 'mouse']) as CatalogProduct[])[0].brand, 'Acme Pro');
+    assert.equal(
+      (harness.get(['reviewProductsIndex', 'mouse']) as ProductsIndexResponse).products[0].identity.brand,
+      'Acme Pro',
+    );
+    assert.deepEqual(
+      (harness.get(['reviewProductsIndex', 'mouse']) as ProductsIndexResponse).brands,
+      ['Acme Pro', 'Other'],
+    );
+    assert.equal((harness.get(['catalog-products', 'keyboard']) as CatalogProduct[])[0].brand, 'Acme Pro');
+    assert.equal(
+      (harness.get(['reviewProductsIndex', 'keyboard']) as ProductsIndexResponse).products[0].identity.brand,
+      'Acme Pro',
+    );
+
+    restoreBrandCascadeProductCaches(harness.queryClient as never, snapshot);
+
+    assert.equal((harness.get(['catalog-products', 'mouse']) as CatalogProduct[])[0].brand, 'Acme');
+    assert.equal((harness.get(['catalog-products', 'keyboard']) as CatalogProduct[])[0].brand, 'Acme');
   });
 });

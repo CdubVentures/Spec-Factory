@@ -1,8 +1,7 @@
 import { Fragment, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import { MiniDonut } from './MiniDonut.tsx';
-import { api } from '../../../api/client.ts';
+import { useProductHistoryQuery } from '../api/productHistoryQuery.ts';
 import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
 import { TrafficLight } from '../../../shared/ui/feedback/TrafficLight.tsx';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
@@ -352,13 +351,7 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
   const [tab, setTab] = usePersistedTab<HistTab>(`indexing:history:tab:${productId}`, 'queries', { validValues: HIST_TAB_KEYS });
   const [selRunId, setSelRunId] = usePersistedTab<string>(`indexing:history:run:${productId}`, '');
 
-  const { data, isLoading } = useQuery({
-    queryKey: ['indexlab', 'product-history', category, productId],
-    queryFn: () => api.get<ProductHistoryResponse>(
-      `/indexlab/product-history?category=${encodeURIComponent(category)}&product_id=${encodeURIComponent(productId)}`
-    ),
-    enabled: Boolean(productId) && Boolean(category) && category !== 'all',
-  });
+  const { data, isLoading } = useProductHistoryQuery(category, productId);
 
   const selRun = useMemo(() => {
     if (!data?.runs.length) return undefined;

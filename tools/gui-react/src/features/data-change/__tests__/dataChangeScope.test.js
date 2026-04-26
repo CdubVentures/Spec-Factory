@@ -27,6 +27,17 @@ test('resolveDataChangeScopedCategories falls back to current category when mess
   assert.deepEqual(categories, ['mouse']);
 });
 
+test('resolveDataChangeScopedCategories treats global scope as unscoped', () => {
+  const categories = resolveDataChangeScopedCategories({
+    type: 'data-change',
+    event: 'runtime-settings-updated',
+    category: 'global',
+    categories: ['global'],
+  }, 'mouse');
+
+  assert.deepEqual(categories, ['mouse']);
+});
+
 test('applyDataChangeInvalidation invalidates each scoped category once', () => {
   const invalidated = [];
   const scoped = applyDataChangeInvalidation({

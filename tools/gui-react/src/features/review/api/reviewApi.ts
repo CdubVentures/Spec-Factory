@@ -26,6 +26,42 @@ export function deleteAllCandidatesForField(
   );
 }
 
+export interface ReviewFieldRowActionResult {
+  readonly productId: string;
+  readonly published_status: 'cleared' | 'unchanged';
+  readonly key_selected_cleared?: boolean;
+  readonly deleted_candidates?: number | boolean;
+  readonly deleted_runs?: readonly number[];
+}
+
+export interface ReviewFieldRowActionResponse {
+  readonly ok: boolean;
+  readonly status: 'unpublished' | 'deleted';
+  readonly field: string;
+  readonly product_count: number;
+  readonly results: readonly ReviewFieldRowActionResult[];
+  readonly deleted_runs_by_product?: Readonly<Record<string, readonly number[]>>;
+}
+
+export function unpublishReviewFieldRow(
+  category: string,
+  fieldKey: string,
+): Promise<ReviewFieldRowActionResponse> {
+  return api.post<ReviewFieldRowActionResponse>(
+    `/review/${category}/field-row/${encodeURIComponent(fieldKey)}/unpublish-all`,
+    {},
+  );
+}
+
+export function deleteReviewFieldRow(
+  category: string,
+  fieldKey: string,
+): Promise<ReviewFieldRowActionResponse> {
+  return api.del<ReviewFieldRowActionResponse>(
+    `/review/${category}/field-row/${encodeURIComponent(fieldKey)}`,
+  );
+}
+
 interface ManualOverrideBody {
   productId: string;
   field: string;

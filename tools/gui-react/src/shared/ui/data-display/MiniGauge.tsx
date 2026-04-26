@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import './MiniGauge.css';
 
 // WHY: r=8.5 inside a 22px box yields circumference 2π·8.5 ≈ 53.41.
@@ -19,7 +20,7 @@ function clamp01(value: number): number {
   return value;
 }
 
-export function MiniGauge({ ratio, tone, label }: MiniGaugeProps) {
+function MiniGaugeInner({ ratio, tone, label }: MiniGaugeProps) {
   const clamped = clamp01(ratio);
   const dashOffset = CIRCUMFERENCE * (1 - clamped);
   const showFill = tone !== 'gray';
@@ -54,3 +55,8 @@ export function MiniGauge({ ratio, tone, label }: MiniGaugeProps) {
     </span>
   );
 }
+
+// WHY: rendered 3× per catalog row (coverage/confidence/fields columns) ×
+// ~500 rows = 1500 cells per Overview render. Props are primitives, so
+// default shallow equality dedupes identical renders.
+export const MiniGauge = memo(MiniGaugeInner);

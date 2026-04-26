@@ -1,6 +1,6 @@
 export function normalizeDataChangeCategory(value) {
   const token = String(value || '').trim().toLowerCase();
-  if (!token || token === 'all') return '';
+  if (!token || token === 'all' || token === 'global') return '';
   return token;
 }
 

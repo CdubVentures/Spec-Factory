@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import type { PifVariantProgressGen } from '../../types/product.generated.ts';
 import { ColorSwatch } from '../../shared/ui/finder/ColorSwatch.tsx';
@@ -7,7 +7,7 @@ import { FinderRunModelBadge, PromptPreviewModal, useResolvedFinderModel } from 
 import { Popover } from '../../shared/ui/overlay/Popover.tsx';
 import { FinderRunPopoverShell } from '../../shared/ui/overlay/FinderRunPopoverShell.tsx';
 import { useFireAndForget } from '../../features/operations/hooks/useFireAndForget.ts';
-import { useRunningVariantKeys } from '../../features/operations/hooks/useFinderOperations.ts';
+import { useRunningFieldKeys, useRunningVariantKeys } from '../../features/operations/hooks/useFinderOperations.ts';
 import { usePromptPreviewQuery } from '../../features/indexing/api/promptPreviewQueries.ts';
 import { useFinderDiscoveryHistoryStore } from '../../stores/finderDiscoveryHistoryStore.ts';
 import { groupHistory, type FinderRun } from '../../shared/ui/finder/discoveryHistoryHelpers.ts';
@@ -28,6 +28,7 @@ import type {
   CarouselSlide,
   GalleryImage,
   ProductImageEntry,
+  ProductImageDependencyStatus,
   ProductImageFinderResult,
 } from '../../features/product-image-finder/types.ts';
 import { PifVariantRings } from './PifVariantRings.tsx';
@@ -69,7 +70,7 @@ export function PifVariantPopover({
   productId,
   category,
   variant,
-  pifDependencyReady = true,
+  pifDependencyReady,
   pifDependencyMissingKeys = [],
   hexMap,
   brand,
@@ -85,6 +86,7 @@ export function PifVariantPopover({
   const totalTarget = variant.priority_total + variant.hero_target + variant.loop_total;
 
   const fire = useFireAndForget({ type: 'pif', category, productId });
+  const fireKeyFinder = useFireAndForget({ type: 'kf', category, productId });
   // WHY: Per-variant lock — match the IndexLab PIF panel (VariantImageGroup)
   // so Loop/Evaluate only disable when THIS variant has the same op running,
   // not when any other variant is running.
@@ -97,6 +99,7 @@ export function PifVariantPopover({
   const runUrl = `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
   const loopUrl = `${runUrl}/loop`;
   const evalCarouselUrl = `${runUrl}/evaluate-carousel`;
+  const keyFinderRunUrl = `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`;
 
   const finderModel = useResolvedFinderModel('imageFinder');
   const evalModel = useResolvedFinderModel('imageEvaluator');
@@ -106,10 +109,36 @@ export function PifVariantPopover({
   // WS invalidation keeps open popups fresh. A short stale window prevents
   // every hover/reopen from refetching the full PIF payload.
   const popOpen = popoverOpen || carouselOpen;
+  const pifQueryFn = useCallback(
+    () => api.get<ProductImageFinderResult>(
+      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
+    ),
+    [category, productId],
+  );
   const { data: pifData } = useQuery<ProductImageFinderResult>({
     queryKey: ['product-image-finder', category, productId],
-    queryFn: () => api.get<ProductImageFinderResult>(
-      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
+    queryFn: pifQueryFn,
+    enabled: popOpen && Boolean(category) && Boolean(productId),
+    staleTime: 30_000,
+  });
+
+  // WHY: Hover triggers a prefetch with the same key + queryFn so the cache
+  // is warm before the user clicks. TanStack Query dedupes by key — no
+  // double-fetch if click beats the prefetch. staleTime 30s keeps repeated
+  // hovers cheap (cache hits don't refire the network).
+  const queryClient = useQueryClient();
+  const prefetchPif = useCallback(() => {
+    if (!category || !productId) return;
+    void queryClient.prefetchQuery({
+      queryKey: ['product-image-finder', category, productId],
+      queryFn: pifQueryFn,
+      staleTime: 30_000,
+    });
+  }, [queryClient, pifQueryFn, category, productId]);
+  const { data: dependencyStatus } = useQuery<ProductImageDependencyStatus>({
+    queryKey: ['product-image-finder', category, productId, 'dependencies'] as const,
+    queryFn: () => api.get<ProductImageDependencyStatus>(
+      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/dependencies`,
     ),
     enabled: popOpen && Boolean(category) && Boolean(productId),
     staleTime: 30_000,
@@ -133,10 +162,34 @@ export function PifVariantPopover({
   );
   const hasHeroes = evalTargets.has('hero');
   const hasEvalTargets = canonicalViews.length > 0 || hasHeroes;
-  const pifDependencyLocked = pifDependencyReady !== true;
+  const catalogDependencyStatus = useMemo<ProductImageDependencyStatus | null>(() => {
+    if (typeof pifDependencyReady !== 'boolean') return null;
+    return {
+      ready: pifDependencyReady,
+      required_keys: [...pifDependencyMissingKeys],
+      resolved_keys: [],
+      missing_keys: [...pifDependencyMissingKeys],
+    };
+  }, [pifDependencyReady, pifDependencyMissingKeys]);
+  const shouldUseCatalogDependencyStatus = pifDependencyReady === false || !popOpen;
+  const effectiveDependencyStatus = dependencyStatus
+    ?? pifData?.dependencyStatus
+    ?? (shouldUseCatalogDependencyStatus ? catalogDependencyStatus : null);
+  const missingDependencyKeys = effectiveDependencyStatus?.missing_keys ?? [];
+  const runningDependencyKeys = useRunningFieldKeys('kf', productId);
+  const runnableDependencyKeys = useMemo(
+    () => missingDependencyKeys.filter((fieldKey) => !runningDependencyKeys.has(fieldKey)),
+    [missingDependencyKeys, runningDependencyKeys],
+  );
+  const pifDependencyLocked = effectiveDependencyStatus?.ready !== true;
   const pifDependencyTitle = pifDependencyLocked
-    ? `PIF locked until Product Image Dependent key(s) are resolved: ${pifDependencyMissingKeys.join(', ') || 'unknown'}. Use Run Dep to run these keys solo.`
+    ? `PIF locked until Product Image Dependent key(s) are resolved: ${missingDependencyKeys.join(', ') || 'checking'}. Use Run Dep to run these keys solo.`
     : 'PIF dependency keys are resolved.';
+  const runDependencyTitle = missingDependencyKeys.length === 0
+    ? pifDependencyTitle
+    : runnableDependencyKeys.length === 0
+      ? `PIF dependency key(s) already running: ${missingDependencyKeys.join(', ')}.`
+      : `Run missing PIF dependency key(s) solo: ${runnableDependencyKeys.join(', ')}.`;
 
   // Carousel slides — bit-for-bit parity with Indexing Lab's CarouselSlotRow:
   //   buildGalleryImages → filter to variant → sortByPriorityAndSize
@@ -185,6 +238,17 @@ export function PifVariantPopover({
     if (pifDependencyLocked) return;
     fire(runUrl, { variant_key: variantKey, variant_id: variantId, mode: 'view' }, { subType: 'priority-view', variantKey });
   }, [fire, runUrl, variantKey, variantId, pifDependencyLocked]);
+
+  const handleRunDependencies = useCallback(() => {
+    if (runnableDependencyKeys.length === 0) return;
+    runnableDependencyKeys.forEach((fieldKey) => {
+      fireKeyFinder(
+        keyFinderRunUrl,
+        { field_key: fieldKey, mode: 'run', force_solo: true, reason: 'pif_dependency' },
+        { fieldKey },
+      );
+    });
+  }, [fireKeyFinder, keyFinderRunUrl, runnableDependencyKeys]);
 
   const handleRunIndividualView = useCallback((view: string) => {
     if (pifDependencyLocked) return;
@@ -254,7 +318,10 @@ export function PifVariantPopover({
       : 'Open carousel preview';
 
   return (
-    <span className={`sf-pif-rings-cluster${pulsing ? ' sf-pulsing' : ''}`}>
+    <span
+      className={`sf-pif-rings-cluster${pulsing ? ' sf-pulsing' : ''}`}
+      onMouseEnter={prefetchPif}
+    >
       <Popover
         open={popoverOpen}
         onOpenChange={setPopoverOpen}
@@ -289,6 +356,15 @@ export function PifVariantPopover({
           }
           actions={
             <div className="sf-pif-popover-actions-stack">
+              <button
+                type="button"
+                className="sf-frp-btn-primary"
+                onClick={handleRunDependencies}
+                disabled={runnableDependencyKeys.length === 0}
+                title={runDependencyTitle}
+              >
+                Run Dep
+              </button>
               <div className="sf-pif-popover-runs-grid">
                 <RunPreviewCell
                   label="Priority"

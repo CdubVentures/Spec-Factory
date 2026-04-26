@@ -3184,6 +3184,109 @@ html[data-sf-theme-mode='dark'] .sf-component-row-pending-ai-soft {
   background: rgb(var(--sf-color-surface-elevated-rgb));
 }
 
+.sf-review-matrix-field-cell-open {
+  z-index: 80;
+}
+
+.sf-review-matrix-field-menu-root {
+  position: relative;
+  min-width: 0;
+  flex: 1 1 auto;
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+.sf-review-matrix-field-button {
+  min-width: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: rgb(var(--sf-color-text-primary-rgb));
+  border-radius: var(--sf-radius-sm);
+  padding-inline: 0.125rem;
+}
+
+.sf-review-matrix-field-button-actionable:hover,
+.sf-review-matrix-field-button-actionable:focus-visible {
+  background: rgb(var(--sf-color-accent-rgb) / 0.12);
+  outline: none;
+}
+
+.sf-review-matrix-field-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.6875rem;
+}
+
+.sf-review-matrix-variant-icon,
+.sf-review-matrix-field-chevron,
+.sf-review-matrix-field-menu-icon {
+  flex: 0 0 auto;
+}
+
+.sf-review-matrix-variant-icon {
+  width: 0.8125rem;
+  height: 0.8125rem;
+  color: rgb(var(--sf-color-accent-rgb));
+}
+
+.sf-review-matrix-field-chevron {
+  width: 0.625rem;
+  height: 0.625rem;
+  color: rgb(var(--sf-color-text-muted-rgb));
+}
+
+.sf-review-matrix-field-menu {
+  position: absolute;
+  inset-block-start: calc(100% + 0.125rem);
+  inset-inline-start: 0;
+  z-index: 60;
+  min-width: 9.5rem;
+  padding: 0.25rem;
+  border: 1px solid rgb(var(--sf-color-border-default-rgb));
+  border-radius: var(--sf-radius-md);
+  background: rgb(var(--sf-color-panel-rgb));
+  box-shadow: var(--sf-shadow-popover);
+}
+
+.sf-review-matrix-field-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.5rem;
+  border-radius: var(--sf-radius-sm);
+  color: rgb(var(--sf-color-text-primary-rgb));
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-align: left;
+}
+
+.sf-review-matrix-field-menu-item:hover,
+.sf-review-matrix-field-menu-item:focus-visible {
+  background: rgb(var(--sf-color-accent-rgb) / 0.12);
+  outline: none;
+}
+
+.sf-review-matrix-field-menu-item-danger {
+  color: var(--sf-state-danger-fg);
+}
+
+.sf-review-matrix-field-menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.sf-review-matrix-field-menu-icon {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
 .sf-review-matrix-required-dot {
   background: var(--sf-state-danger-fg);
 }

@@ -1,7 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from '../../../api/client.ts';
 import type { FinderTabSummary, FinderTabStatus } from '../../../shared/ui/finder/tabSummary.ts';
 import type { ProductHistoryResponse } from '../types.ts';
+import { useProductHistoryQuery } from '../api/productHistoryQuery.ts';
 
 export function derivePipelineTabSummary(data: ProductHistoryResponse | null): FinderTabSummary {
   const agg = data?.aggregate;
@@ -29,12 +28,6 @@ export function derivePipelineTabSummary(data: ProductHistoryResponse | null): F
 }
 
 export function usePipelineTabSummary(productId: string, category: string): FinderTabSummary {
-  const { data } = useQuery({
-    queryKey: ['indexlab', 'product-history', category, productId],
-    queryFn: () => api.get<ProductHistoryResponse>(
-      `/indexlab/product-history?category=${encodeURIComponent(category)}&product_id=${encodeURIComponent(productId)}`
-    ),
-    enabled: Boolean(productId) && Boolean(category) && category !== 'all',
-  });
+  const { data } = useProductHistoryQuery(category, productId);
   return derivePipelineTabSummary(data ?? null);
 }

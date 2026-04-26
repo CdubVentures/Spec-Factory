@@ -149,6 +149,11 @@ const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confi
   readonly onDismiss: (e: React.MouseEvent, op: Operation) => void;
   readonly onStop: (e: React.MouseEvent, op: Operation) => void;
   readonly confirming: boolean;
+  // WHY: Memo blocks parent re-renders from reaching this card. Active ops
+  // need to update their elapsed timer every second, so the parent passes
+  // a tick value that changes once per second for running/queued ops and
+  // stays 0 for terminal ops — invalidating memo only when needed.
+  readonly tick: number;
 }) {
   const streamText = useOperationsStore((s) => selectOperationPreviewStreamText({
     streamText: s.streamTexts.get(op.id) ?? '',
@@ -355,8 +360,10 @@ export function OperationsTracker() {
     [isOpen, operations, sortMode],
   );
 
-  // WHY: Force re-render every second to update elapsed timers while ops are running.
-  const [, setTick] = useState(0);
+  // WHY: Force re-render every second to update elapsed timers while ops are
+  // running. The tick value is threaded into each OpCard so its memo
+  // invalidates once per second for running/queued ops (and only for those).
+  const [tick, setTick] = useState(0);
   useEffect(() => {
     if (activeCount === 0) return;
     const interval = setInterval(() => setTick((n) => n + 1), 1000);
@@ -473,7 +480,15 @@ export function OperationsTracker() {
             </div>
           ) : (
             sorted.map((op) => (
-              <OpCard key={op.id} op={op} onClick={handleCardClick} onDismiss={handleDismiss} onStop={handleStop} confirming={confirmCancelId === op.id} />
+              <OpCard
+                key={op.id}
+                op={op}
+                onClick={handleCardClick}
+                onDismiss={handleDismiss}
+                onStop={handleStop}
+                confirming={confirmCancelId === op.id}
+                tick={(op.status === 'running' || op.status === 'queued') ? tick : 0}
+              />
             ))
           )}
         </div>

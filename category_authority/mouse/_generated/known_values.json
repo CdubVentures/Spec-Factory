@@ -121,6 +121,7 @@
     "computer_side_connector": {
       "policy": "open_prefer_known",
       "values": [
+        "PS/2",
         "USB-A",
         "USB-C"
       ]
@@ -136,10 +137,9 @@
     "connectivity": {
       "policy": "open_prefer_known",
       "values": [
-        "2.4GHz Dongle",
         "2.4GHz RF Dongle",
-        "2.4GHz WIFI Dongle",
-        "n/a"
+        "Bluetooth",
+        "USB Wired"
       ]
     },
     "design": {
@@ -217,6 +217,10 @@
       "values": [
         "1 zone (led)",
         "1 zone (rgb)",
+        "10 zone (rgb)",
+        "11 zone (rgb)",
+        "12 zone (rgb)",
+        "13 zone (rgb)",
         "2 zone (led)",
         "2 zone (rgb)",
         "3 zone (led)",
@@ -268,6 +272,7 @@
     "mouse_side_connector": {
       "policy": "open_prefer_known",
       "values": [
+        "Lightning",
         "Micro-B",
         "n/a",
         "USB-C"
@@ -305,6 +310,6 @@
       ]
     }
   },
-  "generated_at": "2026-04-26T08:49:32.162Z",
+  "generated_at": "2026-04-26T21:25:42.189Z",
   "version": 1
 }

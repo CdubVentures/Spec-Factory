@@ -373,6 +373,8 @@ test('fieldKeyOrder writes a sorted/ folder of numbered .md files in navigator o
     );
     const dpiSorted = await fs.readFile(path.join(sortedDir, '02-dpi.md'), 'utf8');
     assert.equal(dpiSorted, dpiCanonical);
+    assert.match(dpiSorted, /mouse-02-dpi-field-studio-change\.txt/);
+    assert.match(dpiSorted, /## 02-dpi/);
   } finally {
     await cleanupDir(outputRoot);
   }

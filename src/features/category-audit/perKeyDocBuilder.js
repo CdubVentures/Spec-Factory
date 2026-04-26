@@ -125,6 +125,18 @@ async function writeSortedFolder({ basePath, fieldKeyOrder, written, skipped, ca
   return { basePath: sortedDir, count: entries.length, entries };
 }
 
+function buildNavigatorOrdinalMap(fieldKeyOrder) {
+  if (!Array.isArray(fieldKeyOrder)) return new Map();
+  const fields = fieldKeyOrder.filter(
+    (entry) => typeof entry === 'string' && !entry.startsWith('__grp::'),
+  );
+  const width = Math.max(2, String(fields.length).length);
+  return new Map(fields.map((fieldKey, index) => [
+    fieldKey,
+    String(index + 1).padStart(width, '0'),
+  ]));
+}
+
 function resolvePerKeyCategoryPath(outputRoot, category) {
   const perKeyRoot = path.resolve(outputRoot, 'per-key');
   const basePath = path.resolve(perKeyRoot, category);
@@ -183,6 +195,7 @@ export async function generatePerKeyDocs({
   await fs.mkdir(basePath, { recursive: true });
 
   const byGroup = groupRecordsByGroup(reportData.keys);
+  const navigatorOrdinals = buildNavigatorOrdinalMap(fieldKeyOrder);
   const written = [];
   const skipped = [];
 
@@ -210,6 +223,7 @@ export async function generatePerKeyDocs({
       groups: reportData.groups || [],
       componentInventory: reportData.components || [],
       preview,
+      navigatorOrdinal: navigatorOrdinals.get(record.fieldKey) || '',
     });
 
     const documentTitle = `Per-Key Doc \u2014 ${category}/${record.fieldKey}`;
