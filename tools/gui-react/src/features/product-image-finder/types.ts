@@ -293,6 +293,7 @@ export interface ProductImageFinderLoopResponse {
 export interface ProductImageFinderDeleteResponse {
   ok: boolean;
   remaining_runs?: number;
+  deleted?: string | string[];
 }
 
 export interface VariantInfo {

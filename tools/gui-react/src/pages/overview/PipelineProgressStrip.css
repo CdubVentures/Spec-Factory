@@ -1,29 +1,27 @@
 .sf-overview-identity-cell {
-  overflow: visible;
+  overflow: visible !important;
   position: relative;
   z-index: 2;
 }
 
 .sf-overview-brand-cell {
-  position: relative;
-  min-height: 100%;
-  padding-bottom: 18px;
+  min-height: auto;
 }
 
 .sf-pipeline-strip {
   position: absolute;
-  left: 0;
-  bottom: -2px;
-  width: 540px;
+  left: 8px;
+  bottom: 6px;
+  width: 510px;
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 4px;
+  gap: 3px;
   pointer-events: none;
 }
 
 .sf-pipeline-strip-step {
   position: relative;
-  height: 12px;
+  height: 10px;
   min-width: 0;
   overflow: hidden;
   border-radius: var(--sf-token-radius-sm);

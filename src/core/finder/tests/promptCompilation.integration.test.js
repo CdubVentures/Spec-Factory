@@ -340,10 +340,10 @@ describe('every finder phase exposes prompt_templates for the LLM Config GUI', (
 
   test('PIF image prompt settings expose full-template required variables', () => {
     const expectedRequiredBySetting = {
-      viewPromptOverride: ['BRAND', 'MODEL', 'CATEGORY', 'VARIANT_DESC', 'DISCOVERY_IDENTITY_GATE', 'PRIORITY_VIEWS', 'ALL_VIEW_KEYS', 'IMAGE_REQUIREMENTS'],
-      heroPromptOverride: ['CATEGORY', 'HERO_INSTRUCTIONS'],
-      evalPromptOverride: ['IDENTITY', 'CATEGORY', 'VIEW_LINE', 'COUNT_LINE', 'VARIANT_IDENTITY_GATE', 'CRITERIA'],
-      heroEvalPromptOverride: ['IDENTITY', 'CATEGORY', 'COUNT_LINE', 'VARIANT_IDENTITY_GATE', 'CRITERIA', 'HERO_COUNT'],
+      viewPromptOverride: ['BRAND', 'MODEL', 'CATEGORY_CONTEXT', 'VARIANT_DESC', 'DISCOVERY_IDENTITY_GATE', 'PRIORITY_VIEWS', 'ALL_VIEW_KEYS', 'IMAGE_REQUIREMENTS'],
+      heroPromptOverride: ['CATEGORY_CONTEXT', 'HERO_INSTRUCTIONS'],
+      evalPromptOverride: ['CATEGORY_CONTEXT', 'IDENTITY', 'VIEW_LINE', 'COUNT_LINE', 'VARIANT_IDENTITY_GATE', 'CRITERIA'],
+      heroEvalPromptOverride: ['CATEGORY_CONTEXT', 'IDENTITY', 'COUNT_LINE', 'VARIANT_IDENTITY_GATE', 'CRITERIA', 'HERO_COUNT'],
     };
     const fullTemplateSettings = [
       ['image-finder', 'viewPromptOverride'],
@@ -625,7 +625,7 @@ describe('scalar finder prompt contract (O(1) overlay)', () => {
   test('SCALAR_FINDER_VARIABLES has the canonical entries in the expected order', () => {
     const names = SCALAR_FINDER_VARIABLES.map((v) => v.name);
     assert.deepEqual(names, [
-      'BRAND', 'MODEL', 'CATEGORY', 'VARIANT_DESC', 'VARIANT_SUFFIX', 'VARIANT_TYPE_WORD',
+      'BRAND', 'MODEL', 'CATEGORY_CONTEXT', 'VARIANT_DESC', 'VARIANT_SUFFIX', 'VARIANT_TYPE_WORD',
       'IDENTITY_INTRO', 'IDENTITY_WARNING', 'EVIDENCE_REQUIREMENTS',
       'VALUE_CONFIDENCE_GUIDANCE', 'UNK_POLICY',
       'SOURCE_GUIDANCE', 'VARIANT_DISAMBIGUATION',
@@ -633,7 +633,7 @@ describe('scalar finder prompt contract (O(1) overlay)', () => {
     ]);
   });
 
-  test('SCALAR_FINDER_USER_MESSAGE_INFO has the 5 canonical fields', () => {
+  test('SCALAR_FINDER_USER_MESSAGE_INFO has the 6 canonical fields', () => {
     const fields = SCALAR_FINDER_USER_MESSAGE_INFO.map((e) => e.field);
     assert.deepEqual(fields, ['brand', 'model', 'base_model', 'category', 'variant_label', 'variant_type']);
   });

@@ -61,12 +61,60 @@ let _seq = 0;
 // never evicted — concurrency is not capped here.
 const MAX_OPS = 250;
 
+function compactObject(value) {
+  return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined));
+}
+
+function isPendingLlmCall(call) {
+  return call?.response === null || call?.response === undefined;
+}
+
+export function summarizeLlmCall(call) {
+  return compactObject({
+    callIndex: call.callIndex,
+    callId: call.callId,
+    timestamp: call.timestamp,
+    model: call.model,
+    variant: call.variant,
+    mode: call.mode,
+    lane: call.lane,
+    label: call.label,
+    isFallback: call.isFallback,
+    thinking: call.thinking,
+    webSearch: call.webSearch,
+    effortLevel: call.effortLevel,
+    accessMode: call.accessMode,
+    usage: call.usage,
+    responseStatus: isPendingLlmCall(call) ? 'pending' : 'done',
+  });
+}
+
+export function summarizeOperation(operation) {
+  const { llmCalls, ...opWithoutCalls } = operation;
+  const calls = Array.isArray(llmCalls) ? llmCalls : [];
+  const activeLlmCalls = calls.filter(isPendingLlmCall).map(summarizeLlmCall);
+  return {
+    ...opWithoutCalls,
+    llmCallCount: calls.length,
+    activeLlmCallCount: activeLlmCalls.length,
+    activeLlmCalls,
+  };
+}
+
 function broadcast(operation, action = 'upsert') {
   if (!_broadcastWs) return;
-  // WHY: llmCalls can be large; they have their own 'llm-call-append' broadcast.
-  // Exclude from regular upsert to keep per-update messages small.
-  const { llmCalls, ...opWithoutCalls } = operation;
-  _broadcastWs('operations', { action, operation: action === 'remove' ? undefined : { ...opWithoutCalls }, id: operation.id });
+  _broadcastWs('operations', { action, operation: action === 'remove' ? undefined : summarizeOperation(operation), id: operation.id });
+}
+
+function broadcastLlmCall(operation, action, call) {
+  if (!_broadcastWs) return;
+  _broadcastWs('operations', {
+    action,
+    id: operation.id,
+    callIndex: call.callIndex,
+    call: summarizeLlmCall(call),
+    operation: summarizeOperation(operation),
+  });
 }
 
 function broadcastRemove(id) {
@@ -271,9 +319,7 @@ export function appendLlmCall({ id, call }) {
         timestamp: new Date().toISOString(),
       };
       op.llmCalls[supersededIndex] = updated;
-      if (_broadcastWs) {
-        _broadcastWs('operations', { action: 'llm-call-update', id, callIndex: updated.callIndex, call: updated });
-      }
+      broadcastLlmCall(op, 'llm-call-update', updated);
       return;
     }
   }
@@ -291,9 +337,7 @@ export function appendLlmCall({ id, call }) {
         timestamp: new Date().toISOString(),
       };
       op.llmCalls[existingIndex] = updated;
-      if (_broadcastWs) {
-        _broadcastWs('operations', { action: 'llm-call-update', id, callIndex: updated.callIndex, call: updated });
-      }
+      broadcastLlmCall(op, 'llm-call-update', updated);
       return;
     }
   }
@@ -305,18 +349,14 @@ export function appendLlmCall({ id, call }) {
     // while preserving the original callIndex and prompt from the pending entry.
     const updated = { ...last, ...call, callIndex: last.callIndex, timestamp: new Date().toISOString() };
     op.llmCalls[op.llmCalls.length - 1] = updated;
-    if (_broadcastWs) {
-      _broadcastWs('operations', { action: 'llm-call-update', id, callIndex: updated.callIndex, call: updated });
-    }
+    broadcastLlmCall(op, 'llm-call-update', updated);
     return;
   }
 
   // Append new call
   const indexed = { ...call, callIndex: op.llmCalls.length, timestamp: new Date().toISOString() };
   op.llmCalls.push(indexed);
-  if (_broadcastWs) {
-    _broadcastWs('operations', { action: 'llm-call-append', id, call: indexed });
-  }
+  broadcastLlmCall(op, 'llm-call-append', indexed);
 }
 
 /**
@@ -433,6 +473,24 @@ export function listOperations() {
     const cmp = b.startedAt.localeCompare(a.startedAt);
     return cmp !== 0 ? cmp : b._seq - a._seq;
   });
+}
+
+export function listOperationSummaries() {
+  return listOperations().map(summarizeOperation);
+}
+
+export function getOperation(id) {
+  const op = ops.get(id);
+  if (!op) return null;
+  return {
+    ...op,
+    llmCalls: Array.isArray(op.llmCalls)
+      ? op.llmCalls.map((call) => ({
+        ...call,
+        prompt: call.prompt && typeof call.prompt === 'object' ? { ...call.prompt } : call.prompt,
+      }))
+      : [],
+  };
 }
 
 /**

@@ -19,23 +19,23 @@ import { KEY_FINDER_DEFAULT_TEMPLATE } from '../../../key/keyLlmAdapter.js';
 
 export const FINDER_PHASE_SCHEMAS = Object.freeze({
   'color-finder': {
-    system_prompt: buildColorEditionFinderPrompt({ product: { brand: '{brand}', model: '{model}' } }),
+    system_prompt: buildColorEditionFinderPrompt({ product: { brand: '{brand}', model: '{model}', category: '{category}' } }),
     response_schema: zodToLlmSchema(colorEditionFinderResponseSchema),
   },
   'image-finder': {
-    system_prompt: buildProductImageFinderPrompt({ product: { brand: '{brand}', model: '{model}' } }),
+    system_prompt: buildProductImageFinderPrompt({ product: { brand: '{brand}', model: '{model}', category: '{category}' } }),
     response_schema: zodToLlmSchema(productImageFinderResponseSchema),
   },
   'release-date-finder': {
-    system_prompt: buildReleaseDateFinderPrompt({ product: { brand: '{brand}', model: '{model}' } }),
+    system_prompt: buildReleaseDateFinderPrompt({ product: { brand: '{brand}', model: '{model}', category: '{category}' } }),
     response_schema: zodToLlmSchema(releaseDateFinderResponseSchema),
   },
   'sku-finder': {
-    system_prompt: buildSkuFinderPrompt({ product: { brand: '{brand}', model: '{model}' } }),
+    system_prompt: buildSkuFinderPrompt({ product: { brand: '{brand}', model: '{model}', category: '{category}' } }),
     response_schema: zodToLlmSchema(skuFinderResponseSchema),
   },
   'key-finder': {
-    system_prompt: buildKeyFinderPrompt({ product: { brand: '{brand}', model: '{model}' } }),
+    system_prompt: buildKeyFinderPrompt({ product: { brand: '{brand}', model: '{model}', category: '{category}' } }),
     response_schema: zodToLlmSchema(keyFinderResponseSchema),
   },
 });

@@ -96,6 +96,37 @@ test('useDataChangeMutation removes query keys before invalidating event coverag
   );
 });
 
+test('useDataChangeMutation can derive category and entities from mutation result', async () => {
+  resetHarness();
+  const { useDataChangeMutation } = await loadHookModule();
+
+  useDataChangeMutation({
+    event: 'storage-history-purged',
+    mutationFn: async () => ({ ok: true }),
+    resolveDataChangeMessage: ({ data }) => ({
+      category: data.category,
+      entities: { productIds: data.productIds },
+    }),
+  });
+
+  globalThis.__dataChangeMutationHarness.mutationOptions.onSuccess(
+    { ok: true, category: 'mouse', productIds: ['mouse-1'] },
+    undefined,
+    undefined,
+  );
+
+  assert.equal(
+    globalThis.__dataChangeMutationHarness.invalidations.some((key) =>
+      JSON.stringify(key) === JSON.stringify(['catalog', 'mouse'])),
+    true,
+  );
+  assert.equal(
+    globalThis.__dataChangeMutationHarness.invalidations.some((key) =>
+      JSON.stringify(key) === JSON.stringify(['indexlab', 'product-history', 'mouse', 'mouse-1'])),
+    true,
+  );
+});
+
 test('useDataChangeMutation rejects unknown event names at hook construction', async () => {
   resetHarness();
   const { useDataChangeMutation } = await loadHookModule();

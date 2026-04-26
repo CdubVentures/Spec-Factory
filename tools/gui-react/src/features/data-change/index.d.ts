@@ -25,6 +25,13 @@ export type DataChangeQueryClient = {
   invalidateQueries: (options: { queryKey: readonly unknown[] }) => unknown;
 };
 
+export type DataChangeQueryKeyFilter = (args: {
+  readonly queryKey: unknown[];
+  readonly message?: DataChangeMessage | null;
+  readonly categories: string[];
+  readonly fallbackCategory: string;
+}) => boolean;
+
 export declare const KNOWN_DATA_CHANGE_DOMAINS: readonly string[];
 export declare const DATA_CHANGE_EVENT_DOMAIN_FALLBACK: Readonly<Record<string, readonly string[]>>;
 
@@ -110,6 +117,7 @@ export declare function createDataChangeInvalidationScheduler(args?: {
   delayMs?: number;
   setTimeoutFn?: (fn: () => void, delay: number) => unknown;
   clearTimeoutFn?: (id: unknown) => void;
+  shouldInvalidateQueryKey?: DataChangeQueryKeyFilter | null;
   onFlush?: (payload: {
     ts: string;
     queryKeys: unknown[][];
@@ -129,11 +137,32 @@ export type DataChangeQueryKeyInput<TData, TVariables, TOnMutateResult> =
   | readonly QueryKey[]
   | DataChangeQueryKeyResolver<TData, TVariables, TOnMutateResult>;
 
+export interface DataChangeMessageEntities {
+  readonly productIds?: readonly string[];
+  readonly fieldKeys?: readonly string[];
+}
+
+export interface DataChangeMutationMessage {
+  readonly category?: string;
+  readonly categories?: readonly string[];
+  readonly domains?: readonly string[];
+  readonly entities?: DataChangeMessageEntities;
+  readonly meta?: Record<string, unknown>;
+}
+
+export type DataChangeMessageResolver<TData, TVariables, TOnMutateResult> = (args: {
+  readonly data: TData;
+  readonly variables: TVariables;
+  readonly onMutateResult: TOnMutateResult;
+  readonly mutationContext: MutationFunctionContext;
+}) => DataChangeMutationMessage;
+
 export interface UseDataChangeMutationArgs<TData, TError = Error, TVariables = void, TOnMutateResult = unknown> {
   readonly event: string;
   readonly category?: string;
   readonly categories?: readonly string[];
   readonly mutationFn: MutationFunction<TData, TVariables>;
+  readonly resolveDataChangeMessage?: DataChangeMessageResolver<TData, TVariables, TOnMutateResult>;
   readonly extraQueryKeys?: DataChangeQueryKeyInput<TData, TVariables, TOnMutateResult>;
   readonly removeQueryKeys?: DataChangeQueryKeyInput<TData, TVariables, TOnMutateResult>;
   readonly options?: Omit<

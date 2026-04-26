@@ -486,3 +486,13 @@ export function removeImageFromResult(
     runs: nextRuns,
   };
 }
+
+export function removeImagesFromResult(
+  data: ProductImageFinderResult,
+  filenames: readonly string[],
+): ProductImageFinderResult {
+  return filenames.reduce(
+    (current, filename) => removeImageFromResult(current, filename),
+    data,
+  );
+}

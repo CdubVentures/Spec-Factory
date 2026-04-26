@@ -12,13 +12,13 @@ export function createCatalogRouteContext(options = {}) {
   }
 
   const {
-    jsonRes, readJsonBody, toInt, config, storage, buildCatalog,
+    jsonRes, readJsonBody, toInt, config, storage, buildCatalog, buildCatalogRow,
     readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,
     resolveCategoryAlias, listDirs, HELPER_ROOT, broadcastWs, getSpecDb, appDb,
   } = options;
 
   return {
-    jsonRes, readJsonBody, toInt, config, storage, reconcileOrphans, buildCatalog,
+    jsonRes, readJsonBody, toInt, config, storage, reconcileOrphans, buildCatalog, buildCatalogRow,
     listProducts, catalogAddProduct, catalogAddProductsBulk, catalogUpdateProduct,
     catalogRemoveProduct,
     readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,

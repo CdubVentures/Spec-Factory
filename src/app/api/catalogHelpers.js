@@ -243,66 +243,82 @@ function buildLastRunMaps(specDb, category) {
   };
 }
 
+function buildCatalogProjectionContext(specDb, category) {
+  return {
+    totalFieldCount: readFieldKeyOrderCount(specDb, category),
+    pifTargets: readPifTargets(specDb, category),
+    keyGateKnobs: readKeyFinderGateKnobs(specDb),
+    lastRunMaps: buildLastRunMaps(specDb, category),
+  };
+}
+
+function buildCatalogRowFromSql({ specDb, cleanVariant, category, row, context }) {
+  if (!row || typeof row !== 'object') return null;
+  const pid = String(row.product_id || '').trim();
+  if (!pid) return null;
+
+  const brand = String(row.brand || '').trim();
+  const base_model = String(row.base_model || '').trim();
+  const variant = cleanVariant(row.variant);
+  const model = String(row.model || '').trim() || [base_model, variant].filter(Boolean).join(' ').trim();
+  if (!brand || !base_model) return null;
+
+  const candidates = specDb.getAllFieldCandidatesByProduct?.(pid) || [];
+  const resolvedCandidates = candidates.filter(c => String(c.status || '').trim() === 'resolved');
+  const fieldKeysWithData = new Set(resolvedCandidates.map(c => String(c.field_key || '').trim()).filter(Boolean));
+  const avgConfidence = resolvedCandidates.length > 0
+    ? resolvedCandidates.reduce((s, c) => s + (Number(c.confidence) || 0), 0) / resolvedCandidates.length / 100
+    : 0;
+
+  const cefRuns = specDb.listColorEditionFinderRuns?.(pid) || [];
+  const pifVariants = buildPifVariants(specDb, pid, context.pifTargets);
+  const skuVariants = buildScalarVariants(specDb, pid, 'sku');
+  const rdfVariants = buildScalarVariants(specDb, pid, 'release_date');
+  const keyTierProgress = buildKeyTierProgress(specDb, pid, context.keyGateKnobs);
+  const pifDependencyStatus = buildPifDependencyStatus(specDb, category, row);
+
+  return {
+    productId: pid,
+    id: row.id || 0,
+    identifier: String(row.identifier || '').trim(),
+    brand,
+    brand_identifier: String(row.brand_identifier || '').trim(),
+    model,
+    base_model,
+    variant,
+    status: row.status || 'active',
+    confidence: avgConfidence,
+    coverage: context.totalFieldCount > 0 ? fieldKeysWithData.size / context.totalFieldCount : 0,
+    fieldsFilled: fieldKeysWithData.size,
+    fieldsTotal: context.totalFieldCount,
+    cefRunCount: cefRuns.length,
+    ...pifDependencyStatus,
+    pifVariants,
+    skuVariants,
+    rdfVariants,
+    keyTierProgress,
+    cefLastRunAt: context.lastRunMaps.cef.get(pid) || '',
+    pifLastRunAt: context.lastRunMaps.pif.get(pid) || '',
+    rdfLastRunAt: context.lastRunMaps.rdf.get(pid) || '',
+    skuLastRunAt: context.lastRunMaps.sku.get(pid) || '',
+    kfLastRunAt:  context.lastRunMaps.kf.get(pid)  || '',
+  };
+}
+
 function buildCatalogFromSql({ specDb, cleanVariant, category }) {
   if (!specDb) return [];
 
   const allProducts = specDb.getAllProducts() || [];
-  const totalFieldCount = readFieldKeyOrderCount(specDb, category);
-  const pifTargets = readPifTargets(specDb, category);
-  const keyGateKnobs = readKeyFinderGateKnobs(specDb);
-  const lastRunMaps = buildLastRunMaps(specDb, category);
-
+  const context = buildCatalogProjectionContext(specDb, category);
   const seen = new Map();
 
   for (const row of allProducts) {
-    const pid = row.product_id;
-    const brand = String(row.brand || '').trim();
-    const base_model = String(row.base_model || '').trim();
-    const variant = cleanVariant(row.variant);
-    const model = String(row.model || '').trim() || [base_model, variant].filter(Boolean).join(' ').trim();
-    if (!brand || !base_model) continue;
+    const pid = String(row?.product_id || '').trim();
+    if (!pid) continue;
     if (seen.has(pid)) continue;
-
-    const candidates = specDb.getAllFieldCandidatesByProduct?.(pid) || [];
-    const resolvedCandidates = candidates.filter(c => String(c.status || '').trim() === 'resolved');
-    const fieldKeysWithData = new Set(resolvedCandidates.map(c => String(c.field_key || '').trim()).filter(Boolean));
-    const avgConfidence = resolvedCandidates.length > 0
-      ? resolvedCandidates.reduce((s, c) => s + (Number(c.confidence) || 0), 0) / resolvedCandidates.length / 100
-      : 0;
-
-    const cefRuns = specDb.listColorEditionFinderRuns?.(pid) || [];
-    const pifVariants = buildPifVariants(specDb, pid, pifTargets);
-    const skuVariants = buildScalarVariants(specDb, pid, 'sku');
-    const rdfVariants = buildScalarVariants(specDb, pid, 'release_date');
-    const keyTierProgress = buildKeyTierProgress(specDb, pid, keyGateKnobs);
-    const pifDependencyStatus = buildPifDependencyStatus(specDb, category, row);
-
-    seen.set(pid, {
-      productId: pid,
-      id: row.id || 0,
-      identifier: String(row.identifier || '').trim(),
-      brand,
-      brand_identifier: String(row.brand_identifier || '').trim(),
-      model,
-      base_model,
-      variant,
-      status: row.status || 'active',
-      confidence: avgConfidence,
-      coverage: totalFieldCount > 0 ? fieldKeysWithData.size / totalFieldCount : 0,
-      fieldsFilled: fieldKeysWithData.size,
-      fieldsTotal: totalFieldCount,
-      cefRunCount: cefRuns.length,
-      ...pifDependencyStatus,
-      pifVariants,
-      skuVariants,
-      rdfVariants,
-      keyTierProgress,
-      cefLastRunAt: lastRunMaps.cef.get(pid) || '',
-      pifLastRunAt: lastRunMaps.pif.get(pid) || '',
-      rdfLastRunAt: lastRunMaps.rdf.get(pid) || '',
-      skuLastRunAt: lastRunMaps.sku.get(pid) || '',
-      kfLastRunAt:  lastRunMaps.kf.get(pid)  || '',
-    });
+    const catalogRow = buildCatalogRowFromSql({ specDb, cleanVariant, category, row, context });
+    if (!catalogRow) continue;
+    seen.set(pid, catalogRow);
   }
 
   const rows = [...seen.values()];
@@ -324,6 +340,28 @@ export function createCatalogBuilder({
   return async function buildCatalog(category) {
     const specDb = getSpecDb(category);
     return buildCatalogFromSql({ specDb, cleanVariant, category });
+  };
+}
+
+export function createCatalogRowBuilder({
+  getSpecDb,
+  cleanVariant,
+} = {}) {
+  assertFunction('getSpecDb', getSpecDb);
+  assertFunction('cleanVariant', cleanVariant);
+
+  return async function buildCatalogRow(category, productId) {
+    const specDb = getSpecDb(category);
+    const normalizedProductId = String(productId || '').trim();
+    if (!specDb || !normalizedProductId) return null;
+
+    const row = typeof specDb.getProduct === 'function'
+      ? specDb.getProduct(normalizedProductId)
+      : (specDb.getAllProducts?.() || []).find((product) => product?.product_id === normalizedProductId) || null;
+    if (!row) return null;
+
+    const context = buildCatalogProjectionContext(specDb, category);
+    return buildCatalogRowFromSql({ specDb, cleanVariant, category, row, context });
   };
 }
 

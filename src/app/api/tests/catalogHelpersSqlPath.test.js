@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createCatalogBuilder } from '../catalogHelpers.js';
+import { createCatalogBuilder, createCatalogRowBuilder } from '../catalogHelpers.js';
 // WHY: Contract tests for the SQL-based catalog builder path.
 
 function cleanVariant(variant) {
@@ -22,12 +22,17 @@ function createMockSpecDb({
   compiledFields = null,
   resolvedByPidField = {},
   concreteByPidField = {},
+  candidateReads = null,
 } = {}) {
   const pif = pifSettings || {};
   const kfs = keyFinderSettings || {};
   return {
     getAllProducts: () => products,
-    getAllFieldCandidatesByProduct: (pid) => candidatesByPid[pid] || [],
+    getProduct: (pid) => products.find((row) => row.product_id === pid) || null,
+    getAllFieldCandidatesByProduct: (pid) => {
+      if (candidateReads) candidateReads.push(pid);
+      return candidatesByPid[pid] || [];
+    },
     getFieldCandidatesByProductAndField: (pid, fk, variantId) => {
       const rows = candidatesByPidField[pid]?.[fk] || [];
       if (variantId === undefined) return rows;
@@ -64,6 +69,52 @@ function createMockSpecDb({
     },
   };
 }
+
+test('SQL catalog row builder: returns one CatalogRow without reading unrelated product candidates', async () => {
+  const candidateReads = [];
+  const buildCatalogRow = createCatalogRowBuilder({
+    getSpecDb: () => createMockSpecDb({
+      products: [
+        { id: 1, product_id: 'mouse-a', brand: 'Acme', model: 'A', base_model: 'A', variant: '', identifier: '', status: 'active' },
+        { id: 2, product_id: 'mouse-b', brand: 'Beta', model: 'B', base_model: 'B', variant: '', identifier: 'b', status: 'active' },
+      ],
+      candidatesByPid: {
+        'mouse-b': [
+          { field_key: 'dpi_max', status: 'resolved', confidence: 90 },
+        ],
+      },
+      fieldOrderJson: JSON.stringify(['dpi_max', 'sensor_model']),
+      candidateReads,
+    }),
+    cleanVariant,
+  });
+
+  const row = await buildCatalogRow('mouse', 'mouse-b');
+
+  assert.equal(row.productId, 'mouse-b');
+  assert.equal(row.brand, 'Beta');
+  assert.equal(row.fieldsFilled, 1);
+  assert.equal(row.fieldsTotal, 2);
+  assert.deepEqual(candidateReads, ['mouse-b']);
+});
+
+test('SQL catalog row builder: missing product returns null', async () => {
+  const candidateReads = [];
+  const buildCatalogRow = createCatalogRowBuilder({
+    getSpecDb: () => createMockSpecDb({
+      products: [
+        { id: 1, product_id: 'mouse-a', brand: 'Acme', model: 'A', base_model: 'A', variant: '', identifier: '', status: 'active' },
+      ],
+      candidateReads,
+    }),
+    cleanVariant,
+  });
+
+  const row = await buildCatalogRow('mouse', 'missing-product');
+
+  assert.equal(row, null);
+  assert.deepEqual(candidateReads, []);
+});
 
 test('SQL catalog builder: returns CatalogRow[] from SQL products table', async () => {
   const buildCatalog = createCatalogBuilder({

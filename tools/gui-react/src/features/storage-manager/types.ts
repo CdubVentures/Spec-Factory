@@ -127,6 +127,8 @@ export interface DeleteRunResponse {
   ok: boolean;
   run_id: string;
   deleted_from: string;
+  category?: string;
+  product_id?: string;
   error?: string;
 }
 
@@ -134,23 +136,30 @@ export interface BulkDeleteResponse {
   ok: boolean;
   deleted: Array<{ run_id: string; deleted_from: string }>;
   errors: Array<{ run_id: string; error: string }>;
+  categories?: string[];
+  product_ids?: string[];
 }
 
 export interface PruneResponse {
   ok: boolean;
   pruned: number;
   errors: Array<{ run_id: string; error: string }>;
+  categories?: string[];
+  product_ids?: string[];
 }
 
 export interface PurgeResponse {
   ok: boolean;
   purged: number;
+  categories?: string[];
+  product_ids?: string[];
 }
 
 export interface DeleteUrlResponse {
   ok: boolean;
   url: string;
   product_id: string;
+  category?: string;
   reason?: string;
   sql?: { rows_deleted: number };
   fs?: { files_deleted: number; product_json_updated: boolean };
@@ -159,6 +168,7 @@ export interface DeleteUrlResponse {
 export interface PurgeProductHistoryResponse {
   ok: boolean;
   product_id: string;
+  category?: string;
   runs_deleted: number;
   sql?: { rows_deleted: number };
   fs?: { run_dirs_deleted: number; output_dir_deleted: boolean; product_json_reset: boolean };

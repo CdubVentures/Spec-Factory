@@ -14,6 +14,7 @@ import {
   groupEvalsByVariant,
   derivePifKpiCards,
   removeImageFromResult,
+  removeImagesFromResult,
   buildExpandAllRunHistoryMaps,
   isAllRunHistoryExpanded,
 } from '../pifSelectors.ts';
@@ -827,5 +828,33 @@ describe('removeImageFromResult', () => {
     assert.equal(result.image_count, 1);
     assert.equal(result.runs[0].selected.images.length, 1);
     assert.equal(result.runs[0].selected.images[0].filename, 'b.png');
+  });
+});
+
+describe('removeImagesFromResult', () => {
+  it('removes several filenames from all image collections', () => {
+    const imgA = makeImage({ filename: 'a.png', view: 'top' });
+    const imgB = makeImage({ filename: 'b.png', view: 'left' });
+    const imgC = makeImage({ filename: 'c.png', view: 'angle' });
+    const run = makeRun({
+      selected: { images: [imgA, imgB, imgC] },
+      response: { ...makeRun().response, images: [imgA, imgB, imgC] },
+    });
+    const data = makeResult({
+      images: [
+        { view: 'top', filename: 'a.png', variant_key: 'color:black' },
+        { view: 'left', filename: 'b.png', variant_key: 'color:black' },
+        { view: 'angle', filename: 'c.png', variant_key: 'color:black' },
+      ],
+      image_count: 3,
+      runs: [run],
+    });
+
+    const result = removeImagesFromResult(data, ['a.png', 'c.png']);
+
+    assert.deepEqual(result.images.map((img) => img.filename), ['b.png']);
+    assert.equal(result.image_count, 1);
+    assert.deepEqual(result.runs[0].selected.images.map((img) => img.filename), ['b.png']);
+    assert.deepEqual(result.runs[0].response.images.map((img) => img.filename), ['b.png']);
   });
 });

@@ -209,6 +209,26 @@ test('per-key LLM audit prompt uses navigator ordinal when available', () => {
   assert.match(allText, /## 07-design/);
 });
 
+test('per-key LLM audit prompt gives component link fields authoritative component-source guidance', () => {
+  const rule = makeRule({
+    contract: { type: 'url', shape: 'scalar' },
+    component: { type: 'sensor', source: 'component_db.sensor' },
+    ui: { label: 'Sensor Link' },
+  });
+  const record = makeKeyRecord('sensor_link', rule, {
+    component: { type: 'sensor', relation: 'subfield_of', source: 'component_db.sensor' },
+  });
+  const preview = composePerKeyPromptPreview(rule, 'sensor_link', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview });
+  const section = structure.sections.find((s) => s.id === 'llm-audit-prompt');
+  assert.ok(section, 'llm-audit-prompt section present');
+  const allText = JSON.stringify(section);
+  assert.match(allText, /component _link fields/i);
+  assert.match(allText, /manufacturer component page/i);
+  assert.match(allText, /datasheet\/spec-sheet PDF/i);
+  assert.match(allText, /merely mention/i);
+});
+
 test('contract-schema table has a row for every FIELD_RULE_SCHEMA entry', () => {
   const rule = makeRule();
   const record = makeKeyRecord('dpi', rule);

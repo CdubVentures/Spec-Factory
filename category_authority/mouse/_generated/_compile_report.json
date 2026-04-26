@@ -6,7 +6,7 @@
     },
     "field_rules": {
       "changed": true,
-      "hash": "1d68aba9769b00e2588fdbcb426d5740bbf960c5906be69c7db9f629c03d32ed",
+      "hash": "878c64d2e30c52683d69eca0bf658feefe4c6fd0e92bb3674a385e0990c58ed8",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\field_rules.json"
     },
     "key_migrations": {
@@ -14,49 +14,54 @@
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\key_migrations.json"
     },
     "known_values": {
-      "hash": "f91b9000ec6f58cc815c491ea70dda27ff13d4d08ae9d04e061e12207b048d03",
+      "hash": "a390d54f425f40d6186233f7ff379a807dfdd6a67de4bc988ba851fb55ba0e87",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "4bd32d667bd0f76fca4191f2cd91c4a6df1b3a05a9f8fa66ee0960d2d11b8f54",
+      "hash": "492ecbcdf38bfeca4e19550ba3a1cb0999c9e6b14066264fb6c51d63eb8eb240",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\ui_field_catalog.json"
     }
   },
   "category": "mouse",
   "compile_mode": "field_studio",
   "compiled": true,
-  "compiled_at": "2026-04-26T22:04:04.597Z",
+  "compiled_at": "2026-04-26T23:42:58.768Z",
   "counts": {
     "component_types": 3,
     "enums": 22,
     "fields": 80,
-    "mandatory": 16,
-    "non_mandatory": 64
+    "mandatory": 17,
+    "non_mandatory": 63
   },
   "diff": {
     "changed": true,
-    "current_hash": "1d68aba9769b00e2588fdbcb426d5740bbf960c5906be69c7db9f629c03d32ed",
+    "current_hash": "878c64d2e30c52683d69eca0bf658feefe4c6fd0e92bb3674a385e0990c58ed8",
     "fields": {
       "added_count": 0,
       "added_keys": [],
-      "changed_count": 4,
+      "changed_count": 9,
       "changed_keys": [
-        "coating",
-        "feet_material",
-        "honeycomb_frame",
-        "material"
+        "adjustable_weight",
+        "front_flare",
+        "height",
+        "hump",
+        "lngth",
+        "shape",
+        "thumb_rest",
+        "weight",
+        "width"
       ],
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "4a74ecd1f6a01090efd0e2c0c0b6cef75cca503c4851c75651db08d1110b5540"
+    "previous_hash": "1d68aba9769b00e2588fdbcb426d5740bbf960c5906be69c7db9f629c03d32ed"
   },
   "errors": [],
-  "field_studio_map_hash": "a902081537fcbfd1528f7afc5df4c469752e1d4bc43e30a8b296f80d4ca55519",
+  "field_studio_map_hash": "fad3c02bff3840aae807fe72f7452adb5d29b7095d7548cf48a29c5c15403539",
   "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_control_plane\\field_studio_map.json",
   "field_studio_source_hash": null,
   "field_studio_source_path": "",
-  "generated_at": "2026-04-26T22:04:04.597Z",
+  "generated_at": "2026-04-26T23:42:58.768Z",
   "source_summary": {
     "component_sheets": 3,
     "component_sources": 3,

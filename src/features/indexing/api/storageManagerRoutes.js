@@ -161,7 +161,7 @@ export function createStorageManagerHandler(opts) {
               category,
               productIds: [productId],
             });
-            return jsonRes(res, 200, result);
+            return jsonRes(res, 200, { ...result, category, product_id: productId });
           }
           // Fallback: filesystem-only delete
           const result = await deleteArchivedRun(runId);
@@ -170,7 +170,7 @@ export function createStorageManagerHandler(opts) {
             category,
             productIds: [productId],
           });
-          return jsonRes(res, 200, { ok: true, ...result });
+          return jsonRes(res, 200, { ok: true, ...result, category, product_id: productId });
         } catch (err) {
           return jsonRes(res, 500, { ok: false, error: String(err?.message || err), run_id: runId });
         }
@@ -214,7 +214,13 @@ export function createStorageManagerHandler(opts) {
             productIds: deletedProductIds,
           });
         }
-        return jsonRes(res, 200, { ok: errors.length === 0, deleted, errors });
+        return jsonRes(res, 200, {
+          ok: errors.length === 0,
+          deleted,
+          errors,
+          categories: uniqueTokens(deletedCategories),
+          product_ids: uniqueTokens(deletedProductIds),
+        });
       }
 
       // GET /storage/runs — run list
@@ -272,7 +278,13 @@ export function createStorageManagerHandler(opts) {
           productIds: prunedProductIds,
         });
       }
-      return jsonRes(res, 200, { ok: true, pruned: pruned.length, errors });
+      return jsonRes(res, 200, {
+        ok: true,
+        pruned: pruned.length,
+        errors,
+        categories: uniqueTokens(prunedCategories),
+        product_ids: uniqueTokens(prunedProductIds),
+      });
     }
 
     // POST /storage/purge — purge all runs (requires confirmToken)
@@ -312,7 +324,12 @@ export function createStorageManagerHandler(opts) {
           productIds: purgedProductIds,
         });
       }
-      return jsonRes(res, 200, { ok: true, purged });
+      return jsonRes(res, 200, {
+        ok: true,
+        purged,
+        categories: uniqueTokens(purgedCategories),
+        product_ids: uniqueTokens(purgedProductIds),
+      });
     }
 
     // POST /storage/urls/delete — delete a URL and all its artifacts (body: { url, productId, category })
@@ -335,7 +352,7 @@ export function createStorageManagerHandler(opts) {
           category,
           productIds: [productId],
         });
-        return jsonRes(res, 200, result);
+        return jsonRes(res, 200, { ...result, category, product_id: productId });
       } catch (err) {
         return jsonRes(res, 500, { ok: false, error: String(err?.message || err) });
       }
@@ -370,7 +387,7 @@ export function createStorageManagerHandler(opts) {
           category,
           productIds: [productId],
         });
-        return jsonRes(res, 200, result);
+        return jsonRes(res, 200, { ...result, category, product_id: productId });
       } catch (err) {
         return jsonRes(res, 500, { ok: false, error: String(err?.message || err) });
       }

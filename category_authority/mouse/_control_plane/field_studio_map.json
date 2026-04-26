@@ -220,22 +220,22 @@
     },
     {
       "ai_assist": {
-        "reasoning_note": ""
+        "reasoning_note": "Keep chips to structural shell categories. Use ergonomic for non-mirrored/asymmetrical sculpted shells; use hybrid only when a credible source explicitly says hybrid or describes a symmetrical/ambi top-front mixed with ergonomic/asymmetric side/back shaping; use symmetrical for mirrored/ambi-style shells, including right-handed symmetrical mice. Keep asymmetrical/asymmetric/ergo, hand-compatibility wording, ambi wording, and generic comfortable/ergonomic marketing out of public chips unless normalized to one canonical value."
       },
       "delimiter": "",
       "field": "shape",
       "header_row": 0,
       "manual_values": [
-        "symmetrical",
         "ergonomic",
-        "asymmetrical"
+        "hybrid",
+        "symmetrical"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
-        "availability": "sometimes",
+        "availability": "always",
         "difficulty": "easy",
-        "required_level": "non_mandatory"
+        "required_level": "mandatory"
       },
       "row_end": 0,
       "row_start": 2,
@@ -244,22 +244,22 @@
     },
     {
       "ai_assist": {
-        "reasoning_note": ""
+        "reasoning_note": "Closed placement vocabulary only. Normalize middle to center and source phrases such as forward/front/centered/middle/rearward/rear-set/back/highest point to a canonical placement value. Do not store source prose, grip recommendations, or height-only terms as chips."
       },
       "delimiter": "",
       "field": "hump",
       "header_row": 0,
       "manual_values": [
-        "middle",
-        "back - front",
-        "back mid",
         "front",
-        "back - rear"
+        "center",
+        "back - minimal",
+        "back - moderate",
+        "back - aggressive"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
+      "normalize": "casefold + trim + normalize hyphen/dash spacing",
       "priority": {
-        "availability": "sometimes",
+        "availability": "always",
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
@@ -270,18 +270,18 @@
     },
     {
       "ai_assist": {
-        "reasoning_note": ""
+        "reasoning_note": "Keep the public chips direction-only; normalize source degree words such as slight/moderate/aggressive away unless a future schema intentionally stores flare intensity. Do not create chips from button-splay, flared-front, taper, narrows/widens, or degree-qualified source wording."
       },
       "delimiter": "",
       "field": "front_flare",
       "header_row": 0,
       "manual_values": [
-        "inward",
         "flat",
+        "inward",
         "outward"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
+      "normalize": "casefold + trim + map degree-qualified direction phrases to canonical direction",
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
@@ -1195,6 +1195,15 @@
       "value_form_sample": "scalar"
     },
     "adjustable_weight": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Return true only when the exact mouse has a user-changeable physical weight or balance system: removable/movable/add-on weights, included tuning weights, optional official extra weight, or a branded tunable/center-of-gravity weight system. Do not count adjustable DPI/CPI, lift-off distance, scroll-wheel resistance/free-spin/tilt, DPI-shift button position, lighting/profiles, swappable side buttons/grips/shells, battery swaps, fixed weight, lightweight/reduced weight, or unofficial mods. For false, require exact-product evidence from an official/support/manual/retailer/spec source that gives a fixed weight and no weight system/included weights, or explicitly says no; otherwise return unk. If a family has mixed models, do not carry values between siblings or successors, for example G502 HERO vs G502 X.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
       "aliases": [
         "adjustable weight",
         "adjustable weights",
@@ -1368,16 +1377,7 @@
       },
       "value_form": "scalar",
       "value_form_sample": "scalar",
-      "variant_dependent": false,
-      "ai_assist": {
-        "pif_priority_images": {
-          "enabled": false
-        },
-        "reasoning_note": "Return true only when the exact mouse has a user-changeable physical weight or balance system: removable/movable/add-on weights, included tuning weights, optional official extra weight, or a branded tunable/center-of-gravity weight system. Do not count adjustable DPI/CPI, lift-off distance, scroll-wheel resistance/free-spin/tilt, DPI-shift button position, lighting/profiles, swappable side buttons/grips/shells, battery swaps, fixed weight, lightweight/reduced weight, or unofficial mods. For false, require exact-product evidence from an official/support/manual/retailer/spec source that gives a fixed weight and no weight system/included weights, or explicitly says no; otherwise return unk. If a family has mixed models, do not carry values between siblings or successors, for example G502 HERO vs G502 X.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
-      }
+      "variant_dependent": false
     },
     "battery_hours": {
       "ai_assist": {
@@ -4811,7 +4811,36 @@
       }
     },
     "front_flare": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Classify only the plan-view front/button-end outline. Return `outward` when the shell or main-button sides widen as they approach the front, `inward` when they narrow or tuck inward at the front, and `flat` when the front sidewalls are essentially straight or parallel. Normalize degree words such as slight/moderate/aggressive to the canonical direction; do not store intensity. Do not confuse front flare with side curvature, rear flare, thumb rest, ring-finger rest, or hump placement. Prefer explicit `Front flare` rows from shape databases; otherwise use official/top-view product images as `visual_inspection`. If the exact product image/wording is ambiguous, return `unk` rather than guessing.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
+      "aliases": [
+        "front flare",
+        "button flare",
+        "button splay",
+        "flared front",
+        "front flared design",
+        "flares outward at the front",
+        "flares inward at the front",
+        "front flares outward",
+        "front flares inward",
+        "tapers inward at front",
+        "tapers outward at front",
+        "narrows at front",
+        "widens at front",
+        "outward - slight",
+        "outward - moderate",
+        "outward - aggressive",
+        "inward - slight",
+        "inward - moderate",
+        "inward - aggressive"
+      ],
       "availability": "always",
       "canonical_key": "front_flare",
       "component": null,
@@ -4889,18 +4918,30 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review"
+          "product comparison/spec pages",
+          "professional mouse reviews",
+          "official product pages",
+          "official image galleries",
+          "top-view/PIF images"
         ],
         "domain_hints": [
           "eloshapes.com",
-          "mousespecs.org"
+          "rtings.com",
+          "tomshardware.com",
+          "rocketjumpninja.com",
+          "manufacturer product pages when available"
         ],
         "query_terms": [
           "front flare",
           "button flare",
           "front width",
           "front shape",
-          "button splay"
+          "button splay",
+          "flared at the front",
+          "front flares outward",
+          "front flares inward",
+          "tapers at the front",
+          "top view mouse shape"
         ]
       },
       "selection_policy": {},
@@ -4925,6 +4966,7 @@
       },
       "value_form": "single",
       "value_form_sample": "scalar",
+      "variant_dependent": false,
       "vocab": {
         "allow_new": false,
         "known_values": [
@@ -5323,19 +5365,34 @@
       "value_form_sample": "scalar"
     },
     "height": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the mouse maximum physical vertical height/profile height in mm for the exact product/SKU/size. Prefer product/device dimensions on manufacturer pages, manuals, datasheets, and spec tables. Convert cm/in to mm and round to 1 decimal. Do not use package/box dimensions, receiver/dongle dimensions, button height, grip width, base size, or length/depth/width values. When a triplet is labeled H x W x D, take the first value; when labeled L x W x H or W x D x H, take the value mapped to H. If a source gives only an unlabeled triplet, or credible sources conflict on axis labels, corroborate with another labeled source or return unk. For families with multiple size variants, use the exact requested size/SKU; if the product identity does not resolve a single size, return unk instead of choosing a base/default.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "height",
-        "height_mm",
-        "overall height"
+        "product height",
+        "overall height",
+        "vertical height",
+        "profile height",
+        "hump height",
+        "height_mm"
       ],
       "availability": "always",
       "canonical_key": "height",
       "component": null,
-      "constraints": [],
+      "constraints": [
+        "height <= lngth"
+      ],
       "contract": {
         "range": {
-          "max": 80,
-          "min": 15
+          "max": 105,
+          "min": 10
         },
         "rounding": {
           "decimals": 1,
@@ -5404,21 +5461,31 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "spec_sheet",
-          "review"
+          "manufacturer product specs",
+          "support/specification pages",
+          "datasheets/PDFs",
+          "professional review spec tables",
+          "authorized retailer spec tables",
+          "shape/spec database pages"
         ],
         "domain_hints": [
           "eloshapes.com",
           "rtings.com",
           "mousespecs.org",
-          "techpowerup.com"
+          "techpowerup.com",
+          "maxgaming.com",
+          "microcenter.com"
         ],
         "query_terms": [
           "height",
           "height mm",
           "mouse height",
-          "hump height",
-          "profile height"
+          "product dimensions",
+          "dimensions H x W x D",
+          "dimensions L x W x H",
+          "size and weight",
+          "profile height",
+          "hump height"
         ]
       },
       "selection_policy": {},
@@ -5443,7 +5510,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": true
     },
     "honeycomb_frame": {
       "ai_assist": {
@@ -5774,7 +5842,30 @@
       "value_form_sample": "scalar"
     },
     "hump": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Classify the longitudinal location of the mouse shell highest dorsal hump/apex, not overall height, grip suitability, hand size, front flare, or sensor position. Use the exact requested model/size/shell option; do not copy from sibling shapes. Map `front` only when the peak is clearly forward of center near the buttons/scroll-wheel area. Map `center` when the apex is near the midpoint with no meaningful rear bias. Map `back - minimal` for a slight rear bias or rear-centered peak; `back - moderate` for a clear rear-biased palm-support hump; and `back - aggressive` for a far-rear/back-of-palm peak. Treat source phrases such as rearward, rear-set, centered rear, middle, and mid-positioned as aliases that need normalization, not new enum chips. If a source only says high/low hump, low-profile, comfortable, or suited to a grip without proving placement, use images or another source; otherwise return unk.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
+      "aliases": [
+        "forward hump",
+        "front hump",
+        "center hump",
+        "centered hump",
+        "middle hump",
+        "mid-positioned hump",
+        "rear hump",
+        "rearward hump",
+        "rear-set hump",
+        "back hump",
+        "centered rear hump",
+        "hump apex",
+        "highest point"
+      ],
       "availability": "always",
       "canonical_key": "hump",
       "component": null,
@@ -5852,20 +5943,35 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review"
+          "official product pages and image galleries",
+          "PIF side/profile/top images",
+          "professional reviews",
+          "shape comparison/spec databases",
+          "launch pages with shape notes"
         ],
         "domain_hints": [
           "eloshapes.com",
-          "mousespecs.org",
-          "rtings.com"
+          "rtings.com",
+          "zowie.benq.com",
+          "logitech.com",
+          "tomshardware.com",
+          "choosewin.win",
+          "mousespecs.org"
         ],
         "query_terms": [
-          "hump",
-          "hump position",
           "hump placement",
-          "back hump",
+          "hump position",
+          "rear hump",
+          "rearward hump",
+          "rear-set hump",
           "center hump",
-          "hump height"
+          "mid-positioned hump",
+          "forward hump",
+          "front hump",
+          "highest point",
+          "shape review",
+          "site:eloshapes.com/mouse/compare \"Hump placement\"",
+          "site:rtings.com/mouse/reviews hump"
         ]
       },
       "selection_policy": {},
@@ -5890,6 +5996,7 @@
       },
       "value_form": "single",
       "value_form_sample": "scalar",
+      "variant_dependent": false,
       "vocab": {
         "allow_new": false,
         "known_values": [
@@ -6459,11 +6566,26 @@
       "variant_dependent": true
     },
     "lngth": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the mouse body front-to-back length in mm, excluding cable, dongles, packaging, charging dock, or hand-size references. Prefer explicit Length/L values from official specs. For dimension triples such as LxWxH, W x H x L, H/W/D, or Height/Width/Depth, map the value that corresponds to front-to-back body length, not vertical hump height; many mouse pages put the 100-130 mm body length under Height or Depth. Use sibling width/height values and a second source to confirm unlabeled or swapped-axis tables. Do not copy series/sibling sizes such as Mini/2c/HyperSpeed, EC1/EC2/EC3, or small/medium/large unless the source names the exact model; color-only variants usually share the same length. Convert cm/in to mm and round to 1 decimal.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "length",
         "length_mm",
         "lngth",
-        "overall length"
+        "overall length",
+        "body length",
+        "mouse length",
+        "front-to-back",
+        "front to back",
+        "L",
+        "LxWxH"
       ],
       "availability": "always",
       "canonical_key": "lngth",
@@ -6541,20 +6663,32 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "spec_sheet",
-          "review"
+          "official product pages",
+          "official support/specification articles",
+          "spec sheets/datasheets",
+          "review-lab shape pages",
+          "retailer specification tables",
+          "mouse shape/spec databases"
         ],
         "domain_hints": [
           "eloshapes.com",
           "rtings.com",
           "mousespecs.org",
-          "techpowerup.com"
+          "techpowerup.com",
+          "maxgaming.com",
+          "bhphotovideo.com"
         ],
         "query_terms": [
           "length",
           "length mm",
-          "mouse length",
-          "front to back"
+          "dimensions",
+          "product dimensions",
+          "mouse dimensions",
+          "size and weight",
+          "LxWxH",
+          "length width height",
+          "front to back",
+          "body length"
         ]
       },
       "selection_policy": {},
@@ -9805,7 +9939,31 @@
       }
     },
     "shape": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Extract the structural shell shape, not hand compatibility, button handedness, or generic comfort marketing. Use `symmetrical` for mirrored/ambi-style shells even when the mouse is optimized for right-handed users or has side buttons only on the left. Use `ergonomic` for clearly non-mirrored/sculpted right- or left-handed shells; map source phrases such as `asymmetrical`, `asymmetric`, `ergo`, `right-handed ergonomic`, and `left-handed ergonomic` to this value. Use `hybrid` only when a credible shape source explicitly labels the product hybrid or describes an ambi/symmetrical top/front combined with ergonomic/asymmetric side/back shaping. Do not emit `ergonomic` merely because a source says the mouse is comfortable or has an ergonomic design in generic copy, especially when the same source or a stronger source calls the shell symmetrical/ambidextrous. For configurable-shell mice that support multiple structural shapes and have no single marketed/default shell, return unknown rather than forcing this scalar.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
+      "aliases": [
+        "asymmetrical",
+        "asymmetric",
+        "ergo",
+        "ergonomic shell",
+        "ergonomic shape",
+        "right-handed ergonomic",
+        "left-handed ergonomic",
+        "ambidextrous shape",
+        "ambi shape",
+        "symmetrical design",
+        "symmetric shape",
+        "right-handed symmetrical",
+        "hybrid shape",
+        "ambi-ergo hybrid"
+      ],
       "availability": "always",
       "canonical_key": "shape",
       "component": null,
@@ -9877,28 +10035,41 @@
       "priority": {
         "availability": "always",
         "difficulty": "easy",
-        "required_level": "non_mandatory"
+        "required_level": "mandatory"
       },
-      "required_level": "non_mandatory",
+      "required_level": "mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review",
-          "comparison"
+          "official product page/spec/FAQ",
+          "manufacturer shape guide",
+          "professional mouse review",
+          "EloShapes comparison/browse page",
+          "priority-view top/front/back product renders"
         ],
         "domain_hints": [
           "eloshapes.com",
           "rtings.com",
-          "mousespecs.org",
-          "techpowerup.com"
+          "zowie.benq.com",
+          "razer.com",
+          "logitech.com",
+          "vaxee.co",
+          "prosettings.net"
         ],
         "query_terms": [
           "shape",
           "mouse shape",
-          "ergonomic shape",
-          "ambidextrous",
+          "form factor",
           "symmetrical",
-          "right-handed"
+          "symmetric",
+          "ambidextrous shape",
+          "ergonomic shape",
+          "ergo mouse",
+          "asymmetrical",
+          "asymmetric",
+          "hybrid shape",
+          "right-handed symmetrical",
+          "right-handed ergonomic"
         ]
       },
       "selection_policy": {},
@@ -9923,6 +10094,7 @@
       },
       "value_form": "single",
       "value_form_sample": "scalar",
+      "variant_dependent": false,
       "vocab": {
         "allow_new": false,
         "known_values": [
@@ -10964,7 +11136,29 @@
       }
     },
     "thumb_rest": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Count true only when the mouse has a dedicated molded thumb support area: a shelf, scoop, ledge, wing, platform, or extended side rest where the thumb can sit. Accept source phrases such as thumb rest, thumb scoop, thumb shelf, thumb ledge, thumb support, or extended thumb rest when tied to the exact mouse. Count false when product images or a credible shape/spec source show a normal side wall only, even if the mouse is ergonomic/asymmetrical. Do not treat thumb buttons, a thumb wheel, thumb-operated trackball, side grip texture, side curvature/groove, or generic thumb control as proof of a thumb rest by themselves. For negative values, prefer official/PIF images or a shape database with an explicit Thumb rest = No over mere absence of wording.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
+      "aliases": [
+        "thumb rest",
+        "thumb shelf",
+        "thumb ledge",
+        "thumb scoop",
+        "thumb groove",
+        "thumb platform",
+        "thumb support",
+        "thumb wing",
+        "thumb cutout",
+        "extended thumb rest",
+        "sculpted thumb rest",
+        "rubberized thumb scoop"
+      ],
       "availability": "always",
       "canonical_key": "thumb_rest",
       "component": null,
@@ -11064,7 +11258,11 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review"
+          "official product page",
+          "official product images/renders",
+          "professional mouse review",
+          "shape/spec database",
+          "authorized retailer only as fallback"
         ],
         "domain_hints": [
           "eloshapes.com",
@@ -11073,10 +11271,15 @@
         ],
         "query_terms": [
           "thumb rest",
+          "signature thumb rest",
+          "thumb shelf",
+          "thumb scoop",
+          "thumb ledge",
+          "thumb platform",
+          "thumb support",
           "thumb groove",
-          "thumb area",
-          "side grip",
-          "thumb support"
+          "extended thumb rest",
+          "side wing"
         ]
       },
       "selection_policy": {},
@@ -11244,6 +11447,15 @@
       "value_form_sample": "scalar"
     },
     "weight": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the mouse device/body weight in grams for the exact requested model/variant. Prefer manufacturer/support specs; use lab-measured default/actual weight when official specs are absent or clearly not a device weight. Treat weight without cable/excluding cable as the preferred convention; for wired mice, accept official mouse weight but do not subtract cable weight yourself. Exclude shipping/package weight, carbon-footprint kg CO2e, chargers/docks, receivers, grip tape/spare feet, and optional add-on weights. For adjustable-weight mice, store the stock/default body weight without optional add-on weights and let adjustable_weight capture the feature. If a source qualifies battery inclusion/exclusion, use the stated spec as-is and do not add/remove battery mass unless a total installed-battery value is directly given. When a family lists size/color/SKU-specific weights, return only the exact variant; do not average or emit a range. Convert oz/lb/kg to g, round per contract, and return unk if only sibling/family/package weight is proven.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "grams",
         "g",
@@ -11386,22 +11598,29 @@
       "unit": "g",
       "value_form": "single",
       "value_form_sample": "scalar",
-      "variant_dependent": true,
+      "variant_dependent": true
+    },
+    "width": {
       "ai_assist": {
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the mouse device/body weight in grams for the exact requested model/variant. Prefer manufacturer/support specs; use lab-measured default/actual weight when official specs are absent or clearly not a device weight. Treat weight without cable/excluding cable as the preferred convention; for wired mice, accept official mouse weight but do not subtract cable weight yourself. Exclude shipping/package weight, carbon-footprint kg CO2e, chargers/docks, receivers, grip tape/spare feet, and optional add-on weights. For adjustable-weight mice, store the stock/default body weight without optional add-on weights and let adjustable_weight capture the feature. If a source qualifies battery inclusion/exclusion, use the stated spec as-is and do not add/remove battery mass unless a total installed-battery value is directly given. When a family lists size/color/SKU-specific weights, return only the exact variant; do not average or emit a range. Convert oz/lb/kg to g, round per contract, and return unk if only sibling/family/package weight is proven.",
+        "reasoning_note": "Extract the mouse body overall/maximum left-to-right width in millimeters for the exact model/SKU. Prefer official product/support/spec tables. If dimensions appear as LxWxH, take W; if a source labels Height/Width/Depth, use the value labeled Width even when the order is unusual. When a source gives multiple physical widths such as front/back, submit the widest body width unless an explicit overall width is listed. Do not use grip width, hand-contact width, package/shipping width, receiver/dongle width, cable length, or retailer axis labels that clearly swap length/depth/width. Convert cm/in to mm and round to 1 decimal. If sources conflict, prefer the latest brand-official page for the exact variant; use shape databases, review labs, and retailers only to corroborate or fill gaps. If the catalog row bundles multiple size variants without an exact size, return unk rather than averaging or listing widths.",
         "variant_inventory_usage": {
           "enabled": true
         }
-      }
-    },
-    "width": {
+      },
       "aliases": [
+        "overall width",
+        "maximum width",
+        "body width",
         "width",
         "width_mm",
-        "overall width"
+        "product dimensions",
+        "mouse dimensions",
+        "approximate size",
+        "L x W x H",
+        "H x W x D"
       ],
       "availability": "always",
       "canonical_key": "width",
@@ -11479,8 +11698,13 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "spec_sheet",
-          "review"
+          "official product page",
+          "official support/specification page",
+          "datasheet/manual/spec sheet",
+          "annotated dimension diagram",
+          "professional review/lab",
+          "authorized retailer spec table",
+          "shape/spec database fallback"
         ],
         "domain_hints": [
           "eloshapes.com",
@@ -11489,10 +11713,15 @@
           "techpowerup.com"
         ],
         "query_terms": [
-          "width",
+          "dimensions",
+          "product dimensions",
+          "mouse dimensions",
           "width mm",
-          "mouse width",
-          "grip width"
+          "overall width",
+          "body width",
+          "L x W x H",
+          "H x W x D",
+          "approximate size"
         ]
       },
       "selection_policy": {},
@@ -11517,7 +11746,8 @@
       },
       "unit": "mm",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": false
     },
     "wireless_charging": {
       "ai_assist": {

@@ -519,18 +519,35 @@ describe('broadcastWs integration', () => {
     assert.equal(spy.calls[0].data.operation.progressText, '5/10 done');
   });
 
-  it('appendLlmCall broadcasts llm-call-append with call data', () => {
+  it('appendLlmCall broadcasts a lightweight call summary plus operation summary', () => {
     const spy = makeBroadcastSpy();
     initOperationsRegistry({ broadcastWs: spy });
     const op = registerOperation(VALID_OP);
     spy.calls.length = 0;
-    appendLlmCall({ id: op.id, call: { prompt: { system: 'sys', user: 'usr' }, response: { colors: [] }, model: 'test' } });
+    appendLlmCall({
+      id: op.id,
+      call: {
+        callId: 'call-1',
+        prompt: { system: 'sys', user: 'usr' },
+        response: null,
+        model: 'test',
+        lane: 'hero',
+      },
+    });
     assert.equal(spy.calls.length, 1);
     assert.equal(spy.calls[0].data.action, 'llm-call-append');
     assert.equal(spy.calls[0].data.id, op.id);
-    assert.equal(spy.calls[0].data.call.prompt.system, 'sys');
     assert.equal(spy.calls[0].data.call.callIndex, 0);
+    assert.equal(spy.calls[0].data.call.callId, 'call-1');
+    assert.equal(spy.calls[0].data.call.lane, 'hero');
+    assert.equal(spy.calls[0].data.call.responseStatus, 'pending');
+    assert.equal(spy.calls[0].data.call.prompt, undefined);
+    assert.equal(spy.calls[0].data.call.response, undefined);
     assert.ok(spy.calls[0].data.call.timestamp);
+    assert.equal(spy.calls[0].data.operation.llmCalls, undefined);
+    assert.equal(spy.calls[0].data.operation.llmCallCount, 1);
+    assert.equal(spy.calls[0].data.operation.activeLlmCallCount, 1);
+    assert.equal(spy.calls[0].data.operation.activeLlmCalls[0].callId, 'call-1');
   });
 
   it('regular upsert broadcast excludes llmCalls from payload', () => {

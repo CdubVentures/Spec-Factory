@@ -624,9 +624,9 @@ export function OverviewPage() {
               onColumnHeaderSort={handleColumnHeaderSort}
               // WHY: Catalogs run 350-600 products. Fixed-height row virtualization
               // renders only the viewport (+ overscan) instead of all rows. Row
-              // height matches the cells' tallest variants plus the row-level
-              // pipeline strip under the identity columns.
-              virtualize={{ rowHeight: 88, overscan: 10 }}
+              // height matches the cells' tallest variants; the pipeline
+              // strip overlays the identity area without changing row geometry.
+              virtualize={{ rowHeight: 72, overscan: 10 }}
             />
           </FamilyCountContext.Provider>
         </VisibleIdsContext.Provider>

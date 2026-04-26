@@ -21,6 +21,7 @@ function makeCatalogCtx(overrides = {}) {
     storage: {},
     reconcileOrphans: async () => ({ ok: true }),
     buildCatalog: async () => [],
+    buildCatalogRow: async () => null,
     listProducts: async () => [],
     catalogAddProduct: async () => ({ ok: true, productId: 'mouse-razer-viper', product: {} }),
     catalogAddProductsBulk: async () => ({ ok: true, created: 0 }),
@@ -112,6 +113,58 @@ test('catalog routes: product add upserts products table', async () => {
   assert.equal(upsertRows[0].brand, 'Razer');
   assert.equal(result.body.product.productId, 'mouse-razer-viper');
   assert.equal(result.body.product.identifier, 'id_123');
+});
+
+test('catalog routes: single row GET returns one enriched CatalogRow', async () => {
+  const calls = [];
+  const handler = registerCatalogRoutes(makeCatalogCtx({
+    buildCatalogRow: async (category, productId) => {
+      calls.push({ category, productId });
+      return {
+        productId,
+        id: 1,
+        identifier: 'id-1',
+        brand: 'Razer',
+        brand_identifier: '',
+        model: 'Viper',
+        base_model: 'Viper',
+        variant: '',
+        status: 'active',
+        confidence: 0,
+        coverage: 0,
+        fieldsFilled: 0,
+        fieldsTotal: 0,
+        cefRunCount: 0,
+        pifVariants: [],
+        skuVariants: [],
+        rdfVariants: [],
+        keyTierProgress: [],
+        cefLastRunAt: '',
+        pifLastRunAt: '',
+        rdfLastRunAt: '',
+        skuLastRunAt: '',
+        kfLastRunAt: '',
+      };
+    },
+  }));
+
+  const result = await handler(['catalog', 'mouse', 'rows', 'mouse-razer-viper'], new URLSearchParams(), 'GET', {}, {});
+
+  assert.equal(result.status, 200);
+  assert.equal(result.body.productId, 'mouse-razer-viper');
+  assert.deepEqual(calls, [{ category: 'mouse', productId: 'mouse-razer-viper' }]);
+});
+
+test('catalog routes: single row GET returns 404 for missing product', async () => {
+  const handler = registerCatalogRoutes(makeCatalogCtx({
+    buildCatalogRow: async () => null,
+  }));
+
+  const result = await handler(['catalog', 'mouse', 'rows', 'missing-product'], new URLSearchParams(), 'GET', {}, {});
+
+  assert.equal(result.status, 404);
+  assert.equal(result.body.error, 'catalog_row_not_found');
+  assert.equal(result.body.productId, 'missing-product');
 });
 
 test('catalog routes: product identity update upserts same productId in specDb (immutable ID)', async () => {

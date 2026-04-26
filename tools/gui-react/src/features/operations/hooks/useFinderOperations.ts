@@ -309,6 +309,33 @@ export function selectRunningModulesByProductOrdered(
     .join('|');
 }
 
+export function selectRunningModulesForProductOrdered(
+  ops: ReadonlyMap<string, Operation>,
+  category: string,
+  productId: string,
+): string {
+  const runningOps: Operation[] = [];
+  for (const op of ops.values()) {
+    if (op.status !== 'running') continue;
+    if (!op.productId) continue;
+    if (op.productId !== productId) continue;
+    if (category && op.category !== category) continue;
+    runningOps.push(op);
+  }
+  runningOps.sort((a, b) => {
+    const ta = a.queuedAt ?? a.startedAt;
+    const tb = b.queuedAt ?? b.startedAt;
+    if (ta < tb) return -1;
+    if (ta > tb) return 1;
+    return 0;
+  });
+  const modules: string[] = [];
+  for (const op of runningOps) {
+    if (!modules.includes(op.type)) modules.push(op.type);
+  }
+  return modules.join(',');
+}
+
 export function parseOrderedModulesByProduct(serialized: string): ReadonlyMap<string, readonly string[]> {
   const map = new Map<string, readonly string[]>();
   if (!serialized) return map;
@@ -323,6 +350,11 @@ export function parseOrderedModulesByProduct(serialized: string): ReadonlyMap<st
   return map;
 }
 
+export function parseOrderedModules(serialized: string): readonly string[] {
+  if (!serialized) return [];
+  return serialized.split(',').filter(Boolean);
+}
+
 export function useRunningModulesByProductOrdered(category: string): ReadonlyMap<string, readonly string[]> {
   const serialized = useOperationsStore(
     useCallback(
@@ -332,6 +364,17 @@ export function useRunningModulesByProductOrdered(category: string): ReadonlyMap
     ),
   );
   return useMemo(() => parseOrderedModulesByProduct(serialized), [serialized]);
+}
+
+export function useRunningModulesForProductOrdered(category: string, productId: string): readonly string[] {
+  const serialized = useOperationsStore(
+    useCallback(
+      (s: { operations: ReadonlyMap<string, Operation> }) =>
+        selectRunningModulesForProductOrdered(s.operations, category, productId),
+      [category, productId],
+    ),
+  );
+  return useMemo(() => parseOrderedModules(serialized), [serialized]);
 }
 
 function deserializeModulesByProduct(serialized: string): ReadonlyMap<string, ReadonlySet<string>> {

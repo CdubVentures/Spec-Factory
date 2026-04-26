@@ -2,16 +2,26 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 import { useRuntimeStore } from '../../../stores/runtimeStore.ts';
 import { useEventsStore } from '../../../stores/eventsStore.ts';
-import { useOperationsStore, type Operation, type LlmCallStreamChunk } from '../../../stores/operationsStore.ts';
+import { useOperationsStore, type OperationUpsert, type LlmCallRecord, type LlmCallStreamChunk } from '../../../stores/operationsStore.ts';
 import { useIndexLabStore, type IndexLabEvent } from '../../../stores/indexlabStore.ts';
 import type { ProcessStatus, RuntimeEvent } from '../../../types/events.ts';
 import { useWsSubscription } from '../../../hooks/useWsSubscription.ts';
+import { api } from '../../../api/client.ts';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import {
   resolveDataChangeScopedCategories,
   recordDataChangeInvalidationFlush,
   createDataChangeInvalidationScheduler,
 } from '../../../features/data-change/index.js';
+import {
+  patchCatalogRowsFromDataChange,
+  shouldSkipCatalogListInvalidation,
+} from '../../../features/catalog/api/catalogRowPatch.ts';
+
+function isFullLlmCallRecord(value: unknown): value is LlmCallRecord {
+  if (!value || typeof value !== 'object') return false;
+  return 'prompt' in value;
+}
 
 export function useWsEventBridge({ category, queryClient }: { category: string; queryClient: QueryClient }) {
   const setProcessStatus = useRuntimeStore((s) => s.setProcessStatus);
@@ -74,6 +84,8 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
       onFlush: (payload: { queryKeys: unknown[][]; categories: string[] }) => {
         recordDataChangeInvalidationFlush(payload);
       },
+      shouldInvalidateQueryKey: ({ queryKey, message, fallbackCategory }) =>
+        !shouldSkipCatalogListInvalidation({ queryKey, message, fallbackCategory }),
     });
     dataChangeSchedulerRef.current = dataChangeScheduler;
     return () => {
@@ -102,14 +114,14 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
       appendIndexLabEvents(data as IndexLabEvent[]);
     }
     if (channel === 'operations' && data && typeof data === 'object') {
-      const msg = data as { action?: string; operation?: Operation; id?: string; call?: unknown };
-      if (msg.action === 'upsert' && msg.operation) useOperationsStore.getState().upsert(msg.operation);
+      const msg = data as { action?: string; operation?: OperationUpsert; id?: string; call?: unknown };
+      if (msg.operation) useOperationsStore.getState().upsert(msg.operation);
       if (msg.action === 'remove' && msg.id) useOperationsStore.getState().remove(msg.id);
-      if (msg.action === 'llm-call-append' && msg.id && msg.call) {
-        useOperationsStore.getState().appendLlmCall(msg.id, msg.call as import('../../../features/operations/state/operationsStore.ts').LlmCallRecord);
+      if (msg.action === 'llm-call-append' && msg.id && isFullLlmCallRecord(msg.call)) {
+        useOperationsStore.getState().appendLlmCall(msg.id, msg.call);
       }
-      if (msg.action === 'llm-call-update' && msg.id && msg.call != null) {
-        const call = msg.call as import('../../../features/operations/state/operationsStore.ts').LlmCallRecord & { callIndex?: number };
+      if (msg.action === 'llm-call-update' && msg.id && isFullLlmCallRecord(msg.call)) {
+        const call = msg.call;
         if (call.callIndex != null) {
           useOperationsStore.getState().updateLlmCall(msg.id, call.callIndex, call);
         }
@@ -148,6 +160,12 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
         useRuntimeSettingsValueStore.getState().confirmFlush();
       }
       const scopedCategories = resolveDataChangeScopedCategories(msg, category);
+      void patchCatalogRowsFromDataChange({
+        api,
+        queryClient,
+        message: msg,
+        fallbackCategory: category,
+      });
       dataChangeSchedulerRef.current?.schedule({
         message: msg,
         categories: scopedCategories,

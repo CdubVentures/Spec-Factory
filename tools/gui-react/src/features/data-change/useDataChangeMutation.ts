@@ -23,11 +23,32 @@ type QueryKeyInput<TData, TVariables, TOnMutateResult> =
   | readonly QueryKey[]
   | QueryKeyResolver<TData, TVariables, TOnMutateResult>;
 
+interface DataChangeMessageEntities {
+  readonly productIds?: readonly string[];
+  readonly fieldKeys?: readonly string[];
+}
+
+interface DataChangeMutationMessage {
+  readonly category?: string;
+  readonly categories?: readonly string[];
+  readonly domains?: readonly string[];
+  readonly entities?: DataChangeMessageEntities;
+  readonly meta?: Record<string, unknown>;
+}
+
+type DataChangeMessageResolver<TData, TVariables, TOnMutateResult> = (args: {
+  readonly data: TData;
+  readonly variables: TVariables;
+  readonly onMutateResult: TOnMutateResult;
+  readonly mutationContext: MutationFunctionContext;
+}) => DataChangeMutationMessage;
+
 export interface UseDataChangeMutationArgs<TData, TError, TVariables, TOnMutateResult> {
   readonly event: string;
   readonly category?: string;
   readonly categories?: readonly string[];
   readonly mutationFn: MutationFunction<TData, TVariables>;
+  readonly resolveDataChangeMessage?: DataChangeMessageResolver<TData, TVariables, TOnMutateResult>;
   readonly extraQueryKeys?: QueryKeyInput<TData, TVariables, TOnMutateResult>;
   readonly removeQueryKeys?: QueryKeyInput<TData, TVariables, TOnMutateResult>;
   readonly options?: Omit<
@@ -60,6 +81,10 @@ function assertKnownDataChangeEvent(event: string): void {
   throw new Error(`Unknown data-change event: ${event}`);
 }
 
+function asStringArray(values: readonly string[] | undefined): string[] {
+  return Array.isArray(values) ? [...values] : [];
+}
+
 export function useDataChangeMutation<
   TData,
   TError = Error,
@@ -70,6 +95,7 @@ export function useDataChangeMutation<
   category = '',
   categories = [],
   mutationFn,
+  resolveDataChangeMessage,
   extraQueryKeys,
   removeQueryKeys,
   options,
@@ -87,11 +113,26 @@ export function useDataChangeMutation<
         queryClient.removeQueries({ queryKey });
       }
 
+      const messageScope = resolveDataChangeMessage?.(resolverArgs);
+      const scopedCategory = messageScope?.category ?? category;
+      const scopedCategories = [
+        ...categories,
+        ...asStringArray(messageScope?.categories),
+      ];
+
       const invalidatedKeys = invalidateDataChangeQueries({
         queryClient,
-        message: { type: 'data-change', event, category },
-        categories: categories.length > 0 ? [...categories] : [],
-        fallbackCategory: category,
+        message: {
+          type: 'data-change',
+          event,
+          category: scopedCategory,
+          categories: scopedCategories,
+          domains: asStringArray(messageScope?.domains),
+          entities: messageScope?.entities,
+          meta: messageScope?.meta,
+        },
+        categories: scopedCategories,
+        fallbackCategory: scopedCategory,
       });
 
       const seen = new Set(invalidatedKeys.map(queryKeySignature));

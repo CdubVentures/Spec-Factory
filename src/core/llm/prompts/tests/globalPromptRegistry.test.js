@@ -27,6 +27,7 @@ describe('GLOBAL_PROMPTS registry', () => {
     'siblingsExclusion',
     'discoveryHistoryBlock',
     'identityIntro',
+    'categoryContext',
     'discoveryLogShape',
     'scalarSourceGuidanceCloser',
     'variantScalarSourceGuidance',

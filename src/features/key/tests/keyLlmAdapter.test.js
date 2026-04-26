@@ -92,9 +92,9 @@ function renderPrimary(fieldKey, fieldRule, overrides = {}) {
 
 test('default template contains every placeholder the builder injects', () => {
   // FAMILY_SIZE is an optional placeholder available to prompt authors.
-  // CATEGORY is part of the default prompt identity lock.
+  // CATEGORY_CONTEXT is the default prompt's global category identity lock.
   const placeholders = [
-    '{{BRAND}}', '{{MODEL}}', '{{VARIANT_SUFFIX}}', '{{CATEGORY}}',
+    '{{BRAND}}', '{{MODEL}}', '{{VARIANT_SUFFIX}}', '{{CATEGORY_CONTEXT}}',
     '{{IDENTITY_INTRO}}', '{{IDENTITY_WARNING}}',
     '{{PRIMARY_FIELD_KEY}}',
     '{{PRIMARY_FIELD_GUIDANCE}}',

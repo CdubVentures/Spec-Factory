@@ -15,6 +15,7 @@ export function registerCatalogRoutes(ctx) {
     storage,
     reconcileOrphans,
     buildCatalog,
+    buildCatalogRow,
     listProducts,
     catalogAddProduct,
     catalogAddProductsBulk,
@@ -252,6 +253,22 @@ export function registerCatalogRoutes(ctx) {
         const status = result.ok ? 200 : 404;
         return jsonRes(res, status, result);
       }
+    }
+
+    // Catalog overview row - /api/v1/catalog/{cat}/rows/{pid}
+    if (parts[0] === 'catalog' && parts[1] && parts[2] === 'rows' && parts[3] && !parts[4] && method === 'GET') {
+      const category = parts[1];
+      const productId = parts[3];
+      const row = typeof buildCatalogRow === 'function'
+        ? await buildCatalogRow(category, productId)
+        : (await buildCatalog(category)).find((catalogRow) => catalogRow.productId === productId) || null;
+      if (!row) {
+        return jsonRes(res, 404, {
+          error: 'catalog_row_not_found',
+          productId,
+        });
+      }
+      return jsonRes(res, 200, row);
     }
 
     // Catalog overview - /api/v1/catalog/{cat}  ("all" merges every category)

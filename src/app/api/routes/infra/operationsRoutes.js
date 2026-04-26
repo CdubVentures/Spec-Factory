@@ -1,11 +1,17 @@
-import { listOperations, dismissOperation, cancelOperation } from '../../../../core/operations/index.js';
+import { listOperationSummaries, getOperation, dismissOperation, cancelOperation } from '../../../../core/operations/index.js';
 
 export function createInfraOperationsRoutes({ jsonRes }) {
   return function handleOperationsRoutes(parts, params, method, req, res) {
     if (parts[0] !== 'operations') return false;
 
     if (method === 'GET' && !parts[1]) {
-      return jsonRes(res, 200, listOperations());
+      return jsonRes(res, 200, listOperationSummaries());
+    }
+
+    if (method === 'GET' && parts[1] && !parts[2]) {
+      const operation = getOperation(parts[1]);
+      if (!operation) return jsonRes(res, 404, { error: 'operation_not_found' });
+      return jsonRes(res, 200, operation);
     }
 
     // POST /operations/:id/cancel — abort a running operation

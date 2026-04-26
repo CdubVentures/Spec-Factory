@@ -6,6 +6,7 @@ import { variantHexPartsForOp } from '../state/opVariantSwatch.ts';
 import { useOpVariantAtomsMap } from '../state/useOpVariantAtomsMap.ts';
 import { sortOperations, readSortMode, writeSortMode, SORT_MODES, type OpSortMode } from '../state/opSort.ts';
 import { selectOperationPreviewStreamText } from '../state/operationStreamPreview.ts';
+import { selectActiveLlmCallSummaries } from '../state/operationCallSummaries.ts';
 import {
   cancelActiveOperations,
   formatStopAllActiveOperationsMessage,
@@ -182,7 +183,7 @@ const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confi
   const isDone = op.status === 'done';
   const isError = op.status === 'error';
   const isCancelled = op.status === 'cancelled';
-  const activeCalls = op.llmCalls.filter((call) => call.response === null || call.response === undefined);
+  const activeCalls = selectActiveLlmCallSummaries(op);
 
   return (
     <div

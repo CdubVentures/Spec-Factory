@@ -2,7 +2,9 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   selectRunningModulesByProductOrdered,
+  selectRunningModulesForProductOrdered,
   parseOrderedModulesByProduct,
+  parseOrderedModules,
 } from '../useFinderOperations.ts';
 import type { Operation } from '../../state/operationsStore.ts';
 
@@ -114,6 +116,35 @@ describe('selectRunningModulesByProductOrdered', () => {
   });
 });
 
+describe('selectRunningModulesForProductOrdered', () => {
+  it('returns only the requested product signature', () => {
+    const ops = opsMap(
+      makeOp({ id: 'a', type: 'cef', productId: 'p2', status: 'running', startedAt: '2026-04-25T10:00:01Z' }),
+      makeOp({ id: 'b', type: 'pif', productId: 'p1', status: 'running', startedAt: '2026-04-25T10:00:02Z' }),
+      makeOp({ id: 'c', type: 'kf', productId: 'p1', status: 'running', startedAt: '2026-04-25T10:00:03Z' }),
+    );
+
+    assert.equal(selectRunningModulesForProductOrdered(ops, 'mouse', 'p1'), 'pif,kf');
+  });
+
+  it('stays stable when unrelated products change', () => {
+    const before = opsMap(
+      makeOp({ id: 'a', type: 'pif', productId: 'p1', status: 'running', startedAt: '2026-04-25T10:00:02Z' }),
+      makeOp({ id: 'b', type: 'cef', productId: 'p2', status: 'running', startedAt: '2026-04-25T10:00:01Z' }),
+    );
+    const after = opsMap(
+      makeOp({ id: 'a', type: 'pif', productId: 'p1', status: 'running', startedAt: '2026-04-25T10:00:02Z' }),
+      makeOp({ id: 'b', type: 'cef', productId: 'p2', status: 'running', startedAt: '2026-04-25T10:00:01Z' }),
+      makeOp({ id: 'c', type: 'kf', productId: 'p2', status: 'running', startedAt: '2026-04-25T10:00:03Z' }),
+    );
+
+    assert.equal(
+      selectRunningModulesForProductOrdered(before, 'mouse', 'p1'),
+      selectRunningModulesForProductOrdered(after, 'mouse', 'p1'),
+    );
+  });
+});
+
 describe('parseOrderedModulesByProduct', () => {
   it('returns an empty map for empty signature', () => {
     const map = parseOrderedModulesByProduct('');
@@ -137,5 +168,15 @@ describe('parseOrderedModulesByProduct', () => {
     assert.deepEqual([...(map.get('p1') ?? [])], ['cef']);
     assert.deepEqual([...(map.get('p2') ?? [])], ['pif']);
     assert.equal(map.size, 2);
+  });
+});
+
+describe('parseOrderedModules', () => {
+  it('returns an empty list for an empty product signature', () => {
+    assert.deepEqual(parseOrderedModules(''), []);
+  });
+
+  it('parses an ordered module signature', () => {
+    assert.deepEqual(parseOrderedModules('cef,pif,kf'), ['cef', 'pif', 'kf']);
   });
 });

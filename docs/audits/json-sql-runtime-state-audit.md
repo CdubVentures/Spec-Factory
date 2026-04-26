@@ -310,6 +310,7 @@ Affected surfaces:
 Current behavior:
 
 - Product identity and brand changes now patch several shared product caches.
+- Product-scoped catalog data-change messages now patch loaded Overview/Indexing catalog rows through a single-row backend refresh.
 - Review field/component/enum mutations mainly patch Review Grid.
 - Finder panels, prompt previews, active operation data, and product detail data usually wait for data-change invalidation.
 
@@ -755,6 +756,122 @@ Required fix:
 - Add a small cache-prune/invalidate utility used by every PIF image mutation path.
 - Add boundary tests for thumbnail/preview/full URL selection through public component or helper contracts.
 - Add a periodic or mutation-triggered prune for orphaned `.cache` files.
+
+### 9B. PIF Image Delete Live Propagation Gap
+
+Status: confirmed frontend/backend boundary gap after the 2026-04-26 live-propagation audit. The first production fix now replaces the PIF panel's delete-all/variant image fan-out with a product-scoped bulk mutation and immediate frontend cache patching.
+
+Tooling evidence:
+
+- Temporary audit tooling was installed under `.tmp/audit-tools` only.
+- Extraction output is under `.tmp/live-propagation-audit/out/`.
+- The extractor scanned 2,685 source files and found 902 query signal lines, 294 mutation signal lines, 776 data-change signal lines, 930 SQL signal lines, 3,345 JSON signal lines, and 7,318 image/PIF signal lines.
+- `dependency-cruiser` and `madge` outputs were generated in `.tmp/live-propagation-audit/out/dependency-cruiser.json` and `.tmp/live-propagation-audit/out/madge-dependencies.json`.
+
+Observed path:
+
+- Indexing Lab PIF panel: `tools/gui-react/src/features/product-image-finder/components/ProductImageFinderPanel.tsx`
+- Delete-all-images UI path: `deleteTarget.kind === 'images-all'`
+- Pre-fix behavior: looped every filename and called `deleteImageMut.mutate(f)` independently, then dismissed the modal immediately.
+- Single image mutation hook: `tools/gui-react/src/features/product-image-finder/api/productImageFinderQueries.ts`
+- Backend route: `DELETE /product-image-finder/:category/:productId/images/:filename`
+- Backend mutation: `src/features/product-image/api/productImageFinderRoutes.js`
+- Overview source: `GET /catalog/:category` -> `src/app/api/catalogHelpers.js` -> `pif_variant_progress`
+
+What works:
+
+- The single-image backend route emits `product-image-finder-image-deleted` with `category` and `entities.productIds`.
+- The data-change registry maps `product-image-finder-image-deleted` to the PIF domain plus `catalog`, so `['catalog', category]` should be invalidated by WS data-change.
+- The frontend single-image mutation optimistically removes the image from the PIF detail cache.
+
+What was broken before the first fix:
+
+- There is no product-level "delete selected/all images" mutation. The UI fans out N concurrent single-image deletes against the same `product_images.json` and SQL summary/runs rows.
+- The fan-out creates a read/modify/write race on `product_images.json`. Later deletes can write a recalculation based on stale pre-delete data from another request.
+- The fan-out emits N data-change events and N invalidation waves instead of one authoritative product-level mutation event.
+- The frontend optimistic patch only updates the PIF detail query. It does not patch the Overview catalog row (`['catalog', category]`) or the product-scoped PIF summary query (`['product-image-finder', category, productId, 'summary']`) before the backend/WS round trip.
+- The backend single-image route deletes `pif_variant_progress` rows instead of recomputing them from the updated image state. For "delete all" this happens to produce zero rings after refetch, but for partial deletes it can make Overview show zero progress for all variants until the next recomputation.
+- Storage Manager deletes (`storage-*`) clean IndexLab run/source artifacts and product checkpoint history, but they do not own the PIF image asset contract. They do not update `product_images.json`, `product_image_finder` rows, or `pif_variant_progress` unless the request goes through the PIF route.
+- Pre-fix: `useStorageActions.ts` did not pass mutation variables or response scope into `useDataChangeMutation` as category/product context, so local on-success invalidation for storage actions was weaker than the later WS event. This was a latency gap even when the server event was correct.
+
+Impact:
+
+- Deleting images in the PIF panel can appear instantly inside that panel but not inside Overview because Overview waits for category-level invalidation and a catalog refetch.
+- During operation load, the N-delete fan-out competes with operation WS events, stream chunks, and broad query invalidations. The user sees the app slow down and the Overview can stay visually stale until refetch wins.
+- Because the app has no mutation-to-surface contract, the current tests prove selected events invalidate selected query-key families, but they do not prove every table/surface that shares data receives an immediate update.
+
+Required fix:
+
+- Add a single backend bulk image deletion contract for PIF, e.g. delete by filename list and delete all images for one product. First fix complete for filename-list bulk delete.
+- Make that backend contract update `product_images.json`, `product_image_finder`, `product_image_finder_runs`, and `pif_variant_progress` once in a deterministic order, then emit one product-scoped data-change event. First fix complete for PIF panel bulk deletes.
+- Recompute `pif_variant_progress` immediately from the post-delete state instead of deleting rows and waiting for a later run. First fix complete for bulk and single-image PIF deletes.
+- Replace the frontend `images-all`/`images-variant` fan-out with the bulk mutation. First fix complete.
+- Optimistically patch all mounted product image consumers: PIF detail, PIF summary, and the Overview catalog row. First fix complete for PIF detail, product-scoped PIF summary, and all/variant Overview PIF rings.
+- Let `useDataChangeMutation` derive local invalidation scope from mutation variables or server response payloads, and return Storage Manager category/product scope in storage mutation responses. Second fix complete for Storage Manager delete/prune/purge local invalidation.
+- Add regression contracts that mutate once and assert the PIF panel, Overview catalog row, and product-scoped PIF summary agree after the mutation/refetch.
+- Add a generated or declarative mutation dependency map for app-level propagation: mutation -> SQL/JSON writes -> data-change event -> query keys -> frontend surfaces.
+
+### 9C. Overview Live Operation Render Fan-Out
+
+Status: confirmed frontend render-scope gap after the 2026-04-26 live-propagation audit. First production mitigation complete.
+
+Observed path:
+
+- `tools/gui-react/src/pages/overview/LiveOpsCell.tsx`
+- `tools/gui-react/src/features/operations/hooks/useFinderOperations.ts`
+- `tools/gui-react/src/pages/overview/OverviewPage.tsx`
+
+What was broken before the fix:
+
+- Every Overview row's `LiveOpsCell` subscribed to the category-wide `useRunningModulesByProductOrdered(category)` map.
+- Any running-operation update changed the serialized category map, so every live cell in the grid recomputed even when only one product changed.
+- During active IndexLab operations this compounded with operation WS events, LLM stream chunks, and data-change invalidations, making the app feel slow.
+
+Fix completed:
+
+- Added a product-scoped selector/hook: `selectRunningModulesForProductOrdered()` / `useRunningModulesForProductOrdered(category, productId)`.
+- Updated `LiveOpsCell` to subscribe only to its row product's ordered module signature.
+- Added regression coverage proving unrelated product operation changes do not change the selected product signature.
+
+Remaining gaps:
+
+- Overview still keeps one category-wide running-product map for active-first sort and selection badges.
+- Category-level catalog invalidation is now mitigated for product-scoped catalog data-change messages by the single-row patch path below. Category-wide events, events without product IDs, and non-catalog surfaces still rely on broader invalidation/refetch.
+- Runtime operation detail pages still need a separate render-profile pass; this fix only narrows the Overview live-cell hot path.
+
+### 9D. Product-Scoped Catalog Row Refresh
+
+Status: production mitigation complete for product-scoped catalog row propagation after the 2026-04-26 live-propagation audit.
+
+Observed path:
+
+- Backend full list: `GET /catalog/:category` -> `src/app/api/catalogHelpers.js`
+- Backend new row contract: `GET /catalog/:category/rows/:productId`
+- Frontend cache patcher: `tools/gui-react/src/features/catalog/api/catalogRowPatch.ts`
+- Frontend data-change bridge: `tools/gui-react/src/pages/layout/hooks/useWsEventBridge.ts`
+- Shared catalog caches patched: `['catalog', category]` and `['catalog', category, 'indexing']`
+
+What was broken before the fix:
+
+- A product-scoped data-change event that affected Overview still invalidated `['catalog', category]`.
+- React Query's broad invalidation then refetched the full category catalog, including products unrelated to the mutation.
+- During active operations, that full refetch competed with operation WS events and table rendering, so a small product change could feel like a whole-app refresh.
+
+Fix completed:
+
+- Added `createCatalogRowBuilder()` and `GET /catalog/:category/rows/:productId`.
+- The row builder uses `specDb.getProduct(productId)` and reads candidate/progress data only for the requested product row.
+- Added frontend row patching that fetches one refreshed `CatalogRow` and splices it into mounted Overview/Indexing catalog caches.
+- Added a data-change scheduler key filter so patchable product-scoped catalog messages skip broad `['catalog', category]` invalidation.
+- Added fallback invalidation for the same catalog keys if the row fetch fails, so the optimization does not silently strand stale rows.
+
+Remaining gaps:
+
+- This is still a targeted cache patch, not the final registry-driven mutation dependency graph. New shared surfaces can still be missed unless they are added to the patcher/dispatcher.
+- Review Grid (`['reviewProductsIndex', category]`), product detail (`['product', category, productId]`), and candidate caches are not patched by this catalog-row helper; they continue to rely on their own optimistic helpers or invalidation.
+- Category-wide changes, brand-wide changes without affected product IDs, and settings changes still require broader invalidation/refetch.
+- The row patch depends on the backend SQL projection being correct. If the mutation wrote JSON only and did not update SQL, the single-row refetch can still return stale data.
+- GUI proof has not yet been run for this slice; verification is currently automated contract tests and TypeScript build only.
 
 ### 10. IndexLab Product URL History
 

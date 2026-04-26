@@ -9,6 +9,13 @@ export function parseCatalogRows(raw: unknown): CatalogRow[] {
   return raw as CatalogRow[];
 }
 
+export function parseCatalogRow(raw: unknown): CatalogRow {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+    throw new TypeError('Expected object for catalog row');
+  }
+  return raw as CatalogRow;
+}
+
 export function parseCatalogProducts(raw: unknown): CatalogProduct[] {
   if (!Array.isArray(raw)) throw new TypeError('Expected array for catalog products');
   return raw as CatalogProduct[];

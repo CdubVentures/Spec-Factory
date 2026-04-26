@@ -887,7 +887,25 @@
       "unit": ""
     },
     {
-      "aliases": [],
+      "aliases": [
+        "adjustable weight",
+        "adjustable weights",
+        "center of gravity tuning",
+        "custom weight system",
+        "included weights",
+        "movable weights",
+        "optional extra weight",
+        "removable weights",
+        "repositionable weights",
+        "smart tunable weight system",
+        "tunable weight",
+        "tunable weight system",
+        "tuning weights",
+        "weight and balance",
+        "weight and balance configurations",
+        "weight system",
+        "weight tuning"
+      ],
       "array_handling": "none",
       "availability": "sometimes",
       "canonical_key": "adjustable_weight",
@@ -915,9 +933,20 @@
     },
     {
       "aliases": [
+        "actual weight",
+        "approx. weight",
+        "approximate weight",
+        "default weight",
+        "device weight",
+        "excluding cable",
+        "g",
+        "gram",
         "grams",
         "mass",
+        "mouse weight",
+        "net weight",
         "weight",
+        "weight without cable",
         "weight_g"
       ],
       "array_handling": "none",
@@ -947,9 +976,15 @@
     },
     {
       "aliases": [
+        "body length",
+        "front to back",
+        "front-to-back",
+        "L",
         "length",
         "length_mm",
         "lngth",
+        "LxWxH",
+        "mouse length",
         "overall length"
       ],
       "array_handling": "none",
@@ -979,7 +1014,14 @@
     },
     {
       "aliases": [
+        "approximate size",
+        "body width",
+        "H x W x D",
+        "L x W x H",
+        "maximum width",
+        "mouse dimensions",
         "overall width",
+        "product dimensions",
         "width",
         "width_mm"
       ],
@@ -1012,7 +1054,11 @@
       "aliases": [
         "height",
         "height_mm",
-        "overall height"
+        "hump height",
+        "overall height",
+        "product height",
+        "profile height",
+        "vertical height"
       ],
       "array_handling": "none",
       "availability": "always",
@@ -1040,7 +1086,22 @@
       "unit": "mm"
     },
     {
-      "aliases": [],
+      "aliases": [
+        "ambi shape",
+        "ambi-ergo hybrid",
+        "ambidextrous shape",
+        "asymmetric",
+        "asymmetrical",
+        "ergo",
+        "ergonomic shape",
+        "ergonomic shell",
+        "hybrid shape",
+        "left-handed ergonomic",
+        "right-handed ergonomic",
+        "right-handed symmetrical",
+        "symmetric shape",
+        "symmetrical design"
+      ],
       "array_handling": "none",
       "availability": "always",
       "canonical_key": "shape",
@@ -1055,7 +1116,7 @@
       "order": 28,
       "placeholder": "",
       "prefix": null,
-      "required_level": "non_mandatory",
+      "required_level": "mandatory",
       "shape": "scalar",
       "short_label": null,
       "suffix": null,
@@ -1094,7 +1155,21 @@
       "unit": ""
     },
     {
-      "aliases": [],
+      "aliases": [
+        "back hump",
+        "center hump",
+        "centered hump",
+        "centered rear hump",
+        "forward hump",
+        "front hump",
+        "highest point",
+        "hump apex",
+        "mid-positioned hump",
+        "middle hump",
+        "rear hump",
+        "rear-set hump",
+        "rearward hump"
+      ],
       "array_handling": "none",
       "availability": "always",
       "canonical_key": "hump",
@@ -1121,7 +1196,27 @@
       "unit": ""
     },
     {
-      "aliases": [],
+      "aliases": [
+        "button flare",
+        "button splay",
+        "flared front",
+        "flares inward at the front",
+        "flares outward at the front",
+        "front flare",
+        "front flared design",
+        "front flares inward",
+        "front flares outward",
+        "inward - aggressive",
+        "inward - moderate",
+        "inward - slight",
+        "narrows at front",
+        "outward - aggressive",
+        "outward - moderate",
+        "outward - slight",
+        "tapers inward at front",
+        "tapers outward at front",
+        "widens at front"
+      ],
       "array_handling": "none",
       "availability": "always",
       "canonical_key": "front_flare",
@@ -1148,7 +1243,20 @@
       "unit": ""
     },
     {
-      "aliases": [],
+      "aliases": [
+        "extended thumb rest",
+        "rubberized thumb scoop",
+        "sculpted thumb rest",
+        "thumb cutout",
+        "thumb groove",
+        "thumb ledge",
+        "thumb platform",
+        "thumb rest",
+        "thumb scoop",
+        "thumb shelf",
+        "thumb support",
+        "thumb wing"
+      ],
       "array_handling": "none",
       "availability": "always",
       "canonical_key": "thumb_rest",
@@ -2546,6 +2654,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-26T22:04:04.597Z",
+  "generated_at": "2026-04-26T23:42:58.768Z",
   "version": 1
 }

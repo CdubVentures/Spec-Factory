@@ -20,6 +20,8 @@ import { resolveViewBudget, resolveViewConfig, CANONICAL_VIEW_KEYS } from '../pr
 import { resolveViewAttemptBudgets } from '../viewAttemptDefaults.js';
 import {
   readProductImages,
+  writeProductImages,
+  recalculateProductImagesFromRuns,
   deleteProductImageFinderRun,
   deleteProductImageFinderRuns,
   deleteProductImageFinderAll,
@@ -119,6 +121,101 @@ function writePifVariantProgress({ specDb, category, productId, carouselProgress
       heroFilled,
       heroTarget: buckets.heroEnabled ? buckets.heroCount : 0,
       imageCount,
+    });
+  }
+}
+
+function isValidImageFilename(filename) {
+  return /^[\w-]+\.\w+$/.test(String(filename || ''));
+}
+
+function normalizeImageDeleteFilenames(value) {
+  const source = Array.isArray(value) ? value : [value];
+  const filenames = [];
+  const seen = new Set();
+  for (const raw of source) {
+    const filename = String(raw || '').trim();
+    if (!filename || seen.has(filename)) continue;
+    if (!isValidImageFilename(filename)) return null;
+    seen.add(filename);
+    filenames.push(filename);
+  }
+  return filenames;
+}
+
+function removeImagesFromDocRuns(doc, deleteStems) {
+  if (!doc || !Array.isArray(doc.runs)) return null;
+  for (const run of doc.runs) {
+    if (run.selected?.images) {
+      run.selected.images = run.selected.images.filter((img) => !deleteStems.has(imageStem(img.filename)));
+    }
+    if (run.response?.images) {
+      run.response.images = run.response.images.filter((img) => !deleteStems.has(imageStem(img.filename)));
+    }
+  }
+  return doc;
+}
+
+function removeImageFiles({ filenames, doc, imagesDir }) {
+  const masterCacheDir = path.join(imagesDir, '.cache', 'master');
+  const originalsCacheDir = path.join(imagesDir, '.cache', 'originals');
+  const deleteStems = new Set(filenames.map(imageStem));
+
+  for (const filename of filenames) {
+    const stem = imageStem(filename);
+    const masterPath = path.join(imagesDir, `${stem}.png`);
+    removeLocalAssetVariants({ sourcePath: masterPath, cacheDir: masterCacheDir });
+    try { fs.unlinkSync(masterPath); } catch { /* file may already be gone */ }
+    if (filename !== `${stem}.png`) {
+      const exactPath = path.join(imagesDir, filename);
+      removeLocalAssetVariants({ sourcePath: exactPath, cacheDir: masterCacheDir });
+      try { fs.unlinkSync(exactPath); } catch { /* */ }
+    }
+  }
+
+  if (!doc || !Array.isArray(doc.runs)) return deleteStems;
+  for (const run of doc.runs) {
+    for (const img of (run.selected?.images || [])) {
+      if (!deleteStems.has(imageStem(img.filename)) || !img.original_filename) continue;
+      const originalPath = path.join(imagesDir, 'originals', img.original_filename);
+      removeLocalAssetVariants({ sourcePath: originalPath, cacheDir: originalsCacheDir });
+      try { fs.unlinkSync(originalPath); } catch { /* */ }
+    }
+  }
+
+  return deleteStems;
+}
+
+function upsertProductImageFinderSql({ specDb, category, productId, recalculated }) {
+  const finderStore = specDb.getFinderStore('productImageFinder');
+  finderStore.upsert({
+    category,
+    product_id: productId,
+    images: recalculated.selected?.images?.map((img) => ({
+      view: img.view,
+      filename: img.filename,
+      variant_key: img.variant_key,
+      ...(img.variant_id ? { variant_id: img.variant_id } : {}),
+    })) || [],
+    image_count: recalculated.selected?.images?.length || 0,
+    latest_ran_at: recalculated.last_ran_at || '',
+    run_count: recalculated.run_count || 0,
+  });
+  for (const run of recalculated.runs || []) {
+    finderStore.insertRun({
+      category,
+      product_id: productId,
+      run_number: run.run_number,
+      ran_at: run.ran_at || '',
+      model: run.model || '',
+      fallback_used: run.fallback_used,
+      effort_level: run.effort_level || '',
+      access_mode: run.access_mode || '',
+      thinking: Boolean(run.thinking),
+      web_search: Boolean(run.web_search),
+      selected: run.selected || {},
+      prompt: run.prompt || {},
+      response: run.response || {},
     });
   }
 }
@@ -1472,6 +1569,43 @@ export function registerProductImageFinderRoutes(ctx) {
     }
 
     // ── DELETE single image file ────────────────────────────────────
+    // DELETE /product-image-finder/:category/:productId/images
+    // Body: { filenames: string[] }
+    if (method === 'DELETE' && category && productId && parts[3] === 'images' && !parts[4]) {
+      const body = await readJsonBody(req).catch(() => ({}));
+      const filenames = normalizeImageDeleteFilenames(body?.filenames);
+      if (!filenames) return jsonRes(res, 400, { error: 'invalid filename' });
+      if (filenames.length === 0) return jsonRes(res, 400, { error: 'filenames_required' });
+
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+      const productRoot = defaultProductRoot();
+      const imagesDir = path.join(productRoot, productId, 'images');
+      const doc = readProductImages({ productId, productRoot });
+      const deleteStems = removeImageFiles({ filenames, doc, imagesDir });
+      const updatedDoc = removeImagesFromDocRuns(doc, deleteStems);
+
+      if (updatedDoc) {
+        const recalculated = recalculateProductImagesFromRuns(updatedDoc.runs, productId, category, updatedDoc);
+        writeProductImages({ productId, productRoot, data: recalculated });
+        upsertProductImageFinderSql({ specDb, category, productId, recalculated });
+      }
+
+      try { specDb.deletePifVariantProgressByProduct?.(productId); } catch { /* best-effort */ }
+      writePifVariantProgress({ specDb, category, productId });
+
+      emitDataChange({
+        broadcastWs,
+        event: 'product-image-finder-image-deleted',
+        category,
+        entities: { productIds: [productId] },
+        meta: { productId, deletedImages: filenames },
+      });
+
+      return jsonRes(res, 200, { ok: true, deleted: filenames });
+    }
+
     // DELETE /product-image-finder/:category/:productId/images/:filename
     if (method === 'DELETE' && category && productId && parts[3] === 'images' && parts[4]) {
       const filename = parts[4];
@@ -1557,8 +1691,9 @@ export function registerProductImageFinderRoutes(ctx) {
         }
       }
 
-      // Invalidate materialized per-variant progress — next PIF run recomputes.
+      // Refresh materialized per-variant progress before the Overview refetches.
       try { specDb.deletePifVariantProgressByProduct?.(productId); } catch { /* best-effort */ }
+      writePifVariantProgress({ specDb, category, productId });
 
       emitDataChange({
         broadcastWs,

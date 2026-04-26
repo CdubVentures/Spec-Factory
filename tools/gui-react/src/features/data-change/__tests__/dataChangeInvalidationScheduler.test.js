@@ -150,3 +150,29 @@ test('scheduler emits flush telemetry callback with merged query keys and catego
   assert.equal(flushMetrics[0].categories.includes('mouse'), true);
   assert.equal(flushMetrics[0].categories.includes('keyboard'), true);
 });
+
+test('scheduler can suppress selected query keys while keeping the rest of the event scope', () => {
+  const timers = createFakeTimers();
+  const invalidated = [];
+  const scheduler = createDataChangeInvalidationScheduler({
+    queryClient: {
+      invalidateQueries: ({ queryKey }) => invalidated.push(queryKey),
+    },
+    delayMs: 50,
+    setTimeoutFn: timers.setTimeoutFn,
+    clearTimeoutFn: timers.clearTimeoutFn,
+    shouldInvalidateQueryKey: ({ queryKey }) =>
+      JSON.stringify(queryKey) !== JSON.stringify(['catalog', 'mouse']),
+  });
+
+  scheduler.schedule({
+    message: { type: 'data-change', event: 'catalog-product-update', domains: ['catalog'] },
+    categories: ['mouse'],
+    fallbackCategory: 'mouse',
+  });
+
+  timers.flushAll();
+
+  assert.equal(hasQueryKey(invalidated, ['catalog', 'mouse']), false);
+  assert.equal(hasQueryKey(invalidated, ['catalog-products', 'mouse']), true);
+});

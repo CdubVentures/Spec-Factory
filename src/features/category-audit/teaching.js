@@ -50,6 +50,7 @@ Component Source Mapping:
 - maker role: <source field / blank / No change>
 - aliases/name variants: <ordered list, blank, or No change>
 - reference URLs/links: <ordered list, blank, or No change>
+- component _link fields: for fields such as sensor_link, encoder_link, switch_link, or mcu_link, reference URLs/links must target the exact component's own manufacturer component page, datasheet/spec-sheet PDF, support PDF, or maker documentation. Do not use product pages, reviews, retailers, forum posts, or articles that merely mention the component; if no component-level source exists, say so in References spot-checked/open questions.
 - attributes/properties:
   - field_key: <field key | No change>
   - variance_policy: <authoritative|upper_bound|lower_bound|range|override_allowed|majority_vote|blank|No change>

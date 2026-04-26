@@ -20,6 +20,7 @@ export function createDataChangeInvalidationScheduler({
   setTimeoutFn = setTimeout,
   clearTimeoutFn = clearTimeout,
   onFlush = null,
+  shouldInvalidateQueryKey = null,
 } = {}) {
   const pendingQueryKeys = new Map();
   const pendingCategories = new Set();
@@ -75,6 +76,17 @@ export function createDataChangeInvalidationScheduler({
       pendingCategories.add(scopedCategory);
     }
     for (const queryKey of queryKeys) {
+      if (
+        typeof shouldInvalidateQueryKey === 'function'
+        && !shouldInvalidateQueryKey({
+          queryKey,
+          message,
+          categories: scopedCategories,
+          fallbackCategory,
+        })
+      ) {
+        continue;
+      }
       const signature = queryKeySignature(queryKey);
       if (!signature) continue;
       pendingQueryKeys.set(signature, queryKey);

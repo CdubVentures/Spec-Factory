@@ -1,4 +1,4 @@
-import { useRunningModulesByProductOrdered } from '../../features/operations/hooks/useFinderOperations.ts';
+import { useRunningModulesForProductOrdered } from '../../features/operations/hooks/useFinderOperations.ts';
 import { MODULE_LABEL, MiniIcon } from '../../features/operations/components/moduleIcons.tsx';
 import './LiveOpsCell.css';
 
@@ -7,11 +7,8 @@ export interface LiveOpsCellProps {
   readonly productId: string;
 }
 
-const EMPTY: readonly string[] = [];
-
 export function LiveOpsCell({ category, productId }: LiveOpsCellProps) {
-  const byProduct = useRunningModulesByProductOrdered(category);
-  const mods = byProduct.get(productId) ?? EMPTY;
+  const mods = useRunningModulesForProductOrdered(category, productId);
 
   if (mods.length === 0) {
     return <span className="sf-live-empty" aria-label="No live operations">{'\u2014'}</span>;

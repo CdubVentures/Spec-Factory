@@ -440,7 +440,7 @@ function generateFinderPhaseSchemaRegistry() {
     if (!m.promptBuilderExport || !m.responseSchemaExport) continue;
     const uiId = phaseUiId(m.phase);
     lines.push(`  ${quote(uiId)}: {`);
-    lines.push(`    system_prompt: ${m.promptBuilderExport}({ product: { brand: '{brand}', model: '{model}' } }),`);
+    lines.push(`    system_prompt: ${m.promptBuilderExport}({ product: { brand: '{brand}', model: '{model}', category: '{category}' } }),`);
     lines.push(`    response_schema: zodToLlmSchema(${m.responseSchemaExport}),`);
     lines.push(`  },`);
   }

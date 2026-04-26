@@ -89,6 +89,10 @@ test('renderMarkdown places auditor-task section before summary and includes ret
   assert.match(md, /<sort_order>-<field_key>/);
   assert.match(md, /Mapping Studio:/);
   assert.match(md, /Component Source Mapping:/);
+  assert.match(md, /component _link fields/i);
+  assert.match(md, /manufacturer component page/i);
+  assert.match(md, /datasheet\/spec-sheet PDF/i);
+  assert.match(md, /merely mention/i);
   assert.match(md, /Enum Data Lists:/);
   assert.match(md, /Key Navigator:/);
   assert.match(md, /Contract:/);

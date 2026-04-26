@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useOperationsStore } from '../state/operationsStore.ts';
 import type { Operation, LlmCallRecord, LlmCallStreamText } from '../state/operationsStore.ts';
+import { selectOperationDetailDisplay } from '../state/operationDetailSelection.ts';
+import { api } from '../../../api/client.ts';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
@@ -386,7 +389,15 @@ interface Props {
   readonly onClose: () => void;
 }
 
-export function OperationDetailModal({ op, onClose }: Props) {
+export function OperationDetailModal({ op: summaryOp, onClose }: Props) {
+  const detailQuery = useQuery<Operation>({
+    queryKey: ['operations', 'detail', summaryOp.id],
+    queryFn: () => api.get<Operation>(`/operations/${encodeURIComponent(summaryOp.id)}`),
+    enabled: Boolean(summaryOp.id),
+    refetchInterval: summaryOp.status === 'running' || summaryOp.status === 'queued' ? 2000 : false,
+  });
+  const op = selectOperationDetailDisplay(summaryOp, detailQuery.data ?? null);
+  const llmCalls = op.llmCalls;
   const formatTime = useFormatTime();
   /* ── Dismiss handlers ─────────────────────────────────────── */
   useEffect(() => {
@@ -559,8 +570,20 @@ export function OperationDetailModal({ op, onClose }: Props) {
           </section>
 
           {/* LLM Calls */}
-          {op.llmCalls.length > 0 && (
-            <LlmCallsSection calls={op.llmCalls} callStreams={callStreams} />
+          {detailQuery.isLoading && llmCalls.length === 0 && (
+            <section className="text-[10px] sf-text-subtle font-mono">
+              Loading operation detail...
+            </section>
+          )}
+
+          {detailQuery.isError && llmCalls.length === 0 && (
+            <section className="text-[10px] text-[var(--sf-state-danger-fg)] font-mono">
+              Operation detail unavailable.
+            </section>
+          )}
+
+          {llmCalls.length > 0 && (
+            <LlmCallsSection calls={llmCalls} callStreams={callStreams} />
           )}
 
           {/* Timestamps */}

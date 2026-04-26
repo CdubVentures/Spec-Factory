@@ -46,6 +46,7 @@ import {
   useDeleteProductImageFinderRunMutation,
   useDeleteProductImageFinderRunsBatchMutation,
   useDeleteProductImageMutation,
+  useDeleteProductImagesMutation,
   useProcessProductImageMutation,
   useProcessAllProductImagesMutation,
   useClearCarouselWinnersMutation,
@@ -146,6 +147,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const deleteRunsBatchMut = useDeleteProductImageFinderRunsBatchMutation(category, productId);
   const deleteAllMut = useDeleteProductImageFinderAllMutation(category, productId);
   const deleteImageMut = useDeleteProductImageMutation(category, productId);
+  const deleteImagesMut = useDeleteProductImagesMutation(category, productId);
   const clearCarouselWinnersMut = useClearCarouselWinnersMutation(category, productId);
   const deleteEvalMut = useDeleteEvalRecordMutation(category, productId);
   const processImageMut = useProcessProductImageMutation(category, productId);
@@ -171,8 +173,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const handleDeleteImage = useCallback((filename: string) => {
     setDeleteTarget({ kind: 'image', filename });
   }, []);
-  const handleDeleteVariantImages = useCallback((filenames: readonly string[], label: string) => {
-    setDeleteTarget({ kind: 'images-variant', filenames, count: filenames.length, label });
+  const handleDeleteVariantImages = useCallback((filenames: readonly string[], label: string, variantKey: string) => {
+    setDeleteTarget({ kind: 'images-variant', filenames, count: filenames.length, label, variantKey });
   }, []);
   const handleClearVariantCarousel = useCallback((variantKey: string, variantId: string | null, label: string) => {
     setDeleteTarget({ kind: 'carousel-clear-variant', variantKey, variantId: variantId ?? undefined, label });
@@ -378,14 +380,17 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
       case 'images-all':
       case 'images-variant':
         if (deleteTarget.filenames?.length) {
-          for (const f of deleteTarget.filenames) deleteImageMut.mutate(f);
-          dismiss();
+          deleteImagesMut.mutate({
+            filenames: deleteTarget.filenames,
+            scope: deleteTarget.kind === 'images-all' ? 'all' : 'variant',
+            variantKey: deleteTarget.variantKey,
+          }, { onSuccess: dismiss });
         }
         break;
       default:
         deleteAllMut.mutate(undefined, { onSuccess: dismiss });
     }
-  }, [deleteTarget, deleteRunMut, deleteRunsBatchMut, deleteAllMut, deleteImageMut, deleteEvalMut, clearCarouselWinnersMut]);
+  }, [deleteTarget, deleteRunMut, deleteRunsBatchMut, deleteAllMut, deleteImageMut, deleteImagesMut, deleteEvalMut, clearCarouselWinnersMut]);
 
   const hasCefData = Boolean(variants.length);
   const effectiveResult = isError ? null : pifData;
@@ -637,7 +642,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                         const allFilenames = galleryImages.map(img => img.filename).filter(Boolean);
                         setDeleteTarget({ kind: 'images-all', filenames: allFilenames, count: allFilenames.length });
                       }}
-                      disabled={deleteImageMut.isPending}
+                      disabled={deleteImageMut.isPending || deleteImagesMut.isPending}
                     />
                   )}
                 </div>
@@ -821,7 +826,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           target={deleteTarget}
           onConfirm={handleConfirmDelete}
           onCancel={() => setDeleteTarget(null)}
-          isPending={deleteRunMut.isPending || deleteRunsBatchMut.isPending || deleteAllMut.isPending || deleteImageMut.isPending || deleteEvalMut.isPending || clearCarouselWinnersMut.isPending}
+          isPending={deleteRunMut.isPending || deleteRunsBatchMut.isPending || deleteAllMut.isPending || deleteImageMut.isPending || deleteImagesMut.isPending || deleteEvalMut.isPending || clearCarouselWinnersMut.isPending}
           moduleLabel="PIF"
           confirmLabel={deleteTarget.kind === 'carousel-clear-variant' ? 'Clear' : undefined}
           pendingLabel={deleteTarget.kind === 'carousel-clear-variant' ? 'Clearing...' : undefined}

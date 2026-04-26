@@ -92,6 +92,30 @@ export interface PillLoopProgress {
  */
 export type LoopProgress = CarouselLoopProgress | PillLoopProgress;
 
+export interface LlmCallSummary {
+  readonly callIndex: number;
+  readonly callId?: string;
+  readonly timestamp: string;
+  readonly model?: string;
+  readonly variant?: string;
+  readonly mode?: string;
+  readonly lane?: string;
+  readonly label?: string;
+  readonly isFallback?: boolean;
+  readonly thinking?: boolean;
+  readonly webSearch?: boolean;
+  readonly effortLevel?: string;
+  readonly accessMode?: string;
+  readonly usage?: {
+    readonly prompt_tokens: number;
+    readonly completion_tokens: number;
+    readonly total_tokens: number;
+    readonly cost_usd: number;
+    readonly estimated_usage?: boolean;
+  } | null;
+  readonly responseStatus: 'pending' | 'done';
+}
+
 export interface Operation {
   readonly id: string;
   readonly type: string;
@@ -133,6 +157,9 @@ export interface Operation {
   /** keyFinder-only: the passenger field_keys selected when registration completed.
    *  Debug visibility; UI doesn't render this today. */
   readonly passengerFieldKeys?: readonly string[];
+  readonly llmCallCount?: number;
+  readonly activeLlmCallCount?: number;
+  readonly activeLlmCalls?: ReadonlyArray<LlmCallSummary>;
   /** Accumulated LLM call records — prompt, response, model per call. */
   readonly llmCalls: ReadonlyArray<LlmCallRecord>;
 }
@@ -189,7 +216,7 @@ interface OperationsState {
   /** WHY: Separated from operations so stream appends don't clone the operations Map. */
   readonly streamTexts: ReadonlyMap<string, string>;
   readonly callStreamTexts: ReadonlyMap<string, ReadonlyMap<string, LlmCallStreamText>>;
-  upsert: (op: Operation) => void;
+  upsert: (op: OperationUpsert) => void;
   remove: (id: string) => void;
   clear: () => void;
   appendStreamText: (id: string, text: string) => void;
@@ -199,6 +226,10 @@ interface OperationsState {
   appendLlmCall: (id: string, call: LlmCallRecord) => void;
   updateLlmCall: (id: string, callIndex: number, call: LlmCallRecord) => void;
 }
+
+export type OperationUpsert = Omit<Operation, 'llmCalls'> & {
+  readonly llmCalls?: ReadonlyArray<LlmCallRecord>;
+};
 
 function mergeLlmCall(existing: LlmCallRecord, incoming: LlmCallRecord): LlmCallRecord {
   return {
@@ -245,16 +276,16 @@ export const useOperationsStore = create<OperationsState>((set) => ({
   streamTexts: new Map<string, string>(),
   callStreamTexts: new Map<string, ReadonlyMap<string, LlmCallStreamText>>(),
 
-  upsert: (op: Operation) =>
+  upsert: (op: OperationUpsert) =>
     set((state) => {
       const next = new Map(state.operations);
       const existing = state.operations.get(op.id);
       // WHY: queueDelayMs is reported by the server (actual lab queue wait time).
       // Preserve across upserts — once set, it stays.
       const queueDelayMs = op.queueDelayMs ?? existing?.queueDelayMs;
-      // WHY: llmCalls are broadcast separately (llm-call-append action), not in regular WS upsert.
-      // Preserve accumulated calls from store. For hydration (GET /operations), use incoming data.
-      const llmCalls = existing?.llmCalls?.length ? existing.llmCalls : (op.llmCalls ?? []);
+      // WHY: Summary upserts omit llmCalls so the hot operations store does
+      // not retain full prompt/response payloads for every active job.
+      const llmCalls = Object.prototype.hasOwnProperty.call(op, 'llmCalls') ? (op.llmCalls ?? []) : [];
       next.set(op.id, { ...op, queueDelayMs, llmCalls });
       // WHY: Clear stream text when operation reaches terminal state to free memory.
       if (op.status === 'done' || op.status === 'error' || op.status === 'cancelled') {

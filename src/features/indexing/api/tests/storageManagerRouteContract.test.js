@@ -144,6 +144,8 @@ describe('storageManagerRoutes', () => {
       strictEqual(result.status, 200);
       strictEqual(result.body.ok, true);
       strictEqual(result.body.run_id, 'run-001');
+      strictEqual(result.body.category, 'mouse');
+      strictEqual(result.body.product_id, 'mouse-test-product');
     });
 
     it('emits data-change after deleting an inactive run', async () => {
@@ -178,6 +180,8 @@ describe('storageManagerRoutes', () => {
       ok(Array.isArray(result.body.deleted));
       ok(Array.isArray(result.body.errors));
       strictEqual(result.body.deleted.length, 2);
+      deepStrictEqual(result.body.categories, ['mouse', 'keyboard']);
+      deepStrictEqual(result.body.product_ids, ['mouse-test-product', 'keyboard-test']);
     });
 
     it('emits data-change after bulk deleting runs', async () => {
@@ -222,6 +226,8 @@ describe('storageManagerRoutes', () => {
       strictEqual(result.status, 200);
       strictEqual(result.body.ok, true);
       ok(typeof result.body.purged === 'number');
+      deepStrictEqual(result.body.categories, ['mouse', 'keyboard']);
+      deepStrictEqual(result.body.product_ids, ['mouse-test-product', 'keyboard-test']);
     });
 
     it('emits data-change after purging runs', async () => {
@@ -265,6 +271,8 @@ describe('storageManagerRoutes', () => {
 
       strictEqual(result.status, 200);
       strictEqual(result.body.pruned, 1);
+      deepStrictEqual(result.body.categories, ['mouse']);
+      deepStrictEqual(result.body.product_ids, ['mouse-test']);
     });
 
     it('emits data-change after pruning runs', async () => {
@@ -302,6 +310,8 @@ describe('storageManagerRoutes', () => {
       const result = await handler(['storage', 'urls', 'delete'], new URLSearchParams(), 'POST', {}, {});
 
       strictEqual(result.status, 200);
+      strictEqual(result.body.category, 'mouse');
+      strictEqual(result.body.product_id, 'mouse-test-product');
       strictEqual(deletionCalls.length, 1);
       const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
       strictEqual(emitted?.payload?.event, 'storage-urls-deleted');
@@ -333,6 +343,8 @@ describe('storageManagerRoutes', () => {
       );
 
       strictEqual(result.status, 200);
+      strictEqual(result.body.category, 'mouse');
+      strictEqual(result.body.product_id, 'mouse-test-product');
       strictEqual(deletionCalls.length, 1);
       const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
       strictEqual(emitted?.payload?.event, 'storage-history-purged');

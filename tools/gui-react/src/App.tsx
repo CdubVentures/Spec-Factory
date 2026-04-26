@@ -7,7 +7,7 @@ import { Spinner } from './shared/ui/feedback/Spinner.tsx';
 import { ROUTE_ENTRIES } from './registries/pageRegistry.ts';
 import { wsManager } from './api/ws.ts';
 import { api } from './api/client.ts';
-import { useOperationsStore, type Operation } from './features/operations/state/operationsStore.ts';
+import { useOperationsStore, type OperationUpsert } from './features/operations/state/operationsStore.ts';
 
 function lazyNamedPage(loader: () => Promise<Record<string, unknown>>, exportName: string) {
   return lazy(async () => {
@@ -44,7 +44,7 @@ const queryClient = new QueryClient({
 // open modals, scroll) that a full page reload would destroy.
 wsManager.onReconnect(() => {
   queryClient.invalidateQueries();
-  api.get<Operation[]>('/operations')
+  api.get<OperationUpsert[]>('/operations')
     .then((ops) => {
       const upsert = useOperationsStore.getState().upsert;
       for (const op of ops) upsert(op);

@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import { deepStrictEqual, throws } from 'node:assert';
-import { parseCatalogRows, parseCatalogProducts } from '../catalogParsers.ts';
+import { parseCatalogRow, parseCatalogRows, parseCatalogProducts } from '../catalogParsers.ts';
 
 describe('parseCatalogRows', () => {
   it('returns valid array input unchanged', () => {
@@ -30,6 +30,21 @@ describe('parseCatalogRows', () => {
 
   it('throws TypeError for number', () => {
     throws(() => parseCatalogRows(42), TypeError);
+  });
+});
+
+describe('parseCatalogRow', () => {
+  it('returns valid object input unchanged', () => {
+    const input = { productId: 'a', brand: 'B' };
+    deepStrictEqual(parseCatalogRow(input), input);
+  });
+
+  it('throws TypeError for array input', () => {
+    throws(() => parseCatalogRow([]), TypeError);
+  });
+
+  it('throws TypeError for null', () => {
+    throws(() => parseCatalogRow(null), TypeError);
   });
 });
 

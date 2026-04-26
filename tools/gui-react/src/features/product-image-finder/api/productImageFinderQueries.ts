@@ -1,16 +1,35 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import { useDataChangeMutation } from '../../data-change/index.js';
-import { removeImageFromResult } from '../selectors/pifSelectors.ts';
+import { removeImageFromResult, removeImagesFromResult } from '../selectors/pifSelectors.ts';
+import { removeImagesFromPifSummary, zeroCatalogPifProgress } from '../state/pifDeleteOptimism.ts';
+import type { CatalogRow } from '../../../types/product.ts';
 import type {
   ProductImageFinderResult,
   ProductImageDependencyStatus,
   AcceptedResponse,
   ProductImageFinderDeleteResponse,
+  ProductImageFinderSummary,
 } from '../types.ts';
 
 function productImageFinderQueryKey(category: string, productId: string) {
   return ['product-image-finder', category, productId] as const;
+}
+
+function productImageFinderSummaryQueryKey(category: string, productId: string) {
+  return ['product-image-finder', category, productId, 'summary'] as const;
+}
+
+export interface DeleteProductImagesVariables {
+  readonly filenames: readonly string[];
+  readonly scope: 'all' | 'variant' | 'files';
+  readonly variantKey?: string;
+}
+
+interface DeleteProductImagesMutationContext {
+  readonly previousResult: ProductImageFinderResult | undefined;
+  readonly previousSummary: ProductImageFinderSummary | undefined;
+  readonly previousCatalog: CatalogRow[] | undefined;
 }
 
 export function useProductImageFinderQuery(category: string, productId: string) {
@@ -106,6 +125,65 @@ export function useDeleteProductImageMutation(category: string, productId: strin
       onError: (_err, _filename, context) => {
         if (context?.previous) {
           queryClient.setQueryData<ProductImageFinderResult>(queryKey, context.previous);
+        }
+      },
+    },
+  });
+}
+
+export function useDeleteProductImagesMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+  const queryKey = productImageFinderQueryKey(category, productId);
+  const summaryQueryKey = productImageFinderSummaryQueryKey(category, productId);
+  const catalogQueryKey = ['catalog', category] as const;
+
+  return useDataChangeMutation<
+    ProductImageFinderDeleteResponse,
+    Error,
+    DeleteProductImagesVariables,
+    DeleteProductImagesMutationContext
+  >({
+    event: 'product-image-finder-image-deleted',
+    category,
+    mutationFn: ({ filenames }) => api.del<ProductImageFinderDeleteResponse>(
+      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/images`,
+      { filenames },
+    ),
+    options: {
+      onMutate: (variables) => {
+        const filenames = [...variables.filenames];
+        const previousResult = queryClient.getQueryData<ProductImageFinderResult>(queryKey);
+        const previousSummary = queryClient.getQueryData<ProductImageFinderSummary>(summaryQueryKey);
+        const previousCatalog = queryClient.getQueryData<CatalogRow[]>(catalogQueryKey);
+        if (previousResult) {
+          queryClient.setQueryData<ProductImageFinderResult>(queryKey, removeImagesFromResult(previousResult, filenames));
+        }
+        if (previousSummary) {
+          queryClient.setQueryData<ProductImageFinderSummary | undefined>(
+            summaryQueryKey,
+            removeImagesFromPifSummary(previousSummary, filenames),
+          );
+        }
+        if (variables.scope === 'all' || (variables.scope === 'variant' && variables.variantKey)) {
+          queryClient.setQueryData<CatalogRow[] | undefined>(
+            catalogQueryKey,
+            (current) => zeroCatalogPifProgress(current, {
+              productId,
+              ...(variables.scope === 'variant' && variables.variantKey ? { variantKey: variables.variantKey } : {}),
+            }),
+          );
+        }
+        return { previousResult, previousSummary, previousCatalog };
+      },
+      onError: (_err, _variables, context) => {
+        if (context?.previousResult) {
+          queryClient.setQueryData<ProductImageFinderResult>(queryKey, context.previousResult);
+        }
+        if (context?.previousSummary) {
+          queryClient.setQueryData<ProductImageFinderSummary>(summaryQueryKey, context.previousSummary);
+        }
+        if (context?.previousCatalog) {
+          queryClient.setQueryData<CatalogRow[]>(catalogQueryKey, context.previousCatalog);
         }
       },
     },

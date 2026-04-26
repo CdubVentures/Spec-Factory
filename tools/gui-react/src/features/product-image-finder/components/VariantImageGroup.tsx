@@ -50,7 +50,7 @@ interface VariantImageGroupProps {
   readonly onOpenPromptModal: (variantKey: string, mode: PifPromptPreviewMode, view?: string) => void;
   readonly onOpenLightbox: (img: GalleryImage) => void;
   readonly onDeleteImage: (filename: string) => void;
-  readonly onDeleteVariantImages: (filenames: readonly string[], label: string) => void;
+  readonly onDeleteVariantImages: (filenames: readonly string[], label: string, variantKey: string) => void;
   readonly onProcessImage: (filename: string) => void;
   readonly processingFilename: string | null;
   readonly category: string;
@@ -264,7 +264,7 @@ export const VariantImageGroup = memo(function VariantImageGroup({
               <RowActionButton
                 intent="delete"
                 label="Del"
-                onClick={() => onDeleteVariantImages(group.images.map(img => img.filename).filter(Boolean), group.label)}
+                onClick={() => onDeleteVariantImages(group.images.map(img => img.filename).filter(Boolean), group.label, group.key)}
                 title={`Delete all ${group.images.length} images for this variant`}
                 width={ACTION_BUTTON_WIDTH.standardRow}
               />

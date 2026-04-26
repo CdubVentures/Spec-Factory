@@ -96,15 +96,15 @@ function buildEvalCriteriaDefaults() {
 
 const CAROUSEL_BUILDER_PHASE = Object.freeze({
   'image-evaluator': {
-    system_prompt: buildViewEvalPrompt({ product: { brand: '{brand}', model: '{model}' }, view: 'top', viewDescription: GENERIC_VIEW_DESCRIPTIONS.top, candidateCount: 3 }),
-    hero_system_prompt: buildHeroSelectionPrompt({ product: { brand: '{brand}', model: '{model}' }, viewWinners: [{ view: 'top', filename: 'top-black.png' }, { view: 'left', filename: 'left-black.png' }] }),
+    system_prompt: buildViewEvalPrompt({ product: { brand: '{brand}', model: '{model}', category: '{category}' }, view: 'top', viewDescription: GENERIC_VIEW_DESCRIPTIONS.top, candidateCount: 3 }),
+    hero_system_prompt: buildHeroSelectionPrompt({ product: { brand: '{brand}', model: '{model}', category: '{category}' }, viewWinners: [{ view: 'top', filename: 'top-black.png' }, { view: 'left', filename: 'left-black.png' }] }),
     response_schema: zodToLlmSchema(viewEvalResponseSchema),
     hero_response_schema: zodToLlmSchema(heroEvalResponseSchema),
     view_prompts: Object.freeze(
       Object.fromEntries(
         Object.entries(GENERIC_VIEW_DESCRIPTIONS).map(([view, desc]) => [
           view,
-          buildViewEvalPrompt({ product: { brand: '{brand}', model: '{model}' }, view, viewDescription: desc, candidateCount: 3 }),
+          buildViewEvalPrompt({ product: { brand: '{brand}', model: '{model}', category: '{category}' }, view, viewDescription: desc, candidateCount: 3 }),
         ]),
       ),
     ),
@@ -112,6 +112,7 @@ const CAROUSEL_BUILDER_PHASE = Object.freeze({
     eval_criteria_categories: EVAL_CRITERIA_CATEGORIES,
     prompt_templates: [
       { promptKey: 'viewEval', label: 'View Eval Structural Prompt', storageScope: 'module', moduleId: 'productImageFinder', settingKey: 'evalPromptOverride', defaultTemplate: VIEW_EVAL_DEFAULT_TEMPLATE, variables: [
+        { name: 'CATEGORY_CONTEXT', description: 'Global category identity line, e.g. "Category: mouse". Empty only when category is missing. Edit text via Global Prompts (categoryContext).', required: true },
         { name: 'IDENTITY', description: 'e.g. "Product: Logitech G502 X Plus — the \\"black\\" color variant"', required: true },
         { name: 'VIEW_LINE', description: 'e.g. "View: \\"top\\" — Bird\'s-eye shot looking directly down..."', required: true },
         { name: 'PRODUCT_IMAGE_IDENTITY_FACTS', description: 'Resolved Field Studio product_image_dependent facts for this product/variant. Empty when no enabled facts are resolved.', required: false },
@@ -123,6 +124,7 @@ const CAROUSEL_BUILDER_PHASE = Object.freeze({
         { field: 'image labels', description: 'e.g. "Image 1: top-black.png (1200x800, 145KB)" — filename + original dimensions' },
       ] },
       { promptKey: 'heroEval', label: 'Hero Eval Structural Prompt', storageScope: 'module', moduleId: 'productImageFinder', settingKey: 'heroEvalPromptOverride', defaultTemplate: HERO_EVAL_DEFAULT_TEMPLATE, variables: [
+        { name: 'CATEGORY_CONTEXT', description: 'Global category identity line, e.g. "Category: mouse". Empty only when category is missing. Edit text via Global Prompts (categoryContext).', required: true },
         { name: 'IDENTITY', description: 'e.g. "Product: Logitech G502 X Plus — the \\"black\\" color variant"', required: true },
         { name: 'PRODUCT_IMAGE_IDENTITY_FACTS', description: 'Resolved Field Studio product_image_dependent facts for this product/variant. Empty when no enabled facts are resolved.', required: false },
         { name: 'COUNT_LINE', description: 'e.g. "You are evaluating 6 hero/marketing image candidates."', required: true },
@@ -141,7 +143,7 @@ const CAROUSEL_BUILDER_PHASE = Object.freeze({
 // Overlay adds the second prompt/schema to the auto-generated color-finder entry
 // so the LLM Config GUI renders both side by side.
 const identityCheckExample = buildVariantIdentityCheckPrompt({
-  product: { brand: '{brand}', model: '{model}' },
+  product: { brand: '{brand}', model: '{model}', category: '{category}' },
   existingRegistry: [
     { variant_id: 'v_example1', variant_key: 'color:black', variant_type: 'color', variant_label: 'black', color_atoms: ['black'] },
   ],
@@ -159,6 +161,7 @@ const COLOR_FINDER_IDENTITY_CHECK = Object.freeze({
       { promptKey: 'discovery', label: 'Discovery Prompt', storageScope: 'module', moduleId: 'colorEditionFinder', settingKey: 'discoveryPromptTemplate', defaultTemplate: CEF_DISCOVERY_DEFAULT_TEMPLATE, variables: [
         { name: 'BRAND', description: 'e.g. "Logitech"', required: true, category: 'deterministic' },
         { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
+        { name: 'CATEGORY_CONTEXT', description: 'Global category identity line, e.g. "Category: mouse". Empty only when category is missing. Edit text via Global Prompts (categoryContext).', required: true, category: 'global-fragment' },
         { name: 'KNOWN_FINDINGS', description: 'Run 2+ discovery context — includes: colors found so far e.g. ["black","white"], color marketing names e.g. {"light-blue":"Glacier Blue"}, editions found so far e.g. ["cod-bo6"], urls already checked e.g. ["https://www.logitech.com/..."]. Empty string on Run 1.', required: false, category: 'deterministic' },
         { name: 'PALETTE', description: 'e.g. "black (#000000), white (#ffffff), red (#ff0000), light-blue (#add8e6)" — or "(no registered colors)" when palette is empty', required: true, category: 'deterministic' },
         { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). 3 tiers: easy="no known siblings" | medium="CAUTION: ..." | hard="HIGH AMBIGUITY: TRIPLE-CHECK". Includes the siblings-exclusion line when sibling models are provided. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
@@ -169,6 +172,7 @@ const COLOR_FINDER_IDENTITY_CHECK = Object.freeze({
         { field: 'brand', description: 'e.g. "Logitech"' },
         { field: 'base_model', description: 'e.g. "G502 X" — family model name' },
         { field: 'model', description: 'e.g. "G502 X Plus" — exact model' },
+        { field: 'category', description: 'e.g. "mouse"' },
         { field: 'variant', description: 'e.g. "black" — if base_model is set' },
       ] },
       // WHY: Identity check uses full-replacement override (not {{VARIABLE}} templates) because the
@@ -178,6 +182,7 @@ const COLOR_FINDER_IDENTITY_CHECK = Object.freeze({
       { promptKey: 'identityCheck', label: 'Identity Check Prompt (Run 2+)', storageScope: 'module', moduleId: 'colorEditionFinder', settingKey: 'identityCheckPromptTemplate', defaultTemplate: identityCheckExample, variables: [], userMessageInfo: [
         { field: 'brand', description: 'e.g. "Logitech"' },
         { field: 'model', description: 'e.g. "G502 X Plus"' },
+        { field: 'category', description: 'e.g. "mouse"' },
         { field: 'existing_variants', description: 'Count of current variant registry entries' },
         { field: 'new_colors', description: 'Count of new color discoveries' },
         { field: 'new_editions', description: 'Count of new edition discoveries' },
@@ -220,6 +225,7 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
       { promptKey: 'view', label: 'View Search Prompt', storageScope: 'module', moduleId: 'productImageFinder', settingKey: 'viewPromptOverride', defaultTemplate: PIF_VIEW_DEFAULT_TEMPLATE, variables: [
         { name: 'BRAND', description: 'e.g. "Logitech"', required: true, category: 'deterministic' },
         { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
+        { name: 'CATEGORY_CONTEXT', description: 'Global category identity line, e.g. "Category: mouse". Empty only when category is missing. Edit text via Global Prompts (categoryContext).', required: true, category: 'global-fragment' },
         { name: 'VARIANT_DESC', description: 'e.g. the "black" color variant — or the "COD BO6" edition', required: true, category: 'deterministic' },
         { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
         { name: 'DISCOVERY_IDENTITY_GATE', description: 'Global exact-product/source-confidence/acceptance-checklist gate for PIF view discovery. Includes extra family and variant collision rules only when that context exists.', required: true, category: 'deterministic' },
@@ -239,12 +245,14 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
         { field: 'brand', description: 'e.g. "Logitech"' },
         { field: 'model', description: 'e.g. "G502 X Plus"' },
         { field: 'base_model', description: 'e.g. "G502 X"' },
+        { field: 'category', description: 'e.g. "mouse"' },
         { field: 'variant_label', description: 'e.g. "black" or "COD BO6 Edition"' },
         { field: 'variant_type', description: '"color" or "edition"' },
       ] },
       { promptKey: 'hero', label: 'Hero Search Prompt', storageScope: 'module', moduleId: 'productImageFinder', settingKey: 'heroPromptOverride', defaultTemplate: PIF_HERO_DEFAULT_TEMPLATE, variables: [
         { name: 'BRAND', description: 'e.g. "Logitech" — available for use in custom overrides. The default template does not reference it directly; it is consumed inside {{IDENTITY_INTRO}}.', required: false, category: 'deterministic' },
         { name: 'MODEL', description: 'e.g. "G502 X Plus" — available for use in custom overrides. The default template does not reference it directly; it is consumed inside {{IDENTITY_INTRO}}.', required: false, category: 'deterministic' },
+        { name: 'CATEGORY_CONTEXT', description: 'Global category identity line, e.g. "Category: mouse". Empty only when category is missing. Edit text via Global Prompts (categoryContext).', required: true, category: 'global-fragment' },
         { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant. Consumed inside {{IDENTITY_INTRO}}.', required: false, category: 'deterministic' },
         { name: 'HERO_INSTRUCTIONS', description: 'Built-in hero search rules block inserted into the full prompt template', required: true, category: 'deterministic' },
         { name: 'PRODUCT_IMAGE_IDENTITY_FACTS', description: 'Resolved Field Studio product_image_dependent facts injected into PIF hero search prompts. Empty when no enabled facts are resolved.', required: false, category: 'deterministic' },
@@ -256,6 +264,7 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
         { field: 'brand', description: 'e.g. "Logitech"' },
         { field: 'model', description: 'e.g. "G502 X Plus"' },
         { field: 'base_model', description: 'e.g. "G502 X"' },
+        { field: 'category', description: 'e.g. "mouse"' },
         { field: 'variant_label', description: 'e.g. "black"' },
         { field: 'variant_type', description: '"color" or "edition"' },
       ] },
@@ -266,7 +275,7 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
 // WHY: O(1) overlay for every scalar finder (variantFieldProducer modules).
 // A new scalar finder (e.g. priceFinder) declares `defaultTemplateExport` in
 // its FINDER_MODULES entry and codegen emits FINDER_SCALAR_DEFAULT_TEMPLATES.
-// The prompt_templates array (9 variables + 5 user-message fields) is derived
+// The prompt_templates array (16 variables + 6 user-message fields) is derived
 // from the shared buildScalarFinderPromptTemplates contract — zero per-finder
 // duplication here. RDF + SKU used to have 30-line hand-written blocks; now
 // they flow through this single loop.

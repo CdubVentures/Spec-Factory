@@ -19,6 +19,7 @@ export const KEY_FINDER_VARIABLES = Object.freeze([
   { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
   { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" \u2014 empty when no variant', required: false, category: 'deterministic' },
   { name: 'CATEGORY', description: 'e.g. "mouse"', required: false, category: 'deterministic' },
+  { name: 'CATEGORY_CONTEXT', description: 'Global category identity line, e.g. "Category: mouse". Empty only when category is missing. Edit text via Global Prompts (categoryContext).', required: true, category: 'global-fragment' },
   { name: 'FAMILY_SIZE', description: 'Product-family size sharing brand + base_model (e.g. "3")', required: false, category: 'deterministic' },
 
   // Primary key (deterministic, field-rule driven)
@@ -62,6 +63,7 @@ export const KEY_FINDER_VARIABLES = Object.freeze([
 export const KEY_FINDER_USER_MESSAGE_INFO = Object.freeze([
   { field: 'brand', description: 'e.g. "Logitech"' },
   { field: 'model', description: 'e.g. "G502 X Plus"' },
+  { field: 'category', description: 'e.g. "mouse"' },
   { field: 'primary_field_key', description: 'The field_key this call targets as primary' },
   { field: 'passenger_count', description: 'Number of passenger keys bundled into this call (0 when solo)' },
   { field: 'family_size', description: 'Product-family size sharing brand + base_model' },

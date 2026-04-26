@@ -124,7 +124,7 @@ export function createGuiServerRuntime({
       },
       domain: {
         normalizeLower, isMeaningfulValue, candidateLooksReference,
-        buildCatalog, patchCompiledComponentDb,
+        buildCatalog, buildCatalogRow, patchCompiledComponentDb,
       },
     } = bootstrapServer({ projectRoot });
 
@@ -215,7 +215,7 @@ export function createGuiServerRuntime({
         listFiles, resolveCategoryAlias, appDb,
       }),
       catalogRouteContext: createCatalogRouteContext({
-        jsonRes, readJsonBody, toInt, config, storage, buildCatalog,
+        jsonRes, readJsonBody, toInt, config, storage, buildCatalog, buildCatalogRow,
         readJsonlEvents, fs, path, OUTPUT_ROOT, sessionCache,
         resolveCategoryAlias, listDirs, HELPER_ROOT, broadcastWs, getSpecDb, appDb,
       }),

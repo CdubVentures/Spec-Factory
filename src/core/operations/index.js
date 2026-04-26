@@ -15,7 +15,11 @@ export {
   getOperationSignal,
   countRunningOperations,
   dismissOperation,
+  getOperation,
+  listOperationSummaries,
   listOperations,
+  summarizeLlmCall,
+  summarizeOperation,
   acquireKeyLock,
   releaseKeyLock,
 } from './operationsRegistry.js';

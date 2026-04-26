@@ -3,6 +3,7 @@ import path from 'node:path';
 import { normalizeLower, isMeaningfulValue, candidateLooksReference } from '../../../features/review/domain/reviewCandidateRuntime.js';
 import {
   createCatalogBuilder,
+  createCatalogRowBuilder,
   createCompiledComponentDbPatcher,
 } from '../catalogHelpers.js';
 import { safeReadJson, listFiles } from '../../../shared/fileHelpers.js';
@@ -13,6 +14,10 @@ export function createBootstrapDomainRuntimes({
 
   // ── Catalog builder (SQL-first: reads from specDb products + field_candidates) ──
   const buildCatalog = createCatalogBuilder({
+    getSpecDb,
+    cleanVariant,
+  });
+  const buildCatalogRow = createCatalogRowBuilder({
     getSpecDb,
     cleanVariant,
   });
@@ -29,6 +34,6 @@ export function createBootstrapDomainRuntimes({
     // Review candidate
     normalizeLower, isMeaningfulValue, candidateLooksReference,
     // Catalog
-    buildCatalog, patchCompiledComponentDb,
+    buildCatalog, buildCatalogRow, patchCompiledComponentDb,
   };
 }

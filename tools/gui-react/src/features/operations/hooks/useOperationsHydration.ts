@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useOperationsStore, type Operation } from '../state/operationsStore.ts';
+import { useOperationsStore, type OperationUpsert } from '../state/operationsStore.ts';
 import { api } from '../../../api/client.ts';
 
 /**
@@ -11,7 +11,7 @@ export function useOperationsHydration(): void {
 
   useEffect(() => {
     let cancelled = false;
-    api.get<Operation[]>('/operations')
+    api.get<OperationUpsert[]>('/operations')
       .then((ops) => {
         if (cancelled) return;
         for (const op of ops) upsert(op);

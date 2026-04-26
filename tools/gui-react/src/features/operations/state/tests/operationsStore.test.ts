@@ -85,12 +85,21 @@ describe('operationsStore (characterization)', () => {
       assert.equal(getOps().get('op-1')?.queueDelayMs, 500);
     });
 
-    it('preserves accumulated llmCalls from store', () => {
+    it('uses incoming llmCalls when a full detail upsert includes them', () => {
       const call = { callIndex: 0, timestamp: '', prompt: { system: '', user: '' }, response: null };
       useOperationsStore.getState().upsert(makeOp());
-      useOperationsStore.getState().appendLlmCall('op-1', call);
-      useOperationsStore.getState().upsert(makeOp());
+      useOperationsStore.getState().upsert(makeOp({ llmCalls: [call] }));
       assert.equal(getOps().get('op-1')?.llmCalls.length, 1);
+    });
+
+    it('drops accumulated llmCalls when a summary upsert omits llmCalls', () => {
+      const call = { callIndex: 0, timestamp: '', prompt: { system: 'heavy', user: 'payload' }, response: null };
+      useOperationsStore.getState().upsert(makeOp());
+      useOperationsStore.getState().appendLlmCall('op-1', call);
+      const summary = { ...makeOp({ currentStageIndex: 2 }) };
+      delete (summary as { llmCalls?: unknown }).llmCalls;
+      useOperationsStore.getState().upsert(summary as Operation);
+      assert.equal(getOps().get('op-1')?.llmCalls.length, 0);
     });
   });
 

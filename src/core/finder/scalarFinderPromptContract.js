@@ -4,11 +4,11 @@
  * WHY: RDF, SKU (and future variant-scoped scalar finders — price, msrp,
  * discontinued, upc) all share the same GUI contract for the Discovery
  * Prompt editor:
- *   - 15 canonical template variables (BRAND, MODEL, VARIANT_*, IDENTITY_*,
- *     EVIDENCE_REQUIREMENTS, VALUE_CONFIDENCE_GUIDANCE, SOURCE_GUIDANCE,
- *     VARIANT_DISAMBIGUATION, UNK_POLICY, SIBLING_VARIANTS, PREVIOUS_DISCOVERY,
- *     SCALAR_RETURN_JSON_TAIL)
- *   - 5 canonical user-message fields
+ *   - 16 canonical template variables (BRAND, MODEL, CATEGORY_CONTEXT,
+ *     VARIANT_*, IDENTITY_*, EVIDENCE_REQUIREMENTS,
+ *     VALUE_CONFIDENCE_GUIDANCE, SOURCE_GUIDANCE, VARIANT_DISAMBIGUATION,
+ *     UNK_POLICY, SIBLING_VARIANTS, PREVIOUS_DISCOVERY, SCALAR_RETURN_JSON_TAIL)
+ *   - 6 canonical user-message fields
  *   - storage scope 'module' with settingKey 'discoveryPromptTemplate'
  *
  * Registration auto-wires two globals:
@@ -33,6 +33,7 @@ import {
 export const SCALAR_FINDER_VARIABLES = Object.freeze([
   { name: 'BRAND', description: 'e.g. "Logitech"', required: true, category: 'deterministic' },
   { name: 'MODEL', description: 'e.g. "G502 X Plus"', required: true, category: 'deterministic' },
+  { name: 'CATEGORY_CONTEXT', description: 'Global category identity line, e.g. "Category: mouse". Empty only when category is missing. Edit text via Global Prompts (categoryContext).', required: true, category: 'global-fragment' },
   { name: 'VARIANT_DESC', description: 'e.g. the "black" color variant — or the "COD BO6" edition', required: true, category: 'deterministic' },
   { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant', required: false, category: 'deterministic' },
   { name: 'VARIANT_TYPE_WORD', description: '"color" or "edition"', required: false, category: 'deterministic' },
@@ -52,6 +53,7 @@ export const SCALAR_FINDER_USER_MESSAGE_INFO = Object.freeze([
   { field: 'brand', description: 'e.g. "Logitech"' },
   { field: 'model', description: 'e.g. "G502 X Plus"' },
   { field: 'base_model', description: 'e.g. "G502 X"' },
+  { field: 'category', description: 'e.g. "mouse"' },
   { field: 'variant_label', description: 'e.g. "black" or "COD BO6 Edition"' },
   { field: 'variant_type', description: '"color" or "edition"' },
 ]);

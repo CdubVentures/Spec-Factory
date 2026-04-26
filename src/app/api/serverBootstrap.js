@@ -43,7 +43,7 @@ export const BOOTSTRAP_RETURN_GROUPS = {
   helpers: ['toInt', 'toFloat', 'toUnitRatio', 'hasKnownValue', 'safeReadJson', 'safeStat', 'listFiles', 'listDirs', 'readJsonlEvents', 'safeJoin', 'canonicalSlugify', 'invalidateFieldRulesCache', 'loadCategoryConfig'],
   domain: [
     'normalizeLower', 'isMeaningfulValue', 'candidateLooksReference',
-    'buildCatalog', 'patchCompiledComponentDb',
+    'buildCatalog', 'buildCatalogRow', 'patchCompiledComponentDb',
   ],
 };
 
