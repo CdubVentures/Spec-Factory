@@ -50,6 +50,7 @@ import { resolveViewPrompt, viewPromptSettingKey } from './viewPromptDefaults.js
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
 import { readProductImages, mergeProductImageDiscovery } from './productImageStore.js';
 import { matchVariant } from './variantMatch.js';
+import { resolveProductImageIdentityFacts } from './productImageIdentityDependencies.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { processImage, processHeroImage, loadModel, releaseModel, setInferenceConcurrency } from './imageProcessor.js';
 import { ensureModelReady } from './modelDownloader.js';
@@ -335,6 +336,7 @@ async function runSingleVariant({
   llmCallExtras = {},
   onPhaseChange = null,
   alreadyDownloadedUrls = new Set(),
+  productImageIdentityFacts = null,
 }) {
   // WHY: Self-heal dedup sets when caller did not provide them.
   // The carousel loop path (executeOneCall) does not pass alreadyDownloadedUrls,
@@ -372,6 +374,11 @@ async function runSingleVariant({
   const qualityKey = mode === 'hero' ? 'hero' : 'top';
   const promptMinWidth = viewQualityMap[qualityKey]?.minWidth || 600;
   const promptMinHeight = viewQualityMap[qualityKey]?.minHeight || 400;
+  const resolvedProductImageIdentityFacts = productImageIdentityFacts || resolveProductImageIdentityFacts({
+    specDb,
+    product,
+    variant,
+  });
 
   let response, usage;
   try {
@@ -390,6 +397,7 @@ async function runSingleVariant({
       previousDiscovery: previousDiscovery || { urlsChecked: [], queriesRun: [] },
       scopeLabel,
       promptOverride,
+      productImageIdentityFacts: resolvedProductImageIdentityFacts,
       mode,
       llmCallLabel,
       llmCallExtras,
@@ -802,11 +810,16 @@ export async function runProductImageFinder({
           dbOverride: finderStore.getSetting(viewPromptSettingKey('additional', k)) || '',
         }),
       }));
+    const productImageIdentityFacts = resolveProductImageIdentityFacts({
+      specDb,
+      product,
+      variant,
+    });
 
     const promptBuilder = mode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
     const promptArgs = mode === 'hero'
-      ? resolveHeroPromptInputs({ product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, heroPromptOverride })
-      : resolveViewPromptInputs({ product, variant, allVariants, priorityViews, additionalViews, viewQualityMap, minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, viewPromptOverride });
+      ? resolveHeroPromptInputs({ product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, heroPromptOverride, productImageIdentityFacts })
+      : resolveViewPromptInputs({ product, variant, allVariants, priorityViews, additionalViews, viewQualityMap, minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, viewPromptOverride, productImageIdentityFacts });
     const systemPrompt = promptBuilder(promptArgs);
     const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
 
@@ -844,6 +857,7 @@ export async function runProductImageFinder({
       llmCallExtras,
       onPhaseChange: onStageAdvance,
       alreadyDownloadedUrls,
+      productImageIdentityFacts,
     });
 
     const variantDurationMs = Date.now() - variantStartMs;
@@ -1241,12 +1255,17 @@ export async function runCarouselLoop({
           }),
         }));
     }
+    const productImageIdentityFacts = resolveProductImageIdentityFacts({
+      specDb,
+      product,
+      variant,
+    });
 
     // Build prompt BEFORE call so operations modal shows it immediately
     const promptBuilder = callMode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
     const promptArgs = callMode === 'hero'
-      ? resolveHeroPromptInputs({ product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, heroPromptOverride })
-      : resolveViewPromptInputs({ product, variant, allVariants, priorityViews, additionalViews, viewQualityMap, minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, viewPromptOverride });
+      ? resolveHeroPromptInputs({ product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, heroPromptOverride, productImageIdentityFacts })
+      : resolveViewPromptInputs({ product, variant, allVariants, priorityViews, additionalViews, viewQualityMap, minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, viewPromptOverride, productImageIdentityFacts });
     const systemPrompt = promptBuilder(promptArgs);
     const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
 
@@ -1285,6 +1304,7 @@ export async function runCarouselLoop({
         mode: callMode,
       },
       onPhaseChange: onStageAdvance,
+      productImageIdentityFacts,
     });
 
     const callDurationMs = Date.now() - callStartMs;

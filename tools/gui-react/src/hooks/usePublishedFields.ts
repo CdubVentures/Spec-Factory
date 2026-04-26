@@ -29,7 +29,6 @@ export function usePublishedFields(category: string | undefined, productId: stri
     queryFn: () => api.get<PublishedFieldsResponse>(`/publisher/${category}/published/${productId}`),
     enabled: Boolean(category && productId),
     staleTime: 10_000,
-    refetchInterval: 30_000,
   });
 
   const published = data?.fields ?? {};

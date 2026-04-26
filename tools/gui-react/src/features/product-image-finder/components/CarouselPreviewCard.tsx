@@ -33,7 +33,7 @@ export const CarouselPreviewCard = memo(function CarouselPreviewCard({ slides, o
               ))}
             </div>
             <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity pif-mosaic-overlay">
-              <span className="text-white text-lg">{'\u26F6'}</span>
+              <span className="sf-overlay-text-strong text-lg">{'\u26F6'}</span>
             </div>
           </>
         ) : (

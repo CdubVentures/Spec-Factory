@@ -275,6 +275,8 @@ html[data-sf-theme='sand'] {
   --sf-color-accent-rgb: 212 168 83;
   --sf-color-accent-strong-rgb: 184 134 11;
   --sf-color-run-ai-rgb: 147 51 234;
+  /* Sand accent is bright gold \u2014 white text fails contrast; use dark warm text */
+  --sf-token-on-accent-fg: #2c2416;
 }
 
 /* Rose — soft blush/lavender surfaces, pink/mauve accents */
@@ -304,6 +306,8 @@ html[data-sf-theme='rose'] {
   --sf-color-accent-rgb: 212 97 155;
   --sf-color-accent-strong-rgb: 183 69 131;
   --sf-color-run-ai-rgb: 147 51 234;
+  /* Rose accent is medium pink \u2014 dark plum text reads better than white */
+  --sf-token-on-accent-fg: #2c1622;
 }
 
 /* Ember — charcoal/warm gray surfaces, amber/orange accents */
@@ -350,6 +354,8 @@ html[data-sf-theme='ember'] {
   --sf-color-accent-rgb: 232 116 42;
   --sf-color-accent-strong-rgb: 245 158 11;
   --sf-color-run-ai-rgb: 192 132 252;
+  /* Ember accent is bright orange \u2014 dark text reads better than white */
+  --sf-token-on-accent-fg: #1a0f08;
 }
 
 /* Forest — deep green/teal surfaces, emerald accents */
@@ -880,6 +886,8 @@ html[data-sf-theme='arcade'] {
   --sf-color-accent-rgb: 46 204 64;
   --sf-color-accent-strong-rgb: 37 168 53;
   --sf-color-run-ai-rgb: 147 51 234;
+  /* Arcade accent is neon green \u2014 dark text reads better than white */
+  --sf-token-on-accent-fg: #0a1d0d;
 }
 
 /* Funhaus — colorful flat design on deep steel-blue, playful */
@@ -1072,6 +1080,8 @@ html[data-sf-theme='hightech'] {
   --sf-color-accent-rgb: 230 126 34;
   --sf-color-accent-strong-rgb: 200 106 24;
   --sf-color-run-ai-rgb: 147 51 234;
+  /* Hightech accent is burnt orange \u2014 dark text reads better than white */
+  --sf-token-on-accent-fg: #1a1c20;
 }
 
 /* Cosmos — deep space midnight navy, blue stellar glow */
@@ -1733,6 +1743,111 @@ html[data-sf-radius] {
   --sf-radius-status: var(--sf-token-radius-status);
   --sf-radius-chip: var(--sf-token-radius-chip);
   --sf-radius-callout: var(--sf-token-radius-callout);
+  /* WHY: legacy/short alias names referenced across components. Each must
+     resolve to a real theme-aware token, not a hardcoded fallback. Adding
+     these prevents "white pill in dark theme" bugs caused by undefined
+     var() references silently using their hex fallback. */
+  --sf-token-surface-alt: var(--sf-token-surface-base);
+  --sf-token-surface-soft: rgb(var(--sf-color-surface-elevated-rgb) / 0.6);
+  --sf-token-surface-hover: var(--sf-token-surface-elevated);
+  --sf-token-border-soft: rgb(var(--sf-color-border-default-rgb) / 0.5);
+  --sf-token-text-dim: var(--sf-token-text-subtle);
+  --sf-color-text-dim-rgb: var(--sf-color-text-subtle-rgb);
+  --sf-token-accent-light: rgb(var(--sf-color-accent-rgb) / 0.6);
+  --sf-token-accent-bg: rgb(var(--sf-color-accent-rgb) / 0.15);
+  --sf-token-success: var(--sf-token-state-success-fg);
+  --sf-token-warning: var(--sf-token-state-warning-fg);
+  --sf-token-info: var(--sf-token-state-info-fg);
+  --sf-token-danger: var(--sf-token-state-error-fg);
+  --sf-token-muted: var(--sf-token-text-muted);
+  --sf-token-state-danger-fg: var(--sf-token-state-error-fg);
+  --sf-color-surface-default-rgb: var(--sf-color-surface-rgb);
+  /* Short legacy aliases */
+  --sf-success: var(--sf-token-state-success-fg);
+  --sf-warning: var(--sf-token-state-warning-fg);
+  --sf-info: var(--sf-token-state-info-fg);
+  --sf-error: var(--sf-token-state-error-fg);
+  --sf-warning-bg: var(--sf-token-state-warning-bg);
+  --sf-error-bg: var(--sf-token-state-error-bg);
+  --sf-info-bg: var(--sf-token-state-info-bg);
+  --sf-warning-text: var(--sf-token-state-warning-fg);
+  --sf-status-danger: var(--sf-token-state-error-fg);
+  --sf-accent: var(--sf-token-accent);
+  --sf-text-muted: rgb(var(--sf-color-text-muted-rgb));
+  --sf-surface-elevated: var(--sf-token-surface-elevated);
+  --sf-font-mono: var(--sf-token-font-family-mono);
+  --sf-purple-fg: var(--sf-token-state-timeout-fg);
+  --sf-teal-fg: var(--sf-token-state-info-fg);
+  /* Picker accent: subtle accent variants for the indexing picker panel */
+  --sf-picker-accent-bg: rgb(var(--sf-color-accent-rgb) / 0.10);
+  --sf-picker-accent-border: rgb(var(--sf-color-accent-rgb) / 0.40);
+  --sf-picker-accent-fg: var(--sf-token-accent);
+  /* Billing chart palette \u2014 categorical colors per pipeline group.
+     Defined as theme-overridable tokens so different themes can re-skin the
+     billing dashboard. Defaults match the previous hardcoded fallbacks. */
+  --sf-billing-writer-1: #495057;
+  --sf-billing-pipeline-1: #748ffc;
+  --sf-billing-pipeline-2: #5c7cfa;
+  --sf-billing-pipeline-3: #4c6ef5;
+  --sf-billing-pipeline-4: #4263eb;
+  --sf-billing-color-1: #da77f2;
+  --sf-billing-color-2: #be4bdb;
+  --sf-billing-image-1: #ff922b;
+  --sf-billing-image-2: #fd7e14;
+  --sf-billing-image-3: #f76707;
+  --sf-billing-image-4: #e8590c;
+  --sf-billing-releasedate-1: #fcc419;
+  --sf-billing-sku-1: #ae3ec9;
+  --sf-billing-keyfinder-1: #66d9e8;
+  --sf-billing-keyfinder-2: #22b8cf;
+  --sf-billing-keyfinder-3: #0c8599;
+  --sf-billing-keyfinder-4: #0b7285;
+  --sf-billing-other-1: #94a3b8;
+  --sf-cost-accent: var(--sf-token-accent-strong);
+  /* Foreground color for content placed on top of an accent/state-colored
+     surface (e.g., primary button text on accent bg, badge labels on
+     colored chips). Typically white but theme-overridable for themes whose
+     accent palette demands a darker on-color contrast. */
+  --sf-token-on-accent-fg: #ffffff;
+  /* Shadow color primitive \u2014 themes can shift to deeper or warmer black */
+  --sf-token-shadow-color-rgb: 0 0 0;
+  /* Overlay text colors for content placed on overlay-surface/overlay-backdrop
+     (e.g., image lightbox captions, video stream banners). Always near-white
+     for contrast against the universal-dark overlay surface; theme-overridable
+     for themes that want a tinted overlay text (e.g., warm-amber dawn). */
+  --sf-token-overlay-text-strong: rgb(255 255 255 / 1);
+  --sf-token-overlay-text-soft:   rgb(255 255 255 / 0.85);
+  --sf-token-overlay-text-muted:  rgb(255 255 255 / 0.6);
+  --sf-token-overlay-text-subtle: rgb(255 255 255 / 0.4);
+  /* HIW info-banner palette tokens (Finder How-It-Works section).
+     Defined here so any theme can re-skin the help banner. */
+  --sf-hiw-bg: rgb(var(--sf-color-accent-rgb) / 0.08);
+  --sf-hiw-border: rgb(var(--sf-color-accent-rgb) / 0.25);
+  --sf-hiw-fg: var(--sf-token-accent);
+  /* History action accent (brown/amber). Distinct from primary/secondary
+     so per-variant history buttons stand out. Theme-overridable. */
+  --sf-token-history-fg: rgb(184 134 81);
+  --sf-token-history-fg-dark: rgb(224 196 156);
+  --sf-token-history-border: rgb(184 134 81 / 0.55);
+  --sf-token-history-bg-hover: rgb(184 134 81 / 0.12);
+  --sf-token-history-bg-hover-dark: rgb(184 134 81 / 0.18);
+  /* Source-kind palette (light defaults). Each query family / source kind
+     gets its own bg/fg pair, themable per theme. */
+  --sf-token-source-manufacturer-bg: #2563eb; --sf-token-source-manufacturer-fg: #ffffff;
+  --sf-token-source-manual-bg:       #7c3aed; --sf-token-source-manual-fg:       #ffffff;
+  --sf-token-source-support-bg:      #0891b2; --sf-token-source-support-fg:      #ffffff;
+  --sf-token-source-review-bg:       #059669; --sf-token-source-review-fg:       #ffffff;
+  --sf-token-source-benchmark-bg:    #0d9488; --sf-token-source-benchmark-fg:    #ffffff;
+  --sf-token-source-targeted-bg:     #f97316; --sf-token-source-targeted-fg:     #ffffff;
+  --sf-token-source-spec-bg:         #4f46e5; --sf-token-source-spec-fg:         #ffffff;
+  --sf-token-source-fallback-bg:     #64748b; --sf-token-source-fallback-fg:     #ffffff;
+  --sf-token-source-unknown-bg:      #6b7280; --sf-token-source-unknown-fg:      #ffffff;
+  /* Tier-category palette (light defaults). */
+  --sf-token-tier-brand-bg:         #e11d48; --sf-token-tier-brand-fg:         #ffffff;
+  --sf-token-tier-specification-bg: #2563eb; --sf-token-tier-specification-fg: #ffffff;
+  --sf-token-tier-sources-bg:       #7c3aed; --sf-token-tier-sources-fg:       #ffffff;
+  --sf-token-tier-groups-bg:        #f59e0b; --sf-token-tier-groups-fg:        #ffffff;
+  --sf-token-tier-single-bg:        #059669; --sf-token-tier-single-fg:        #ffffff;
 }
 
 /* ── Scrollbars (theme-aware) ── */
@@ -5732,6 +5847,24 @@ html[data-sf-theme-mode='dark'] .sf-callout-neutral {
   border-color: rgb(var(--sf-color-accent-rgb) / 0.34);
 }
 
+.sf-callout-timeout {
+  color: var(--sf-token-state-timeout-fg);
+  background: var(--sf-token-state-timeout-bg);
+  border-color: var(--sf-token-state-timeout-border);
+}
+
+.sf-callout-key {
+  color: var(--sf-token-state-key-fg);
+  background: var(--sf-token-state-key-bg);
+  border-color: var(--sf-token-state-key-border);
+}
+
+.sf-callout-neutral {
+  color: var(--sf-token-text-muted);
+  background: rgb(var(--sf-color-text-muted-rgb) / 0.10);
+  border-color: rgb(var(--sf-color-text-muted-rgb) / 0.25);
+}
+
 .sf-text-caption {
   font-size: var(--sf-token-font-size-caption);
   line-height: var(--sf-token-line-height-tight);
@@ -7258,6 +7391,79 @@ html[data-sf-theme='slate'] .sf-theme-swatch-card-selected {
   background: rgb(var(--sf-color-accent-rgb) / 0.14);
 }
 
+/* WHY: ReviewValueCell trigger hover \u2014 a faint tint that adapts to theme
+   instead of hardcoded black/5 light-mode + white/5 dark-mode pair. */
+.sf-review-value-cell-trigger:hover {
+  background: rgb(var(--sf-color-text-primary-rgb) / 0.06);
+}
+
+/* Overlay text utilities \u2014 for content placed on overlay-surface/backdrop
+   (image lightboxes, video stream banners). Uses --sf-token-overlay-text-*
+   so any theme can re-skin the overlay text palette. */
+.sf-overlay-text-strong { color: var(--sf-token-overlay-text-strong); }
+.sf-overlay-text-soft   { color: var(--sf-token-overlay-text-soft); }
+.sf-overlay-text-muted  { color: var(--sf-token-overlay-text-muted); }
+.sf-overlay-text-subtle { color: var(--sf-token-overlay-text-subtle); }
+.sf-overlay-text-button {
+  color: var(--sf-token-overlay-text-muted);
+  transition: color 120ms ease;
+}
+.sf-overlay-text-button:hover {
+  color: var(--sf-token-overlay-text-strong);
+}
+
+/* Consumer-badge utility classes \u2014 read from --sf-token-consumer-*
+   tokens (themable per-theme, including mid-tone overrides). Used by
+   SystemBadges + StaticBadges + any other workbench consumer chip. */
+.sf-badge-consumer-idx  { background: var(--sf-token-consumer-idx-bg);  color: var(--sf-token-consumer-idx-fg);  border: 1px solid var(--sf-token-consumer-idx-border); }
+.sf-badge-consumer-eng  { background: var(--sf-token-consumer-eng-bg);  color: var(--sf-token-consumer-eng-fg);  border: 1px solid var(--sf-token-consumer-eng-border); }
+.sf-badge-consumer-rev  { background: var(--sf-token-consumer-rev-bg);  color: var(--sf-token-consumer-rev-fg);  border: 1px solid var(--sf-token-consumer-rev-border); }
+.sf-badge-consumer-flag { background: var(--sf-token-consumer-flag-bg); color: var(--sf-token-consumer-flag-fg); border: 1px solid var(--sf-token-consumer-flag-border); }
+.sf-badge-consumer-seed { background: var(--sf-token-consumer-seed-bg); color: var(--sf-token-consumer-seed-fg); border: 1px solid var(--sf-token-consumer-seed-border); }
+.sf-badge-consumer-comp { background: var(--sf-token-consumer-comp-bg); color: var(--sf-token-consumer-comp-fg); border: 1px solid var(--sf-token-consumer-comp-border); }
+.sf-badge-consumer-val  { background: var(--sf-token-consumer-val-bg);  color: var(--sf-token-consumer-val-fg);  border: 1px solid var(--sf-token-consumer-val-border); }
+.sf-badge-consumer-pub  { background: var(--sf-token-consumer-pub-bg);  color: var(--sf-token-consumer-pub-fg);  border: 1px solid var(--sf-token-consumer-pub-border); }
+.sf-badge-consumer-llm  { background: var(--sf-token-consumer-llm-bg);  color: var(--sf-token-consumer-llm-fg);  border: 1px solid var(--sf-token-consumer-llm-border); }
+.sf-badge-consumer-dim {
+  background: rgb(var(--sf-color-text-subtle-rgb) / 0.10);
+  color: var(--sf-token-text-subtle);
+  border: 1px solid rgb(var(--sf-color-text-subtle-rgb) / 0.30);
+  text-decoration: line-through;
+}
+
+/* Source-kind palette \u2014 used by indexing query family badges + cross-feature
+   source provenance chips. Each token group is themable. */
+.sf-source-manufacturer { background: var(--sf-token-source-manufacturer-bg); color: var(--sf-token-source-manufacturer-fg); }
+.sf-source-manual       { background: var(--sf-token-source-manual-bg);       color: var(--sf-token-source-manual-fg); }
+.sf-source-support      { background: var(--sf-token-source-support-bg);      color: var(--sf-token-source-support-fg); }
+.sf-source-review       { background: var(--sf-token-source-review-bg);       color: var(--sf-token-source-review-fg); }
+.sf-source-benchmark    { background: var(--sf-token-source-benchmark-bg);    color: var(--sf-token-source-benchmark-fg); }
+.sf-source-targeted     { background: var(--sf-token-source-targeted-bg);     color: var(--sf-token-source-targeted-fg); }
+.sf-source-spec         { background: var(--sf-token-source-spec-bg);         color: var(--sf-token-source-spec-fg); }
+.sf-source-fallback     { background: var(--sf-token-source-fallback-bg);     color: var(--sf-token-source-fallback-fg); }
+.sf-source-unknown      { background: var(--sf-token-source-unknown-bg);      color: var(--sf-token-source-unknown-fg); }
+
+/* Tier-category palette \u2014 used by NeedSetProfileInfluence and any
+   tier/category provenance chip. */
+.sf-tier-brand         { background: var(--sf-token-tier-brand-bg);         color: var(--sf-token-tier-brand-fg); }
+.sf-tier-specification { background: var(--sf-token-tier-specification-bg); color: var(--sf-token-tier-specification-fg); }
+.sf-tier-sources       { background: var(--sf-token-tier-sources-bg);       color: var(--sf-token-tier-sources-fg); }
+.sf-tier-groups        { background: var(--sf-token-tier-groups-bg);        color: var(--sf-token-tier-groups-fg); }
+.sf-tier-single        { background: var(--sf-token-tier-single-bg);        color: var(--sf-token-tier-single-fg); }
+
+/* Overlay surface backgrounds \u2014 used by lightboxes and image viewers */
+.sf-overlay-surface-deep-bg { background-color: var(--sf-token-overlay-surface-deep); }
+.sf-overlay-backdrop-bg { background-color: var(--sf-token-overlay-backdrop); }
+.sf-overlay-strong-bg { background-color: var(--sf-token-overlay-strong); }
+.sf-overlay-button-strong-bg {
+  background-color: var(--sf-token-overlay-button-strong);
+  transition: background-color 120ms ease;
+}
+.sf-overlay-button-strong-bg:hover {
+  background-color: var(--sf-token-overlay-backdrop);
+}
+.hover\:sf-overlay-backdrop-bg:hover { background-color: var(--sf-token-overlay-backdrop); }
+
 .sf-table-row.sf-table-row-danger {
   background: rgb(var(--sf-color-danger-rgb, 239 68 68) / 0.08);
 }
@@ -7388,6 +7594,8 @@ html[data-sf-theme-mode='dark'] .sf-chip-purple {
 /* ── LLM Calls Dashboard: Amber text for slow durations ─── */
 
 .sf-text-amber { color: var(--sf-token-state-warning-fg); }
+.sf-text-timeout { color: var(--sf-token-state-timeout-fg); }
+.sf-text-key { color: var(--sf-token-state-key-fg); }
 
 /* ── Search Worker Panel: Blink cursor animation ─────────── */
 

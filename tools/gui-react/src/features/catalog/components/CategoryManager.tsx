@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
+import { useDataChangeMutation } from '../../data-change/index.js';
 import { useUiStore } from '../../../stores/uiStore.ts';
 import { coerceCategories } from '../../../utils/categoryStoreSync.js';
 
@@ -22,18 +22,19 @@ export function CategoryManager() {
   const setCategories = useUiStore((s) => s.setCategories);
   const activeCategory = useUiStore((s) => s.category);
   const setCategory = useUiStore((s) => s.setCategory);
-  const queryClient = useQueryClient();
 
   const [newName, setNewName] = useState('');
 
-  const addMut = useMutation({
+  const addMut = useDataChangeMutation<CreateCategoryResult, Error, string>({
+    event: 'category-created',
     mutationFn: (name: string) => api.post<CreateCategoryResult>('/categories', { name }),
-    onSuccess: (data) => {
-      if (Array.isArray(data.categories)) {
-        setCategories(coerceCategories(data.categories));
-      }
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-      setNewName('');
+    options: {
+      onSuccess: (data) => {
+        if (Array.isArray(data.categories)) {
+          setCategories(coerceCategories(data.categories));
+        }
+        setNewName('');
+      },
     },
   });
 

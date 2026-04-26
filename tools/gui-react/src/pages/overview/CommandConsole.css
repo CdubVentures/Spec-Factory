@@ -24,7 +24,7 @@
   grid-template-rows: auto auto auto auto;
   gap: var(--sf-cc-row-gap);
   min-width: 0;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 2px rgb(var(--sf-token-shadow-color-rgb) / 0.04);
   color: rgb(var(--sf-color-text-primary-rgb));
 }
 
@@ -106,7 +106,7 @@
   padding: 0 5px;
   border-radius: var(--sf-token-radius-pill);
   background: var(--sf-token-accent, #4263eb);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
   font-weight: 700;
   font-size: var(--sf-token-font-size-caption);
   line-height: var(--sf-token-line-height-none);
@@ -131,7 +131,7 @@
 }
 .sf-cc-btn-clear:hover:not(:disabled) {
   background: var(--sf-token-state-danger-fg, #c92a2a);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
 }
 .sf-cc-btn-clear:disabled {
   border-color: var(--sf-token-border, #e5e9ef);
@@ -322,8 +322,8 @@
 .sf-cc-stepper-seg-done .sf-cc-stepper-label,
 .sf-cc-stepper-seg-error .sf-cc-stepper-label,
 .sf-cc-stepper-seg-cancelled .sf-cc-stepper-label {
-  color: #fff;
-  text-shadow: 0 0 2px rgba(0, 0, 0, 0.45), 0 0 1px rgba(0, 0, 0, 0.4);
+  color: var(--sf-token-on-accent-fg);
+  text-shadow: 0 0 2px rgb(var(--sf-token-shadow-color-rgb) / 0.45), 0 0 1px rgb(var(--sf-token-shadow-color-rgb) / 0.4);
 }
 
 @keyframes sf-cc-pulse {
@@ -364,7 +364,7 @@
 
 .sf-cc-btn-primary {
   background: var(--sf-token-accent, #4263eb);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
   border-color: var(--sf-token-accent, #4263eb);
 }
 .sf-cc-btn-primary:hover:not(:disabled) {
@@ -390,7 +390,7 @@
 }
 .sf-cc-btn-danger:hover:not(:disabled) {
   background: var(--sf-token-state-danger-fg, #c92a2a);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
 }
 
 .sf-cc-btn:disabled {

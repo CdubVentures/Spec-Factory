@@ -33,6 +33,7 @@ import {
 import { resolveViewPrompt, viewPromptSettingKey } from './viewPromptDefaults.js';
 import { readProductImages } from './productImageStore.js';
 import { matchVariant } from './variantMatch.js';
+import { resolveProductImageIdentityFacts } from './productImageIdentityDependencies.js';
 import { accumulateDiscoveryLog } from '../../core/finder/discoveryLog.js';
 import { resolveRunScopeKey, scopeLabelFor } from './runScope.js';
 import { resolveAmbiguityContext } from '../../core/finder/finderOrchestrationHelpers.js';
@@ -65,6 +66,7 @@ export function resolveViewPromptInputs({
   previousDiscovery,
   scopeLabel,
   viewPromptOverride = '',
+  productImageIdentityFacts = [],
 }) {
   return {
     product,
@@ -83,6 +85,7 @@ export function resolveViewPromptInputs({
     previousDiscovery,
     scopeLabel,
     promptOverride: viewPromptOverride,
+    productImageIdentityFacts,
   };
 }
 
@@ -99,6 +102,7 @@ export function resolveHeroPromptInputs({
   previousDiscovery,
   scopeLabel,
   heroPromptOverride = '',
+  productImageIdentityFacts = [],
 }) {
   const heroQuality = (viewQualityMap && viewQualityMap.hero) || {};
   return {
@@ -113,6 +117,7 @@ export function resolveHeroPromptInputs({
     previousDiscovery,
     scopeLabel,
     promptOverride: heroPromptOverride,
+    productImageIdentityFacts,
   };
 }
 
@@ -128,6 +133,7 @@ export function resolveViewEvalPromptInputs({
   candidates,
   evalPromptOverride = '',
   evalCriteria = '',
+  productImageIdentityFacts = [],
 }) {
   return {
     product,
@@ -138,6 +144,7 @@ export function resolveViewEvalPromptInputs({
     candidateCount: candidates.length,
     promptOverride: evalPromptOverride,
     evalCriteria,
+    productImageIdentityFacts,
   };
 }
 
@@ -151,6 +158,7 @@ export function resolveHeroEvalPromptInputs({
   heroPromptOverride = '',
   heroCriteria = '',
   heroCount = 3,
+  productImageIdentityFacts = [],
 }) {
   return {
     product,
@@ -160,6 +168,7 @@ export function resolveHeroEvalPromptInputs({
     promptOverride: heroPromptOverride,
     heroCriteria,
     heroCount,
+    productImageIdentityFacts,
   };
 }
 
@@ -194,6 +203,11 @@ export async function resolvePifPromptContext({
     label: variant.variant_label || variant.variant_key,
     type: variant.variant_type || 'color',
   };
+  const productImageIdentityFacts = resolveProductImageIdentityFacts({
+    specDb,
+    product,
+    variant: variantShape,
+  });
 
   // WHY: Canonicalize variant shape for buildSiblingVariantsPromptBlock which
   // filters by `.key` and reads `.label` / `.type`. Raw DB rows use
@@ -298,6 +312,7 @@ export async function resolvePifPromptContext({
     heroEnabled, heroCount,
     viewPromptOverride, heroPromptOverride,
     evalPromptOverride, heroEvalPromptOverride, heroEvalCriteria,
+    productImageIdentityFacts,
     previousPifRuns, buildPreviousDiscoveryByPool, pifDoc,
     productRoot, modelInfo, finderStore,
   };
@@ -351,6 +366,7 @@ function buildViewPromptEntry(baseCtx, focusView, additionalViews, label, runSco
     previousDiscovery: baseCtx.buildPreviousDiscoveryByPool(runScopeKey),
     scopeLabel: scopeLabelFor(runScopeKey),
     viewPromptOverride: baseCtx.viewPromptOverride,
+    productImageIdentityFacts: baseCtx.productImageIdentityFacts,
   });
   return {
     label,
@@ -373,6 +389,7 @@ function buildHeroPromptEntry(baseCtx, runScopeKey, label = 'hero') {
     previousDiscovery: baseCtx.buildPreviousDiscoveryByPool(runScopeKey),
     scopeLabel: scopeLabelFor(runScopeKey),
     heroPromptOverride: baseCtx.heroPromptOverride,
+    productImageIdentityFacts: baseCtx.productImageIdentityFacts,
   });
   return {
     label,
@@ -533,6 +550,7 @@ export async function compilePifPreviewPrompt(ctx) {
         candidates,
         evalPromptOverride: baseCtx.evalPromptOverride,
         evalCriteria,
+        productImageIdentityFacts: baseCtx.productImageIdentityFacts,
       });
       prompts.push({
         label: `view-eval:${view}`,
@@ -559,6 +577,7 @@ export async function compilePifPreviewPrompt(ctx) {
       heroPromptOverride: baseCtx.heroEvalPromptOverride,
       heroCriteria: baseCtx.heroEvalCriteria,
       heroCount: baseCtx.heroCount,
+      productImageIdentityFacts: baseCtx.productImageIdentityFacts,
     });
     const userText = candidates.map((img, i) => {
       const meta = img.width && img.height

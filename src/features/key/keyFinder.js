@@ -371,10 +371,9 @@ export async function runKeyFinder(opts) {
     family_size: familySize,
   });
 
-  // 8. Invoke LLM via the canonical tracking wrapper. withLlmCallTracking owns
-  // the pending-before / completed-after onLlmCallComplete emission and the
-  // modelTracking.actual* snapshot so the shape stays identical across every
-  // finder — one bug fix in the wrapper propagates to all of them.
+  // 8. Invoke LLM via the canonical tracking wrapper. Direct test seams use
+  // wrapper-owned pending/completed rows; real routed calls own their telemetry
+  // inside the router so fallback/writer rows are not duplicated.
   onStageAdvance?.('Discovery');
 
   const modelTracking = resolveModelTracking({ config, phaseKey: 'keyFinder', onModelResolved });

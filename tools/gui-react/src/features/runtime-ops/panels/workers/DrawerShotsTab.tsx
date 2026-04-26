@@ -113,7 +113,7 @@ export function DrawerShotsTab({ screenshots, runId, workerId, isRunning }: Draw
         >
           <button
             type="button"
-            className="absolute inset-0 bg-black/70"
+            className="absolute inset-0 sf-overlay-strong-bg"
             onClick={() => setLightboxIndex(null)}
             aria-label="Close lightbox"
           />

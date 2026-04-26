@@ -18,9 +18,9 @@ export function isLightColor(hex: string): boolean {
   return (0.299 * r + 0.587 * g + 0.114 * b) > 0.85;
 }
 
-/** Per-color border stop: light colors get a dark fallback so they stay visible. */
+/** Per-color border stop: light colors get a theme-aware shadow tint so they stay visible. */
 export function borderStopColor(hex: string): string {
-  return isLightColor(hex) ? 'rgba(0,0,0,0.2)' : hexToRgba(hex, 0.45);
+  return isLightColor(hex) ? 'rgb(var(--sf-token-shadow-color-rgb) / 0.2)' : hexToRgba(hex, 0.45);
 }
 
 /**

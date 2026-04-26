@@ -37,7 +37,7 @@ export function ImageLightbox({ img, src, category, productId, onClose }: ImageL
     >
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center text-white/60 hover:text-white text-xl pif-lightbox-close"
+        className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center sf-overlay-text-button text-xl pif-lightbox-close"
       >
         {'\u2715'}
       </button>
@@ -48,7 +48,7 @@ export function ImageLightbox({ img, src, category, productId, onClose }: ImageL
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex-1 flex flex-col items-center gap-2 max-h-full">
-            <span className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">
+            <span className="text-[11px] font-semibold sf-overlay-text-muted uppercase tracking-wider">
               {img.view === 'hero' ? 'Cropped 16:9' : 'Processed'}
             </span>
             <div
@@ -58,7 +58,7 @@ export function ImageLightbox({ img, src, category, productId, onClose }: ImageL
             </div>
           </div>
           <div className="flex-1 flex flex-col items-center gap-2 max-h-full">
-            <span className="text-[11px] font-semibold text-white/60 uppercase tracking-wider">Original</span>
+            <span className="text-[11px] font-semibold sf-overlay-text-muted uppercase tracking-wider">Original</span>
             <div className="flex items-center justify-center flex-1 rounded-lg overflow-hidden">
               <img src={originalSrc} alt={`${img.view} original`} className="max-w-full max-h-[75vh] object-contain" />
             </div>
@@ -77,9 +77,9 @@ export function ImageLightbox({ img, src, category, productId, onClose }: ImageL
         <Chip label={`Run #${img.run_number}`} className="sf-chip-info" />
         <Chip label={img.view} className="sf-chip-neutral" />
         {hasOriginal && <Chip label={img.bg_removed ? (img.view === 'hero' ? 'Cropped' : 'BG Removed') : 'RAW'} className={img.bg_removed ? 'sf-chip-success' : 'sf-chip-neutral'} />}
-        <span className="text-[12px] text-white/80 font-mono">{formatBytes(img.bytes)}</span>
-        {dims && <span className="text-[12px] text-white/60 font-mono">{dims}px</span>}
-        <span className="text-[12px] text-white/50">{img.variant_label || img.variant_key}</span>
+        <span className="text-[12px] sf-overlay-text-soft font-mono">{formatBytes(img.bytes)}</span>
+        {dims && <span className="text-[12px] sf-overlay-text-muted font-mono">{dims}px</span>}
+        <span className="text-[12px] sf-overlay-text-muted">{img.variant_label || img.variant_key}</span>
         {img.url && (
           <a href={img.url} target="_blank" rel="noopener noreferrer" className="text-[12px] text-blue-400 hover:underline font-mono">
             {(() => { try { return new URL(img.url).hostname; } catch { return 'source'; } })()}

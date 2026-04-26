@@ -1,6 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { deriveStudioOperationsState } from '../studioOperationsSelectors.ts';
+import {
+  deriveStudioOperationsState,
+  selectStudioOperationsState,
+} from '../studioOperationsSelectors.ts';
 import type { Operation } from '../../../operations/state/operationsStore.ts';
 
 function makeOp(overrides: Partial<Operation>): Operation {
@@ -22,7 +25,7 @@ function makeOp(overrides: Partial<Operation>): Operation {
   };
 }
 
-describe('deriveStudioOperationsState — contract', () => {
+describe('deriveStudioOperationsState contract', () => {
   it('no operations: all false/null', () => {
     const result = deriveStudioOperationsState(new Map(), 'mouse');
     assert.strictEqual(result.compileRunning, false);
@@ -39,7 +42,7 @@ describe('deriveStudioOperationsState — contract', () => {
     assert.strictEqual(result.anyStudioOpRunning, true);
   });
 
-  it('compile running for DIFFERENT category: does not affect', () => {
+  it('compile running for different category: does not affect', () => {
     const ops = new Map([['op-1', makeOp({ type: 'compile', category: 'keyboard', status: 'running' })]]);
     const result = deriveStudioOperationsState(ops, 'mouse');
     assert.strictEqual(result.compileRunning, false);
@@ -85,5 +88,20 @@ describe('deriveStudioOperationsState — contract', () => {
     assert.strictEqual(result.compileRunning, true);
     assert.strictEqual(result.validateRunning, false);
     assert.strictEqual(result.anyStudioOpRunning, true);
+  });
+
+  it('store selector derives the same state without exposing the operations map', () => {
+    const operations = new Map([
+      ['op-1', makeOp({ id: 'op-1', type: 'compile', category: 'mouse', status: 'running' })],
+      ['op-2', makeOp({ id: 'op-2', type: 'validate', category: 'keyboard', status: 'running' })],
+    ]);
+    const result = selectStudioOperationsState({ operations }, 'mouse');
+    assert.deepStrictEqual(result, {
+      compileRunning: true,
+      validateRunning: false,
+      compileError: null,
+      validateError: null,
+      anyStudioOpRunning: true,
+    });
   });
 });

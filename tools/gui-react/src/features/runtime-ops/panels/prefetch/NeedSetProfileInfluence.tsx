@@ -53,11 +53,11 @@ export function NeedSetProfileInfluence({ profileInfluence, isLlmPending }: Need
               <div
                 key={e.category}
                 className={`flex items-center justify-center text-[10px] font-bold ${
-                  e.category === 'targeted_brand' ? 'bg-rose-600 text-white' :
-                  e.category === 'targeted_specification' ? 'bg-blue-600 text-white' :
-                  e.category === 'targeted_sources' ? 'bg-violet-600 text-white' :
-                  e.category === 'targeted_groups' ? 'bg-amber-500 text-white' :
-                  'bg-emerald-600 text-white'
+                  e.category === 'targeted_brand' ? 'sf-tier-brand' :
+                  e.category === 'targeted_specification' ? 'sf-tier-specification' :
+                  e.category === 'targeted_sources' ? 'sf-tier-sources' :
+                  e.category === 'targeted_groups' ? 'sf-tier-groups' :
+                  'sf-tier-single'
                 }`}
                 style={{ width: `${(e.count / tierTotal) * 100}%` }}
                 title={`${e.category.replace(/_/g, ' ')}: ${e.count}`}
@@ -79,11 +79,11 @@ export function NeedSetProfileInfluence({ profileInfluence, isLlmPending }: Need
             return (
               <span key={e.category} className="flex items-center gap-2">
                 <span className={`inline-block w-3 h-3 rounded-sm ${
-                  e.category === 'targeted_brand' ? 'bg-rose-600' :
-                  e.category === 'targeted_specification' ? 'bg-blue-600' :
-                  e.category === 'targeted_sources' ? 'bg-violet-600' :
-                  e.category === 'targeted_groups' ? 'bg-amber-500' :
-                  'bg-emerald-600'
+                  e.category === 'targeted_brand' ? 'sf-tier-brand' :
+                  e.category === 'targeted_specification' ? 'sf-tier-specification' :
+                  e.category === 'targeted_sources' ? 'sf-tier-sources' :
+                  e.category === 'targeted_groups' ? 'sf-tier-groups' :
+                  'sf-tier-single'
                 }`} />
                 <span className="font-semibold">{e.category.replace(/targeted_/g, '').replace(/_/g, ' ')}</span>
                 <span className="font-mono font-bold sf-text-primary">{e.count}/{total}</span>

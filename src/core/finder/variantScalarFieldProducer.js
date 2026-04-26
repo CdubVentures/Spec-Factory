@@ -202,11 +202,10 @@ export function createVariantScalarFieldProducer(cfg) {
 
       const systemPrompt = buildPrompt(domainArgs);
 
-      // WHY: withLlmCallTracking owns the pending-before / completed-after
-      // emission shape and the started_at/duration_ms timing. The catch below
-      // preserves the legacy "LLM throw → skip this variant" behavior so other
-      // variants in the run continue to be processed (per variantFieldLoop
-      // semantics).
+      // WHY: withLlmCallTracking owns timing for persisted runs. It emits rows
+      // only for direct/test callers; routed callers own pending/completed/
+      // failure telemetry so fallback/writer rows are not duplicated. The catch
+      // below preserves the legacy "LLM throw → skip this variant" behavior.
       let llmResult, usage, durationMs, callStartedAt;
       const llmCallExtras = { callId: `${fieldKey}:${variant.variant_id || variant.key}:${_i}`, variant: variant.label };
       try {

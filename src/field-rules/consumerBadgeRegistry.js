@@ -114,6 +114,12 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'rev.grid': { desc: 'Determines whether the review grid renders per-variant lanes or a single product-scoped lane. reviewGridData.js:140.' },
     } },
 
+  { path: 'product_image_dependent', type: 'presence', flatAliases: [],
+    section: 'Contract (Type, Shape, Unit)', key: 'Product Image Dependent',
+    consumers: {
+      'llm.pif': { desc: 'Resolved value is injected into Product Image Finder discovery and eval prompts as exact-product identity context. productImageIdentityDependencies.js.' },
+    } },
+
   { path: 'contract.type', type: 'string', flatAliases: ['data_type', 'type'],
     section: 'Contract (Type, Shape, Unit)', key: 'Data Type',
     consumers: {

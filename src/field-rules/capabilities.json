@@ -143,6 +143,11 @@
       "consumer": "src/features/product-image/keyFinderPifPriorityImages.js:resolveKeyFinderPifPriorityImageContext + src/features/key/keyLlmAdapter.js:PIF_PRIORITY_IMAGES",
       "description": "Single on/off control for whether Key Finder may attach PIF-evaluated default/base priority-view images. Enable only when those images add visual evidence value; missing images are not negative evidence and field-specific edition/list interpretation belongs in ai_assist.reasoning_note."
     },
+    "product_image_dependent": {
+      "status": "live",
+      "consumer": "src/features/product-image/productImageIdentityDependencies.js + PIF discovery/eval prompt builders",
+      "description": "When true, the resolved field value is injected into Product Image Finder discovery and eval prompts as exact-product identity context."
+    },
     "ui.label": {
       "status": "ui_only",
       "consumer": "React GUI (tools/gui-react/)",

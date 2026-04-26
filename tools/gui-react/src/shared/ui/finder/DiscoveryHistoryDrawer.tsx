@@ -12,8 +12,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
+import { useDataChangeMutation } from '../../../features/data-change/index.js';
 import { FINDER_PANELS } from '../../../features/indexing/state/finderPanelRegistry.generated.ts';
 import { useFinderDiscoveryHistoryStore } from '../../../stores/finderDiscoveryHistoryStore.ts';
 import { useColorEditionFinderQuery } from '../../../features/color-edition-finder/index.ts';
@@ -165,7 +166,6 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
   const scopeLevel = resolveScopeLevel(finderId);
   const routePrefix = resolveRoutePrefix(finderId);
   const finderLabel = resolveFinderLabel(finderId);
-  const queryClient = useQueryClient();
   // WHY: Optional allow-list of field_keys. keyFinder's group-history button
   // sets this to the current group's keys so the drawer shows one group's
   // worth of buckets instead of all of them. Panel keeps this live by calling
@@ -192,15 +192,17 @@ function DrawerImpl({ open, finderId, productId, category, onClose }: DrawerImpl
     enabled: open && Boolean(routePrefix),
   });
 
-  const scrubMutation = useMutation<DiscoveryHistoryScrubResponse, Error, DiscoveryHistoryScrubRequest>({
+  const scrubMutation = useDataChangeMutation<DiscoveryHistoryScrubResponse, Error, DiscoveryHistoryScrubRequest>({
+    event: `${routePrefix}-discovery-history-scrubbed`,
+    category,
     mutationFn: (body) => api.post<DiscoveryHistoryScrubResponse>(
       `/${routePrefix}/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/discovery-history/scrub`,
       body,
     ),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [routePrefix, category, productId] });
-      queryClient.invalidateQueries({ queryKey: ['finder-runs-for-history', finderId, category, productId] });
-    },
+    extraQueryKeys: [
+      [routePrefix, category, productId],
+      ['finder-runs-for-history', finderId, category, productId],
+    ],
   });
 
   const { data: cefData } = useColorEditionFinderQuery(category, productId);

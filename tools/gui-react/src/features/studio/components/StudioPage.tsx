@@ -1,10 +1,11 @@
-﻿import { useEffect, useRef, useMemo } from "react";
+import { useEffect, useRef } from "react";
 import { usePersistedTab } from "../../../stores/tabStore.ts";
 import { useQueryClient } from "@tanstack/react-query";
+import { useShallow } from "zustand/react/shallow";
 import { useUiStore } from "../../../stores/uiStore.ts";
 import { useRuntimeStore } from "../../runtime-ops/state/runtimeStore.ts";
 import { useOperationsStore } from "../../operations/state/operationsStore.ts";
-import { deriveStudioOperationsState } from "../state/studioOperationsSelectors.ts";
+import { selectStudioOperationsState } from "../state/studioOperationsSelectors.ts";
 import { Spinner } from "../../../shared/ui/feedback/Spinner.tsx";
 import { StudioPageActivePanel } from "./StudioPageActivePanel.tsx";
 import { useStudioPageDocsController } from "../state/useStudioPageDocsController.ts";
@@ -45,7 +46,9 @@ export function StudioPage() {
     "",
   );
   const processStatus = useRuntimeStore((s) => s.processStatus);
-  const operations = useOperationsStore((s) => s.operations);
+  const opsState = useOperationsStore(
+    useShallow((s) => selectStudioOperationsState(s, category)),
+  );
   const queryClient = useQueryClient();
   const autoSaveAllEnabled = useUiStore((s) => s.autoSaveAllEnabled);
   const setAutoSaveAllEnabled = useUiStore((s) => s.setAutoSaveAllEnabled);
@@ -53,11 +56,6 @@ export function StudioPage() {
   const setAutoSaveEnabled = useUiStore((s) => s.setAutoSaveEnabled);
   const autoSaveMapEnabled = useUiStore((s) => s.autoSaveMapEnabled);
   const setAutoSaveMapEnabled = useUiStore((s) => s.setAutoSaveMapEnabled);
-
-  const opsState = useMemo(
-    () => deriveStudioOperationsState(operations, category),
-    [operations, category],
-  );
 
   // WHY: processRunning drives artifact polling — true when IndexLab OR compile/validate is running
   const anyRunning = Boolean(processStatus.running) || opsState.anyStudioOpRunning;
@@ -164,7 +162,7 @@ export function StudioPage() {
     activeTab,
     autoSaveAllEnabled,
     selectedKey,
-    operations,
+    opsState,
     rules: storeRules,
     fieldOrder: storeFieldOrder,
     wbMap,

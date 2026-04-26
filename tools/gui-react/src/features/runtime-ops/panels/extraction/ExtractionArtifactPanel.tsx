@@ -313,7 +313,7 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
 
       {previewSrc && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8 cursor-pointer"
+          className="fixed inset-0 z-50 sf-overlay-backdrop-bg flex items-center justify-center p-8 cursor-pointer"
           onClick={() => setPreviewSrc(null)}
         >
           <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
@@ -338,7 +338,7 @@ export function ExtractionArtifactPanel({ config, data, persistScope, runId }: E
             <button
               type="button"
               onClick={() => setPreviewSrc(null)}
-              className="absolute top-2 right-2 w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black/80 text-sm"
+              className="absolute top-2 right-2 w-8 h-8 sf-overlay-button-strong-bg sf-overlay-text-strong rounded-full flex items-center justify-center hover:sf-overlay-backdrop-bg text-sm"
             >
               &times;
             </button>

@@ -4,237 +4,15 @@ import {
 } from './domainScope.js';
 import { collectDataChangeCategories } from './categoryScope.js';
 import {
-  FINDER_DATA_CHANGE_EVENTS,
-  FINDER_DATA_CHANGE_DOMAINS,
-  FINDER_MODULES,
-} from '../../../../../src/core/finder/finderModuleRegistry.js';
+  CATEGORY_TOKEN,
+  DOMAIN_QUERY_TEMPLATES,
+  KNOWN_DATA_CHANGE_DOMAINS,
+  EVENT_REGISTRY,
+} from '../../../../../src/core/events/eventRegistry.js';
 
-const CATEGORY_TOKEN = ':category';
+export { KNOWN_DATA_CHANGE_DOMAINS };
 
-const DOMAIN_QUERY_TEMPLATES = Object.freeze({
-  studio: Object.freeze([
-    ['studio', CATEGORY_TOKEN],
-    ['studio-config', CATEGORY_TOKEN],
-    ['studio-tooltip-bank', CATEGORY_TOKEN],
-    ['studio-known-values', CATEGORY_TOKEN],
-    ['studio-component-db', CATEGORY_TOKEN],
-    ['studio-artifacts', CATEGORY_TOKEN],
-  ]),
-  mapping: Object.freeze([
-    ['studio-config', CATEGORY_TOKEN],
-    ['studio-artifacts', CATEGORY_TOKEN],
-    // WHY: Field Studio group / key order changes must live-refresh the
-    // Overview Keys popover's key list. /summary now applies the saved
-    // field_key_order server-side (keyFinderRoutes::applyFieldKeyOrder), so
-    // re-fetching after a navigator reorder is what propagates the new order
-    // to every consumer. Invalidating the whole `['key-finder', cat]` subtree
-    // picks up every open popover + the KF panel.
-    ['key-finder', CATEGORY_TOKEN],
-    ['reviewLayout', CATEGORY_TOKEN],
-    ['reviewProductsIndex', CATEGORY_TOKEN],
-    ['product', CATEGORY_TOKEN],
-    ['fieldLabels', CATEGORY_TOKEN],
-  ]),
-  'review-layout': Object.freeze([
-    ['reviewLayout', CATEGORY_TOKEN],
-    ['componentReviewLayout', CATEGORY_TOKEN],
-    // WHY: resolving a peer field shifts the keyFinder passenger set — any
-    // open PromptPreviewModal must refetch so the compiled prompt reflects
-    // the new resolved-field state (passengers drop out once their peer
-    // resolves). staleTime=0 handles open/close; this covers while-open.
-    ['prompt-preview', 'key', CATEGORY_TOKEN],
-  ]),
-  labels: Object.freeze([
-    ['fieldLabels', CATEGORY_TOKEN],
-  ]),
-  catalog: Object.freeze([
-    ['catalog', CATEGORY_TOKEN],
-    ['catalog-products', CATEGORY_TOKEN],
-    ['catalog-review', CATEGORY_TOKEN],
-    ['reviewProductsIndex', CATEGORY_TOKEN],
-    ['product', CATEGORY_TOKEN],
-  ]),
-  brand: Object.freeze([
-    ['brands'],
-    ['brand-impact'],
-    ['brands', CATEGORY_TOKEN],
-    ['catalog', CATEGORY_TOKEN],
-    ['catalog-products', CATEGORY_TOKEN],
-    ['catalog-review', CATEGORY_TOKEN],
-    ['reviewProductsIndex', CATEGORY_TOKEN],
-    ['product', CATEGORY_TOKEN],
-  ]),
-  identity: Object.freeze([
-    ['catalog', CATEGORY_TOKEN],
-    ['catalog-products', CATEGORY_TOKEN],
-    ['reviewProductsIndex', CATEGORY_TOKEN],
-    ['product', CATEGORY_TOKEN],
-    ['candidates', CATEGORY_TOKEN],
-    ['componentReview', CATEGORY_TOKEN],
-    ['componentReviewData', CATEGORY_TOKEN],
-    ['enumReviewData', CATEGORY_TOKEN],
-    ['componentImpact'],
-  ]),
-  queue: Object.freeze([
-    ['queue', CATEGORY_TOKEN],
-  ]),
-  review: Object.freeze([
-    ['reviewProductsIndex', CATEGORY_TOKEN],
-    ['catalog-review', CATEGORY_TOKEN],
-    ['catalog', CATEGORY_TOKEN],
-    ['product', CATEGORY_TOKEN],
-    ['candidates', CATEGORY_TOKEN],
-    ['componentReview', CATEGORY_TOKEN],
-    ['componentReviewData', CATEGORY_TOKEN],
-    ['enumReviewData', CATEGORY_TOKEN],
-    ['componentImpact'],
-  ]),
-  suggestions: Object.freeze([
-    ['candidates', CATEGORY_TOKEN],
-    ['reviewProductsIndex', CATEGORY_TOKEN],
-  ]),
-  component: Object.freeze([
-    ['componentReview', CATEGORY_TOKEN],
-    ['componentReviewData', CATEGORY_TOKEN],
-    ['componentReviewLayout', CATEGORY_TOKEN],
-    ['studio-component-db', CATEGORY_TOKEN],
-    ['reviewProductsIndex', CATEGORY_TOKEN],
-    ['product', CATEGORY_TOKEN],
-    ['candidates', CATEGORY_TOKEN],
-    ['componentImpact'],
-  ]),
-  enum: Object.freeze([
-    ['enumReviewData', CATEGORY_TOKEN],
-    ['studio-known-values', CATEGORY_TOKEN],
-    ['reviewProductsIndex', CATEGORY_TOKEN],
-    ['candidates', CATEGORY_TOKEN],
-  ]),
-  product: Object.freeze([
-    ['product', CATEGORY_TOKEN],
-    ['catalog', CATEGORY_TOKEN],
-    ['catalog-review', CATEGORY_TOKEN],
-    ['reviewProductsIndex', CATEGORY_TOKEN],
-    ['candidates', CATEGORY_TOKEN],
-    ['componentImpact'],
-  ]),
-  'color-registry': Object.freeze([
-    ['colors'],
-  ]),
-  // WHY: Finder domains derived from FINDER_MODULES registry (O(1) scaling).
-  ...Object.fromEntries(
-    FINDER_MODULES.map((mod) => [
-      mod.routePrefix,
-      Object.freeze([[mod.routePrefix, CATEGORY_TOKEN]]),
-    ]),
-  ),
-  categories: Object.freeze([
-    ['categories'],
-    ['categories-real'],
-  ]),
-  settings: Object.freeze([
-    ['ui-settings'],
-    ['runtime-settings'],
-    ['indexing', 'llm-config'],
-    // WHY: pipeline-settings save can change keyFinder bundling knobs, which
-    // affects /summary's bundle_preview column. Invalidate the keyFinder
-    // query tree so the Bundled column refreshes reactively.
-    ['key-finder', CATEGORY_TOKEN],
-    // Bundling knob changes also alter the compiled prompt (passenger list,
-    // sort order, ADDITIONAL_* sections). Refetch any open PromptPreviewModal
-    // so it live-updates without a close/reopen cycle.
-    ['prompt-preview', 'key', CATEGORY_TOKEN],
-  ]),
-  storage: Object.freeze([
-    ['indexlab', 'runs'],
-    ['indexlab', 'product-history', CATEGORY_TOKEN],
-  ]),
-  'source-strategy': Object.freeze([
-    ['source-strategy', CATEGORY_TOKEN],
-  ]),
-  'spec-seeds': Object.freeze([
-    ['spec-seeds', CATEGORY_TOKEN],
-  ]),
-  indexing: Object.freeze([
-    ['indexing', 'llm-config'],
-    ['indexing', 'llm-metrics', CATEGORY_TOKEN],
-  ]),
-  publisher: Object.freeze([
-    ['publisher', CATEGORY_TOKEN],
-    ['publisher', 'published', CATEGORY_TOKEN],
-  ]),
-});
-
-export const KNOWN_DATA_CHANGE_DOMAINS = Object.freeze([
-  'brand',
-  'catalog',
-  'categories',
-  ...FINDER_DATA_CHANGE_DOMAINS,
-  'color-registry',
-  'component',
-  'enum',
-  'identity',
-  'indexing',
-  'labels',
-  'mapping',
-  'product',
-  'publisher',
-  'queue',
-  'review',
-  'review-layout',
-  'source-strategy',
-  'spec-seeds',
-  'settings',
-  'storage',
-  'studio',
-  'suggestions',
-]);
-
-// WHY: Finder events derived from FINDER_MODULES registry (O(1) scaling).
-export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = Object.freeze({
-  ...FINDER_DATA_CHANGE_EVENTS,
-  'field-studio-map-saved': ['studio', 'mapping', 'review-layout'],
-  'process-completed': ['studio', 'review-layout', 'component', 'enum', 'storage'],
-  'catalog-bulk-add': ['catalog', 'queue', 'identity'],
-  'catalog-product-add': ['catalog', 'queue', 'identity'],
-  'catalog-product-update': ['catalog', 'queue', 'identity'],
-  'catalog-product-delete': ['catalog', 'queue', 'identity'],
-  'brand-seed': ['brand', 'catalog', 'identity'],
-  'brand-bulk-add': ['brand', 'catalog', 'identity'],
-  'brand-add': ['brand', 'catalog', 'identity'],
-  'brand-rename': ['brand', 'catalog', 'identity', 'queue'],
-  'brand-update': ['brand', 'catalog', 'identity'],
-  'brand-delete': ['brand', 'catalog', 'identity'],
-  'color-add': ['color-registry'],
-  'color-update': ['color-registry'],
-  'color-delete': ['color-registry'],
-  'runtime-settings-updated': ['settings', 'indexing'],
-  'user-settings-updated': ['settings', 'indexing'],
-  'category-created': ['categories'],
-  'source-strategy-created': ['source-strategy'],
-  'source-strategy-updated': ['source-strategy'],
-  'source-strategy-deleted': ['source-strategy'],
-  'spec-seeds-updated': ['spec-seeds'],
-  'queue-retry': ['queue'],
-  'queue-pause': ['queue'],
-  'queue-priority': ['queue'],
-  'queue-requeue': ['queue'],
-  'review-suggest': ['review', 'suggestions'],
-  review: ['review'],
-  'component-review': ['component', 'review'],
-  'review-override': ['review', 'product'],
-  'review-manual-override': ['review', 'product'],
-  'review-clear-published': ['review', 'product'],
-  'review-variant-field-deleted': ['review', 'product'],
-  'key-finder-unpublished': ['key-finder', 'review', 'product'],
-  'candidate-deleted': ['review', 'product'],
-  'key-review-confirm': ['review', 'product'],
-  'key-review-accept': ['review', 'product'],
-  'component-override': ['component', 'review'],
-  'component-key-review-confirm': ['component', 'review'],
-  'enum-override': ['enum', 'review'],
-  'enum-rename': ['enum', 'review'],
-  'publisher-reconcile': ['publisher'],
-});
+export const DATA_CHANGE_EVENT_DOMAIN_FALLBACK = EVENT_REGISTRY;
 
 const FALLBACK_QUERY_TEMPLATES = Object.freeze([
   ['brands'],
@@ -261,6 +39,11 @@ const FALLBACK_QUERY_TEMPLATES = Object.freeze([
   ['queue', CATEGORY_TOKEN],
   ['source-strategy', CATEGORY_TOKEN],
   ['componentImpact'],
+  ['storage'],
+  ['storage', 'overview'],
+  ['indexlab', 'runs'],
+  ['module-settings'],
+  ['data-authority', 'snapshot', CATEGORY_TOKEN],
 ]);
 
 function resolveDomainsFromMessage(message) {

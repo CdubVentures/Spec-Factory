@@ -26,7 +26,13 @@ import { ActiveAndSelectedRow } from './ActiveAndSelectedRow.tsx';
 import { OverviewLastRunCell, OverviewLastRunHeaderToggle } from './OverviewLastRunCell.tsx';
 import { LiveOpsCell } from './LiveOpsCell.tsx';
 import { useRunningModulesByProductOrdered } from '../../features/operations/hooks/useFinderOperations.ts';
-import { getOverviewLastRunMs, sortOverviewRows, toggleOverviewSortStack } from './overviewSort.ts';
+import {
+  getOverviewLastRunMs,
+  readOverviewSortSessionState,
+  sortOverviewRows,
+  toggleOverviewSortStack,
+  writeOverviewSortSessionState,
+} from './overviewSort.ts';
 import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import {
   useOverviewSelectionStore,
@@ -103,6 +109,11 @@ const CEF_REQUIRED_RUNS = 2;
 const INITIAL_FILTER_STATE: OverviewFilterState = Object.freeze({
   search: '',
 });
+
+interface OverviewSortViewState {
+  category: string;
+  sorting: SortingState;
+}
 
 function matchesSearch(row: CatalogRow, query: string): boolean {
   if (!query) return true;
@@ -387,7 +398,6 @@ export function OverviewPage() {
   const { data: catalog = [], isLoading } = useQuery({
     queryKey: ['catalog', category],
     queryFn: () => api.parsedGet(`/catalog/${category}`, parseCatalogRows),
-    refetchInterval: 10_000,
   });
 
   const { data: colorRegistry = [] } = useQuery<ColorRegistryEntry[]>({
@@ -405,10 +415,40 @@ export function OverviewPage() {
   // so they slide open/closed together — clicking either chevron flips both.
   const [detailColsOpen, toggleDetailCols] = usePersistedToggle('overview:detail-cols:open', false);
 
-  const [tableSorting, setTableSorting] = useState<SortingState>([]);
+  const [overviewSortState, setOverviewSortState] = useState<OverviewSortViewState>(() => ({
+    category,
+    sorting: readOverviewSortSessionState(category),
+  }));
+  const tableSorting = overviewSortState.category === category
+    ? overviewSortState.sorting
+    : [];
+  useEffect(() => {
+    setOverviewSortState((current) => {
+      if (current.category === category) return current;
+      return {
+        category,
+        sorting: readOverviewSortSessionState(category),
+      };
+    });
+  }, [category]);
+  useEffect(() => {
+    if (overviewSortState.category !== category) return;
+    writeOverviewSortSessionState(category, overviewSortState.sorting);
+  }, [category, overviewSortState]);
   const handleColumnHeaderSort = useCallback((columnId: string) => {
-    setTableSorting((current) => toggleOverviewSortStack(current, columnId));
-  }, []);
+    setOverviewSortState((current) => {
+      const currentSorting = current.category === category
+        ? current.sorting
+        : readOverviewSortSessionState(category);
+      return {
+        category,
+        sorting: toggleOverviewSortStack(currentSorting, columnId),
+      };
+    });
+  }, [category]);
+  const handleTableSortingChange = useCallback((next: SortingState) => {
+    setOverviewSortState({ category, sorting: next });
+  }, [category]);
 
   const columnFilters = useColumnFilterStore(selectFilterState(category));
   const runningByProduct = useRunningModulesByProductOrdered(category);
@@ -490,7 +530,7 @@ export function OverviewPage() {
           persistKey={`overview:table:${category}`}
           maxHeight="max-h-[calc(100vh-340px)]"
           sorting={tableSorting}
-          onSortingChange={setTableSorting}
+          onSortingChange={handleTableSortingChange}
           manualSorting
           onColumnHeaderSort={handleColumnHeaderSort}
         />

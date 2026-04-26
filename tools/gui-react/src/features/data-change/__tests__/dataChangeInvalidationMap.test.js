@@ -72,6 +72,7 @@ test('PIF lifecycle events invalidate overview catalog so rings refresh live', (
     'product-image-finder-image-deleted',
     'product-image-finder-batch-processed',
     'product-image-finder-evaluate',
+    'product-image-finder-carousel-updated',
   ];
 
   for (const event of events) {
@@ -224,6 +225,7 @@ test('process-completed event invalidates indexlab product-history and run-list 
 
   assert.equal(hasQueryKey(keys, ['indexlab', 'runs']), true);
   assert.equal(hasQueryKey(keys, ['indexlab', 'product-history', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['data-authority', 'snapshot', 'mouse']), true);
 });
 
 test('spec-seeds event invalidates category-scoped spec-seeds query key (not broad fallback)', () => {
@@ -239,4 +241,93 @@ test('spec-seeds event invalidates category-scoped spec-seeds query key (not bro
   assert.equal(hasQueryKey(keys, ['spec-seeds', 'mouse']), true);
   // WHY: Prove the broad fallback path is NOT triggered.
   assert.equal(hasQueryKey(keys, ['brands']), false);
+});
+
+test('module settings event invalidates module-settings query family', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'module-settings-updated',
+      category: 'mouse',
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['module-settings']), true);
+});
+
+test('field key order saves invalidate all order consumers from explicit domains payload', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'field-key-order-saved',
+      category: 'mouse',
+      domains: ['studio', 'mapping', 'review-layout'],
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['studio', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['key-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['reviewLayout', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['data-authority', 'snapshot', 'mouse']), true);
+});
+
+test('publisher reconcile invalidates candidate list, published fields, and preview', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'publisher-reconcile',
+      category: 'mouse',
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['publisher', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['publisher', 'published', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['publisher', 'reconcile', 'mouse']), true);
+});
+
+test('storage events invalidate storage overview, run list, run details, and IndexLab run list', () => {
+  const events = [
+    'storage-runs-deleted',
+    'storage-runs-bulk-deleted',
+    'storage-pruned',
+    'storage-purged',
+    'storage-urls-deleted',
+    'storage-history-purged',
+  ];
+
+  for (const event of events) {
+    const keys = resolveDataChangeInvalidationQueryKeys({
+      message: {
+        type: 'data-change',
+        event,
+        category: 'mouse',
+      },
+      categories: ['mouse'],
+    });
+
+    assert.equal(hasQueryKey(keys, ['storage']), true, `${event} should invalidate broad storage subtree`);
+    assert.equal(hasQueryKey(keys, ['storage', 'overview']), true, `${event} should invalidate storage overview`);
+    assert.equal(hasQueryKey(keys, ['storage', 'runs', 'mouse']), true, `${event} should invalidate category run list`);
+    assert.equal(hasQueryKey(keys, ['indexlab', 'runs']), true, `${event} should invalidate IndexLab run list`);
+  }
+});
+
+test('CEF variant delete-all event invalidates CEF and downstream finder panels', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'color-edition-finder-variants-deleted-all',
+      category: 'mouse',
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['color-edition-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['product-image-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['release-date-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['sku-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['publisher', 'published', 'mouse']), true);
 });

@@ -1,14 +1,10 @@
-// WHY: Canonical LLM-call tracking wrapper. Replaces the ~30 LOC of duplicated
-// pending-before / completed-after onLlmCallComplete emission code that every
-// finder orchestrator (keyFinder, variantScalarFieldProducer, CEF) hand-rolled.
-// Called once per conceptual LLM call — keyFinder 1×, RDF/SKU 1× per variant,
-// CEF 2× (Discovery + Identity Check). PIF stays on its own bespoke wiring.
-//
-// Relies on appendLlmCall's upsert rule (src/core/operations/operationsRegistry.js
-// lines 223-247): the registry merges a call into the last row only when
-// `last.response === null && call.response != null`. Sequential awaits of this
-// wrapper naturally alternate pending → completed → pending → completed, so
-// consecutive multi-call orchestrators (CEF) produce distinct rows per label.
+// WHY: Canonical LLM-call tracking wrapper. Direct/test callers use this for
+// pending-before / completed-after onLlmCallComplete emissions. Routed LLM
+// callers already emit their own rows, so delegated mode suppresses wrapper
+// emissions to avoid stale duplicate pending rows.
+// Direct callers still alternate pending/completed wrapper emissions. Routed
+// callers pass emitCompleted:false so the router owns pending/completed/failure
+// telemetry, including fallback and writer-phase rows.
 
 const EMPTY_TIER_CAPS = Object.freeze({
   thinking: false,
@@ -17,7 +13,7 @@ const EMPTY_TIER_CAPS = Object.freeze({
 });
 
 /**
- * Wrap an LLM call with canonical pending + completed emission.
+ * Wrap an LLM call with canonical timing and optional pending/completed emission.
  *
  * @param {object} opts
  * @param {string} opts.label             'Discovery' | 'Identity Check' | …
@@ -27,6 +23,8 @@ const EMPTY_TIER_CAPS = Object.freeze({
  * @param {object} opts.modelTracking     from resolveModelTracking(...)
  * @param {Function} [opts.onLlmCallComplete]  downstream callback; no-op if undefined
  * @param {() => Promise<{result: any, usage: any}>} opts.callFn
+ * @param {boolean} [opts.emitCompleted=true] false when routed telemetry owns the completed/failure row
+ * @param {boolean} [opts.emitPending=opts.emitCompleted] false when routed telemetry owns the pending row
  * @param {object} [opts.extras]          tier / reason / variant / … spread into BOTH emissions
  * @returns {Promise<{result: any, usage: any, durationMs: number}>}
  */
@@ -40,6 +38,7 @@ export async function withLlmCallTracking({
   callFn,
   extras = {},
   emitCompleted = true,
+  emitPending = emitCompleted,
 }) {
   const resolvedInitialModel = initialModel || modelTracking?.configModel || '';
   const caps = tierCapabilities || EMPTY_TIER_CAPS;
@@ -48,18 +47,20 @@ export async function withLlmCallTracking({
   // model, usage, started_at, duration_ms) overwrite any colliding extras key.
   // A buggy caller passing `extras: { response: 'oops' }` must NOT corrupt the
   // pending/completed shape the modal reads.
-  onLlmCallComplete?.({
-    ...extras,
-    label,
-    prompt,
-    response: null,
-    model: resolvedInitialModel,
-    isFallback: false,
-    thinking: caps.thinking,
-    webSearch: caps.webSearch,
-    effortLevel: caps.effortLevel,
-    accessMode: '',
-  });
+  if (emitPending) {
+    onLlmCallComplete?.({
+      ...extras,
+      label,
+      prompt,
+      response: null,
+      model: resolvedInitialModel,
+      isFallback: false,
+      thinking: caps.thinking,
+      webSearch: caps.webSearch,
+      effortLevel: caps.effortLevel,
+      accessMode: '',
+    });
+  }
 
   const startedAt = new Date().toISOString();
   const startMs = Date.now();

@@ -12,6 +12,7 @@ This boundary is the canonical home for low-level configuration and model-routin
 - `src/core/llm/providers/index.js`: `selectLlmProvider()`.
 - `src/core/llm/providers/{gemini,deepseek,openaiCompatible}.js`: provider request functions.
 - `src/core/llm/prompts/{planner,extractor,validator}.js`: prompt builders.
+- `src/core/events/eventRegistry.js`: `EVENT_REGISTRY`, `DOMAIN_QUERY_TEMPLATES`, `KNOWN_DATA_CHANGE_EVENTS`, `KNOWN_DATA_CHANGE_DOMAINS`.
 - `src/core/events/dataChangeContract.js`: `createDataChangePayload`, `emitDataChange`, `isDataChangePayload`, `dataChangeMatchesCategory`, `DATA_CHANGE_EVENT_DOMAIN_MAP`, `DATA_CHANGE_EVENT_NAMES`.
 - `src/core/events/dataPropagationCounters.js`: `resetDataPropagationCounters`, `recordDataChangeBroadcast`, `recordQueueCleanupOutcome`, `getDataPropagationCountersSnapshot`.
 - `src/core/events/settingsPersistenceCounters.js`: `resetSettingsPersistenceCounters`, `recordSettingsWriteAttempt`, `recordSettingsWriteOutcome`, `recordSettingsStaleRead`, `recordSettingsMigration`, `getSettingsPersistenceCountersSnapshot`.
@@ -26,4 +27,5 @@ This boundary is the canonical home for low-level configuration and model-routin
 - Runtime artifact roots resolve deterministically from the local temp root plus fixed `output` and `indexlab` subpaths.
 - Prompt builders stay pure; provider selection, HTTP concerns, and caching stay inside `src/core/llm/**`.
 - Secrets and provider credentials must not leak out of this boundary through logs or higher-level contracts.
+- `src/core/events/eventRegistry.js`: the SSOT for live-update event-to-domain and domain-to-query-template coverage.
 - `src/core/events/dataChangeContract.js`: shared mutation broadcast infrastructure consumed by all features — not feature-specific.

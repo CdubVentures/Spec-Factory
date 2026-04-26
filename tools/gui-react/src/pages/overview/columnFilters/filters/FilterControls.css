@@ -96,7 +96,7 @@
 }
 .sf-fc-seg--active {
   background: var(--sf-token-accent, #4263eb);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
   font-weight: 600;
 }
 
@@ -125,7 +125,7 @@
 .sf-fc-grade-pill--active {
   background: var(--sf-token-accent, #4263eb);
   border-color: var(--sf-token-accent, #4263eb);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
 }
 
 /* ── Range inputs (Coverage / Conf / Fields) ─────────────────────────── */
@@ -211,5 +211,5 @@
 .sf-fc-tier-chip--active {
   background: var(--sf-token-accent, #4263eb);
   border-color: var(--sf-token-accent, #4263eb);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
 }

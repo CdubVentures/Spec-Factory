@@ -1,6 +1,7 @@
 import { useMemo, useCallback, useEffect, useRef } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
+import { useDataChangeMutation } from '../../data-change/index.js';
 import { useUiStore } from '../../../stores/uiStore.ts';
 import {
   useReviewStore, selectSelectedField, selectSelectedProductId,
@@ -290,54 +291,50 @@ export function ReviewPage() {
   }, [selectCell, startEditing]);
 
   // Manual override mutation (for inline edits)
-  const manualOverrideMut = useMutation({
+  const manualOverrideMut = useDataChangeMutation<unknown, Error, { productId: string; field: string; value: string; variantId?: string }>({
+    event: 'review-manual-override',
+    category,
     mutationFn: (body: { productId: string; field: string; value: string; variantId?: string }) =>
       api.post(`/review/${category}/manual-override`, body),
-    onSuccess: () => {
+    options: {
+      onSuccess: () => {
       setSaveStatus('saved');
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['catalog', category] });
-      queryClient.invalidateQueries({ queryKey: ['product', category] });
-    },
-    onError: (err: unknown) => {
+      },
+      onError: (err: unknown) => {
       setSaveStatus('error');
       // WHY: silent failure was confusing — surface the API error so the user
       // sees exactly why override didn't land (validation, 400 shape, etc.).
       console.error('manual override failed', err);
+      },
     },
   });
 
   // Clear published mutation — demotes resolved row(s) + removes JSON projection.
-  const clearPublishedMut = useMutation({
+  const clearPublishedMut = useDataChangeMutation<unknown, Error, { productId: string; field: string; variantId?: string; allVariants?: boolean }>({
+    event: 'review-clear-published',
+    category,
     mutationFn: (body: { productId: string; field: string; variantId?: string; allVariants?: boolean }) =>
       api.post(`/review/${category}/clear-published`, body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['candidates', category] });
-      queryClient.invalidateQueries({ queryKey: ['product', category] });
-    },
-    onError: (err: unknown) => {
-      console.error('clear published failed', err);
+    options: {
+      onError: (err: unknown) => {
+        console.error('clear published failed', err);
+      },
     },
   });
 
   // Candidate deletion mutations
-  const deleteCandidateMut = useMutation({
+  const deleteCandidateMut = useDataChangeMutation<CandidateDeleteResponse, Error, { sourceId: string }>({
+    event: 'candidate-deleted',
+    category,
     mutationFn: ({ sourceId }: { sourceId: string }) =>
       deleteCandidateBySourceId(category, selectedProductId, selectedField, sourceId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['candidates', category] });
-    },
   });
 
-  const deleteAllCandidatesMut = useMutation({
+  const deleteAllCandidatesMut = useDataChangeMutation<CandidateDeleteResponse>({
+    event: 'candidate-deleted',
+    category,
     mutationFn: () =>
       deleteAllCandidatesForField(category, selectedProductId, selectedField),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['candidates', category] });
-    },
   });
 
   // Optimistically update the products-index cache so the grid reflects changes instantly.

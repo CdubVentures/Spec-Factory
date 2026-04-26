@@ -36,9 +36,9 @@ export function buildFinderHooksSource(module) {
 // Run: node tools/gui-react/scripts/generateFinderHooks.js ${id}
 // Do not edit manually.
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
+import { useDataChangeMutation } from '../../data-change/index.js';
 import type { ${resultType} } from '../types.generated.ts';
 
 export interface AcceptedResponse {
@@ -84,28 +84,24 @@ export function use${base}LoopMutation(category: string, productId: string) {
 }
 
 export function useDelete${base}RunMutation(category: string, productId: string) {
-  const queryClient = useQueryClient();
-  const resetQuery = useCallback(() => {
-    queryClient.removeQueries({ queryKey: ['${routePrefix}', category, productId] });
-  }, [queryClient, category, productId]);
-  return useMutation<${base}DeleteResponse, Error, number>({
+  return useDataChangeMutation<${base}DeleteResponse, Error, number>({
+    event: '${routePrefix}-run-deleted',
+    category,
     mutationFn: (runNumber: number) => api.del<${base}DeleteResponse>(
       \`${urlBase}/runs/\${runNumber}\`,
     ),
-    onSuccess: resetQuery,
+    removeQueryKeys: [['${routePrefix}', category, productId]],
   });
 }
 
 export function useDelete${base}AllMutation(category: string, productId: string) {
-  const queryClient = useQueryClient();
-  const resetQuery = useCallback(() => {
-    queryClient.removeQueries({ queryKey: ['${routePrefix}', category, productId] });
-  }, [queryClient, category, productId]);
-  return useMutation<${base}DeleteResponse>({
+  return useDataChangeMutation<${base}DeleteResponse>({
+    event: '${routePrefix}-deleted',
+    category,
     mutationFn: () => api.del<${base}DeleteResponse>(
       \`${urlBase}\`,
     ),
-    onSuccess: resetQuery,
+    removeQueryKeys: [['${routePrefix}', category, productId]],
   });
 }
 `;

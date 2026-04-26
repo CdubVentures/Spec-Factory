@@ -98,7 +98,7 @@ export function SerpScreenshotOverlay({ src, filename, onClose }: SerpScreenshot
       </div>
 
       {/* Image — scrollable */}
-      <div className="flex-1 overflow-auto bg-black/90 min-h-0">
+      <div className="flex-1 overflow-auto sf-overlay-surface-deep-bg min-h-0">
         <img
           src={src}
           alt="Google SERP Screenshot"

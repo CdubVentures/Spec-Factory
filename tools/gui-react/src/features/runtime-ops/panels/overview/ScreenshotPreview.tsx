@@ -43,7 +43,7 @@ export function ScreenshotPreview({ screenshot, runId }: ScreenshotPreviewProps)
 
       {isExpanded && (
         <div
-          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-8 cursor-pointer"
+          className="fixed inset-0 z-50 sf-overlay-backdrop-bg flex items-center justify-center p-8 cursor-pointer"
           onClick={() => setIsExpanded(false)}
         >
           <div className="relative max-w-[90vw] max-h-[90vh]" onClick={(e) => e.stopPropagation()}>
@@ -52,14 +52,14 @@ export function ScreenshotPreview({ screenshot, runId }: ScreenshotPreviewProps)
               alt={screenshot.filename}
               className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl"
             />
-            <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-xs px-3 py-2 rounded flex items-center justify-between">
+            <div className="absolute bottom-0 left-0 right-0 sf-overlay-button-strong-bg sf-overlay-text-strong text-xs px-3 py-2 rounded flex items-center justify-between">
               <span className="font-mono">{screenshot.filename}</span>
               <span>{screenshot.width}x{screenshot.height} &middot; {formatBytes(screenshot.bytes)}</span>
             </div>
             <button
               type="button"
               onClick={() => setIsExpanded(false)}
-              className="absolute top-2 right-2 w-8 h-8 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black/80 text-sm"
+              className="absolute top-2 right-2 w-8 h-8 sf-overlay-button-strong-bg sf-overlay-text-strong rounded-full flex items-center justify-center hover:sf-overlay-backdrop-bg text-sm"
             >
               &times;
             </button>

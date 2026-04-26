@@ -2838,6 +2838,7 @@
         "difficulty": "easy",
         "required_level": "mandatory"
       },
+      "product_image_dependent": true,
       "required_level": "mandatory",
       "round": "none",
       "search_hints": {

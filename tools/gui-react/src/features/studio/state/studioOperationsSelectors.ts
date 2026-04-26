@@ -43,3 +43,10 @@ export function deriveStudioOperationsState(
     anyStudioOpRunning: compileRunning || validateRunning,
   };
 }
+
+export function selectStudioOperationsState(
+  state: { readonly operations: ReadonlyMap<string, Operation> },
+  category: string,
+): StudioOperationsState {
+  return deriveStudioOperationsState(state.operations, category);
+}

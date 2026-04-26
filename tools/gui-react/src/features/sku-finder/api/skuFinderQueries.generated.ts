@@ -2,9 +2,9 @@
 // Run: node tools/gui-react/scripts/generateFinderHooks.js skuFinder
 // Do not edit manually.
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
+import { useDataChangeMutation } from '../../data-change/index.js';
 import type { SkuFinderResult } from '../types.generated.ts';
 
 export interface AcceptedResponse {
@@ -50,27 +50,23 @@ export function useSkuFinderLoopMutation(category: string, productId: string) {
 }
 
 export function useDeleteSkuFinderRunMutation(category: string, productId: string) {
-  const queryClient = useQueryClient();
-  const resetQuery = useCallback(() => {
-    queryClient.removeQueries({ queryKey: ['sku-finder', category, productId] });
-  }, [queryClient, category, productId]);
-  return useMutation<SkuFinderDeleteResponse, Error, number>({
+  return useDataChangeMutation<SkuFinderDeleteResponse, Error, number>({
+    event: 'sku-finder-run-deleted',
+    category,
     mutationFn: (runNumber: number) => api.del<SkuFinderDeleteResponse>(
       `/sku-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/runs/${runNumber}`,
     ),
-    onSuccess: resetQuery,
+    removeQueryKeys: [['sku-finder', category, productId]],
   });
 }
 
 export function useDeleteSkuFinderAllMutation(category: string, productId: string) {
-  const queryClient = useQueryClient();
-  const resetQuery = useCallback(() => {
-    queryClient.removeQueries({ queryKey: ['sku-finder', category, productId] });
-  }, [queryClient, category, productId]);
-  return useMutation<SkuFinderDeleteResponse>({
+  return useDataChangeMutation<SkuFinderDeleteResponse>({
+    event: 'sku-finder-deleted',
+    category,
     mutationFn: () => api.del<SkuFinderDeleteResponse>(
       `/sku-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
     ),
-    onSuccess: resetQuery,
+    removeQueryKeys: [['sku-finder', category, productId]],
   });
 }

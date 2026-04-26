@@ -3,6 +3,8 @@ import type { CatalogRow } from '../../types/product.ts';
 import type { KeyTierProgressGen } from '../../types/product.generated.ts';
 import { computeScoreCard } from './scoreCard.ts';
 
+const OVERVIEW_SORT_STORAGE_KEY_PREFIX = 'sf:overview:sort:';
+
 export const OVERVIEW_SORTABLE_COLUMN_IDS = [
   'brand',
   'base_model',
@@ -41,6 +43,95 @@ const FIRST_SORT_DESC: Readonly<Record<OverviewSortableColumnId, boolean>> = {
 
 function isOverviewSortableColumnId(columnId: string): columnId is OverviewSortableColumnId {
   return OVERVIEW_SORTABLE_COLUMN_IDS.includes(columnId as OverviewSortableColumnId);
+}
+
+function getLocalStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function getSessionStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return window.sessionStorage;
+  } catch {
+    return null;
+  }
+}
+
+function parseOverviewSorting(value: unknown): SortingState {
+  if (!Array.isArray(value)) return [];
+  return value.reduce<SortingState>((acc, entry) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return acc;
+    const id = (entry as { id?: unknown }).id;
+    const desc = (entry as { desc?: unknown }).desc;
+    if (typeof id !== 'string' || !isOverviewSortableColumnId(id)) return acc;
+    if (typeof desc !== 'boolean') return acc;
+    acc.push({ id, desc });
+    return acc;
+  }, []);
+}
+
+function parseOverviewSortSessionState(raw: string | null): SortingState {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return [];
+    const wrapped = (parsed as { state?: unknown }).state;
+    const base = wrapped && typeof wrapped === 'object' && !Array.isArray(wrapped)
+      ? wrapped
+      : parsed;
+    return parseOverviewSorting((base as { sorting?: unknown }).sorting);
+  } catch {
+    return [];
+  }
+}
+
+export function buildOverviewSortStorageKey(category: string): string {
+  const token = String(category || '').trim() || 'default';
+  return `${OVERVIEW_SORT_STORAGE_KEY_PREFIX}${token}`;
+}
+
+export function readOverviewSortSessionState(category: string): SortingState {
+  const key = buildOverviewSortStorageKey(category);
+  const local = getLocalStorage();
+  if (local) {
+    try {
+      const raw = local.getItem(key);
+      if (raw) return parseOverviewSortSessionState(raw);
+    } catch {
+      return [];
+    }
+  }
+
+  const session = getSessionStorage();
+  if (!session) return [];
+  try {
+    const legacy = session.getItem(key);
+    if (!legacy) return [];
+    local?.setItem(key, legacy);
+    session.removeItem(key);
+    return parseOverviewSortSessionState(legacy);
+  } catch {
+    return [];
+  }
+}
+
+export function writeOverviewSortSessionState(category: string, sorting: SortingState): void {
+  const storage = getLocalStorage();
+  if (!storage) return;
+  try {
+    storage.setItem(
+      buildOverviewSortStorageKey(category),
+      JSON.stringify({ sorting: parseOverviewSorting(sorting) }),
+    );
+  } catch {
+    return;
+  }
 }
 
 export function getOverviewColumnFirstSortDesc(columnId: string): boolean {

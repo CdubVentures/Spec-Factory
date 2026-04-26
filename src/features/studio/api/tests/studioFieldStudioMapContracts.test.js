@@ -33,7 +33,7 @@ test('studio field-studio-map PUT emits data-change event for live propagation',
   assert.equal(emitted[0].payload.event, 'field-studio-map-saved');
   assert.equal(emitted[0].payload.category, 'mouse');
   assert.deepEqual(emitted[0].payload.categories, ['mouse']);
-  assert.deepEqual(emitted[0].payload.domains, ['studio', 'mapping', 'review-layout']);
+  assert.deepEqual(emitted[0].payload.domains, ['studio', 'mapping', 'review-layout', 'labels']);
   assert.ok(typeof emitted[0].payload.ts === 'string' && emitted[0].payload.ts.length > 0);
 });
 

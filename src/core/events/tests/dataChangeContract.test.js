@@ -21,7 +21,7 @@ test('createDataChangePayload builds canonical data-change shape', () => {
   assert.equal(payload.event, 'field-studio-map-saved');
   assert.equal(payload.category, 'mouse');
   assert.deepEqual(payload.categories, ['mouse']);
-  assert.deepEqual(payload.domains, ['studio', 'mapping', 'review-layout']);
+  assert.deepEqual(payload.domains, ['studio', 'mapping', 'review-layout', 'labels']);
   assert.deepEqual(payload.entities.productIds, ['mouse-razer-viper']);
   assert.deepEqual(payload.entities.fieldKeys, ['dpi']);
   assert.deepEqual(payload.version, {

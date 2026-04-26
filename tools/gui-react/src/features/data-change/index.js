@@ -31,3 +31,6 @@ export {
 export {
   createDataChangeInvalidationScheduler,
 } from './invalidationScheduler.js';
+export {
+  useDataChangeMutation,
+} from './useDataChangeMutation.ts';

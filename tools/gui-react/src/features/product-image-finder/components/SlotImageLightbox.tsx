@@ -24,7 +24,7 @@ export function SlotImageLightbox({ src, alt, onClose }: SlotImageLightboxProps)
     >
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center text-white/60 hover:text-white text-xl pif-lightbox-close"
+        className="absolute top-4 right-4 w-10 h-10 rounded-full flex items-center justify-center sf-overlay-text-button text-xl pif-lightbox-close"
       >
         {'\u2715'}
       </button>

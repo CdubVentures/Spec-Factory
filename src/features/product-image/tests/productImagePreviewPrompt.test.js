@@ -69,9 +69,23 @@ function makeFinderStoreStub(overrides = {}) {
   };
 }
 
-function makeSpecDbStub({ finderStore, variants = VARIANTS } = {}) {
+function makeSpecDbStub({
+  finderStore,
+  variants = VARIANTS,
+  compiledRules = null,
+  rowsByField = {},
+} = {}) {
   return {
     getFinderStore: () => finderStore,
+    getCompiledRules: () => compiledRules,
+    getFieldCandidatesByProductAndField: (_productId, fieldKey, variantId) => {
+      if (variantId) return rowsByField[`${fieldKey}:${variantId}`] || [];
+      return rowsByField[`${fieldKey}:product`] || rowsByField[fieldKey] || [];
+    },
+    getResolvedFieldCandidate: (_productId, fieldKey) => {
+      const rows = rowsByField[`${fieldKey}:product`] || rowsByField[fieldKey] || [];
+      return rows.find((row) => row.status === 'resolved') || null;
+    },
     variants: {
       listActive: () => variants,
       listByProduct: () => variants,
@@ -198,6 +212,37 @@ describe('compilePifPreviewPrompt', () => {
     const system = envelope.prompts[0].system;
     assert.match(system, /"front"/);
     assert.ok(!/ADDITIONAL[\s\S]*"bottom"/.test(system), 'individual-view hint "bottom" must not appear when no view is set');
+  });
+
+  it('view mode injects enabled product image dependency facts from resolved fields', async () => {
+    const finderStore = makeFinderStoreStub();
+    const specDb = makeSpecDbStub({
+      finderStore,
+      compiledRules: {
+        fields: {
+          connection: { product_image_dependent: true, ui: { label: 'Connection' } },
+          weight_g: { product_image_dependent: false, ui: { label: 'Weight' } },
+        },
+      },
+      rowsByField: {
+        'connection:product': [{ status: 'resolved', value: 'wired', confidence: 96 }],
+        'weight_g:product': [{ status: 'resolved', value: 63, confidence: 90 }],
+      },
+    });
+
+    const envelope = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'view' },
+    });
+
+    const system = envelope.prompts[0].system;
+    assert.match(system, /Product image identity facts/);
+    assert.match(system, /connection: wired/);
+    assert.doesNotMatch(system, /weight_g: 63/);
   });
 
   it('hero mode returns one hero-prompt envelope', async () => {

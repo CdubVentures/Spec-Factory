@@ -3008,6 +3008,7 @@
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
+      "product_image_dependent": true,
       "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
@@ -5122,6 +5123,7 @@
         "difficulty": "easy",
         "required_level": "mandatory"
       },
+      "product_image_dependent": true,
       "required_level": "mandatory",
       "round": null,
       "search_hints": {
@@ -6022,6 +6024,7 @@
         "difficulty": "easy",
         "required_level": "mandatory"
       },
+      "product_image_dependent": true,
       "required_level": "mandatory",
       "round": null,
       "search_hints": {
@@ -6134,6 +6137,7 @@
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
+      "product_image_dependent": true,
       "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
@@ -7660,6 +7664,7 @@
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
+      "product_image_dependent": true,
       "required_level": "non_mandatory",
       "round": null,
       "search_hints": {
@@ -7774,6 +7779,7 @@
         "difficulty": "easy",
         "required_level": "mandatory"
       },
+      "product_image_dependent": true,
       "required_level": "mandatory",
       "round": null,
       "search_hints": {
@@ -8918,6 +8924,7 @@
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
+      "product_image_dependent": true,
       "required_level": "non_mandatory",
       "round": null,
       "search_hints": {

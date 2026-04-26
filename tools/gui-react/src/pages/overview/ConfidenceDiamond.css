@@ -16,7 +16,7 @@
   font-family: var(--sf-token-font-family-mono);
   font-size: var(--sf-token-font-size-body-sm);
   font-weight: 800;
-  fill: #fff;
+  fill: var(--sf-token-on-accent-fg);
   dominant-baseline: central;
   text-anchor: middle;
   letter-spacing: var(--sf-token-letter-spacing-tighter);

@@ -1025,6 +1025,14 @@ export function registerProductImageFinderRoutes(ctx) {
         const finderStore = store(specDb);
         finderStore.updateSummaryField(productId, 'carousel_slots', JSON.stringify(updatedSlots));
 
+        emitDataChange({
+          broadcastWs,
+          event: 'product-image-finder-carousel-updated',
+          category,
+          entities: { productIds: [productId] },
+          meta: { productId, variantKey, slot },
+        });
+
         return jsonRes(res, 200, { ok: true, carousel_slots: updatedSlots });
       } catch (err) {
         return jsonRes(res, 500, { error: 'carousel-slot failed', message: err instanceof Error ? err.message : String(err) });
@@ -1062,6 +1070,7 @@ export function registerProductImageFinderRoutes(ctx) {
         writePifVariantProgress({ specDb, category, productId });
 
         emitDataChange({
+          broadcastWs,
           event: 'product-image-finder-evaluate',
           category,
           entities: { productIds: [productId] },
@@ -1094,6 +1103,7 @@ export function registerProductImageFinderRoutes(ctx) {
         }
 
         emitDataChange({
+          broadcastWs,
           event: 'product-image-finder-evaluate',
           category,
           entities: { productIds: [productId] },

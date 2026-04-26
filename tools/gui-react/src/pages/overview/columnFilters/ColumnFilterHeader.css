@@ -128,7 +128,7 @@
 }
 .sf-cfh-btn--done {
   background: var(--sf-token-accent, #4263eb);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
   border-color: var(--sf-token-accent, #4263eb);
 }
 .sf-cfh-btn--done:hover:not(:disabled) {

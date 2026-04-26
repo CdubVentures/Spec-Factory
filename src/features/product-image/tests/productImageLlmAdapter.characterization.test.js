@@ -78,12 +78,31 @@ describe('buildProductImageFinderPrompt — characterization', () => {
     assert.ok(result.includes('NOT: lifestyle photos'));
   });
 
+  it('includes product image identity facts when provided', () => {
+    const result = buildProductImageFinderPrompt({
+      product: PRODUCT,
+      variantLabel: 'black',
+      priorityViews: PRIORITY_VIEWS,
+      additionalViews: ADDITIONAL_VIEWS,
+      productImageIdentityFacts: [
+        { fieldKey: 'connection', label: 'Connection', value: 'wired' },
+      ],
+    });
+    assert.ok(result.includes('Product image identity facts'));
+    assert.ok(result.includes('connection: wired'));
+    assert.ok(result.includes('source-identity filters'));
+  });
+
   it('treats promptOverride as a full prompt template override', () => {
     const result = buildProductImageFinderPrompt({
       product: PRODUCT, variantLabel: 'black', priorityViews: PRIORITY_VIEWS, additionalViews: ADDITIONAL_VIEWS,
-      promptOverride: 'CUSTOM TEMPLATE {{BRAND}} {{MODEL}}\n{{PRIORITY_VIEWS}}\n{{IMAGE_REQUIREMENTS}}\n{{ALL_VIEW_KEYS}}',
+      promptOverride: 'CUSTOM TEMPLATE {{BRAND}} {{MODEL}}\n{{PRODUCT_IMAGE_IDENTITY_FACTS}}\n{{PRIORITY_VIEWS}}\n{{IMAGE_REQUIREMENTS}}\n{{ALL_VIEW_KEYS}}',
+      productImageIdentityFacts: [
+        { fieldKey: 'connection', label: 'Connection', value: 'wired' },
+      ],
     });
     assert.ok(result.startsWith('CUSTOM TEMPLATE Logitech G502 X Plus'));
+    assert.ok(result.includes('connection: wired'));
     assert.ok(result.includes('PRIORITY'));
     assert.ok(result.includes('Image requirements:'));
     assert.ok(result.includes('View slot rule'));
@@ -238,15 +257,27 @@ describe('buildHeroImageFinderPrompt — characterization', () => {
     assert.ok(result.includes('IDENTITY'));
   });
 
-  it('includes lifestyle/contextual guidance', () => {
+  it('treats hero discovery as broad lead-image candidate gathering', () => {
     const result = buildHeroImageFinderPrompt({ product: PRODUCT, variantLabel: 'black' });
-    assert.ok(result.includes('lifestyle') || result.includes('contextual'));
-    assert.ok(result.includes('IN CONTEXT') || result.includes('real-world environment') || result.includes('desk'));
+    assert.ok(result.includes('product-page hero image'));
+    assert.ok(result.includes('studio'));
+    assert.ok(result.includes('cutout'));
+    assert.ok(result.includes('lifestyle'));
+    assert.ok(result.includes('kit layout'));
+    assert.ok(result.includes('Corsair-style product cards'));
+    assert.ok(result.includes('card crop'));
+    assert.ok(result.includes('original source image'));
+    assert.ok(result.includes('Ordinary flat catalog view-slot shots'));
+    assert.ok(result.includes('technical/detail documentation'));
+    assert.ok(!result.includes('These are NOT cutout/studio shots'));
+    assert.ok(!result.includes('White or plain background studio cutouts'));
+    assert.ok(!result.includes('cannot find a contextual lifestyle shot'));
+    assert.ok(!result.includes('feet/skate'));
   });
 
   it('includes hard rejects section', () => {
     const result = buildHeroImageFinderPrompt({ product: PRODUCT, variantLabel: 'black' });
-    assert.ok(result.includes('HARD REJECTS') || result.includes('do NOT return'));
+    assert.ok(result.includes('DO NOT RETURN'));
     assert.ok(result.includes('watermark') || result.includes('Watermarks'));
   });
 
@@ -294,7 +325,7 @@ describe('buildHeroImageFinderPrompt — characterization', () => {
       promptOverride: 'CUSTOM HERO TEMPLATE {{BRAND}} {{MODEL}}\n{{HERO_INSTRUCTIONS}}\n{{DISCOVERY_LOG_SHAPE}}',
     });
     assert.ok(result.startsWith('CUSTOM HERO TEMPLATE Logitech G502 X Plus'));
-    assert.ok(result.includes('WHAT MAKES A GOOD HERO IMAGE'));
+    assert.ok(result.includes('GOOD HERO CANDIDATES'));
     assert.ok(result.includes('discovery_log'));
     assert.ok(!result.includes('{{BRAND}}'));
     assert.ok(!result.includes('{{HERO_INSTRUCTIONS}}'));

@@ -45,12 +45,13 @@ function writeTestDoc(images) {
   fs.writeFileSync(path.join(dir, 'product_images.json'), JSON.stringify(doc, null, 2));
 }
 
-function makeSpecDb(settings = {}) {
+function makeSpecDb(settings = {}, overrides = {}) {
   return {
     getFinderStore: () => ({
       getSetting: (key) => settings[key] ?? '',
       updateSummaryField: () => {},
     }),
+    ...overrides,
   };
 }
 
@@ -104,6 +105,55 @@ describe('runEvalView', () => {
       _mergeFn: () => ({}),
     });
     assert.equal(result.skipped, true);
+  });
+
+  it('passes product image dependency facts into view eval', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'top-black.png', view: 'top' }),
+      makeImage({ filename: 'top-black-2.png', view: 'top' }),
+    ]);
+    let seenFacts = null;
+    await runEvalView({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb(
+        { evalThumbSize: '512' },
+        {
+          getCompiledRules: () => ({
+            fields: {
+              connection: { product_image_dependent: true, ui: { label: 'Connection' } },
+            },
+          }),
+          getFieldCandidatesByProductAndField: (_productId, fieldKey) => {
+            if (fieldKey === 'connection') return [{ status: 'resolved', value: 'wired', confidence: 96 }];
+            return [];
+          },
+          getResolvedFieldCandidate: () => null,
+        },
+      ),
+      config: {},
+      variantKey: 'color:black',
+      variantId: 'v_abc12345',
+      view: 'top',
+      productRoot: TMP,
+      _evalViewFn: async ({ imagePaths, productImageIdentityFacts }) => {
+        seenFacts = productImageIdentityFacts;
+        return {
+          rankings: imagePaths.map((p, i) => ({
+            filename: path.basename(p),
+            rank: i + 1,
+            best: i === 0,
+            flags: [],
+            reasoning: 'test',
+          })),
+        };
+      },
+      _mergeFn: () => ({ selected: { images: [] } }),
+    });
+
+    assert.deepEqual(
+      seenFacts.map((fact) => [fact.fieldKey, fact.value]),
+      [['connection', 'wired']],
+    );
   });
 
   it('calls onStageAdvance', async () => {

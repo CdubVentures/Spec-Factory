@@ -343,7 +343,7 @@ export function registerStudioRoutes(ctx) {
           event: 'field-studio-map-saved',
           category,
           categories: [category],
-          domains: ['studio', 'mapping', 'review-layout'],
+          domains: ['studio', 'mapping', 'review-layout', 'labels'],
           meta: {
             map_sections: Array.isArray(normalizedFieldStudioMap?.field_mapping) ? normalizedFieldStudioMap.field_mapping.length : 0,
           },
@@ -387,7 +387,7 @@ export function registerStudioRoutes(ctx) {
         event: 'field-key-order-saved',
         category,
         categories: [category],
-        domains: ['mapping'],
+        domains: ['studio', 'mapping', 'review-layout'],
         meta: { order_length: order.length },
       });
       return jsonRes(res, 200, { ok: true, category });
@@ -464,4 +464,3 @@ export function registerStudioRoutes(ctx) {
     return false;
   };
 }
-

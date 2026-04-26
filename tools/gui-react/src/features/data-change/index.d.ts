@@ -1,3 +1,11 @@
+import type {
+  MutationFunction,
+  MutationFunctionContext,
+  QueryKey,
+  UseMutationOptions,
+  UseMutationResult,
+} from '@tanstack/react-query';
+
 export type DataChangeMessage = {
   type?: string;
   event?: string;
@@ -109,3 +117,38 @@ export declare function createDataChangeInvalidationScheduler(args?: {
     categories: string[];
   }) => void;
 }): DataChangeInvalidationScheduler;
+
+export type DataChangeQueryKeyResolver<TData, TVariables, TOnMutateResult> = (args: {
+  readonly data: TData;
+  readonly variables: TVariables;
+  readonly onMutateResult: TOnMutateResult;
+  readonly mutationContext: MutationFunctionContext;
+}) => readonly QueryKey[];
+
+export type DataChangeQueryKeyInput<TData, TVariables, TOnMutateResult> =
+  | readonly QueryKey[]
+  | DataChangeQueryKeyResolver<TData, TVariables, TOnMutateResult>;
+
+export interface UseDataChangeMutationArgs<TData, TError = Error, TVariables = void, TOnMutateResult = unknown> {
+  readonly event: string;
+  readonly category?: string;
+  readonly categories?: readonly string[];
+  readonly mutationFn: MutationFunction<TData, TVariables>;
+  readonly extraQueryKeys?: DataChangeQueryKeyInput<TData, TVariables, TOnMutateResult>;
+  readonly removeQueryKeys?: DataChangeQueryKeyInput<TData, TVariables, TOnMutateResult>;
+  readonly options?: Omit<
+    UseMutationOptions<TData, TError, TVariables, TOnMutateResult>,
+    'mutationFn' | 'onSuccess'
+  > & {
+    readonly onSuccess?: UseMutationOptions<TData, TError, TVariables, TOnMutateResult>['onSuccess'];
+  };
+}
+
+export declare function useDataChangeMutation<
+  TData,
+  TError = Error,
+  TVariables = void,
+  TOnMutateResult = unknown,
+>(
+  args: UseDataChangeMutationArgs<TData, TError, TVariables, TOnMutateResult>,
+): UseMutationResult<TData, TError, TVariables, TOnMutateResult>;

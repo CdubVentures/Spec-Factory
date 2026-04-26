@@ -34,6 +34,7 @@ const OFFSET = 8;          // gap between trigger and panel
 const VIEWPORT_PAD = 10;    // min gap from viewport edge
 const EST_CONTENT_W = 280;  // initial estimate before measurement
 const EST_CONTENT_H = 180;
+const INTERNAL_INTERACTION_REPOSITION_GRACE_MS = 800;
 
 function computePosition(triggerRect: DOMRect, contentRect: { width: number; height: number }, preferred: PopoverPlacement): PositionState {
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
@@ -95,7 +96,21 @@ export function Popover({
 
   const triggerRef = useRef<HTMLSpanElement | null>(null);
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const preserveOpenAfterContentInteractionRef = useRef(false);
+  const contentInteractionGraceTimerRef = useRef<number | null>(null);
   const [pos, setPos] = useState<PositionState | null>(null);
+
+  const markContentInteraction = useCallback(() => {
+    preserveOpenAfterContentInteractionRef.current = true;
+    if (typeof window === 'undefined') return;
+    if (contentInteractionGraceTimerRef.current !== null) {
+      window.clearTimeout(contentInteractionGraceTimerRef.current);
+    }
+    contentInteractionGraceTimerRef.current = window.setTimeout(() => {
+      preserveOpenAfterContentInteractionRef.current = false;
+      contentInteractionGraceTimerRef.current = null;
+    }, INTERNAL_INTERACTION_REPOSITION_GRACE_MS);
+  }, []);
 
   // Measure + position. Shared by initial open and scroll/resize repositioning
   // so the panel tracks the trigger as the page reflows around it.
@@ -105,6 +120,7 @@ export function Popover({
     const vw = typeof window !== 'undefined' ? window.innerWidth : 1280;
     const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
     if (!isTriggerInViewport(tRect, { width: vw, height: vh })) {
+      if (preserveOpenAfterContentInteractionRef.current) return;
       setOpen(false);
       return;
     }
@@ -120,6 +136,21 @@ export function Popover({
     if (!open) { setPos(null); return; }
     reposition();
   }, [open, placement, children, reposition]);
+
+  useEffect(() => () => {
+    if (typeof window === 'undefined') return;
+    if (contentInteractionGraceTimerRef.current === null) return;
+    window.clearTimeout(contentInteractionGraceTimerRef.current);
+  }, []);
+
+  useEffect(() => {
+    if (open) return;
+    preserveOpenAfterContentInteractionRef.current = false;
+    if (typeof window === 'undefined') return;
+    if (contentInteractionGraceTimerRef.current === null) return;
+    window.clearTimeout(contentInteractionGraceTimerRef.current);
+    contentInteractionGraceTimerRef.current = null;
+  }, [open]);
 
   // Reposition (NOT close) on outside scroll / resize. Layout churn from
   // sibling components — e.g. the active-row strip mounting when a finder op
@@ -199,6 +230,10 @@ export function Popover({
           role="dialog"
           style={contentStyle}
           className={`sf-popover-panel sf-popover-${pos?.placement ?? placement} ${contentClassName}`}
+          onPointerDownCapture={markContentInteraction}
+          onMouseDownCapture={markContentInteraction}
+          onClickCapture={markContentInteraction}
+          onKeyDownCapture={markContentInteraction}
           onClick={(e) => { if (stopPropagation) e.stopPropagation(); }}
           onMouseDown={(e) => { if (stopPropagation) e.stopPropagation(); }}
         >

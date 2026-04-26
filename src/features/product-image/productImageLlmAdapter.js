@@ -21,6 +21,7 @@ import { buildSiblingVariantsPromptBlock } from '../../core/finder/siblingVarian
 import { buildIdentityWarning } from '../../core/llm/prompts/identityContext.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { productImageFinderResponseSchema } from './productImageSchema.js';
+import { formatProductImageIdentityFactsBlock } from './productImageIdentityDependencies.js';
 
 // WHY: PIF is the evidence-refs exception across finders — the image URL IS
 // the evidence, and images don't flow through the publisher candidate gate.
@@ -648,6 +649,7 @@ export const PIF_VIEW_DEFAULT_TEMPLATE = `Find high-resolution product images fo
 {{IDENTITY_INTRO}}
 {{IDENTITY_WARNING}}
 {{SIBLING_VARIANTS}}
+{{PRODUCT_IMAGE_IDENTITY_FACTS}}
 
 VIEW DEFINITIONS — classify every image with one of these exact view names:
 
@@ -689,6 +691,7 @@ export function buildProductImageFinderPrompt({
   scopeLabel = "this variant's view searches",
   promptOverride = '',
   templateOverride = '',
+  productImageIdentityFacts = [],
 }) {
   const brand = product.brand || '';
   const baseModel = product.base_model || '';
@@ -767,6 +770,7 @@ export function buildProductImageFinderPrompt({
       currentVariantLabel: variantLabel,
       whatToSkip: 'images',
     }),
+    PRODUCT_IMAGE_IDENTITY_FACTS: formatProductImageIdentityFactsBlock(productImageIdentityFacts, { mode: 'discovery' }),
     PRIORITY_VIEWS: prioritySection,
     ADDITIONAL_VIEWS: additionalSection,
     ADDITIONAL_GUIDANCE: additionalViews.length > 0
@@ -801,6 +805,7 @@ export const PRODUCT_IMAGE_FINDER_SPEC = {
     scopeLabel: domainArgs.scopeLabel,
     promptOverride: domainArgs.promptOverride || '',
     viewQualityMap: domainArgs.viewQualityMap || null,
+    productImageIdentityFacts: domainArgs.productImageIdentityFacts || [],
   }),
   jsonSchema: zodToLlmSchema(productImageFinderResponseSchema),
 };
@@ -850,6 +855,7 @@ export const PIF_HERO_DEFAULT_TEMPLATE = `{{HERO_INSTRUCTIONS}}
 
 {{IDENTITY_INTRO}}
 {{IDENTITY_WARNING}}
+{{PRODUCT_IMAGE_IDENTITY_FACTS}}
 
 Every image you return MUST use the view name "hero".
 
@@ -870,6 +876,7 @@ export function buildHeroImageFinderPrompt({
   scopeLabel = "this variant's hero searches",
   promptOverride = '',
   templateOverride = '',
+  productImageIdentityFacts = [],
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
@@ -894,29 +901,21 @@ export function buildHeroImageFinderPrompt({
     scopeLabel,
   });
 
-  const heroInstructions = `Find high-quality lifestyle and contextual product images for: ${brand} ${model} — ${variantDesc}
+  const heroInstructions = `Find strong product-page hero image candidates for: ${brand} ${model} — ${variantDesc}
 
-You are looking for images that show this product IN CONTEXT — placed on a desk, in a gaming setup, on a workspace surface, or in any real-world environment. The background and setting are intentional and valuable. These are NOT cutout/studio shots.
+Use manufacturer product pages and premium retailer galleries as the visual target. Think Corsair-style product cards and hero sections: composed product imagery with desk/setup context, polished lighting, brand-quality studio treatment, bundle/edition context, or a clean product family/lineup. The image should feel like something used as a lead product card, homepage feature, or article thumbnail.
 
-WHAT MAKES A GOOD HERO IMAGE:
-- Product placed in a real environment — desk setup, gaming station, workspace, lifestyle setting
-- The environment/background is part of the image's value (moody lighting, RGB glow, natural surfaces)
-- Other peripherals may be visible (keyboard, monitor, mousepad) as long as the target product is clearly identifiable in the scene
-- Official manufacturer lifestyle photography, Amazon A+ lifestyle content, press kit contextual shots
-- High-resolution, landscape-oriented preferred (will be cropped to 16:9 later)
-- Dramatic or atmospheric lighting that shows the product in its intended environment
+GOOD HERO CANDIDATES:
+- Exact product is clear and visually important in the frame
+- Polished studio shots, clean cutouts, lifestyle/setup scenes, kit or contents layouts, product lineups, dramatic marketing renders, and retailer/manufacturer promotional images are all acceptable
+- A tight card crop is acceptable when the original source image reads like a composed hero/card image
+- Other products or peripherals may appear when they provide setup, bundle, edition, or product-family context and do not obscure the target product
+- High-resolution, landscape-oriented preferred, but final selection and stricter quality/legal filtering happen in eval
 
-HARD REJECTS — do NOT return any image that has:
-- White or plain background studio cutouts — those are "view" images, NOT heroes
-- Product isolated on a solid/gradient background with no environment context
-- Text overlays, watermarks, logos, price tags, or advertising copy of any kind
-- Busy promotional banners, box art, or marketing collateral with graphics/text
-- User photos, unboxing images, or screenshots
-- The product too small or not clearly identifiable in the scene
-- Generic category banners or brand-only imagery
-- Small thumbnails or low-resolution images
-
-QUALITY OVER QUANTITY: Return ONLY images you are confident meet ALL criteria above. It is far better to return 0 images than to return a single bad one. If you cannot find a contextual lifestyle shot meeting every requirement, return an empty images array.
+DO NOT RETURN:
+- Images that are mainly technical/detail documentation, underside/spec-label closeups, or feature callouts
+- Ordinary flat catalog view-slot shots that do not feel composed as a lead image
+- Watermarked images, text-heavy promo banners, user photos, low-quality editorial photos, or images where the product is too small or unclear
 
 Image requirements:
 - Minimum resolution: ${minWidth}px wide, ${minHeight}px tall — bigger is always better
@@ -924,10 +923,10 @@ Image requirements:
 - Must show the EXACT product: ${brand} ${model} in ${variantDesc}
 
 Allowed sources (in priority order):
-1. Manufacturer's official product page lifestyle/gallery images for this ${variantType === 'edition' ? 'edition' : 'color'}
-2. Manufacturer's press/media page or press kit lifestyle photography
-3. Authorized retailer product galleries (Amazon A+ content, Best Buy) — lifestyle images showing the product in context
-Do NOT use images from editorial review sites — even if the photo looks contextual, it is copyrighted editorial content.`;
+1. Manufacturer's official product page gallery images for this ${variantType === 'edition' ? 'edition' : 'color'}
+2. Manufacturer's press/media page or press kit photography/renders
+3. Authorized retailer product galleries and promotional media (Amazon A+ content, Best Buy)
+Do NOT use images from editorial review sites when they are original review photography; those are copyrighted editorial content.`;
 
   const template = templateOverride || promptOverride || PIF_HERO_DEFAULT_TEMPLATE;
 
@@ -941,6 +940,7 @@ Do NOT use images from editorial review sites — even if the photo looks contex
       BRAND: brand, MODEL: model, VARIANT_SUFFIX: variantSuffix,
     }),
     IDENTITY_WARNING: identityWarning,
+    PRODUCT_IMAGE_IDENTITY_FACTS: formatProductImageIdentityFactsBlock(productImageIdentityFacts, { mode: 'discovery' }),
     PREVIOUS_DISCOVERY: discoverySection,
     HERO_INSTRUCTIONS: heroInstructions,
     DISCOVERY_LOG_SHAPE: resolveGlobalPrompt('discoveryLogShape'),
@@ -963,6 +963,7 @@ export const HERO_IMAGE_FINDER_SPEC = {
     previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
     scopeLabel: domainArgs.scopeLabel,
     promptOverride: domainArgs.promptOverride || '',
+    productImageIdentityFacts: domainArgs.productImageIdentityFacts || [],
   }),
   jsonSchema: zodToLlmSchema(productImageFinderResponseSchema),
 };

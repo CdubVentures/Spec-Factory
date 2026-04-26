@@ -237,7 +237,7 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
 
   if (videoUrl) {
     return (
-      <div className="flex-1 min-h-0 relative bg-black flex items-center justify-center overflow-hidden">
+      <div className="flex-1 min-h-0 relative sf-overlay-surface-deep-bg flex items-center justify-center overflow-hidden">
         <video
           src={videoUrl}
           autoPlay
@@ -260,7 +260,7 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
   }
 
   return (
-    <div className="flex-1 min-h-0 relative bg-black flex items-center justify-center overflow-hidden">
+    <div className="flex-1 min-h-0 relative sf-overlay-surface-deep-bg flex items-center justify-center overflow-hidden">
       {status === 'connecting' && (
         <div className="sf-text-subtle text-sm animate-pulse">Connecting to browser stream...</div>
       )}
@@ -275,7 +275,7 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
       {status === 'ended' && hasFrame && (
         <div className="absolute inset-x-0 top-0 z-10 flex justify-center p-3 pointer-events-none">
           <div
-            className="text-white sf-text-caption px-3 py-1.5 rounded"
+            className="sf-overlay-text-strong sf-text-caption px-3 py-1.5 rounded"
             style={{
               background: 'var(--sf-token-overlay-strong)',
               border: '1px solid var(--sf-token-overlay-divider)',
@@ -301,7 +301,7 @@ export function BrowserStream({ runId, workerId, workerState, workerPool, fetchM
               {activeWorkerId && <span className="ml-1 opacity-80">{activeWorkerId}</span>}
             </div>
           )}
-          <div className="absolute bottom-2 left-2 bg-black/70 text-white sf-text-caption px-2 py-0.5 rounded flex items-center gap-3">
+          <div className="absolute bottom-2 left-2 sf-overlay-strong-bg sf-overlay-text-strong sf-text-caption px-2 py-0.5 rounded flex items-center gap-3">
             <span>{formatMs(elapsed)}</span>
             {frameSize.width > 0 && <span>{frameSize.width}x{frameSize.height}</span>}
           </div>

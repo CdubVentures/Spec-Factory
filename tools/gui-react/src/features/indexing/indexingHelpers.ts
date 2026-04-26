@@ -273,21 +273,23 @@ export function formatLatencyMs(value: number) {
 // WHY: Single source of truth for query family → badge class mapping.
 // Adding a new query family requires editing only this record.
 
+// WHY: Each badge class is backed by --sf-token-source-* tokens in theme.css.
+// Themes can re-skin source palette without touching this file.
 const QUERY_FAMILY_BADGES: Record<string, string> = {
-  manufacturer_html:    'bg-blue-600 text-white dark:bg-blue-500 dark:text-white',
-  manual_pdf:           'bg-violet-600 text-white dark:bg-violet-500 dark:text-white',
-  support_docs:         'bg-cyan-600 text-white dark:bg-cyan-500 dark:text-white',
-  review_lookup:        'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white',
-  benchmark_lookup:     'bg-teal-600 text-white dark:bg-teal-500 dark:text-white',
-  fallback_web:         'bg-slate-500 text-white dark:bg-slate-400 dark:text-white',
-  targeted_single:      'bg-orange-500 text-white dark:bg-orange-400 dark:text-white',
-  targeted_single_field:'bg-orange-500 text-white dark:bg-orange-400 dark:text-white',
-  spec_sheet:           'bg-indigo-600 text-white dark:bg-indigo-500 dark:text-white',
-  review:               'bg-emerald-600 text-white dark:bg-emerald-500 dark:text-white',
-  product_page:         'bg-blue-600 text-white dark:bg-blue-500 dark:text-white',
+  manufacturer_html:    'sf-source-manufacturer',
+  manual_pdf:           'sf-source-manual',
+  support_docs:         'sf-source-support',
+  review_lookup:        'sf-source-review',
+  benchmark_lookup:     'sf-source-benchmark',
+  fallback_web:         'sf-source-fallback',
+  targeted_single:      'sf-source-targeted',
+  targeted_single_field:'sf-source-targeted',
+  spec_sheet:           'sf-source-spec',
+  review:               'sf-source-review',
+  product_page:         'sf-source-manufacturer',
 };
 
-const QUERY_FAMILY_FALLBACK = 'bg-gray-500 text-white dark:bg-gray-400 dark:text-white';
+const QUERY_FAMILY_FALLBACK = 'sf-source-unknown';
 
 export function queryFamilyBadge(family: string): string {
   return QUERY_FAMILY_BADGES[normalizeToken(family)] ?? QUERY_FAMILY_FALLBACK;

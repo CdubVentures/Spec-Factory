@@ -3,7 +3,7 @@
   flex-direction: column;
   min-height: 260px;
   background: var(--sf-token-surface-base);
-  border-right: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.08));
+  border-right: 1px solid var(--sf-token-border-default, rgb(var(--sf-token-shadow-color-rgb) / 0.08));
 }
 
 .sf-drill-col:last-child {
@@ -17,7 +17,7 @@
 
 .sf-drill-head {
   padding: 8px 12px;
-  border-bottom: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.08));
+  border-bottom: 1px solid var(--sf-token-border-default, rgb(var(--sf-token-shadow-color-rgb) / 0.08));
   background: var(--sf-token-surface-elevated);
   display: flex;
   align-items: center;
@@ -35,7 +35,7 @@
   justify-content: center;
   background: var(--sf-token-surface-base);
   color: var(--sf-token-text-muted);
-  border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.12));
+  border: 1px solid var(--sf-token-border-default, rgb(var(--sf-token-shadow-color-rgb) / 0.12));
 }
 
 .sf-drill-step[data-status="active"] {
@@ -67,7 +67,7 @@
   padding: 1px 6px;
   border-radius: var(--sf-token-radius-xs);
   background: var(--sf-token-surface-base);
-  border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.08));
+  border: 1px solid var(--sf-token-border-default, rgb(var(--sf-token-shadow-color-rgb) / 0.08));
 }
 
 .sf-drill-list {
@@ -148,7 +148,7 @@
   padding: 1px 5px;
   border-radius: var(--sf-token-radius-xs);
   background: var(--sf-token-surface-elevated);
-  border: 1px solid var(--sf-token-border-default, rgba(0, 0, 0, 0.08));
+  border: 1px solid var(--sf-token-border-default, rgb(var(--sf-token-shadow-color-rgb) / 0.08));
   flex: none;
 }
 

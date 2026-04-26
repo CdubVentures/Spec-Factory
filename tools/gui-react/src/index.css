@@ -131,6 +131,8 @@
   .traffic-green { background-color: var(--sf-token-state-success-fg); }
   .traffic-yellow { background-color: var(--sf-token-state-warning-fg); }
   .traffic-red { background-color: var(--sf-token-state-error-fg); }
+  .traffic-purple { background-color: var(--sf-token-state-timeout-fg); }
+  .traffic-teal { background-color: var(--sf-token-state-info-fg); }
   .traffic-gray { background-color: var(--sf-token-text-subtle); }
 }
 

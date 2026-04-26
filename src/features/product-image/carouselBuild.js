@@ -27,6 +27,7 @@ import { matchVariant } from './variantMatch.js';
 import {
   resolveHeroEvalPromptInputs,
 } from './productImagePreviewPrompt.js';
+import { resolveProductImageIdentityFacts } from './productImageIdentityDependencies.js';
 
 const MOUSE_EVAL_VIEW_ORDER = Object.freeze(['top', 'left', 'right', 'bottom', 'angle', 'sangle', 'front', 'rear']);
 
@@ -196,6 +197,18 @@ export async function runEvalView({
 
   const dbCriteria = finderStore?.getSetting?.(`evalViewCriteria_${view}`) || '';
   const evalCriteria = dbCriteria || resolveViewEvalCriteria(product.category, view);
+  const variantLabel = viewImages[0]?.variant_label || variantKey;
+  const variantType = viewImages[0]?.variant_type || 'color';
+  const productImageIdentityFacts = resolveProductImageIdentityFacts({
+    specDb,
+    product,
+    variant: {
+      variant_id: variantId,
+      key: variantKey,
+      label: variantLabel,
+      type: variantType,
+    },
+  });
 
   const evalFn = _evalViewFn || evaluateViewCandidates;
   const result = await evalFn({
@@ -204,12 +217,13 @@ export async function runEvalView({
     view,
     viewDescription,
     product,
-    variantLabel: viewImages[0]?.variant_label || variantKey,
-    variantType: viewImages[0]?.variant_type || 'color',
+    variantLabel,
+    variantType,
     size: thumbSize,
     promptOverride: evalPromptOverride,
     evalCriteria,
     carouselContext,
+    productImageIdentityFacts,
     callLlm,
   });
 
@@ -529,6 +543,11 @@ export async function runEvalHero({
     label: variantLabel,
     type: variantType,
   };
+  const productImageIdentityFacts = resolveProductImageIdentityFacts({
+    specDb,
+    product,
+    variant: heroEvalVariant,
+  });
   const heroSystemPrompt = buildHeroSelectionPrompt(resolveHeroEvalPromptInputs({
     product,
     variant: heroEvalVariant,
@@ -536,6 +555,7 @@ export async function runEvalHero({
     heroPromptOverride,
     heroCriteria,
     heroCount,
+    productImageIdentityFacts,
   }));
   const { result: heroResults } = await heroCall({
     product,
@@ -545,6 +565,7 @@ export async function runEvalHero({
     promptOverride: heroPromptOverride,
     heroCriteria,
     heroCount,
+    productImageIdentityFacts,
     userText,
     images,
   });

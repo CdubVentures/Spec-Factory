@@ -2,12 +2,15 @@ import { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
 import type { KeyFinderSummaryRow } from '../../features/key-finder/types.ts';
-import { DiscoveryHistoryButton, FinderRunModelBadge, PromptPreviewModal, useResolvedFinderModel } from '../../shared/ui/finder/index.ts';
+import { DiscoveryHistoryButton, FinderRunModelBadge, PromptPreviewModal } from '../../shared/ui/finder/index.ts';
 import { Popover } from '../../shared/ui/overlay/Popover.tsx';
 import { FinderRunPopoverShell } from '../../shared/ui/overlay/FinderRunPopoverShell.tsx';
 import { useFireAndForget } from '../../features/operations/hooks/useFireAndForget.ts';
 import { useRunningFieldKeys } from '../../features/operations/hooks/useFinderOperations.ts';
 import { usePromptPreviewQuery } from '../../features/indexing/api/promptPreviewQueries.ts';
+import { useKeyDifficultyModelMap, type DifficultyTier } from '../../features/key-finder/hooks/useKeyDifficultyModelMap.ts';
+import { Chip } from '../../shared/ui/feedback/Chip.tsx';
+import { tagCls } from '../../registries/fieldRuleTaxonomy.ts';
 import './KeyTierPopover.css';
 
 export type KeyTierName = 'easy' | 'medium' | 'hard' | 'very_hard' | 'mandatory';
@@ -18,6 +21,15 @@ const TIER_DISPLAY_NAME: Readonly<Record<KeyTierName, string>> = {
   hard: 'Hard',
   very_hard: 'Very Hard',
   mandatory: 'Mandatory',
+};
+
+const DIFFICULTY_TIER_ORDER: readonly DifficultyTier[] = ['easy', 'medium', 'hard', 'very_hard'];
+
+const MODEL_BADGE_LABEL: Readonly<Record<DifficultyTier, string>> = {
+  easy: 'KF-EASY',
+  medium: 'KF-MED',
+  hard: 'KF-HARD',
+  very_hard: 'KF-VHARD',
 };
 
 export interface KeyTierPopoverProps {
@@ -39,6 +51,34 @@ type KeyPromptPreviewState = {
 function matchesTier(row: KeyFinderSummaryRow, tier: KeyTierName): boolean {
   if (tier === 'mandatory') return row.required_level === 'mandatory';
   return row.difficulty === tier;
+}
+
+function formatDifficultyLabel(value: string): string {
+  return value.replace('_', ' ');
+}
+
+function KeyTierModelSlot({ tier }: { readonly tier: KeyTierName }) {
+  const tierMap = useKeyDifficultyModelMap();
+  const renderBadge = (difficulty: DifficultyTier) => {
+    const resolved = tierMap[difficulty];
+    return (
+      <FinderRunModelBadge
+        key={difficulty}
+        labelPrefix={MODEL_BADGE_LABEL[difficulty]}
+        model={resolved.model}
+        accessMode={resolved.accessMode}
+        thinking={resolved.thinking}
+        webSearch={resolved.webSearch}
+        effortLevel={resolved.effortLevel}
+      />
+    );
+  };
+
+  if (tier === 'mandatory') {
+    return <>{DIFFICULTY_TIER_ORDER.map(renderBadge)}</>;
+  }
+
+  return renderBadge(tier);
 }
 
 /** 5-pointed star — renders at the row's right edge when the key has cleared
@@ -67,7 +107,6 @@ export function KeyTierPopover({
   const [open, setOpen] = useState(false);
   const [promptPreview, setPromptPreview] = useState<KeyPromptPreviewState | null>(null);
 
-  const { model, accessMode, modelDisplay, effortLevel } = useResolvedFinderModel('keyFinder');
   const fire = useFireAndForget({ type: 'kf', category, productId });
   const runningFieldKeys = useRunningFieldKeys('kf', productId);
 
@@ -139,16 +178,7 @@ export function KeyTierPopover({
       <FinderRunPopoverShell
         title={`Key Finder — ${TIER_DISPLAY_NAME[tier]}`}
         meta={<>{resolved}/{total} resolved</>}
-        modelSlot={
-          <FinderRunModelBadge
-            labelPrefix="KF"
-            model={modelDisplay}
-            accessMode={accessMode}
-            thinking={model?.thinking ?? false}
-            webSearch={model?.webSearch ?? false}
-            effortLevel={effortLevel}
-          />
-        }
+        modelSlot={<KeyTierModelSlot tier={tier} />}
       >
         <div className="sf-ktp-legend" aria-label="Row state legend">
           <span className="sf-ktp-legend-item">
@@ -186,7 +216,15 @@ export function KeyTierPopover({
                           className={`sf-ktp-row ${stateClass} ${busy ? 'sf-ktp-row-busy' : ''}`}
                         >
                           <span className="sf-ktp-row-label" title={r.field_key}>
-                            {r.label || r.field_key}
+                            <span className="sf-ktp-row-label-text">{r.label || r.field_key}</span>
+                            {tier === 'mandatory' && r.difficulty && (
+                              <span className="sf-ktp-row-difficulty">
+                                <Chip
+                                  label={formatDifficultyLabel(r.difficulty)}
+                                  className={tagCls('difficulty', r.difficulty)}
+                                />
+                              </span>
+                            )}
                             {r.concrete_evidence && (
                               <ConcreteStarIcon className="sf-ktp-row-star" />
                             )}

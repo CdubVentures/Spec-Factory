@@ -10,9 +10,9 @@ interface AlertBannerProps {
 }
 
 const SEVERITY_STYLES: Record<AlertSeverity, { border: string; bg: string; icon: string }> = {
-  warning: { border: 'var(--sf-warning, #d97706)', bg: 'var(--sf-warning-bg, rgba(217,119,6,0.08))', icon: '\u26A0' },
-  info: { border: 'var(--sf-info, #2563eb)', bg: 'var(--sf-info-bg, rgba(37,99,235,0.08))', icon: '\u2139' },
-  error: { border: 'var(--sf-error, #dc2626)', bg: 'var(--sf-error-bg, rgba(220,38,38,0.08))', icon: '\u2715' },
+  warning: { border: 'var(--sf-token-state-warning-fg)', bg: 'var(--sf-token-state-warning-bg)', icon: '\u26A0' },
+  info:    { border: 'var(--sf-token-state-info-fg)',    bg: 'var(--sf-token-state-info-bg)',    icon: '\u2139' },
+  error:   { border: 'var(--sf-token-state-error-fg)',   bg: 'var(--sf-token-state-error-bg)',   icon: '\u2715' },
 };
 
 export const AlertBanner = memo(function AlertBanner({ severity, title, message, onDismiss }: AlertBannerProps) {

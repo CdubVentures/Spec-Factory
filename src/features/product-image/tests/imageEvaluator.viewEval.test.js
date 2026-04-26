@@ -108,6 +108,18 @@ describe('buildViewEvalPrompt', () => {
     assert.ok(result.toLowerCase().includes('sharp'));
   });
 
+  it('includes product image identity guardrails when provided', () => {
+    const result = buildViewEvalPrompt({
+      ...defaults,
+      productImageIdentityFacts: [
+        { fieldKey: 'connection', label: 'Connection', value: 'wired' },
+      ],
+    });
+    assert.ok(result.includes('Product image identity guardrails'));
+    assert.ok(result.includes('connection: wired'));
+    assert.ok(result.includes('wrong_product'));
+  });
+
   it('describes the JSON response format', () => {
     const result = buildViewEvalPrompt(defaults);
     assert.ok(result.includes('winner'));
@@ -126,9 +138,13 @@ describe('buildViewEvalPrompt', () => {
   it('treats promptOverride as a full view-eval prompt template override', () => {
     const result = buildViewEvalPrompt({
       ...defaults,
-      promptOverride: 'CUSTOM VIEW EVAL {{IDENTITY}}\n{{VIEW_LINE}}\n{{COUNT_LINE}}\n{{CRITERIA}}',
+      promptOverride: 'CUSTOM VIEW EVAL {{IDENTITY}}\n{{PRODUCT_IMAGE_IDENTITY_FACTS}}\n{{VIEW_LINE}}\n{{COUNT_LINE}}\n{{CRITERIA}}',
+      productImageIdentityFacts: [
+        { fieldKey: 'connection', label: 'Connection', value: 'wired' },
+      ],
     });
     assert.ok(result.startsWith('CUSTOM VIEW EVAL Product: Razer DeathAdder V3'));
+    assert.ok(result.includes('connection: wired'));
     assert.ok(result.includes('View: "top"'));
     assert.ok(result.includes('You are evaluating 3 candidate images'));
     assert.ok(result.includes('Evaluation criteria'));

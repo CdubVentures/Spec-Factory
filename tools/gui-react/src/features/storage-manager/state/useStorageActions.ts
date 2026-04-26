@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
+import { useDataChangeMutation } from '../../data-change/index.js';
 import type {
   DeleteRunResponse,
   BulkDeleteResponse,
@@ -9,28 +9,19 @@ import type {
   PurgeProductHistoryResponse,
 } from '../types.ts';
 
-function useInvalidateStorage() {
-  const queryClient = useQueryClient();
-  return () => {
-    queryClient.invalidateQueries({ queryKey: ['storage'] });
-  };
-}
-
 export function useDeleteRun() {
-  const invalidate = useInvalidateStorage();
-  return useMutation({
+  return useDataChangeMutation<DeleteRunResponse, Error, string>({
+    event: 'storage-runs-deleted',
     mutationFn: (runId: string) =>
       api.del<DeleteRunResponse>(`/storage/runs/${encodeURIComponent(runId)}`),
-    onSuccess: invalidate,
   });
 }
 
 export function useBulkDeleteRuns() {
-  const invalidate = useInvalidateStorage();
-  return useMutation({
+  return useDataChangeMutation<BulkDeleteResponse, Error, string[]>({
+    event: 'storage-runs-bulk-deleted',
     mutationFn: (runIds: string[]) =>
       api.post<BulkDeleteResponse>('/storage/runs/bulk-delete', { runIds }),
-    onSuccess: invalidate,
   });
 }
 
@@ -40,20 +31,18 @@ interface PruneParams {
 }
 
 export function usePruneRuns() {
-  const invalidate = useInvalidateStorage();
-  return useMutation({
+  return useDataChangeMutation<PruneResponse, Error, PruneParams>({
+    event: 'storage-pruned',
     mutationFn: (params: PruneParams) =>
       api.post<PruneResponse>('/storage/prune', params),
-    onSuccess: invalidate,
   });
 }
 
 export function usePurgeRuns() {
-  const invalidate = useInvalidateStorage();
-  return useMutation({
+  return useDataChangeMutation<PurgeResponse>({
+    event: 'storage-purged',
     mutationFn: () =>
       api.post<PurgeResponse>('/storage/purge', { confirmToken: 'DELETE' }),
-    onSuccess: invalidate,
   });
 }
 
@@ -64,11 +53,10 @@ interface DeleteUrlParams {
 }
 
 export function useDeleteUrl() {
-  const invalidate = useInvalidateStorage();
-  return useMutation({
+  return useDataChangeMutation<DeleteUrlResponse, Error, DeleteUrlParams>({
+    event: 'storage-urls-deleted',
     mutationFn: (params: DeleteUrlParams) =>
       api.post<DeleteUrlResponse>('/storage/urls/delete', params),
-    onSuccess: invalidate,
   });
 }
 
@@ -78,13 +66,12 @@ interface PurgeProductHistoryParams {
 }
 
 export function usePurgeProductHistory() {
-  const invalidate = useInvalidateStorage();
-  return useMutation({
+  return useDataChangeMutation<PurgeProductHistoryResponse, Error, PurgeProductHistoryParams>({
+    event: 'storage-history-purged',
     mutationFn: ({ productId, category }: PurgeProductHistoryParams) =>
       api.post<PurgeProductHistoryResponse>(
         `/storage/products/${encodeURIComponent(productId)}/purge-history`,
         { category },
       ),
-    onSuccess: invalidate,
   });
 }

@@ -59,7 +59,7 @@
   height: 18px;
   padding: 0 6px;
   border-radius: var(--sf-token-radius-pill);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
   font-weight: 700;
   font-size: var(--sf-token-font-size-caption);
   line-height: var(--sf-token-line-height-none);
@@ -219,7 +219,7 @@
 
 .sf-aas-remove:hover {
   background: var(--sf-token-state-danger-fg, #c92a2a);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
 }
 
 /* ── Idle-group "Clear selection" button ────────────────────────────── */
@@ -239,5 +239,5 @@
 }
 .sf-aas-clear:hover {
   background: var(--sf-token-state-danger-fg, #c92a2a);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
 }

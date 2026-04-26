@@ -1,10 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  buildOverviewSortStorageKey,
   getOverviewColumnFirstSortDesc,
   OVERVIEW_SORTABLE_COLUMN_IDS,
+  readOverviewSortSessionState,
   sortOverviewRows,
   toggleOverviewSortStack,
+  writeOverviewSortSessionState,
 } from '../overviewSort.ts';
 import type { CatalogRow } from '../../../types/product.ts';
 import type {
@@ -78,6 +81,59 @@ function makeRow(overrides: Partial<CatalogRow> = {}): CatalogRow {
     kfLastRunAt: '',
     ...overrides,
   };
+}
+
+class MemoryStorage implements Storage {
+  private readonly values = new Map<string, string>();
+
+  get length(): number {
+    return this.values.size;
+  }
+
+  clear(): void {
+    this.values.clear();
+  }
+
+  getItem(key: string): string | null {
+    return this.values.get(key) ?? null;
+  }
+
+  key(index: number): string | null {
+    return Array.from(this.values.keys())[index] ?? null;
+  }
+
+  removeItem(key: string): void {
+    this.values.delete(key);
+  }
+
+  setItem(key: string, value: string): void {
+    this.values.set(key, value);
+  }
+}
+
+function withBrowserStorage<T>(
+  localStorage: Storage,
+  sessionStorage: Storage,
+  callback: () => T,
+): T {
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'window');
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      localStorage,
+      sessionStorage,
+    } as unknown as Window & typeof globalThis,
+  });
+
+  try {
+    return callback();
+  } finally {
+    if (descriptor) {
+      Object.defineProperty(globalThis, 'window', descriptor);
+    } else {
+      Reflect.deleteProperty(globalThis, 'window');
+    }
+  }
 }
 
 describe('toggleOverviewSortStack', () => {
@@ -329,4 +385,62 @@ describe('sortOverviewRows', () => {
       );
     });
   }
+});
+
+describe('Overview sort session state', () => {
+  it('persists the Overview sort stack per category', () => {
+    withBrowserStorage(new MemoryStorage(), new MemoryStorage(), () => {
+      writeOverviewSortSessionState('mouse', [
+        { id: 'pifVariants', desc: true },
+        { id: 'brand', desc: false },
+      ]);
+      writeOverviewSortSessionState('keyboard', [
+        { id: 'lastRun', desc: true },
+      ]);
+
+      assert.deepEqual(readOverviewSortSessionState('mouse'), [
+        { id: 'pifVariants', desc: true },
+        { id: 'brand', desc: false },
+      ]);
+      assert.deepEqual(readOverviewSortSessionState('keyboard'), [
+        { id: 'lastRun', desc: true },
+      ]);
+    });
+  });
+
+  it('drops stale or malformed sort entries before restoring', () => {
+    const local = new MemoryStorage();
+    local.setItem(buildOverviewSortStorageKey('mouse'), JSON.stringify({
+      sorting: [
+        { id: 'select', desc: true },
+        { id: 'brand', desc: false },
+        { id: 'live', desc: 'desc' },
+      ],
+    }));
+
+    withBrowserStorage(local, new MemoryStorage(), () => {
+      assert.deepEqual(readOverviewSortSessionState('mouse'), [
+        { id: 'brand', desc: false },
+      ]);
+    });
+  });
+
+  it('migrates legacy sessionStorage sort state to localStorage', () => {
+    const local = new MemoryStorage();
+    const session = new MemoryStorage();
+    const key = buildOverviewSortStorageKey('mouse');
+    session.setItem(key, JSON.stringify({
+      sorting: [{ id: 'live', desc: true }],
+    }));
+
+    withBrowserStorage(local, session, () => {
+      assert.deepEqual(readOverviewSortSessionState('mouse'), [
+        { id: 'live', desc: true },
+      ]);
+      assert.equal(session.getItem(key), null);
+      assert.equal(local.getItem(key), JSON.stringify({
+        sorting: [{ id: 'live', desc: true }],
+      }));
+    });
+  });
 });

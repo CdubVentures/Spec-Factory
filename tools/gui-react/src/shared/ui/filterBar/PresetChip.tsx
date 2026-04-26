@@ -74,7 +74,7 @@ export const PresetChip = memo(function PresetChip({
     >
       <span
         className={`sf-filter-dot ${running ? 'animate-pulse' : ''}`.trim()}
-        style={{ background: loudActive ? 'rgba(255,255,255,0.85)' : dotColor(tone) }}
+        style={{ background: loudActive ? 'var(--sf-token-on-accent-fg)' : dotColor(tone) }}
       />
       <span>{label}</span>
       <span className="sf-filter-chip-count">{count}</span>

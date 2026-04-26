@@ -51,6 +51,7 @@ export function KeyContractSection({
   }
 
   const variantDependent = boolN(currentRule, 'variant_dependent', false);
+  const productImageDependent = boolN(currentRule, 'product_image_dependent', false);
 
   return (
     <Section
@@ -106,7 +107,50 @@ export function KeyContractSection({
         </button>
       </div>
 
-      {/* ── Type & Shape ──────────────────────────────────────── */}
+      {/* Product Image Dependent */}
+      <div className={`flex items-center justify-between gap-3 px-3 py-2 mb-3 rounded-md sf-surface-panel border sf-border-soft ${productImageDependent ? 'sf-switch-on' : ''}`}>
+        <div className="flex items-center gap-2 min-w-0">
+          <svg
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            className={`w-3.5 h-3.5 shrink-0 ${productImageDependent ? '' : 'sf-text-subtle'}`}
+            aria-hidden="true"
+          >
+            <rect x="2.5" y="3" width="11" height="8" rx="1.5" />
+            <circle cx="5" cy="5.5" r="1" />
+            <path d="M3.5 10l3-3 2 2 1.5-1.5 2.5 2.5" />
+            <path d="M5 13h6" />
+          </svg>
+          <div className="flex flex-col min-w-0">
+            <div className={`${labelCls} flex items-center m-0`}>
+              <span className="font-semibold">Product Image Dependent</span>
+              <B p="product_image_dependent" />
+            </div>
+            <span className="sf-text-nano sf-text-subtle leading-tight">
+              {productImageDependent
+                ? 'Resolved value is injected into PIF search and eval identity context'
+                : 'PIF image prompts ignore this field value'}
+            </span>
+          </div>
+        </div>
+        <button
+          type="button"
+          role="switch"
+          aria-checked={productImageDependent}
+          aria-label={productImageDependent ? 'Product image dependent (on)' : 'Product image dependent (off)'}
+          disabled={disabled}
+          onClick={() => updateField(selectedKey, 'product_image_dependent', !productImageDependent)}
+          className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full sf-switch-track transition focus:outline-none focus:ring-2 focus:ring-accent/25 ${productImageDependent ? 'sf-switch-track-on' : ''} disabled:opacity-60 disabled:cursor-not-allowed`}
+        >
+          <span
+            className={`inline-block h-3.5 w-3.5 rounded-full sf-switch-thumb transition-transform ${productImageDependent ? 'translate-x-4' : 'translate-x-0.5'}`}
+            aria-hidden="true"
+          />
+        </button>
+      </div>
+
       <SubSection label="Type & Shape">
         <div className="grid grid-cols-2 gap-3">
           <div>

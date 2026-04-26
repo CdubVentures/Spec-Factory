@@ -4,9 +4,9 @@
  * ──────────────────────────────────────────────────────────────── */
 
 /* Lightbox overlay */
-.pif-lightbox-overlay { background-color: rgba(0, 0, 0, 0.92); }
-.pif-lightbox-close { background-color: rgba(255, 255, 255, 0.08); }
-.pif-lightbox-info { background-color: rgba(0, 0, 0, 0.6); }
+.pif-lightbox-overlay { background-color: rgb(var(--sf-token-shadow-color-rgb) / 0.92); }
+.pif-lightbox-close { background-color: var(--sf-token-overlay-button); }
+.pif-lightbox-info { background-color: rgb(var(--sf-token-shadow-color-rgb) / 0.6); }
 
 /* Source indicator dots */
 .pif-source-dot {
@@ -26,25 +26,28 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  font-family: var(--sf-font-mono, monospace);
+  font-family: var(--sf-token-font-family-mono);
   font-size: var(--sf-token-font-size-micro);
-  color: #999;
-  background-color: rgba(0, 0, 0, 0.05);
+  color: rgb(var(--sf-color-text-muted-rgb));
+  background-color: rgb(var(--sf-color-text-primary-rgb) / 0.05);
   flex-shrink: 0;
 }
 
 /* Carousel mosaic grid gap background */
-.pif-mosaic-gap-bg { background-color: rgba(0, 0, 0, 0.06); }
+.pif-mosaic-gap-bg { background-color: rgb(var(--sf-token-shadow-color-rgb) / 0.06); }
 
 /* Carousel hover overlay */
 .pif-mosaic-overlay {
-  background-color: rgba(0, 0, 0, 0.45);
+  background-color: rgb(var(--sf-token-shadow-color-rgb) / 0.45);
   backdrop-filter: blur(2px);
 }
 
 /* Checkerboard background for transparent image preview */
 .pif-lightbox-checker {
-  background: repeating-conic-gradient(#808080 0% 25%, #606060 0% 50%) 0 0 / 20px 20px;
+  background: repeating-conic-gradient(
+    rgb(var(--sf-color-text-subtle-rgb) / 0.30) 0% 25%,
+    rgb(var(--sf-color-text-subtle-rgb) / 0.15) 0% 50%
+  ) 0 0 / 20px 20px;
 }
 
 /* Empty grid placeholder cells */

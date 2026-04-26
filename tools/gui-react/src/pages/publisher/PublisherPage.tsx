@@ -482,7 +482,6 @@ export function PublisherPage() {
     queryKey: ['publisher', category, page, limit],
     queryFn: () => api.get<PublisherCandidatesResponse>(`/publisher/${category}/candidates?page=${page}&limit=${limit}`),
     enabled: Boolean(category),
-    refetchInterval: 10_000,
   });
 
   const stats: PublisherStats = data?.stats ?? { total: 0, resolved: 0, pending: 0, repaired: 0, products: 0, unknown_stripped: 0 };

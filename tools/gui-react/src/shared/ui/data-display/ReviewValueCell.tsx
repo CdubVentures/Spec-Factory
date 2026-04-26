@@ -86,10 +86,13 @@ export function ReviewValueCell({
     >
       {/* Tooltip trigger wraps the dot + confidence for a bigger hover target */}
       <CellTooltip state={state}>
-        <span className="inline-flex items-center gap-1 cursor-help rounded-full px-0.5 py-0.5 -my-0.5 hover:bg-black/5 dark:hover:bg-white/5 transition-colors flex-shrink-0">
-          <span className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${hasShared ? 'bg-purple-500' : trafficColor(color)}`} />
+        <span className="sf-review-value-cell-trigger inline-flex items-center gap-1 cursor-help rounded-full px-0.5 py-0.5 -my-0.5 transition-colors flex-shrink-0">
+          <span
+            className={`inline-block w-2.5 h-2.5 rounded-full flex-shrink-0 ${hasShared ? '' : trafficColor(color)}`}
+            style={hasShared ? { background: 'var(--sf-token-state-timeout-fg)' } : undefined}
+          />
           {showConfidence && state.selected.confidence > 0 && (
-            <span className="text-[9px] text-gray-400 flex-shrink-0 tabular-nums">
+            <span className="text-[9px] sf-text-subtle flex-shrink-0 tabular-nums">
               {pct(state.selected.confidence)}
             </span>
           )}

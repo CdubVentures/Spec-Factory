@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
+import { useDataChangeMutation } from '../../data-change/index.js';
 import type { ColorEntry } from '../types.ts';
 import { buildColorMatrix } from '../utils/buildColorMatrix.ts';
 import { ColorMatrixView } from './ColorMatrixView.tsx';
@@ -11,7 +12,6 @@ import { inputCls } from '../../../utils/studioConstants.ts';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 
 export function ColorRegistryPage() {
-  const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [showAddColor, setShowAddColor] = useState(false);
   const [showAddGroup, setShowAddGroup] = useState(false);
@@ -22,23 +22,19 @@ export function ColorRegistryPage() {
     queryFn: () => api.get<ColorEntry[]>('/colors'),
   });
 
-  const invalidate = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: ['colors'] });
-  }, [queryClient]);
-
-  const addMut = useMutation({
+  const addMut = useDataChangeMutation<unknown, Error, { name: string; hex: string }>({
+    event: 'color-add',
     mutationFn: (body: { name: string; hex: string }) => api.post('/colors', body),
-    onSuccess: invalidate,
   });
 
-  const updateMut = useMutation({
+  const updateMut = useDataChangeMutation<unknown, Error, { name: string; hex: string }>({
+    event: 'color-update',
     mutationFn: ({ name, hex }: { name: string; hex: string }) => api.put(`/colors/${name}`, { hex }),
-    onSuccess: invalidate,
   });
 
-  const deleteMut = useMutation({
+  const deleteMut = useDataChangeMutation<unknown, Error, string>({
+    event: 'color-delete',
     mutationFn: (name: string) => api.del(`/colors/${name}`),
-    onSuccess: invalidate,
   });
 
   const filtered = useMemo(() => {

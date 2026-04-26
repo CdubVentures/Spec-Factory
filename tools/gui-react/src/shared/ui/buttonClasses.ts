@@ -9,5 +9,5 @@ export const btnDanger =
 export const btnDangerSolid =
   'px-3 py-1.5 text-sm sf-danger-button-solid transition-colors disabled:opacity-50';
 export const sectionCls =
-  'bg-white sf-dk-surface-800 rounded border sf-border-default p-4';
+  'sf-surface-card rounded border sf-border-default p-4';
 export const actionBtnWidth = 'w-56';

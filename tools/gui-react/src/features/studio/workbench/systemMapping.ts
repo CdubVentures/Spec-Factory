@@ -18,83 +18,35 @@ export type ParentGroup = 'idx' | 'eng' | 'rev' | 'flag' | 'seed' | 'comp' | 'va
 
 // ── Badge configs (5 parent groups, all read-only) ───────────────────
 
+// WHY: cls is a semantic CSS class backed by --sf-token-consumer-* tokens
+// (defined in theme.css). Themes can re-skin without touching this file.
 export const PARENT_BADGE_CONFIGS: Record<ParentGroup, {
   label: string;
   title: string;
   cls: string;
 }> = {
-  idx: {
-    label: 'IDX',
-    title: 'Indexing Lab',
-    cls: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300',
-  },
-  eng: {
-    label: 'ENG',
-    title: 'Field Rules Engine',
-    cls: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',
-  },
-  rev: {
-    label: 'REV',
-    title: 'Component Review',
-    cls: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
-  },
-  flag: {
-    label: 'FLAG',
-    title: 'Review Flags',
-    cls: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300',
-  },
-  seed: {
-    label: 'SEED',
-    title: 'Seed Pipeline',
-    cls: 'bg-lime-100 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300',
-  },
-  comp: {
-    label: 'COMP',
-    title: 'Component System',
-    cls: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-300',
-  },
-  val: {
-    label: 'VAL',
-    title: 'Publish Pipeline Validation',
-    cls: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
-  },
-  pub: {
-    label: 'PUB',
-    title: 'Publisher Pipeline',
-    cls: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',
-  },
-  llm: {
-    label: 'LLM',
-    title: 'LLM Finder',
-    cls: 'bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-900/40 dark:text-fuchsia-300',
-  },
+  idx:  { label: 'IDX',  title: 'Indexing Lab',                 cls: 'sf-badge-consumer-idx' },
+  eng:  { label: 'ENG',  title: 'Field Rules Engine',           cls: 'sf-badge-consumer-eng' },
+  rev:  { label: 'REV',  title: 'Component Review',             cls: 'sf-badge-consumer-rev' },
+  flag: { label: 'FLAG', title: 'Review Flags',                 cls: 'sf-badge-consumer-flag' },
+  seed: { label: 'SEED', title: 'Seed Pipeline',                cls: 'sf-badge-consumer-seed' },
+  comp: { label: 'COMP', title: 'Component System',             cls: 'sf-badge-consumer-comp' },
+  val:  { label: 'VAL',  title: 'Publish Pipeline Validation',  cls: 'sf-badge-consumer-val' },
+  pub:  { label: 'PUB',  title: 'Publisher Pipeline',           cls: 'sf-badge-consumer-pub' },
+  llm:  { label: 'LLM',  title: 'LLM Finder',                   cls: 'sf-badge-consumer-llm' },
 };
 
 // WHY: Legacy badge configs kept for EnumConfigurator / StaticBadges backward compat.
+// Maps to the same theme-driven consumer classes via parent-group equivalents.
 export const SYSTEM_BADGE_CONFIGS: Record<DownstreamSystem, {
   label: string;
   title: string;
   cls: string;
   clsDim: string;
 }> = {
-  indexlab: {
-    label: 'IDX',
-    title: 'Indexing Lab',
-    cls: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-300',
-    clsDim: 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600 line-through',
-  },
-  seed: {
-    label: 'SEED',
-    title: 'Seed Pipeline',
-    cls: 'bg-lime-100 text-lime-700 dark:bg-lime-900/40 dark:text-lime-300',
-    clsDim: 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600 line-through',
-  },
-  review: {
-    label: 'REV',
-    title: 'Component Review',
-    cls: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300',
-    clsDim: 'bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-600 line-through',
-  },
+  indexlab: { label: 'IDX',  title: 'Indexing Lab',     cls: 'sf-badge-consumer-idx',  clsDim: 'sf-badge-consumer-dim' },
+  seed:     { label: 'SEED', title: 'Seed Pipeline',    cls: 'sf-badge-consumer-seed', clsDim: 'sf-badge-consumer-dim' },
+  review:   { label: 'REV',  title: 'Component Review', cls: 'sf-badge-consumer-rev',  clsDim: 'sf-badge-consumer-dim' },
 };
 
 // ── Derived maps (from unified registry) ─────────────────────────────

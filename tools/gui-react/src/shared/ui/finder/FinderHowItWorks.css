@@ -3,24 +3,24 @@
 /* Element classes (flow-box, callout, etc.) read those vars.      */
 
 .hiw-tone-accent {
-  --hiw-fg: var(--sf-token-accent, #3b82f6);
-  --hiw-bg: rgba(59, 130, 246, 0.08);
-  --hiw-border: rgba(59, 130, 246, 0.25);
+  --hiw-fg: var(--sf-token-accent);
+  --hiw-bg: rgb(var(--sf-color-accent-rgb) / 0.08);
+  --hiw-border: rgb(var(--sf-color-accent-rgb) / 0.25);
 }
 .hiw-tone-green {
-  --hiw-fg: var(--sf-token-state-success-fg, #16a34a);
-  --hiw-bg: var(--sf-token-state-success-bg, rgba(34, 197, 94, 0.08));
-  --hiw-border: var(--sf-token-state-success-border, rgba(34, 197, 94, 0.25));
+  --hiw-fg: var(--sf-token-state-success-fg);
+  --hiw-bg: var(--sf-token-state-success-bg);
+  --hiw-border: var(--sf-token-state-success-border);
 }
 .hiw-tone-purple {
-  --hiw-fg: var(--sf-token-state-run-ai-fg, #7c3aed);
-  --hiw-bg: rgba(124, 58, 237, 0.08);
-  --hiw-border: rgba(124, 58, 237, 0.25);
+  --hiw-fg: var(--sf-token-state-run-ai-fg);
+  --hiw-bg: var(--sf-token-state-key-bg);
+  --hiw-border: var(--sf-token-state-key-border);
 }
 .hiw-tone-teal {
-  --hiw-fg: #0891b2;
-  --hiw-bg: rgba(8, 145, 178, 0.08);
-  --hiw-border: rgba(8, 145, 178, 0.25);
+  --hiw-fg: var(--sf-token-state-info-fg);
+  --hiw-bg: var(--sf-token-state-info-bg);
+  --hiw-border: var(--sf-token-state-info-border);
 }
 .hiw-tone-orange {
   --hiw-fg: var(--sf-token-state-confirm-fg, #ea580c);
@@ -86,7 +86,7 @@
   border-radius: 50%;
   font-size: var(--sf-token-font-size-caption, 11px);
   font-weight: 700;
-  color: white;
+  color: var(--sf-token-on-accent-fg);
   flex-shrink: 0;
   background: var(--hiw-fg);
 }
@@ -211,7 +211,7 @@
   padding: 2px 6px;
   border-radius: var(--sf-token-radius-sm, 3px);
   background: var(--hiw-fg);
-  color: white;
+  color: var(--sf-token-on-accent-fg);
 }
 
 .hiw-compare-list {

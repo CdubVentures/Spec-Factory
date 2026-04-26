@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import { useUiStore } from '../../../stores/uiStore.ts';
 import { useOperationsStore } from '../../operations/state/operationsStore.ts';
+import { useDataChangeMutation } from '../../data-change/index.js';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
+import { selectActivePublisherReconcileOperation } from '../state/publisherReconcileOperations.ts';
 
 interface ReconcilePreview {
   threshold: number;
@@ -21,7 +23,6 @@ interface ReconcileResult {
 
 export default function PublisherReconcileSection() {
   const category = useUiStore((s) => s.category);
-  const queryClient = useQueryClient();
   const [lastResult, setLastResult] = useState<ReconcilePreview | null>(null);
 
   const { data: preview, isLoading, isError } = useQuery({
@@ -29,29 +30,25 @@ export default function PublisherReconcileSection() {
     queryFn: () => api.get<ReconcilePreview>(`/publisher/${category}/reconcile`),
     enabled: Boolean(category),
     staleTime: 5_000,
-    refetchInterval: 15_000,
   });
 
-  const reconcileMut = useMutation({
+  const reconcileMut = useDataChangeMutation<ReconcileResult>({
+    event: 'publisher-reconcile',
+    category,
     mutationFn: () => api.post<ReconcileResult>(`/publisher/${category}/reconcile`, {}),
-    onSuccess: (data) => {
-      setLastResult(data.result);
-      queryClient.invalidateQueries({ queryKey: ['publisher', 'reconcile', category] });
-      queryClient.invalidateQueries({ queryKey: ['publisher', category] });
-      queryClient.invalidateQueries({ queryKey: ['publisher', 'published'] });
+    options: {
+      onSuccess: (data) => {
+        setLastResult(data.result);
+      },
     },
   });
 
-  // Watch for active reconcile operations
-  const ops = useOperationsStore((s) => s.operations);
-  const activeOp = useMemo(() => {
-    for (const op of ops.values()) {
-      if (op.type === 'publisher-reconcile' && op.category === category && op.status === 'running') {
-        return op;
-      }
-    }
-    return null;
-  }, [ops, category]);
+  const activeOp = useOperationsStore(
+    useCallback(
+      (s) => selectActivePublisherReconcileOperation(s.operations, category),
+      [category],
+    ),
+  );
 
   const isReconciling = reconcileMut.isPending || Boolean(activeOp);
   const needsAction = preview && (preview.unpublished > 0 || preview.published > 0);

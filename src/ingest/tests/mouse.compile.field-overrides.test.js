@@ -66,6 +66,40 @@ test('compileCategoryFieldStudio preserves saved map field_overrides consumers i
   }
 });
 
+test('compileCategoryFieldStudio preserves product_image_dependent in generated field rules', async () => {
+  const workspace = await createMouseCompileWorkspace({
+    tempPrefix: 'spec-harvester-category-compile-pif-image-dep-',
+  });
+  const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
+
+  try {
+    fieldStudioMap.field_overrides = {
+      ...(fieldStudioMap.field_overrides || {}),
+      connection: {
+        ...(fieldStudioMap.field_overrides?.connection || {}),
+        product_image_dependent: true,
+      },
+    };
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: { categoryAuthorityRoot: helperRoot },
+    });
+
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath,
+      config: { categoryAuthorityRoot: helperRoot },
+    });
+    assert.equal(result.compiled, true);
+
+    const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
+    assert.equal(fieldRules?.fields?.connection?.product_image_dependent, true);
+  } finally {
+    await cleanup();
+  }
+});
+
 test('compileCategoryFieldStudio hard-fails invalid override contract', async () => {
   const workspace = await createMouseCompileWorkspace({
     tempPrefix: 'spec-harvester-category-compile-invalid-',

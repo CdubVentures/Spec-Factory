@@ -71,7 +71,7 @@
 }
 .sf-frp-btn-primary {
   background: var(--sf-token-accent, #4263eb);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
 }
 .sf-frp-btn-primary:hover:not(:disabled) {
   background: var(--sf-token-accent-strong, #364fc7);
@@ -101,8 +101,8 @@
   font-weight: 600;
   padding: 7px 12px;
   border-radius: var(--sf-token-radius-md);
-  border: 1px solid rgb(184 134 81 / 0.55);
-  color: rgb(184 134 81);
+  border: 1px solid var(--sf-token-history-border);
+  color: var(--sf-token-history-fg);
   background: transparent;
   cursor: pointer;
   transition: background 120ms ease, opacity 120ms ease;
@@ -110,16 +110,16 @@
   width: 100%;
 }
 .sf-frp-btn-history:hover:not(:disabled) {
-  background: rgb(184 134 81 / 0.12);
+  background: var(--sf-token-history-bg-hover);
 }
 .sf-frp-btn-history:disabled {
   opacity: 0.55;
   cursor: not-allowed;
 }
 html[data-sf-theme-mode='dark'] .sf-frp-btn-history {
-  color: rgb(224 196 156);
-  border-color: rgb(224 196 156 / 0.55);
+  color: var(--sf-token-history-fg-dark);
+  border-color: var(--sf-token-history-fg-dark);
 }
 html[data-sf-theme-mode='dark'] .sf-frp-btn-history:hover:not(:disabled) {
-  background: rgb(184 134 81 / 0.18);
+  background: var(--sf-token-history-bg-hover-dark);
 }

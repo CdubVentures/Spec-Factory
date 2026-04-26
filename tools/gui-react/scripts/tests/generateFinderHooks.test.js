@@ -1,8 +1,8 @@
 /**
- * generateFinderHooks — unit tests.
+ * generateFinderHooks unit tests.
  *
  * Locks the shape of the 5 standard hooks the codegen emits. Any drift in
- * URL patterns, cache keys, or mutation bodies will surface here BEFORE the
+ * URL patterns, cache keys, or mutation bodies will surface here before the
  * frontend panels break.
  */
 
@@ -22,7 +22,7 @@ const FAKE_SKU_MODULE = {
   getResponseSchemaExport: 'skuFinderGetResponseSchema',
 };
 
-describe('generateFinderHooks — buildFinderHooksSource', () => {
+describe('generateFinderHooks buildFinderHooksSource', () => {
   it('throws when finder does not declare getResponseSchemaExport', () => {
     const m = { id: 'fakeFinder', routePrefix: 'fake-finder' };
     assert.throws(() => buildFinderHooksSource(m), /does not declare getResponseSchemaExport/);
@@ -40,9 +40,8 @@ describe('generateFinderHooks — buildFinderHooksSource', () => {
   it('uses cache key [routePrefix, category, productId] exactly', () => {
     const src = buildFinderHooksSource(FAKE_RDF_MODULE);
     assert.match(src, /queryKey: \['release-date-finder', category, productId\]/);
-    // Both the main query AND delete reset keys
-    const occurrences = (src.match(/queryKey: \['release-date-finder', category, productId\]/g) || []).length;
-    assert.ok(occurrences >= 3, `expected cache key ≥3x (query + 2 delete resets); got ${occurrences}`);
+    const removeKeyOccurrences = (src.match(/removeQueryKeys: \[\['release-date-finder', category, productId\]\]/g) || []).length;
+    assert.equal(removeKeyOccurrences, 2, 'both delete hooks remove the same exact finder query key');
   });
 
   it('GET query hits /{routePrefix}/{cat}/{pid}', () => {
@@ -52,31 +51,39 @@ describe('generateFinderHooks — buildFinderHooksSource', () => {
 
   it('Run mutation POSTs to {routePrefix}/{cat}/{pid}; Loop POSTs to /loop suffix', () => {
     const src = buildFinderHooksSource(FAKE_RDF_MODULE);
-    // Loop variant
     assert.match(src, /api\.post<AcceptedResponse>\(\s*`\/release-date-finder\/\${encodeURIComponent\(category\)}\/\${encodeURIComponent\(productId\)}\/loop`/);
-    // Run variant (no /loop suffix — match the path without /loop)
     assert.match(src, /api\.post<AcceptedResponse>\(\s*`\/release-date-finder\/\${encodeURIComponent\(category\)}\/\${encodeURIComponent\(productId\)}`/);
   });
 
   it('mutation body type accepts { variant_key?, variant_id? }', () => {
     const src = buildFinderHooksSource(FAKE_RDF_MODULE);
     const matches = src.match(/useMutation<AcceptedResponse, Error, \{ variant_key\?: string; variant_id\?: string \}>/g) || [];
-    assert.equal(matches.length, 2, 'both Run + Loop mutations use the same body type shape');
+    assert.equal(matches.length, 2, 'both Run and Loop mutations use the same body type shape');
   });
 
   it('DELETE single run hits /runs/{n}; DELETE all hits base path', () => {
     const src = buildFinderHooksSource(FAKE_RDF_MODULE);
     assert.match(src, /api\.del<ReleaseDateFinderDeleteResponse>\(\s*`\/release-date-finder\/\${encodeURIComponent\(category\)}\/\${encodeURIComponent\(productId\)}\/runs\/\${runNumber}`/);
-    // DELETE all (no /runs suffix)
     assert.match(src, /mutationFn: \(\) => api\.del<ReleaseDateFinderDeleteResponse>\(\s*`\/release-date-finder\/\${encodeURIComponent\(category\)}\/\${encodeURIComponent\(productId\)}`/);
   });
 
-  it('delete mutations removeQueries on success (cache reset)', () => {
+  it('delete mutations remove exact cache and emit data-change events', () => {
     const src = buildFinderHooksSource(FAKE_RDF_MODULE);
-    const resetCount = (src.match(/queryClient\.removeQueries\(/g) || []).length;
-    assert.equal(resetCount, 2, 'both delete mutations call removeQueries');
-    const onSuccessCount = (src.match(/onSuccess: resetQuery/g) || []).length;
-    assert.equal(onSuccessCount, 2);
+    const removeKeyCount = (src.match(/removeQueryKeys: \[\['release-date-finder', category, productId\]\]/g) || []).length;
+    assert.equal(removeKeyCount, 2, 'both delete mutations remove the exact finder query before invalidating');
+    assert.match(src, /event: 'release-date-finder-run-deleted'/);
+    assert.match(src, /event: 'release-date-finder-deleted'/);
+    assert.doesNotMatch(src, /queryClient\.removeQueries\(/);
+    assert.doesNotMatch(src, /onSuccess: resetQuery/);
+  });
+
+  it('delete mutations use the data-change mutation helper', () => {
+    const src = buildFinderHooksSource(FAKE_RDF_MODULE);
+    assert.match(src, /import \{ useDataChangeMutation \} from '\.\.\/\.\.\/data-change\/index\.js'/);
+    assert.doesNotMatch(src, /useQueryClient/);
+    assert.doesNotMatch(src, /useCallback/);
+    const helperCount = (src.match(/useDataChangeMutation<ReleaseDateFinderDeleteResponse/g) || []).length;
+    assert.equal(helperCount, 2);
   });
 
   it('imports ResultType from ../types.generated.ts (not ../types.ts)', () => {

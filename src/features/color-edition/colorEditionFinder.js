@@ -283,11 +283,9 @@ export async function runColorEditionFinder({
   if (signal?.aborted) throw new DOMException('Operation cancelled', 'AbortError');
 
   // Outer-scoped refs populated inside withLlmCallTracking's callFn so the
-  // Discovery extraction runs once and the rest of the orchestrator reads
-  // from here. withLlmCallTracking owns the pending + completed emissions —
-  // the completed emit still carries the enriched {colors, color_names,
-  // editions, default_color, siblings_excluded, discovery_log} shape the
-  // modal has shown for months.
+  // Discovery extraction runs once and the rest of the orchestrator reads from
+  // here. Direct test seams use wrapper-owned rows; real routed calls own their
+  // telemetry inside the router so fallback/writer rows are not duplicated.
   let response, usage;
   let colors, colorNamesMap, editions, defaultColor;
   const discoveryEvidenceByAtomRaw = new Map();
@@ -532,11 +530,9 @@ export async function runColorEditionFinder({
         callIdentityCheck = createVariantIdentityCheckCallLlm(llmDeps);
       }
 
-      // WHY: Second wrapper call shares the same modelTracking as Discovery —
-      // routing internals decide model per call. appendLlmCall's alternation
-      // rule keeps the Identity Check row distinct from the Discovery row
-      // because Discovery completed (response non-null) fires BEFORE Identity
-      // Check pending (response null) appends as a new row.
+      // WHY: Second wrapper call shares the same modelTracking as Discovery.
+      // Routing internals decide model per call and own real-call telemetry;
+      // direct test seams still use wrapper-owned pending/completed rows.
       const idWrapped = await withLlmCallTracking({
         label: 'Identity Check',
         prompt: { system: identityCheckPrompt, user: identityCheckUser },

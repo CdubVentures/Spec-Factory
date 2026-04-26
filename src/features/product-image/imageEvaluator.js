@@ -8,6 +8,7 @@ import { viewEvalResponseSchema, heroEvalResponseSchema } from './imageEvaluator
 import { readProductImages, writeProductImages } from './productImageStore.js';
 import { matchVariant } from './variantMatch.js';
 import { resolveViewEvalPromptInputs } from './productImagePreviewPrompt.js';
+import { formatProductImageIdentityFactsBlock } from './productImageIdentityDependencies.js';
 
 /* ── Thumbnail pipeline (Phase 1) ───────────────────────────────── */
 
@@ -47,6 +48,7 @@ export async function createThumbnailBase64({ imagePath, size = 512 }) {
 // WHY: Default template for view evaluation prompt. {{CRITERIA}} resolves to per-category/per-view
 // eval criteria (already editable in the GUI), so the structural prompt around it is now also editable.
 export const VIEW_EVAL_DEFAULT_TEMPLATE = `{{IDENTITY}}
+{{PRODUCT_IMAGE_IDENTITY_FACTS}}
 {{VIEW_LINE}}
 {{COUNT_LINE}}
 
@@ -119,6 +121,7 @@ export function buildViewEvalPrompt({
   evalCriteria = '',
   templateOverride = '',
   carouselContext = [],
+  productImageIdentityFacts = [],
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
@@ -146,6 +149,7 @@ export function buildViewEvalPrompt({
 
   return resolvePromptTemplate(template, {
     IDENTITY: identity,
+    PRODUCT_IMAGE_IDENTITY_FACTS: formatProductImageIdentityFactsBlock(productImageIdentityFacts, { mode: 'eval' }),
     VIEW_LINE: viewLine,
     COUNT_LINE: countLine,
     CRITERIA: criteria,
@@ -163,6 +167,7 @@ export function buildViewEvalPrompt({
 // WHY: Default template for hero evaluation. {{CRITERIA}} resolves to per-category hero criteria
 // (already editable), {{HERO_COUNT}} controls how many heroes to pick.
 export const HERO_EVAL_DEFAULT_TEMPLATE = `{{IDENTITY}}
+{{PRODUCT_IMAGE_IDENTITY_FACTS}}
 {{COUNT_LINE}}
 
 Images are labeled Image 1, Image 2, etc. matching the order of image content parts.
@@ -205,6 +210,7 @@ export function buildHeroSelectionPrompt({
   heroCriteria = '',
   heroCount = 3,
   templateOverride = '',
+  productImageIdentityFacts = [],
 }) {
   const brand = product.brand || '';
   const model = product.model || '';
@@ -241,6 +247,7 @@ Your job is a LEGAL and QUALITY gatekeeper, not an art director. Any image type 
 
   return resolvePromptTemplate(template, {
     IDENTITY: identity,
+    PRODUCT_IMAGE_IDENTITY_FACTS: formatProductImageIdentityFactsBlock(productImageIdentityFacts, { mode: 'eval' }),
     COUNT_LINE: countLine,
     CRITERIA: criteria,
     HERO_COUNT: String(heroCount),
@@ -263,6 +270,7 @@ const VIEW_EVAL_SPEC = {
     promptOverride: domainArgs.promptOverride,
     evalCriteria: domainArgs.evalCriteria,
     carouselContext: domainArgs.carouselContext,
+    productImageIdentityFacts: domainArgs.productImageIdentityFacts || [],
   }),
   jsonSchema: zodToLlmSchema(viewEvalResponseSchema),
 };
@@ -279,6 +287,7 @@ const HERO_EVAL_SPEC = {
     promptOverride: domainArgs.promptOverride,
     heroCriteria: domainArgs.heroCriteria,
     heroCount: domainArgs.heroCount,
+    productImageIdentityFacts: domainArgs.productImageIdentityFacts || [],
   }),
   jsonSchema: zodToLlmSchema(heroEvalResponseSchema),
 };
@@ -350,6 +359,7 @@ export async function evaluateViewCandidates({
   promptOverride = '',
   evalCriteria = '',
   carouselContext = [],
+  productImageIdentityFacts = [],
   callLlm,
   createThumbnail = createThumbnailBase64,
 }) {
@@ -415,6 +425,7 @@ export async function evaluateViewCandidates({
       candidates: filenames.map((filename) => ({ filename })),
       evalPromptOverride: promptOverride,
       evalCriteria,
+      productImageIdentityFacts,
     }),
     carouselContext,
   });
@@ -428,6 +439,7 @@ export async function evaluateViewCandidates({
     promptOverride,
     evalCriteria,
     carouselContext,
+    productImageIdentityFacts,
     userText,
     images,
   });

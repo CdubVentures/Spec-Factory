@@ -124,6 +124,14 @@
   align-items: center;
   gap: 6px;
 }
+.sf-ktp-row-label-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sf-ktp-row-difficulty {
+  flex-shrink: 0;
+}
 .sf-ktp-row-star {
   flex-shrink: 0;
   color: var(--sf-token-accent-strong, var(--sf-token-accent, #4263eb));
@@ -147,7 +155,7 @@
 }
 .sf-ktp-btn-primary {
   background: var(--sf-token-accent, #4263eb);
-  color: #fff;
+  color: var(--sf-token-on-accent-fg);
 }
 .sf-ktp-btn-primary:hover:not(:disabled) {
   background: var(--sf-token-accent-strong, #364fc7);

@@ -21,12 +21,13 @@ function buildMockCtx(overrides = {}) {
   ];
 
   const deletedRuns = [];
+  const emitted = [];
 
   return {
     jsonRes: (res, status, body) => ({ status, body }),
     readJsonBody: async () => overrides.requestBody || {},
     toInt: (v, fallback) => { const n = parseInt(v, 10); return Number.isFinite(n) ? n : fallback; },
-    broadcastWs: () => {},
+    broadcastWs: (channel, payload) => emitted.push({ channel, payload }),
     listIndexLabRuns: async ({ limit, category } = {}) => {
       let result = [...runs];
       if (category) result = result.filter(r => r.category === category);
@@ -46,6 +47,7 @@ function buildMockCtx(overrides = {}) {
       return { ok: true, run_id: runId, deleted_from: 'local' };
     },
     _deletedRuns: deletedRuns,
+    _emitted: emitted,
     ...overrides,
   };
 }
@@ -144,6 +146,17 @@ describe('storageManagerRoutes', () => {
       strictEqual(result.body.run_id, 'run-001');
     });
 
+    it('emits data-change after deleting an inactive run', async () => {
+      const ctx = buildMockCtx();
+      const handler = createStorageManagerHandler(ctx);
+      await handler(['storage', 'runs', 'run-001'], new URLSearchParams(), 'DELETE', {}, {});
+
+      const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
+      strictEqual(emitted?.payload?.event, 'storage-runs-deleted');
+      strictEqual(emitted?.payload?.category, 'mouse');
+      deepStrictEqual(emitted?.payload?.entities?.productIds, ['mouse-test-product']);
+    });
+
     it('rejects deletion of an active run with 409', async () => {
       const ctx = buildMockCtx({ activeRunId: 'run-001' });
       const handler = createStorageManagerHandler(ctx);
@@ -165,6 +178,17 @@ describe('storageManagerRoutes', () => {
       ok(Array.isArray(result.body.deleted));
       ok(Array.isArray(result.body.errors));
       strictEqual(result.body.deleted.length, 2);
+    });
+
+    it('emits data-change after bulk deleting runs', async () => {
+      const ctx = buildMockCtx({ requestBody: { runIds: ['run-001', 'run-002'] } });
+      const handler = createStorageManagerHandler(ctx);
+      await handler(['storage', 'runs', 'bulk-delete'], new URLSearchParams(), 'POST', {}, {});
+
+      const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
+      strictEqual(emitted?.payload?.event, 'storage-runs-bulk-deleted');
+      deepStrictEqual(emitted?.payload?.categories, ['mouse', 'keyboard']);
+      deepStrictEqual(emitted?.payload?.entities?.productIds, ['mouse-test-product', 'keyboard-test']);
     });
 
     it('reports in-progress runs as errors in bulk delete', async () => {
@@ -199,6 +223,16 @@ describe('storageManagerRoutes', () => {
       strictEqual(result.body.ok, true);
       ok(typeof result.body.purged === 'number');
     });
+
+    it('emits data-change after purging runs', async () => {
+      const ctx = buildMockCtx({ requestBody: { confirmToken: 'DELETE' } });
+      const handler = createStorageManagerHandler(ctx);
+      await handler(['storage', 'purge'], new URLSearchParams(), 'POST', {}, {});
+
+      const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
+      strictEqual(emitted?.payload?.event, 'storage-purged');
+      deepStrictEqual(emitted?.payload?.categories, ['mouse', 'keyboard']);
+    });
   });
 
   describe('POST /storage/prune', () => {
@@ -231,6 +265,79 @@ describe('storageManagerRoutes', () => {
 
       strictEqual(result.status, 200);
       strictEqual(result.body.pruned, 1);
+    });
+
+    it('emits data-change after pruning runs', async () => {
+      const runs = [
+        {
+          run_id: 'run-old-failed', category: 'mouse', product_id: 'mouse-test',
+          status: 'failed', started_at: '2025-01-01T00:00:00Z', ended_at: '2025-01-01T00:05:00Z',
+          counters: { pages_checked: 0, fetched_ok: 0, parse_completed: 0, indexed_docs: 0, fields_filled: 0 },
+        },
+      ];
+      const ctx = buildMockCtx({ runs, requestBody: { olderThanDays: 0, failedOnly: true } });
+      const handler = createStorageManagerHandler(ctx);
+      await handler(['storage', 'prune'], new URLSearchParams(), 'POST', {}, {});
+
+      const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
+      strictEqual(emitted?.payload?.event, 'storage-pruned');
+      strictEqual(emitted?.payload?.category, 'mouse');
+    });
+  });
+
+  describe('POST /storage/urls/delete', () => {
+    it('emits data-change after deleting URL artifacts', async () => {
+      const deletionCalls = [];
+      const ctx = buildMockCtx({
+        requestBody: { url: 'https://example.test/a', productId: 'mouse-test-product', category: 'mouse' },
+        fsRoots: { indexLabRoot: '/fake/indexlab' },
+        resolveDeletionStore: () => ({
+          deleteUrl: (args) => {
+            deletionCalls.push(args);
+            return { ok: true, deleted: 1 };
+          },
+        }),
+      });
+      const handler = createStorageManagerHandler(ctx);
+      const result = await handler(['storage', 'urls', 'delete'], new URLSearchParams(), 'POST', {}, {});
+
+      strictEqual(result.status, 200);
+      strictEqual(deletionCalls.length, 1);
+      const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
+      strictEqual(emitted?.payload?.event, 'storage-urls-deleted');
+      strictEqual(emitted?.payload?.category, 'mouse');
+      deepStrictEqual(emitted?.payload?.entities?.productIds, ['mouse-test-product']);
+    });
+  });
+
+  describe('POST /storage/products/:pid/purge-history', () => {
+    it('emits data-change after purging product history', async () => {
+      const deletionCalls = [];
+      const ctx = buildMockCtx({
+        requestBody: { category: 'mouse' },
+        fsRoots: { indexLabRoot: '/fake/indexlab' },
+        resolveDeletionStore: () => ({
+          deleteProductHistory: (args) => {
+            deletionCalls.push(args);
+            return { ok: true, deleted: 1 };
+          },
+        }),
+      });
+      const handler = createStorageManagerHandler(ctx);
+      const result = await handler(
+        ['storage', 'products', 'mouse-test-product', 'purge-history'],
+        new URLSearchParams(),
+        'POST',
+        {},
+        {},
+      );
+
+      strictEqual(result.status, 200);
+      strictEqual(deletionCalls.length, 1);
+      const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
+      strictEqual(emitted?.payload?.event, 'storage-history-purged');
+      strictEqual(emitted?.payload?.category, 'mouse');
+      deepStrictEqual(emitted?.payload?.entities?.productIds, ['mouse-test-product']);
     });
   });
 

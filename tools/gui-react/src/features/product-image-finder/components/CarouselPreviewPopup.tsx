@@ -60,7 +60,7 @@ export function CarouselPreviewPopup({
       {/* Close button */}
       <button
         onClick={onClose}
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center text-white/60 hover:text-white text-xl transition-colors"
+        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full flex items-center justify-center sf-overlay-text-button text-xl transition-colors"
         style={{ backgroundColor: 'var(--sf-token-overlay-button)' }}
       >
         {'\u2715'}
@@ -136,14 +136,14 @@ export function CarouselPreviewPopup({
               <>
                 <button
                   onClick={() => mainApi?.scrollPrev()}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all hover:scale-110"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center sf-overlay-text-button transition-all hover:scale-110"
                   style={{ backgroundColor: 'var(--sf-token-overlay-button-strong)', backdropFilter: 'blur(8px)' }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
                 </button>
                 <button
                   onClick={() => mainApi?.scrollNext()}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center text-white/60 hover:text-white transition-all hover:scale-110"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full flex items-center justify-center sf-overlay-text-button transition-all hover:scale-110"
                   style={{ backgroundColor: 'var(--sf-token-overlay-button-strong)', backdropFilter: 'blur(8px)' }}
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
@@ -159,7 +159,7 @@ export function CarouselPreviewPopup({
           >
             {current && (
               <>
-                <span className="text-[12px] font-bold uppercase tracking-wider text-white/85">
+                <span className="text-[12px] font-bold uppercase tracking-wider sf-overlay-text-soft">
                   {current.slotLabel}
                 </span>
                 <ActionTooltip text={current.source === 'eval' ? 'LLM selected' : 'User override'}>
@@ -173,23 +173,23 @@ export function CarouselPreviewPopup({
                 </ActionTooltip>
                 <div className="flex-1" />
                 {current.width > 0 && (
-                  <span className="text-[11px] text-white/40 font-mono">
+                  <span className="text-[11px] sf-overlay-text-subtle font-mono">
                     {formatDims(current.width, current.height)}
                   </span>
                 )}
                 {current.bytes > 0 && (
-                  <span className="text-[11px] text-white/55 font-mono">
+                  <span className="text-[11px] sf-overlay-text-muted font-mono">
                     {formatBytes(current.bytes)}
                   </span>
                 )}
-                <span className="text-[11px] text-white/30 font-mono">
+                <span className="text-[11px] sf-overlay-text-subtle font-mono">
                   {selectedIndex + 1} / {slides.length}
                 </span>
                 {current.reasoning && (
                   <ActionTooltip text={current.reasoning} side="left">
                     <span
                       className="flex items-center justify-center rounded-full font-mono shrink-0 cursor-help"
-                      style={{ width: 16, height: 16, fontSize: 9, color: 'rgba(255,255,255,0.5)', backgroundColor: 'var(--sf-token-overlay-button)' }}
+                      style={{ width: 16, height: 16, fontSize: 9, color: 'var(--sf-token-overlay-text-muted)', backgroundColor: 'var(--sf-token-overlay-button)' }}
                     >
                       R
                     </span>
@@ -199,7 +199,7 @@ export function CarouselPreviewPopup({
                   <ActionTooltip text={`Run ${current.runNumber}`}>
                     <span
                       className="flex items-center justify-center rounded-full font-mono shrink-0"
-                      style={{ width: 16, height: 16, fontSize: 9, color: 'rgba(255,255,255,0.5)', backgroundColor: 'var(--sf-token-overlay-button)' }}
+                      style={{ width: 16, height: 16, fontSize: 9, color: 'var(--sf-token-overlay-text-muted)', backgroundColor: 'var(--sf-token-overlay-button)' }}
                     >
                       {current.runNumber}
                     </span>

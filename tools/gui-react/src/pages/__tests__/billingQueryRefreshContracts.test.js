@@ -380,7 +380,7 @@ test('BillingPage exposes clear-view and model-cost popup actions', async () => 
   assert.equal(globalThis.__queryHarness.stateSetters.includes(true), true);
 });
 
-test('OverviewPage billing query uses 30s cadence (not 10s catalog cadence)', async () => {
+test('OverviewPage billing query uses 30s cadence while catalog relies on data-change invalidation', async () => {
   globalThis.__queryHarness = {
     calls: [],
     persisted: {},
@@ -404,6 +404,6 @@ test('OverviewPage billing query uses 30s cadence (not 10s catalog cadence)', as
     assert.strictEqual(c.refetchInterval, 30_000, 'billing should use 30s cadence');
   }
   for (const c of catalogCalls) {
-    assert.strictEqual(c.refetchInterval, 10_000, 'catalog should use 10s cadence');
+    assert.strictEqual(c.refetchInterval, undefined, 'catalog should not poll when data-change invalidation covers it');
   }
 });

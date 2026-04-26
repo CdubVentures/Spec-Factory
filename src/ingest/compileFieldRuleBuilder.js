@@ -979,5 +979,8 @@ export function buildStudioFieldRule({
   if (isObject(rule.selection_policy) && Object.keys(rule.selection_policy).length > 0) {
     out.selection_policy = sortDeep(rule.selection_policy);
   }
+  if (rule.product_image_dependent === true) {
+    out.product_image_dependent = true;
+  }
   return sortDeep(out);
 }

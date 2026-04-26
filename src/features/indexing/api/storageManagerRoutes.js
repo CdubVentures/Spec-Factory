@@ -1,3 +1,5 @@
+import { emitDataChange } from '../../../core/events/dataChangeContract.js';
+
 export function createStorageManagerHandler(opts) {
   const {
     jsonRes,
@@ -16,6 +18,24 @@ export function createStorageManagerHandler(opts) {
   } = opts;
   // WHY: getSpecDb(category) requires a category — resolved per-request.
   const resolveDeletionStore = opts.resolveDeletionStore || (() => null);
+
+  function uniqueTokens(values) {
+    return [...new Set(
+      values
+        .map((value) => String(value || '').trim())
+        .filter(Boolean),
+    )];
+  }
+
+  function emitStorageChange({ event, category = '', categories = [], productIds = [] }) {
+    emitDataChange({
+      broadcastWs,
+      event,
+      category,
+      categories: uniqueTokens(categories),
+      entities: { productIds: uniqueTokens(productIds) },
+    });
+  }
 
   function resolveBackend() {
     return { type: 'local' };
@@ -136,10 +156,20 @@ export function createStorageManagerHandler(opts) {
           const _ds = resolveDeletionStore(category);
           if (_ds && productId && category && fsRoots) {
             const result = _ds.deleteRun({ runId, productId, category, fsRoots });
+            emitStorageChange({
+              event: 'storage-runs-deleted',
+              category,
+              productIds: [productId],
+            });
             return jsonRes(res, 200, result);
           }
           // Fallback: filesystem-only delete
           const result = await deleteArchivedRun(runId);
+          emitStorageChange({
+            event: 'storage-runs-deleted',
+            category,
+            productIds: [productId],
+          });
           return jsonRes(res, 200, { ok: true, ...result });
         } catch (err) {
           return jsonRes(res, 500, { ok: false, error: String(err?.message || err), run_id: runId });
@@ -152,6 +182,8 @@ export function createStorageManagerHandler(opts) {
         const runIds = Array.isArray(body?.runIds) ? body.runIds.map(id => String(id).trim()).filter(Boolean) : [];
         const deleted = [];
         const errors = [];
+        const deletedCategories = [];
+        const deletedProductIds = [];
         for (const id of runIds) {
           if (typeof isRunStillActive === 'function' && isRunStillActive(id)) {
             errors.push({ run_id: id, error: 'run_in_progress' });
@@ -169,9 +201,18 @@ export function createStorageManagerHandler(opts) {
               const result = await deleteArchivedRun(id);
               deleted.push({ run_id: id, deleted_from: result?.deleted_from || 'unknown' });
             }
+            if (category) deletedCategories.push(category);
+            if (productId) deletedProductIds.push(productId);
           } catch (err) {
             errors.push({ run_id: id, error: String(err?.message || err) });
           }
+        }
+        if (deleted.length > 0) {
+          emitStorageChange({
+            event: 'storage-runs-bulk-deleted',
+            categories: deletedCategories,
+            productIds: deletedProductIds,
+          });
         }
         return jsonRes(res, 200, { ok: errors.length === 0, deleted, errors });
       }
@@ -202,6 +243,8 @@ export function createStorageManagerHandler(opts) {
 
       const pruned = [];
       const errors = [];
+      const prunedCategories = [];
+      const prunedProductIds = [];
       for (const run of candidates) {
         const id = String(run?.run_id || '').trim();
         if (!id) continue;
@@ -216,9 +259,18 @@ export function createStorageManagerHandler(opts) {
             await deleteArchivedRun(id);
           }
           pruned.push(id);
+          if (category) prunedCategories.push(category);
+          if (productId) prunedProductIds.push(productId);
         } catch (err) {
           errors.push({ run_id: id, error: String(err?.message || err) });
         }
+      }
+      if (pruned.length > 0) {
+        emitStorageChange({
+          event: 'storage-pruned',
+          categories: prunedCategories,
+          productIds: prunedProductIds,
+        });
       }
       return jsonRes(res, 200, { ok: true, pruned: pruned.length, errors });
     }
@@ -231,6 +283,8 @@ export function createStorageManagerHandler(opts) {
       }
       const runs = await listIndexLabRuns({ limit: 10000 });
       let purged = 0;
+      const purgedCategories = [];
+      const purgedProductIds = [];
       for (const run of runs) {
         const id = String(run?.run_id || '').trim();
         if (!id) continue;
@@ -245,9 +299,18 @@ export function createStorageManagerHandler(opts) {
             await deleteArchivedRun(id);
           }
           purged += 1;
+          if (category) purgedCategories.push(category);
+          if (productId) purgedProductIds.push(productId);
         } catch {
           // Best-effort purge
         }
+      }
+      if (purged > 0) {
+        emitStorageChange({
+          event: 'storage-purged',
+          categories: purgedCategories,
+          productIds: purgedProductIds,
+        });
       }
       return jsonRes(res, 200, { ok: true, purged });
     }
@@ -267,6 +330,11 @@ export function createStorageManagerHandler(opts) {
       }
       try {
         const result = _dsUrl.deleteUrl({ url, productId, category, fsRoots });
+        emitStorageChange({
+          event: 'storage-urls-deleted',
+          category,
+          productIds: [productId],
+        });
         return jsonRes(res, 200, result);
       } catch (err) {
         return jsonRes(res, 500, { ok: false, error: String(err?.message || err) });
@@ -297,6 +365,11 @@ export function createStorageManagerHandler(opts) {
       }
       try {
         const result = _dsPurge.deleteProductHistory({ productId, category, fsRoots });
+        emitStorageChange({
+          event: 'storage-history-purged',
+          category,
+          productIds: [productId],
+        });
         return jsonRes(res, 200, result);
       } catch (err) {
         return jsonRes(res, 500, { ok: false, error: String(err?.message || err) });

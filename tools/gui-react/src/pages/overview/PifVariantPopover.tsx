@@ -415,7 +415,7 @@ function CarouselEmptyOverlay({ label, onClose }: { readonly label: string; read
     >
       <div
         className="rounded-lg px-6 py-5 text-center"
-        style={{ backgroundColor: 'var(--sf-token-overlay-surface)', color: 'rgba(255,255,255,0.85)', minWidth: 280 }}
+        style={{ backgroundColor: 'var(--sf-token-overlay-surface)', color: 'var(--sf-token-overlay-text-soft)', minWidth: 280 }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="text-[13px] font-semibold mb-1">No carousel images yet</div>
@@ -424,7 +424,7 @@ function CarouselEmptyOverlay({ label, onClose }: { readonly label: string; read
           type="button"
           onClick={onClose}
           className="mt-3 px-3 py-1 rounded text-[11px] font-semibold"
-          style={{ backgroundColor: 'var(--sf-token-overlay-button)', color: 'rgba(255,255,255,0.9)' }}
+          style={{ backgroundColor: 'var(--sf-token-overlay-button)', color: 'var(--sf-token-overlay-text-strong)' }}
         >
           Close
         </button>

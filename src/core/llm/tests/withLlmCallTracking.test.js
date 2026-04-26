@@ -230,7 +230,7 @@ test('withLlmCallTracking when callFn throws: pending emitted, error bubbles, NO
   assert.equal(emissions[0].response, null, 'pending row preserved');
 });
 
-test('withLlmCallTracking can delegate completion to routed phase telemetry', async () => {
+test('withLlmCallTracking can delegate the full row to routed phase telemetry', async () => {
   const { emissions, onLlmCallComplete } = makeRecorder();
   await withLlmCallTracking({
     label: 'Discovery',
@@ -243,8 +243,7 @@ test('withLlmCallTracking can delegate completion to routed phase telemetry', as
     callFn: async () => ({ result: { ok: true }, usage: { total_tokens: 7 } }),
   });
 
-  assert.equal(emissions.length, 1, 'delegated mode emits only the pending row');
-  assert.equal(emissions[0].response, null);
+  assert.equal(emissions.length, 0, 'delegated mode emits no wrapper rows; routed telemetry owns pending + completed');
 });
 
 test('withLlmCallTracking callFn returns undefined usage → completed emits usage: null', async () => {

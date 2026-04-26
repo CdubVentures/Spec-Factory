@@ -2,9 +2,9 @@
 // Run: node tools/gui-react/scripts/generateFinderHooks.js releaseDateFinder
 // Do not edit manually.
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
+import { useDataChangeMutation } from '../../data-change/index.js';
 import type { ReleaseDateFinderResult } from '../types.generated.ts';
 
 export interface AcceptedResponse {
@@ -50,27 +50,23 @@ export function useReleaseDateFinderLoopMutation(category: string, productId: st
 }
 
 export function useDeleteReleaseDateFinderRunMutation(category: string, productId: string) {
-  const queryClient = useQueryClient();
-  const resetQuery = useCallback(() => {
-    queryClient.removeQueries({ queryKey: ['release-date-finder', category, productId] });
-  }, [queryClient, category, productId]);
-  return useMutation<ReleaseDateFinderDeleteResponse, Error, number>({
+  return useDataChangeMutation<ReleaseDateFinderDeleteResponse, Error, number>({
+    event: 'release-date-finder-run-deleted',
+    category,
     mutationFn: (runNumber: number) => api.del<ReleaseDateFinderDeleteResponse>(
       `/release-date-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/runs/${runNumber}`,
     ),
-    onSuccess: resetQuery,
+    removeQueryKeys: [['release-date-finder', category, productId]],
   });
 }
 
 export function useDeleteReleaseDateFinderAllMutation(category: string, productId: string) {
-  const queryClient = useQueryClient();
-  const resetQuery = useCallback(() => {
-    queryClient.removeQueries({ queryKey: ['release-date-finder', category, productId] });
-  }, [queryClient, category, productId]);
-  return useMutation<ReleaseDateFinderDeleteResponse>({
+  return useDataChangeMutation<ReleaseDateFinderDeleteResponse>({
+    event: 'release-date-finder-deleted',
+    category,
     mutationFn: () => api.del<ReleaseDateFinderDeleteResponse>(
       `/release-date-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
     ),
-    onSuccess: resetQuery,
+    removeQueryKeys: [['release-date-finder', category, productId]],
   });
 }

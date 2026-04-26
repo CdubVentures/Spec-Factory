@@ -14,8 +14,9 @@
  */
 
 import { useState, useCallback, useMemo, type ReactNode } from 'react';
-import { useMutation, useQueryClient, type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
+import { type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import { clearPublishedField, deleteVariantField } from '../../../features/review/api/reviewApi.ts';
+import { useDataChangeMutation } from '../../../features/data-change/index.js';
 import { Spinner } from '../feedback/Spinner.tsx';
 import { Chip } from '../feedback/Chip.tsx';
 import { IndexingPanelHeader } from './IndexingPanelHeader.tsx';
@@ -243,18 +244,21 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
   // /review/:cat/delete-variant-field → wipes candidates + evidence for
   // (pid, fk, vid) and strips the JSON entry. Both invalidate the panel's
   // data query so the row flips state on success.
-  const queryClient = useQueryClient();
-  const invalidateFinder = useCallback(() => {
-    queryClient.invalidateQueries({ queryKey: [routePrefix, category, productId] });
-    queryClient.invalidateQueries({ queryKey: ['review', category] });
-  }, [queryClient, routePrefix, category, productId]);
-  const unpublishVariantMut = useMutation<unknown, Error, { readonly fieldKey: string; readonly variantId: string }>({
+  const scalarVariantQueryKeys = [
+    [routePrefix, category, productId],
+    ['review', category],
+  ] as const;
+  const unpublishVariantMut = useDataChangeMutation<unknown, Error, { readonly fieldKey: string; readonly variantId: string }>({
+    event: 'review-clear-published',
+    category,
     mutationFn: ({ fieldKey, variantId }) => clearPublishedField(category, { productId, field: fieldKey, variantId }),
-    onSuccess: invalidateFinder,
+    extraQueryKeys: scalarVariantQueryKeys,
   });
-  const deleteVariantMut = useMutation<unknown, Error, { readonly fieldKey: string; readonly variantId: string }>({
+  const deleteVariantMut = useDataChangeMutation<unknown, Error, { readonly fieldKey: string; readonly variantId: string }>({
+    event: 'review-variant-field-deleted',
+    category,
     mutationFn: ({ fieldKey, variantId }) => deleteVariantField(category, { productId, field: fieldKey, variantId }),
-    onSuccess: invalidateFinder,
+    extraQueryKeys: scalarVariantQueryKeys,
   });
 
   const { model: resolvedModel, accessMode, modelDisplay, effortLevel } = useResolvedFinderModel(phase as LlmOverridePhaseId);

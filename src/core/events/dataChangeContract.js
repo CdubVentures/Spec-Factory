@@ -1,53 +1,7 @@
 import { recordDataChangeBroadcast } from './dataPropagationCounters.js';
-import { FINDER_DATA_CHANGE_EVENTS } from '../finder/finderModuleRegistry.js';
+import { EVENT_REGISTRY } from './eventRegistry.js';
 
-// WHY: Finder events are derived from FINDER_MODULES registry (O(1) scaling).
-// Non-finder events are declared inline below.
-export const DATA_CHANGE_EVENT_DOMAIN_MAP = Object.freeze({
-  ...FINDER_DATA_CHANGE_EVENTS,
-  'field-studio-map-saved': ['studio', 'mapping', 'review-layout'],
-  'process-completed': ['studio', 'review-layout', 'component', 'enum', 'storage'],
-  'catalog-bulk-add': ['catalog', 'queue', 'identity'],
-  'catalog-product-add': ['catalog', 'queue', 'identity'],
-  'catalog-product-update': ['catalog', 'queue', 'identity'],
-  'catalog-product-delete': ['catalog', 'queue', 'identity'],
-  'brand-seed': ['brand', 'catalog', 'identity'],
-  'brand-bulk-add': ['brand', 'catalog', 'identity'],
-  'brand-add': ['brand', 'catalog', 'identity'],
-  'brand-rename': ['brand', 'catalog', 'identity', 'queue'],
-  'brand-update': ['brand', 'catalog', 'identity'],
-  'brand-delete': ['brand', 'catalog', 'identity'],
-  'color-add': ['color-registry'],
-  'color-update': ['color-registry'],
-  'color-delete': ['color-registry'],
-  'spec-seeds-updated': ['spec-seeds'],
-  'runtime-settings-updated': ['settings', 'indexing'],
-  'user-settings-updated': ['settings', 'indexing'],
-  'category-created': ['categories'],
-  'source-strategy-created': ['source-strategy'],
-  'source-strategy-updated': ['source-strategy'],
-  'source-strategy-deleted': ['source-strategy'],
-  'queue-retry': ['queue'],
-  'queue-pause': ['queue'],
-  'queue-priority': ['queue'],
-  'queue-requeue': ['queue'],
-  'review-suggest': ['review', 'suggestions'],
-  review: ['review'],
-  'component-review': ['component', 'review'],
-  'review-override': ['review', 'product'],
-  'review-manual-override': ['review', 'product'],
-  'review-clear-published': ['review', 'product'],
-  'review-variant-field-deleted': ['review', 'product'],
-  'key-finder-unpublished': ['key-finder', 'review', 'product'],
-  'candidate-deleted': ['review', 'product'],
-  'key-review-confirm': ['review', 'product'],
-  'key-review-accept': ['review', 'product'],
-  'component-override': ['component', 'review'],
-  'component-key-review-confirm': ['component', 'review'],
-  'enum-override': ['enum', 'review'],
-  'enum-rename': ['enum', 'review'],
-  'publisher-reconcile': ['publisher'],
-});
+export const DATA_CHANGE_EVENT_DOMAIN_MAP = EVENT_REGISTRY;
 
 const EVENT_DOMAIN_MAP = DATA_CHANGE_EVENT_DOMAIN_MAP;
 

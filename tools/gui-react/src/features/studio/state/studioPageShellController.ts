@@ -1,6 +1,5 @@
 import { resolveStudioSaveStatus, type StudioAutoSaveStatus } from '../../../shared/ui/feedback/settingsStatus.ts';
-import type { Operation } from '../../operations/state/operationsStore.ts';
-import { deriveStudioOperationsState } from './studioOperationsSelectors.ts';
+import type { StudioOperationsState } from './studioOperationsSelectors.ts';
 import type {
   ArtifactEntry,
   ComponentDbResponse,
@@ -38,7 +37,7 @@ interface BuildStudioPageShellControllerStateInput {
   activeTab: StudioTabId;
   autoSaveAllEnabled: boolean;
   selectedKey: string;
-  operations: ReadonlyMap<string, Operation>;
+  opsState: StudioOperationsState;
   rules: Record<string, FieldRule>;
   fieldOrder: string[];
   wbMap: StudioConfig;
@@ -120,7 +119,7 @@ export function buildStudioPageShellControllerState({
   activeTab,
   autoSaveAllEnabled,
   selectedKey,
-  operations,
+  opsState,
   rules,
   fieldOrder,
   wbMap,
@@ -166,8 +165,6 @@ export function buildStudioPageShellControllerState({
       kind: 'loading',
     };
   }
-
-  const opsState = deriveStudioOperationsState(operations, category);
 
   const processState = deriveStudioPageProcessState({
     compileRunning: opsState.compileRunning,

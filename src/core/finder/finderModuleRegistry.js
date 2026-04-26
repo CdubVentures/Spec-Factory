@@ -99,7 +99,8 @@ export const FINDER_MODULES = Object.freeze([
       'run': ['color-registry', 'review', 'product'],
       'run-deleted': ['review', 'product'],
       'deleted': ['review', 'product'],
-      'variant-deleted': ['review', 'product', 'product-image-finder', 'publisher'],
+      'variant-deleted': ['review', 'product', 'product-image-finder', 'release-date-finder', 'sku-finder', 'publisher'],
+      'variants-deleted-all': ['review', 'product', 'product-image-finder', 'release-date-finder', 'sku-finder', 'publisher'],
     },
 
     // Module Settings (codegen: moduleSettingsSections.generated.ts)
@@ -292,6 +293,7 @@ export const FINDER_MODULES = Object.freeze([
       'image-deleted': ['catalog'],
       'batch-processed': ['catalog'],
       'evaluate': ['catalog'],
+      'carousel-updated': ['catalog'],
     },
 
     // Module Settings (codegen: moduleSettingsSections.generated.ts)
@@ -785,8 +787,8 @@ export const FINDER_MODULE_BY_PREFIX = Object.freeze(
  * Each event key is `${routePrefix}-${suffix}`, domains always include routePrefix.
  *
  * Consumed by:
- * - Backend: dataChangeContract.js (spread into DATA_CHANGE_EVENT_DOMAIN_MAP)
- * - Frontend: invalidationResolver.js (spread into DATA_CHANGE_EVENT_DOMAIN_FALLBACK)
+ * - Backend: eventRegistry.js (spread into EVENT_REGISTRY)
+ * - Frontend: invalidationResolver.js (re-exported from EVENT_REGISTRY)
  */
 const STANDARD_FINDER_DATA_CHANGE_EVENTS = Object.freeze({
   'discovery-history-scrubbed': [],

@@ -114,6 +114,7 @@ const CAROUSEL_BUILDER_PHASE = Object.freeze({
       { promptKey: 'viewEval', label: 'View Eval Structural Prompt', storageScope: 'module', moduleId: 'productImageFinder', settingKey: 'evalPromptOverride', defaultTemplate: VIEW_EVAL_DEFAULT_TEMPLATE, variables: [
         { name: 'IDENTITY', description: 'e.g. "Product: Logitech G502 X Plus — the \\"black\\" color variant"', required: true },
         { name: 'VIEW_LINE', description: 'e.g. "View: \\"top\\" — Bird\'s-eye shot looking directly down..."', required: true },
+        { name: 'PRODUCT_IMAGE_IDENTITY_FACTS', description: 'Resolved Field Studio product_image_dependent facts for this product/variant. Empty when no enabled facts are resolved.', required: false },
         { name: 'COUNT_LINE', description: 'e.g. "You are evaluating 4 candidate images for this view."', required: true },
         { name: 'CRITERIA', description: 'Per-category/per-view eval criteria text inserted into the full prompt template', required: true },
       ], userMessageInfo: [
@@ -122,6 +123,7 @@ const CAROUSEL_BUILDER_PHASE = Object.freeze({
       ] },
       { promptKey: 'heroEval', label: 'Hero Eval Structural Prompt', storageScope: 'module', moduleId: 'productImageFinder', settingKey: 'heroEvalPromptOverride', defaultTemplate: HERO_EVAL_DEFAULT_TEMPLATE, variables: [
         { name: 'IDENTITY', description: 'e.g. "Product: Logitech G502 X Plus — the \\"black\\" color variant"', required: true },
+        { name: 'PRODUCT_IMAGE_IDENTITY_FACTS', description: 'Resolved Field Studio product_image_dependent facts for this product/variant. Empty when no enabled facts are resolved.', required: false },
         { name: 'COUNT_LINE', description: 'e.g. "You are evaluating 6 hero/marketing image candidates."', required: true },
         { name: 'CRITERIA', description: 'Per-category hero eval criteria text inserted into the full prompt template', required: true },
         { name: 'HERO_COUNT', description: 'e.g. "3" — from heroCount setting', required: true },
@@ -224,6 +226,7 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
         { name: 'ADDITIONAL_GUIDANCE', description: 'One-line note appended after the priority-views instructions when additional views are supplied. Empty when only priority views are requested.', required: false, category: 'deterministic' },
         { name: 'ALL_VIEW_KEYS', description: 'e.g. "top, bottom, left, right, front, rear, sangle, angle"', required: true, category: 'deterministic' },
         { name: 'IMAGE_REQUIREMENTS', description: 'Built-in image quality and view-slot rules section inserted into the full prompt template', required: true, category: 'deterministic' },
+        { name: 'PRODUCT_IMAGE_IDENTITY_FACTS', description: 'Resolved Field Studio product_image_dependent facts injected into PIF image search prompts. Empty when no enabled facts are resolved.', required: false, category: 'deterministic' },
         { name: 'IDENTITY_INTRO', description: 'Opening "IDENTITY: You are looking for the EXACT product..." line with sibling-skip sentence. Shared by PIF-view, PIF-hero, RDF, SKU. Edit text via Global Prompts (identityIntro).', required: false, category: 'global-fragment' },
         { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). 3 tiers — includes siblings-exclusion line inline when provided. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
         { name: 'SIBLING_VARIANTS', description: 'Other variants of this same product (e.g. list of other colors/editions the LLM should skip). Empty when the product has only one variant. Shared by PIF-view, PIF-loop, RDF, SKU. NOT in PIF-hero. Edit text via Global Prompts (siblingVariantsExclusion).', required: false, category: 'global-fragment' },
@@ -241,6 +244,7 @@ const IMAGE_FINDER_TEMPLATES = Object.freeze({
         { name: 'MODEL', description: 'e.g. "G502 X Plus" — available for use in custom overrides. The default template does not reference it directly; it is consumed inside {{IDENTITY_INTRO}}.', required: false, category: 'deterministic' },
         { name: 'VARIANT_SUFFIX', description: 'e.g. " (variant: black)" — empty when no variant. Consumed inside {{IDENTITY_INTRO}}.', required: false, category: 'deterministic' },
         { name: 'HERO_INSTRUCTIONS', description: 'Built-in hero search rules block inserted into the full prompt template', required: true, category: 'deterministic' },
+        { name: 'PRODUCT_IMAGE_IDENTITY_FACTS', description: 'Resolved Field Studio product_image_dependent facts injected into PIF hero search prompts. Empty when no enabled facts are resolved.', required: false, category: 'deterministic' },
         { name: 'IDENTITY_INTRO', description: 'Opening "IDENTITY: You are looking for the EXACT product..." line with sibling-skip sentence. Shared by PIF-view, PIF-hero, RDF, SKU. Edit text via Global Prompts (identityIntro).', required: false, category: 'global-fragment' },
         { name: 'IDENTITY_WARNING', description: 'Unified block from buildIdentityWarning (src/core/llm/prompts/). Same wording as view-search prompt. Edit text via Global Prompts in LLM Config.', required: false, category: 'global-fragment' },
         { name: 'PREVIOUS_DISCOVERY', description: 'e.g. "Previous searches:\\n- URLs already checked: [...]\\n" — empty on first run. Header text editable in Global Prompts (discoveryHistoryBlock).', required: false, category: 'global-fragment' },
