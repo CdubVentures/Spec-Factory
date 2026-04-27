@@ -49,6 +49,21 @@ export const deleteProductImageFinderRuns = store.deleteRuns;
 export const deleteProductImageFinderAll = store.deleteAll;
 export const recalculateProductImagesFromRuns = store.recalculateFromRuns;
 
+export function buildProductImageFinderSqlSummaryRow({ category, productId, data, ranAt }) {
+  const images = data?.selected?.images || [];
+  return {
+    category,
+    product_id: productId,
+    images: images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
+    image_count: images.length,
+    carousel_slots: JSON.stringify(data?.carousel_slots || {}),
+    eval_state: JSON.stringify(extractEvalState(data)),
+    evaluations: JSON.stringify(Array.isArray(data?.evaluations) ? data.evaluations : []),
+    latest_ran_at: ranAt || data?.last_ran_at || '',
+    run_count: data?.run_count || 0,
+  };
+}
+
 /**
  * Rebuild the product_image_finder SQL table from per-product JSON files.
  * Called on DB delete to satisfy the CLAUDE.md rebuild contract.
@@ -81,19 +96,13 @@ export function rebuildProductImageFinderFromJson({ specDb, productRoot }) {
     }
 
     const productId = data.product_id || entry.name;
-    const images = data.selected?.images || [];
 
-    specDb.getFinderStore('productImageFinder').upsert({
+    specDb.getFinderStore('productImageFinder').upsert(buildProductImageFinderSqlSummaryRow({
       category: data.category,
-      product_id: productId,
-      images,
-      image_count: images.length,
-      carousel_slots: JSON.stringify(data.carousel_slots || {}),
-      eval_state: JSON.stringify(extractEvalState(data)),
-      evaluations: JSON.stringify(Array.isArray(data.evaluations) ? data.evaluations : []),
-      latest_ran_at: data.last_ran_at || '',
-      run_count: data.run_count || 0,
-    });
+      productId,
+      data,
+      ranAt: data.last_ran_at || '',
+    }));
 
     const runs = Array.isArray(data.runs) ? data.runs : [];
     for (const run of runs) {

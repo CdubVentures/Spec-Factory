@@ -238,6 +238,39 @@ export type OperationUpsert = Omit<Operation, 'llmCalls'> & {
   readonly llmCalls?: ReadonlyArray<LlmCallRecord>;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function jsonLikeEqual(a: unknown, b: unknown): boolean {
+  if (Object.is(a, b)) return true;
+  if (Array.isArray(a) || Array.isArray(b)) {
+    if (!Array.isArray(a) || !Array.isArray(b)) return false;
+    if (a.length !== b.length) return false;
+    return a.every((entry, index) => jsonLikeEqual(entry, b[index]));
+  }
+  if (isRecord(a) || isRecord(b)) {
+    if (!isRecord(a) || !isRecord(b)) return false;
+    const aKeys = Object.keys(a);
+    const bKeys = Object.keys(b);
+    if (aKeys.length !== bKeys.length) return false;
+    return aKeys.every((key) => Object.prototype.hasOwnProperty.call(b, key) && jsonLikeEqual(a[key], b[key]));
+  }
+  return false;
+}
+
+function normalizeOperationUpsert(op: OperationUpsert, existing?: Operation): Operation {
+  return {
+    ...op,
+    queueDelayMs: op.queueDelayMs ?? existing?.queueDelayMs,
+    llmCalls: Object.prototype.hasOwnProperty.call(op, 'llmCalls') ? (op.llmCalls ?? []) : [],
+  };
+}
+
+function isTerminalOperation(op: Pick<Operation, 'status'>): boolean {
+  return op.status === 'done' || op.status === 'error' || op.status === 'cancelled';
+}
+
 function mergeLlmCall(existing: LlmCallRecord, incoming: LlmCallRecord): LlmCallRecord {
   return {
     ...existing,
@@ -285,17 +318,18 @@ export const useOperationsStore = create<OperationsState>((set) => ({
 
   upsert: (op: OperationUpsert) =>
     set((state) => {
-      const next = new Map(state.operations);
       const existing = state.operations.get(op.id);
-      // WHY: queueDelayMs is reported by the server (actual lab queue wait time).
-      // Preserve across upserts — once set, it stays.
-      const queueDelayMs = op.queueDelayMs ?? existing?.queueDelayMs;
-      // WHY: Summary upserts omit llmCalls so the hot operations store does
-      // not retain full prompt/response payloads for every active job.
-      const llmCalls = Object.prototype.hasOwnProperty.call(op, 'llmCalls') ? (op.llmCalls ?? []) : [];
-      next.set(op.id, { ...op, queueDelayMs, llmCalls });
+      // WHY: Normalize before comparing so repeated lightweight WS summaries
+      // can short-circuit without cloning the operations Map.
+      const normalized = normalizeOperationUpsert(op, existing);
+      const shouldClearStreams = isTerminalOperation(normalized)
+        && (state.streamTexts.has(op.id) || state.callStreamTexts.has(op.id));
+      if (existing && jsonLikeEqual(existing, normalized) && !shouldClearStreams) return state;
+
+      const next = new Map(state.operations);
+      next.set(op.id, normalized);
       // WHY: Clear stream text when operation reaches terminal state to free memory.
-      if (op.status === 'done' || op.status === 'error' || op.status === 'cancelled') {
+      if (isTerminalOperation(normalized)) {
         const nextStreams = new Map(state.streamTexts);
         nextStreams.delete(op.id);
         const nextCallStreams = new Map(state.callStreamTexts);

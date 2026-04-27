@@ -11,6 +11,7 @@ import {
   applyRuntimeSettingsToConfig,
   loadUserSettingsSync,
 } from '../../../features/settings-authority/index.js';
+import { loadGlobalPromptsSync } from '../../../core/llm/prompts/globalPromptStore.js';
 import { syncSpecDbForCategory as syncSpecDbForCategoryService } from '../services/specDbSyncService.js';
 import { safeReadJson } from '../../../shared/fileHelpers.js';
 import { defaultUserSettingsRoot, defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
@@ -40,6 +41,7 @@ export function createBootstrapSessionLayer({
     userSettingsPath: path.join(defaultUserSettingsRoot(), 'user-settings.json'),
     unitRegistryPath: path.resolve(HELPER_ROOT, '_global', 'unit_registry.json'),
   });
+  loadGlobalPromptsSync({ appDb });
 
   // ── Lazy SpecDb Cache ──
   const {

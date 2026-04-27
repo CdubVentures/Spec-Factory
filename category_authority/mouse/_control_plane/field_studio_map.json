@@ -113,7 +113,7 @@
             "field_key": "click_force",
             "key": "click_force",
             "type": "number",
-            "unit": "g",
+            "unit": "gf",
             "variance_policy": "override_allowed"
           },
           {
@@ -348,22 +348,55 @@
     },
     {
       "ai_assist": {
-        "reasoning_note": ""
+        "reasoning_note": "Keep the four coarse technology chips only: inductive, mechanical, optical, optical / mechanical. Brand, generation, model, lifecycle, force, and marketing names are source phrases or component identity, not enum values."
       },
       "delimiter": "",
       "field": "switch_type",
       "header_row": 0,
       "manual_values": [
+        "inductive",
         "mechanical",
         "optical",
-        "optical / mechanical",
-        "inductive"
+        "optical / mechanical"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
       "priority": {
         "availability": "sometimes",
         "difficulty": "easy",
+        "required_level": "non_mandatory"
+      },
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "ai_assist": {
+        "reasoning_note": "Use the canonical switch-maker/proprietary-switch brand only. Store exact switch model/name in mouse.switch; keep model suffixes, click ratings, switch type, colorways, and marketing phrases out of brand chips."
+      },
+      "delimiter": "",
+      "field": "mouse_switch_brand",
+      "header_row": 0,
+      "manual_values": [
+        "Omron",
+        "Kailh",
+        "Huano",
+        "TTC",
+        "Zippy",
+        "HNCHK",
+        "Razer",
+        "Logitech",
+        "SteelSeries",
+        "ROG",
+        "Glorious",
+        "Raesha"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "priority": {
+        "availability": "sometimes",
+        "difficulty": "medium",
         "required_level": "non_mandatory"
       },
       "row_end": 0,
@@ -1114,16 +1147,46 @@
       "variant_dependent": false
     },
     "adjustable_scroll_wheel": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Emit true only when the exact mouse has a scroll wheel whose behavior/feel is user-adjustable or mode-switchable, such as ratchet vs free-spin/smooth mode, software-configurable scroll tension/resistance/steps, Smart-Reel/auto free-spin threshold, MagSpeed/manual mode-shift, HyperScroll, or HyperScroll Pro. Do not count tilt/horizontal scrolling by itself; ordinary programmable buttons; DPI/polling changes; OS/app scroll speed; scroll acceleration alone without a configurable wheel/mode; or a fixed 16/24-step wheel. For false, require affirmative evidence of a fixed/standard wheel, a credible spec database stating no editable scroll-wheel resistance, or a complete authoritative spec/review that distinguishes the wheel from adjustable models. If the page merely omits adjustable-wheel language, return unknown rather than guessing false.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
+      "aliases": [
+        "adjustable scroll wheel",
+        "editable scroll-wheel resistance",
+        "configurable scroll feel",
+        "scroll tension",
+        "scroll resistance",
+        "scroll wheel resistance",
+        "free-spin scroll wheel",
+        "free-spinning mode",
+        "hyper-fast scroll wheel",
+        "dual-mode scroll wheel",
+        "ratchet mode",
+        "tactile cycling mode",
+        "smooth scrolling mode",
+        "Smart-Reel",
+        "HyperScroll",
+        "HyperScroll Pro",
+        "MagSpeed",
+        "mode shift button",
+        "mode-shift button",
+        "adaptive scroll wheel",
+        "scroll force",
+        "scroll steps"
+      ],
       "availability": "sometimes",
       "canonical_key": "adjustable_scroll_wheel",
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
         "shape": "scalar",
-        "type": "boolean",
-        "unit": null
+        "type": "boolean"
       },
       "data_type": "boolean",
       "difficulty": "easy",
@@ -1215,18 +1278,36 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review"
+          "manufacturer product pages",
+          "official setup guides/manuals",
+          "official support pages",
+          "professional review/spec pages",
+          "authorized retailer spec tables",
+          "spec aggregators only as fallback/corroboration"
         ],
         "domain_hints": [
+          "logitech.com",
+          "logitechg.com",
+          "support.logi.com",
+          "razer.com",
+          "zowie.benq.com",
           "rtings.com",
-          "mousespecs.org",
-          "techpowerup.com"
+          "techpowerup.com",
+          "mousespecs.org"
         ],
         "query_terms": [
           "adjustable scroll wheel",
+          "editable scroll-wheel resistance",
+          "configurable scroll feel",
           "scroll tension",
-          "free-spin scroll",
-          "scroll wheel resistance"
+          "scroll resistance",
+          "dual-mode scroll wheel",
+          "free-spin ratchet scroll wheel",
+          "hyper-fast scroll wheel",
+          "Smart-Reel",
+          "HyperScroll Pro",
+          "MagSpeed mode shift button",
+          "fixed 24-step scroll wheel"
         ]
       },
       "selection_policy": {},
@@ -1238,7 +1319,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Buttons & Wheel",
-        "guidance_md": null,
+        "guidance_md": "Boolean yes/no for user-adjustable or mode-switchable scroll-wheel feel/behavior. True covers ratchet/free-spin modes, configurable scroll tension/resistance/steps, Smart-Reel, MagSpeed, HyperScroll, or HyperScroll Pro. Do not count tilt/horizontal scrolling, OS/app scroll speed, scroll acceleration alone, or fixed step-count wheels.",
         "label": "Adjustable Scroll Wheel",
         "order": 72,
         "placeholder": "",
@@ -1246,11 +1327,12 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": "adjustable_scroll_wheel",
-        "tooltip_md": "Define 'Adjustable Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Adjustable or mode-switchable scroll-wheel behavior. Absence of marketing text is unknown, not false.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "scalar",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": false
     },
     "adjustable_weight": {
       "ai_assist": {
@@ -1953,7 +2035,28 @@
       "variant_dependent": true
     },
     "click_force": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the left/right main-button click or actuation force in gf. Prefer an exact product-level value for the requested model/variant (brand spec, lab measurement, or review measurement) over a bare switch spec. If only the switch model is proven, use the switch component nominal operating force as the product value; when PRODUCT_COMPONENTS did not already prove the switch, cite both the product switch-identity source and the switch-force source. Treat operating force, actuation force, tactile force, button force, press force, click weight, and grams of force as aliases for this field. Do not confuse this with release/releasing force, switch lifespan/click count, click latency/debounce, actuation distance/pre-travel/post-travel, or L/R force deviation. Normalize tolerance values to the nominal center: 65+/-10gf -> 65. Convert Newtons to gf using N x 101.97 and round to the nearest whole gf: 0.59 N -> 60. If separate left/right values are given, use their average unless the source gives a combined value. If only a binned range is marketed, use the midpoint rounded to the nearest gf. For hot-swap mice or editions/batches with different installed switches, use only the exact/default factory-installed switch for the requested variant; return unknown if the installed switch/variant cannot be pinned down. Product-level measurements may override component nominal force because shell/button implementation changes real click force.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
+      "aliases": [
+        "click force",
+        "actuation force",
+        "operating force",
+        "tactile force",
+        "button force",
+        "press force",
+        "click weight",
+        "grams of force",
+        "gram force",
+        "gf",
+        "OF"
+      ],
       "availability": "sometimes",
       "canonical_key": "click_force",
       "component": null,
@@ -1975,7 +2078,9 @@
       "difficulty": "hard",
       "display_name": "Click Force",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "numeric gf scalar; nominal force only"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -2030,20 +2135,36 @@
       "round": "int",
       "search_hints": {
         "content_types": [
-          "review",
-          "benchmark"
+          "official product spec pages",
+          "component maker datasheets/PDFs",
+          "authorized distributor component pages",
+          "instrumented review/lab pages",
+          "switch databases only as fallback or corroboration"
         ],
         "domain_hints": [
-          "mousespecs.org",
+          "rtings.com",
+          "prosettings.net",
+          "endgamegear.com",
+          "components.omron.com",
+          "digikey.com",
+          "mouser.com",
           "eloshapes.com",
+          "mousespecs.org",
+          "pmm.gg",
           "techpowerup.com"
         ],
         "query_terms": [
           "click force",
           "actuation force",
+          "operating force",
+          "tactile force",
           "button force",
-          "click pressure",
-          "grams force"
+          "click weight",
+          "grams force",
+          "gf",
+          "mouse switch datasheet",
+          "main button force",
+          "<switch model> operating force"
         ]
       },
       "selection_policy": {},
@@ -2055,7 +2176,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Click Feel & Latency",
-        "guidance_md": null,
+        "guidance_md": "Extract left/right main-button click or actuation force in gf. Prefer exact product measurements/specs; otherwise use the proven switch component nominal operating force. Do not use release force, lifespan/click count, latency/debounce, actuation distance, pre/post-travel, or L/R deviation.",
         "label": "Click Force",
         "order": 61,
         "placeholder": "",
@@ -2063,16 +2184,37 @@
         "short_label": null,
         "suffix": "gf",
         "tooltip_key": "click_force",
-        "tooltip_md": "Define 'Click Force' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Main-button click/actuation force in gf. Product-level measurement can override switch nominal force.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "gf",
       "value_form": "single",
       "value_form_sample": "scalar",
-      "variance_policy": "override_allowed"
+      "variance_policy": "override_allowed",
+      "variant_dependent": true
     },
     "click_latency": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the average left/main-button click-to-computer/report latency in ms for the exact mouse. When a source provides an overall/expected/primary connection value, use that for scalar click_latency. Prefer instrumented lab results over marketing. If only mode-specific values exist, use wired for wired-only mice, 2.4GHz/receiver for wireless gaming mice normally used by dongle, and Bluetooth only for Bluetooth-only or productivity-first mice; do not average modes. Manufacturer values are acceptable only when they state an exact product click latency/average click latency in ms, not merely switch response, wireless-platform latency, polling interval, or vague near-zero wording. Do not use sensor latency, motion latency, shift latency, click force, debounce setting, optical-switch actuation time, or relative/baseline-adjusted values such as negative MouseSpecs comparison rows. If the exact product, connection mode, or measurement basis is ambiguous, return unknown.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
+      "aliases": [
+        "click response time",
+        "button latency",
+        "button response time",
+        "left click latency",
+        "left-click latency",
+        "click-to-report latency",
+        "click input latency",
+        "click delay",
+        "average click latency",
+        "avg latency"
+      ],
       "availability": "sometimes",
       "canonical_key": "click_latency",
       "component": null,
@@ -2083,7 +2225,7 @@
           "min": 0
         },
         "rounding": {
-          "decimals": 1,
+          "decimals": 2,
           "mode": "nearest"
         },
         "shape": "scalar",
@@ -2149,8 +2291,11 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review",
-          "benchmark"
+          "instrumented lab review pages",
+          "lab methodology pages",
+          "comparison tables with per-mode average latency",
+          "manufacturer product/technology pages only when they give exact ms for average click latency",
+          "avoid generic retailer specs unless they quote an exact manufacturer value"
         ],
         "domain_hints": [
           "rtings.com",
@@ -2161,9 +2306,16 @@
         ],
         "query_terms": [
           "click latency",
+          "average click latency",
+          "left click latency",
           "click response time",
           "button latency",
-          "end-to-end latency",
+          "button response time",
+          "click-to-report latency",
+          "expected connection click latency",
+          "Avg. Latency Wired",
+          "Avg. Latency Receiver",
+          "Avg. Latency Bluetooth",
           "click delay ms"
         ]
       },
@@ -2176,7 +2328,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Click Feel & Latency",
-        "guidance_md": "Click Latency is a single numeric ms field, not a comma-delimited list.\nKeep mode-specific measurements in click_latency_wired, click_latency_wireless, click_latency_bluetooth.\nOnly fill this scalar when a single authoritative value is reported or the source clearly names the primary mode value; otherwise output unk.",
+        "guidance_md": "Click Latency is one numeric ms value for average main-button click-to-computer/report latency. Prefer lab measurements. Use the overall/expected/primary connection value when the source provides one; otherwise choose wired for wired-only, receiver for wireless gaming, or Bluetooth for Bluetooth-only/productivity-first products. Do not use sensor latency, polling interval, debounce, switch actuation, click force, or relative/baseline-adjusted values.",
         "label": "Click Latency",
         "order": 62,
         "placeholder": "",
@@ -2184,24 +2336,40 @@
         "short_label": null,
         "suffix": "ms",
         "tooltip_key": "click_latency",
-        "tooltip_md": "Click Latency as one numeric ms value. Mode-specific values belong in the separate wired/wireless/bluetooth fields.",
+        "tooltip_md": "Average main-button click-to-report latency in ms. Mode-specific values belong in the wired/wireless/Bluetooth fields.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": false
     },
     "click_latency_bluetooth": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the average main-button click-to-registration latency measured in Bluetooth mode only, stored as milliseconds. Accept labels such as Avg. Latency (Bluetooth) or RTINGS Wireless Latency Over Bluetooth when they apply to the exact product. Do not use overall/expected click latency, wired latency, receiver/2.4 GHz latency, sensor latency, polling rate, debounce time, actuation time, wake-up latency, or manufacturer marketing claims like 0 ms/1 ms unless the source explicitly gives a numeric Bluetooth click-latency measurement. If the product lacks Bluetooth or the Bluetooth row is N/A/locked/no exact number, return unknown with a reason rather than inferring from typical Bluetooth ranges. If multiple labs disagree, prefer the most recent transparent lab result for the exact product/test bench and do not average. For color/edition variants, inherit only when the source or product context says the internal hardware/firmware is unchanged.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "click latency (bluetooth)",
-        "click latency bluetooth"
+        "click latency bluetooth",
+        "bluetooth click latency",
+        "wireless latency over bluetooth",
+        "latency over bluetooth",
+        "avg latency (bluetooth)",
+        "average latency bluetooth",
+        "button latency bluetooth",
+        "click response time bluetooth"
       ],
       "availability": "sometimes",
       "canonical_key": "click_latency_bluetooth",
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
         "range": {
           "max": 150,
           "min": 0
@@ -2215,11 +2383,16 @@
         "unit": "ms"
       },
       "data_type": "number",
-      "difficulty": "hard",
+      "difficulty": "very_hard",
       "display_name": "Click Latency (Bluetooth)",
       "enum": {
-        "match": {},
-        "new_value_policy": {},
+        "match": {
+          "format_hint": "numeric ms value only"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -2250,6 +2423,10 @@
       "group": "Click Feel & Latency",
       "key": "click_latency_bluetooth",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
@@ -2263,29 +2440,29 @@
       },
       "priority": {
         "availability": "sometimes",
-        "difficulty": "hard",
+        "difficulty": "very_hard",
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
       "round": "2dp",
       "search_hints": {
         "content_types": [
-          "review",
-          "benchmark"
+          "professional lab review",
+          "lab methodology page",
+          "comparison/spec table with per-connection latency rows"
         ],
         "domain_hints": [
-          "rtings.com",
-          "mousespecs.org",
-          "sensor.fyi",
           "lttlabs.com",
-          "techpowerup.com"
+          "rtings.com"
         ],
         "query_terms": [
-          "click latency",
-          "click response time",
-          "button latency",
-          "end-to-end latency",
-          "click delay ms"
+          "Avg. Latency (Bluetooth)",
+          "Wireless Latency Over Bluetooth",
+          "Bluetooth click latency mouse",
+          "button latency bluetooth mouse",
+          "click response time bluetooth mouse",
+          "<product> Avg. Latency (Bluetooth)",
+          "<product> Wireless Latency Over Bluetooth"
         ]
       },
       "shape": "scalar",
@@ -2296,7 +2473,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Click Feel & Latency",
-        "guidance_md": null,
+        "guidance_md": "Extract average main-button click-to-registration latency measured in Bluetooth mode only. Reject overall/expected, wired, receiver, sensor latency, polling rate, debounce, actuation, wake-up latency, and generic 0 ms/1 ms marketing.",
         "label": "Click Latency (Bluetooth)",
         "order": 65,
         "placeholder": "",
@@ -2304,7 +2481,7 @@
         "short_label": null,
         "suffix": "ms",
         "tooltip_key": "click_latency",
-        "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Bluetooth-mode main-click latency in ms. Unknown if no exact Bluetooth row/value exists.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
@@ -2312,16 +2489,31 @@
       "value_form_sample": "scalar"
     },
     "click_latency_wired": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the measured click or button latency for the exact mouse when it is used over a wired USB input connection. Prefer direct lab rows labelled Wired, Avg. Latency (Wired), Click Latency -> Wired, or equivalent. Do not use receiver, 2.4 GHz wireless, expected connection, or Bluetooth values for this wired key. If the mouse cannot send input over USB, return unknown/no submitted value for this key. Do not derive a value from polling rate/report interval, Razer HyperPolling 0.125 ms marketing, generic response time, sensor/movement latency, debounce setting, shift latency, or click force unless the source explicitly names measured click/button latency in wired mode. Treat MouseSpecs Click Latency Comparison list as an adjusted comparison-offset table, including possible negative values; do not emit those offsets. Use MouseSpecs only when a product/compare page gives an absolute Click Latency value, or as corroboration for TechPowerUp/lab data. If credible lab values conflict, prefer the most current RTINGS or LTT Labs measured wired value for the exact product/test bench, then exact-product TechPowerUp/MouseSpecs absolute values as fallback. Store total click/button registration latency in ms, rounded to 2 decimals.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "click latency (wired)",
-        "click latency wired"
+        "click latency wired",
+        "wired click latency",
+        "button latency wired",
+        "click response time wired",
+        "average latency wired",
+        "avg latency wired",
+        "USB click latency",
+        "wired button response time"
       ],
       "availability": "sometimes",
       "canonical_key": "click_latency_wired",
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
         "range": {
           "max": 150,
           "min": 0
@@ -2339,7 +2531,10 @@
       "display_name": "Click Latency (Wired)",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -2370,6 +2565,10 @@
       "group": "Click Feel & Latency",
       "key": "click_latency_wired",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
@@ -2390,22 +2589,26 @@
       "round": "2dp",
       "search_hints": {
         "content_types": [
-          "review",
-          "benchmark"
+          "lab review",
+          "comparison table",
+          "test-methodology page",
+          "official product/spec page only when it literally states click/button latency for wired mode"
         ],
         "domain_hints": [
           "rtings.com",
-          "mousespecs.org",
-          "sensor.fyi",
           "lttlabs.com",
-          "techpowerup.com"
+          "techpowerup.com",
+          "mousespecs.org",
+          "sensor.fyi"
         ],
         "query_terms": [
-          "click latency",
-          "click response time",
-          "button latency",
-          "end-to-end latency",
-          "click delay ms"
+          "click latency wired",
+          "Avg. Latency (Wired)",
+          "Click Latency Wired",
+          "button latency wired ms",
+          "click response time wired",
+          "USB click latency",
+          "mouse click latency ms"
         ]
       },
       "shape": "scalar",
@@ -2416,7 +2619,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Click Feel & Latency",
-        "guidance_md": null,
+        "guidance_md": "Extract measured main-button click/button latency in wired USB input mode only. Do not use receiver, Bluetooth, expected connection, polling interval, HyperPolling response-time marketing, sensor latency, debounce, shift latency, click force, or MouseSpecs offset rows.",
         "label": "Click Latency (Wired)",
         "order": 63,
         "placeholder": "",
@@ -2424,24 +2627,41 @@
         "short_label": null,
         "suffix": "ms",
         "tooltip_key": "click_latency",
-        "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Wired USB click/button latency in ms.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": false
     },
     "click_latency_wireless": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the click/button latency for the exact product using its non-Bluetooth wireless receiver/dongle mode such as 2.4GHz, receiver, LIGHTSPEED, HyperSpeed, SpeedNova, or Quantum 2.0. If a source provides separate Wired, Receiver, and Bluetooth values, use Receiver only. Do not use Bluetooth for this key; Bluetooth belongs to click_latency_bluetooth. Do not use Wired for this key. Do not use polling/report rate values such as 1000Hz=1ms or 8000Hz=0.125ms, optical-switch response time, debounce setting, motion/sensor latency, display/system input lag, or side-button latency unless the source explicitly says it is the main/left-click latency. Prefer direct lab measurements over marketing language; manufacturer exact average click-latency claims are acceptable when they name the exact product and wireless mode. Ignore Mouse Specs comparison-table negative/baseline values for this field unless the page provides an absolute click-latency value for the exact product. If the product lacks a proprietary/non-Bluetooth receiver or no exact receiver-mode value is proven, return unknown with searched sources.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
       "aliases": [
         "click latency (wireless)",
-        "click latency wireless"
+        "click latency wireless",
+        "wireless click latency",
+        "wireless latency over receiver",
+        "receiver latency",
+        "avg latency (receiver)",
+        "average latency (receiver)",
+        "2.4GHz click latency",
+        "2.4 GHz click latency",
+        "button latency over receiver"
       ],
       "availability": "sometimes",
       "canonical_key": "click_latency_wireless",
       "component": null,
       "constraints": [],
       "contract": {
-        "list_rules": {},
         "range": {
           "max": 150,
           "min": 0
@@ -2459,7 +2679,10 @@
       "display_name": "Click Latency (Wireless)",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open",
         "source": null
       },
@@ -2490,6 +2713,10 @@
       "group": "Click Feel & Latency",
       "key": "click_latency_wireless",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
@@ -2510,21 +2737,31 @@
       "round": "2dp",
       "search_hints": {
         "content_types": [
-          "review",
-          "benchmark"
+          "lab review pages",
+          "lab comparison pages",
+          "manufacturer product/spec pages",
+          "manufacturer technology/support/blog pages with explicit ms values",
+          "spec database pages only as fallback"
         ],
         "domain_hints": [
           "rtings.com",
+          "lttlabs.com",
+          "techpowerup.com",
           "mousespecs.org",
           "sensor.fyi",
-          "lttlabs.com",
-          "techpowerup.com"
+          "razer.com",
+          "steelseries.com",
+          "logitechg.com"
         ],
         "query_terms": [
           "click latency",
-          "click response time",
-          "button latency",
-          "end-to-end latency",
+          "wireless click latency",
+          "wireless latency over receiver",
+          "receiver latency",
+          "avg latency receiver",
+          "button latency receiver",
+          "2.4GHz click latency",
+          "2.4 GHz latency",
           "click delay ms"
         ]
       },
@@ -2536,7 +2773,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Click Feel & Latency",
-        "guidance_md": null,
+        "guidance_md": "Extract non-Bluetooth receiver/dongle main-click latency only. Do not use wired rows, Bluetooth rows, polling/report-rate math, optical switch response time, debounce, sensor/motion latency, display/system input lag, or MouseSpecs comparison offsets.",
         "label": "Click Latency (Wireless)",
         "order": 64,
         "placeholder": "",
@@ -2544,12 +2781,13 @@
         "short_label": null,
         "suffix": "ms",
         "tooltip_key": "click_latency",
-        "tooltip_md": "Define 'Click Latency' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Receiver/proprietary wireless main-click latency in ms.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "ms",
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": false
     },
     "coating": {
       "ai_assist": {
@@ -3464,7 +3702,30 @@
       "variant_dependent": true
     },
     "debounce": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the mouse firmware/software click debounce delay setting, in milliseconds. Use exact-product product guides, support articles, software manuals, firmware notes, or official technology pages first. Treat zero debounce, no debounce delay, and does not require debouncing as 0 ms only when stated for the exact product or for the exact switch technology the product uses; do not use a nearby switch actuation value, such as 0.2 ms actuation, as debounce. Accept labels such as debounce time, debounce delay, debounce rate, click debounce, key response time, button response time, and click response time only when the source gives numeric ms values or explicitly maps the label to debounce. If a source lists discrete options, return every option. If it gives only an adjustable numeric range, return the min and max endpoints and mention the default in evidence, but do not invent intermediate steps. If it gives only a default numeric debounce setting, return that default. Do not emit measured click latency, OS double-click speed, switch actuation distance/time, multiclick filter, slamclick/SPDT/GX mode, or Fast/Normal labels unless a credible source maps them to debounce ms. For bundled pages covering wired/wireless, size, Pro/eS/WE, firmware, or edition variants, use only the exact product values; do not union sibling variants.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
+      "aliases": [
+        "debounce time",
+        "debounce delay",
+        "debounce rate",
+        "click debounce",
+        "button debounce",
+        "key response time",
+        "button response time",
+        "click response time",
+        "no debounce delay",
+        "zero debounce",
+        "debounce slider",
+        "debounce timer",
+        "double-click prevention"
+      ],
       "availability": "sometimes",
       "canonical_key": "debounce",
       "component": null,
@@ -3472,6 +3733,7 @@
       "contract": {
         "list_rules": {
           "dedupe": true,
+          "item_union": true,
           "sort": "asc"
         },
         "range": {
@@ -3559,10 +3821,23 @@
       "round": "int",
       "search_hints": {
         "content_types": [
-          "review",
-          "benchmark"
+          "product guide/spec page",
+          "support FAQ",
+          "software/driver guide",
+          "firmware/release note",
+          "official switch-technology page",
+          "professional review/lab page only when it states the debounce setting used or quotes a product debounce value"
         ],
         "domain_hints": [
+          "gloriousgaming.com",
+          "support.pulsar.gg",
+          "razer.com",
+          "logitechg.com",
+          "help.endgamegear.com",
+          "zowie.benq.com",
+          "help.fnatic.com",
+          "lamzu.com",
+          "rtings.com",
           "mousecompare.com",
           "mousespecs.org",
           "techpowerup.com"
@@ -3571,8 +3846,18 @@
           "debounce",
           "debounce time",
           "debounce delay",
+          "debounce rate",
+          "click debounce",
+          "button debounce",
+          "key response time",
+          "button response time",
+          "click response time ms",
+          "no debounce delay",
+          "zero debounce",
+          "debounce slider",
+          "debounce timer",
           "double click prevention",
-          "debounce ms"
+          "mouse software debounce"
         ]
       },
       "selection_policy": {},
@@ -3584,7 +3869,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Click Feel & Latency",
-        "guidance_md": null,
+        "guidance_md": "Extract firmware/software click debounce delay settings in ms. Return all discrete options; for a numeric range, return min and max endpoints only. Normalize explicit zero/no debounce to 0 ms. Do not use measured click latency, actuation time, OS double-click speed, multiclick filters, slamclick/SPDT/GX modes, or unmapped Fast/Normal labels.",
         "label": "Debounce",
         "order": 66,
         "placeholder": "",
@@ -3592,12 +3877,13 @@
         "short_label": null,
         "suffix": "ms",
         "tooltip_key": null,
-        "tooltip_md": "Define 'Debounce' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Click debounce delay setting in ms. Numeric settings only.",
         "tooltip_source": null
       },
       "unit": "ms",
       "value_form": "set",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "variant_dependent": true
     },
     "design": {
       "ai_assist": {
@@ -5903,7 +6189,29 @@
       "variant_dependent": false
     },
     "hot_swappable": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Return true only when evidence for the exact mouse says its mouse button micro-switches are hot-swappable, swappable, user-replaceable, interchangeable, use push-fit/switch sockets, or can be changed without soldering. Treat ASUS ROG Push-Fit Switch Socket and Push-Fit Switch Socket II as true. This key is for mouse click/micro-switch sockets, usually the main left/right buttons; do not mark true for hot-swappable keyboard switches, batteries, shells, side plates, dongles, receiver pairing, mouse feet, or generic spare switches unless the source ties them to mouse click switch replacement. Return false only from direct negative evidence for the exact product, such as an official FAQ/spec table saying it lacks hot-swappable switches, a comparison table showing the switch-socket feature as No, or a credible teardown/repair source showing fixed/soldered switches that require soldering. Absence of a hot-swap claim on an ordinary product page is unknown, not false. Do not copy sibling-family values unless the exact model is listed in the supported/available model set.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
+      "aliases": [
+        "push-fit switch socket",
+        "Push-Fit Switch Socket II",
+        "switch socket design",
+        "swappable mouse switches",
+        "hot-swap switches",
+        "hot-swappable micro-switches",
+        "replaceable mouse switches",
+        "interchangeable switches",
+        "user-replaceable switches",
+        "no-solder switch replacement",
+        "drop-in switches",
+        "swappable micro-movement switches"
+      ],
       "availability": "sometimes",
       "canonical_key": "hot_swappable",
       "component": null,
@@ -6004,20 +6312,35 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review",
-          "product_page"
+          "manufacturer product pages",
+          "official support FAQs",
+          "official feature/compatibility pages",
+          "manufacturer replacement guides",
+          "review-lab mouse reviews",
+          "credible teardown/repair guides",
+          "authorized retailer/spec pages"
         ],
         "domain_hints": [
-          "mousespecs.org",
+          "rog.asus.com",
+          "asus.com",
           "rtings.com",
           "eloshapes.com",
+          "rawmshop.com",
+          "mechkeys.com",
+          "mousespecs.org",
           "techpowerup.com"
         ],
         "query_terms": [
-          "hot swappable",
+          "hot swappable mouse switches",
           "hot-swap switches",
-          "switch sockets",
-          "replaceable switches"
+          "push-fit switch socket",
+          "Push-Fit Switch Socket II",
+          "switch socket design",
+          "replaceable mouse switches",
+          "user-replaceable switches",
+          "no soldering required mouse switch",
+          "hot-swappable micro-switch sockets",
+          "swappable micro-movement switches"
         ]
       },
       "selection_policy": {},
@@ -6029,7 +6352,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Switch Identity",
-        "guidance_md": null,
+        "guidance_md": "Boolean yes/no for mouse button micro-switch sockets. True requires exact-mouse evidence for hot-swappable/user-replaceable/push-fit/no-solder click switches. Do not count keyboard switches, batteries, shells, side plates, dongles, mouse feet, or generic spare switches.",
         "label": "Hot Swappable",
         "order": 60,
         "placeholder": "",
@@ -6037,11 +6360,12 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": "hot_swappable",
-        "tooltip_md": "Define 'Hot Swappable' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Hot-swappable mouse button micro-switch sockets. Absence is unknown, not false.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "scalar",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": false
     },
     "hump": {
       "ai_assist": {
@@ -7355,7 +7679,26 @@
       "value_form_sample": "scalar"
     },
     "middle_buttons": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Count only extra dedicated physical buttons on the mouse upper middle/top-center shell near the scroll wheel, such as top DPI, profile/cycle, wheel-mode, or similar center-strip buttons. Exclude left/right primary buttons, scroll-wheel click/middle click, wheel-tilt inputs, side/thumb buttons, ring-finger buttons that are not on the center strip, underside power/DPI/polling/pairing buttons, receiver-storage controls, and software-only actions. Do not derive this value from total or programmable button count alone; use an official layout/manual, clear top-view image, or a normalized source that explicitly reports middle/top buttons. If the visible control clickability or location is ambiguous, corroborate with another source or return unknown.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
+      "aliases": [
+        "top-center buttons",
+        "top buttons",
+        "middle/top buttons",
+        "DPI button behind scroll wheel",
+        "profile button",
+        "cycle mode button",
+        "wheel-mode shift button",
+        "G7/G8",
+        "center-strip buttons"
+      ],
       "availability": "always",
       "canonical_key": "middle_buttons",
       "component": null,
@@ -7370,13 +7713,15 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer"
+        "type": "number"
       },
       "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Middle Buttons",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "integer count 0-8"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -7426,31 +7771,42 @@
       "round": "int",
       "search_hints": {
         "content_types": [
-          "review",
-          "product_page"
+          "official product page",
+          "official support FAQ",
+          "setup guide/manual PDF",
+          "top-view product image/render",
+          "professional review controls section",
+          "EloShapes compare/spec page"
         ],
         "domain_hints": [
           "eloshapes.com",
           "rtings.com",
-          "mousespecs.org"
+          "mousespecs.org",
+          "brand-official product/support/manual pages when available"
         ],
         "query_terms": [
-          "middle button",
-          "DPI button",
-          "top buttons",
-          "middle click"
+          "middle buttons",
+          "top-center buttons",
+          "button layout",
+          "device layout",
+          "mouse layout",
+          "DPI button behind scroll wheel",
+          "profile button",
+          "cycle mode button",
+          "wheel mode shift",
+          "top view buttons"
         ]
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "integer",
+      "type": "number",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
         "group": "Buttons & Wheel",
-        "guidance_md": null,
+        "guidance_md": "Count only extra dedicated top-center buttons near the scroll wheel. Use official layout/manual, clear top-view image, or normalized source. Exclude scroll-wheel click, wheel tilt, side/thumb buttons, underside controls, and total/programmable button counts.",
         "label": "Middle Buttons",
         "order": 70,
         "placeholder": "",
@@ -7458,11 +7814,12 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": "middle_buttons",
-        "tooltip_md": "Count of middle buttons (wheel click + extra middle buttons).",
+        "tooltip_md": "Extra top-center button count. Visual/PIF top views can support counting.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": false
     },
     "motion_sync": {
       "aliases": [],
@@ -8792,8 +9149,27 @@
       "value_form_sample": "scalar"
     },
     "programmable_buttons": {
-      "aliases": [],
-      "availability": "always",
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Count the number of remappable mouse inputs for the exact product as stated by a credible source. Prefer explicit labels such as programmable buttons, programmable controls, programmable inputs, macro programmable buttons, fully configurable buttons, or customizable buttons. Normalize arithmetic marketing counts, for example 10+1 -> 11 and 19+1 -> 20. If a source distinguishes buttons from broader controls, use the count attached to the programmable-buttons label; use a programmable-controls/input count only when that is the clearest available label for remappable mouse inputs. For mice with included swappable side plates or layouts, use the highest count available in the retail configuration when the source says up to and the parts are included. Do not count power, pairing, receiver-storage, wheel-mode toggle, or other controls explicitly marked not programmable. Do not infer a value from visible buttons, side-button count, or total physical button count alone; return unknown when sources only show physical button count or generic software customizability without a count.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
+      "aliases": [
+        "programmable controls",
+        "programmable inputs",
+        "macro programmable buttons",
+        "fully configurable buttons",
+        "configurable buttons",
+        "customizable buttons",
+        "remappable buttons",
+        "rebindable buttons",
+        "button assignments"
+      ],
+      "availability": "sometimes",
       "canonical_key": "programmable_buttons",
       "component": null,
       "constraints": [],
@@ -8807,7 +9183,7 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer"
+        "type": "number"
       },
       "data_type": "integer",
       "difficulty": "easy",
@@ -8855,7 +9231,7 @@
       "parse": {},
       "parse_rules": {},
       "priority": {
-        "availability": "always",
+        "availability": "sometimes",
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
@@ -8863,33 +9239,40 @@
       "round": "int",
       "search_hints": {
         "content_types": [
-          "review",
-          "product_page"
+          "official product/spec pages",
+          "official support/FAQ/manual/QSG pages",
+          "review-lab spec tables",
+          "authorized retailer spec tables"
         ],
         "domain_hints": [
           "rtings.com",
-          "mousespecs.org",
-          "eloshapes.com",
-          "bestbuy.com"
+          "lttlabs.com",
+          "bestbuy.com",
+          "amazon.com",
+          "mousespecs.org"
         ],
         "query_terms": [
           "programmable buttons",
-          "button count",
-          "total buttons",
+          "programmable controls",
+          "programmable inputs",
+          "macro programmable buttons",
+          "customizable buttons",
           "remappable buttons",
-          "customizable buttons"
+          "total buttons",
+          "button count",
+          "button assignments"
         ]
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "integer",
+      "type": "number",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
         "group": "Buttons & Wheel",
-        "guidance_md": null,
+        "guidance_md": "Count remappable mouse inputs only when a source gives a programmable/remappable/configurable count. Do not infer from visible buttons, side-button count, or total physical button count alone.",
         "label": "Programmable Buttons",
         "order": 68,
         "placeholder": "",
@@ -8897,7 +9280,7 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": "programmable_buttons",
-        "tooltip_md": "Define 'Programmable Buttons' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Number of programmable/remappable mouse inputs. Physical button count alone is not enough.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "single",
@@ -10687,7 +11070,31 @@
       "value_form_sample": "scalar"
     },
     "side_buttons": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": true
+        },
+        "reasoning_note": "Count physical side-mounted button actuators on the exact mouse. Include thumb/back-forward buttons, side-located DPI-shift/sniper/multi-function/gesture buttons, and buttons on both left and right sides if installed and usable. Exclude primary left/right clicks, scroll-wheel click/tilt, top DPI/profile buttons, bottom power/profile buttons, side scroll wheels, lighting zones, and total programmable-button counts. For modular/swappable side plates that ship with the exact product, submit the highest side-button count from any included side plate; mention lower included configurations in evidence notes. Do not count optional accessories or sibling-model side plates. Prefer manufacturer specs/manuals; otherwise use professional review/spec tables or clear side-view/360/PIF images. Treat 0 as proven only when a source states no relevant buttons/only one physical button or images clearly show both sides with no side buttons.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
+      "aliases": [
+        "side buttons",
+        "thumb buttons",
+        "side button count",
+        "number of side buttons",
+        "side panel buttons",
+        "side plate buttons",
+        "side keypad",
+        "thumb grid",
+        "back/forward buttons",
+        "mouse 4/5",
+        "DPI-shift button",
+        "sniper button",
+        "multi-function trigger",
+        "gesture button"
+      ],
       "availability": "always",
       "canonical_key": "side_buttons",
       "component": null,
@@ -10702,13 +11109,15 @@
           "mode": "nearest"
         },
         "shape": "scalar",
-        "type": "integer"
+        "type": "number"
       },
       "data_type": "integer",
       "difficulty": "easy",
       "display_name": "Side Buttons",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "integer 0-12"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -10758,8 +11167,11 @@
       "round": "int",
       "search_hints": {
         "content_types": [
-          "review",
-          "product_page"
+          "manufacturer product/spec pages",
+          "official quick-start/user manuals",
+          "side-view or 360 product images",
+          "professional review/spec tables",
+          "mouse spec database pages"
         ],
         "domain_hints": [
           "eloshapes.com",
@@ -10768,22 +11180,26 @@
           "techpowerup.com"
         ],
         "query_terms": [
-          "side buttons",
-          "thumb buttons",
-          "forward back buttons",
-          "side button count"
+          "number of side buttons",
+          "side panel buttons",
+          "side plate buttons",
+          "thumb button count",
+          "12-button side panel",
+          "2 6 12 side plate",
+          "DPI-shift thumb button",
+          "multi-function trigger"
         ]
       },
       "selection_policy": {},
       "shape": "scalar",
-      "type": "integer",
+      "type": "number",
       "ui": {
         "array_handling": "none",
         "display_decimals": 0,
         "display_mode": "all",
         "examples": [],
         "group": "Buttons & Wheel",
-        "guidance_md": null,
+        "guidance_md": "Count physical side-mounted button actuators only. Use clear side/360/PIF images when specs are absent. Exclude primary clicks, wheel inputs, top/bottom buttons, side scroll wheels, lighting zones, and total programmable-button counts.",
         "label": "Side Buttons",
         "order": 69,
         "placeholder": "",
@@ -10791,14 +11207,44 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": "side_buttons",
-        "tooltip_md": "Count of side buttons (excluding main clicks and wheel).",
+        "tooltip_md": "Physical side-mounted button count. Visual/PIF evidence can support counting.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": false
     },
     "silent_clicks": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Treat this as an intentionally quiet/silent click feature, not a measured click-latency or switch-feel field. Return true only when exact-product evidence says the mouse has silent/quiet/whisper-quiet/noiseless/mute clicks or buttons, SilentTouch/Silent Touch, Quiet Click, silent mechanical switches, or explicit click-noise reduction. Return false only when exact-product evidence explicitly says click-noise reduction/quiet-click support is absent, or a credible comparison/spec table marks the feature as No. Do not infer false from a missing marketing claim. Do not count low-latency optical/mechanical switches, debounce, light click force, crisp/tactile click feel, or quiet/silent scroll wheel alone. If evidence is only for a sibling, bundle member, or scroll wheel, return unknown.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
+      "aliases": [
+        "silent clicks",
+        "quiet clicks",
+        "whisper-quiet clicks",
+        "silent button clicks",
+        "quiet buttons",
+        "noiseless clicks",
+        "mute click",
+        "muted clicks",
+        "SilentTouch",
+        "Silent Touch",
+        "Quiet Click",
+        "quiet click buttons",
+        "silent mechanical switches",
+        "silent switches",
+        "click-noise reduction",
+        "clicking noise reduction",
+        "reduced click sound",
+        "almost-silent mouse buttons",
+        "low-noise buttons"
+      ],
       "availability": "sometimes",
       "canonical_key": "silent_clicks",
       "component": null,
@@ -10899,19 +11345,36 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review",
-          "product_page"
+          "manufacturer product pages",
+          "official specs/feature pages",
+          "official comparison matrices and datasheet PDFs",
+          "professional reviews",
+          "retailer product-feature/spec listings as fallback"
         ],
         "domain_hints": [
-          "mousespecs.org",
+          "logitech.com",
+          "razer.com",
+          "asus.com",
           "rtings.com",
-          "eloshapes.com"
+          "bestbuy.com",
+          "amazon.com",
+          "mousespecs.org"
         ],
         "query_terms": [
           "silent clicks",
-          "silent switches",
           "quiet clicks",
-          "noise level",
+          "whisper quiet clicks",
+          "click noise reduction",
+          "clicking noise reduction",
+          "SilentTouch",
+          "Silent Touch",
+          "Quiet Click",
+          "silent mechanical switches",
+          "silent switches",
+          "mute click",
+          "noiseless clicks",
+          "almost-silent mouse buttons",
+          "quiet mouse buttons",
           "silent mouse"
         ]
       },
@@ -10924,7 +11387,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Click Feel & Latency",
-        "guidance_md": null,
+        "guidance_md": "Boolean yes/no for intentionally quiet/silent click support. True requires exact-product silent/quiet/noiseless/mute click wording. False requires explicit negative evidence; absence is unknown.",
         "label": "Silent Clicks",
         "order": 67,
         "placeholder": "",
@@ -10932,7 +11395,7 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": "silent_clicks",
-        "tooltip_md": "Define 'Silent Clicks' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Silent/quiet click feature. Do not infer false from silence.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "scalar",
@@ -11139,8 +11602,29 @@
       "value_form_sample": "scalar"
     },
     "switch": {
-      "aliases": [],
-      "availability": "always",
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the stock primary left/right click switch identity, not the scroll-wheel encoder, side-button switches, hot-swap capability, switch_type, or click lifespan. Prefer exact manufacturer/model or branded technology names such as Razer Optical Mouse Switches Gen-3, LIGHTFORCE Hybrid, Kailh GX SPDT, Huano Transparent Blue Shell Pink Dot, or ROG Micro Switch II. Treat brand-only names or generic optical/mechanical wording as insufficient unless the product source presents that wording as the switch marketed component name. For hot-swappable mice, record the factory-installed main switches; spare or included switch packs are corroboration only, not a union. When sources disagree by edition, revision, colorway, or sibling model, use only evidence tied to the exact product and otherwise return unknown.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
+      "aliases": [
+        "main button switch",
+        "primary mouse button switches",
+        "left/right click switches",
+        "M1/M2 switches",
+        "click switches",
+        "key switch",
+        "microswitch",
+        "micro switch",
+        "switch model",
+        "switch type",
+        "button switches"
+      ],
+      "availability": "sometimes",
       "canonical_key": "switch",
       "component": null,
       "constraints": [],
@@ -11155,11 +11639,15 @@
       "display_name": "Switch",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "component_db.switch"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "component_db.switch",
       "evidence": {
         "min_evidence_refs": 2,
         "tier_preference": [
@@ -11192,6 +11680,10 @@
       "group": "Switch Identity",
       "key": "switch",
       "min_evidence_refs": 2,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
         "component_type": "switch",
@@ -11206,7 +11698,7 @@
         "unit": null
       },
       "priority": {
-        "availability": "always",
+        "availability": "sometimes",
         "difficulty": "medium",
         "required_level": "mandatory"
       },
@@ -11214,10 +11706,15 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "spec_sheet",
-          "review"
+          "official product page",
+          "official support/spec/guide",
+          "official store spec table",
+          "professional review/spec table",
+          "curated spec database",
+          "teardown/replacement-source evidence only as fallback/corroboration"
         ],
         "domain_hints": [
+          "manufacturer official product/support domain for the exact brand",
           "eloshapes.com",
           "prosettings.net",
           "mousespecs.org",
@@ -11225,11 +11722,16 @@
           "techpowerup.com"
         ],
         "query_terms": [
-          "mouse switch",
-          "main switch",
-          "micro switch",
+          "primary mouse button switches",
+          "main button switch",
+          "left right switch",
+          "M1 M2 switch",
+          "mouse microswitch",
           "switch model",
-          "primary switch"
+          "switch type",
+          "key switch",
+          "click switch",
+          "teardown switches"
         ]
       },
       "selection_policy": {},
@@ -11241,7 +11743,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Switch Identity",
-        "guidance_md": null,
+        "guidance_md": "Extract the stock primary left/right click switch identity. Do not use scroll encoder, side-button switches, switch_type, hot-swap support, or click lifespan. Brand-only or technology-only wording belongs to switch_brand/switch_type unless marketed as the switch component name.",
         "label": "Switch",
         "order": 56,
         "placeholder": "",
@@ -11249,15 +11751,48 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": "switch",
-        "tooltip_md": "Main click switch model (component DB-backed). Evidence required.",
+        "tooltip_md": "Stock primary click switch model/name, component DB-backed. Exact product evidence required.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "single",
       "value_form_sample": "scalar"
     },
     "switch_brand": {
-      "aliases": [],
-      "availability": "always",
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the brand credited for the primary left/right click switches as shipped on the exact product/SKU. Prefer sources that name the switch maker or exact switch model. Map unambiguous model/name prefixes to the maker: Omron D2FC/D2LS -> Omron; Kailh GM/GX -> Kailh; Huano Blue Shell/Pink Dot -> Huano; TTC Gold/Dustproof/Nihil -> TTC; Zippy DF3 -> Zippy. For proprietary names such as Razer Optical Mouse Switches, Logitech LIGHTFORCE, ROG Micro Switches, SteelSeries Prestige OM, or Glorious Switches, return the proprietary brand only when no underlying maker is disclosed for the exact product. Do not infer from the mouse brand when the source only says mechanical/optical switches, click rating, quiet clicks, or durability. Ignore side buttons, wheel encoder, scroll switch, and optional replacement packs unless shipped by default.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
+      "aliases": [
+        "switch brand",
+        "switch manufacturer",
+        "switch maker",
+        "main switch",
+        "main switches",
+        "main button switches",
+        "left/right click switches",
+        "L/R switches",
+        "mouse micro switches",
+        "microswitches",
+        "Omron D2FC",
+        "Omron D2LS",
+        "Kailh GM",
+        "Kailh GX",
+        "Huano Blue Shell Pink Dot",
+        "TTC Gold",
+        "TTC Dustproof Gold",
+        "Zippy DF3",
+        "Razer Optical Mouse Switches",
+        "LIGHTFORCE",
+        "ROG Optical Micro Switches",
+        "Prestige OM",
+        "Glorious Switches"
+      ],
+      "availability": "sometimes",
       "canonical_key": "switch_brand",
       "component": null,
       "constraints": [],
@@ -11272,17 +11807,23 @@
       "display_name": "Switch Brand",
       "enum": {
         "match": {},
-        "new_value_policy": {},
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "data_lists.mouse_switch_brand"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.mouse_switch_brand",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
           "tier1",
           "tier2",
-          "tier3"
+          "tier5",
+          "tier3",
+          "tier4"
         ]
       },
       "field_key": "switch_brand",
@@ -11305,6 +11846,10 @@
       "group": "Switch Identity",
       "key": "switch_brand",
       "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
@@ -11317,30 +11862,55 @@
         "unit": null
       },
       "priority": {
-        "availability": "always",
+        "availability": "sometimes",
         "difficulty": "medium",
-        "required_level": "mandatory"
+        "required_level": "non_mandatory"
       },
-      "required_level": "mandatory",
+      "required_level": "non_mandatory",
       "round": "none",
       "search_hints": {
         "content_types": [
-          "spec_sheet",
-          "review"
+          "manufacturer product page",
+          "official support/spec page",
+          "official news/press page",
+          "component/switch product page",
+          "professional review or teardown",
+          "structured product spec database",
+          "authorized retailer only as fallback"
         ],
         "domain_hints": [
+          "brand/manufacturer product pages",
+          "support/spec pages",
+          "razer.com",
+          "logitechg.com",
+          "endgamegear.com",
+          "pulsar.gg",
+          "steelseries.com",
+          "rog.asus.com",
+          "zowie.benq.com",
+          "gloriousgaming.com",
+          "rtings.com",
+          "techpowerup.com",
           "eloshapes.com",
           "mousespecs.org",
-          "techpowerup.com"
+          "mechanicalkeyboards.com"
         ],
         "query_terms": [
-          "switch brand",
-          "switch manufacturer",
+          "<brand> <model> switches",
+          "<brand> <model> switch brand",
+          "<brand> <model> switch manufacturer",
+          "<brand> <model> main switches",
+          "<brand> <model> left right switches",
+          "<brand> <model> teardown switches",
           "Omron",
           "Kailh",
           "Huano",
           "TTC",
-          "Razer"
+          "Zippy",
+          "Razer Optical",
+          "LIGHTFORCE",
+          "Prestige OM",
+          "ROG Micro Switches"
         ]
       },
       "selection_policy": {},
@@ -11352,7 +11922,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Switch Identity",
-        "guidance_md": null,
+        "guidance_md": "Extract the primary left/right click switch brand as shipped on the exact SKU. Normalize exact switch models to the canonical maker/proprietary brand list. Do not infer from mouse brand, generic optical/mechanical wording, click rating, quiet clicks, or optional replacement switch packs.",
         "label": "Switch Brand",
         "order": 57,
         "placeholder": "",
@@ -11360,38 +11930,63 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": null,
-        "tooltip_md": "Switch manufacturer brand. Prefer component DB when switch identified.",
+        "tooltip_md": "Primary click switch brand/maker. Exact switch model belongs in switch.",
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variance_policy": "authoritative",
+      "variant_dependent": true
     },
     "switch_link": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Return the URL for the resolved switch component, not a page about the mouse. Use the exact switch value and variant/SKU context first. Accept maker component pages, maker datasheets/spec PDFs, support PDFs, official maker technology pages for exact proprietary branded switch generations, or authorized component distributor/supplier pages naming the exact part when no maker source exists. Product pages, reviews, EloShapes/TechPowerUp/spec databases, Amazon/eBay/AliExpress/resale listings, and pages that only mention the switch can help discover identity but are not valid switch_link targets. If sources only prove a generic label such as optical switches, Omron, Huano, or mechanical switches, or if the component page only covers a broader family that cannot be matched to the exact model/generation, return unknown. For hot-swappable or multi-switch bundles, use the default factory-installed main-click switch for the exact SKU/edition; do not union multiple links.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
         "Switch Link",
-        "switch_link",
-        "switches_link"
+        "switch URL",
+        "switch_url",
+        "switch datasheet",
+        "mouse switch datasheet",
+        "micro switch datasheet",
+        "switch component page",
+        "official switch technology page",
+        "manufacturer component page",
+        "authorized distributor part page"
       ],
       "availability": "sometimes",
       "canonical_key": "switch_link",
       "component": null,
-      "constraints": [],
+      "constraints": [
+        "exact switch identity must be known before emitting switch_link",
+        "link target must name the exact switch model, exact switch family variant, or exact branded switch generation/technology",
+        "switch_link must not point to mouse product pages, reviews, specs aggregators, consumer marketplaces, resale listings, forum posts, or articles that merely mention the component"
+      ],
       "contract": {
-        "list_rules": {},
         "shape": "scalar",
-        "type": "url",
-        "unit": null
+        "type": "url"
       },
       "data_type": "url",
       "difficulty": "medium",
       "display_name": "Switch Link",
       "enum": {
-        "match": {},
-        "new_value_policy": {},
-        "policy": "open_prefer_known",
+        "match": {
+          "format_hint": "absolute https URL"
+        },
+        "new_value_policy": {
+          "accept_if_evidence": true,
+          "mark_needs_curation": true
+        },
+        "policy": "open",
         "source": null
       },
-      "enum_policy": "open_prefer_known",
+      "enum_policy": "open",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -11413,6 +12008,11 @@
       },
       "group": "Switch Identity",
       "key": "switch_link",
+      "min_evidence_refs": 1,
+      "new_value_policy": {
+        "accept_if_evidence": true,
+        "mark_needs_curation": true
+      },
       "output_shape": "scalar",
       "parse": {
         "delimiters": [],
@@ -11433,15 +12033,32 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "spec_sheet"
+          "manufacturer component page",
+          "manufacturer datasheet/spec-sheet PDF",
+          "official technology/support page for proprietary switch generation",
+          "authorized component distributor/supplier part page"
         ],
         "domain_hints": [
-          "eloshapes.com",
-          "techpowerup.com"
+          "components.omron.com",
+          "digikey.com",
+          "mouser.com",
+          "kailhswitch.com",
+          "kailhswitch.net",
+          "en.ttc9.com",
+          "ttcswitches.com",
+          "logitechg.com",
+          "razer.com"
         ],
         "query_terms": [
-          "switch datasheet",
-          "switch specifications"
+          "<switch name> datasheet",
+          "<switch name> component page",
+          "<switch name> mouse switch",
+          "<switch name> micro switch specifications",
+          "<switch name> official",
+          "<brand> optical mouse switch technology",
+          "site:components.omron.com <switch name>",
+          "site:digikey.com <switch name>",
+          "site:mouser.com <switch name>"
         ]
       },
       "selection_policy": {},
@@ -11453,7 +12070,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Switch Identity",
-        "guidance_md": null,
+        "guidance_md": "Return the exact switch component URL, not a mouse product/review/spec page. Valid targets are maker component pages, maker datasheets/spec PDFs, official exact proprietary switch-technology pages, or authorized component distributor pages for the exact part. Return unknown if the exact switch identity or component URL is not proven.",
         "label": "Switch Link",
         "order": 59,
         "placeholder": "",
@@ -11461,15 +12078,43 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": null,
-        "tooltip_md": "URL for switch datasheet, manufacturer component page, or reliable switch specification source. Output unk when not provable.",
+        "tooltip_md": "Exact switch component URL only. Product pages and reviews are not valid switch_link targets.",
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": true
     },
     "switch_type": {
-      "aliases": [],
-      "availability": "always",
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the factory/default left/right main click switch technology only. Do not use optical sensor type, scroll-wheel encoder/wheel technology, debounce settings, quiet-click marketing, hot-swap/socket compatibility, or optional switch packs. Map ordinary microswitch/mechanical micro switch/SPDT/galvanic wording, or a resolved Omron/Huano/Kailh/TTC/ROG Micro mechanical component, to mechanical only when the source or component row supports it. Map optical/IR/light-based/Titan Switch Optical/Razer Optical/Glorious optical/Prestige OM or other infrared-actuated main click switches to optical. Map Logitech LIGHTFORCE or explicit hybrid optical-mechanical primary switches to optical / mechanical. Map Logitech HITS/SUPERSTRIKE or explicit Haptic Inductive Trigger System main-click actuation to inductive. For hot-swappable mice, use the installed factory switch type; if sources only state compatible switch types and not the installed type, return unknown.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
+      "aliases": [
+        "HITS",
+        "Haptic Inductive Trigger System",
+        "SUPERSTRIKE",
+        "LIGHTFORCE",
+        "optical-mechanical",
+        "hybrid optical mechanical",
+        "optical magnetic",
+        "opto-magnetic",
+        "infrared switch",
+        "IR switch",
+        "light-based switch",
+        "mechanical micro switch",
+        "microswitch",
+        "SPDT switch",
+        "galvanic switch",
+        "main button switch",
+        "primary click switch"
+      ],
+      "availability": "sometimes",
       "canonical_key": "switch_type",
       "component": null,
       "constraints": [],
@@ -11539,7 +12184,7 @@
         "unit": null
       },
       "priority": {
-        "availability": "always",
+        "availability": "sometimes",
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
@@ -11547,19 +12192,33 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "spec_sheet",
-          "review"
+          "official product pages",
+          "official support/spec pages",
+          "official manuals/spec PDFs",
+          "brand technology pages",
+          "professional reviews with main-button/switch sections",
+          "component maker pages or datasheets when exact switch identity is known"
         ],
         "domain_hints": [
-          "eloshapes.com",
           "mousespecs.org",
+          "rtings.com",
           "techpowerup.com"
         ],
         "query_terms": [
           "switch type",
-          "mechanical switch",
-          "optical switch",
-          "switch technology"
+          "mouse switch type",
+          "switch technology",
+          "main button switches",
+          "primary click switches",
+          "optical mouse switches",
+          "mechanical mouse switches",
+          "optical magnetic switches",
+          "hybrid optical mechanical",
+          "Haptic Inductive Trigger System",
+          "HITS",
+          "LIGHTFORCE",
+          "microswitch",
+          "SPDT"
         ]
       },
       "selection_policy": {},
@@ -11571,7 +12230,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Switch Identity",
-        "guidance_md": null,
+        "guidance_md": "Extract only factory/default left/right main click switch technology. Keep to inductive, mechanical, optical, or optical / mechanical. Do not use optical sensor type, encoder technology, hot-swap compatibility, quiet-click marketing, optional switch packs, model names, or lifecycle claims as chips.",
         "label": "Switch Type",
         "order": 58,
         "placeholder": "",
@@ -11579,19 +12238,20 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": "switch_type",
-        "tooltip_md": "Define 'Switch Type' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Main click switch technology: inductive, mechanical, optical, or optical / mechanical.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "single",
       "value_form_sample": "scalar",
       "variance_policy": "authoritative",
+      "variant_dependent": false,
       "vocab": {
         "allow_new": false,
         "known_values": [
+          "inductive",
           "mechanical",
           "optical",
-          "optical / mechanical",
-          "inductive"
+          "optical / mechanical"
         ],
         "mode": "closed"
       }
@@ -11767,7 +12427,29 @@
       "value_form_sample": "scalar"
     },
     "tilt_scroll_wheel": {
-      "aliases": [],
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Return true only when the main/top/middle scroll wheel itself has left/right tilt-click inputs or 4-way wheel scrolling. Count source phrases such as tilt wheel, tilt-click scroll wheel, L/R tilt inputs, left/right tilt, left-right tilt, wheel tilt left/right, scroll wheel tilt, tilt-shift button, and 4-way scrolling as true when they refer to the scroll wheel. Do not count a separate thumb wheel, side scroll wheel, horizontal scroll wheel, ergonomic body tilt angle, adjustable/free-spin/infinite/smart-shift wheel mode, mouse tilt gestures, or software-only horizontal scrolling unless the source explicitly says the scroll wheel tilts left/right. For false, prefer an explicit source statement such as does not feature a tilt-click scroll wheel or lacks L/R tilt inputs; otherwise return unknown rather than inferring false from silence. Exact model identity matters because close siblings can differ, e.g. Basilisk V3 vs Basilisk V3 X/Pro, DeathAdder variants, and G502/G502 X variants.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
+      "aliases": [
+        "tilt wheel",
+        "tilt-click scroll wheel",
+        "wheel tilt left/right",
+        "scroll left/right (wheel tilt left/right)",
+        "left/right tilt",
+        "left-right tilt",
+        "L/R tilt inputs",
+        "scroll wheel tilt",
+        "tilt-shift button",
+        "4-way scrolling",
+        "four-way scrolling",
+        "horizontal scrolling with tilt-wheel"
+      ],
       "availability": "sometimes",
       "canonical_key": "tilt_scroll_wheel",
       "component": null,
@@ -11868,20 +12550,39 @@
       "round": "none",
       "search_hints": {
         "content_types": [
-          "review",
-          "product_page"
+          "brand product page",
+          "brand support/spec page",
+          "setup guide or manual PDF",
+          "official FAQ",
+          "review-lab mouse review",
+          "tested product database/collection page",
+          "retailer/spec page only as fallback"
         ],
         "domain_hints": [
           "rtings.com",
+          "lttlabs.com",
           "mousespecs.org",
-          "techpowerup.com",
-          "eloshapes.com"
+          "support.logi.com",
+          "logitech.com",
+          "razer.com",
+          "keychron.com",
+          "techpowerup.com"
         ],
         "query_terms": [
           "tilt scroll wheel",
-          "horizontal scroll",
-          "side scroll",
-          "scroll wheel tilt"
+          "tilt-click scroll wheel",
+          "L/R tilt inputs",
+          "left/right tilt",
+          "left-right tilt inputs",
+          "wheel tilt left",
+          "wheel tilt right",
+          "scroll wheel tilt",
+          "4-way scrolling",
+          "four-way scrolling",
+          "horizontal scroll tilt-wheel",
+          "tilt-shift button",
+          "lacks L/R tilt inputs",
+          "does not feature a tilt-click scroll wheel"
         ]
       },
       "selection_policy": {},
@@ -11893,7 +12594,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Buttons & Wheel",
-        "guidance_md": null,
+        "guidance_md": "Boolean yes/no for main scroll-wheel left/right tilt-click inputs. Do not count separate thumb/side wheels, horizontal scrolling without wheel tilt, free-spin/smart-shift mode, body tilt, or software-only horizontal scrolling.",
         "label": "Tilt Scroll Wheel",
         "order": 71,
         "placeholder": "",
@@ -11901,11 +12602,12 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": "tilt_scroll_wheel",
-        "tooltip_md": "Define 'Tilt Scroll Wheel' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "True only when the main scroll wheel tilts left/right.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "value_form": "scalar",
-      "value_form_sample": "scalar"
+      "value_form_sample": "scalar",
+      "variant_dependent": false
     },
     "weight": {
       "ai_assist": {

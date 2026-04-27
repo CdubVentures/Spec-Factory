@@ -127,6 +127,34 @@ test('useDataChangeMutation can derive category and entities from mutation resul
   );
 });
 
+test('useDataChangeMutation derives entity scope from mutation context', async () => {
+  resetHarness();
+  const { useDataChangeMutation } = await loadHookModule();
+
+  useDataChangeMutation({
+    event: 'candidate-deleted',
+    category: 'mouse',
+    mutationFn: async () => ({ ok: true }),
+  });
+
+  globalThis.__dataChangeMutationHarness.mutationOptions.onSuccess(
+    { ok: true },
+    { sourceId: 'manual-mouse-1' },
+    { productId: 'mouse-1', field: 'weight' },
+  );
+
+  assert.equal(
+    globalThis.__dataChangeMutationHarness.invalidations.some((key) =>
+      JSON.stringify(key) === JSON.stringify(['candidates', 'mouse', 'mouse-1', 'weight'])),
+    true,
+  );
+  assert.equal(
+    globalThis.__dataChangeMutationHarness.invalidations.some((key) =>
+      JSON.stringify(key) === JSON.stringify(['product', 'mouse', 'mouse-1'])),
+    true,
+  );
+});
+
 test('useDataChangeMutation rejects unknown event names at hook construction', async () => {
   resetHarness();
   const { useDataChangeMutation } = await loadHookModule();

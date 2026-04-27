@@ -12,10 +12,6 @@ const IDENTITY_FIELDS = new Set([
   'category'
 ]);
 
-const FIELD_ALIASES = {
-  switch_link: 'switches_link'
-};
-
 function cleanToken(value) {
   return String(value || '')
     .replace(/\[\d+\]/g, '')
@@ -42,7 +38,7 @@ function normalizeTail(raw) {
     .replace(/\s+/g, '')
     .toLowerCase();
   const tail = token.includes('.') ? token.split('.').pop() : token;
-  return FIELD_ALIASES[tail] || tail;
+  return tail;
 }
 
 export function toRawFieldKey(value, options = {}) {

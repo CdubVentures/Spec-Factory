@@ -6,57 +6,51 @@
     },
     "field_rules": {
       "changed": true,
-      "hash": "8d47c6f6e39bd55c546772a6eec9610f595387514416482ce47149f9e64f51ce",
+      "hash": "563a8781ec8a9a051fe4d6eef64fd7305c18bd53a6a22c8304fc79cee0ecc1d6",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\field_rules.json"
     },
-    "key_migrations": {
-      "hash": "5e2490e844f2a88f06aa48458b9a06195579177e638ab4be03559f4dfa92b7e5",
-      "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\key_migrations.json"
-    },
+    "key_migrations": null,
     "known_values": {
-      "hash": "3375488d114a7377570edcb2e72d9fa20f818870151e2864ce1bfff27b085843",
+      "hash": "2b6610246428f5c5aaddb0bfc1f5ddccb81853ee0a35c2fc8d810dd8186469eb",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "a03b616b728787274eeabb90af05dc32df29fa01cae8e96e96e9481a9c333062",
+      "hash": "981642da19648a69ff72fbe292f2359fbf11049d8e0a7896db1669c8b2b57e53",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\ui_field_catalog.json"
     }
   },
   "category": "mouse",
   "compile_mode": "field_studio",
   "compiled": true,
-  "compiled_at": "2026-04-27T03:06:50.885Z",
+  "compiled_at": "2026-04-27T06:35:43.515Z",
   "counts": {
     "component_types": 3,
-    "enums": 23,
+    "enums": 24,
     "fields": 80,
     "mandatory": 17,
     "non_mandatory": 63
   },
   "diff": {
     "changed": true,
-    "current_hash": "8d47c6f6e39bd55c546772a6eec9610f595387514416482ce47149f9e64f51ce",
+    "current_hash": "563a8781ec8a9a051fe4d6eef64fd7305c18bd53a6a22c8304fc79cee0ecc1d6",
     "fields": {
       "added_count": 0,
       "added_keys": [],
-      "changed_count": 4,
+      "changed_count": 1,
       "changed_keys": [
-        "acceleration",
-        "dpi",
-        "ips",
-        "polling_rate"
+        "adjustable_scroll_wheel"
       ],
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "9ff46b9a505d3a18adb07c78bbc0e1a59328abda16b73758c2a98cc55d04ef06"
+    "previous_hash": "80082267d24ef28964e739d1e521ddef4f68e558cc453092b38b53d53bf736c2"
   },
   "errors": [],
-  "field_studio_map_hash": "05b49c389ef518a1b11933dbeeff3534f91e9295870f1b0028f027b4be73e5eb",
+  "field_studio_map_hash": "3719e196c32d71b5e1a0b1569f42b2d668007c02a339fee692dd693449280cd2",
   "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_control_plane\\field_studio_map.json",
   "field_studio_source_hash": null,
   "field_studio_source_path": "",
-  "generated_at": "2026-04-27T03:06:50.885Z",
+  "generated_at": "2026-04-27T06:35:43.515Z",
   "source_summary": {
     "component_sheets": 3,
     "component_sources": 3,
@@ -67,8 +61,11 @@
   },
   "version": 1,
   "warnings": [
+    "field programmable_buttons: numeric type 'number' without unit declared",
     "field programmable_buttons: enum_policy=open but parse_rules is empty",
+    "field side_buttons: numeric type 'number' without unit declared",
     "field side_buttons: enum_policy=open but parse_rules is empty",
+    "field middle_buttons: numeric type 'number' without unit declared",
     "field middle_buttons: enum_policy=open but parse_rules is empty",
     "field onboard_memory_value: enum_policy=open but parse_rules is empty",
     "component_db.encoder: property \"encoder_steps\" coverage 38/40 (95%), missing 2; examples: Magnetic Encoder, Optical Encoder",

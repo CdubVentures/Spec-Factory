@@ -11,6 +11,18 @@ interface PifVariantSelector {
   readonly variantId?: string;
 }
 
+interface RemovedPifImageRef {
+  readonly filename?: string;
+  readonly view?: string;
+  readonly variant_key?: string;
+  readonly variant_id?: string;
+  readonly eval_best?: boolean;
+  readonly eval_usable_as_required_view?: boolean;
+  readonly eval_usable_as_carousel_extra?: boolean;
+  readonly hero?: boolean;
+  readonly hero_rank?: number | null;
+}
+
 interface PifRunWithImages {
   readonly selected?: {
     readonly images?: readonly ProductImageEntry[];
@@ -165,6 +177,93 @@ export function zeroCatalogPifProgress<TCatalogRow extends Pick<CatalogRow, 'pro
         if (variantKey && variant.variant_key !== variantKey) return variant;
         return zeroPifVariant(variant);
       }),
+    };
+  });
+}
+
+function matchesRemovedImageVariant(
+  variant: PifVariantProgressGen,
+  image: RemovedPifImageRef,
+): boolean {
+  const imageVariantId = String(image.variant_id || '').trim();
+  const variantId = String(variant.variant_id || '').trim();
+  if (imageVariantId && variantId) return imageVariantId === variantId;
+
+  const imageVariantKey = String(image.variant_key || '').trim();
+  const variantKey = String(variant.variant_key || '').trim();
+  return Boolean(imageVariantKey && variantKey && imageVariantKey === variantKey);
+}
+
+function removedImagesForVariant(
+  variant: PifVariantProgressGen,
+  images: readonly RemovedPifImageRef[],
+): RemovedPifImageRef[] {
+  return images.filter((image) => matchesRemovedImageVariant(variant, image));
+}
+
+function isRemovedPrioritySlotImage(image: RemovedPifImageRef): boolean {
+  return image.eval_best === true || image.eval_usable_as_required_view === true;
+}
+
+function isRemovedHeroSlotImage(image: RemovedPifImageRef): boolean {
+  return image.hero === true || image.hero_rank != null || image.view === 'hero';
+}
+
+function isRemovedLoopSlotImage(image: RemovedPifImageRef): boolean {
+  return !isRemovedPrioritySlotImage(image) && image.eval_usable_as_carousel_extra === true;
+}
+
+function decrementFilledCount(value: number, decrementBy: number): number {
+  return Math.max(0, value - decrementBy);
+}
+
+function decrementVariantProgress(
+  variant: PifVariantProgressGen,
+  removedImages: readonly RemovedPifImageRef[],
+): PifVariantProgressGen {
+  if (removedImages.length === 0) return variant;
+  const imageCount = Math.max(0, variant.image_count - removedImages.length);
+  if (imageCount === 0) return zeroPifVariant(variant);
+  return {
+    ...variant,
+    priority_filled: decrementFilledCount(
+      variant.priority_filled,
+      removedImages.filter(isRemovedPrioritySlotImage).length,
+    ),
+    loop_filled: decrementFilledCount(
+      variant.loop_filled,
+      removedImages.filter(isRemovedLoopSlotImage).length,
+    ),
+    hero_filled: decrementFilledCount(
+      variant.hero_filled,
+      removedImages.filter(isRemovedHeroSlotImage).length,
+    ),
+    image_count: imageCount,
+  };
+}
+
+export function decrementCatalogPifProgressForRemovedImages<
+  TCatalogRow extends Pick<CatalogRow, 'productId' | 'pifVariants'>,
+>(
+  rows: readonly TCatalogRow[] | undefined,
+  target: {
+    readonly productId: string;
+    readonly images: readonly RemovedPifImageRef[];
+  },
+): TCatalogRow[] | undefined {
+  if (!rows) return rows;
+  const productId = String(target.productId || '').trim();
+  if (!productId || target.images.length === 0) return [...rows];
+
+  return rows.map((row) => {
+    if (row.productId !== productId) return row;
+    return {
+      ...row,
+      pifVariants: row.pifVariants.map((variant) =>
+        decrementVariantProgress(
+          variant,
+          removedImagesForVariant(variant, target.images),
+        )),
     };
   });
 }

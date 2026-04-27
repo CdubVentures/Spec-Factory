@@ -1,5 +1,5 @@
-// WHY: Single source of truth for sources.json file I/O and pure-function
-// mutations. Routes and orchestration helpers consume these instead of SQLite.
+// WHY: Pure source-strategy document helpers. SQL is the runtime source when a
+// SpecDb is available; sources.json remains the rebuild mirror/fallback.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -104,6 +104,23 @@ export async function readSourcesFile(root, category) {
   }
 }
 
+function hasRebuildableSourceContent(data) {
+  return Object.keys(data?.sources || {}).length > 0
+    || Object.keys(data?.approved || {}).length > 0
+    || (Array.isArray(data?.denylist) && data.denylist.length > 0);
+}
+
+export async function readSourcesDocument({ root, category, specDb = null } = {}) {
+  if (specDb?.hasSourceStrategyDocument?.(category)) {
+    return specDb.getSourceStrategyDocument(category);
+  }
+  const data = await readSourcesFile(root, category);
+  if (specDb?.replaceSourceStrategyDocument && hasRebuildableSourceContent(data)) {
+    return specDb.replaceSourceStrategyDocument(data, category);
+  }
+  return data;
+}
+
 /**
  * Atomic write: write to .tmp then rename.
  */
@@ -114,6 +131,14 @@ export async function writeSourcesFile(root, category, data) {
   const tmpPath = filePath + '.tmp';
   await fs.writeFile(tmpPath, JSON.stringify(data, null, 2) + '\n', 'utf8');
   await fs.rename(tmpPath, filePath);
+}
+
+export async function writeSourcesDocument({ root, category, data, specDb = null } = {}) {
+  if (specDb?.replaceSourceStrategyDocument) {
+    specDb.replaceSourceStrategyDocument(data, category);
+  }
+  await writeSourcesFile(root, category, data);
+  return data;
 }
 
 /**
@@ -208,4 +233,3 @@ export function removeSourceEntry(data, sourceId) {
     approved: deriveApprovedFromSources(rest),
   };
 }
-

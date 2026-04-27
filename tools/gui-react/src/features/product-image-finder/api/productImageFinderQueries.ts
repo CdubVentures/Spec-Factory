@@ -4,6 +4,7 @@ import { useDataChangeMutation } from '../../data-change/index.js';
 import { removeImageFromResult, removeImagesFromResult } from '../selectors/pifSelectors.ts';
 import {
   clearPifCarouselSelections,
+  decrementCatalogPifProgressForRemovedImages,
   removeImagesFromPifSummary,
   zeroCatalogPifCarouselProgress,
   zeroCatalogPifProgress,
@@ -25,6 +26,29 @@ function productImageFinderSummaryQueryKey(category: string, productId: string) 
   return ['product-image-finder', category, productId, 'summary'] as const;
 }
 
+function collectDeletedImageRefs(
+  filenames: readonly string[],
+  result: ProductImageFinderResult | undefined,
+  summary: ProductImageFinderSummary | undefined,
+) {
+  const filenameSet = new Set(filenames.map((filename) => String(filename || '').trim()).filter(Boolean));
+  if (filenameSet.size === 0) return [];
+
+  const refs = [
+    ...(result?.images ?? []),
+    ...(result?.selected?.images ?? []),
+    ...(summary?.images ?? []),
+  ].filter((image) => filenameSet.has(image.filename));
+
+  const seen = new Set<string>();
+  return refs.filter((image) => {
+    const signature = `${image.filename}|${image.variant_id || ''}|${image.variant_key || ''}`;
+    if (seen.has(signature)) return false;
+    seen.add(signature);
+    return true;
+  });
+}
+
 export interface DeleteProductImagesVariables {
   readonly filenames: readonly string[];
   readonly scope: 'all' | 'variant' | 'files';
@@ -34,6 +58,16 @@ export interface DeleteProductImagesVariables {
 interface DeleteProductImagesMutationContext {
   readonly previousResult: ProductImageFinderResult | undefined;
   readonly previousSummary: ProductImageFinderSummary | undefined;
+  readonly previousCatalog: CatalogRow[] | undefined;
+}
+
+interface DeleteProductImageMutationContext {
+  readonly previousResult: ProductImageFinderResult | undefined;
+  readonly previousSummary: ProductImageFinderSummary | undefined;
+  readonly previousCatalog: CatalogRow[] | undefined;
+}
+
+interface DeleteProductImageFinderAllMutationContext {
   readonly previousCatalog: CatalogRow[] | undefined;
 }
 
@@ -122,15 +156,18 @@ export function useDeleteProductImageFinderRunsBatchMutation(category: string, p
 export function useDeleteProductImageMutation(category: string, productId: string) {
   const queryClient = useQueryClient();
   const queryKey = productImageFinderQueryKey(category, productId);
+  const summaryQueryKey = productImageFinderSummaryQueryKey(category, productId);
+  const catalogQueryKey = ['catalog', category] as const;
 
   return useDataChangeMutation<
     ProductImageFinderDeleteResponse,
     Error,
     string,
-    { previous: ProductImageFinderResult | undefined }
+    DeleteProductImageMutationContext
   >({
     event: 'product-image-finder-image-deleted',
     category,
+    resolveDataChangeMessage: () => ({ entities: { productIds: [productId] } }),
     mutationFn: (filename: string) => api.del<ProductImageFinderDeleteResponse>(
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/images/${encodeURIComponent(filename)}`,
     ),
@@ -138,15 +175,39 @@ export function useDeleteProductImageMutation(category: string, productId: strin
       // WHY: Optimistic update removes the image from the UI instantly. The
       // data-change invalidation refreshes authoritative data after success.
       onMutate: (filename) => {
-        const previous = queryClient.getQueryData<ProductImageFinderResult>(queryKey);
-        if (previous) {
-          queryClient.setQueryData<ProductImageFinderResult>(queryKey, removeImageFromResult(previous, filename));
+        const previousResult = queryClient.getQueryData<ProductImageFinderResult>(queryKey);
+        const previousSummary = queryClient.getQueryData<ProductImageFinderSummary>(summaryQueryKey);
+        const previousCatalog = queryClient.getQueryData<CatalogRow[]>(catalogQueryKey);
+        const deletedImages = collectDeletedImageRefs([filename], previousResult, previousSummary);
+        if (previousResult) {
+          queryClient.setQueryData<ProductImageFinderResult>(queryKey, removeImageFromResult(previousResult, filename));
         }
-        return { previous };
+        if (previousSummary) {
+          queryClient.setQueryData<ProductImageFinderSummary | undefined>(
+            summaryQueryKey,
+            removeImagesFromPifSummary(previousSummary, [filename]),
+          );
+        }
+        if (deletedImages.length > 0) {
+          queryClient.setQueryData<CatalogRow[] | undefined>(
+            catalogQueryKey,
+            (current) => decrementCatalogPifProgressForRemovedImages(current, {
+              productId,
+              images: deletedImages,
+            }),
+          );
+        }
+        return { previousResult, previousSummary, previousCatalog };
       },
       onError: (_err, _filename, context) => {
-        if (context?.previous) {
-          queryClient.setQueryData<ProductImageFinderResult>(queryKey, context.previous);
+        if (context?.previousResult) {
+          queryClient.setQueryData<ProductImageFinderResult>(queryKey, context.previousResult);
+        }
+        if (context?.previousSummary) {
+          queryClient.setQueryData<ProductImageFinderSummary>(summaryQueryKey, context.previousSummary);
+        }
+        if (context?.previousCatalog) {
+          queryClient.setQueryData<CatalogRow[]>(catalogQueryKey, context.previousCatalog);
         }
       },
     },
@@ -167,6 +228,7 @@ export function useDeleteProductImagesMutation(category: string, productId: stri
   >({
     event: 'product-image-finder-image-deleted',
     category,
+    resolveDataChangeMessage: () => ({ entities: { productIds: [productId] } }),
     mutationFn: ({ filenames }) => api.del<ProductImageFinderDeleteResponse>(
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/images`,
       { filenames },
@@ -177,6 +239,7 @@ export function useDeleteProductImagesMutation(category: string, productId: stri
         const previousResult = queryClient.getQueryData<ProductImageFinderResult>(queryKey);
         const previousSummary = queryClient.getQueryData<ProductImageFinderSummary>(summaryQueryKey);
         const previousCatalog = queryClient.getQueryData<CatalogRow[]>(catalogQueryKey);
+        const deletedImages = collectDeletedImageRefs(filenames, previousResult, previousSummary);
         if (previousResult) {
           queryClient.setQueryData<ProductImageFinderResult>(queryKey, removeImagesFromResult(previousResult, filenames));
         }
@@ -192,6 +255,14 @@ export function useDeleteProductImagesMutation(category: string, productId: stri
             (current) => zeroCatalogPifProgress(current, {
               productId,
               ...(variables.scope === 'variant' && variables.variantKey ? { variantKey: variables.variantKey } : {}),
+            }),
+          );
+        } else if (deletedImages.length > 0) {
+          queryClient.setQueryData<CatalogRow[] | undefined>(
+            catalogQueryKey,
+            (current) => decrementCatalogPifProgressForRemovedImages(current, {
+              productId,
+              images: deletedImages,
             }),
           );
         }
@@ -233,13 +304,40 @@ export function useProcessAllProductImagesMutation(category: string, productId: 
 }
 
 export function useDeleteProductImageFinderAllMutation(category: string, productId: string) {
-  return useDataChangeMutation<ProductImageFinderDeleteResponse>({
+  const queryClient = useQueryClient();
+  const catalogQueryKey = ['catalog', category] as const;
+
+  return useDataChangeMutation<
+    ProductImageFinderDeleteResponse,
+    Error,
+    void,
+    DeleteProductImageFinderAllMutationContext
+  >({
     event: 'product-image-finder-deleted',
     category,
+    resolveDataChangeMessage: () => ({ entities: { productIds: [productId] } }),
     mutationFn: () => api.del<ProductImageFinderDeleteResponse>(
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
     ),
-    removeQueryKeys: [productImageFinderQueryKey(category, productId)],
+    removeQueryKeys: [
+      productImageFinderQueryKey(category, productId),
+      productImageFinderSummaryQueryKey(category, productId),
+    ],
+    options: {
+      onMutate: () => {
+        const previousCatalog = queryClient.getQueryData<CatalogRow[]>(catalogQueryKey);
+        queryClient.setQueryData<CatalogRow[] | undefined>(
+          catalogQueryKey,
+          (current) => zeroCatalogPifProgress(current, { productId }),
+        );
+        return { previousCatalog };
+      },
+      onError: (_err, _variables, context) => {
+        if (context?.previousCatalog) {
+          queryClient.setQueryData<CatalogRow[]>(catalogQueryKey, context.previousCatalog);
+        }
+      },
+    },
   });
 }
 

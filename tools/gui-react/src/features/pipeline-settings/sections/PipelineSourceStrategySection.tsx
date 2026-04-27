@@ -428,7 +428,7 @@ export function PipelineSourceStrategySection({
                 Source Strategy
               </h3>
               <p className="mt-0.5 sf-text-label" style={{ color: 'var(--sf-muted)' }}>
-                Manage data sources per category. Edits write directly to sources.json.
+                Manage data sources per category.
               </p>
             </div>
           </div>

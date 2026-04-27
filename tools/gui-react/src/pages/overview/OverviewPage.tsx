@@ -30,6 +30,7 @@ import { PipelineProgressStrip } from './PipelineProgressStrip.tsx';
 import { useRunningModulesByProductOrdered } from '../../features/operations/hooks/useFinderOperations.ts';
 import {
   getOverviewLastRunMs,
+  overviewSortingUsesLive,
   readOverviewSortSessionState,
   sortOverviewRows,
   toggleOverviewSortStack,
@@ -134,6 +135,7 @@ const SelectCell = memo(function SelectCell({ category, productId }: { category:
 // module will let a product advance. Visual today, enforcement later.
 const CEF_REQUIRED_RUNS = 2;
 
+const EMPTY_RUNNING_BY_PRODUCT: ReadonlyMap<string, readonly string[]> = new Map();
 
 const INITIAL_FILTER_STATE: OverviewFilterState = Object.freeze({
   search: '',
@@ -400,12 +402,12 @@ function buildColumns(
       size: 95,
     },
     {
-      // WHY: no accessorFn — DataTable uses manualSorting and the live cell
-      // subscribes to its own data via useFinderOperations. Removing the
-      // closure over runningByProduct keeps this column def stable across
-      // the 2–5s ops tick during a run.
+      // WHY: accessor marks the header sortable while actual ordering stays in
+      // overviewSort.ts. The live cell subscribes independently, so this
+      // column def does not close over runningByProduct during ops ticks.
       id: 'live',
-      enableSorting: false,
+      accessorFn: (row) => row.productId,
+      enableSorting: true,
       header: () => (
         <span className="sf-cfh-row sf-cfh-row--left">
           <span className="sf-cfh-label">Live</span>
@@ -508,6 +510,9 @@ export function OverviewPage() {
 
   const columnFilters = useColumnFilterStore(selectFilterState(category));
   const runningByProduct = useRunningModulesByProductOrdered(category);
+  const sortRunningByProduct = overviewSortingUsesLive(tableSorting)
+    ? runningByProduct
+    : EMPTY_RUNNING_BY_PRODUCT;
   const familyCountByProductId = useMemo(
     () => deriveFamilyCountByProductId(catalog),
     [catalog],
@@ -526,8 +531,8 @@ export function OverviewPage() {
     const filtered = catalog.filter(
       (r) => matchesSearch(r, deferredSearch) && matchesColumnFilters(r, columnFilters),
     );
-    return sortOverviewRows(filtered, tableSorting, runningByProduct);
-  }, [catalog, deferredSearch, columnFilters, tableSorting, runningByProduct]);
+    return sortOverviewRows(filtered, tableSorting, sortRunningByProduct);
+  }, [catalog, deferredSearch, columnFilters, tableSorting, sortRunningByProduct]);
 
   const visibleIds = useMemo<readonly string[]>(
     () => visibleRows.map((r) => r.productId),

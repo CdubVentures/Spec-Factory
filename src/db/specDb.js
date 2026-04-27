@@ -29,6 +29,8 @@ import { createTelemetryIndexStore } from './stores/telemetryIndexStore.js';
 import { createFieldStudioMapStore } from './stores/fieldStudioMapStore.js';
 import { createFieldKeyOrderStore } from './stores/fieldKeyOrderStore.js';
 import { createCrawlLedgerStore } from './stores/crawlLedgerStore.js';
+import { createSourceStrategyStore } from './stores/sourceStrategyStore.js';
+import { createSpecSeedStore } from './stores/specSeedStore.js';
 import { FINDER_MODULES } from '../core/finder/finderModuleRegistry.js';
 import { createFinderSqlStore } from '../core/finder/finderSqlStore.js';
 import { generateFinderDdl } from '../core/finder/finderSqlDdl.js';
@@ -139,6 +141,29 @@ export class SpecDb {
     });
     this._fieldKeyOrderStore = createFieldKeyOrderStore({
       stmts: { _getFieldKeyOrder: this._getFieldKeyOrder, _setFieldKeyOrder: this._setFieldKeyOrder, _deleteFieldKeyOrder: this._deleteFieldKeyOrder },
+    });
+    this._sourceStrategyStore = createSourceStrategyStore({
+      db: this.db,
+      category: this.category,
+      stmts: {
+        _upsertSourceStrategyMeta: this._upsertSourceStrategyMeta,
+        _getSourceStrategyMeta: this._getSourceStrategyMeta,
+        _deleteSourceStrategyEntries: this._deleteSourceStrategyEntries,
+        _upsertSourceStrategyEntry: this._upsertSourceStrategyEntry,
+        _listSourceStrategyEntries: this._listSourceStrategyEntries,
+        _countSourceStrategyEntries: this._countSourceStrategyEntries,
+      },
+    });
+    this._specSeedStore = createSpecSeedStore({
+      db: this.db,
+      category: this.category,
+      stmts: {
+        _upsertSpecSeedSet: this._upsertSpecSeedSet,
+        _getSpecSeedSet: this._getSpecSeedSet,
+        _deleteSpecSeedTemplates: this._deleteSpecSeedTemplates,
+        _insertSpecSeedTemplate: this._insertSpecSeedTemplate,
+        _listSpecSeedTemplates: this._listSpecSeedTemplates,
+      },
     });
     this._crawlLedgerStore = createCrawlLedgerStore({
       db: this.db,
@@ -331,7 +356,31 @@ export class SpecDb {
     });
   }
 
-  // --- Source Strategy --- (removed: sources.json is now the SSOT via sourceFileService.js)
+  // --- Source Strategy / Spec Seeds ---
+
+  getSourceStrategyDocument(category = this.category) {
+    return this._sourceStrategyStore.getSourceStrategyDocument(category);
+  }
+
+  hasSourceStrategyDocument(category = this.category) {
+    return this._sourceStrategyStore.hasSourceStrategyDocument(category);
+  }
+
+  replaceSourceStrategyDocument(doc, category = this.category) {
+    return this._sourceStrategyStore.replaceSourceStrategyDocument(doc, category);
+  }
+
+  hasSpecSeedTemplates(category = this.category) {
+    return this._specSeedStore.hasSpecSeedTemplates(category);
+  }
+
+  listSpecSeedTemplates(category = this.category) {
+    return this._specSeedStore.listSpecSeedTemplates(category);
+  }
+
+  replaceSpecSeedTemplates(seeds, category = this.category) {
+    return this._specSeedStore.replaceSpecSeedTemplates(seeds, category);
+  }
 
   // --- Candidates (stubbed — tables removed in Phase 7a, callers removed in 7b-7d) ---
 

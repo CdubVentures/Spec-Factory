@@ -1,7 +1,12 @@
 export * from './orchestration/index.js';
 
-// WHY: category_authority/sources.json ownership — indexing is the sole writer
-export { readSourcesFile, writeSourcesFile } from './sources/sourceFileService.js';
+// WHY: indexing owns source-strategy runtime projection plus JSON rebuild mirror.
+export {
+  readSourcesFile,
+  writeSourcesFile,
+  readSourcesDocument,
+  writeSourcesDocument,
+} from './sources/sourceFileService.js';
 
 export function getIndexingFeatureInfo() {
   return Object.freeze({

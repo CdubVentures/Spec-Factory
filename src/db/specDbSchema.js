@@ -243,7 +243,40 @@ CREATE TABLE IF NOT EXISTS run_artifacts (
 CREATE INDEX IF NOT EXISTS idx_rart_run_id ON run_artifacts(run_id);
 CREATE INDEX IF NOT EXISTS idx_rart_category ON run_artifacts(category);
 
--- source_strategy table removed: sources.json is now the SSOT (see sourceFileService.js)
+CREATE TABLE IF NOT EXISTS source_strategy_meta (
+  category      TEXT PRIMARY KEY,
+  version       TEXT NOT NULL DEFAULT '1.0.0',
+  approved_json TEXT NOT NULL DEFAULT '{}',
+  denylist_json TEXT NOT NULL DEFAULT '[]',
+  created_at    TEXT DEFAULT (datetime('now')),
+  updated_at    TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS source_strategy_entries (
+  category   TEXT NOT NULL,
+  source_id  TEXT NOT NULL,
+  entry_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (category, source_id)
+);
+CREATE INDEX IF NOT EXISTS idx_source_strategy_category ON source_strategy_entries(category);
+
+CREATE TABLE IF NOT EXISTS spec_seed_sets (
+  category   TEXT PRIMARY KEY,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS spec_seed_templates (
+  category   TEXT NOT NULL,
+  position   INTEGER NOT NULL,
+  template   TEXT NOT NULL,
+  created_at TEXT DEFAULT (datetime('now')),
+  updated_at TEXT DEFAULT (datetime('now')),
+  PRIMARY KEY (category, position)
+);
+CREATE INDEX IF NOT EXISTS idx_spec_seed_templates_category ON spec_seed_templates(category);
 
 -- Artifact storage: content-addressed binary index (HTML, screenshots, PDFs on disk; SQL points to them)
 

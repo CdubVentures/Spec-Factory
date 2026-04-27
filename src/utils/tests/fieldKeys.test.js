@@ -8,11 +8,11 @@ import {
   toRawFieldKey
 } from '../fieldKeys.js';
 
-test('toRawFieldKey normalizes field paths and aliases', () => {
-  const fieldOrder = ['weight', 'switches_link', 'polling_rate', 'brand'];
+test('toRawFieldKey normalizes field paths and preserves canonical keys', () => {
+  const fieldOrder = ['weight', 'switch_link', 'polling_rate', 'brand'];
   assert.equal(toRawFieldKey('fields.weight', { fieldOrder }), 'weight');
   assert.equal(toRawFieldKey('identity.brand', { fieldOrder }), 'brand');
-  assert.equal(toRawFieldKey('switch_link', { fieldOrder }), 'switches_link');
+  assert.equal(toRawFieldKey('switch_link', { fieldOrder }), 'switch_link');
   assert.equal(toRawFieldKey('fields.polling-rate', { fieldOrder }), 'polling_rate');
 });
 

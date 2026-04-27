@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import path from 'node:path';
 import { loadCategoryConfig } from '../loader.js';
 import { withTempCategoryRoots, writeJson } from './helpers/categoryLoaderHarness.js';
+import { SpecDb } from '../../db/specDb.js';
 
 test('loadCategoryConfig maps rich source registry metadata to source hosts', async () => {
   const category = 'mouse';
@@ -87,6 +88,66 @@ test('loadCategoryConfig maps rich source registry metadata to source hosts', as
       config.sourceHosts.map((row) => row.host).sort(),
       ['razer.com', 'rtings.com'],
     );
+  });
+});
+
+test('loadCategoryConfig uses SQL source strategy and spec seeds when specDb is supplied', async () => {
+  const category = 'mouse';
+
+  await withTempCategoryRoots('phase4-source-registry-sql-', async ({ helperRoot }) => {
+    const specDb = new SpecDb({ dbPath: ':memory:', category });
+    try {
+      await writeJson(path.join(helperRoot, category, '_generated', 'field_rules.json'), {
+        category,
+        fields: {
+          weight: {
+            required_level: 'required',
+            availability: 'expected',
+            difficulty: 'easy',
+          },
+        },
+      });
+      await writeJson(path.join(helperRoot, category, 'sources.json'), {
+        category,
+        version: '1.0.0',
+        approved: { lab: [], database: [], retailer: [] },
+        denylist: [],
+        sources: {
+          json_lab: {
+            display_name: 'JSON Lab',
+            tier: 'tier2_lab',
+            base_url: 'https://json-lab.example',
+          },
+        },
+      });
+      await writeJson(path.join(helperRoot, category, 'spec_seeds.json'), ['{product} json specs']);
+      specDb.replaceSourceStrategyDocument({
+        category,
+        version: '1.0.0',
+        approved: { lab: [], database: [], retailer: [] },
+        denylist: [],
+        sources: {
+          sql_lab: {
+            display_name: 'SQL Lab',
+            tier: 'tier2_lab',
+            base_url: 'https://sql-lab.example',
+          },
+        },
+      });
+      specDb.replaceSpecSeedTemplates(['{product} sql specs']);
+
+      const config = await loadCategoryConfig(category, {
+        config: { categoryAuthorityRoot: helperRoot },
+        specDb,
+      });
+
+      const hostMap = config.sourceHostMap || new Map();
+      assert.deepEqual([...hostMap.keys()], ['sql-lab.example']);
+      assert.equal(hostMap.get('sql-lab.example').displayName, 'SQL Lab');
+      assert.deepEqual(config.specSeeds, ['{product} sql specs']);
+    } finally {
+      specDb.close();
+    }
   });
 });
 

@@ -85,6 +85,47 @@ function asStringArray(values: readonly string[] | undefined): string[] {
   return Array.isArray(values) ? [...values] : [];
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  return value as Record<string, unknown>;
+}
+
+function addEntityToken(tokens: string[], seen: Set<string>, value: unknown): void {
+  const values = Array.isArray(value) ? value : [value];
+  for (const rawValue of values) {
+    const token = String(rawValue ?? '').trim();
+    if (!token || seen.has(token)) continue;
+    seen.add(token);
+    tokens.push(token);
+  }
+}
+
+function deriveDataChangeEntities(
+  entities: DataChangeMessageEntities | undefined,
+  scopes: readonly unknown[],
+): DataChangeMessageEntities | undefined {
+  const productIds: string[] = [];
+  const fieldKeys: string[] = [];
+  const seenProductIds = new Set<string>();
+  const seenFieldKeys = new Set<string>();
+
+  addEntityToken(productIds, seenProductIds, entities?.productIds);
+  addEntityToken(fieldKeys, seenFieldKeys, entities?.fieldKeys);
+
+  for (const scope of scopes) {
+    const record = asRecord(scope);
+    addEntityToken(productIds, seenProductIds, record.productIds);
+    addEntityToken(productIds, seenProductIds, record.productId);
+    addEntityToken(fieldKeys, seenFieldKeys, record.fieldKeys);
+    addEntityToken(fieldKeys, seenFieldKeys, record.fields);
+    addEntityToken(fieldKeys, seenFieldKeys, record.fieldKey);
+    addEntityToken(fieldKeys, seenFieldKeys, record.field);
+  }
+
+  if (productIds.length === 0 && fieldKeys.length === 0) return undefined;
+  return { productIds, fieldKeys };
+}
+
 export function useDataChangeMutation<
   TData,
   TError = Error,
@@ -119,6 +160,12 @@ export function useDataChangeMutation<
         ...categories,
         ...asStringArray(messageScope?.categories),
       ];
+      const entities = deriveDataChangeEntities(messageScope?.entities, [
+        messageScope?.meta,
+        data,
+        variables,
+        onMutateResult,
+      ]);
 
       const invalidatedKeys = invalidateDataChangeQueries({
         queryClient,
@@ -128,7 +175,7 @@ export function useDataChangeMutation<
           category: scopedCategory,
           categories: scopedCategories,
           domains: asStringArray(messageScope?.domains),
-          entities: messageScope?.entities,
+          entities,
           meta: messageScope?.meta,
         },
         categories: scopedCategories,

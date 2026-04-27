@@ -7,12 +7,14 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { AppDb } from '../../../../db/appDb.js';
 import {
   getGlobalPrompts,
   setGlobalPromptsSnapshot,
   loadGlobalPromptsSync,
   writeGlobalPromptsPatch,
   GLOBAL_PROMPTS_FILENAME,
+  GLOBAL_PROMPTS_SETTINGS_SECTION,
 } from '../globalPromptStore.js';
 
 const TMP_DIRS = [];
@@ -97,6 +99,48 @@ describe('loadGlobalPromptsSync', () => {
     const out = loadGlobalPromptsSync({ settingsRoot: root });
     assert.deepEqual(out, {});
   });
+
+  it('loads appDb settings before JSON when both exist', async (t) => {
+    const root = await makeTmpRoot();
+    const appDb = new AppDb({ dbPath: ':memory:' });
+    t.after(() => appDb.close());
+    appDb.upsertSetting({
+      section: GLOBAL_PROMPTS_SETTINGS_SECTION,
+      key: 'identityWarningMedium',
+      value: 'sql-med',
+      type: 'string',
+    });
+    await fs.writeFile(
+      path.join(root, GLOBAL_PROMPTS_FILENAME),
+      JSON.stringify({ identityWarningMedium: 'json-med', identityWarningHard: 'json-hard' }),
+      'utf8',
+    );
+
+    const out = loadGlobalPromptsSync({ settingsRoot: root, appDb });
+
+    assert.deepEqual(out, { identityWarningMedium: 'sql-med' });
+    assert.equal(getGlobalPrompts().identityWarningMedium, 'sql-med');
+    assert.equal(getGlobalPrompts().identityWarningHard, undefined);
+  });
+
+  it('rebuilds appDb prompt settings from JSON when SQL is empty', async (t) => {
+    const root = await makeTmpRoot();
+    const appDb = new AppDb({ dbPath: ':memory:' });
+    t.after(() => appDb.close());
+    await fs.writeFile(
+      path.join(root, GLOBAL_PROMPTS_FILENAME),
+      JSON.stringify({ evidenceContract: 'json-evidence' }),
+      'utf8',
+    );
+
+    const out = loadGlobalPromptsSync({ settingsRoot: root, appDb });
+
+    assert.deepEqual(out, { evidenceContract: 'json-evidence' });
+    assert.equal(
+      appDb.getSetting(GLOBAL_PROMPTS_SETTINGS_SECTION, 'evidenceContract')?.value,
+      'json-evidence',
+    );
+  });
 });
 
 describe('writeGlobalPromptsPatch', () => {
@@ -135,5 +179,47 @@ describe('writeGlobalPromptsPatch', () => {
     await writeGlobalPromptsPatch({ identityWarningMedium: 'x' }, { settingsRoot: root });
     const disk = JSON.parse(await fs.readFile(path.join(root, GLOBAL_PROMPTS_FILENAME), 'utf8'));
     assert.deepEqual(disk, { identityWarningMedium: 'x' });
+  });
+
+  it('writes appDb settings first and mirrors JSON', async (t) => {
+    const root = await makeTmpRoot();
+    const appDb = new AppDb({ dbPath: ':memory:' });
+    t.after(() => appDb.close());
+
+    await writeGlobalPromptsPatch(
+      { identityWarningMedium: 'sql-med', siblingsExclusion: 'sql-sib' },
+      { settingsRoot: root, appDb },
+    );
+
+    const rows = Object.fromEntries(
+      appDb.getSection(GLOBAL_PROMPTS_SETTINGS_SECTION).map((row) => [row.key, row.value]),
+    );
+    assert.deepEqual(rows, { identityWarningMedium: 'sql-med', siblingsExclusion: 'sql-sib' });
+    const disk = JSON.parse(await fs.readFile(path.join(root, GLOBAL_PROMPTS_FILENAME), 'utf8'));
+    assert.deepEqual(disk, { identityWarningMedium: 'sql-med', siblingsExclusion: 'sql-sib' });
+    assert.equal(getGlobalPrompts().siblingsExclusion, 'sql-sib');
+  });
+
+  it('removes appDb prompt keys and mirrors the removal to JSON', async (t) => {
+    const root = await makeTmpRoot();
+    const appDb = new AppDb({ dbPath: ':memory:' });
+    t.after(() => appDb.close());
+    await writeGlobalPromptsPatch(
+      { identityWarningMedium: 'med', siblingsExclusion: 'sib' },
+      { settingsRoot: root, appDb },
+    );
+
+    await writeGlobalPromptsPatch(
+      { identityWarningMedium: null },
+      { settingsRoot: root, appDb },
+    );
+
+    assert.equal(appDb.getSetting(GLOBAL_PROMPTS_SETTINGS_SECTION, 'identityWarningMedium'), null);
+    assert.equal(
+      appDb.getSetting(GLOBAL_PROMPTS_SETTINGS_SECTION, 'siblingsExclusion')?.value,
+      'sib',
+    );
+    const disk = JSON.parse(await fs.readFile(path.join(root, GLOBAL_PROMPTS_FILENAME), 'utf8'));
+    assert.deepEqual(disk, { siblingsExclusion: 'sib' });
   });
 });

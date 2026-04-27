@@ -9,6 +9,10 @@ import { rebuildFieldCandidatesFromJson, rebuildPublishedFieldsFromJson } from '
 import { rebuildReviewOverridesFromJson } from '../../features/review/index.js';
 import { reseedFieldKeyOrderFromJson } from '../../features/studio/fieldKeyOrderReseed.js';
 import { reseedFieldStudioMapFromJson } from '../../features/studio/fieldStudioMapReseed.js';
+import {
+  rebuildSourceStrategyFromJson,
+  rebuildSpecSeedsFromJson,
+} from '../../features/indexing/sources/sourceStrategyReseed.js';
 import { buildReseedSurfaces } from '../../db/seedRegistry.js';
 
 function assertFunction(name, value) {
@@ -65,6 +69,8 @@ export function createSpecDbRuntime({
     rebuildKeyFinderFromJson,
     reseedFieldKeyOrderFromJson,
     reseedFieldStudioMapFromJson,
+    rebuildSourceStrategyFromJson,
+    rebuildSpecSeedsFromJson,
     rebuildFieldCandidatesFromJson,
     rebuildPublishedFieldsFromJson,
     rebuildReviewOverridesFromJson,

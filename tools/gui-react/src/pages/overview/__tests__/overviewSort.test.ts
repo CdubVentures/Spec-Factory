@@ -4,6 +4,7 @@ import {
   buildOverviewSortStorageKey,
   getOverviewColumnFirstSortDesc,
   OVERVIEW_SORTABLE_COLUMN_IDS,
+  overviewSortingUsesLive,
   readOverviewSortSessionState,
   sortOverviewRows,
   toggleOverviewSortStack,
@@ -315,6 +316,13 @@ describe('sortOverviewRows', () => {
     );
   });
 
+  it('only treats running operations as row-order input when Live is in the sort stack', () => {
+    assert.equal(overviewSortingUsesLive([]), false);
+    assert.equal(overviewSortingUsesLive([{ id: 'brand', desc: false }]), false);
+    assert.equal(overviewSortingUsesLive([{ id: 'live', desc: true }]), true);
+    assert.equal(overviewSortingUsesLive([{ id: 'brand', desc: false }, { id: 'live', desc: true }]), true);
+  });
+
   const requestedColumns = [
     'brand',
     'base_model',
@@ -389,7 +397,8 @@ describe('sortOverviewRows', () => {
 
 describe('Overview sort session state', () => {
   it('persists the Overview sort stack per category', () => {
-    withBrowserStorage(new MemoryStorage(), new MemoryStorage(), () => {
+    const local = new MemoryStorage();
+    withBrowserStorage(local, new MemoryStorage(), () => {
       writeOverviewSortSessionState('mouse', [
         { id: 'pifVariants', desc: true },
         { id: 'brand', desc: false },
@@ -402,6 +411,16 @@ describe('Overview sort session state', () => {
         { id: 'pifVariants', desc: true },
         { id: 'brand', desc: false },
       ]);
+      assert.equal(
+        local.getItem(buildOverviewSortStorageKey('mouse')),
+        JSON.stringify({
+          version: 2,
+          sorting: [
+            { id: 'pifVariants', desc: true },
+            { id: 'brand', desc: false },
+          ],
+        }),
+      );
       assert.deepEqual(readOverviewSortSessionState('keyboard'), [
         { id: 'lastRun', desc: true },
       ]);
@@ -425,21 +444,59 @@ describe('Overview sort session state', () => {
     });
   });
 
+  it('drops unversioned Live sort entries because older UI could persist a hidden Live sort', () => {
+    const local = new MemoryStorage();
+    local.setItem(buildOverviewSortStorageKey('mouse'), JSON.stringify({
+      sorting: [
+        { id: 'live', desc: true },
+        { id: 'brand', desc: false },
+      ],
+    }));
+
+    withBrowserStorage(local, new MemoryStorage(), () => {
+      assert.deepEqual(readOverviewSortSessionState('mouse'), [
+        { id: 'brand', desc: false },
+      ]);
+    });
+  });
+
+  it('preserves versioned Live sort entries created after the Live header became clickable', () => {
+    const local = new MemoryStorage();
+    local.setItem(buildOverviewSortStorageKey('mouse'), JSON.stringify({
+      version: 2,
+      sorting: [
+        { id: 'live', desc: true },
+        { id: 'brand', desc: false },
+      ],
+    }));
+
+    withBrowserStorage(local, new MemoryStorage(), () => {
+      assert.deepEqual(readOverviewSortSessionState('mouse'), [
+        { id: 'live', desc: true },
+        { id: 'brand', desc: false },
+      ]);
+    });
+  });
+
   it('migrates legacy sessionStorage sort state to localStorage', () => {
     const local = new MemoryStorage();
     const session = new MemoryStorage();
     const key = buildOverviewSortStorageKey('mouse');
     session.setItem(key, JSON.stringify({
-      sorting: [{ id: 'live', desc: true }],
+      sorting: [
+        { id: 'live', desc: true },
+        { id: 'brand', desc: false },
+      ],
     }));
 
     withBrowserStorage(local, session, () => {
       assert.deepEqual(readOverviewSortSessionState('mouse'), [
-        { id: 'live', desc: true },
+        { id: 'brand', desc: false },
       ]);
       assert.equal(session.getItem(key), null);
       assert.equal(local.getItem(key), JSON.stringify({
-        sorting: [{ id: 'live', desc: true }],
+        version: 2,
+        sorting: [{ id: 'brand', desc: false }],
       }));
     });
   });

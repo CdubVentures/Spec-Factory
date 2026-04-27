@@ -85,6 +85,37 @@ describe('operationsStore (characterization)', () => {
       assert.equal(getOps().get('op-1')?.queueDelayMs, 500);
     });
 
+    it('does not replace the operations map for a duplicate summary upsert', () => {
+      useOperationsStore.getState().upsert(makeOp());
+      const beforeMap = getOps();
+      const beforeOp = beforeMap.get('op-1');
+
+      useOperationsStore.getState().upsert(makeOp());
+
+      assert.equal(getOps(), beforeMap);
+      assert.equal(getOps().get('op-1'), beforeOp);
+    });
+
+    it('does replace the operations map when summary fields change', () => {
+      useOperationsStore.getState().upsert(makeOp());
+      const beforeMap = getOps();
+
+      useOperationsStore.getState().upsert(makeOp({ currentStageIndex: 2 }));
+
+      assert.notEqual(getOps(), beforeMap);
+      assert.equal(getOps().get('op-1')?.currentStageIndex, 2);
+    });
+
+    it('treats preserved queueDelayMs as part of duplicate upsert equality', () => {
+      useOperationsStore.getState().upsert(makeOp({ queueDelayMs: 500 }));
+      const beforeMap = getOps();
+
+      useOperationsStore.getState().upsert(makeOp());
+
+      assert.equal(getOps(), beforeMap);
+      assert.equal(getOps().get('op-1')?.queueDelayMs, 500);
+    });
+
     it('uses incoming llmCalls when a full detail upsert includes them', () => {
       const call = { callIndex: 0, timestamp: '', prompt: { system: '', user: '' }, response: null };
       useOperationsStore.getState().upsert(makeOp());

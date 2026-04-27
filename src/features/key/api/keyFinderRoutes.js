@@ -48,10 +48,12 @@ import { runKeyFinderLoop } from '../keyFinderLoop.js';
 import { compileKeyFinderPreviewPrompt } from '../keyFinderPreviewPrompt.js';
 import {
   readKeyFinder,
-  deleteKeyFinderRun,
-  deleteKeyFinderAll,
+  readKeyFinderRuntimeDoc,
+  listKeyFinderRuntimeSummaries,
+  deleteKeyFinderRunSqlFirst,
+  deleteKeyFinderAllSqlFirst,
   unselectKeyFinderField,
-  scrubFieldFromKeyFinder,
+  scrubFieldFromKeyFinderSqlFirst,
 } from '../keyStore.js';
 import { wipePublisherStateForUnpub } from '../../publisher/publish/wipePublisherStateForUnpub.js';
 
@@ -494,16 +496,6 @@ function applyFieldKeyOrder(fieldKeys, specDb) {
   return ordered;
 }
 
-function summaryFromDoc(doc) {
-  if (!doc) return null;
-  return {
-    product_id: doc.product_id,
-    category: doc.category,
-    run_count: doc.run_count || (doc.runs?.length || 0),
-    last_ran_at: doc.last_ran_at || '',
-  };
-}
-
 function selectedForField(doc, fieldKey) {
   return doc?.selected?.keys?.[fieldKey] || null;
 }
@@ -530,21 +522,8 @@ export function registerKeyFinderRoutes(ctx) {
       const specDb = getSpecDb(category);
       if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
       const productRoot = resolveProductRoot(config);
-      // WHY: Phase 3a Part 2 ships a filesystem-scan list. Phase 4 dashboard
-      // will switch to a SQL listByCategory once the summary table grows past
-      // a handful of products; the shape stays the same.
-      const summaries = [];
-      try {
-        const fs = await import('node:fs');
-        const entries = fs.readdirSync(productRoot, { withFileTypes: true });
-        for (const entry of entries) {
-          if (!entry.isDirectory()) continue;
-          const doc = readKeyFinder({ productId: entry.name, productRoot });
-          if (!doc || doc.category !== category) continue;
-          summaries.push(summaryFromDoc(doc));
-        }
-      } catch { /* productRoot missing → empty */ }
-      return jsonRes(res, 200, summaries);
+      const runtimeSummaries = listKeyFinderRuntimeSummaries({ specDb, category, productRoot });
+      return jsonRes(res, 200, runtimeSummaries);
     }
 
     // ── GET /key-finder/:category/:productId/bundling-config — live settings
@@ -577,12 +556,12 @@ export function registerKeyFinderRoutes(ctx) {
 
     // ── GET /key-finder/:category/:productId/summary — per-key rollup ─
     // Panel uses this to populate one row per key (status, last_value, etc.).
-    // Reads the JSON doc directly (Dual-State mandate: JSON is SSOT).
+    // Reads SQL runtime projection when available; JSON is the rebuild mirror.
     if (method === 'GET' && category && productId && parts[3] === 'summary' && !parts[4]) {
       const specDb = getSpecDb(category);
       if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
       const productRoot = resolveProductRoot(config);
-      const doc = readKeyFinder({ productId, productRoot });
+      const doc = readKeyFinderRuntimeDoc({ specDb, productId, productRoot, category });
       const rows = buildSummaryFromDocAndRules({
         doc,
         specDb,
@@ -599,7 +578,7 @@ export function registerKeyFinderRoutes(ctx) {
       const scope = String(params?.get?.('scope') || 'key').trim();
       const fieldKey = params?.get?.('field_key') || '';
       const groupName = params?.get?.('group') || '';
-      const doc = readKeyFinder({ productId, productRoot: resolveProductRoot(config) });
+      const doc = readKeyFinderRuntimeDoc({ specDb, productId, productRoot: resolveProductRoot(config), category });
       if (!doc) return jsonRes(res, 404, { error: 'not found' });
 
       let runs;
@@ -763,15 +742,13 @@ export function registerKeyFinderRoutes(ctx) {
       if (typeof specDb.deleteFieldCandidatesBySourceType === 'function') {
         specDb.deleteFieldCandidatesBySourceType(productId, fieldKey, SOURCE_TYPE);
       }
-      const { deletedRuns } = scrubFieldFromKeyFinder({ productId, productRoot: resolveProductRoot(config), fieldKey });
-      // Cascade the SQL row deletes for each primary run that got wiped,
-      // otherwise the key_finder_runs table keeps stale rows that the summary
-      // rebuild contract assumes reflect JSON state.
-      if (deletedRuns.length > 0 && typeof specDb.deleteFinderRun === 'function') {
-        for (const runNumber of deletedRuns) {
-          specDb.deleteFinderRun('keyFinder', productId, runNumber);
-        }
-      }
+      const { deletedRuns } = scrubFieldFromKeyFinderSqlFirst({
+        specDb,
+        productId,
+        productRoot: resolveProductRoot(config),
+        category,
+        fieldKey,
+      });
       emitDataChange({
         broadcastWs,
         event: `${ROUTE_PREFIX}-field-deleted`,
@@ -923,7 +900,7 @@ export function registerKeyFinderRoutes(ctx) {
       if (!Number.isFinite(runNumber)) return jsonRes(res, 400, { error: 'invalid_run_number' });
       const productRoot = resolveProductRoot(config);
 
-      const doc = readKeyFinder({ productId, productRoot });
+      const doc = readKeyFinderRuntimeDoc({ specDb, productId, productRoot, category });
       if (!doc) return jsonRes(res, 404, { error: 'not found' });
 
       // Cascade: derive affected keys from run.selected.keys (primary + passengers)
@@ -934,8 +911,7 @@ export function registerKeyFinderRoutes(ctx) {
         stripRunSourceFromCandidates(specDb, productId, affectedKeys, SOURCE_TYPE, [runNumber], config, false);
       }
 
-      deleteKeyFinderRun({ productId, productRoot, runNumber });
-      if (specDb.deleteFinderRun) specDb.deleteFinderRun('keyFinder', productId, runNumber);
+      deleteKeyFinderRunSqlFirst({ specDb, productId, productRoot, category, runNumber });
 
       emitDataChange({
         broadcastWs,
@@ -956,7 +932,7 @@ export function registerKeyFinderRoutes(ctx) {
       // Collect every field_key this product's keyFinder runs have touched
       // (primary + every passenger across every run) so the candidate cascade
       // is complete, not just the query-string fieldKey.
-      const doc = readKeyFinder({ productId, productRoot });
+      const doc = readKeyFinderRuntimeDoc({ specDb, productId, productRoot, category });
       const affectedKeys = new Set();
       for (const r of doc?.runs || []) {
         for (const k of Object.keys(r?.selected?.keys || {})) affectedKeys.add(k);
@@ -965,8 +941,7 @@ export function registerKeyFinderRoutes(ctx) {
         stripRunSourceFromCandidates(specDb, productId, [...affectedKeys], SOURCE_TYPE, null, config, false);
       }
 
-      deleteKeyFinderAll({ productId, productRoot });
-      if (specDb.deleteFinderAll) specDb.deleteFinderAll('keyFinder', productId);
+      deleteKeyFinderAllSqlFirst({ specDb, productId, productRoot, category });
 
       emitDataChange({
         broadcastWs,

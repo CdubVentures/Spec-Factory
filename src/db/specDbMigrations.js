@@ -116,6 +116,35 @@ export const MIGRATIONS = [
   // combined) so the Overview cell can display "total images" alongside the
   // slot-fill fraction. Next PIF run or rebuild backfills legacy 0s.
   `ALTER TABLE pif_variant_progress ADD COLUMN image_count INTEGER NOT NULL DEFAULT 0`,
+  `CREATE TABLE IF NOT EXISTS source_strategy_meta (
+    category      TEXT PRIMARY KEY,
+    version       TEXT NOT NULL DEFAULT '1.0.0',
+    approved_json TEXT NOT NULL DEFAULT '{}',
+    denylist_json TEXT NOT NULL DEFAULT '[]',
+    created_at    TEXT DEFAULT (datetime('now')),
+    updated_at    TEXT DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS source_strategy_entries (
+    category   TEXT NOT NULL,
+    source_id  TEXT NOT NULL,
+    entry_json TEXT NOT NULL DEFAULT '{}',
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (category, source_id)
+  )`,
+  `CREATE TABLE IF NOT EXISTS spec_seed_sets (
+    category   TEXT PRIMARY KEY,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now'))
+  )`,
+  `CREATE TABLE IF NOT EXISTS spec_seed_templates (
+    category   TEXT NOT NULL,
+    position   INTEGER NOT NULL,
+    template   TEXT NOT NULL,
+    created_at TEXT DEFAULT (datetime('now')),
+    updated_at TEXT DEFAULT (datetime('now')),
+    PRIMARY KEY (category, position)
+  )`,
 ];
 
 export const SECONDARY_INDEXES = `
@@ -125,6 +154,8 @@ export const SECONDARY_INDEXES = `
   CREATE INDEX IF NOT EXISTS idx_fc_source_id ON field_candidates(category, product_id, field_key, source_id);
   CREATE INDEX IF NOT EXISTS idx_fce_accepted ON field_candidate_evidence(candidate_id, accepted);
   CREATE INDEX IF NOT EXISTS idx_fc_fingerprint ON field_candidates(product_id, field_key, value_fingerprint, variant_id_key);
+  CREATE INDEX IF NOT EXISTS idx_source_strategy_category ON source_strategy_entries(category);
+  CREATE INDEX IF NOT EXISTS idx_spec_seed_templates_category ON spec_seed_templates(category);
 `;
 
 /**

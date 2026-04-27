@@ -18,43 +18,43 @@
       "sha256": "55cf59bf13c4e1db3434145986e7e589a4046efee8688e57eb0699b00c7665fa"
     },
     {
-      "bytes": 9018,
+      "bytes": 9017,
       "path": "cross_validation_rules.json",
-      "sha256": "a83064cd608921e3d3aba51bd5204c503a57ce95a26811d57bcd911c44cfe464"
+      "sha256": "954c6d4e34e5e34f59e1b1b141bf68d8ed561d1d5dc458524ab6fac64f02058c"
     },
     {
-      "bytes": 5840,
+      "bytes": 5836,
       "path": "field_groups.json",
-      "sha256": "72986a1c353133829f6c7f7efd3654b29cafdd1833a845cb769fd71db7f79ee3"
+      "sha256": "ef598485de6295815e18841e240a1e1f075c45cd61006c5a32e4619cf50a0c38"
     },
     {
-      "bytes": 291408,
+      "bytes": 337683,
       "path": "field_rules.json",
-      "sha256": "d0f5282f6388e0736427c4ac7ae31e1d3236ea8fa5a216b2d890d7cea38f8732"
+      "sha256": "cce079aa2b66b617fe833399dd40ecda94a5c6e4eaeaa0e1c53b795e9027c061"
     },
     {
-      "bytes": 382,
+      "bytes": 201,
       "path": "key_migrations.json",
-      "sha256": "5f6f46c8a14187b4b095545a20469e74d8185c42858b47302876ebf4c57eade9"
+      "sha256": "f586186d31cee70ccb52f334fc38e4b83e4768abed23aab8b1e711cd73aeecf5"
     },
     {
-      "bytes": 6413,
+      "bytes": 6491,
       "path": "known_values.json",
-      "sha256": "ecb479c92c5edded5c34d32d94dc8962cf8478cb571d7b676b35a9d1f539ad54"
+      "sha256": "8c1becb7268c8098723ad25bb59afb1a147c086422ef673c3ea1d5082654e79d"
     },
     {
-      "bytes": 26506,
+      "bytes": 33335,
       "path": "parse_templates.json",
-      "sha256": "595788bad1a480e16343b26c5d3ffb593d976a2c47008fe4fe5e8c58f930a935"
+      "sha256": "d330224dffd5bd1a86f2b1a036f3c3ad60dcb75906dee5f68866e5d37d91b48b"
     },
     {
-      "bytes": 82770,
+      "bytes": 94126,
       "path": "ui_field_catalog.json",
-      "sha256": "16480c29507e242a8810a7467cc401b84b71e3d22acbd3cc9c2ca489561893ad"
+      "sha256": "fcbce22449961708c9abf7355466d5e519e87f3277b170f1c346ce45b12031ff"
     }
   ],
   "category": "mouse",
-  "generated_at": "2026-04-27T02:48:31.520Z",
-  "source_map_hash": "e1b8b0692a89533aa589ae50f777f57d7abd0cda4d1fb84d46dc47c19dbf802d",
+  "generated_at": "2026-04-27T06:26:59.095Z",
+  "source_map_hash": "ef7236a814e43e06d0b6f71728352105f4dfb13c4020e5a211b5311bd1617224",
   "version": 1
 }

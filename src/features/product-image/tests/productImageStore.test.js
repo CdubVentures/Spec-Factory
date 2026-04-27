@@ -11,6 +11,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import {
+  buildProductImageFinderSqlSummaryRow,
   mergeProductImageDiscovery,
   readProductImages,
   recalculateProductImagesFromRuns,
@@ -136,5 +137,46 @@ describe('productImageStore: multi-image accumulation', () => {
     const recalced = recalculateProductImagesFromRuns(doc.runs, pid, 'mouse');
 
     assert.equal(recalced.selected.images.length, 2);
+  });
+});
+
+describe('productImageStore: SQL projection contract', () => {
+  it('projects evals and carousel slots when writing a PIF summary row', () => {
+    const row = buildProductImageFinderSqlSummaryRow({
+      category: 'mouse',
+      productId: 'projection-product',
+      data: {
+        selected: {
+          images: [
+            makeImage('top', 'color:black', 'top-black.png'),
+            {
+              ...makeImage('hero', 'color:black', 'hero-black.png'),
+              hero: true,
+              hero_rank: 1,
+              eval_reasoning: 'best hero',
+            },
+          ],
+        },
+        carousel_slots: { 'color:black': { hero_1: 'hero-black.png' } },
+        evaluations: [{ eval_number: 1, type: 'hero', variant_key: 'color:black' }],
+        run_count: 4,
+      },
+      ranAt: '2026-04-27T05:42:49.892Z',
+    });
+
+    assert.equal(row.product_id, 'projection-product');
+    assert.equal(row.category, 'mouse');
+    assert.equal(row.image_count, 2);
+    assert.deepEqual(row.images, [
+      { view: 'top', filename: 'top-black.png', variant_key: 'color:black' },
+      { view: 'hero', filename: 'hero-black.png', variant_key: 'color:black' },
+    ]);
+    assert.deepEqual(JSON.parse(row.carousel_slots), { 'color:black': { hero_1: 'hero-black.png' } });
+    assert.deepEqual(JSON.parse(row.eval_state), {
+      'hero-black.png': { hero: true, hero_rank: 1, eval_reasoning: 'best hero' },
+    });
+    assert.deepEqual(JSON.parse(row.evaluations), [{ eval_number: 1, type: 'hero', variant_key: 'color:black' }]);
+    assert.equal(row.latest_ran_at, '2026-04-27T05:42:49.892Z');
+    assert.equal(row.run_count, 4);
   });
 });

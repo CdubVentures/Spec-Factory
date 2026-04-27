@@ -28,7 +28,11 @@ import { FieldRulesEngine } from '../../engine/fieldRulesEngine.js';
 import { resolveKeyFinderPifPriorityImageContext } from '../product-image/index.js';
 
 import { keyFinderResponseSchema } from './keySchema.js';
-import { readKeyFinder, mergeKeyFinderDiscovery } from './keyStore.js';
+import {
+  listKeyFinderRuntimeRuns,
+  nextKeyFinderRunNumber,
+  persistKeyFinderRunSqlFirst,
+} from './keyStore.js';
 import { readFloatKnob } from './keyBudgetCalc.js';
 import {
   buildKeyFinderPrompt,
@@ -236,8 +240,17 @@ export async function runKeyFinder(opts) {
   const familySize = resolveKeyFinderFamilySize({ product, specDb, productId: product.product_id });
 
   // 5. Previous-run discovery (scoped per-key via runMatcher)
-  const previousDoc = readKeyFinder({ productId: product.product_id, productRoot: resolvedProductRoot });
-  const previousRuns = Array.isArray(previousDoc?.runs) ? previousDoc.runs : [];
+  const previousRuns = listKeyFinderRuntimeRuns({
+    specDb,
+    productId: product.product_id,
+    productRoot: resolvedProductRoot,
+  });
+  const plannedRunNumber = nextKeyFinderRunNumber({
+    specDb,
+    productId: product.product_id,
+    productRoot: resolvedProductRoot,
+    previousRuns,
+  });
   const { urlsChecked, queriesRun } = accumulateDiscoveryLog(previousRuns, {
     // WHY: Broadened to include prior appearances as a passenger — after bundling,
     // a key may have resolved as a passenger in another primary's run. That run's
@@ -468,7 +481,7 @@ export async function runKeyFinder(opts) {
           source: 'key_finder',
           source_type: 'feature',
           tier: tierName,
-          run_number: (previousDoc?.next_run_number || 1),
+          run_number: plannedRunNumber,
           model: persistedModel,
         },
         fieldRules: engine.rules,
@@ -531,7 +544,7 @@ export async function runKeyFinder(opts) {
           source: 'key_finder',
           source_type: 'feature',
           tier: tierName,
-          run_number: (previousDoc?.next_run_number || 1),
+          run_number: plannedRunNumber,
           model: persistedModel,
         },
         fieldRules: engine.rules,
@@ -595,10 +608,13 @@ export async function runKeyFinder(opts) {
   //   of a single loop call can be grouped (matches RDF's variantFieldLoop pattern).
   const storageResponse = normalizeUnknownResponseForStorage(parsed);
   const persistedResponse = loop_id ? { ...storageResponse, loop_id } : storageResponse;
-  const merged = mergeKeyFinderDiscovery({
+  const persistedRun = persistKeyFinderRunSqlFirst({
+    specDb,
     productId: product.product_id,
     productRoot: resolvedProductRoot,
-    newDiscovery: { category: product.category, last_ran_at: callStartedAt },
+    category: product.category,
+    ranAt: callStartedAt,
+    runNumber: plannedRunNumber,
     run: {
       started_at: callStartedAt,
       duration_ms: durationMs,
@@ -613,39 +629,7 @@ export async function runKeyFinder(opts) {
       response: persistedResponse,
     },
   });
-  const runNumber = merged.runs[merged.runs.length - 1].run_number;
-
-  if (finderStore?.insertRun) {
-    const latestRun = merged.runs[merged.runs.length - 1];
-    finderStore.insertRun({
-      category: product.category,
-      product_id: product.product_id,
-      run_number: runNumber,
-      ran_at: callStartedAt,
-      started_at: callStartedAt,
-      duration_ms: durationMs,
-      model: persistedModel,
-      fallback_used: persistedFallbackUsed,
-      effort_level: persistedEffort,
-      access_mode: persistedAccessMode,
-      thinking: persistedThinking,
-      web_search: persistedWebSearch,
-      selected: latestRun.selected,
-      prompt: latestRun.prompt,
-      response: latestRun.response,
-    });
-  }
-
-  if (finderStore?.upsert) {
-    finderStore.upsert({
-      category: product.category,
-      product_id: product.product_id,
-      last_run_id: runNumber,
-      cooldown_until: '',
-      latest_ran_at: callStartedAt,
-      run_count: merged.run_count,
-    });
-  }
+  const runNumber = persistedRun.runNumber;
 
   // WHY: The publisher already runs all the gate logic (confidence, evidence
   // count, manual-override) and returns a rich publishResult. The loop pill

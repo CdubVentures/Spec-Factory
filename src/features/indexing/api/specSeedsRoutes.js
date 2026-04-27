@@ -3,14 +3,13 @@
 
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import {
-  readSpecSeedsFile,
-  writeSpecSeedsFile,
+  readSpecSeeds,
+  writeSpecSeeds,
   validateSpecSeeds,
-  defaultSpecSeeds,
 } from '../sources/specSeedsFileService.js';
 
 export function registerSpecSeedsRoutes(ctx) {
-  const { jsonRes, readJsonBody, config, resolveCategoryAlias, broadcastWs } = ctx;
+  const { jsonRes, readJsonBody, config, resolveCategoryAlias, broadcastWs, getSpecDb } = ctx;
 
   function resolveScopedCategory(params) {
     return resolveCategoryAlias(params.get('category') || '') || '';
@@ -20,15 +19,24 @@ export function registerSpecSeedsRoutes(ctx) {
     return config?.categoryAuthorityRoot || 'category_authority';
   }
 
+  function getSqlStore(category) {
+    try {
+      return typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+    } catch {
+      return null;
+    }
+  }
+
   return async function handleSpecSeedsRoutes(parts, params, method, req, res) {
     if (parts[0] !== 'spec-seeds') return false;
 
     const category = resolveScopedCategory(params);
     if (!category) return jsonRes(res, 400, { error: 'category_required' });
     const root = getRoot();
+    const specDb = getSqlStore(category);
 
     if (method === 'GET') {
-      const seeds = await readSpecSeedsFile(root, category);
+      const seeds = await readSpecSeeds({ root, category, specDb });
       return jsonRes(res, 200, { category, seeds });
     }
 
@@ -39,7 +47,7 @@ export function registerSpecSeedsRoutes(ctx) {
       if (!check.valid) {
         return jsonRes(res, 400, { error: 'invalid_spec_seeds', reason: check.reason });
       }
-      await writeSpecSeedsFile(root, category, seeds);
+      await writeSpecSeeds({ root, category, seeds, specDb });
       emitDataChange({
         broadcastWs,
         event: 'spec-seeds-updated',

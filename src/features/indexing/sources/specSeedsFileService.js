@@ -1,5 +1,5 @@
-// WHY: File I/O for per-category spec seed templates.
-// Pure functions + atomic write. Routes compose these.
+// WHY: Pure helpers for per-category spec seed templates. SQL is the runtime
+// source when a SpecDb is available; spec_seeds.json is the rebuild mirror.
 
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -33,6 +33,17 @@ export async function readSpecSeedsFile(root, category) {
   }
 }
 
+export async function readSpecSeeds({ root, category, specDb = null } = {}) {
+  if (specDb?.hasSpecSeedTemplates?.(category)) {
+    return specDb.listSpecSeedTemplates(category);
+  }
+  const seeds = await readSpecSeedsFile(root, category);
+  if (specDb?.replaceSpecSeedTemplates) {
+    return specDb.replaceSpecSeedTemplates(seeds, category);
+  }
+  return seeds;
+}
+
 export async function writeSpecSeedsFile(root, category, seeds) {
   const check = validateSpecSeeds(seeds);
   if (!check.valid) throw new Error(`Invalid spec seeds: ${check.reason}`);
@@ -42,4 +53,14 @@ export async function writeSpecSeedsFile(root, category, seeds) {
   const tmpPath = filePath + '.tmp';
   await fs.writeFile(tmpPath, JSON.stringify(seeds, null, 2) + '\n', 'utf8');
   await fs.rename(tmpPath, filePath);
+}
+
+export async function writeSpecSeeds({ root, category, seeds, specDb = null } = {}) {
+  const check = validateSpecSeeds(seeds);
+  if (!check.valid) throw new Error(`Invalid spec seeds: ${check.reason}`);
+  if (specDb?.replaceSpecSeedTemplates) {
+    specDb.replaceSpecSeedTemplates(seeds, category);
+  }
+  await writeSpecSeedsFile(root, category, seeds);
+  return seeds;
 }

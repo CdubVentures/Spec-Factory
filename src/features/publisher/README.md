@@ -7,6 +7,7 @@ Single gate for all field data entering the product record. No field value reach
 ```js
 // src/features/publisher/index.js
 export { submitCandidate } from './candidate-gate/submitCandidate.js';
+export { normalizeConfidence } from './publish/publishCandidate.js';
 export { buildSourceId }   from './candidate-gate/buildSourceId.js';
 export { validateField }   from './validation/validateField.js';
 export { validateRecord }  from './validation/validateRecord.js';

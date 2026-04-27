@@ -57,9 +57,15 @@ function writeFakeOriginal(productId, filename, body = 'orig') {
 }
 
 function makeSpecDbStub() {
-  const calls = { deleteByProduct: [] };
+  const calls = { deleteByProduct: [], summaryUpdates: [] };
   return {
     deletePifVariantProgressByProduct: (pid) => { calls.deleteByProduct.push(pid); },
+    getFinderStore: (moduleId) => {
+      assert.equal(moduleId, 'productImageFinder');
+      return {
+        updateSummaryField: (...args) => { calls.summaryUpdates.push(args); },
+      };
+    },
     _calls: calls,
   };
 }
@@ -104,6 +110,19 @@ describe('fullResetProductImages', () => {
     const specDb = makeSpecDbStub();
     fullResetProductImages({ specDb, productId: 'pid-1', productRoot: tmpRoot });
     assert.deepEqual(specDb._calls.deleteByProduct, ['pid-1']);
+  });
+
+  it('wipes SQL summary artifact columns read by the runtime UI', () => {
+    writeProductImages({ productId: 'pid-1', productRoot: tmpRoot, data: makeProductJson() });
+    const specDb = makeSpecDbStub();
+    fullResetProductImages({ specDb, productId: 'pid-1', productRoot: tmpRoot });
+    assert.deepEqual(specDb._calls.summaryUpdates, [
+      ['pid-1', 'images', '[]'],
+      ['pid-1', 'image_count', 0],
+      ['pid-1', 'carousel_slots', '{}'],
+      ['pid-1', 'eval_state', '{}'],
+      ['pid-1', 'evaluations', '[]'],
+    ]);
   });
 
   it('is a no-op when the product has no JSON / no images directory', () => {

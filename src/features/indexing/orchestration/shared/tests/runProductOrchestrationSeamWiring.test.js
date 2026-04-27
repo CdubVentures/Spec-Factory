@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { pathToFileURL } from 'node:url';
+import { SpecDb } from '../../../../../db/specDb.js';
 
 const RUN_PRODUCT_HELPERS = path.resolve('src/features/indexing/orchestration/shared/runProductOrchestrationHelpers.js');
 
@@ -67,6 +68,58 @@ test('runProduct orchestration helper loads enabled file-backed source entries w
     assert.equal(sourceEntries[0].discovery.method, 'search_first');
     assert.equal(Object.hasOwn(sourceEntries[0], 'discovery_method'), false);
   } finally {
+    fs.rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('runProduct orchestration helper prefers SQL source entries when specDb is supplied', async () => {
+  const helpers = await import(pathToFileURL(RUN_PRODUCT_HELPERS).href);
+  const tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'source-entries-sql-'));
+  const categoryRoot = path.join(tempRoot, 'mouse');
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+
+  try {
+    fs.mkdirSync(categoryRoot, { recursive: true });
+    fs.writeFileSync(path.join(categoryRoot, 'sources.json'), JSON.stringify({
+      category: 'mouse',
+      version: '1.0.0',
+      approved: { lab: [], database: [], retailer: [] },
+      denylist: [],
+      sources: {
+        json_lab: {
+          display_name: 'JSON Lab',
+          tier: 'tier2_lab',
+          base_url: 'https://json-lab.example',
+          discovery: { enabled: true, priority: 1 },
+        },
+      },
+    }, null, 2));
+    specDb.replaceSourceStrategyDocument({
+      category: 'mouse',
+      version: '1.0.0',
+      approved: { lab: [], database: [], retailer: [] },
+      denylist: [],
+      sources: {
+        sql_lab: {
+          display_name: 'SQL Lab',
+          tier: 'tier2_lab',
+          base_url: 'https://sql-lab.example',
+          discovery: { enabled: true, priority: 99 },
+        },
+      },
+    });
+
+    const sourceEntries = await helpers.loadEnabledSourceEntries({
+      config: { categoryAuthorityRoot: tempRoot },
+      category: 'mouse',
+      specDb,
+    });
+
+    assert.equal(sourceEntries.length, 1);
+    assert.equal(sourceEntries[0].sourceId, 'sql_lab');
+    assert.equal(sourceEntries[0].host, 'sql-lab.example');
+  } finally {
+    specDb.close();
     fs.rmSync(tempRoot, { recursive: true, force: true });
   }
 });

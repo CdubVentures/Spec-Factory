@@ -23,6 +23,305 @@ export const deleteKeyFinderRun = keyFinderStore.deleteRun;
 export const deleteKeyFinderRuns = keyFinderStore.deleteRuns;
 export const deleteKeyFinderAll = keyFinderStore.deleteAll;
 
+function keyFinderSqlStore(specDb) {
+  const store = specDb?.getFinderStore?.('keyFinder') ?? null;
+  return store && typeof store === 'object' ? store : null;
+}
+
+function canReadSqlRuns(store) {
+  return typeof store?.listRuns === 'function';
+}
+
+function canWriteSqlRuns(store) {
+  return canReadSqlRuns(store)
+    && typeof store.insertRun === 'function'
+    && typeof store.upsert === 'function';
+}
+
+function sortRuns(runs) {
+  return [...(Array.isArray(runs) ? runs : [])]
+    .sort((a, b) => (Number(a?.run_number) || 0) - (Number(b?.run_number) || 0));
+}
+
+function maxRunNumber(runs) {
+  return sortRuns(runs).reduce((max, run) => Math.max(max, Number(run?.run_number) || 0), 0);
+}
+
+function latestRun(runs) {
+  const sorted = sortRuns(runs);
+  return sorted.length > 0 ? sorted[sorted.length - 1] : null;
+}
+
+function buildRunEntry({ runNumber, ranAt, run }) {
+  return {
+    run_number: runNumber,
+    ran_at: ranAt || new Date().toISOString(),
+    model: run.model || 'unknown',
+    fallback_used: Boolean(run.fallback_used),
+    ...(run.status ? { status: run.status } : {}),
+    ...(run.mode ? { mode: run.mode } : {}),
+    ...(run.loop_id ? { loop_id: run.loop_id } : {}),
+    ...(run.started_at ? { started_at: run.started_at } : {}),
+    ...(run.duration_ms != null ? { duration_ms: run.duration_ms } : {}),
+    ...(run.access_mode ? { access_mode: run.access_mode } : {}),
+    ...(run.effort_level ? { effort_level: run.effort_level } : {}),
+    ...(run.thinking != null ? { thinking: Boolean(run.thinking) } : {}),
+    ...(run.web_search != null ? { web_search: Boolean(run.web_search) } : {}),
+    selected: run.selected || { keys: {} },
+    prompt: run.prompt || { system: '', user: '' },
+    response: run.response || { keys: {} },
+  };
+}
+
+function upsertSqlSummary({ store, category, productId, runs }) {
+  const sorted = sortRuns(runs);
+  const latest = latestRun(sorted);
+  store.upsert({
+    category,
+    product_id: productId,
+    last_run_id: latest ? (Number(latest.run_number) || 0) : 0,
+    cooldown_until: '',
+    latest_ran_at: latest?.ran_at || '',
+    run_count: sorted.length,
+  });
+}
+
+function insertSqlRun({ store, category, productId, run }) {
+  store.insertRun({
+    category,
+    product_id: productId,
+    run_number: run.run_number,
+    ran_at: run.ran_at,
+    started_at: run.started_at ?? null,
+    duration_ms: run.duration_ms ?? null,
+    model: run.model || 'unknown',
+    fallback_used: Boolean(run.fallback_used),
+    effort_level: run.effort_level || '',
+    access_mode: run.access_mode || '',
+    thinking: Boolean(run.thinking),
+    web_search: Boolean(run.web_search),
+    selected: run.selected || { keys: {} },
+    prompt: run.prompt || {},
+    response: run.response || {},
+  });
+}
+
+export function listKeyFinderRuntimeRuns({ specDb, productId, productRoot }) {
+  const store = keyFinderSqlStore(specDb);
+  if (canReadSqlRuns(store)) {
+    const runs = sortRuns(store.listRuns(productId));
+    const summary = typeof store.get === 'function' ? store.get(productId) : null;
+    if (runs.length > 0 || summary) return runs;
+  }
+  const doc = readKeyFinder({ productId, productRoot });
+  return sortRuns(doc?.runs || []);
+}
+
+export function readKeyFinderRuntimeDoc({ specDb, productId, productRoot, category }) {
+  const store = keyFinderSqlStore(specDb);
+  if (canReadSqlRuns(store)) {
+    const runs = sortRuns(store.listRuns(productId));
+    const summary = typeof store.get === 'function' ? store.get(productId) : null;
+    if (runs.length > 0 || summary) {
+      const existing = readKeyFinder({ productId, productRoot });
+      return keyFinderStore.recalculateFromRuns(
+        runs,
+        productId,
+        summary?.category || category || specDb?.category || existing?.category || '',
+        existing,
+      );
+    }
+  }
+  return readKeyFinder({ productId, productRoot });
+}
+
+export function listKeyFinderRuntimeSummaries({ specDb, category, productRoot }) {
+  const store = keyFinderSqlStore(specDb);
+  if (typeof store?.listByCategory === 'function') {
+    const rows = store.listByCategory(category).map((row) => ({
+      product_id: row.product_id,
+      category: row.category,
+      run_count: row.run_count || 0,
+      last_ran_at: row.latest_ran_at || '',
+    }));
+    if (rows.length > 0) return rows;
+  }
+
+  const summaries = [];
+  let entries;
+  try {
+    entries = fs.readdirSync(productRoot, { withFileTypes: true });
+  } catch {
+    return summaries;
+  }
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const doc = readKeyFinder({ productId: entry.name, productRoot });
+    if (!doc || doc.category !== category) continue;
+    summaries.push({
+      product_id: doc.product_id,
+      category: doc.category,
+      run_count: doc.run_count || (doc.runs?.length || 0),
+      last_ran_at: doc.last_ran_at || '',
+    });
+  }
+  return summaries;
+}
+
+export function nextKeyFinderRunNumber({ specDb, productId, productRoot, previousRuns = null }) {
+  const store = keyFinderSqlStore(specDb);
+  if (canReadSqlRuns(store)) {
+    const runs = Array.isArray(previousRuns) ? previousRuns : store.listRuns(productId);
+    const summary = typeof store.get === 'function' ? store.get(productId) : null;
+    if (runs.length > 0 || summary) return maxRunNumber(runs) + 1;
+  }
+
+  const doc = readKeyFinder({ productId, productRoot });
+  if (Number.isInteger(doc?.next_run_number) && doc.next_run_number > 0) return doc.next_run_number;
+  const runs = Array.isArray(previousRuns) ? previousRuns : (doc?.runs || []);
+  return maxRunNumber(runs) + 1;
+}
+
+export function writeKeyFinderJsonMirrorFromSql({ specDb, productId, productRoot, category }) {
+  const store = keyFinderSqlStore(specDb);
+  if (!canReadSqlRuns(store)) return readKeyFinder({ productId, productRoot });
+  const runs = sortRuns(store.listRuns(productId));
+  const existing = readKeyFinder({ productId, productRoot });
+  const doc = keyFinderStore.recalculateFromRuns(runs, productId, category || specDb?.category || existing?.category || '', existing);
+  keyFinderStore.write({ productId, productRoot, data: doc });
+  return doc;
+}
+
+export function persistKeyFinderRunSqlFirst({
+  specDb,
+  productId,
+  productRoot,
+  category,
+  run,
+  ranAt,
+  runNumber,
+}) {
+  const store = keyFinderSqlStore(specDb);
+  if (!canWriteSqlRuns(store)) {
+    const merged = mergeKeyFinderDiscovery({
+      productId,
+      productRoot,
+      newDiscovery: { category, last_ran_at: ranAt },
+      run,
+    });
+    const latest = latestRun(merged.runs);
+    return { runNumber: latest?.run_number || 0, run: latest, doc: merged, sqlFirst: false };
+  }
+
+  let existingRuns = sortRuns(store.listRuns(productId));
+  const existingSummary = typeof store.get === 'function' ? store.get(productId) : null;
+  if (existingRuns.length === 0 && !existingSummary) {
+    const existingDoc = readKeyFinder({ productId, productRoot });
+    const jsonRuns = sortRuns(existingDoc?.runs || []);
+    if (jsonRuns.length > 0) {
+      for (const jsonRun of jsonRuns) {
+        insertSqlRun({ store, category, productId, run: jsonRun });
+      }
+      existingRuns = jsonRuns;
+      upsertSqlSummary({ store, category, productId, runs: existingRuns });
+    }
+  }
+  const nextRunNumber = Number.isInteger(runNumber) && runNumber > 0
+    ? runNumber
+    : maxRunNumber(existingRuns) + 1;
+  const runEntry = buildRunEntry({ runNumber: nextRunNumber, ranAt, run });
+  insertSqlRun({ store, category, productId, run: runEntry });
+
+  const runs = sortRuns([...existingRuns.filter((r) => r.run_number !== nextRunNumber), runEntry]);
+  upsertSqlSummary({ store, category, productId, runs });
+  const doc = writeKeyFinderJsonMirrorFromSql({ specDb, productId, productRoot, category });
+  return { runNumber: nextRunNumber, run: runEntry, doc, sqlFirst: true };
+}
+
+export function deleteKeyFinderRunSqlFirst({ specDb, productId, productRoot, category, runNumber }) {
+  const store = keyFinderSqlStore(specDb);
+  if (!canReadSqlRuns(store) || typeof store.removeRun !== 'function' || typeof store.upsert !== 'function') {
+    const updated = deleteKeyFinderRun({ productId, productRoot, runNumber });
+    if (typeof specDb?.deleteFinderRun === 'function') {
+      specDb.deleteFinderRun('keyFinder', productId, runNumber);
+    }
+    return { updated, targetRun: (updated?.runs || []).find((r) => r.run_number === runNumber) || null, sqlFirst: false };
+  }
+
+  const before = sortRuns(store.listRuns(productId));
+  const targetRun = before.find((r) => r.run_number === runNumber) || null;
+  store.removeRun(productId, runNumber);
+  const after = sortRuns(store.listRuns(productId));
+  upsertSqlSummary({ store, category, productId, runs: after });
+  const updated = writeKeyFinderJsonMirrorFromSql({ specDb, productId, productRoot, category });
+  return { updated, targetRun, sqlFirst: true };
+}
+
+export function deleteKeyFinderAllSqlFirst({ specDb, productId, productRoot, category }) {
+  const store = keyFinderSqlStore(specDb);
+  if (!canReadSqlRuns(store) || typeof store.removeAllRuns !== 'function' || typeof store.upsert !== 'function') {
+    const updated = deleteKeyFinderAll({ productId, productRoot });
+    if (typeof specDb?.deleteFinderAll === 'function') {
+      specDb.deleteFinderAll('keyFinder', productId);
+    }
+    return { updated, runs: [], sqlFirst: false };
+  }
+
+  const runs = sortRuns(store.listRuns(productId));
+  store.removeAllRuns(productId);
+  upsertSqlSummary({ store, category, productId, runs: [] });
+  const updated = writeKeyFinderJsonMirrorFromSql({ specDb, productId, productRoot, category });
+  return { updated, runs, sqlFirst: true };
+}
+
+export function scrubFieldFromKeyFinderSqlFirst({ specDb, productId, productRoot, category, fieldKey }) {
+  const store = keyFinderSqlStore(specDb);
+  if (!canReadSqlRuns(store) || typeof store.removeRun !== 'function' || typeof store.updateRunJson !== 'function' || typeof store.upsert !== 'function') {
+    const result = scrubFieldFromKeyFinder({ productId, productRoot, fieldKey });
+    if (result.deletedRuns?.length > 0 && typeof specDb?.deleteFinderRun === 'function') {
+      for (const deletedRun of result.deletedRuns) {
+        specDb.deleteFinderRun('keyFinder', productId, deletedRun);
+      }
+    }
+    return result;
+  }
+
+  const runs = sortRuns(store.listRuns(productId));
+  const deletedRuns = [];
+  let touched = false;
+  for (const run of runs) {
+    if (run?.response?.primary_field_key === fieldKey) {
+      deletedRuns.push(run.run_number);
+      store.removeRun(productId, run.run_number);
+      touched = true;
+      continue;
+    }
+
+    const selected = run.selected && typeof run.selected === 'object'
+      ? { ...run.selected, keys: { ...(run.selected.keys || {}) } }
+      : { keys: {} };
+    const response = run.response && typeof run.response === 'object'
+      ? { ...run.response, results: { ...(run.response.results || {}) } }
+      : {};
+    const hadSelected = Object.prototype.hasOwnProperty.call(selected.keys || {}, fieldKey);
+    const hadResult = Object.prototype.hasOwnProperty.call(response.results || {}, fieldKey);
+    if (!hadSelected && !hadResult) continue;
+
+    delete selected.keys[fieldKey];
+    delete response.results[fieldKey];
+    store.updateRunJson(productId, run.run_number, { selected, response });
+    touched = true;
+  }
+
+  if (!touched) return { scrubbed: false, deletedRuns: [] };
+
+  const remaining = sortRuns(store.listRuns(productId));
+  upsertSqlSummary({ store, category, productId, runs: remaining });
+  writeKeyFinderJsonMirrorFromSql({ specDb, productId, productRoot, category });
+  return { scrubbed: true, deletedRuns };
+}
+
 function normalizeUnknownPerKeyForStorage(perKey) {
   if (!perKey || typeof perKey !== 'object') return perKey;
   if (!isUnknownSentinel(perKey.value)) return perKey;

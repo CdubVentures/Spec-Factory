@@ -7,6 +7,10 @@ import { sortOperations, readSortMode, writeSortMode, SORT_MODES, type OpSortMod
 import { createOperationPreviewStreamSelector } from '../state/operationStreamPreview.ts';
 import { selectActiveLlmCallSummaries } from '../state/operationCallSummaries.ts';
 import {
+  formatOperationStatusText,
+  isOperationElapsedTimerActive,
+} from '../state/operationElapsedStatus.ts';
+import {
   cancelActiveOperations,
   formatStopAllActiveOperationsMessage,
 } from '../state/operationBulkCancel.ts';
@@ -30,28 +34,7 @@ import { OperationDetailModal } from './OperationDetailModal.tsx';
 import { ModelBadgeGroup } from '../../llm-config/components/ModelAccessBadges.tsx';
 import type { LlmAccessMode } from '../../llm-config/types/llmProviderRegistryTypes.ts';
 import { resolveEffortLabel } from '../../llm-config/state/resolveEffortLabel.ts';
-import { parseBackendMs } from '../../../utils/dateTime.ts';
 
-
-/* ── Elapsed timer ─────────────────────────────────────────────────── */
-
-function formatElapsed(startedAt: string, endedAt: string | null): string {
-  const end = endedAt ? parseBackendMs(endedAt) : Date.now();
-  const start = parseBackendMs(startedAt);
-  if (!Number.isFinite(end) || !Number.isFinite(start)) return '0:00';
-  const sec = Math.max(0, Math.floor((end - start) / 1000));
-  const m = Math.floor(sec / 60);
-  const s = sec % 60;
-  return `${m}:${String(s).padStart(2, '0')}`;
-}
-
-function formatStatusText(op: Operation): string {
-  const elapsed = formatElapsed(op.startedAt, op.endedAt);
-  if (op.status === 'done') return `done ${elapsed}`;
-  if (op.status === 'error') return `failed ${elapsed}`;
-  if (op.status === 'cancelled') return `cancelled ${elapsed}`;
-  return elapsed;
-}
 
 /* ── Stage pipeline renderer ───────────────────────────────────────── */
 
@@ -139,6 +122,35 @@ function StreamPanel({ text }: { readonly text: string }) {
   );
 }
 
+const OperationElapsedStatus = memo(function OperationElapsedStatusInner({
+  status,
+  startedAt,
+  endedAt,
+}: {
+  readonly status: Operation['status'];
+  readonly startedAt: string;
+  readonly endedAt: string | null;
+}) {
+  const [, setTick] = useState(0);
+
+  useEffect(() => {
+    if (!isOperationElapsedTimerActive(status)) return;
+    const interval = setInterval(() => setTick((n) => n + 1), 1000);
+    return () => clearInterval(interval);
+  }, [startedAt, status]);
+
+  return (
+    <span className={`text-[9px] font-mono ${
+      status === 'running' ? 'text-[rgb(var(--sf-color-accent-strong-rgb))]'
+      : status === 'error' ? 'text-[var(--sf-state-danger-fg)]'
+      : status === 'cancelled' ? 'sf-text-subtle'
+      : 'sf-text-success'
+    }`}>
+      {formatOperationStatusText({ status, startedAt, endedAt })}
+    </span>
+  );
+});
+
 /* ── Single operation card ─────────────────────────────────────────── */
 
 // WHY: Memoized so a WS upsert that clones the operations Map only re-renders
@@ -151,11 +163,6 @@ const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confi
   readonly onDismiss: (e: React.MouseEvent, op: Operation) => void;
   readonly onStop: (e: React.MouseEvent, op: Operation) => void;
   readonly confirming: boolean;
-  // WHY: Memo blocks parent re-renders from reaching this card. Active ops
-  // need to update their elapsed timer every second, so the parent passes
-  // a tick value that changes once per second for running/queued ops and
-  // stays 0 for terminal ops — invalidating memo only when needed.
-  readonly tick: number;
 }) {
   const streamPreviewSelector = useMemo(
     () => createOperationPreviewStreamSelector(op.id),
@@ -251,14 +258,11 @@ const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confi
           {op.productLabel}
         </span>
         <span className="flex flex-col items-end shrink-0">
-          <span className={`text-[9px] font-mono ${
-            op.status === 'running' ? 'text-[rgb(var(--sf-color-accent-strong-rgb))]'
-            : op.status === 'error' ? 'text-[var(--sf-state-danger-fg)]'
-            : op.status === 'cancelled' ? 'sf-text-subtle'
-            : 'sf-text-success'
-          }`}>
-            {formatStatusText(op)}
-          </span>
+          <OperationElapsedStatus
+            status={op.status}
+            startedAt={op.startedAt}
+            endedAt={op.endedAt}
+          />
           {op.queueDelayMs != null && op.queueDelayMs > 0 && (
             <span className="text-[6px] font-mono sf-text-subtle leading-none">q {op.queueDelayMs >= 1000 ? `${(op.queueDelayMs / 1000).toFixed(1)}s` : `${op.queueDelayMs}ms`}</span>
           )}
@@ -366,16 +370,6 @@ export function OperationsTracker() {
     () => (isOpen ? sortOperations(operations, sortMode) : []),
     [isOpen, operations, sortMode],
   );
-
-  // WHY: Force re-render every second to update elapsed timers while ops are
-  // running. The tick value is threaded into each OpCard so its memo
-  // invalidates once per second for running/queued ops (and only for those).
-  const [tick, setTick] = useState(0);
-  useEffect(() => {
-    if (activeCount === 0) return;
-    const interval = setInterval(() => setTick((n) => n + 1), 1000);
-    return () => clearInterval(interval);
-  }, [activeCount]);
 
   // Clear confirm timer on unmount
   useEffect(() => () => { if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current); }, []);
@@ -494,7 +488,6 @@ export function OperationsTracker() {
                 onDismiss={handleDismiss}
                 onStop={handleStop}
                 confirming={confirmCancelId === op.id}
-                tick={(op.status === 'running' || op.status === 'queued') ? tick : 0}
               />
             ))
           )}

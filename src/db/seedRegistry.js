@@ -210,6 +210,36 @@ export function buildReseedSurfaces(deps) {
           : '',
     },
     {
+      key: 'source_strategy',
+      label: 'Source Strategy',
+      scope: 'reseed',
+      tables: ['source_strategy_meta', 'source_strategy_entries'],
+      shouldRun: null,
+      execute: (ctx) => deps.rebuildSourceStrategyFromJson({
+        specDb: ctx.db,
+        helperRoot: ctx.helperRoot,
+      }),
+      formatLog: (category, result) =>
+        result.reseeded
+          ? `${category}: source_strategy re-seeded (${result.sources_seeded} sources)`
+          : '',
+    },
+    {
+      key: 'spec_seeds',
+      label: 'Spec Seeds',
+      scope: 'reseed',
+      tables: ['spec_seed_sets', 'spec_seed_templates'],
+      shouldRun: null,
+      execute: (ctx) => deps.rebuildSpecSeedsFromJson({
+        specDb: ctx.db,
+        helperRoot: ctx.helperRoot,
+      }),
+      formatLog: (category, result) =>
+        result.reseeded
+          ? `${category}: spec_seeds re-seeded (${result.seeds_seeded} seeds)`
+          : '',
+    },
+    {
       key: 'field_candidates',
       label: 'Field Candidates',
       scope: 'reseed',

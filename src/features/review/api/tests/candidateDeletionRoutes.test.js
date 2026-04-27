@@ -131,6 +131,15 @@ describe('handleCandidateDeletionRoute', () => {
     });
     assert.equal(broadcasts.length, 1);
     assert.equal(broadcasts[0].channel, 'data-change');
+    assert.deepEqual(broadcasts[0].payload.entities, {
+      productIds: ['mouse-001'],
+      fieldKeys: ['weight'],
+    });
+    assert.deepEqual(broadcasts[0].payload.meta, {
+      productId: 'mouse-001',
+      fieldKey: 'weight',
+      sourceId: sid,
+    });
   }));
 
   it('non-variant field delete → response body carries republished=true', withFreshEnv(async ({ specDb, root, ensureProductJson, seed, context, responses }) => {

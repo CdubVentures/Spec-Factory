@@ -172,6 +172,8 @@ function buildKeyRecord(fieldKey, rule, enumsIndex, componentRelations) {
     component: normalizeComponent(rule, componentRelations),
     ai_assist: normalizeAiAssist(rule),
     evidence: normalizeEvidence(rule),
+    variant_dependent: rule?.variant_dependent === true,
+    product_image_dependent: rule?.product_image_dependent === true,
     variance_policy: String(rule?.variance_policy || ''),
     rawRule: rule,
   };
@@ -263,6 +265,8 @@ function buildStats(keyRecords, groups) {
     emptySearchDomainsCount: 0,
     patternlessOpenEnumsCount: 0,
     groupCount: groups.length,
+    productImageDependentCount: 0,
+    variantDependentCount: 0,
   };
   for (const k of keyRecords) {
     if (k.priority.required_level === 'mandatory') stats.mandatoryCount++;
@@ -273,6 +277,8 @@ function buildStats(keyRecords, groups) {
     if (k.aliases.length === 0) stats.emptyAliasesCount++;
     if (k.search_hints.query_terms.length === 0) stats.emptyHintsCount++;
     if (k.search_hints.domain_hints.length === 0) stats.emptySearchDomainsCount++;
+    if (k.product_image_dependent) stats.productImageDependentCount++;
+    if (k.variant_dependent) stats.variantDependentCount++;
     if (k.enum.policy === 'open_prefer_known' && k.enum.values.length >= 4) {
       const top = k.enum.analysis?.topSignature;
       if (!top || top.coveragePct < 70) stats.patternlessOpenEnumsCount++;

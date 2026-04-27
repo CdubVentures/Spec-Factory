@@ -48,7 +48,7 @@ import {
 } from './secondaryHintsDefaults.js';
 import { resolveViewPrompt, viewPromptSettingKey } from './viewPromptDefaults.js';
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
-import { readProductImages, mergeProductImageDiscovery } from './productImageStore.js';
+import { buildProductImageFinderSqlSummaryRow, readProductImages, mergeProductImageDiscovery } from './productImageStore.js';
 import { matchVariant } from './variantMatch.js';
 import { resolveProductImageIdentityFacts } from './productImageIdentityDependencies.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
@@ -1117,14 +1117,12 @@ export async function runProductImageFinder({
       response: latestRun.response,
     });
 
-    store.upsert({
+    store.upsert(buildProductImageFinderSqlSummaryRow({
       category: product.category,
-      product_id: product.product_id,
-      images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
-      image_count: merged.selected.images.length,
-      latest_ran_at: ranAt,
-      run_count: merged.run_count,
-    });
+      productId: product.product_id,
+      data: merged,
+      ranAt,
+    }));
 
     onVariantPersisted?.({ variantKey: variant.key, variantId: variant.variant_id || null });
 
@@ -1643,14 +1641,12 @@ export async function runCarouselLoop({
         response: latestRun.response,
       });
 
-      store.upsert({
+      store.upsert(buildProductImageFinderSqlSummaryRow({
         category: product.category,
-        product_id: product.product_id,
-        images: merged.selected.images.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })),
-        image_count: merged.selected.images.length,
-        latest_ran_at: ranAt,
-        run_count: merged.run_count,
-      });
+        productId: product.product_id,
+        data: merged,
+        ranAt,
+      }));
 
       onVariantPersisted?.({ variantKey: variant.key, variantId: variant.variant_id || null });
 

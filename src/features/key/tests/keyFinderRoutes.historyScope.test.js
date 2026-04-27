@@ -52,6 +52,30 @@ function makeSpecDbStub({ hasRules = true, finderStore = null } = {}) {
   };
 }
 
+function makeSqlRun(pid, fk, runNumber, perKey = { value: 'sql-v', confidence: 91, unknown_reason: '', evidence_refs: [], discovery_log: { urls_checked: [], queries_run: [], notes: [] } }) {
+  return {
+    category: 'mouse',
+    product_id: pid,
+    run_number: runNumber,
+    ran_at: `2026-04-20T10:0${runNumber}:00Z`,
+    started_at: `2026-04-20T10:0${runNumber}:00Z`,
+    duration_ms: 1000,
+    model: 'sql-model',
+    fallback_used: false,
+    thinking: true,
+    web_search: true,
+    effort_level: 'xhigh',
+    access_mode: 'api',
+    selected: { keys: { [fk]: perKey } },
+    prompt: { system: 'sql-s', user: 'sql-u' },
+    response: {
+      primary_field_key: fk,
+      results: { [fk]: perKey },
+      discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+    },
+  };
+}
+
 function seedRun(productRoot, pid, fk, runNumber, perKey = { value: 'v', confidence: 80, unknown_reason: '', evidence_refs: [], discovery_log: { urls_checked: [], queries_run: [], notes: [] } }) {
   mergeKeyFinderDiscovery({
     productId: pid,
@@ -120,6 +144,43 @@ describe('GET /key-finder/:category/:productId with scope param', () => {
 
     assert.equal(responses[0].status, 200);
     assert.equal(responses[0].body.runs.length, 3);
+  });
+
+  it('scope=product reads SQL runs instead of a stale key_finder.json mirror', async (t) => {
+    t.after(cleanupTmp);
+    const pid = 'sql-detail-prod';
+    fs.mkdirSync(path.join(PRODUCT_ROOT, pid), { recursive: true });
+
+    seedRun(PRODUCT_ROOT, pid, 'sensor_model', 1, {
+      value: 'json-stale',
+      confidence: 80,
+      unknown_reason: '',
+      evidence_refs: [],
+      discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+    });
+
+    const finderStore = {
+      get: (productId) => ({ category: 'mouse', product_id: productId, latest_ran_at: '2026-04-20T10:07:00Z', run_count: 1 }),
+      listRuns: (productId) => [makeSqlRun(productId, 'polling_rate', 7, {
+        value: 8000,
+        confidence: 93,
+        unknown_reason: '',
+        evidence_refs: [],
+        discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+      })],
+    };
+    const specDb = makeSpecDbStub({ finderStore });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    const params = new URLSearchParams({ scope: 'product' });
+    await handler(['key-finder', 'mouse', pid], params, 'GET', {}, {});
+
+    assert.equal(responses[0].status, 200);
+    assert.equal(responses[0].body.runs.length, 1);
+    assert.equal(responses[0].body.runs[0].run_number, 7);
+    assert.equal(responses[0].body.runs[0].response.primary_field_key, 'polling_rate');
+    assert.equal(responses[0].body.selected.keys.polling_rate.value, 8000);
   });
 
   it('default scope (no scope param, no field_key) behaves like legacy unfiltered', async (t) => {

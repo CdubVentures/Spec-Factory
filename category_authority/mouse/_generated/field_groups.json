@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-27T02:48:22.414Z",
+  "generated_at": "2026-04-27T06:26:59.005Z",
   "group_index": {
     "appearance": [
       "design",
@@ -103,8 +103,8 @@
       "hot_swappable",
       "switch",
       "switch_brand",
-      "switch_type",
-      "switches_link"
+      "switch_link",
+      "switch_type"
     ]
   },
   "groups": [
@@ -267,8 +267,8 @@
         "hot_swappable",
         "switch",
         "switch_brand",
-        "switch_type",
-        "switches_link"
+        "switch_link",
+        "switch_type"
       ],
       "group_key": "switch_identity"
     }

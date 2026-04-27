@@ -63,7 +63,7 @@ export function registerConfigRoutes(ctx) {
   });
 
   const globalPromptsHandler = createGlobalPromptsHandler({
-    jsonRes, readJsonBody, broadcastWs,
+    jsonRes, readJsonBody, broadcastWs, appDb,
   });
 
   const writerModelTestHandler = createWriterModelTestHandler({

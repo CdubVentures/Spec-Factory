@@ -9,11 +9,13 @@ import {
   setGlobalPromptsSnapshot,
   loadGlobalPromptsSync,
   GLOBAL_PROMPTS_FILENAME,
+  GLOBAL_PROMPTS_SETTINGS_SECTION,
 } from '../../../core/llm/prompts/globalPromptStore.js';
 import {
   GLOBAL_PROMPT_KEYS,
   GLOBAL_PROMPTS,
 } from '../../../core/llm/prompts/globalPromptRegistry.js';
+import { AppDb } from '../../../db/appDb.js';
 
 const TMP_DIRS = [];
 const origCwd = process.cwd();
@@ -45,13 +47,14 @@ after(async () => {
   }
 });
 
-function buildHandler() {
+function buildHandler(options = {}) {
   let lastResponse = null;
   const broadcasts = [];
   const handler = createGlobalPromptsHandler({
     jsonRes: (_res, status, body) => { lastResponse = { status, body }; },
     readJsonBody: async (req) => req._body ?? {},
     broadcastWs: (event, payload) => broadcasts.push({ event, payload }),
+    ...options,
   });
   return {
     handler,
@@ -109,6 +112,31 @@ describe('GET /llm-policy/global-prompts', () => {
     assert.equal(res.body.prompts.identityWarningMedium.override, 'my-custom');
     assert.equal(res.body.prompts.identityWarningHard.override, '');
   });
+
+  it('uses appDb runtime overrides instead of stale JSON or memory when appDb is available', async (t) => {
+    await withTmpWorkspace(async (root) => {
+      const appDb = new AppDb({ dbPath: ':memory:' });
+      t.after(() => appDb.close());
+      appDb.upsertSetting({
+        section: GLOBAL_PROMPTS_SETTINGS_SECTION,
+        key: 'identityWarningHard',
+        value: 'sql-hard',
+        type: 'string',
+      });
+      await fs.writeFile(
+        path.join(root, '.workspace', 'global', GLOBAL_PROMPTS_FILENAME),
+        JSON.stringify({ identityWarningHard: 'json-hard' }),
+        'utf8',
+      );
+      setGlobalPromptsSnapshot({ identityWarningHard: 'memory-hard' });
+
+      const { get } = buildHandler({ appDb });
+      const res = await get();
+
+      assert.equal(res.status, 200);
+      assert.equal(res.body.prompts.identityWarningHard.override, 'sql-hard');
+    });
+  });
 });
 
 describe('PUT /llm-policy/global-prompts', () => {
@@ -129,6 +157,28 @@ describe('PUT /llm-policy/global-prompts', () => {
       assert.ok(broadcasts.length > 0);
       assert.equal(broadcasts[0].payload.event, 'user-settings-updated');
       assert.equal(broadcasts[0].payload.meta?.source, 'global-prompts');
+    });
+  });
+
+  it('persists valid patch to appDb runtime settings and mirrors JSON', async (t) => {
+    await withTmpWorkspace(async (root) => {
+      const appDb = new AppDb({ dbPath: ':memory:' });
+      t.after(() => appDb.close());
+      const { put } = buildHandler({ appDb });
+
+      const res = await put({ identityWarningMedium: 'sql-med' });
+
+      assert.equal(res.status, 200);
+      assert.equal(res.body.prompts.identityWarningMedium.override, 'sql-med');
+      assert.equal(
+        appDb.getSetting(GLOBAL_PROMPTS_SETTINGS_SECTION, 'identityWarningMedium')?.value,
+        'sql-med',
+      );
+      const disk = JSON.parse(await fs.readFile(
+        path.join(root, '.workspace', 'global', GLOBAL_PROMPTS_FILENAME),
+        'utf8',
+      ));
+      assert.deepEqual(disk, { identityWarningMedium: 'sql-med' });
     });
   });
 

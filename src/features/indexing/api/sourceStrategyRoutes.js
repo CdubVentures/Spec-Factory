@@ -1,7 +1,7 @@
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import {
-  readSourcesFile,
-  writeSourcesFile,
+  readSourcesDocument,
+  writeSourcesDocument,
   generateSourceId,
   listSourceEntries,
   addSourceEntry,
@@ -19,6 +19,7 @@ export function registerSourceStrategyRoutes(ctx) {
     config,
     resolveCategoryAlias,
     broadcastWs,
+    getSpecDb,
   } = ctx;
 
   function resolveScopedCategory(params) {
@@ -31,13 +32,21 @@ export function registerSourceStrategyRoutes(ctx) {
     return config?.categoryAuthorityRoot || 'category_authority';
   }
 
+  function getSqlStore(category) {
+    try {
+      return typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+    } catch {
+      return null;
+    }
+  }
+
   return async function handleSourceStrategyRoutes(parts, params, method, req, res) {
     // GET /api/v1/source-strategy
     if (parts[0] === 'source-strategy' && method === 'GET' && !parts[1]) {
       const category = resolveScopedCategory(params);
       if (!category) return jsonRes(res, 400, { error: 'category_required' });
       const root = getRoot();
-      const data = await readSourcesFile(root, category);
+      const data = await readSourcesDocument({ root, category, specDb: getSqlStore(category) });
       const entries = listSourceEntries(data);
       return jsonRes(res, 200, entries);
     }
@@ -49,7 +58,8 @@ export function registerSourceStrategyRoutes(ctx) {
       const body = await readJsonBody(req).catch(() => ({}));
       if (!body.host) return jsonRes(res, 400, { error: 'host_required' });
       const root = getRoot();
-      const data = await readSourcesFile(root, category);
+      const specDb = getSqlStore(category);
+      const data = await readSourcesDocument({ root, category, specDb });
       const sourceId = body.sourceId || generateSourceId(body.host);
       const { discovery: bodyDiscovery, host: _h, sourceId: _sid, ...restBody } = body;
       // WHY: Loop over schema-derived mutable keys so new fields auto-flow through.
@@ -70,7 +80,7 @@ export function registerSourceStrategyRoutes(ctx) {
         }
       }
       const updated = addSourceEntry(data, sourceId, entry);
-      await writeSourcesFile(root, category, updated);
+      await writeSourcesDocument({ root, category, data: updated, specDb });
       emitDataChange({
         broadcastWs,
         event: 'source-strategy-created',
@@ -89,10 +99,11 @@ export function registerSourceStrategyRoutes(ctx) {
       const body = await readJsonBody(req).catch(() => ({}));
       const { accepted, rejected } = validateSourceEntryPatch(body);
       const root = getRoot();
-      const data = await readSourcesFile(root, category);
+      const specDb = getSqlStore(category);
+      const data = await readSourcesDocument({ root, category, specDb });
       if (!data.sources[sourceId]) return jsonRes(res, 404, { error: 'not_found' });
       const updated = updateSourceEntry(data, sourceId, accepted);
-      await writeSourcesFile(root, category, updated);
+      await writeSourcesDocument({ root, category, data: updated, specDb });
       const entries = listSourceEntries(updated);
       const updatedEntry = entries.find((e) => e.sourceId === sourceId) || null;
       emitDataChange({
@@ -111,10 +122,11 @@ export function registerSourceStrategyRoutes(ctx) {
       const category = resolveScopedCategory(params);
       if (!category) return jsonRes(res, 400, { error: 'category_required' });
       const root = getRoot();
-      const data = await readSourcesFile(root, category);
+      const specDb = getSqlStore(category);
+      const data = await readSourcesDocument({ root, category, specDb });
       if (!data.sources[sourceId]) return jsonRes(res, 404, { error: 'not_found' });
       const updated = removeSourceEntry(data, sourceId);
-      await writeSourcesFile(root, category, updated);
+      await writeSourcesDocument({ root, category, data: updated, specDb });
       emitDataChange({
         broadcastWs,
         event: 'source-strategy-deleted',

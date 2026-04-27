@@ -12,10 +12,18 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { extractReportData } from './reportData.js';
-import { renderHtml } from './reportHtml.js';
-import { renderMarkdown } from './reportMarkdown.js';
+import { renderSummaryHtml, renderSummaryMarkdown } from './reportSummary.js';
 
 const SUPPORTED_CONSUMERS = new Set(['key_finder']);
+
+function resolveCategoryOutputRoot(outputRoot, category) {
+  const root = path.resolve(outputRoot);
+  const categoryRoot = path.resolve(root, category);
+  if (categoryRoot !== root && categoryRoot.startsWith(`${root}${path.sep}`)) {
+    return categoryRoot;
+  }
+  throw new Error(`generateCategoryAuditReport: unsafe category output path for ${category}`);
+}
 
 /**
  * @param {object} opts
@@ -61,13 +69,14 @@ export async function generateCategoryAuditReport({
     now,
   });
 
-  const htmlText = renderHtml(reportData);
-  const mdText = renderMarkdown(reportData);
+  const htmlText = renderSummaryHtml(reportData);
+  const mdText = renderSummaryMarkdown(reportData);
 
-  await fs.mkdir(outputRoot, { recursive: true });
-  const baseName = `${category}-${consumer.replace(/_/g, '-')}-audit`;
-  const htmlPath = path.join(outputRoot, `${baseName}.html`);
-  const mdPath = path.join(outputRoot, `${baseName}.md`);
+  const categoryOutputRoot = resolveCategoryOutputRoot(outputRoot, category);
+  await fs.mkdir(categoryOutputRoot, { recursive: true });
+  const baseName = `${category}-${consumer.replace(/_/g, '-')}-summary`;
+  const htmlPath = path.join(categoryOutputRoot, `${baseName}.html`);
+  const mdPath = path.join(categoryOutputRoot, `${baseName}.md`);
   await fs.writeFile(htmlPath, htmlText, 'utf8');
   await fs.writeFile(mdPath, mdText, 'utf8');
 

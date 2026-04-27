@@ -24,7 +24,7 @@ import { isReservedFieldKey } from '../../../core/finder/finderExclusions.js';
 import * as keyFinderRegistry from '../../../core/operations/keyFinderRegistry.js';
 import {
   unselectKeyFinderField,
-  scrubFieldFromKeyFinder,
+  scrubFieldFromKeyFinderSqlFirst,
 } from '../../key/index.js';
 import { deleteAllCandidatesForField as deleteReviewCandidatesForField } from '../domain/deleteCandidate.js';
 
@@ -145,12 +145,13 @@ function deleteFieldRowProduct({ specDb, category, config, productRoot, productI
   });
   clearProductFieldJson({ productRoot, productId, fieldKey });
 
-  const { deletedRuns } = scrubFieldFromKeyFinder({ productId, productRoot, fieldKey });
-  if (deletedRuns.length > 0 && typeof specDb.deleteFinderRun === 'function') {
-    for (const runNumber of deletedRuns) {
-      specDb.deleteFinderRun('keyFinder', productId, runNumber);
-    }
-  }
+  const { deletedRuns } = scrubFieldFromKeyFinderSqlFirst({
+    specDb,
+    productId,
+    productRoot,
+    category,
+    fieldKey,
+  });
 
   return {
     productId,

@@ -10,6 +10,7 @@ function fixtureLoadedRules() {
         sensor: {
           field_key: 'sensor',
           display_name: 'Sensor',
+          product_image_dependent: true,
           priority: { required_level: 'mandatory', availability: 'always', difficulty: 'hard' },
           contract: { type: 'string', shape: 'scalar' },
           enum: { policy: 'open_prefer_known', source: 'data_lists.sensor', values: [] },
@@ -140,6 +141,14 @@ test('extractReportData carries simple AI assist toggles as enabled flags', () =
     variant_inventory_usage: { enabled: false },
     pif_priority_images: { enabled: true },
   });
+});
+
+test('extractReportData carries Product Image Dependent as a category-summary dependency flag', () => {
+  const data = callExtract();
+  const sensor = data.keys.find((k) => k.fieldKey === 'sensor');
+  const dpi = data.keys.find((k) => k.fieldKey === 'dpi');
+  assert.equal(sensor.product_image_dependent, true);
+  assert.equal(dpi.product_image_dependent, false);
 });
 
 test('extractReportData resolves enum values from known_values when rule has source only', () => {

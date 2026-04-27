@@ -116,6 +116,70 @@ test('zeroCatalogPifProgress zeroes all or one variant for the affected product 
   );
 });
 
+test('decrementCatalogPifProgressForRemovedImages decrements count and zeroes rings at zero images', async () => {
+  const { decrementCatalogPifProgressForRemovedImages } = await loadOptimismHelpers();
+  const rows = [{
+    productId: 'p1',
+    pifVariants: [
+      {
+        variant_id: 'v-black',
+        variant_key: 'color:black',
+        variant_label: 'Black',
+        color_atoms: ['black'],
+        priority_filled: 1,
+        priority_total: 3,
+        loop_filled: 1,
+        loop_total: 3,
+        hero_filled: 1,
+        hero_target: 3,
+        image_count: 2,
+      },
+      {
+        variant_id: 'v-white',
+        variant_key: 'color:white',
+        variant_label: 'White',
+        color_atoms: ['white'],
+        priority_filled: 1,
+        priority_total: 3,
+        loop_filled: 0,
+        loop_total: 3,
+        hero_filled: 0,
+        hero_target: 3,
+        image_count: 1,
+      },
+    ],
+  }];
+
+  const decremented = decrementCatalogPifProgressForRemovedImages(rows, {
+    productId: 'p1',
+    images: [{ variant_key: 'color:black' }],
+  });
+  assert.equal(decremented[0].pifVariants[0].image_count, 1);
+  assert.equal(decremented[0].pifVariants[0].priority_filled, 1);
+  assert.equal(decremented[0].pifVariants[1].image_count, 1);
+
+  const zeroed = decrementCatalogPifProgressForRemovedImages(decremented, {
+    productId: 'p1',
+    images: [{ variant_id: 'v-black' }],
+  });
+  assert.deepEqual(
+    zeroed[0].pifVariants[0],
+    {
+      variant_id: 'v-black',
+      variant_key: 'color:black',
+      variant_label: 'Black',
+      color_atoms: ['black'],
+      priority_filled: 0,
+      priority_total: 3,
+      loop_filled: 0,
+      loop_total: 3,
+      hero_filled: 0,
+      hero_target: 3,
+      image_count: 0,
+    },
+  );
+});
+
 test('clearPifCarouselSelections clears carousel winner state while preserving images and eval history', async () => {
   const { clearPifCarouselSelections } = await loadOptimismHelpers();
   const pifData = {

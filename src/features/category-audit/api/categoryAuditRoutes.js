@@ -22,6 +22,7 @@ import { loadFieldRules } from '../../../field-rules/loader.js';
 import { resolveGlobalPrompt } from '../../../core/llm/prompts/globalPromptRegistry.js';
 import { generateCategoryAuditReport } from '../reportBuilder.js';
 import { generatePerKeyDocs } from '../perKeyDocBuilder.js';
+import { generatePromptAuditReports } from '../promptAuditReportBuilder.js';
 
 const RESOLVED_GLOBAL_FRAGMENT_KEYS = [
   'identityIntro',
@@ -70,6 +71,33 @@ function parseTierBundles(json) {
   } catch {
     return {};
   }
+}
+
+function asSettingsMap(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+}
+
+async function readModuleSettings(helperRoot, category) {
+  const globalRoot = path.join(helperRoot, '_global');
+  return {
+    colorEditionFinder: asSettingsMap(await readJsonIfExists(path.join(globalRoot, 'color_edition_settings.json'))),
+    releaseDateFinder: asSettingsMap(await readJsonIfExists(path.join(globalRoot, 'release_date_settings.json'))),
+    skuFinder: asSettingsMap(await readJsonIfExists(path.join(globalRoot, 'sku_settings.json'))),
+    keyFinder: asSettingsMap(await readJsonIfExists(path.join(globalRoot, 'key_finder_settings.json'))),
+    productImageFinder: asSettingsMap(await readJsonIfExists(path.join(helperRoot, category, 'product_images_settings.json'))),
+  };
+}
+
+function promptAuditResponse(result) {
+  return {
+    summary: result.summary,
+    perPromptReports: {
+      basePath: result.perPromptReports.basePath,
+      count: result.perPromptReports.count,
+    },
+    generatedAt: result.generatedAt,
+    stats: result.stats,
+  };
 }
 
 export function registerCategoryAuditRoutes(ctx) {
@@ -193,6 +221,39 @@ export function registerCategoryAuditRoutes(ctx) {
       });
     }
 
+    if (parts[1] && parts[2] === 'generate-prompt-audit' && method === 'POST') {
+      const category = parts[1];
+      try {
+        await readJsonBody(req);
+      } catch {
+        jsonRes(res, 400, { error: 'invalid_json_body' });
+        return true;
+      }
+
+      try {
+        await loadFieldRules(category, { config });
+      } catch (err) {
+        const msg = String(err?.message || err);
+        if (msg.startsWith('missing_field_rules') || msg.includes('category')) {
+          return jsonRes(res, 400, { error: 'unknown_category', category, details: msg });
+        }
+        throw err;
+      }
+
+      const globalFragments = resolveAllFragments();
+      const moduleSettings = await readModuleSettings(helperRoot, category);
+      const result = await generatePromptAuditReports({
+        category,
+        moduleSettings,
+        globalFragments,
+        outputRoot,
+      });
+      return jsonRes(res, 200, {
+        category,
+        ...promptAuditResponse(result),
+      });
+    }
+
     if (parts[1] && parts[2] === 'generate-all-reports' && method === 'POST') {
       const category = parts[1];
       let body = {};
@@ -224,6 +285,7 @@ export function registerCategoryAuditRoutes(ctx) {
       const fieldKeyOrder = Array.isArray(fieldKeyOrderDoc?.order) ? fieldKeyOrderDoc.order : null;
       const globalFragments = resolveAllFragments();
       const tierBundles = parseTierBundles(config?.keyFinderTierSettingsJson);
+      const moduleSettings = await readModuleSettings(helperRoot, category);
 
       try {
         const categoryReport = await generateCategoryAuditReport({
@@ -247,6 +309,12 @@ export function registerCategoryAuditRoutes(ctx) {
           templateOverride: body?.templateOverride || '',
           fieldKeyOrder,
         });
+        const promptAudit = await generatePromptAuditReports({
+          category,
+          moduleSettings,
+          globalFragments,
+          outputRoot,
+        });
         return jsonRes(res, 200, {
           category,
           consumer,
@@ -266,6 +334,7 @@ export function registerCategoryAuditRoutes(ctx) {
               ? { basePath: perKeyDocs.sorted.basePath, count: perKeyDocs.sorted.count }
               : null,
           },
+          promptAudit: promptAuditResponse(promptAudit),
         });
       } catch (err) {
         const msg = String(err?.message || err);

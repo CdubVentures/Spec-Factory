@@ -3,7 +3,7 @@ export function createSourceStrategyRouteContext(options = {}) {
     throw new TypeError('options must be an object');
   }
 
-  const { jsonRes, readJsonBody, config, resolveCategoryAlias, broadcastWs } = options;
+  const { jsonRes, readJsonBody, config, resolveCategoryAlias, broadcastWs, getSpecDb } = options;
 
-  return { jsonRes, readJsonBody, config, resolveCategoryAlias, broadcastWs };
+  return { jsonRes, readJsonBody, config, resolveCategoryAlias, broadcastWs, getSpecDb };
 }

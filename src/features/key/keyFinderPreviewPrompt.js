@@ -27,7 +27,7 @@ import {
   resolveKeyFinderRuntimeContext,
 } from '../../core/finder/productResolvedStateReader.js';
 import { keyFinderResponseSchema } from './keySchema.js';
-import { readKeyFinder } from './keyStore.js';
+import { listKeyFinderRuntimeRuns } from './keyStore.js';
 import { resolveKeyFinderFamilySize } from './keyFamilySize.js';
 
 function err(statusCode, message) {
@@ -167,8 +167,7 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
     familySize,
   });
 
-  const previousDoc = readKeyFinder({ productId: product.product_id, productRoot });
-  const previousRuns = Array.isArray(previousDoc?.runs) ? previousDoc.runs : [];
+  const previousRuns = listKeyFinderRuntimeRuns({ specDb, productId: product.product_id, productRoot });
   const { urlsChecked, queriesRun } = accumulateDiscoveryLog(previousRuns, {
     runMatcher: (r) =>
       r?.response?.primary_field_key === fieldKey

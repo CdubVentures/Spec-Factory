@@ -13,6 +13,8 @@ import {
   loadSourceRegistry,
   checkCategoryPopulationHardGate,
 } from '../features/indexing/pipeline/shared/index.js';
+import { readSourcesDocument } from '../features/indexing/sources/sourceFileService.js';
+import { readSpecSeeds } from '../features/indexing/sources/specSeedsFileService.js';
 import { isObject, toArray } from '../shared/primitives.js';
 import { normalizeHost } from '../shared/hostParser.js';
 
@@ -377,7 +379,7 @@ function buildBaseConfigCacheKey(category, runtimeConfig = {}) {
   ].join('::');
 }
 
-async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
+async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}, { specDb = null } = {}) {
   const helperRoot = resolveHelperRoot(runtimeConfig);
   const helperCategoryRoot = path.join(helperRoot, category);
   const generatedRoot = path.join(helperRoot, category, '_generated');
@@ -428,16 +430,32 @@ async function loadGeneratedCategoryArtifacts(category, runtimeConfig = {}) {
     return null;
   }
 
-  const sources = isObject(generatedSourcesRaw)
-    ? generatedSourcesRaw
-    : (isObject(helperSourcesRaw) ? helperSourcesRaw : null);
+  let sqlSourcesRaw = null;
+  if (specDb?.hasSourceStrategyDocument?.(category)) {
+    sqlSourcesRaw = specDb.getSourceStrategyDocument(category);
+  } else if (isObject(helperSourcesRaw)) {
+    sqlSourcesRaw = await readSourcesDocument({ root: helperRoot, category, specDb });
+  }
+  const sources = isObject(sqlSourcesRaw)
+    ? sqlSourcesRaw
+    : (isObject(generatedSourcesRaw)
+      ? generatedSourcesRaw
+      : (isObject(helperSourcesRaw) ? helperSourcesRaw : null));
   const anchors = isObject(generatedAnchorsRaw)
     ? generatedAnchorsRaw
     : (isObject(helperSchemaRaw?.anchor_fields) ? helperSchemaRaw.anchor_fields : null);
   const searchTemplates = Array.isArray(generatedSearchTemplatesRaw)
     ? generatedSearchTemplatesRaw
     : (Array.isArray(helperSchemaRaw?.search_templates) ? helperSchemaRaw.search_templates : null);
-  const specSeeds = Array.isArray(helperSpecSeedsRaw) ? helperSpecSeedsRaw : null;
+  let sqlSpecSeedsRaw = null;
+  if (specDb?.hasSpecSeedTemplates?.(category)) {
+    sqlSpecSeedsRaw = specDb.listSpecSeedTemplates(category);
+  } else if (Array.isArray(helperSpecSeedsRaw)) {
+    sqlSpecSeedsRaw = await readSpecSeeds({ root: helperRoot, category, specDb });
+  }
+  const specSeeds = Array.isArray(sqlSpecSeedsRaw)
+    ? sqlSpecSeedsRaw
+    : (Array.isArray(helperSpecSeedsRaw) ? helperSpecSeedsRaw : null);
 
   const schemaPath = isObject(schemaRaw)
     ? path.join(generatedRoot, 'schema.json')
@@ -545,7 +563,9 @@ export async function loadCategoryConfig(category, options = {}) {
   const runtimeConfig = options.config || {};
   const baseConfig = await loadCategoryBaseConfig(category, runtimeConfig);
 
-  const generated = await loadGeneratedCategoryArtifacts(category, runtimeConfig);
+  const generated = await loadGeneratedCategoryArtifacts(category, runtimeConfig, {
+    specDb: options.specDb || null,
+  });
   if (!generated?.fieldRules) {
     throw new Error(`Missing generated field rules: category_authority/${category}/_generated/field_rules.json`);
   }
@@ -555,7 +575,10 @@ export async function loadCategoryConfig(category, options = {}) {
     ? generated.requiredFields
     : (baseConfig.requiredFields || []);
 
-  let sources = mergeSources(baseConfig.sources || defaultSources(), generated.sources || null);
+  const sourceBase = options.specDb?.hasSourceStrategyDocument?.(category)
+    ? defaultSources()
+    : (baseConfig.sources || defaultSources());
+  let sources = mergeSources(sourceBase, generated.sources || null);
   let sourcesOverrideKey = null;
 
   if (storage) {

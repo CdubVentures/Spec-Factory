@@ -106,14 +106,14 @@
     <div class="card-header"><span class="tag tag-accent">Definition</span> Key Finder Audit</div>
     <div class="card-body">
       <p>The Key Finder Audit is a generated self-contained review package for a product category. It tells a reviewer everything Key Finder will use for every field: current contract shape, enum policy, known values, component relations, cross-field constraints, evidence rules, aliases, search hints, priority routing, group membership, and the actual prompt preview.</p>
-      <p>The generated report is not the final deliverable. The deliverable is a change report that tells the human exactly what to edit in Field Studio, panel by panel, with paste-ready guidance and enum/component updates.</p>
+      <p>The generated per-key reports are not the final deliverable. The human or LLM returns per-key Field Studio change files. The category-level summary is the compact final signoff matrix that overwrites only itself inside <code>.workspace/reports/&lt;category&gt;/</code> and does not delete returned text files.</p>
       <dl class="detail-grid">
         <dt>Generator feature</dt>
         <dd><code>src/features/category-audit/</code></dd>
         <dt>Category outputs</dt>
-        <dd><code>.workspace/reports/&lt;category&gt;-key-finder-audit.{html,md}</code></dd>
+        <dd><code>.workspace/reports/&lt;category&gt;/&lt;category&gt;-key-finder-summary.{html,md}</code></dd>
         <dt>Per-key outputs</dt>
-        <dd><code>.workspace/reports/per-key/&lt;category&gt;/&lt;group&gt;/&lt;field_key&gt;.{html,md}</code></dd>
+        <dd><code>.workspace/reports/per-key/&lt;category&gt;/&lt;group&gt;/&lt;field_key&gt;.{html,md}</code> (generated subtree is wiped and rebuilt)</dd>
         <dt>Human-applied edits</dt>
         <dd>Field Studio: Mapping Studio first, Key Navigator second</dd>
       </dl>
@@ -485,8 +485,8 @@ Reason: common materials can be known, but real products may introduce legitimat
         <li>Confirm it generated both the category-level report and per-key docs.</li>
         <li>Use the Markdown output for LLM review and the HTML output for human browsing.</li>
       </ol>
-      <pre>.workspace/reports/&lt;category&gt;-key-finder-audit.html
-.workspace/reports/&lt;category&gt;-key-finder-audit.md
+      <pre>.workspace/reports/&lt;category&gt;/&lt;category&gt;-key-finder-summary.html
+.workspace/reports/&lt;category&gt;/&lt;category&gt;-key-finder-summary.md
 .workspace/reports/per-key/&lt;category&gt;/&lt;group&gt;/&lt;field_key&gt;.html
 .workspace/reports/per-key/&lt;category&gt;/&lt;group&gt;/&lt;field_key&gt;.md</pre>
     </div>

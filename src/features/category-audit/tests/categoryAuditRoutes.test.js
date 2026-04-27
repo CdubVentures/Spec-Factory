@@ -44,6 +44,7 @@ async function setupFixtureCategory(categoryRoot) {
       sensor: {
         field_key: 'sensor',
         display_name: 'Sensor',
+        product_image_dependent: true,
         priority: { required_level: 'mandatory', availability: 'always', difficulty: 'hard' },
         contract: { type: 'string', shape: 'scalar' },
         enum: { policy: 'open_prefer_known', source: 'data_lists.sensor', values: [] },
@@ -83,11 +84,11 @@ test('POST /category-audit/:category/generate-report writes both files and retur
     assert.equal(captured.status, 200);
     assert.equal(captured.body.category, 'mouse');
     assert.equal(captured.body.consumer, 'key_finder');
-    assert.ok(captured.body.htmlPath.endsWith('mouse-key-finder-audit.html'));
-    assert.ok(captured.body.mdPath.endsWith('mouse-key-finder-audit.md'));
+    assert.ok(captured.body.htmlPath.endsWith(path.join('mouse', 'mouse-key-finder-summary.html')));
+    assert.ok(captured.body.mdPath.endsWith(path.join('mouse', 'mouse-key-finder-summary.md')));
     const html = await fs.readFile(captured.body.htmlPath, 'utf8');
     assert.ok(html.startsWith('<!DOCTYPE html>'));
-    assert.ok(html.includes('Key Finder Audit — mouse'));
+    assert.ok(html.includes('Key Finder Summary'));
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }
@@ -189,20 +190,57 @@ test('POST /category-audit/:category/generate-all-reports writes category and pe
   const reportsRoot = path.join(tmp, 'reports');
   try {
     await setupFixtureCategory(path.join(categoryAuthorityRoot, 'mouse'));
+    const humanChangeFile = path.join(reportsRoot, 'mouse', 'mouse-07-design-field-studio-change.txt');
+    await fs.mkdir(path.dirname(humanChangeFile), { recursive: true });
+    await fs.writeFile(humanChangeFile, 'keep human audit text', 'utf8');
     const { ctx, captured } = mockCtx({ reportsRoot, categoryAuthorityRoot });
     const handler = registerCategoryAuditRoutes(ctx);
     await handler(['category-audit', 'mouse', 'generate-all-reports'], null, 'POST', { body: { consumer: 'key_finder' } }, {});
     assert.equal(captured.status, 200);
     assert.equal(captured.body.category, 'mouse');
-    assert.ok(captured.body.categoryReport.htmlPath.endsWith('mouse-key-finder-audit.html'));
-    assert.ok(captured.body.categoryReport.mdPath.endsWith('mouse-key-finder-audit.md'));
+    assert.ok(captured.body.categoryReport.htmlPath.endsWith(path.join('mouse', 'mouse-key-finder-summary.html')));
+    assert.ok(captured.body.categoryReport.mdPath.endsWith(path.join('mouse', 'mouse-key-finder-summary.md')));
     assert.ok(captured.body.perKeyDocs.basePath.endsWith(path.join('per-key', 'mouse')));
     assert.ok(captured.body.perKeyDocs.counts.written >= 1);
+    assert.ok(captured.body.promptAudit.summary.mdPath.endsWith(path.join('mouse', 'mouse-prompt-audit-summary.md')));
+    assert.ok(captured.body.promptAudit.perPromptReports.basePath.endsWith(path.join('per-prompt', 'mouse')));
+    assert.ok(captured.body.promptAudit.perPromptReports.count >= 8);
 
     const categoryMd = await fs.readFile(captured.body.categoryReport.mdPath, 'utf8');
     const sensorMd = await fs.readFile(path.join(captured.body.perKeyDocs.basePath, 'general', 'sensor.md'), 'utf8');
-    assert.ok(categoryMd.includes('Full field contract authoring order'));
+    const promptAuditMd = await fs.readFile(captured.body.promptAudit.summary.mdPath, 'utf8');
+    assert.ok(categoryMd.includes('Product Image Dependent'));
+    assert.ok(!categoryMd.includes('Full field contract authoring order'), 'category summary does not duplicate per-key scripts');
     assert.ok(sensorMd.includes('Full field contract authoring order'));
+    assert.ok(promptAuditMd.includes('Prompt Surface Matrix'));
+    assert.equal(await fs.readFile(humanChangeFile, 'utf8'), 'keep human audit text');
+  } finally {
+    await fs.rm(tmp, { recursive: true, force: true });
+  }
+});
+
+test('POST /category-audit/:category/generate-prompt-audit writes category and per-prompt prompt reports', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'category-audit-routes-'));
+  const categoryAuthorityRoot = path.join(tmp, 'category_authority');
+  const reportsRoot = path.join(tmp, 'reports');
+  try {
+    await setupFixtureCategory(path.join(categoryAuthorityRoot, 'mouse'));
+    await fs.writeFile(path.join(categoryAuthorityRoot, 'mouse', 'product_images_settings.json'), JSON.stringify({
+      viewBudget: '["top","left"]',
+      priorityViewPrompt_top: 'Route fixture top prompt',
+    }));
+    const { ctx, captured } = mockCtx({ reportsRoot, categoryAuthorityRoot });
+    const handler = registerCategoryAuditRoutes(ctx);
+    await handler(['category-audit', 'mouse', 'generate-prompt-audit'], null, 'POST', { body: {} }, {});
+    assert.equal(captured.status, 200);
+    assert.equal(captured.body.category, 'mouse');
+    assert.ok(captured.body.summary.mdPath.endsWith(path.join('mouse', 'mouse-prompt-audit-summary.md')));
+    assert.ok(captured.body.perPromptReports.basePath.endsWith(path.join('per-prompt', 'mouse')));
+    assert.ok(captured.body.perPromptReports.count >= 8);
+
+    const pifView = await fs.readFile(path.join(captured.body.perPromptReports.basePath, 'pif', 'view-search.md'), 'utf8');
+    assert.ok(pifView.includes('Route fixture top prompt'));
+    assert.ok(pifView.includes('{{PRODUCT_IMAGE_IDENTITY_FACTS}}'));
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }

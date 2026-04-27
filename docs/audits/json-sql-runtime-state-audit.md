@@ -10,7 +10,11 @@ Update note, 2026-04-26: this document was amended after the PIF image/popup per
 
 Re-audit note, 2026-04-26: the current checked-out tree was re-audited before starting implementation work. The re-audit changed this document only; no product source was changed and no test or GUI proof was run for this documentation pass.
 
-Implementation update, 2026-04-27: Review override active runtime paths now write/read SQL first, and consolidated override JSON now has deleted-DB reseed coverage for resolved manual/candidate override rows.
+Implementation update, 2026-04-27: Review override active runtime paths now write/read SQL first, consolidated override JSON now has deleted-DB reseed coverage for resolved manual/candidate override rows, and Overview catalog consistency is covered after a route-level manual override mutation. Global prompts now use appDb settings as the runtime source, with `.workspace/global/global-prompts.json` kept as the rebuild mirror/fallback. Source Strategy and Spec Seeds now use per-category SpecDb projections as the runtime source, with `sources.json` and `spec_seeds.json` retained as rebuild mirrors.
+
+Implementation update, 2026-04-27: The shared frontend mutation wrapper now derives product/field entity scope from mutation results, variables, metadata, and optimistic mutation context, so local on-success invalidation can target product/detail/candidate keys without one-off component code. PIF full reset now also clears SQL summary artifact columns (`images`, `image_count`, `carousel_slots`, `eval_state`, `evaluations`) after deleting JSON/image/progress state, preventing stale runtime SQL from surviving delete-all.
+
+Implementation update, 2026-04-27: Key Finder route reads and prompt-history inputs now prefer `key_finder` / `key_finder_runs` through `specDb.getFinderStore('keyFinder')`. Live runs allocate from SQL history, persist SQL first, then mirror `key_finder.json`. Run delete, delete-all, and key field-delete paths use SQL run rows first and mirror JSON afterward; legacy JSON fallback remains only for unseeded test/boot compatibility.
 
 ## Contract Being Audited
 
@@ -58,25 +62,18 @@ But invalidation cannot fix a missing SQL projection. If the SQL row did not cha
 
 ## Executive Summary
 
-The previous audit was directionally correct, but incomplete. The largest missing item was the broader review override workflow. Its active runtime paths are now SQL-first, and deleted-DB reseed coverage now exists for resolved manual/candidate override rows. Overview consistency proof remains.
+The previous audit was directionally correct, but incomplete. The largest missing item was the broader review override workflow. Its active runtime paths are now SQL-first, deleted-DB reseed coverage exists for resolved manual/candidate override rows, and Overview catalog consistency is covered for route-level manual override mutation.
 
 Definite violations:
 
-1. Global prompts.
-2. Source strategy and spec seeds.
-3. Storage Manager run detail.
-4. Cross-cutting finder run persistence, delete-all, and discovery-history scrub paths.
-5. Key Finder routes and prompt history.
-6. Scalar finder prompt history for RDF/SKU.
-7. CEF prompt/runtime history.
-8. PIF progress, mutations, prompt history, and some evaluation/carousel paths.
-9. PIF binary image asset inventory and derived-image cache lifecycle are still filesystem-first.
-10. PIF lightweight summary is SQL-backed, but still route-local and hand-projected instead of schema/registry-driven.
-11. IndexLab product URL history.
-
-Review override follow-up proof still needed:
-
-1. Overview consistency after review override mutation.
+1. Storage Manager run detail.
+2. Cross-cutting finder run persistence, delete-all, and discovery-history scrub paths.
+3. Scalar finder prompt history for RDF/SKU.
+4. CEF prompt/runtime history.
+5. PIF progress, mutations, prompt history, and some evaluation/carousel paths.
+6. PIF binary image asset inventory and derived-image cache lifecycle are still filesystem-first.
+7. PIF lightweight summary is SQL-backed, but still route-local and hand-projected instead of schema/registry-driven.
+8. IndexLab product URL history.
 
 Design-call items:
 
@@ -98,10 +95,13 @@ Mostly compliant:
 8. Billing.
 9. Deletion store SQL-first cleanup.
 10. Brand registry.
+11. Global prompts.
+12. Source strategy and spec seeds.
+13. Key Finder route reads and live/preview prompt history.
 
 ## Current Re-Audit Snapshot
 
-This pass confirmed that the recommended fix order below is still accurate. The production mitigations already recorded in the addendum are present, and the Review Override sub-slices now have SQL-first write paths plus consolidated JSON reseed coverage.
+This pass confirmed that the recommended fix order below is still accurate for the remaining non-review/global-prompt/source-settings areas. The production mitigations already recorded in the addendum are present, and Review Override, Global Prompts, Source Strategy, and Spec Seeds now have SQL-first runtime paths plus JSON rebuild mirrors.
 
 Implementation note, 2026-04-26: review-route manual overrides now call `publishManualOverride(...)`, which demotes the previous resolved row by scalar/variant scope, inserts a resolved `field_candidates` row with `source_type='manual_override'`, and mirrors the value to `product.json.fields` or `product.json.variant_fields`. Review Grid no longer synthesizes manual override rows from `product.json`; JSON-only overrides are treated as rebuild/audit data until reseeded into SQL.
 
@@ -109,21 +109,27 @@ Implementation note, 2026-04-26: consolidated review override write paths in `sr
 
 Implementation note, 2026-04-27: `rebuildReviewOverridesFromJson(...)` now reseeds resolved `manual_override` and `candidate_override` rows from consolidated override JSON into `field_candidates`. The reseed surface is registered as `review_overrides` in `seedRegistry`, wired into `specDbRuntime`, and covered by idempotence and registry tests.
 
+Implementation note, 2026-04-27: `src/app/api/catalogHelpers.js` now normalizes resolved candidate confidence with the publisher's 0-1/0-100 helper, so manual override rows stored as `confidence: 1.0` render as full-confidence Overview rows instead of `1%`. `src/app/api/tests/reviewOverrideOverviewConsistency.test.js` protects the route-level mutation -> SQL -> catalog row contract.
+
+Implementation note, 2026-04-27: `src/core/llm/prompts/globalPromptStore.js` now reads appDb settings section `global-prompts` before JSON, reseeds SQL from `.workspace/global/global-prompts.json` only when SQL is empty, and writes SQL before mirroring JSON. `src/features/settings-authority/globalPromptsHandler.js` and `registerConfigRoutes(...)` thread appDb into GET/PUT `/llm-policy/global-prompts`, and `createBootstrapSessionLayer(...)` reloads the prompt snapshot after appDb opens.
+
+Implementation note, 2026-04-27: Source Strategy and Spec Seeds now project into per-category SpecDb tables (`source_strategy_meta`, `source_strategy_entries`, `spec_seed_sets`, `spec_seed_templates`). GET/POST/PUT/DELETE source strategy routes and GET/PUT spec seed routes read/write SQL first and mirror JSON afterward. `loadCategoryConfig(...)` and `loadEnabledSourceEntries(...)` read SQL when a SpecDb is supplied. `seedRegistry` and `specDbRuntime` include deleted-DB reseed surfaces for `sources.json` and `spec_seeds.json`.
+
 ### Still Open
 
 | Area | Current status | Current proof in the checked-out tree | Implementation contract still needed |
 | --- | --- | --- | --- |
-| Review manual overrides | Mostly closed | `src/features/review/api/itemMutationRoutes.js` routes manual overrides through `publishManualOverride`; `src/features/publisher/publish/publishManualOverride.js` writes SQL first and mirrors JSON; `src/features/review/domain/reviewGridData.js` no longer merges JSON-only manual overrides; publisher locks now read resolved SQL manual override rows; `rebuildReviewOverridesFromJson(...)` reseeds consolidated manual override mirrors into SQL. | Add an Overview consistency test around the route-level mutation. |
-| Consolidated review overrides | Active runtime paths SQL-first; deleted-DB reseed covered | `src/features/review/domain/overrideWorkflow.js` writes `setManualOverride(...)`, `setOverrideFromCandidate(...)`, and `approveGreenOverrides(...)` to resolved `field_candidates` rows before mirroring consolidated JSON. `finalizeOverrides(...)`, `buildReviewMetrics(...)`, and `listOverrideDocs(...)` read resolved SQL override rows even when consolidated JSON is missing or stale. `src/features/review/domain/reviewOverrideReseed.js` and `seedRegistry` rebuild those SQL rows from consolidated JSON. | Add Overview consistency proof. |
+| Review manual overrides | Closed for active runtime, rebuild, and Overview paths | `src/features/review/api/itemMutationRoutes.js` routes manual overrides through `publishManualOverride`; `src/features/publisher/publish/publishManualOverride.js` writes SQL first and mirrors JSON; `src/features/review/domain/reviewGridData.js` no longer merges JSON-only manual overrides; publisher locks now read resolved SQL manual override rows; `rebuildReviewOverridesFromJson(...)` reseeds consolidated manual override mirrors into SQL; `reviewOverrideOverviewConsistency.test.js` proves the Overview catalog row reflects the route-level mutation. | Keep regression coverage current. |
+| Consolidated review overrides | Active runtime paths SQL-first; deleted-DB reseed covered | `src/features/review/domain/overrideWorkflow.js` writes `setManualOverride(...)`, `setOverrideFromCandidate(...)`, and `approveGreenOverrides(...)` to resolved `field_candidates` rows before mirroring consolidated JSON. `finalizeOverrides(...)`, `buildReviewMetrics(...)`, and `listOverrideDocs(...)` read resolved SQL override rows even when consolidated JSON is missing or stale. `src/features/review/domain/reviewOverrideReseed.js` and `seedRegistry` rebuild those SQL rows from consolidated JSON. | Keep JSON as rebuild/export/import artifact only. |
 | Publisher manual-override locks | Closed for active publisher paths | `src/features/publisher/publish/publishCandidate.js`, `reconcileThreshold.js`, and `republishField.js` read resolved SQL manual override rows by scalar/variant scope; JSON-only manual override entries are no longer live locks. | Keep `product.json` reseed coverage so deleted-DB rebuild recreates SQL locks. |
-| Global prompts | Open | `src/core/llm/prompts/globalPromptStore.js` still stores `.workspace/global/global-prompts.json`; `src/features/settings-authority/globalPromptsHandler.js` reads/writes that store directly. | Add appDb runtime source plus JSON mirror/reseed, then route GET/PUT through SQL-first persistence. |
-| Source strategy and spec seeds | Open | `src/features/indexing/sources/sourceFileService.js` says routes and orchestration consume `sources.json` instead of SQLite; `src/db/specDbSchema.js` says `source_strategy` table was removed; `specSeedsRoutes.js` writes `spec_seeds.json`. | Add SQL projections and SQL-first routes/readers, with JSON as rebuild mirror. |
+| Global prompts | Closed for active runtime and deleted-DB rebuild | `globalPromptStore.js` reads appDb settings section `global-prompts` before JSON, rebuilds SQL from `global-prompts.json` only when SQL is empty, and writes SQL before mirroring JSON. `globalPromptsHandler.test.js`, `globalPromptStore.test.js`, and `configRoutesGlobalPrompts.test.js` protect store, route, and production wiring contracts. | Keep JSON as rebuild/fallback mirror only. |
+| Source strategy and spec seeds | Closed for active API/runtime readers and deleted-DB rebuild | SpecDb owns `source_strategy_meta`, `source_strategy_entries`, `spec_seed_sets`, and `spec_seed_templates`. Source Strategy/Spec Seeds routes use SQL first and mirror JSON. `loadCategoryConfig(...)` and `loadEnabledSourceEntries(...)` prefer SQL when SpecDb is supplied. `seedRegistry`/`specDbRuntime` register JSON reseed surfaces. | Keep frontend query shape stable and keep JSON as rebuild mirror only. |
 | Storage Manager run detail | Open | `src/features/indexing/api/storageManagerRoutes.js` still enriches `GET /storage/runs/:runId` from `run.json` for sources and identity. | Replace mutable detail enrichment with SQL joins / `run_artifacts` rows, leaving historical file fallback as explicit artifact policy only. |
 | Cross-cutting finder persistence | Open | `src/core/finder/finderJsonStore.js` still owns read/write/merge/delete of finder JSON files; `finderRoutes.js` delete-all calls JSON cleanup before SQL run cleanup; `discoveryHistoryScrub.js` and `variantCleanup.js` write JSON before updating SQL run blobs. | Introduce SQL-first finder history services and make JSON helpers mirror/rebuild-only. |
-| Key Finder | Open | `src/features/key/api/keyFinderRoutes.js` still uses key store JSON cleanup first for key/run/delete-all routes and then deletes/upserts SQL rows. | Move Key Finder list/detail/history/mutations to SQL-first contracts; mirror `key_finder.json` afterward. |
+| Key Finder | Closed for route reads, live/preview prompt history, run write order, run delete, delete-all, and key field-delete | `keyFinderRoutes.js` list/summary/detail/delete paths read SQL finder rows when available; `keyFinder.js` and `keyFinderPreviewPrompt.js` read previous history from SQL; `persistKeyFinderRunSqlFirst(...)` writes SQL before mirroring `key_finder.json`; `scrubFieldFromKeyFinderSqlFirst(...)` updates SQL run blobs/deletes before mirroring JSON. | Discovery-history scrub still uses the shared JSON-first scrubber and remains part of the cross-cutting finder persistence item. |
 | RDF/SKU scalar finder history | Open | `src/core/finder/variantScalarFieldProducer.js` still calls `mergeDiscovery(...)` before `store.insertRun(...)` and reads prior runs via the JSON `readRuns` callback. | Allocate/read run history from SQL first; write JSON mirror after SQL success. |
 | CEF prompt/runtime history | Open | CEF still participates in the shared finder JSON/run cleanup paths, and variant cleanup still treats JSON as the first mutation target. | Move CEF run history and prompt-history inputs to SQL-first services. |
-| PIF runtime state and progress | Open, partially mitigated | `src/features/product-image/productImageStore.js` still declares durable SSOT as `product_images.json`; `productImageFinderRoutes.js` says progress source of truth is `product_images.json` and has several JSON-first dual writes; `imageEvaluator.js` and `carouselBuild.js` append eval/carousel state to JSON before SQL projection. | Make PIF run/eval/carousel/image mutations SQL-first, materialize progress from SQL, mirror JSON after success, and keep rebuild from JSON. |
+| PIF runtime state and progress | Open, partially mitigated | PIF bulk/single image delete recomputes `pif_variant_progress`, and full reset now clears SQL summary artifact columns as well as JSON/image/progress state. Remaining paths still treat `product_images.json` as the immediate source: `productImageStore.js` declares durable SSOT as `product_images.json`; `productImageFinderRoutes.js` says progress source of truth is `product_images.json`; `imageEvaluator.js` and `carouselBuild.js` append eval/carousel state to JSON before SQL projection. | Make PIF run/eval/carousel/image mutations SQL-first, materialize progress from SQL, mirror JSON after success, and keep rebuild from JSON. |
 | PIF asset/cache contract | Open, partially mitigated | Image files and derived caches still live on disk; route-local deletion code prunes some files and cache variants, but there is no single SQL metadata owner for binary assets. | Declare one asset metadata owner, make cache files derived/discardable, and prune derived cache on every image mutation path. |
 | PIF lightweight summary | Partial mitigation, still open as architecture debt | `GET /product-image-finder/:category/:productId/summary` reads SQL summary/runs, but `buildPifSummaryResponse(...)` is still route-local and hand-projected. | Move the summary contract to a schema/registry-backed projection shared with frontend types. |
 | IndexLab product URL history | Open | `indexlabUrlHistoryReader.js` reads `{productRoot}/{productId}/product.json::sources[]`; `runDiscoverySeedPlan.js` injects that into planning while SQL alternatives exist. | Replace with `url_crawl_ledger` or `crawl_sources` reader based on intended semantics. |
@@ -138,18 +144,18 @@ Implementation note, 2026-04-27: `rebuildReviewOverridesFromJson(...)` now resee
 | Brand rename cache cascade | Present when impact data is loaded | If the impact query is disabled/stale/failed/not loaded, rename relies on invalidation/refetch. |
 | Product-scoped catalog row refresh | Present | Only patches Overview/Indexing catalog rows for product-scoped data-change messages; SQL must already be correct. |
 | Direct Component Review item actions | Present | Patches `['componentReview', category]` for direct approve/merge/dismiss actions only; batch and whole-row flows still need exact changed-entity contracts. |
-| PIF bulk image delete frontend patch | Present | Backend path still reads/writes `product_images.json` first, then projects SQL. |
+| PIF bulk image delete/frontend reset patch | Present | Bulk/single image delete and full reset now update the relevant runtime SQL projections, but backend paths still read/write `product_images.json` first before projecting SQL. |
 | PIF thumbnail/preview URL variants | Present | Asset metadata/caches remain filesystem-first. |
 | Runtime settings active-tab propagation | Present | External-tab conflict/status UI and module setting consumer propagation remain incomplete. |
 
 ### Start Here
 
-Continue Phase 1 with the remaining Review Override Family:
+Continue Phase 4 with Finder History and Route Reads:
 
-- It has the clearest user-visible split-brain path.
-- Consolidated review override writes/finalize/metrics/listing are SQL-projected.
-- Publisher lock checks now read SQL manual overrides; deleted-DB reseed coverage now protects the consolidated mirror path.
-- The manual route/grid/publisher-lock slices now establish the SQL-first pattern needed by later finder/PIF migrations.
+- Review Override Family is covered for current active runtime, rebuild, and Overview catalog contracts.
+- Global prompts are now appDb-backed at runtime with JSON mirror/reseed coverage.
+- Source Strategy and Spec Seeds are now SpecDb-backed at runtime with JSON mirror/reseed coverage.
+- Shared finder history, scalar finder prompt history, CEF history, and PIF runtime state are the next JSON-heavy runtime surfaces.
 
 ## Frontend Impact Matrix
 
@@ -158,12 +164,12 @@ Continue Phase 1 with the remaining Review Override Family:
 | Overview catalog | `['catalog', category]` | SQL via `buildCatalogFromSql` | Yes | Reads products, candidates, variants, PIF progress, finder summaries. |
 | Review product grid | `['product', category, productId]`, `['reviewProductsIndex', category]` | SQL for manual override state plus mixed review artifacts | Partially | Manual overrides now appear only when projected into SQL; JSON-only manual overrides no longer mask stale SQL. |
 | Review catalog picker | `['catalog-review', category]` | SQL product list | Yes | Manual product.json edits do not update picker identity. |
-| Finder panels | `['key-finder', category]`, `['release-date-finder', category]`, `['sku-finder', category]`, `['color-edition-finder', category]`, `['product-image-finder', category]` | Mixed | Yes | Generic scalar routes are more SQL-based; Key Finder is still JSON-heavy. |
+| Finder panels | `['key-finder', category]`, `['release-date-finder', category]`, `['sku-finder', category]`, `['color-edition-finder', category]`, `['product-image-finder', category]` | Mixed | Yes | Key Finder route reads now prefer SQL; shared scalar/CEF/PIF write/history paths remain mixed. |
 | PIF Overview rings | `['catalog', category]` | `pif_variant_progress` SQL | Yes | If JSON images change but progress projection is stale, rings stay stale. |
 | PIF Overview popover | `['product-image-finder', category, productId, 'summary']` | SQL summary/runs plus filesystem image URLs | Partially | New lightweight summary avoids full PIF payload, but still ships product-wide run/image data for one variant popover. |
 | Storage Manager | `['storage']`, `['storage', 'runs', category]`, run detail queries | Mixed SQL + `run.json` | Yes | Run list is SQL-first; run detail still reads `run.json`. |
-| Pipeline source settings | `['source-strategy', category]`, `['spec-seeds', category]` | JSON routes | N/A currently | No SQL projection exists for the GUI setting. |
-| Global prompt editor | `['llm-policy', 'global-prompts']` | JSON-backed snapshot | N/A currently | Needs appDb-backed runtime source. |
+| Pipeline source settings | `['source-strategy', category]`, `['spec-seeds', category]` | SpecDb source/spec-seed tables with JSON mirror | No | SQL wins when SpecDb exists; JSON is fallback/reseed only. |
+| Global prompt editor | `['llm-policy', 'global-prompts']` | appDb settings section `global-prompts` with JSON mirror | No | SQL wins when appDb exists; JSON is fallback/reseed only. |
 
 ## Post-Implementation Addendum: Frontend Runtime Propagation
 
@@ -443,14 +449,11 @@ Tests now protecting the SQL-first contract:
 - `src/features/review/api/tests/itemMutationRoutes.variantId.test.js`
 - `src/features/publisher/publish/tests/publishManualOverride.test.js`
 - `src/features/review/domain/tests/reviewGridData.resolvedSelection.characterization.test.js`
-
-Remaining follow-up:
-
-- Add an Overview consistency test around the route-level mutation.
+- `src/app/api/tests/reviewOverrideOverviewConsistency.test.js`
 
 ### 2. Consolidated Review Overrides
 
-Status: active runtime paths SQL-first; deleted-DB rebuild covered; Overview proof still needed.
+Status: active runtime paths SQL-first; deleted-DB rebuild covered.
 
 Files:
 
@@ -476,6 +479,7 @@ Impact:
 - Finalize now ignores missing/stale consolidated JSON for pending/applied override values.
 - Metrics/listing now ignore missing/stale consolidated JSON when SQL rows are present.
 - Deleted-DB rebuild now reseeds resolved override rows and review metadata from the consolidated mirror.
+- Overview catalog confidence now normalizes both 0-1 manual override rows and 0-100 finder rows correctly.
 
 Tests now protecting the SQL-first write contract:
 
@@ -487,6 +491,7 @@ Tests now protecting the SQL-first write contract:
 - `src/features/review/domain/tests/reviewOverrideMetricsContracts.test.js`
 - `src/features/review/domain/tests/reviewOverrideReseedContracts.test.js`
 - `src/db/tests/seedRegistry.test.js`
+- `src/app/api/tests/reviewOverrideOverviewConsistency.test.js`
 
 Tests still covering consolidated JSON mirror behavior:
 
@@ -495,43 +500,41 @@ Tests still covering consolidated JSON mirror behavior:
 
 Required fix:
 
-- Add Overview consistency proof after a review override mutation.
 - Keep JSON as rebuild/export/import artifact only.
 
 ### 3. Global Prompts
 
-Status: definite violation.
+Status: closed for active runtime and deleted-DB rebuild.
 
 Files:
 
 - `src/core/llm/prompts/globalPromptStore.js`
 - `src/features/settings-authority/globalPromptsHandler.js`
 - `src/app/api/bootstrap/createBootstrapEnvironment.js`
+- `src/app/api/bootstrap/createBootstrapSessionLayer.js`
 - Frontend: `tools/gui-react/src/features/llm-config/state/useGlobalPromptsAuthority.ts`
 - Frontend API: `tools/gui-react/src/features/llm-config/api/globalPromptsApi.ts`
 
-Current behavior:
+Current behavior after fix:
 
-- Overrides persist to `.workspace/global/global-prompts.json`.
-- Bootstrap calls `loadGlobalPromptsSync()`.
-- GET `/llm-policy/global-prompts` serves the JSON-backed in-memory snapshot.
-- PUT `/llm-policy/global-prompts` writes JSON and updates the snapshot.
+- Overrides persist to appDb settings section `global-prompts` when appDb exists.
+- `.workspace/global/global-prompts.json` remains the durable mirror and first-boot fallback.
+- Bootstrap initially allows JSON before appDb exists, then `createBootstrapSessionLayer(...)` reloads prompt overrides from appDb and reseeds SQL from JSON only when SQL is empty.
+- GET `/llm-policy/global-prompts` serves the appDb-backed in-memory snapshot when appDb is threaded through the route.
+- PUT `/llm-policy/global-prompts` writes SQL first, mirrors JSON, and updates the snapshot.
 
-Impact:
+Impact closed:
 
-- Global prompt settings are mutable runtime state but bypass `app.sqlite`.
-- Runtime prompt builders read process memory populated from JSON instead of appDb.
-- If JSON updates but appDb is expected elsewhere, the app has no central SQL source.
+- Runtime prompt builders read process memory loaded from appDb when appDb exists.
+- JSON-only edits no longer win over SQL except during deleted-DB rebuild or first boot before appDb opens.
 
-Required fix:
+Proof:
 
-- Add appDb-backed prompt override storage, likely in a registry-driven table or `settings` section.
-- Bootstrap appDb first, then load prompt overrides from appDb.
-- Mirror `.workspace/global/global-prompts.json` for rebuild only.
-- Reseed appDb from JSON when app.sqlite is deleted.
-- Keep the frontend API shape stable.
+- `src/core/llm/prompts/tests/globalPromptStore.test.js`
+- `src/features/settings-authority/tests/globalPromptsHandler.test.js`
+- `src/features/settings/api/tests/configRoutesGlobalPrompts.test.js`
 
-Related prompt-contract risk:
+Remaining related prompt-contract risk:
 
 - PIF `viewPromptOverride` is a full-template override, not an image requirements fragment.
 - If the GUI stores only an `Image requirements:` fragment, missing-template-variable errors occur.
@@ -539,7 +542,7 @@ Related prompt-contract risk:
 
 ### 4. Source Strategy and Spec Seeds
 
-Status: definite violation.
+Status: closed for active API/runtime readers and deleted-DB rebuild.
 
 Files:
 
@@ -554,24 +557,25 @@ Files:
 
 Current behavior:
 
-- `sources.json` is explicitly described as the route/orchestration source.
-- `spec_seeds.json` is read/written directly by API routes.
-- `src/db/specDbSchema.js` says the `source_strategy` table was removed and `sources.json` is SSOT.
+- SpecDb tables `source_strategy_meta` and `source_strategy_entries` are the runtime source for source strategy when SpecDb exists.
+- SpecDb tables `spec_seed_sets` and `spec_seed_templates` are the runtime source for spec seeds when SpecDb exists.
+- Source Strategy and Spec Seeds routes write SQL first, then mirror `sources.json` / `spec_seeds.json`.
+- `loadCategoryConfig(...)` and `loadEnabledSourceEntries(...)` prefer SQL when a SpecDb is supplied.
+- Deleted-DB rebuild surfaces reseed SQL from `sources.json` and `spec_seeds.json`.
 
-Impact:
+Impact closed:
 
-- GUI settings mutate JSON directly.
-- Runtime orchestration reads source strategy from JSON.
-- There is no SQLite runtime projection for this setting.
-- Data-change invalidates frontend query keys, but those queries re-read JSON.
+- GUI query keys and response shapes stay stable while the backend source is SQL.
+- Runtime readers can use SQL-backed source strategy/spec seeds through the injected SpecDb.
+- JSON-only edits no longer win over SQL except for deleted-DB rebuild/fallback.
 
-Required fix:
+Proof:
 
-- Reintroduce a SQL projection for source strategy and spec seeds.
-- Routes read/write SQL first.
-- JSON mirrors after SQL succeeds.
-- Runtime orchestration reads SQL.
-- Deleted-DB rebuild reseeds SQL from `sources.json` and `spec_seeds.json`.
+- `src/features/indexing/api/tests/sourceStrategySqlContract.test.js`
+- `src/features/indexing/api/tests/specSeedsSqlContract.test.js`
+- `src/categories/tests/sourceRegistryLoader.test.js`
+- `src/features/indexing/orchestration/shared/tests/runProductOrchestrationSeamWiring.test.js`
+- `src/db/tests/seedRegistry.test.js`
 
 ### 5. Storage Manager Run Detail
 
@@ -604,7 +608,7 @@ Required fix:
 
 ### 6. Key Finder
 
-Status: definite violation.
+Status: closed for route reads, live/preview prompt history, SQL-first live run writes, run delete, delete-all, and key field-delete. Discovery-history scrub is still covered by the cross-cutting finder scrub finding.
 
 Files:
 
@@ -613,14 +617,14 @@ Files:
 - `src/features/key/keyFinderPreviewPrompt.js`
 - `src/features/key/keyStore.js`
 
-Current behavior:
+Current behavior after fix:
 
-- List route scans product directories and reads `key_finder.json`.
-- Summary route reads `key_finder.json`.
-- Detail route reads `key_finder.json`.
-- Discovery-history scrub reads and mutates JSON.
-- Live runner reads previous runs from JSON for prompt history.
-- Preview compiler reads previous runs from JSON.
+- List/summary/detail routes read `key_finder` / `key_finder_runs` when the SQL finder store is available.
+- Live runner and preview compiler read previous prompt/discovery history from SQL runs.
+- Live runner allocates the next run number from SQL history, writes the SQL run/summary first, then mirrors `key_finder.json`.
+- Run delete, delete-all, and key field-delete derive affected keys/runs from SQL rows and mirror JSON afterward.
+- Legacy JSON fallback remains for unseeded compatibility and deleted-DB rebuild workflows.
+- Discovery-history scrub still uses the shared finder scrubber and remains open under the cross-cutting finder persistence item.
 
 SQL exists:
 
@@ -631,20 +635,20 @@ SQL exists:
 
 Impact:
 
-- Key Finder panel can reflect JSON state that Overview does not.
-- Overview key rings read SQL candidates and compiled rules, not the JSON doc.
-- Prompt history and discovery-history scrub can diverge from SQL runs.
+- Key Finder panel, prompt preview, and live prompt history now converge on the same SQL run projection as Overview/finder SQL consumers.
+- `key_finder.json` remains a rebuild/audit mirror.
+- Discovery-history scrub can still diverge until the shared scrub service is made SQL-first.
 
-Tests currently protecting the wrong contract:
+Tests now protecting the SQL-first contract:
 
 - `src/features/key/tests/keyFinderRoutes.summary.test.js`
+- `src/features/key/tests/keyFinderRoutes.historyScope.test.js`
+- `src/features/key/tests/keyFinder.test.js`
+- `src/features/key/tests/keyFinderRoutes.unresolveDelete.test.js`
 
-Required fix:
+Remaining fix:
 
-- List/summary/detail routes read SQL summary and runs.
-- Prompt preview and live runner previous history read SQL runs.
-- Discovery-history scrub updates SQL runs first, then mirrors JSON.
-- JSON store remains rebuild layer.
+- Move `scrubFinderDiscoveryHistory(...)` itself to SQL-first for all finder modules, then mirror JSON.
 
 ### 7. Release Date Finder and SKU Finder
 
@@ -837,7 +841,7 @@ Tooling evidence:
 
 - Temporary audit tooling was installed under `.tmp/audit-tools` only.
 - Extraction output is under `.tmp/live-propagation-audit/out/`.
-- The extractor scanned 2,685 source files and found 902 query signal lines, 294 mutation signal lines, 776 data-change signal lines, 930 SQL signal lines, 3,345 JSON signal lines, and 7,318 image/PIF signal lines.
+- Latest extractor rerun scanned 2,713 source files and 1,513 production runtime files. The runtime graph still reports 43 propagation-gap candidates after the targeted fixes, meaning the remaining items are mostly broader JSON-first/runtime-cache architecture gaps rather than the specific PIF delete/full-reset and local mutation-scope bugs fixed in this pass.
 - `dependency-cruiser` and `madge` outputs were generated in `.tmp/live-propagation-audit/out/dependency-cruiser.json` and `.tmp/live-propagation-audit/out/madge-dependencies.json`.
 
 Observed path:
@@ -877,9 +881,10 @@ Required fix:
 - Add a single backend bulk image deletion contract for PIF, e.g. delete by filename list and delete all images for one product. First fix complete for filename-list bulk delete.
 - Make that backend contract update `product_images.json`, `product_image_finder`, `product_image_finder_runs`, and `pif_variant_progress` once in a deterministic order, then emit one product-scoped data-change event. First fix complete for PIF panel bulk deletes.
 - Recompute `pif_variant_progress` immediately from the post-delete state instead of deleting rows and waiting for a later run. First fix complete for bulk and single-image PIF deletes.
+- Clear PIF SQL summary artifact columns on full reset/delete-all so SQL runtime reads cannot retain stale `images`, `image_count`, `carousel_slots`, `eval_state`, or `evaluations`. Fix complete for `fullResetProductImages(...)`.
 - Replace the frontend `images-all`/`images-variant` fan-out with the bulk mutation. First fix complete.
 - Optimistically patch all mounted product image consumers: PIF detail, PIF summary, and the Overview catalog row. First fix complete for PIF detail, product-scoped PIF summary, and all/variant Overview PIF rings.
-- Let `useDataChangeMutation` derive local invalidation scope from mutation variables or server response payloads, and return Storage Manager category/product scope in storage mutation responses. Second fix complete for Storage Manager delete/prune/purge local invalidation.
+- Let `useDataChangeMutation` derive local invalidation scope from mutation variables, server response payloads, metadata, and optimistic mutation context. Fix complete in the shared hook; Review candidate deletion now has exact candidate/product invalidation from mutation context, and Storage Manager scoped responses remain covered.
 - Add regression contracts that mutate once and assert the PIF panel, Overview catalog row, and product-scoped PIF summary agree after the mutation/refetch.
 - Add a generated or declarative mutation dependency map for app-level propagation: mutation -> SQL/JSON writes -> data-change event -> query keys -> frontend surfaces.
 
@@ -992,7 +997,7 @@ Current behavior:
 
 - Finder GET routes can be SQL-backed, but the shared persistence helper writes `{finder}.json` before SQL run/summary rows in several live-run paths.
 - Scalar finder runs call `mergeDiscovery(...)` first, then `finderStore.insertRun(...)` / `finderStore.upsert(...)`.
-- Key Finder persists `key_finder.json` before inserting/upserting SQL.
+- Key Finder no longer uses this JSON-first live-run path, but shared scalar/CEF/PIF paths still do.
 - PIF uses the same JSON store pattern for `product_images.json`.
 - Discovery-history scrub reads and mutates finder JSON, then updates SQL run JSON blobs.
 - Variant cleanup reads and writes finder JSON, then updates SQL summary/run rows.
@@ -1187,6 +1192,20 @@ Status:
 - appDb is primary at runtime.
 - `user-settings.json` is mirror/fallback/reseed.
 
+### Global Prompts
+
+Files:
+
+- `src/core/llm/prompts/globalPromptStore.js`
+- `src/features/settings-authority/globalPromptsHandler.js`
+- `src/features/settings/api/configRoutes.js`
+
+Status:
+
+- appDb settings section `global-prompts` is primary at runtime.
+- `.workspace/global/global-prompts.json` is mirror/fallback/reseed.
+- GET/PUT `/llm-policy/global-prompts` use appDb when available.
+
 ### Brand Registry
 
 Files:
@@ -1293,13 +1312,26 @@ Tests that must change during the fixes:
   - `src/features/review/domain/tests/reviewOverrideMetricsContracts.test.js`
 - Consolidated override mirror tests still JSON-based by design:
   - `src/shared/tests/consolidatedOverrides.test.js`
-- Key Finder JSON-route tests:
-  - `src/features/key/tests/keyFinderRoutes.summary.test.js`
-- Source strategy/spec seed file-route tests:
+- Global prompt SQL-first tests now updated:
+  - `src/core/llm/prompts/tests/globalPromptStore.test.js`
+  - `src/features/settings-authority/tests/globalPromptsHandler.test.js`
+  - `src/features/settings/api/tests/configRoutesGlobalPrompts.test.js`
+- Source strategy/spec seed SQL-first tests now updated:
+  - `src/features/indexing/api/tests/sourceStrategySqlContract.test.js`
+  - `src/features/indexing/api/tests/specSeedsSqlContract.test.js`
+  - `src/categories/tests/sourceRegistryLoader.test.js`
+  - `src/features/indexing/orchestration/shared/tests/runProductOrchestrationSeamWiring.test.js`
+  - `src/db/tests/seedRegistry.test.js`
+- Source strategy/spec seed file-mirror tests still cover fallback behavior:
   - `src/features/indexing/api/tests/sourceStrategyRoutesDataChangeContract.test.js`
   - `src/features/indexing/api/tests/sourceStrategyCategoryScope.test.js`
   - `src/features/indexing/sources/tests/sourceFileService.test.js`
   - `src/features/indexing/sources/tests/specSeedsFileService.test.js`
+- Key Finder SQL-first route/history tests:
+  - `src/features/key/tests/keyFinderRoutes.summary.test.js`
+  - `src/features/key/tests/keyFinderRoutes.historyScope.test.js`
+  - `src/features/key/tests/keyFinder.test.js`
+  - `src/features/key/tests/keyFinderRoutes.unresolveDelete.test.js`
 - PIF JSON-first/progress tests:
   - `src/features/product-image/tests/productImageFinderRoutes.dataChange.test.js`
   - `src/features/product-image/tests/productImageFinderRoutes.summary.test.js`
@@ -1315,7 +1347,7 @@ Tests that must change during the fixes:
   - Preview carousel surfaces use `variant=preview` plus cache-bust.
   - Full inspection/lightbox surfaces keep full-quality image URLs.
   - Every image mutation path prunes derived cache files for affected source images.
-- Prompt-history tests for CEF/RDF/SKU/PIF/Key Finder that currently seed JSON to influence preview/live prompt output.
+- Prompt-history tests for CEF/RDF/SKU/PIF that currently seed JSON to influence preview/live prompt output.
 - Generic finder route/discovery-history tests:
   - `src/core/finder/tests/finderRoutes.test.js`
   - `src/core/finder/tests/discoveryHistoryScrub.test.js`
@@ -1333,9 +1365,7 @@ Test strategy:
 
 ### Phase 1: Review Override Family
 
-Fix together:
-
-- Overview consistency tests.
+Status: complete for current active runtime, rebuild, and Overview contracts.
 
 Contract after fix:
 
@@ -1348,17 +1378,19 @@ Contract after fix:
 Why first:
 
 - Highest user-visible split-brain risk.
-- Current tests explicitly protect the wrong behavior.
+- Earlier tests protected the wrong behavior; current tests now protect SQL-first behavior.
 
 ### Phase 2: Global Prompts
 
-Fix:
+Status: complete for active runtime and deleted-DB rebuild.
 
-- appDb-backed prompt override table/section.
-- Bootstrap load order.
-- GET/PUT `/llm-policy/global-prompts`.
-- JSON mirror/reseed.
-- PIF prompt override UX/schema issue if touching prompt settings.
+Contract after fix:
+
+- appDb settings section `global-prompts` is the runtime source.
+- Bootstrap reloads prompt overrides after appDb opens.
+- GET/PUT `/llm-policy/global-prompts` use appDb when available.
+- JSON mirror/reseed is retained for deleted-DB recovery and first-boot fallback.
+- PIF prompt override UX/schema issue was not touched in this slice.
 
 Why second:
 
@@ -1367,13 +1399,15 @@ Why second:
 
 ### Phase 3: Source Strategy and Spec Seeds
 
-Fix:
+Status: complete for active API/runtime readers and deleted-DB rebuild.
 
-- SQL tables/projection.
-- API routes.
-- Runtime orchestration readers.
-- JSON mirror/reseed.
-- Frontend remains on same query keys.
+Contract after fix:
+
+- SpecDb tables hold source strategy and spec seed runtime projections.
+- API routes use SQL first and mirror JSON after SQL succeeds.
+- `loadCategoryConfig(...)` and `loadEnabledSourceEntries(...)` read SQL when SpecDb is supplied.
+- `seedRegistry` / `specDbRuntime` rebuild SQL from `sources.json` and `spec_seeds.json`.
+- Frontend remains on the same query keys.
 
 Why third:
 
@@ -1383,7 +1417,7 @@ Why third:
 
 Fix in this order:
 
-1. Key Finder list/summary/detail/preview/live history.
+1. Key Finder list/summary/detail/preview/live history. Status: complete except shared discovery-history scrub.
 2. Generic finder run persistence/write order.
 3. Generic discovery-history scrub and variant cleanup.
 4. RDF/SKU preview and live previous-history readers.

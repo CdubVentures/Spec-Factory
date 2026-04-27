@@ -134,6 +134,75 @@ export function prepareStatements(db) {
       LIMIT 1
     `),
 
+    _upsertSourceStrategyMeta: db.prepare(`
+      INSERT INTO source_strategy_meta (category, version, approved_json, denylist_json, updated_at)
+      VALUES (@category, @version, @approved_json, @denylist_json, datetime('now'))
+      ON CONFLICT(category) DO UPDATE SET
+        version = excluded.version,
+        approved_json = excluded.approved_json,
+        denylist_json = excluded.denylist_json,
+        updated_at = datetime('now')
+    `),
+
+    _getSourceStrategyMeta: db.prepare(`
+      SELECT category, version, approved_json, denylist_json
+      FROM source_strategy_meta
+      WHERE category = ?
+      LIMIT 1
+    `),
+
+    _deleteSourceStrategyEntries: db.prepare(`
+      DELETE FROM source_strategy_entries WHERE category = ?
+    `),
+
+    _upsertSourceStrategyEntry: db.prepare(`
+      INSERT INTO source_strategy_entries (category, source_id, entry_json, updated_at)
+      VALUES (@category, @source_id, @entry_json, datetime('now'))
+      ON CONFLICT(category, source_id) DO UPDATE SET
+        entry_json = excluded.entry_json,
+        updated_at = datetime('now')
+    `),
+
+    _listSourceStrategyEntries: db.prepare(`
+      SELECT source_id, entry_json
+      FROM source_strategy_entries
+      WHERE category = ?
+      ORDER BY source_id
+    `),
+
+    _countSourceStrategyEntries: db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM source_strategy_entries
+      WHERE category = ?
+    `),
+
+    _upsertSpecSeedSet: db.prepare(`
+      INSERT INTO spec_seed_sets (category, updated_at)
+      VALUES (?, datetime('now'))
+      ON CONFLICT(category) DO UPDATE SET
+        updated_at = datetime('now')
+    `),
+
+    _getSpecSeedSet: db.prepare(`
+      SELECT category FROM spec_seed_sets WHERE category = ? LIMIT 1
+    `),
+
+    _deleteSpecSeedTemplates: db.prepare(`
+      DELETE FROM spec_seed_templates WHERE category = ?
+    `),
+
+    _insertSpecSeedTemplate: db.prepare(`
+      INSERT INTO spec_seed_templates (category, position, template, updated_at)
+      VALUES (@category, @position, @template, datetime('now'))
+    `),
+
+    _listSpecSeedTemplates: db.prepare(`
+      SELECT template
+      FROM spec_seed_templates
+      WHERE category = ?
+      ORDER BY position ASC
+    `),
+
     _insertBridgeEvent: db.prepare(`
       INSERT INTO bridge_events (run_id, category, product_id, ts, stage, event, payload)
       VALUES (@run_id, @category, @product_id, @ts, @stage, @event, @payload)

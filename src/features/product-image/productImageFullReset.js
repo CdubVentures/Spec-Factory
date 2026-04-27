@@ -56,6 +56,22 @@ function clearProjection({ specDb, productId }) {
   } catch { /* best-effort */ }
 }
 
+function clearSqlSummaryArtifacts({ specDb, productId }) {
+  const finderStore = specDb?.getFinderStore?.('productImageFinder');
+  if (typeof finderStore?.updateSummaryField !== 'function') return;
+  [
+    ['images', '[]'],
+    ['image_count', 0],
+    ['carousel_slots', '{}'],
+    ['eval_state', '{}'],
+    ['evaluations', '[]'],
+  ].forEach(([field, value]) => {
+    try {
+      finderStore.updateSummaryField(productId, field, value);
+    } catch { /* best-effort */ }
+  });
+}
+
 /**
  * Full-reset every PIF artifact for a product.
  *
@@ -69,4 +85,5 @@ export function fullResetProductImages({ specDb, productId, productRoot }) {
   clearJsonExtras({ productId, productRoot });
   deleteProductImageDir({ productId, productRoot });
   clearProjection({ specDb, productId });
+  clearSqlSummaryArtifacts({ specDb, productId });
 }

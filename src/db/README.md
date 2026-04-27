@@ -2,7 +2,7 @@
 
 SQLite-backed persistence layer for review state, component identity, and queue management.
 
-**SpecDb** (`specDb.js`): Per-category facade over 11 domain-specific store modules. One instance per category, located at `.workspace/db/{category}/spec.sqlite`.
+**SpecDb** (`specDb.js`): Per-category facade over domain-specific store modules. One instance per category, located at `.workspace/db/{category}/spec.sqlite`.
 
 **AppDb** (`appDb.js`): Shared cross-category database at `.workspace/db/app.sqlite` for global state: brands (34+), brand categories, brand renames, user settings (~170 keys), studio maps, color registry, unit registry, billing entries, and seed hash tracking. Opened once at bootstrap, shared across all categories.
   - Billing: `insertBillingEntry`, `getBillingRollup(month, category?)`, `getBillingEntriesForMonth`, `getBillingSnapshot`, `getGlobalDaily`, `getGlobalEntries`, `countBillingEntries`
@@ -18,6 +18,7 @@ SQLite-backed persistence layer for review state, component identity, and queue 
   - Enum policy: `getEnumPolicy`, `setEnumPolicy`
   - Key review: `getKeyReviewState`, `setKeyReviewState`
   - Source intel / product / telemetry stores
+  - Source strategy and spec seed runtime projections
   - `close()` — cleanup
 - `appDb.js` → `class AppDb({ dbPath })` — global singleton
   - Brands, settings, studio maps, color registry, unit registry
@@ -42,9 +43,9 @@ SQLite-backed persistence layer for review state, component identity, and queue 
 ## Mutation Boundaries
 
 - SQLite database files: one per category (`spec.sqlite`), plus one global (`app.sqlite`)
-- SpecDb: component_identity, enum/list, key_review, queue/product, telemetry indexes, crawl artifacts, runs, field_candidates
+- SpecDb: component_identity, enum/list, key_review, queue/product, telemetry indexes, crawl artifacts, runs, field_candidates, source_strategy, spec_seed_templates
 - AppDb: brands, brand_categories, brand_renames, settings, studio_maps, color_registry, unit_registry, billing_entries
-- 11 SpecDb store modules: componentStore, enumListStore, itemStateStore, keyReviewStore, queueProductStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, telemetryIndexStore, purgeStore, fieldCandidateStore
+- SpecDb store modules: componentStore, enumListStore, itemStateStore, queueProductStore, sourceIntelStore, artifactStore, runMetaStore, runArtifactStore, telemetryIndexStore, purgeStore, fieldCandidateStore, sourceStrategyStore, specSeedStore, variant/progress stores
 - Write access is through `SpecDb`/`AppDb` methods only — consumers must not use raw SQL
 
 ## Domain Invariants

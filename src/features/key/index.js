@@ -24,6 +24,7 @@ export {
   deleteKeyFinderAll,
   unselectKeyFinderField,
   scrubFieldFromKeyFinder,
+  scrubFieldFromKeyFinderSqlFirst,
   rebuildKeyFinderFromJson,
 } from './keyStore.js';
 export { runKeyFinder } from './keyFinder.js';

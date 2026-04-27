@@ -73,6 +73,8 @@ function makeSpecDbStub({
   publishedKeys = new Set(),
   compiledRules = COMPILED_RULES_MOUSE,
   finderSettings = {},
+  sqlRunsByProduct = {},
+  sqlSummariesByProduct = {},
   topCandidatesByFieldKey = {},
   bucketsByFieldKey = {},
   activeVariants = [],
@@ -81,6 +83,9 @@ function makeSpecDbStub({
 } = {}) {
   const finderStore = {
     getSetting: (k) => (k in finderSettings ? String(finderSettings[k]) : ''),
+    get: (pid) => sqlSummariesByProduct[pid] || null,
+    listByCategory: (cat) => Object.values(sqlSummariesByProduct).filter((row) => row.category === cat),
+    listRuns: (pid) => sqlRunsByProduct[pid] || [],
   };
   return {
     category: 'mouse',
@@ -128,6 +133,46 @@ function seedRun({ productRoot, productId, category, fieldKey, runBody }) {
     newDiscovery: { category, last_ran_at: runBody.started_at || '2024-03-15T00:00:00Z' },
     run: runBody,
   });
+}
+
+function makeSqlRun({ runNumber, fieldKey, value, confidence = 90, ranAt = '2026-04-20T10:00:00Z' }) {
+  return {
+    category: 'mouse',
+    product_id: 'sql-prod',
+    run_number: runNumber,
+    ran_at: ranAt,
+    started_at: ranAt,
+    duration_ms: 100,
+    model: 'gpt-5.4-mini',
+    fallback_used: false,
+    thinking: true,
+    web_search: true,
+    effort_level: 'xhigh',
+    access_mode: 'api',
+    selected: {
+      keys: {
+        [fieldKey]: {
+          value,
+          confidence,
+          unknown_reason: '',
+          evidence_refs: [{ url: 'https://sql.example', tier: 'tier_1' }],
+        },
+      },
+    },
+    prompt: { system: 'sql-system', user: 'sql-user' },
+    response: {
+      primary_field_key: fieldKey,
+      results: {
+        [fieldKey]: {
+          value,
+          confidence,
+          unknown_reason: '',
+          evidence_refs: [{ url: 'https://sql.example', tier: 'tier_1' }],
+        },
+      },
+      discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+    },
+  };
 }
 
 const TMP_ROOT = path.join(os.tmpdir(), `kf-summary-test-${Date.now()}`);
@@ -196,6 +241,50 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.equal(byKey.sensor_model.group, 'sensor_performance');
     assert.equal(byKey.wireless_technology.difficulty, 'easy');
     assert.equal(byKey.wireless_technology.group, 'connectivity');
+  });
+
+  it('prefers SQL run history over a stale key_finder.json mirror', async (t) => {
+    t.after(cleanupTmp);
+    const productId = 'sql-prod';
+    fs.mkdirSync(path.join(PRODUCT_ROOT, productId), { recursive: true });
+
+    seedRun({
+      productRoot: PRODUCT_ROOT,
+      productId,
+      category: 'mouse',
+      fieldKey: 'polling_rate',
+      runBody: {
+        started_at: '2024-03-15T00:00:00Z',
+        duration_ms: 100,
+        model: 'json-stale-model',
+        selected: { keys: { polling_rate: { value: 1000, confidence: 80, unknown_reason: '', evidence_refs: [] } } },
+        prompt: { system: 'stale', user: 'stale' },
+        response: {
+          primary_field_key: 'polling_rate',
+          results: { polling_rate: { value: 1000, confidence: 80, unknown_reason: '', evidence_refs: [] } },
+          discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+        },
+      },
+    });
+
+    const specDb = makeSpecDbStub({
+      sqlSummariesByProduct: {
+        [productId]: { category: 'mouse', product_id: productId, latest_ran_at: '2026-04-20T10:00:00Z', run_count: 1 },
+      },
+      sqlRunsByProduct: {
+        [productId]: [makeSqlRun({ runNumber: 7, fieldKey: 'polling_rate', value: 8000 })],
+      },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', productId, 'summary'], null, 'GET', {}, {});
+
+    assert.equal(responses[0].status, 200);
+    const pollingRate = responses[0].body.find((row) => row.field_key === 'polling_rate');
+    assert.equal(pollingRate.last_run_number, 7);
+    assert.equal(pollingRate.last_value, 8000);
+    assert.equal(pollingRate.last_model, 'gpt-5.4-mini');
   });
 
   it('surfaces prompt dependency flags for dependency-driven overview scheduling', async (t) => {

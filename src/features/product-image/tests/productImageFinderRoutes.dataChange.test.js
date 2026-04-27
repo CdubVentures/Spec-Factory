@@ -156,7 +156,7 @@ after(() => {
 });
 
 describe('productImageFinderRoutes data-change contract', () => {
-  it('emits data-change after updating a carousel slot', async () => {
+  it('updates carousel progress before emitting data-change after updating a slot', async () => {
     writeProductImagesDoc();
     const ctx = createCtx({
       variant_key: 'color:black',
@@ -179,6 +179,12 @@ describe('productImageFinderRoutes data-change contract', () => {
       'carousel_slots',
       JSON.stringify({ 'color:black': { top: 'top-black.png' } }),
     ]);
+    assert.equal(ctx._progressUpserts.length, 1);
+    assert.equal(ctx._progressUpserts[0].productId, PRODUCT_ID);
+    assert.equal(ctx._progressUpserts[0].variantId, 'variant-black');
+    assert.equal(ctx._progressUpserts[0].priorityFilled, 1);
+    assert.equal(ctx._progressUpserts[0].imageCount, 0);
+
     const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
     assert.equal(emitted?.payload?.event, 'product-image-finder-carousel-updated');
     assert.equal(emitted?.payload?.category, CATEGORY);

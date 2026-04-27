@@ -34,7 +34,7 @@ export { buildDiscoveredEnumMap } from './buildDiscoveredEnumMap.js';
 export { persistDiscoveredValue } from './persistDiscoveredValues.js';
 
 export { submitCandidate } from './candidate-gate/submitCandidate.js';
-export { publishCandidate } from './publish/publishCandidate.js';
+export { publishCandidate, normalizeConfidence } from './publish/publishCandidate.js';
 export { publishManualOverride } from './publish/publishManualOverride.js';
 export { rebuildPublishedFieldsFromJson } from './publish/publishedFieldReseed.js';
 export { reconcileThreshold } from './publish/reconcileThreshold.js';

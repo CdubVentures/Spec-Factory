@@ -1,5 +1,6 @@
 import { isReservedFieldKey } from '../../core/finder/finderExclusions.js';
 import { isConcreteEvidence } from '../../features/key/index.js';
+import { normalizeConfidence } from '../../features/publisher/index.js';
 import { resolveProductImageDependencyStatus } from '../../features/product-image/productImageIdentityDependencies.js';
 
 function assertFunction(name, value) {
@@ -267,7 +268,7 @@ function buildCatalogRowFromSql({ specDb, cleanVariant, category, row, context }
   const resolvedCandidates = candidates.filter(c => String(c.status || '').trim() === 'resolved');
   const fieldKeysWithData = new Set(resolvedCandidates.map(c => String(c.field_key || '').trim()).filter(Boolean));
   const avgConfidence = resolvedCandidates.length > 0
-    ? resolvedCandidates.reduce((s, c) => s + (Number(c.confidence) || 0), 0) / resolvedCandidates.length / 100
+    ? resolvedCandidates.reduce((s, c) => s + normalizeConfidence(Number(c.confidence)), 0) / resolvedCandidates.length
     : 0;
 
   const cefRuns = specDb.listColorEditionFinderRuns?.(pid) || [];

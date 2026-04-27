@@ -116,15 +116,16 @@ const UNK_RESPONSE = {
 
 // ── Stubs ──────────────────────────────────────────────────────────────
 
-function makeFinderStoreStub(settings = KNOB_DEFAULTS) {
+function makeFinderStoreStub(settings = KNOB_DEFAULTS, { initialRuns = [] } = {}) {
   const upserts = [];
-  const runs = [];
+  const runs = [...initialRuns];
   const resolved = { ...settings };
   return {
     store: {
       getSetting: (k) => (k in resolved ? String(resolved[k]) : ''),
       upsert: (row) => { upserts.push(row); },
       insertRun: (row) => { runs.push(row); },
+      listRuns: (productId) => runs.filter((row) => row.product_id === productId),
     },
     upserts,
     runs,
@@ -177,7 +178,7 @@ function setupForProduct(productId, opts = {}) {
   const productDir = path.join(PRODUCT_ROOT, productId);
   fs.mkdirSync(productDir, { recursive: true });
   fs.writeFileSync(path.join(productDir, 'product.json'), JSON.stringify({ product_id: productId, category: 'mouse', candidates: {}, fields: {} }));
-  const fsStub = makeFinderStoreStub(opts.settings);
+  const fsStub = makeFinderStoreStub(opts.settings, { initialRuns: opts.initialRuns || [] });
   const specDb = makeSpecDbStub({
     finderStore: fsStub.store,
     variants: opts.variants,
@@ -958,4 +959,68 @@ test('threads onModelResolved / onStreamChunk / onQueueWait to buildLlmCallDeps 
     _submitCandidateOverride: async () => ({ status: 'accepted' }),
   });
   // No throw = opts accepted. Real delivery verified in adapter tests.
+});
+
+test('discovery log scope reads prior history from SQL before stale JSON', async (t) => {
+  t.after(cleanupTmp);
+  const productId = 'kf-disc-sql-first';
+  const { mergeKeyFinderDiscovery } = await import('../keyStore.js');
+  mergeKeyFinderDiscovery({
+    productId,
+    productRoot: PRODUCT_ROOT,
+    newDiscovery: { category: 'mouse', last_ran_at: '2026-04-19T00:00:00Z' },
+    run: {
+      model: 'json-stale-model',
+      selected: { keys: { polling_rate: { value: 1000 } } },
+      prompt: { system: '', user: '' },
+      response: {
+        primary_field_key: 'polling_rate',
+        results: {},
+        discovery_log: { urls_checked: ['https://JSON-STALE.example.com'], queries_run: ['json stale q'], notes: [] },
+      },
+    },
+  });
+
+  const sqlRun = {
+    category: 'mouse',
+    product_id: productId,
+    run_number: 4,
+    ran_at: '2026-04-20T00:00:00Z',
+    started_at: '2026-04-20T00:00:00Z',
+    duration_ms: 1,
+    model: 'sql-prior-model',
+    fallback_used: false,
+    thinking: false,
+    web_search: false,
+    effort_level: '',
+    access_mode: '',
+    selected: { keys: { polling_rate: { value: 4000 } } },
+    prompt: { system: '', user: '' },
+    response: {
+      primary_field_key: 'polling_rate',
+      results: {},
+      discovery_log: { urls_checked: ['https://SQL-PRIOR.example.com'], queries_run: ['sql prior q'], notes: [] },
+    },
+  };
+  const { specDb } = setupForProduct(productId, { initialRuns: [sqlRun] });
+
+  let capturedDomainArgs = null;
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: productId },
+    fieldKey: 'polling_rate',
+    category: 'mouse',
+    specDb, appDb: null, config: {},
+    broadcastWs: null,
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async (domainArgs) => { capturedDomainArgs = domainArgs; return GOOD_RESPONSE; },
+    _submitCandidateOverride: async () => ({ status: 'accepted', publishResult: { status: 'published' } }),
+  });
+
+  const urls = capturedDomainArgs?.previousDiscovery?.urlsChecked || [];
+  const queries = capturedDomainArgs?.previousDiscovery?.queriesRun || [];
+  assert.ok(urls.includes('https://SQL-PRIOR.example.com'), 'SQL prior URL should be injected');
+  assert.ok(!urls.includes('https://JSON-STALE.example.com'), 'stale JSON URL must not be injected when SQL runs exist');
+  assert.ok(queries.includes('sql prior q'));
+  assert.ok(!queries.includes('json stale q'));
 });

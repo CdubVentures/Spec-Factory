@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-27T02:48:22.414Z",
+  "generated_at": "2026-04-27T06:26:59.005Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -167,9 +167,13 @@
   "templates": {
     "acceleration": {
       "context_keywords": [
-        "acceleration",
-        "g",
-        "max acceleration"
+        "acceleration (g)",
+        "g acceleration",
+        "max acceleration",
+        "max acceleration (g)",
+        "maximum acceleration",
+        "sensor acceleration",
+        "tracking acceleration"
       ],
       "patterns": [],
       "type": "number"
@@ -255,33 +259,80 @@
       "type": "string"
     },
     "click_force": {
+      "context_keywords": [
+        "actuation force",
+        "button force",
+        "click force",
+        "click weight",
+        "gf",
+        "gram force",
+        "grams of force",
+        "OF",
+        "operating force",
+        "press force",
+        "tactile force"
+      ],
       "patterns": [],
       "type": "number"
     },
     "click_latency": {
+      "context_keywords": [
+        "average click latency",
+        "avg latency",
+        "button latency",
+        "button response time",
+        "click delay",
+        "click input latency",
+        "click response time",
+        "click-to-report latency",
+        "left click latency",
+        "left-click latency"
+      ],
       "patterns": [],
       "type": "number"
     },
     "click_latency_bluetooth": {
       "context_keywords": [
+        "average latency bluetooth",
+        "avg latency (bluetooth)",
+        "bluetooth click latency",
+        "button latency bluetooth",
         "click latency (bluetooth)",
-        "click latency bluetooth"
+        "click latency bluetooth",
+        "click response time bluetooth",
+        "latency over bluetooth",
+        "wireless latency over bluetooth"
       ],
       "patterns": [],
       "type": "number"
     },
     "click_latency_wired": {
       "context_keywords": [
+        "average latency wired",
+        "avg latency wired",
+        "button latency wired",
         "click latency (wired)",
-        "click latency wired"
+        "click latency wired",
+        "click response time wired",
+        "USB click latency",
+        "wired button response time",
+        "wired click latency"
       ],
       "patterns": [],
       "type": "number"
     },
     "click_latency_wireless": {
       "context_keywords": [
+        "2.4 GHz click latency",
+        "2.4GHz click latency",
+        "average latency (receiver)",
+        "avg latency (receiver)",
+        "button latency over receiver",
         "click latency (wireless)",
-        "click latency wireless"
+        "click latency wireless",
+        "receiver latency",
+        "wireless click latency",
+        "wireless latency over receiver"
       ],
       "patterns": [],
       "type": "number"
@@ -397,6 +448,21 @@
       "type": "string"
     },
     "debounce": {
+      "context_keywords": [
+        "button debounce",
+        "button response time",
+        "click debounce",
+        "click response time",
+        "debounce delay",
+        "debounce rate",
+        "debounce slider",
+        "debounce time",
+        "debounce timer",
+        "double-click prevention",
+        "key response time",
+        "no debounce delay",
+        "zero debounce"
+      ],
       "patterns": [],
       "type": "number"
     },
@@ -432,10 +498,17 @@
     },
     "dpi": {
       "context_keywords": [
+        "counts per inch",
         "cpi",
+        "dots per inch",
         "dpi",
+        "DPI/CPI",
         "max dpi",
-        "maximum dpi"
+        "max resolution",
+        "maximum dpi",
+        "maximum sensitivity",
+        "sensitivity (DPI)",
+        "sensor resolution"
       ],
       "patterns": [],
       "type": "number"
@@ -628,6 +701,20 @@
       "type": "boolean"
     },
     "hot_swappable": {
+      "context_keywords": [
+        "drop-in switches",
+        "hot-swap switches",
+        "hot-swappable micro-switches",
+        "interchangeable switches",
+        "no-solder switch replacement",
+        "push-fit switch socket",
+        "Push-Fit Switch Socket II",
+        "replaceable mouse switches",
+        "swappable micro-movement switches",
+        "swappable mouse switches",
+        "switch socket design",
+        "user-replaceable switches"
+      ],
       "patterns": [],
       "type": "boolean"
     },
@@ -654,7 +741,13 @@
       "context_keywords": [
         "inches per second",
         "ips",
-        "max ips"
+        "max ips",
+        "max speed",
+        "max tracking speed",
+        "maximum speed",
+        "maximum tracking speed",
+        "sensor speed",
+        "tracking speed"
       ],
       "patterns": [],
       "type": "number"
@@ -750,8 +843,19 @@
       "type": "url"
     },
     "middle_buttons": {
+      "context_keywords": [
+        "center-strip buttons",
+        "cycle mode button",
+        "DPI button behind scroll wheel",
+        "G7/G8",
+        "middle/top buttons",
+        "profile button",
+        "top buttons",
+        "top-center buttons",
+        "wheel-mode shift button"
+      ],
       "patterns": [],
-      "type": "integer"
+      "type": "number"
     },
     "motion_sync": {
       "patterns": [],
@@ -822,11 +926,23 @@
     },
     "polling_rate": {
       "context_keywords": [
+        "0.125 ms",
+        "0.25 ms",
+        "0.5 ms",
+        "1 ms report rate",
+        "4K polling",
+        "8 ms",
+        "8K polling",
+        "hyper-polling",
+        "HyperPolling",
         "hz",
+        "max polling rate",
+        "maximum polling rate",
         "polling",
         "polling rate",
         "polling_rate",
-        "report rate"
+        "report rate",
+        "USB report rate"
       ],
       "patterns": [],
       "type": "number"
@@ -840,8 +956,19 @@
       "type": "boolean"
     },
     "programmable_buttons": {
+      "context_keywords": [
+        "button assignments",
+        "configurable buttons",
+        "customizable buttons",
+        "fully configurable buttons",
+        "macro programmable buttons",
+        "programmable controls",
+        "programmable inputs",
+        "rebindable buttons",
+        "remappable buttons"
+      ],
       "patterns": [],
-      "type": "integer"
+      "type": "number"
     },
     "release_date": {
       "patterns": [],
@@ -993,10 +1120,47 @@
       "type": "number"
     },
     "side_buttons": {
+      "context_keywords": [
+        "back/forward buttons",
+        "DPI-shift button",
+        "gesture button",
+        "mouse 4/5",
+        "multi-function trigger",
+        "number of side buttons",
+        "side button count",
+        "side buttons",
+        "side keypad",
+        "side panel buttons",
+        "side plate buttons",
+        "sniper button",
+        "thumb buttons",
+        "thumb grid"
+      ],
       "patterns": [],
-      "type": "integer"
+      "type": "number"
     },
     "silent_clicks": {
+      "context_keywords": [
+        "almost-silent mouse buttons",
+        "click-noise reduction",
+        "clicking noise reduction",
+        "low-noise buttons",
+        "mute click",
+        "muted clicks",
+        "noiseless clicks",
+        "quiet buttons",
+        "Quiet Click",
+        "quiet click buttons",
+        "quiet clicks",
+        "reduced click sound",
+        "silent button clicks",
+        "silent clicks",
+        "silent mechanical switches",
+        "silent switches",
+        "Silent Touch",
+        "SilentTouch",
+        "whisper-quiet clicks"
+      ],
       "patterns": [],
       "type": "boolean"
     },
@@ -1009,25 +1173,89 @@
       "type": "boolean"
     },
     "switch": {
+      "context_keywords": [
+        "button switches",
+        "click switches",
+        "key switch",
+        "left/right click switches",
+        "M1/M2 switches",
+        "main button switch",
+        "micro switch",
+        "microswitch",
+        "primary mouse button switches",
+        "switch model",
+        "switch type"
+      ],
       "patterns": [],
       "type": "string"
     },
     "switch_brand": {
-      "patterns": [],
-      "type": "string"
-    },
-    "switch_type": {
-      "patterns": [],
-      "type": "string"
-    },
-    "switches_link": {
       "context_keywords": [
+        "Glorious Switches",
+        "Huano Blue Shell Pink Dot",
+        "Kailh GM",
+        "Kailh GX",
+        "L/R switches",
+        "left/right click switches",
+        "LIGHTFORCE",
+        "main button switches",
+        "main switch",
+        "main switches",
+        "microswitches",
+        "mouse micro switches",
+        "Omron D2FC",
+        "Omron D2LS",
+        "Prestige OM",
+        "Razer Optical Mouse Switches",
+        "ROG Optical Micro Switches",
+        "switch brand",
+        "switch maker",
+        "switch manufacturer",
+        "TTC Dustproof Gold",
+        "TTC Gold",
+        "Zippy DF3"
+      ],
+      "patterns": [],
+      "type": "string"
+    },
+    "switch_link": {
+      "context_keywords": [
+        "authorized distributor part page",
+        "manufacturer component page",
+        "micro switch datasheet",
+        "mouse switch datasheet",
+        "official switch technology page",
+        "switch component page",
+        "switch datasheet",
         "Switch Link",
-        "switch_link",
-        "switches_link"
+        "switch URL",
+        "switch_url"
       ],
       "patterns": [],
       "type": "url"
+    },
+    "switch_type": {
+      "context_keywords": [
+        "galvanic switch",
+        "Haptic Inductive Trigger System",
+        "HITS",
+        "hybrid optical mechanical",
+        "infrared switch",
+        "IR switch",
+        "light-based switch",
+        "LIGHTFORCE",
+        "main button switch",
+        "mechanical micro switch",
+        "microswitch",
+        "optical magnetic",
+        "optical-mechanical",
+        "opto-magnetic",
+        "primary click switch",
+        "SPDT switch",
+        "SUPERSTRIKE"
+      ],
+      "patterns": [],
+      "type": "string"
     },
     "thumb_rest": {
       "context_keywords": [
@@ -1048,6 +1276,20 @@
       "type": "boolean"
     },
     "tilt_scroll_wheel": {
+      "context_keywords": [
+        "4-way scrolling",
+        "four-way scrolling",
+        "horizontal scrolling with tilt-wheel",
+        "L/R tilt inputs",
+        "left-right tilt",
+        "left/right tilt",
+        "scroll left/right (wheel tilt left/right)",
+        "scroll wheel tilt",
+        "tilt wheel",
+        "tilt-click scroll wheel",
+        "tilt-shift button",
+        "wheel tilt left/right"
+      ],
       "patterns": [],
       "type": "boolean"
     },

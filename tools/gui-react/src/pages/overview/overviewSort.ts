@@ -4,6 +4,7 @@ import type { KeyTierProgressGen } from '../../types/product.generated.ts';
 import { getScoreCard } from './scoreCard.ts';
 
 const OVERVIEW_SORT_STORAGE_KEY_PREFIX = 'sf:overview:sort:';
+const OVERVIEW_SORT_STORAGE_VERSION = 2;
 
 export const OVERVIEW_SORTABLE_COLUMN_IDS = [
   'brand',
@@ -63,13 +64,17 @@ function getSessionStorage(): Storage | null {
   }
 }
 
-function parseOverviewSorting(value: unknown): SortingState {
+function parseOverviewSorting(
+  value: unknown,
+  { allowLive = true }: { readonly allowLive?: boolean } = {},
+): SortingState {
   if (!Array.isArray(value)) return [];
   return value.reduce<SortingState>((acc, entry) => {
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) return acc;
     const id = (entry as { id?: unknown }).id;
     const desc = (entry as { desc?: unknown }).desc;
     if (typeof id !== 'string' || !isOverviewSortableColumnId(id)) return acc;
+    if (id === 'live' && !allowLive) return acc;
     if (typeof desc !== 'boolean') return acc;
     acc.push({ id, desc });
     return acc;
@@ -85,7 +90,10 @@ function parseOverviewSortSessionState(raw: string | null): SortingState {
     const base = wrapped && typeof wrapped === 'object' && !Array.isArray(wrapped)
       ? wrapped
       : parsed;
-    return parseOverviewSorting((base as { sorting?: unknown }).sorting);
+    const version = Number((base as { version?: unknown }).version);
+    return parseOverviewSorting((base as { sorting?: unknown }).sorting, {
+      allowLive: version >= OVERVIEW_SORT_STORAGE_VERSION,
+    });
   } catch {
     return [];
   }
@@ -113,9 +121,10 @@ export function readOverviewSortSessionState(category: string): SortingState {
   try {
     const legacy = session.getItem(key);
     if (!legacy) return [];
-    local?.setItem(key, legacy);
+    const sorting = parseOverviewSortSessionState(legacy);
+    local?.setItem(key, JSON.stringify({ version: OVERVIEW_SORT_STORAGE_VERSION, sorting }));
     session.removeItem(key);
-    return parseOverviewSortSessionState(legacy);
+    return sorting;
   } catch {
     return [];
   }
@@ -127,11 +136,18 @@ export function writeOverviewSortSessionState(category: string, sorting: Sorting
   try {
     storage.setItem(
       buildOverviewSortStorageKey(category),
-      JSON.stringify({ sorting: parseOverviewSorting(sorting) }),
+      JSON.stringify({
+        version: OVERVIEW_SORT_STORAGE_VERSION,
+        sorting: parseOverviewSorting(sorting),
+      }),
     );
   } catch {
     return;
   }
+}
+
+export function overviewSortingUsesLive(sorting: SortingState): boolean {
+  return parseOverviewSorting(sorting).some((entry) => entry.id === 'live');
 }
 
 export function getOverviewColumnFirstSortDesc(columnId: string): boolean {

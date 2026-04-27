@@ -13,6 +13,7 @@ function fixtureLoadedRules() {
         sensor: {
           field_key: 'sensor',
           display_name: 'Sensor',
+          product_image_dependent: true,
           priority: { required_level: 'mandatory', availability: 'always', difficulty: 'hard' },
           contract: { type: 'string', shape: 'scalar' },
           enum: { policy: 'open_prefer_known', source: 'data_lists.sensor', values: [] },
@@ -36,7 +37,7 @@ async function mkTmpDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'category-audit-test-'));
 }
 
-test('generateCategoryAuditReport writes HTML + MD to outputRoot and returns both paths', async () => {
+test('generateCategoryAuditReport writes compact HTML + MD summary inside the category reports folder', async () => {
   const outputRoot = await mkTmpDir();
   try {
     const result = await generateCategoryAuditReport({
@@ -49,21 +50,36 @@ test('generateCategoryAuditReport writes HTML + MD to outputRoot and returns bot
       outputRoot,
       now: new Date('2026-04-22T12:00:00Z'),
     });
-    assert.equal(result.htmlPath, path.join(outputRoot, 'mouse-key-finder-audit.html'));
-    assert.equal(result.mdPath, path.join(outputRoot, 'mouse-key-finder-audit.md'));
+    assert.equal(result.htmlPath, path.join(outputRoot, 'mouse', 'mouse-key-finder-summary.html'));
+    assert.equal(result.mdPath, path.join(outputRoot, 'mouse', 'mouse-key-finder-summary.md'));
     assert.equal(result.generatedAt, '2026-04-22T12:00:00.000Z');
-    const htmlStat = await fs.stat(result.htmlPath);
-    const mdStat = await fs.stat(result.mdPath);
-    assert.ok(htmlStat.size > 1000, 'HTML file is non-trivial');
-    assert.ok(mdStat.size > 500, 'MD file is non-trivial');
+    const html = await fs.readFile(result.htmlPath, 'utf8');
+    const md = await fs.readFile(result.mdPath, 'utf8');
+    assert.ok(html.startsWith('<!DOCTYPE html>'));
+    assert.ok(html.includes('Key Finder Summary'));
+    assert.ok(md.includes('## Audit Context'));
+    assert.ok(md.includes('## Matrix Legend'));
+    assert.ok(md.includes('## Final Signoff Checklist'));
+    assert.ok(md.includes('Priority = `M/N / availability / difficulty`'));
+    assert.ok(md.includes('Unknown / false / n/a'));
+    assert.ok(md.includes('component `_link` fields'));
+    assert.ok(md.includes('| Key | Group | Priority | Contract | Enum | Component | Evidence | Dependencies | Readiness |'));
+    assert.ok(md.includes('Product Image Dependent'));
+    assert.ok(md.includes('`sensor`'));
+    assert.ok(!md.includes('Full field contract authoring order'), 'category summary does not duplicate per-key scripts');
   } finally {
     await fs.rm(outputRoot, { recursive: true, force: true });
   }
 });
 
-test('generateCategoryAuditReport overwrites prior runs (rolling, not timestamped)', async () => {
+test('generateCategoryAuditReport overwrites only its own summary files without wiping category report text files', async () => {
   const outputRoot = await mkTmpDir();
   try {
+    const categoryReportFolder = path.join(outputRoot, 'mouse');
+    await fs.mkdir(categoryReportFolder, { recursive: true });
+    const humanChangeFile = path.join(categoryReportFolder, 'mouse-07-design-field-studio-change.txt');
+    await fs.writeFile(humanChangeFile, 'keep human audit text', 'utf8');
+
     const first = await generateCategoryAuditReport({
       category: 'mouse',
       loadedRules: fixtureLoadedRules(),
@@ -83,9 +99,15 @@ test('generateCategoryAuditReport overwrites prior runs (rolling, not timestampe
       now: new Date('2026-04-22T13:00:00Z'),
     });
     assert.equal(first.htmlPath, second.htmlPath, 'same filename across runs');
+    assert.equal(await fs.readFile(humanChangeFile, 'utf8'), 'keep human audit text');
     const md = await fs.readFile(second.mdPath, 'utf8');
     assert.ok(md.includes('2026-04-22T13:00:00.000Z'), 'later run overwrites timestamp');
     assert.ok(!md.includes('2026-04-22T12:00:00.000Z'), 'earlier timestamp gone');
+    await assert.rejects(
+      fs.stat(path.join(outputRoot, 'mouse-key-finder-audit.md')),
+      /ENOENT/,
+      'legacy root-level giant audit is not regenerated',
+    );
   } finally {
     await fs.rm(outputRoot, { recursive: true, force: true });
   }

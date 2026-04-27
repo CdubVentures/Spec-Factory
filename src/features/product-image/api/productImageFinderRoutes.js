@@ -508,10 +508,23 @@ export function registerProductImageFinderRoutes(ctx) {
       };
       // WHY: evaluations projected to SQL per CLAUDE.md dual-state mandate — runtime UI reads SQL only.
       const evaluations = typeof row.evaluations === 'string' ? JSON.parse(row.evaluations || '[]') : (row.evaluations || []);
-
-      const enrichedSelected = selected?.images
-        ? { ...selected, images: selected.images.map(enrichImage).map(overlayEval) }
+      const rowImages = parseJsonArray(row.images);
+      const runImageByFilename = new Map();
+      for (const run of runs) {
+        for (const img of (run.selected?.images || [])) {
+          if (img?.filename) runImageByFilename.set(img.filename, img);
+        }
+      }
+      const accumulatedSelectedImages = rowImages
+        .filter((img) => img?.filename)
+        .map((img) => ({ ...img, ...(runImageByFilename.get(img.filename) || {}) }));
+      const selectedForResponse = accumulatedSelectedImages.length > 0
+        ? { ...(selected || {}), images: accumulatedSelectedImages }
         : selected;
+
+      const enrichedSelected = selectedForResponse?.images
+        ? { ...selectedForResponse, images: selectedForResponse.images.map(enrichImage).map(overlayEval) }
+        : selectedForResponse;
       const enrichedRuns = runs.map(r => r.selected?.images
         ? { ...r, selected: { ...r.selected, images: r.selected.images.map(enrichImage).map(overlayEval) } }
         : r,
@@ -530,7 +543,6 @@ export function registerProductImageFinderRoutes(ctx) {
 
       // WHY: Use row.images (accumulated SQL summary) not enrichedSelected
       // (which is latest run only). Carousel progress must reflect ALL images.
-      const rowImages = typeof row.images === 'string' ? JSON.parse(row.images) : (row.images || []);
       const allImages = rowImages.map((img) => ({
         view: img.view, variant_key: img.variant_key, quality_pass: true,
       }));
@@ -1397,6 +1409,7 @@ export function registerProductImageFinderRoutes(ctx) {
         // Project to SQL
         const finderStore = store(specDb);
         finderStore.updateSummaryField(productId, 'carousel_slots', JSON.stringify(updatedSlots));
+        writePifVariantProgress({ specDb, category, productId });
 
         emitDataChange({
           broadcastWs,

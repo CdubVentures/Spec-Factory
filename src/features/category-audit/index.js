@@ -9,5 +9,7 @@
 
 export { generateCategoryAuditReport } from './reportBuilder.js';
 export { generatePerKeyDocs } from './perKeyDocBuilder.js';
+export { generatePromptAuditReports } from './promptAuditReportBuilder.js';
 export { extractReportData } from './reportData.js';
+export { extractPromptAuditData } from './promptAuditData.js';
 export { registerCategoryAuditRoutes } from './api/categoryAuditRoutes.js';

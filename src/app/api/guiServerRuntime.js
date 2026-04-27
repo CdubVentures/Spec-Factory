@@ -158,7 +158,7 @@ export function createGuiServerRuntime({
         jsonRes, config, sessionCache, getSpecDb,
       }),
       sourceStrategyRouteContext: createSourceStrategyRouteContext({
-        jsonRes, readJsonBody, config, resolveCategoryAlias, broadcastWs,
+        jsonRes, readJsonBody, config, resolveCategoryAlias, broadcastWs, getSpecDb,
       }),
       specSeedsRouteContext: {
         jsonRes,
@@ -166,6 +166,7 @@ export function createGuiServerRuntime({
         config,
         resolveCategoryAlias,
         broadcastWs,
+        getSpecDb,
       },
       runtimeOpsRouteContext: createRuntimeOpsRouteContext({
         jsonRes, toInt, INDEXLAB_ROOT, OUTPUT_ROOT, config, storage,
