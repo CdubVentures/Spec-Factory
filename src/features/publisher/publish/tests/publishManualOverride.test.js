@@ -78,6 +78,31 @@ describe('publishManualOverride', () => {
     assert.equal(pj.fields.sensor.source, 'manual_override');
   });
 
+  it('publishes variant-scoped overrides to SQL and product.json.variant_fields', () => {
+    ensureProductJson('mo-variant');
+
+    const result = publishManualOverride({
+      specDb, category: 'mouse', productId: 'mo-variant', fieldKey: 'release_date',
+      value: '2026-01-15', variantId: 'v_black', reviewer: 'alice',
+      productRoot: PRODUCT_ROOT,
+    });
+
+    assert.equal(result.status, 'published');
+    assert.equal(result.variantId, 'v_black');
+
+    const rows = specDb.getFieldCandidatesByProductAndField('mo-variant', 'release_date', 'v_black');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].status, 'resolved');
+    assert.equal(rows[0].source_type, 'manual_override');
+    assert.equal(rows[0].variant_id, 'v_black');
+    assert.equal(rows[0].metadata_json.source, 'manual_override');
+
+    const pj = readProductJson('mo-variant');
+    assert.equal(pj.variant_fields.v_black.release_date.value, '2026-01-15');
+    assert.equal(pj.variant_fields.v_black.release_date.source, 'manual_override');
+    assert.equal(pj.fields.release_date, undefined);
+  });
+
   it('demotes previously resolved candidate', () => {
     ensureProductJson('mo-demote');
     // Seed an existing resolved candidate
@@ -101,5 +126,52 @@ describe('publishManualOverride', () => {
     // New override is resolved
     const override = specDb.getResolvedFieldCandidate('mo-demote', 'weight');
     assert.equal(override.value, '60');
+  });
+
+  it('scopes variant manual overrides to the selected variant', () => {
+    ensureProductJson('mo-variant');
+    specDb.insertFieldCandidate({
+      productId: 'mo-variant',
+      fieldKey: 'release_date',
+      sourceId: 'old-black',
+      sourceType: 'release_date_finder',
+      value: '2025-01-01',
+      confidence: 0.9,
+      status: 'resolved',
+      variantId: 'v_black',
+      validationJson: {},
+      metadataJson: {},
+    });
+    specDb.insertFieldCandidate({
+      productId: 'mo-variant',
+      fieldKey: 'release_date',
+      sourceId: 'old-white',
+      sourceType: 'release_date_finder',
+      value: '2025-02-02',
+      confidence: 0.9,
+      status: 'resolved',
+      variantId: 'v_white',
+      validationJson: {},
+      metadataJson: {},
+    });
+
+    publishManualOverride({
+      specDb,
+      category: 'mouse',
+      productId: 'mo-variant',
+      fieldKey: 'release_date',
+      value: '2026-03-03',
+      variantId: 'v_black',
+      productRoot: PRODUCT_ROOT,
+    });
+
+    const blackRows = specDb.getFieldCandidatesByProductAndField('mo-variant', 'release_date', 'v_black');
+    const whiteRows = specDb.getFieldCandidatesByProductAndField('mo-variant', 'release_date', 'v_white');
+    assert.ok(blackRows.some((row) => row.source_type === 'manual_override' && row.status === 'resolved'));
+    assert.ok(whiteRows.some((row) => row.source_id === 'old-white' && row.status === 'resolved'));
+
+    const pj = readProductJson('mo-variant');
+    assert.equal(pj.variant_fields.v_black.release_date.value, '2026-03-03');
+    assert.equal(pj.fields.release_date, undefined);
   });
 });

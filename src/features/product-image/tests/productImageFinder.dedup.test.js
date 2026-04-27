@@ -33,8 +33,8 @@ function writeCefData(productId, cefData) {
   fs.writeFileSync(path.join(dir, 'color_edition.json'), JSON.stringify(cefData));
 }
 
-function makeFinderStoreStub() {
-  const settings = {};
+function makeFinderStoreStub(overrides = {}) {
+  const settings = { ...overrides };
   const runs = [];
   const upserts = [];
   return {
@@ -111,6 +111,9 @@ describe('dedup: URL dedup self-heal + content hash gate', () => {
       } else if (req.url === '/img-b.png') {
         res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': bufferB.length });
         res.end(bufferB);
+      } else if (req.url === '/page-ok') {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.end('<html><body>ok</body></html>');
       } else {
         res.writeHead(404);
         res.end();
@@ -225,6 +228,91 @@ describe('dedup: URL dedup self-heal + content hash gate', () => {
     assert.equal(typeof img.content_hash, 'string', 'content_hash should be a string');
     assert.equal(img.content_hash.length, 64, 'content_hash should be 64-char SHA-256 hex');
     assert.match(img.content_hash, /^[0-9a-f]{64}$/, 'content_hash should be lowercase hex');
+  });
+
+  it('persists per-candidate image validation history on the run response', async () => {
+    const pid = 'validation-history';
+    writeCefData(pid, { selected: { colors: ['black'], color_names: {}, editions: {} } });
+
+    const store = makeFinderStoreStub();
+    const result = await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb: makeSpecDbStub(store),
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmOverride([
+        {
+          view: 'top',
+          url: `http://127.0.0.1:${port}/img-a.png`,
+          source_page: 'https://example.com/product',
+        },
+        {
+          view: 'top',
+          url: `http://127.0.0.1:${port}/img-a-alias.png`,
+          source_page: 'https://example.com/product',
+        },
+      ]),
+    });
+
+    assert.equal(result.images.length, 1);
+    const runResponse = store._runs[0]?.response;
+    assert.ok(Array.isArray(runResponse?.image_validation_log), 'run response should persist image_validation_log');
+    assert.equal(runResponse.image_validation_log.length, 2);
+
+    const accepted = runResponse.image_validation_log.find((entry) => entry.accepted === true);
+    assert.equal(accepted.url, `http://127.0.0.1:${port}/img-a.png`);
+    assert.equal(accepted.stage, 'accepted');
+    assert.equal(accepted.direct_image.status_code, 200);
+    assert.equal(accepted.direct_image.content_type, 'image/png');
+    assert.equal(accepted.dimensions.ok, true);
+    assert.equal(accepted.content_hash.ok, true);
+    assert.equal(accepted.content_hash.value.length, 64);
+
+    const duplicate = runResponse.image_validation_log.find((entry) => entry.accepted === false);
+    assert.equal(duplicate.stage, 'content_hash');
+    assert.equal(duplicate.reason, 'duplicate content');
+    assert.ok(duplicate.content_hash.duplicate_of);
+  });
+
+  it('link validation rejects candidates whose source_page does not load', async () => {
+    const pid = 'source-page-validation';
+    writeCefData(pid, { selected: { colors: ['black'], color_names: {}, editions: {} } });
+
+    const store = makeFinderStoreStub({
+      priorityViewRunLinkValidationEnabled: 'true',
+    });
+    const result = await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb: makeSpecDbStub(store),
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmOverride([
+        {
+          view: 'top',
+          url: `http://127.0.0.1:${port}/img-a.png`,
+          source_page: `http://127.0.0.1:${port}/missing-page`,
+        },
+        {
+          view: 'top',
+          url: `http://127.0.0.1:${port}/img-b.png`,
+          source_page: `http://127.0.0.1:${port}/page-ok`,
+        },
+      ]),
+    });
+
+    assert.equal(result.images.length, 1);
+    assert.ok(result.download_errors.some((entry) => entry.error.includes('source page failed')));
+
+    const validationLog = store._runs[0]?.response?.image_validation_log || [];
+    const rejected = validationLog.find((entry) => entry.stage === 'source_page');
+    assert.equal(rejected.page.ok, false);
+    assert.equal(rejected.page.status_code, 404);
+
+    const accepted = validationLog.find((entry) => entry.accepted === true);
+    assert.equal(accepted.page.ok, true);
+    assert.equal(accepted.page.status_code, 200);
   });
 
   it('different file content passes both dedup gates', async () => {

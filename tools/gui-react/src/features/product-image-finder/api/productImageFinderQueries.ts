@@ -2,7 +2,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import { useDataChangeMutation } from '../../data-change/index.js';
 import { removeImageFromResult, removeImagesFromResult } from '../selectors/pifSelectors.ts';
-import { removeImagesFromPifSummary, zeroCatalogPifProgress } from '../state/pifDeleteOptimism.ts';
+import {
+  clearPifCarouselSelections,
+  removeImagesFromPifSummary,
+  zeroCatalogPifCarouselProgress,
+  zeroCatalogPifProgress,
+} from '../state/pifDeleteOptimism.ts';
 import type { CatalogRow } from '../../../types/product.ts';
 import type {
   ProductImageFinderResult,
@@ -30,6 +35,23 @@ interface DeleteProductImagesMutationContext {
   readonly previousResult: ProductImageFinderResult | undefined;
   readonly previousSummary: ProductImageFinderSummary | undefined;
   readonly previousCatalog: CatalogRow[] | undefined;
+}
+
+interface ClearCarouselMutationContext {
+  readonly previousResult: ProductImageFinderResult | undefined;
+  readonly previousSummary: ProductImageFinderSummary | undefined;
+  readonly previousCatalog: CatalogRow[] | undefined;
+}
+
+type CarouselClearResponse = {
+  readonly ok: boolean;
+  readonly carousel_slots: Record<string, Record<string, string | null>>;
+  readonly eval_state?: Record<string, unknown>;
+};
+
+interface ClearCarouselWinnersVariables {
+  readonly variant_key: string;
+  readonly variant_id?: string;
 }
 
 export function useProductImageFinderQuery(category: string, productId: string) {
@@ -237,17 +259,117 @@ export function useCarouselSlotMutation(category: string, productId: string) {
 }
 
 export function useClearCarouselWinnersMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+  const queryKey = productImageFinderQueryKey(category, productId);
+  const summaryQueryKey = productImageFinderSummaryQueryKey(category, productId);
+  const catalogQueryKey = ['catalog', category] as const;
+
   return useDataChangeMutation<
-    { ok: boolean; carousel_slots: Record<string, Record<string, string | null>> },
+    CarouselClearResponse,
     Error,
-    { variant_key: string; variant_id?: string }
+    ClearCarouselWinnersVariables,
+    ClearCarouselMutationContext
   >({
-    event: 'product-image-finder-evaluate',
+    event: 'product-image-finder-carousel-updated',
     category,
-    mutationFn: (body) => api.post<{ ok: boolean; carousel_slots: Record<string, Record<string, string | null>> }>(
+    mutationFn: (body) => api.post<CarouselClearResponse>(
       `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/carousel-winners/clear`,
       body,
     ),
+    options: {
+      onMutate: (variables) => {
+        const previousResult = queryClient.getQueryData<ProductImageFinderResult>(queryKey);
+        const previousSummary = queryClient.getQueryData<ProductImageFinderSummary>(summaryQueryKey);
+        const previousCatalog = queryClient.getQueryData<CatalogRow[]>(catalogQueryKey);
+        const selector = { variantKey: variables.variant_key, variantId: variables.variant_id };
+        if (previousResult) {
+          queryClient.setQueryData<ProductImageFinderResult | undefined>(
+            queryKey,
+            clearPifCarouselSelections(previousResult, selector),
+          );
+        }
+        if (previousSummary) {
+          queryClient.setQueryData<ProductImageFinderSummary | undefined>(
+            summaryQueryKey,
+            clearPifCarouselSelections(previousSummary, selector),
+          );
+        }
+        queryClient.setQueryData<CatalogRow[] | undefined>(
+          catalogQueryKey,
+          (current) => zeroCatalogPifCarouselProgress(current, {
+            productId,
+            variantKey: variables.variant_key,
+          }),
+        );
+        return { previousResult, previousSummary, previousCatalog };
+      },
+      onError: (_err, _variables, context) => {
+        if (context?.previousResult) {
+          queryClient.setQueryData<ProductImageFinderResult>(queryKey, context.previousResult);
+        }
+        if (context?.previousSummary) {
+          queryClient.setQueryData<ProductImageFinderSummary>(summaryQueryKey, context.previousSummary);
+        }
+        if (context?.previousCatalog) {
+          queryClient.setQueryData<CatalogRow[]>(catalogQueryKey, context.previousCatalog);
+        }
+      },
+    },
+  });
+}
+
+export function useClearAllCarouselWinnersMutation(category: string, productId: string) {
+  const queryClient = useQueryClient();
+  const queryKey = productImageFinderQueryKey(category, productId);
+  const summaryQueryKey = productImageFinderSummaryQueryKey(category, productId);
+  const catalogQueryKey = ['catalog', category] as const;
+
+  return useDataChangeMutation<
+    CarouselClearResponse,
+    Error,
+    void,
+    ClearCarouselMutationContext
+  >({
+    event: 'product-image-finder-carousel-updated',
+    category,
+    mutationFn: () => api.post<CarouselClearResponse>(
+      `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/carousel-winners/clear-all`,
+    ),
+    options: {
+      onMutate: () => {
+        const previousResult = queryClient.getQueryData<ProductImageFinderResult>(queryKey);
+        const previousSummary = queryClient.getQueryData<ProductImageFinderSummary>(summaryQueryKey);
+        const previousCatalog = queryClient.getQueryData<CatalogRow[]>(catalogQueryKey);
+        if (previousResult) {
+          queryClient.setQueryData<ProductImageFinderResult | undefined>(
+            queryKey,
+            clearPifCarouselSelections(previousResult),
+          );
+        }
+        if (previousSummary) {
+          queryClient.setQueryData<ProductImageFinderSummary | undefined>(
+            summaryQueryKey,
+            clearPifCarouselSelections(previousSummary),
+          );
+        }
+        queryClient.setQueryData<CatalogRow[] | undefined>(
+          catalogQueryKey,
+          (current) => zeroCatalogPifCarouselProgress(current, { productId }),
+        );
+        return { previousResult, previousSummary, previousCatalog };
+      },
+      onError: (_err, _variables, context) => {
+        if (context?.previousResult) {
+          queryClient.setQueryData<ProductImageFinderResult>(queryKey, context.previousResult);
+        }
+        if (context?.previousSummary) {
+          queryClient.setQueryData<ProductImageFinderSummary>(summaryQueryKey, context.previousSummary);
+        }
+        if (context?.previousCatalog) {
+          queryClient.setQueryData<CatalogRow[]>(catalogQueryKey, context.previousCatalog);
+        }
+      },
+    },
   });
 }
 

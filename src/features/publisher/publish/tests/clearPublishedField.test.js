@@ -117,8 +117,8 @@ describe('clearPublishedField — scalar scope', () => {
 
     clearPublishedField({ specDb, productId: 'mouse-001', fieldKey: 'weight', productJson });
 
-    // The lock in publishCandidate.js:124-127 checks productJson.fields[fieldKey]?.source === 'manual_override'.
-    // After clear, productJson.fields.weight is undefined → lock no longer blocks.
+    // The lock is the resolved SQL manual_override row.
+    // After clear, SQL is demoted and the JSON mirror no longer exists.
     assert.equal(productJson.fields.weight, undefined, 'lock bypassed by removing the resolved field entry');
   }));
 });

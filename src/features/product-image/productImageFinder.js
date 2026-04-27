@@ -55,6 +55,11 @@ import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 import { processImage, processHeroImage, loadModel, releaseModel, setInferenceConcurrency } from './imageProcessor.js';
 import { ensureModelReady } from './modelDownloader.js';
 import { computeFileContentHash } from '../../shared/contentHash.js';
+import {
+  collectPifImageHistory,
+  collectPifLinkValidationHistory,
+  resolvePifPromptHistorySettings,
+} from './productImagePromptHistory.js';
 
 /* ── Image dimension reader (header-only) ─────────────────────────── */
 
@@ -187,14 +192,14 @@ function downloadFile(url, destPath) {
       }
       if (res.statusCode !== 200) {
         res.resume();
-        return resolve({ ok: false, error: `HTTP ${res.statusCode}` });
+        return resolve({ ok: false, error: `HTTP ${res.statusCode}`, statusCode: res.statusCode });
       }
       const contentType = res.headers['content-type'] || '';
 
       // Guard: if the response isn't an image content-type, don't save it
       if (contentType && !contentType.startsWith('image/')) {
         res.resume();
-        return resolve({ ok: false, error: `not an image: ${contentType}` });
+        return resolve({ ok: false, error: `not an image: ${contentType}`, statusCode: res.statusCode, contentType });
       }
 
       fs.mkdirSync(path.dirname(destPath), { recursive: true });
@@ -202,11 +207,51 @@ function downloadFile(url, destPath) {
       let bytes = 0;
       res.on('data', (chunk) => { bytes += chunk.length; });
       res.pipe(stream);
-      stream.on('finish', () => resolve({ ok: true, bytes, contentType }));
+      stream.on('finish', () => resolve({ ok: true, bytes, contentType, statusCode: res.statusCode }));
       stream.on('error', (err) => resolve({ ok: false, error: err.message }));
     });
     req.on('error', (err) => resolve({ ok: false, error: err.message }));
     req.setTimeout(30000, () => { req.destroy(); resolve({ ok: false, error: 'timeout' }); });
+  });
+}
+
+function validatePageLoaded(url, redirects = 0) {
+  if (!url || typeof url !== 'string') {
+    return Promise.resolve({ ok: false, error: 'missing source_page' });
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return Promise.resolve({ ok: false, error: 'invalid source_page URL' });
+  }
+
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    return Promise.resolve({ ok: false, error: `unsupported source_page protocol: ${parsed.protocol}` });
+  }
+
+  return new Promise((resolve) => {
+    const proto = parsed.protocol === 'https:' ? https : http;
+    const req = proto.get(parsed.href, { headers: DOWNLOAD_HEADERS }, (res) => {
+      if ([301, 302, 307, 308].includes(res.statusCode) && res.headers.location && redirects < 5) {
+        res.resume();
+        validatePageLoaded(new URL(res.headers.location, parsed.href).href, redirects + 1).then(resolve);
+        return;
+      }
+      const statusCode = res.statusCode || 0;
+      const contentType = res.headers['content-type'] || '';
+      const ok = statusCode >= 200 && statusCode < 300;
+      res.resume();
+      resolve({
+        ok,
+        statusCode,
+        contentType,
+        error: ok ? '' : `HTTP ${statusCode}`,
+      });
+    });
+    req.on('error', (err) => resolve({ ok: false, error: err.message }));
+    req.setTimeout(15000, () => { req.destroy(); resolve({ ok: false, error: 'timeout' }); });
   });
 }
 
@@ -324,10 +369,66 @@ export function buildVariantList({ colors = [], colorNames = {}, editions = {} }
 
 /* ── Single-variant runner ─────────────────────────────────────────── */
 
+function createImageValidationEntry({ img, variant, view }) {
+  return {
+    view: view || img?.view || '',
+    url: img?.url || '',
+    source_page: img?.source_page || '',
+    variant_id: variant?.variant_id || null,
+    variant_key: variant?.key || '',
+    accepted: false,
+    stage: 'candidate',
+    reason: '',
+    page: {
+      ok: null,
+      url: img?.source_page || '',
+      status: img?.source_page ? 'not_checked' : 'missing',
+    },
+    direct_image: {
+      ok: null,
+      status_code: null,
+      content_type: '',
+      bytes: null,
+      error: '',
+    },
+    dimensions: {
+      ok: null,
+      width: null,
+      height: null,
+      min_width: null,
+      min_height: null,
+    },
+    content_hash: {
+      ok: null,
+      value: '',
+      duplicate_of: '',
+    },
+    variant_source_evidence: {
+      ok: null,
+      status: 'prompt_contract',
+    },
+    view_label_from_pixels: {
+      ok: null,
+      status: 'prompt_contract',
+    },
+  };
+}
+
+function finishImageValidation(entry, { accepted = false, stage, reason }) {
+  entry.accepted = Boolean(accepted);
+  entry.stage = stage;
+  entry.reason = reason || '';
+  return entry;
+}
+
 async function runSingleVariant({
   product, variant, priorityViews = [], additionalViews = [], viewQualityMap,
   callLlm, productRoot, specDb, actualModel, actualFallbackUsed,
   logger, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
+  imageHistoryEnabled = false,
+  linkValidationEnabled = false,
+  imageHistory = [],
+  linkValidationHistory = [],
   rmbgSession = null,
   promptOverride = '',
   scopeLabel = '',
@@ -395,6 +496,10 @@ async function runSingleVariant({
       familyModelCount: familyModelCount || 1,
       ambiguityLevel: ambiguityLevel || 'easy',
       previousDiscovery: previousDiscovery || { urlsChecked: [], queriesRun: [] },
+      imageHistoryEnabled,
+      linkValidationEnabled,
+      imageHistory,
+      linkValidationHistory,
       scopeLabel,
       promptOverride,
       productImageIdentityFacts: resolvedProductImageIdentityFacts,
@@ -404,7 +509,7 @@ async function runSingleVariant({
     }));
   } catch (err) {
     logger?.error?.('pif_llm_failed', { product_id: product.product_id, variant: variant.key, error: err.message });
-    return { images: [], errors: [{ view: '*', url: '', error: err.message }], variant };
+    return { images: [], errors: [{ view: '*', url: '', error: err.message }], validation_log: [], variant };
   }
 
   const llmImages = Array.isArray(response?.images) ? response.images : [];
@@ -412,6 +517,7 @@ async function runSingleVariant({
   const imagesDir = path.join(productRoot, product.product_id, 'images');
   const downloaded = [];
   const errors = [];
+  const validationLog = [];
 
   // Filename: {view}-{variant_slug}{-N}{ext}
   const variantSlug = slugifyLabel(variant.label);
@@ -427,23 +533,49 @@ async function runSingleVariant({
   } catch { /* dir may not exist yet */ }
 
   for (const img of llmImages) {
-    if (!img.url || !img.view) continue;
+    if (!img.url || !img.view) {
+      const entry = createImageValidationEntry({ img, variant, view: img?.view || '' });
+      validationLog.push(finishImageValidation(entry, { stage: 'candidate', reason: 'missing url or view' }));
+      continue;
+    }
 
     // Normalize view to canonical (lowercase, strip whitespace)
     const view = (img.view || '').toLowerCase().trim();
+    const validationEntry = createImageValidationEntry({ img, variant, view });
     if (!CANONICAL_VIEW_KEYS.includes(view) && view !== 'hero') {
       errors.push({ view: img.view, url: img.url, error: `non-canonical view "${img.view}" skipped` });
+      validationLog.push(finishImageValidation(validationEntry, { stage: 'view_label', reason: `non-canonical view "${img.view}" skipped` }));
       continue;
     }
 
     if (mode === 'hero' && view !== 'hero') {
       errors.push({ view, url: img.url, error: 'non-hero image skipped in hero mode' });
+      validationLog.push(finishImageValidation(validationEntry, { stage: 'view_label', reason: 'non-hero image skipped in hero mode' }));
       continue;
     }
 
     if (mode !== 'hero' && view === 'hero') {
       errors.push({ view, url: img.url, error: 'hero image skipped in view mode' });
+      validationLog.push(finishImageValidation(validationEntry, { stage: 'view_label', reason: 'hero image skipped in view mode' }));
       continue;
+    }
+
+    if (linkValidationEnabled) {
+      const pageResult = await validatePageLoaded(img.source_page || '');
+      validationEntry.page = {
+        ok: pageResult.ok,
+        url: img.source_page || '',
+        status: pageResult.ok ? 'loaded' : 'failed',
+        status_code: pageResult.statusCode ?? null,
+        content_type: pageResult.contentType || '',
+        error: pageResult.error || '',
+      };
+      if (!pageResult.ok) {
+        const reason = `source page failed: ${pageResult.error || 'unknown error'}`;
+        errors.push({ view, url: img.url, error: reason });
+        validationLog.push(finishImageValidation(validationEntry, { stage: 'source_page', reason }));
+        continue;
+      }
     }
 
     // WHY: Hard URL dedup gate. The LLM ignores prompt hints to avoid
@@ -452,6 +584,7 @@ async function runSingleVariant({
     const normUrl = normalizeImageUrl(img.url);
     if (alreadyDownloadedUrls.has(normUrl)) {
       errors.push({ view, url: img.url, error: 'duplicate URL: already downloaded for this variant' });
+      validationLog.push(finishImageValidation(validationEntry, { stage: 'direct_image', reason: 'duplicate URL' }));
       continue;
     }
 
@@ -467,6 +600,13 @@ async function runSingleVariant({
       const result = await downloadFile(img.url, destPath);
 
       if (result.ok) {
+        validationEntry.direct_image = {
+          ok: true,
+          status_code: result.statusCode || 200,
+          content_type: result.contentType || '',
+          bytes: result.bytes ?? null,
+          error: '',
+        };
         const actualExt = inferExtension(img.url, result.contentType || '');
         let finalFilename = filename;
         if (actualExt !== ext) {
@@ -486,6 +626,13 @@ async function runSingleVariant({
         const dims = readImageDimensions(finalPath);
         const belowMinDims = dims && ((vq.minWidth > 0 && dims.width < vq.minWidth) || (vq.minHeight > 0 && dims.height < vq.minHeight));
         const belowMinSize = !dims && vq.minFileSize > 0 && result.bytes < vq.minFileSize;
+        validationEntry.dimensions = {
+          ok: !(belowMinDims || belowMinSize),
+          width: dims?.width ?? null,
+          height: dims?.height ?? null,
+          min_width: vq.minWidth ?? null,
+          min_height: vq.minHeight ?? null,
+        };
 
         if (belowMinDims || belowMinSize) {
           try { fs.unlinkSync(finalPath); } catch { /* */ }
@@ -493,6 +640,7 @@ async function runSingleVariant({
             ? `dimensions ${dims?.width}x${dims?.height} < min ${vq.minWidth}x${vq.minHeight}`
             : `file size ${result.bytes} < min ${vq.minFileSize}`;
           errors.push({ view, url: img.url, error: `quality rejected: ${reason} (${view} view)` });
+          validationLog.push(finishImageValidation(validationEntry, { stage: 'dimensions', reason: `quality rejected: ${reason}` }));
           continue;
         }
 
@@ -502,10 +650,18 @@ async function runSingleVariant({
         // and check against known hashes for this variant.
         const fileBuffer = fs.readFileSync(finalPath);
         const fileHash = computeFileContentHash(fileBuffer);
+        validationEntry.content_hash = {
+          ok: true,
+          value: fileHash || '',
+          duplicate_of: '',
+        };
         if (fileHash && alreadyDownloadedHashes.has(fileHash)) {
           try { fs.unlinkSync(finalPath); } catch { /* */ }
           const existingFile = hashToFilename.get(fileHash) || 'unknown';
           errors.push({ view, url: img.url, error: `duplicate content: identical to ${existingFile}` });
+          validationEntry.content_hash.ok = false;
+          validationEntry.content_hash.duplicate_of = existingFile;
+          validationLog.push(finishImageValidation(validationEntry, { stage: 'content_hash', reason: 'duplicate content' }));
           continue;
         }
         if (fileHash) {
@@ -556,18 +712,29 @@ async function runSingleVariant({
           original_format: originalExt || 'unknown',
           content_hash: fileHash || '',
         });
+        validationLog.push(finishImageValidation(validationEntry, { accepted: true, stage: 'accepted', reason: '' }));
         alreadyDownloadedUrls.add(normUrl);
       } else {
         errors.push({ view, url: img.url, error: result.error });
+        validationEntry.direct_image = {
+          ok: false,
+          status_code: result.statusCode ?? null,
+          content_type: result.contentType || '',
+          bytes: result.bytes ?? null,
+          error: result.error || '',
+        };
+        validationLog.push(finishImageValidation(validationEntry, { stage: 'direct_image', reason: result.error || 'download failed' }));
       }
     } catch (err) {
       errors.push({ view: img.view, url: img.url || '', error: err.message });
+      validationLog.push(finishImageValidation(validationEntry, { stage: 'exception', reason: err.message }));
     }
   }
 
   return {
     images: downloaded,
     errors,
+    validation_log: validationLog,
     variant,
     discovery_log: response?.discovery_log || { urls_checked: [], queries_run: [], notes: [] },
     usage,
@@ -769,6 +936,9 @@ export async function runProductImageFinder({
       includeUrls: urlHistoryEnabled,
       includeQueries: queryHistoryEnabled,
     });
+    const promptHistorySettings = resolvePifPromptHistorySettings({ finderStore, runScopeKey });
+    const imageHistory = collectPifImageHistory({ pifDoc, variant });
+    const linkValidationHistory = collectPifLinkValidationHistory({ pifDoc, variant });
 
     const variantImages = (pifDoc?.selected?.images || []).filter(img => matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key }));
     const alreadyDownloadedUrls = new Set(variantImages.map(img => normalizeImageUrl(img.url)).filter(Boolean));
@@ -818,8 +988,21 @@ export async function runProductImageFinder({
 
     const promptBuilder = mode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
     const promptArgs = mode === 'hero'
-      ? resolveHeroPromptInputs({ product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, heroPromptOverride, productImageIdentityFacts })
-      : resolveViewPromptInputs({ product, variant, allVariants, priorityViews, additionalViews, viewQualityMap, minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, viewPromptOverride, productImageIdentityFacts });
+      ? resolveHeroPromptInputs({
+          product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel,
+          previousDiscovery, imageHistoryEnabled: promptHistorySettings.imageHistoryEnabled,
+          linkValidationEnabled: promptHistorySettings.linkValidationEnabled,
+          imageHistory, linkValidationHistory, scopeLabel: runScopeLabel,
+          heroPromptOverride, productImageIdentityFacts,
+        })
+      : resolveViewPromptInputs({
+          product, variant, allVariants, priorityViews, additionalViews, viewQualityMap,
+          minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel,
+          previousDiscovery, imageHistoryEnabled: promptHistorySettings.imageHistoryEnabled,
+          linkValidationEnabled: promptHistorySettings.linkValidationEnabled,
+          imageHistory, linkValidationHistory, scopeLabel: runScopeLabel,
+          viewPromptOverride, productImageIdentityFacts,
+        });
     const systemPrompt = promptBuilder(promptArgs);
     const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
 
@@ -849,6 +1032,10 @@ export async function runProductImageFinder({
       product, variant, priorityViews, additionalViews, viewQualityMap,
       callLlm, productRoot, specDb, actualModel: _mt.actualModel, actualFallbackUsed: _mt.actualFallbackUsed, logger,
       siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
+      imageHistoryEnabled: promptHistorySettings.imageHistoryEnabled,
+      linkValidationEnabled: promptHistorySettings.linkValidationEnabled,
+      imageHistory,
+      linkValidationHistory,
       rmbgSession,
       promptOverride: mode === 'hero' ? heroPromptOverride : viewPromptOverride,
       scopeLabel: runScopeLabel,
@@ -863,7 +1050,19 @@ export async function runProductImageFinder({
     const variantDurationMs = Date.now() - variantStartMs;
 
     const selected = { images: result.images };
-    const responsePayload = { mode, run_scope_key: runScopeKey, started_at: variantStartedAt, duration_ms: variantDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
+    const responsePayload = {
+      mode,
+      run_scope_key: runScopeKey,
+      started_at: variantStartedAt,
+      duration_ms: variantDurationMs,
+      images: result.images,
+      download_errors: result.errors,
+      image_validation_log: result.validation_log,
+      discovery_log: result.discovery_log,
+      variant_id: variant.variant_id || null,
+      variant_key: variant.key,
+      variant_label: variant.label,
+    };
     const resultCallExtras = { ...llmCallExtras, callId: `${llmCallExtras.callId}:result` };
 
     onLlmCallComplete?.({
@@ -1217,6 +1416,9 @@ export async function runCarouselLoop({
       includeUrls: urlHistoryEnabled,
       includeQueries: queryHistoryEnabled,
     });
+    const promptHistorySettings = resolvePifPromptHistorySettings({ finderStore, runScopeKey });
+    const imageHistory = collectPifImageHistory({ pifDoc, variant });
+    const linkValidationHistory = collectPifLinkValidationHistory({ pifDoc, variant });
 
     const llmDeps = buildLlmCallDeps({
       config, logger,
@@ -1264,8 +1466,21 @@ export async function runCarouselLoop({
     // Build prompt BEFORE call so operations modal shows it immediately
     const promptBuilder = callMode === 'hero' ? buildHeroImageFinderPrompt : buildProductImageFinderPrompt;
     const promptArgs = callMode === 'hero'
-      ? resolveHeroPromptInputs({ product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, heroPromptOverride, productImageIdentityFacts })
-      : resolveViewPromptInputs({ product, variant, allVariants, priorityViews, additionalViews, viewQualityMap, minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery, scopeLabel: runScopeLabel, viewPromptOverride, productImageIdentityFacts });
+      ? resolveHeroPromptInputs({
+          product, variant, viewQualityMap, siblingsExcluded, familyModelCount, ambiguityLevel,
+          previousDiscovery, imageHistoryEnabled: promptHistorySettings.imageHistoryEnabled,
+          linkValidationEnabled: promptHistorySettings.linkValidationEnabled,
+          imageHistory, linkValidationHistory, scopeLabel: runScopeLabel,
+          heroPromptOverride, productImageIdentityFacts,
+        })
+      : resolveViewPromptInputs({
+          product, variant, allVariants, priorityViews, additionalViews, viewQualityMap,
+          minWidth, minHeight, siblingsExcluded, familyModelCount, ambiguityLevel,
+          previousDiscovery, imageHistoryEnabled: promptHistorySettings.imageHistoryEnabled,
+          linkValidationEnabled: promptHistorySettings.linkValidationEnabled,
+          imageHistory, linkValidationHistory, scopeLabel: runScopeLabel,
+          viewPromptOverride, productImageIdentityFacts,
+        });
     const systemPrompt = promptBuilder(promptArgs);
     const userMsg = JSON.stringify({ brand: product.brand, model: product.model, base_model: product.base_model, variant: variant.key });
 
@@ -1292,6 +1507,10 @@ export async function runCarouselLoop({
       product, variant, priorityViews, additionalViews, viewQualityMap,
       callLlm, productRoot, specDb, actualModel: _mtLoop.actualModel, actualFallbackUsed: _mtLoop.actualFallbackUsed, logger,
       siblingsExcluded, familyModelCount, ambiguityLevel, previousDiscovery,
+      imageHistoryEnabled: promptHistorySettings.imageHistoryEnabled,
+      linkValidationEnabled: promptHistorySettings.linkValidationEnabled,
+      imageHistory,
+      linkValidationHistory,
       rmbgSession,
       promptOverride: callMode === 'hero' ? heroPromptOverride : viewPromptOverride,
       scopeLabel: runScopeLabel,
@@ -1309,7 +1528,21 @@ export async function runCarouselLoop({
 
     const callDurationMs = Date.now() - callStartMs;
     const callFocusView = callMode === 'view' ? (focusView || null) : null;
-    const responsePayload = { mode: callMode, run_scope_key: runScopeKey, loop_id: loopId, focus_view: callFocusView, started_at: callStartedAt, duration_ms: callDurationMs, images: result.images, download_errors: result.errors, discovery_log: result.discovery_log, variant_id: variant.variant_id || null, variant_key: variant.key, variant_label: variant.label };
+    const responsePayload = {
+      mode: callMode,
+      run_scope_key: runScopeKey,
+      loop_id: loopId,
+      focus_view: callFocusView,
+      started_at: callStartedAt,
+      duration_ms: callDurationMs,
+      images: result.images,
+      download_errors: result.errors,
+      image_validation_log: result.validation_log,
+      discovery_log: result.discovery_log,
+      variant_id: variant.variant_id || null,
+      variant_key: variant.key,
+      variant_label: variant.label,
+    };
     const infrastructureFailure = resolveLoopLlmInfrastructureFailure(result);
     const resultCallId = `${callContext.callId}:result`;
 

@@ -18,6 +18,20 @@ const VARIANT_IDENTITY_GATE = `Variant identity gate:
 - If source text, alt text, or filename says the target variant but the pixels clearly show a sibling variant, trust the pixels and reject.
 - If pixels are ambiguous between close sibling variants, do not select the image as the winner unless it is the best source-verified match.`;
 
+const DEPENDENCY_STATUSES = new Set(['aligned', 'unknown', 'mismatch']);
+
+function normalizeDependencyStatus(status) {
+  const value = String(status || '').trim().toLowerCase();
+  return DEPENDENCY_STATUSES.has(value) ? value : 'unknown';
+}
+
+function normalizeDependencyMismatchKeys(keys) {
+  if (!Array.isArray(keys)) return [];
+  return keys
+    .map((key) => String(key || '').trim())
+    .filter(Boolean);
+}
+
 /* ── Thumbnail pipeline (Phase 1) ───────────────────────────────── */
 
 /**
@@ -84,6 +98,8 @@ Respond with JSON matching this schema:
       "usable_as_carousel_extra": true,
       "quality": "pass|borderline|fail",
       "duplicate": false,
+      "dependency_status": "aligned|unknown|mismatch",
+      "dependency_mismatch_keys": ["connection"],
       "flags": ["cropped"],
       "reasoning": "1 sentence classification and quality explanation"
     }
@@ -101,7 +117,10 @@ Rules:
 - "candidates": Classify every candidate image by visible pixels, not by query intent, filename, alt text, page label, or the requested view.
 - Query intent is not view evidence. A top-down image found during a front-view search has "actual_view": "top" and "matches_requested_view": false.
 - Set "usable_as_required_view": true only when the image could fill the required slot for its actual_view.
-- Set "usable_as_carousel_extra": true for clean exact-product shots that are not the winner but could still be useful as numbered extras like top2, sangle2, or img1.
+- Set "dependency_status" for every candidate. Use "aligned" when product identity guardrails match visible/source evidence, "unknown" when they are not testable, and "mismatch" when visible/source evidence conflicts. Put conflicting field keys in "dependency_mismatch_keys".
+- Dependency-aligned candidates beat mismatches for the required slot. Prefer fewer accurate images over padding the carousel with dependency-mismatched images.
+- Set "usable_as_carousel_extra": true only for clean exact-product shots that are not the winner and are meaningfully different from the selected/stronger image.
+- Do not mark same composition shots as carousel extras when the only difference is slight zoom, crop, CDN processing, background removal, or a cable/no-cable variant of the same angle.
 - Use "actual_view": "generic" only for clean exact-product shots that are useful but do not match a named canonical view.
 - Set "duplicate": true for near-duplicates of a winner, another candidate, or an existing carousel slot.
 - "rejected": List ALL candidates that were not picked as winner. Include a brief "reasoning" (1 sentence) for each.
@@ -496,6 +515,8 @@ export async function evaluateViewCandidates({
       usableAsCarouselExtra: candidate.usable_as_carousel_extra === true,
       duplicate: candidate.duplicate === true,
       quality: candidate.quality || '',
+      dependencyStatus: normalizeDependencyStatus(candidate.dependency_status),
+      dependencyMismatchKeys: normalizeDependencyMismatchKeys(candidate.dependency_mismatch_keys),
     });
     seenRankingFilenames.add(candidate.filename);
   }
@@ -512,6 +533,8 @@ export async function evaluateViewCandidates({
       usableAsCarouselExtra: true,
       duplicate: false,
       quality: 'pass',
+      dependencyStatus: 'unknown',
+      dependencyMismatchKeys: [],
     });
     seenRankingFilenames.add(winnerFilename);
   }
@@ -529,6 +552,8 @@ export async function evaluateViewCandidates({
       usableAsCarouselExtra: false,
       duplicate: false,
       quality: '',
+      dependencyStatus: 'unknown',
+      dependencyMismatchKeys: [],
     });
     seenRankingFilenames.add(rej.filename);
   }
@@ -551,13 +576,22 @@ const EVAL_FIELDS = [
   'eval_usable_as_carousel_extra',
   'eval_duplicate',
   'eval_quality',
+  'eval_dependency_status',
+  'eval_dependency_mismatch_keys',
   'hero',
   'hero_rank',
 ];
+const VIEW_EVAL_FIELDS = EVAL_FIELDS.filter((field) => field !== 'hero' && field !== 'hero_rank');
 
 function clearEvalFieldsForVariant(images = [], selector) {
   for (const img of (images || [])) {
     if (!matchVariant(img, selector)) continue;
+    for (const field of EVAL_FIELDS) delete img[field];
+  }
+}
+
+function clearEvalFieldsForAll(images = []) {
+  for (const img of (images || [])) {
     for (const field of EVAL_FIELDS) delete img[field];
   }
 }
@@ -603,10 +637,7 @@ export function mergeEvaluation({ productId, productRoot, variantKey, variantId,
     if (!matchVariant(img, { variantId, variantKey })) continue;
     if (viewsBeingUpdated.has(img.view)) {
       // Clear view-eval fields for this view
-      delete img.eval_best;
-      delete img.eval_flags;
-      delete img.eval_reasoning;
-      delete img.eval_source;
+      for (const field of VIEW_EVAL_FIELDS) delete img[field];
     }
     if (heroResults) {
       // Clear hero fields for re-evaluation
@@ -655,6 +686,12 @@ export function mergeEvaluation({ productId, productRoot, variantKey, variantId,
     }
     if (ranking.quality !== undefined && ranking.quality !== '') {
       img.eval_quality = ranking.quality;
+    }
+    if (ranking.dependencyStatus !== undefined) {
+      img.eval_dependency_status = normalizeDependencyStatus(ranking.dependencyStatus);
+    }
+    if (ranking.dependencyMismatchKeys !== undefined) {
+      img.eval_dependency_mismatch_keys = normalizeDependencyMismatchKeys(ranking.dependencyMismatchKeys);
     }
   }
 
@@ -768,6 +805,33 @@ export function clearCarouselWinners({ productId, productRoot, variantKey, varia
 }
 
 /**
+ * Clear all carousel winners for every variant while preserving images, runs,
+ * discovery history, and eval history. Removes both auto-fill eval fields and
+ * manual slot overrides so later Eval runs repopulate from fresh selections.
+ *
+ * @param {object} opts
+ * @param {string} opts.productId
+ * @param {string} opts.productRoot
+ * @returns {object|null} updated product_images document, or null if missing
+ */
+export function clearAllCarouselWinners({ productId, productRoot }) {
+  const doc = readProductImages({ productId, productRoot });
+  if (!doc) return null;
+
+  clearEvalFieldsForAll(doc.selected?.images);
+
+  for (const run of (doc.runs || [])) {
+    clearEvalFieldsForAll(run.selected?.images);
+    clearEvalFieldsForAll(run.response?.images);
+  }
+
+  doc.carousel_slots = {};
+
+  writeProductImages({ productId, productRoot, data: doc });
+  return doc;
+}
+
+/**
  * Resolve carousel slot contents for one variant.
  *
  * Precedence: user override (carousel_slots) > eval_best/hero > empty.
@@ -796,6 +860,15 @@ function actualViewForImage(img) {
   return CANONICAL_EXTRA_VIEWS.has(img?.view) ? img.view : '';
 }
 
+function dependencyStatusForImage(img) {
+  return normalizeDependencyStatus(img?.eval_dependency_status);
+}
+
+function dependencyRankForImage(img) {
+  const rank = { aligned: 0, unknown: 1, mismatch: 2 };
+  return rank[dependencyStatusForImage(img)] ?? rank.unknown;
+}
+
 function isRequiredViewCandidate(img, view) {
   if (!img || img.quality_pass === false) return false;
   const actualView = actualViewForImage(img);
@@ -810,6 +883,7 @@ function isExtraCandidate(img) {
   if (!img || img.quality_pass === false) return false;
   if (img.view === 'hero' || img.hero === true) return false;
   if (img.eval_usable_as_carousel_extra !== true) return false;
+  if (dependencyStatusForImage(img) === 'mismatch') return false;
   if (img.eval_duplicate === true) return false;
   if (hasDisqualifyingFlags(img)) return false;
   const actualView = actualViewForImage(img);
@@ -818,6 +892,9 @@ function isExtraCandidate(img) {
 
 function sortCandidatesByQuality(a, b) {
   const qualityRank = { pass: 0, borderline: 1, fail: 2 };
+  const da = dependencyRankForImage(a);
+  const db = dependencyRankForImage(b);
+  if (da !== db) return da - db;
   const qa = qualityRank[a.eval_quality] ?? 1;
   const qb = qualityRank[b.eval_quality] ?? 1;
   if (qa !== qb) return qa - qb;

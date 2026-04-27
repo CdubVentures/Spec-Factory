@@ -10,6 +10,7 @@ import { z } from 'zod';
 const evalFlagEnum = z.enum(['watermark', 'badge', 'cropped', 'wrong_product', 'other']);
 const actualViewEnum = z.enum(['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle', 'generic']);
 const candidateQualityEnum = z.enum(['pass', 'borderline', 'fail']);
+const dependencyStatusEnum = z.enum(['aligned', 'unknown', 'mismatch']);
 
 const viewCandidateEvalSchema = z.object({
   filename: z.string(),
@@ -19,6 +20,8 @@ const viewCandidateEvalSchema = z.object({
   usable_as_carousel_extra: z.boolean(),
   quality: candidateQualityEnum,
   duplicate: z.boolean(),
+  dependency_status: dependencyStatusEnum.optional(),
+  dependency_mismatch_keys: z.array(z.string()).optional(),
   flags: z.array(evalFlagEnum).optional(),
   reasoning: z.string(),
 });

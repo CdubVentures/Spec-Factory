@@ -42,6 +42,11 @@ import { resolvePhaseModel } from '../../core/llm/client/routing.js';
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { productImageFinderResponseSchema } from './productImageSchema.js';
 import { viewEvalResponseSchema, heroEvalResponseSchema } from './imageEvaluatorSchema.js';
+import {
+  collectPifImageHistory,
+  collectPifLinkValidationHistory,
+  resolvePifPromptHistorySettings,
+} from './productImagePromptHistory.js';
 
 /* ── Pure arg-bag resolvers (shared with orchestrator) ─────────────────────── */
 
@@ -64,6 +69,10 @@ export function resolveViewPromptInputs({
   familyModelCount,
   ambiguityLevel,
   previousDiscovery,
+  imageHistoryEnabled = false,
+  linkValidationEnabled = false,
+  imageHistory = [],
+  linkValidationHistory = [],
   scopeLabel,
   viewPromptOverride = '',
   productImageIdentityFacts = [],
@@ -83,6 +92,10 @@ export function resolveViewPromptInputs({
     familyModelCount,
     ambiguityLevel,
     previousDiscovery,
+    imageHistoryEnabled,
+    linkValidationEnabled,
+    imageHistory,
+    linkValidationHistory,
     scopeLabel,
     promptOverride: viewPromptOverride,
     productImageIdentityFacts,
@@ -100,6 +113,10 @@ export function resolveHeroPromptInputs({
   familyModelCount,
   ambiguityLevel,
   previousDiscovery,
+  imageHistoryEnabled = false,
+  linkValidationEnabled = false,
+  imageHistory = [],
+  linkValidationHistory = [],
   scopeLabel,
   heroPromptOverride = '',
   productImageIdentityFacts = [],
@@ -115,6 +132,10 @@ export function resolveHeroPromptInputs({
     familyModelCount,
     ambiguityLevel,
     previousDiscovery,
+    imageHistoryEnabled,
+    linkValidationEnabled,
+    imageHistory,
+    linkValidationHistory,
     scopeLabel,
     promptOverride: heroPromptOverride,
     productImageIdentityFacts,
@@ -280,6 +301,8 @@ export async function resolvePifPromptContext({
 
   const pifDoc = readProductImages({ productId: product.product_id, productRoot });
   const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
+  const imageHistory = collectPifImageHistory({ pifDoc, variant: variantShape });
+  const linkValidationHistory = collectPifLinkValidationHistory({ pifDoc, variant: variantShape });
 
   // WHY: Match the orchestrator's per-pool partitioning so preview history
   // is byte-identical to what the matching real run would receive.
@@ -313,6 +336,7 @@ export async function resolvePifPromptContext({
     viewPromptOverride, heroPromptOverride,
     evalPromptOverride, heroEvalPromptOverride, heroEvalCriteria,
     productImageIdentityFacts,
+    imageHistory, linkValidationHistory,
     previousPifRuns, buildPreviousDiscoveryByPool, pifDoc,
     productRoot, modelInfo, finderStore,
   };
@@ -352,6 +376,10 @@ function buildViewPromptEntry(baseCtx, focusView, additionalViews, label, runSco
           }),
       }]
     : baseCtx.priorityViews;
+  const promptHistorySettings = resolvePifPromptHistorySettings({
+    finderStore: baseCtx.finderStore,
+    runScopeKey,
+  });
   const promptInputs = resolveViewPromptInputs({
     product: baseCtx.product,
     variant: baseCtx.variant,
@@ -365,6 +393,10 @@ function buildViewPromptEntry(baseCtx, focusView, additionalViews, label, runSco
     familyModelCount: baseCtx.familyModelCount,
     ambiguityLevel: baseCtx.ambiguityLevel,
     previousDiscovery: baseCtx.buildPreviousDiscoveryByPool(runScopeKey),
+    imageHistoryEnabled: promptHistorySettings.imageHistoryEnabled,
+    linkValidationEnabled: promptHistorySettings.linkValidationEnabled,
+    imageHistory: baseCtx.imageHistory,
+    linkValidationHistory: baseCtx.linkValidationHistory,
     scopeLabel: scopeLabelFor(runScopeKey),
     viewPromptOverride: baseCtx.viewPromptOverride,
     productImageIdentityFacts: baseCtx.productImageIdentityFacts,
@@ -380,6 +412,10 @@ function buildViewPromptEntry(baseCtx, focusView, additionalViews, label, runSco
 }
 
 function buildHeroPromptEntry(baseCtx, runScopeKey, label = 'hero') {
+  const promptHistorySettings = resolvePifPromptHistorySettings({
+    finderStore: baseCtx.finderStore,
+    runScopeKey,
+  });
   const promptInputs = resolveHeroPromptInputs({
     product: baseCtx.product,
     variant: baseCtx.variant,
@@ -388,6 +424,10 @@ function buildHeroPromptEntry(baseCtx, runScopeKey, label = 'hero') {
     familyModelCount: baseCtx.familyModelCount,
     ambiguityLevel: baseCtx.ambiguityLevel,
     previousDiscovery: baseCtx.buildPreviousDiscoveryByPool(runScopeKey),
+    imageHistoryEnabled: promptHistorySettings.imageHistoryEnabled,
+    linkValidationEnabled: promptHistorySettings.linkValidationEnabled,
+    imageHistory: baseCtx.imageHistory,
+    linkValidationHistory: baseCtx.linkValidationHistory,
     scopeLabel: scopeLabelFor(runScopeKey),
     heroPromptOverride: baseCtx.heroPromptOverride,
     productImageIdentityFacts: baseCtx.productImageIdentityFacts,

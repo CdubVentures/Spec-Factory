@@ -9,7 +9,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
-import { writeCarouselSlot, clearCarouselWinners, resolveCarouselSlots } from '../imageEvaluator.js';
+import { writeCarouselSlot, clearCarouselWinners, clearAllCarouselWinners, resolveCarouselSlots } from '../imageEvaluator.js';
 
 const TMP = path.join(os.tmpdir(), `carousel-slot-test-${Date.now()}`);
 const PRODUCT_ID = 'test-product';
@@ -290,6 +290,85 @@ describe('clearCarouselWinners', () => {
 
 /* ── resolveCarouselSlots ───────────────────────────────────────── */
 
+describe('clearAllCarouselWinners', () => {
+  it('empties resolved carousel slots for every variant without deleting images, runs, or eval history', () => {
+    const blackTop = makeImage({ view: 'top', filename: 'top-black.png', eval_best: true, eval_flags: [], eval_reasoning: 'best top', eval_source: 'https://example.com/top.png' });
+    const blackHero = makeImage({ view: 'hero', filename: 'hero-black.png', hero: true, hero_rank: 1, eval_reasoning: 'best hero' });
+    const whiteTop = makeImage({ view: 'top', filename: 'top-white.png', variant_id: 'v_white123', variant_key: 'color:white', variant_label: 'White', eval_best: true, eval_reasoning: 'best white' });
+
+    const baseDoc = writeTestDoc([
+      blackTop,
+      blackHero,
+      whiteTop,
+    ], {
+      'color:black': { top: 'manual-top-black.png', hero_1: 'manual-hero-black.png' },
+      'color:white': { top: 'manual-top-white.png' },
+    }, [
+      {
+        run_number: 1,
+        selected: { images: [{ ...blackTop }, { ...blackHero }, { ...whiteTop }] },
+        response: { images: [{ ...blackTop }, { ...blackHero }, { ...whiteTop }] },
+      },
+    ]);
+    baseDoc.evaluations = [{ eval_number: 1, variant_key: 'color:black', type: 'view' }];
+    fs.writeFileSync(path.join(TMP, PRODUCT_ID, 'product_images.json'), JSON.stringify(baseDoc, null, 2));
+
+    const result = clearAllCarouselWinners({
+      productId: PRODUCT_ID,
+      productRoot: TMP,
+    });
+
+    assert.ok(result);
+    const doc = readTestDoc();
+    assert.equal(doc.selected.images.length, 3);
+    assert.equal(doc.runs.length, 1);
+    assert.deepEqual(doc.evaluations, [{ eval_number: 1, variant_key: 'color:black', type: 'view' }]);
+    assert.deepEqual(doc.carousel_slots, {});
+
+    for (const img of doc.selected.images) {
+      assert.equal(img.eval_best, undefined);
+      assert.equal(img.eval_flags, undefined);
+      assert.equal(img.eval_reasoning, undefined);
+      assert.equal(img.eval_source, undefined);
+      assert.equal(img.hero, undefined);
+      assert.equal(img.hero_rank, undefined);
+    }
+
+    for (const img of doc.runs[0].selected.images) {
+      assert.equal(img.eval_best, undefined);
+      assert.equal(img.eval_reasoning, undefined);
+      assert.equal(img.hero, undefined);
+      assert.equal(img.hero_rank, undefined);
+    }
+
+    for (const img of doc.runs[0].response.images) {
+      assert.equal(img.eval_best, undefined);
+      assert.equal(img.eval_reasoning, undefined);
+      assert.equal(img.hero, undefined);
+      assert.equal(img.hero_rank, undefined);
+    }
+
+    const blackSlots = resolveCarouselSlots({
+      viewBudget: ['top'],
+      heroCount: 1,
+      variantKey: 'color:black',
+      variantId: 'v_abc12345',
+      carouselSlots: doc.carousel_slots,
+      images: doc.selected.images,
+    });
+    const whiteSlots = resolveCarouselSlots({
+      viewBudget: ['top'],
+      heroCount: 0,
+      variantKey: 'color:white',
+      variantId: 'v_white123',
+      carouselSlots: doc.carousel_slots,
+      images: doc.selected.images,
+    });
+    assert.deepEqual(blackSlots.map((slot) => slot.filename), [null, null]);
+    assert.deepEqual(whiteSlots.map((slot) => slot.filename), [null]);
+  });
+});
+
 describe('resolveCarouselSlots', () => {
   const viewBudget = ['top', 'left', 'angle'];
 
@@ -322,6 +401,67 @@ describe('resolveCarouselSlots', () => {
     const topSlot = result.find(s => s.slot === 'top');
     assert.equal(topSlot.filename, 'top-black.png');
     assert.equal(topSlot.source, 'eval');
+  });
+
+  it('prefers dependency-aligned required images over a mismatching eval_best pick', () => {
+    const result = resolveCarouselSlots({
+      viewBudget: ['top'],
+      heroCount: 0,
+      variantKey: 'color:black',
+      carouselSlots: {},
+      images: [
+        makeImage({
+          view: 'top',
+          filename: 'top-no-wire.png',
+          eval_best: true,
+          eval_actual_view: 'top',
+          eval_usable_as_required_view: true,
+          eval_quality: 'pass',
+          eval_dependency_status: 'mismatch',
+          width: 1600,
+          height: 1000,
+        }),
+        makeImage({
+          view: 'top',
+          filename: 'top-wired.png',
+          eval_best: false,
+          eval_actual_view: 'top',
+          eval_usable_as_required_view: true,
+          eval_quality: 'pass',
+          eval_dependency_status: 'aligned',
+          width: 1200,
+          height: 800,
+        }),
+      ],
+    });
+
+    assert.deepEqual(result.map(s => [s.slot, s.filename, s.source]), [
+      ['top', 'top-wired.png', 'eval'],
+    ]);
+  });
+
+  it('falls back to a dependency mismatch for a required slot when no better candidate exists', () => {
+    const result = resolveCarouselSlots({
+      viewBudget: ['top'],
+      heroCount: 0,
+      variantKey: 'color:black',
+      carouselSlots: {},
+      images: [
+        makeImage({
+          view: 'top',
+          filename: 'top-no-wire.png',
+          eval_best: true,
+          eval_actual_view: 'top',
+          eval_usable_as_required_view: true,
+          eval_quality: 'pass',
+          eval_dependency_status: 'mismatch',
+        }),
+      ],
+    });
+
+    assert.deepEqual(result.map(s => [s.slot, s.filename, s.source]), [
+      ['top', 'top-no-wire.png', 'eval'],
+    ]);
   });
 
   it('user override takes precedence over eval_best', () => {
@@ -472,6 +612,72 @@ describe('resolveCarouselSlots', () => {
       ['top', 'top-black.png', 'eval'],
       ['front', null, 'empty'],
       ['top2', 'front-search-top.png', 'eval'],
+    ]);
+  });
+
+  it('does not use dependency mismatches or duplicates as numbered extra slots', () => {
+    const result = resolveCarouselSlots({
+      viewBudget: ['top'],
+      heroCount: 0,
+      variantKey: 'color:black',
+      carouselSlots: {},
+      images: [
+        makeImage({
+          view: 'top',
+          filename: 'top-wired.png',
+          eval_best: true,
+          eval_actual_view: 'top',
+          eval_usable_as_required_view: true,
+          eval_usable_as_carousel_extra: true,
+          eval_duplicate: false,
+          eval_flags: [],
+          eval_dependency_status: 'aligned',
+        }),
+        makeImage({
+          view: 'top',
+          filename: 'top-no-wire.png',
+          eval_best: false,
+          eval_actual_view: 'top',
+          eval_usable_as_required_view: true,
+          eval_usable_as_carousel_extra: true,
+          eval_duplicate: false,
+          eval_flags: [],
+          eval_dependency_status: 'mismatch',
+          width: 1600,
+          height: 1000,
+        }),
+        makeImage({
+          view: 'top',
+          filename: 'top-wired-tight-crop.png',
+          eval_best: false,
+          eval_actual_view: 'top',
+          eval_usable_as_required_view: true,
+          eval_usable_as_carousel_extra: true,
+          eval_duplicate: true,
+          eval_flags: [],
+          eval_dependency_status: 'aligned',
+          width: 1500,
+          height: 900,
+        }),
+        makeImage({
+          view: 'top',
+          filename: 'top-wired-distinct.png',
+          eval_best: false,
+          eval_actual_view: 'top',
+          eval_usable_as_required_view: true,
+          eval_usable_as_carousel_extra: true,
+          eval_duplicate: false,
+          eval_flags: [],
+          eval_dependency_status: 'aligned',
+          width: 1200,
+          height: 800,
+        }),
+      ],
+    });
+
+    assert.deepEqual(result.map(s => [s.slot, s.filename, s.source]), [
+      ['top', 'top-wired.png', 'eval'],
+      ['top2', 'top-wired-distinct.png', 'eval'],
     ]);
   });
 

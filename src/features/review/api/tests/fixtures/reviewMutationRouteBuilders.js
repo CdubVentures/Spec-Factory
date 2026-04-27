@@ -34,6 +34,8 @@ export function makeSeededRuntimeSpecDb(overrides = {}) {
     renameListValueById: () => [],
     deleteListValueById: () => {},
     getProductsByListValueId: () => [],
+    demoteResolvedCandidates: () => {},
+    insertFieldCandidate: () => {},
     ...overrides,
   };
 }

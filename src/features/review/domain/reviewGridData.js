@@ -1,9 +1,7 @@
 import fs from 'node:fs/promises';
-import fsSync from 'node:fs';
 import path from 'node:path';
 import { nowIso } from '../../../shared/primitives.js';
 import { loadCategoryConfig } from '../../../categories/loader.js';
-import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { ruleRequiredLevel } from '../../../engine/ruleAccessors.js';
 import { projectFieldRulesForConsumer } from '../../../field-rules/consumerGate.js';
 import { isVariantDependentField } from '../../../core/finder/finderModuleRegistry.js';
@@ -277,58 +275,6 @@ export async function buildProductReviewPayload({
         }
       }
     }
-  }
-
-  // WHY: Manual overrides are user input (not extraction output) and live only
-  // in product.json — never in field_candidates. Merge them into resolvedByField
-  // and variantValuesByField so the grid's downstream logic treats overrides as
-  // the resolved value WITHOUT needing an SQL row. Overrides ALWAYS win over
-  // any pipeline-resolved candidate (confidence=1.0 + manual_override source).
-  try {
-    const productPath = path.join(defaultProductRoot(), productId, 'product.json');
-    const productJson = fsSync.existsSync(productPath)
-      ? JSON.parse(fsSync.readFileSync(productPath, 'utf8'))
-      : null;
-
-    if (productJson?.fields && typeof productJson.fields === 'object') {
-      for (const [fk, entry] of Object.entries(productJson.fields)) {
-        if (!entry || entry.source !== 'manual_override') continue;
-        const normFk = normalizeField(fk);
-        resolvedByField.set(normFk, {
-          value: typeof entry.value === 'object' ? JSON.stringify(entry.value) : String(entry.value ?? ''),
-          confidence: 1.0,
-          status: 'resolved',
-          source_type: 'manual_override',
-          source_id: 'manual_override',
-          metadata_json: { source: 'manual_override', reviewer: entry.reviewer ?? null, reason: entry.reason ?? null },
-          updated_at: String(entry.resolved_at || '').trim() || '',
-          variant_id: null,
-        });
-      }
-    }
-
-    if (productJson?.variant_fields && typeof productJson.variant_fields === 'object') {
-      for (const [vid, fieldMap] of Object.entries(productJson.variant_fields)) {
-        if (!fieldMap || typeof fieldMap !== 'object') continue;
-        for (const [fk, entry] of Object.entries(fieldMap)) {
-          if (!entry || entry.source !== 'manual_override') continue;
-          const normFk = normalizeField(fk);
-          if (!variantValuesByField.has(normFk)) variantValuesByField.set(normFk, new Map());
-          variantValuesByField.get(normFk).set(vid, {
-            value: typeof entry.value === 'object' ? JSON.stringify(entry.value) : String(entry.value ?? ''),
-            confidence: 1.0,
-            status: 'resolved',
-            source_type: 'manual_override',
-            source_id: 'manual_override',
-            metadata_json: { source: 'manual_override', reviewer: entry.reviewer ?? null, reason: entry.reason ?? null },
-            updated_at: String(entry.resolved_at || '').trim() || '',
-            variant_id: vid,
-          });
-        }
-      }
-    }
-  } catch {
-    // best-effort — product.json merge failures shouldn't break the grid
   }
 
   // WHY: Variant-derived fields (colors, editions) are authoritative from the

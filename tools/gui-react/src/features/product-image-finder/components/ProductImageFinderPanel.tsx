@@ -50,6 +50,7 @@ import {
   useProcessProductImageMutation,
   useProcessAllProductImagesMutation,
   useClearCarouselWinnersMutation,
+  useClearAllCarouselWinnersMutation,
   useDeleteEvalRecordMutation,
 } from '../api/productImageFinderQueries.ts';
 import type { ProductImageDependencyStatus, ProductImageEntry, GalleryImage } from '../types.ts';
@@ -149,6 +150,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
   const deleteImageMut = useDeleteProductImageMutation(category, productId);
   const deleteImagesMut = useDeleteProductImagesMutation(category, productId);
   const clearCarouselWinnersMut = useClearCarouselWinnersMutation(category, productId);
+  const clearAllCarouselWinnersMut = useClearAllCarouselWinnersMutation(category, productId);
   const deleteEvalMut = useDeleteEvalRecordMutation(category, productId);
   const processImageMut = useProcessProductImageMutation(category, productId);
   const processAllMut = useProcessAllProductImagesMutation(category, productId);

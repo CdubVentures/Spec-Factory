@@ -37,4 +37,5 @@ Internal modules (not re-exported — auto-wired via `finderModuleRegistry`):
 - **carousel_slots keyed by variant_key**: Human-readable JSON keys. Re-keyed by propagation on rename. Deleted by propagation on variant delete.
 - **matchVariant predicate**: All image filtering uses `matchVariant()`. variant_id wins when both sides have it; falls back to variant_key for legacy data.
 - **Accumulation across runs**: Images from multiple PIF runs are unioned per variant. Each run's images carry the variant_key from that run's CEF data.
+- **Prompt history is variant-wide**: PIF Image History and Link Validation blocks read accepted images plus validation outcomes across all prior PIF run scopes for the same variant. The per-run knobs control injection only; the validation ledger is persisted on every run.
 - **Key Finder image context is read-only**: `resolveKeyFinderPifPriorityImageContext` exposes only PIF-evaluated priority images for the default/base variant. Missing or unconvertible local files produce unavailable guidance; raw image candidates are never promoted into Key Finder context.

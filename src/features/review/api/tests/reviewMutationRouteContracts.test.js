@@ -51,7 +51,7 @@ test('review item manual override rejects empty values via the response contract
   assert.equal(calls.responses[0]?.body?.error, 'value_required');
 });
 
-// Phase 1b: override and manual-override now flow through submitCandidate.
+// Override and manual-override share the route response contract.
 // Error-path tests use a specDb whose getCompiledRules throws to trigger the catch block.
 [
   {

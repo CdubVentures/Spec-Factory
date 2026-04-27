@@ -12,7 +12,10 @@
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { buildProductReviewPayload } from '../reviewGridData.js';
+import { defaultProductRoot } from '../../../../core/config/runtimeArtifactRoots.js';
 
 function makeLayout(fields) {
   const rows = fields.map((f) => ({
@@ -32,13 +35,13 @@ function makeLayout(fields) {
   return { category: 'mouse', rows, field_studio: {} };
 }
 
-function makeSpecDbStub({ variants = [], candidates = [], defaultColor = null, variantDependentFields = [] }) {
+function makeSpecDbStub({ variants = [], candidates = [], defaultColor = null, variantDependentFields = [], productId = 'p1' }) {
   const vdSet = new Set(variantDependentFields);
   return {
-    getProduct: () => ({ product_id: 'p1', brand: 'Corsair', model: 'M75', variant: '' }),
+    getProduct: () => ({ product_id: productId, brand: 'Corsair', model: 'M75', variant: '' }),
     getAllFieldCandidatesByProduct: () => candidates,
     getColorEditionFinder: () => ({
-      product_id: 'p1', category: 'mouse',
+      product_id: productId, category: 'mouse',
       colors: variants.filter((v) => v.variant_type === 'color').map((v) => v.color_atoms.join('+')),
       editions: variants.filter((v) => v.variant_type === 'edition').map((v) => v.edition_slug),
       default_color: defaultColor,
@@ -115,6 +118,42 @@ test('scalar field: metadata_json.source === manual_override triggers isOverridd
   assert.equal(field.source, 'user', 'source forced to user on override');
   assert.equal(field.method, 'manual_override', 'method forced to manual_override');
   assert.equal(field.selected.confidence, 1, 'override confidence forced to 1');
+});
+
+test('json-only manual override does not synthesize a grid field without SQL runtime state', async () => {
+  const productId = 'review-grid-json-only-manual-override-test';
+  const productDir = path.join(defaultProductRoot(), productId);
+  await fs.rm(productDir, { recursive: true, force: true });
+  await fs.mkdir(productDir, { recursive: true });
+  await fs.writeFile(path.join(productDir, 'product.json'), JSON.stringify({
+    schema_version: 2,
+    product_id: productId,
+    category: 'mouse',
+    identity: { brand: 'Corsair', model: 'M75' },
+    fields: {
+      name: {
+        value: 'JsonOnlyOverride',
+        confidence: 1,
+        source: 'manual_override',
+        resolved_at: '2026-04-02T00:00:00Z',
+      },
+    },
+    candidates: {},
+  }, null, 2));
+
+  try {
+    const specDb = makeSpecDbStub({ variants: [], candidates: [], productId });
+    const layout = makeLayout([{ key: 'name' }]);
+
+    const payload = await buildProductReviewPayload({
+      storage: {}, config: {}, category: 'mouse', productId,
+      layout, specDb, catalogProduct: { brand: 'Corsair', model: 'M75' },
+    });
+
+    assert.equal(payload.fields.name, undefined, 'grid must not merge product.json-only overrides');
+  } finally {
+    await fs.rm(productDir, { recursive: true, force: true });
+  }
 });
 
 test('variant-dependent field: default variant value drives grid cell when not overridden', async () => {

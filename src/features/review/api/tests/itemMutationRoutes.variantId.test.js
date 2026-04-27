@@ -1,6 +1,6 @@
-// RED (WS-1): per-variant manual-override wiring + trust-boundary validation.
-// These fail until itemMutationRoutes.js forwards variantId into submitCandidate
-// and itemMutationService.js rejects:
+// Per-variant override wiring + trust-boundary validation.
+// itemMutationRoutes.js must forward variantId into both candidate overrides
+// and SQL-first manual overrides, while itemMutationService.js rejects:
 //   - variant-dependent field without variantId
 //   - scalar field with variantId
 //   - override of any variantGenerator field (colors, editions)
@@ -102,10 +102,7 @@ test('editions field override attempt → 400 override_not_allowed', async () =>
   assert.equal(calls.responses[0]?.body?.error, 'override_not_allowed');
 });
 
-test('variant-dependent field + variantId → 200 and NO field_candidates insert', async () => {
-  // WHY: Manual overrides are user input. They write directly to product.json
-  // and must NOT insert into field_candidates (candidates/evidence are reserved
-  // for pipeline/LLM extraction only).
+test('variant-dependent field + variantId → 200 and inserts a variant-scoped manual override row', async () => {
   const insertCalls = [];
   const { calls, context } = makeItemRouteHarness({
     readJsonBody: async () => ({ value: '2025-06-01', variantId: 'v_black', itemFieldStateId: 1 }),
@@ -121,7 +118,11 @@ test('variant-dependent field + variantId → 200 and NO field_candidates insert
 
   assert.equal(calls.responses[0]?.status, 200);
   assert.equal(calls.responses[0]?.body?.ok, true);
-  assert.equal(insertCalls.length, 0, 'manual override must NOT insert into field_candidates');
+  assert.equal(insertCalls.length, 1, 'manual override must be projected into field_candidates');
+  assert.equal(insertCalls[0]?.fieldKey, 'release_date');
+  assert.equal(insertCalls[0]?.sourceType, 'manual_override');
+  assert.equal(insertCalls[0]?.status, 'resolved');
+  assert.equal(insertCalls[0]?.variantId, 'v_black');
 });
 
 test('candidate-override mode (not manual): variantId also forwards for variant-dependent', async () => {
@@ -147,7 +148,7 @@ test('candidate-override mode (not manual): variantId also forwards for variant-
   assert.equal(insertCalls[0]?.variantId, 'v_white', 'candidate override also forwards variantId');
 });
 
-test('scalar field + no variantId → 200 and NO field_candidates insert', async () => {
+test('scalar field + no variantId → 200 and inserts a scalar manual override row', async () => {
   const insertCalls = [];
   const { calls, context } = makeItemRouteHarness({
     readJsonBody: async () => ({ value: '85g', itemFieldStateId: 1 }),
@@ -162,5 +163,9 @@ test('scalar field + no variantId → 200 and NO field_candidates insert', async
   });
 
   assert.equal(calls.responses[0]?.status, 200);
-  assert.equal(insertCalls.length, 0, 'manual override does not use candidate gate at all');
+  assert.equal(insertCalls.length, 1, 'manual override must be projected into field_candidates');
+  assert.equal(insertCalls[0]?.fieldKey, 'weight');
+  assert.equal(insertCalls[0]?.sourceType, 'manual_override');
+  assert.equal(insertCalls[0]?.status, 'resolved');
+  assert.equal(insertCalls[0]?.variantId, null);
 });

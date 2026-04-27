@@ -1,5 +1,9 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
-import type { LinkedProduct } from '../../types/componentReview.ts';
+import type {
+  ComponentReviewDocument,
+  ComponentReviewStatus,
+  LinkedProduct,
+} from '../../types/componentReview.ts';
 import type { FieldState, ProductsIndexResponse } from '../../types/review.ts';
 
 export interface LinkedReviewProductFieldTarget {
@@ -27,8 +31,24 @@ export interface ComponentReviewGridFieldTarget {
   readonly linkedProducts: readonly LinkedProduct[];
 }
 
+export interface ComponentReviewDocumentActionTarget {
+  readonly category: string;
+  readonly reviewId: string;
+  readonly action: string;
+  readonly mergeTarget?: string | null;
+}
+
+export interface ComponentReviewDocumentSnapshot {
+  readonly queryKey: QueryKey;
+  readonly data: ComponentReviewDocument | undefined;
+}
+
 function buildReviewProductsIndexQueryKey(category: string) {
   return ['reviewProductsIndex', category] as const;
+}
+
+function buildComponentReviewDocumentQueryKey(category: string) {
+  return ['componentReview', category] as const;
 }
 
 function restoreQueryData<TData>(
@@ -210,6 +230,47 @@ function readSnapshot(
   };
 }
 
+function readComponentReviewDocumentSnapshot(
+  queryClient: QueryClient,
+  category: string,
+): ComponentReviewDocumentSnapshot {
+  const queryKey = buildComponentReviewDocumentQueryKey(category);
+  return {
+    queryKey,
+    data: queryClient.getQueryData<ComponentReviewDocument>(queryKey),
+  };
+}
+
+function resolveComponentReviewActionStatus(action: string): ComponentReviewStatus | null {
+  const token = String(action || '').trim();
+  if (token === 'approve_new') return 'approved_new';
+  if (token === 'merge_alias') return 'accepted_alias';
+  if (token === 'dismiss') return 'dismissed';
+  return null;
+}
+
+function patchComponentReviewDocument(
+  data: ComponentReviewDocument | undefined,
+  target: ComponentReviewDocumentActionTarget,
+): ComponentReviewDocument | undefined {
+  if (!data) return data;
+  const status = resolveComponentReviewActionStatus(target.action);
+  if (!status) return data;
+  const reviewId = String(target.reviewId || '').trim();
+  if (!reviewId) return data;
+  return {
+    ...data,
+    items: data.items.map((item) => {
+      if (item.review_id !== reviewId) return item;
+      return {
+        ...item,
+        status,
+        ...(target.mergeTarget ? { matched_component: target.mergeTarget } : {}),
+      };
+    }),
+  };
+}
+
 export async function cancelLinkedReviewProductFields(
   queryClient: QueryClient,
   category: string,
@@ -225,6 +286,25 @@ export function restoreLinkedReviewProductFields(
   snapshot: LinkedReviewProductFieldSnapshot,
 ): void {
   restoreQueryData(queryClient, snapshot.queryKey, snapshot.data);
+}
+
+export function restoreComponentReviewDocument(
+  queryClient: QueryClient,
+  snapshot: ComponentReviewDocumentSnapshot,
+): void {
+  restoreQueryData(queryClient, snapshot.queryKey, snapshot.data);
+}
+
+export function patchComponentReviewDocumentAction(
+  queryClient: QueryClient,
+  target: ComponentReviewDocumentActionTarget,
+): ComponentReviewDocumentSnapshot {
+  const snapshot = readComponentReviewDocumentSnapshot(queryClient, target.category);
+  queryClient.setQueryData<ComponentReviewDocument | undefined>(
+    buildComponentReviewDocumentQueryKey(target.category),
+    (current) => patchComponentReviewDocument(current, target),
+  );
+  return snapshot;
 }
 
 export function updateLinkedReviewProductFields(

@@ -106,7 +106,14 @@ function writeProductImagesJson(productId, images, runs = []) {
   );
 }
 
-function priorRun({ runScopeKey, urls = [], queries = [], variantKey = 'color:black', variantId = 'v_black' }) {
+function priorRun({
+  runScopeKey,
+  urls = [],
+  queries = [],
+  variantKey = 'color:black',
+  variantId = 'v_black',
+  imageValidationLog = [],
+}) {
   return {
     ran_at: '2026-01-01T00:00:00Z',
     response: {
@@ -114,6 +121,7 @@ function priorRun({ runScopeKey, urls = [], queries = [], variantKey = 'color:bl
       mode: runScopeKey.startsWith('hero') || runScopeKey === 'loop-hero' ? 'hero' : 'view',
       run_scope_key: runScopeKey,
       discovery_log: { urls_checked: urls, queries_run: queries },
+      image_validation_log: imageValidationLog,
     },
   };
 }
@@ -430,6 +438,133 @@ describe('compilePifPreviewPrompt', () => {
     assert.ok(sys.includes('https://prior/loopview'));
     assert.ok(!sys.includes('https://prior/priority'));
     assert.ok(!sys.includes('https://prior/viewtop'));
+  });
+
+  it('priority-view history knobs inject accepted image history and link validation history', async () => {
+    const finderStore = makeFinderStoreStub({
+      priorityViewRunImageHistoryEnabled: 'true',
+      priorityViewRunLinkValidationEnabled: 'true',
+    });
+    const specDb = makeSpecDbStub({ finderStore });
+    writeProductImagesJson(PRODUCT.product_id, [
+      {
+        view: 'top',
+        url: 'https://cdn.example.com/accepted-top.png',
+        source_page: 'https://example.com/product',
+        width: 1200,
+        height: 900,
+        content_hash: 'a'.repeat(64),
+        variant_key: 'color:black',
+        variant_id: 'v_black',
+      },
+    ], [
+      priorRun({
+        runScopeKey: 'loop-view',
+        imageValidationLog: [{
+          view: 'left',
+          url: 'https://cdn.example.com/missing-left.png',
+          accepted: false,
+          reason: 'HTTP 404',
+          stage: 'direct_image',
+          variant_id: 'v_black',
+          variant_key: 'color:black',
+        }],
+      }),
+    ]);
+
+    const envelope = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'view' },
+    });
+
+    const sys = envelope.prompts[0].system;
+    assert.ok(sys.includes('IMAGE HISTORY FOR THIS VARIANT'));
+    assert.ok(sys.includes('https://cdn.example.com/accepted-top.png'));
+    assert.ok(sys.includes('Better quality versions, alternate crops, and different useful angles are still welcome'));
+    assert.ok(sys.includes('LINK VALIDATION CHECKLIST'));
+    assert.ok(sys.includes('- page loaded successfully'));
+    assert.ok(sys.includes('- direct image URL returns 2xx'));
+    assert.ok(sys.includes('https://cdn.example.com/missing-left.png'));
+  });
+
+  it('history knobs are scoped by run type: priority, individual view, and loop', async () => {
+    writeProductImagesJson(PRODUCT.product_id, [
+      {
+        view: 'top',
+        url: 'https://cdn.example.com/history-top.png',
+        width: 1200,
+        height: 900,
+        content_hash: 'b'.repeat(64),
+        variant_key: 'color:black',
+        variant_id: 'v_black',
+      },
+    ], [
+      priorRun({
+        runScopeKey: 'priority-view',
+        imageValidationLog: [{
+          view: 'top',
+          url: 'https://cdn.example.com/bad-top.png',
+          accepted: false,
+          reason: 'timeout',
+          stage: 'direct_image',
+          variant_id: 'v_black',
+          variant_key: 'color:black',
+        }],
+      }),
+    ]);
+
+    const priorityOnlyStore = makeFinderStoreStub({
+      priorityViewRunImageHistoryEnabled: 'true',
+      priorityViewRunLinkValidationEnabled: 'true',
+    });
+    const prioritySpecDb = makeSpecDbStub({ finderStore: priorityOnlyStore });
+    const individualDisabled = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb: prioritySpecDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'view', view: 'top' },
+    });
+    assert.ok(!individualDisabled.prompts[0].system.includes('IMAGE HISTORY FOR THIS VARIANT'));
+    assert.ok(!individualDisabled.prompts[0].system.includes('LINK VALIDATION CHECKLIST'));
+
+    const individualStore = makeFinderStoreStub({
+      individualViewRunImageHistoryEnabled: 'true',
+      individualViewRunLinkValidationEnabled: 'true',
+    });
+    const individualSpecDb = makeSpecDbStub({ finderStore: individualStore });
+    const individualEnabled = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb: individualSpecDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'view', view: 'top' },
+    });
+    assert.ok(individualEnabled.prompts[0].system.includes('IMAGE HISTORY FOR THIS VARIANT'));
+    assert.ok(individualEnabled.prompts[0].system.includes('LINK VALIDATION CHECKLIST'));
+
+    const loopStore = makeFinderStoreStub({
+      viewBudget: '["top"]',
+      loopRunImageHistoryEnabled: 'true',
+      loopRunLinkValidationEnabled: 'true',
+    });
+    const loopSpecDb = makeSpecDbStub({ finderStore: loopStore });
+    const loopEnabled = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb: loopSpecDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'loop-view' },
+    });
+    assert.ok(loopEnabled.prompts[0].system.includes('IMAGE HISTORY FOR THIS VARIANT'));
+    assert.ok(loopEnabled.prompts[0].system.includes('LINK VALIDATION CHECKLIST'));
   });
 
   it('view-eval mode with no candidates returns empty-state envelope', async () => {

@@ -161,6 +161,17 @@ function actualViewForImage(img: ProductImageEntry): string {
   return CANONICAL_EXTRA_VIEWS.has(img.view) ? img.view : '';
 }
 
+function dependencyStatusForImage(img: ProductImageEntry): 'aligned' | 'unknown' | 'mismatch' {
+  const value = String(img.eval_dependency_status ?? '').trim().toLowerCase();
+  if (value === 'aligned' || value === 'mismatch') return value;
+  return 'unknown';
+}
+
+function dependencyRankForImage(img: ProductImageEntry): number {
+  const rank = { aligned: 0, unknown: 1, mismatch: 2 };
+  return rank[dependencyStatusForImage(img)];
+}
+
 function isRequiredViewCandidate(img: ProductImageEntry, view: string): boolean {
   if (img.quality_pass === false) return false;
   const actualView = actualViewForImage(img);
@@ -175,6 +186,7 @@ function isExtraCandidate(img: ProductImageEntry): boolean {
   if (img.quality_pass === false) return false;
   if (img.view === 'hero' || img.hero === true) return false;
   if (img.eval_usable_as_carousel_extra !== true) return false;
+  if (dependencyStatusForImage(img) === 'mismatch') return false;
   if (img.eval_duplicate === true) return false;
   if (hasDisqualifyingFlags(img)) return false;
   const actualView = actualViewForImage(img);
@@ -183,6 +195,9 @@ function isExtraCandidate(img: ProductImageEntry): boolean {
 
 function sortCandidatesByQuality(a: ProductImageEntry, b: ProductImageEntry): number {
   const qualityRank: Record<string, number> = { pass: 0, borderline: 1, fail: 2 };
+  const da = dependencyRankForImage(a);
+  const db = dependencyRankForImage(b);
+  if (da !== db) return da - db;
   const qa = qualityRank[a.eval_quality ?? ''] ?? 1;
   const qb = qualityRank[b.eval_quality ?? ''] ?? 1;
   if (qa !== qb) return qa - qb;

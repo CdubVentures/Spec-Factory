@@ -21,8 +21,11 @@ import { LinkedProductsList } from './LinkedProductsList.tsx';
 import {
   buildComponentReviewGridLinkedProducts,
   cancelLinkedReviewProductFields,
+  patchComponentReviewDocumentAction,
+  restoreComponentReviewDocument,
   restoreLinkedReviewProductFields,
   updateLinkedReviewProductFields,
+  type ComponentReviewDocumentSnapshot,
   type LinkedReviewProductFieldSnapshot,
 } from './componentReviewCache.ts';
 import type { ComponentReviewItem, ComponentPropertyState, ComponentReviewPayload, ComponentReviewFlaggedItem } from '../../types/componentReview.ts';
@@ -85,6 +88,16 @@ interface ComponentDrawerConfirmSharedMutationBody {
 interface ComponentDrawerMutationContext {
   previousComponentReviewData?: ComponentReviewPayload;
   previousLinkedReviewProductFields?: LinkedReviewProductFieldSnapshot;
+}
+
+interface ComponentReviewActionMutationBody {
+  review_id: string;
+  action: string;
+  merge_target?: string;
+}
+
+interface ComponentReviewActionMutationContext {
+  previousComponentReview?: ComponentReviewDocumentSnapshot;
 }
 
 const varianceBadge: Record<string, string> = {
@@ -724,9 +737,24 @@ export function ComponentReviewDrawer({
   })();
 
   // Mutation: approve individual review items (approve_new / dismiss)
-  const reviewActionMut = useMutation({
-    mutationFn: (body: { review_id: string; action: string; merge_target?: string }) =>
+  const reviewActionMut = useMutation<unknown, Error, ComponentReviewActionMutationBody, ComponentReviewActionMutationContext>({
+    mutationFn: (body) =>
       api.post(`/review-components/${category}/component-review-action`, body),
+    onMutate: async (body) => {
+      await queryClient.cancelQueries({ queryKey: ['componentReview', category], exact: true });
+      const previousComponentReview = patchComponentReviewDocumentAction(queryClient, {
+        category,
+        reviewId: body.review_id,
+        action: body.action,
+        mergeTarget: body.merge_target,
+      });
+      return { previousComponentReview };
+    },
+    onError: (_error, _body, context) => {
+      if (context?.previousComponentReview) {
+        restoreComponentReviewDocument(queryClient, context.previousComponentReview);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['componentReview', category] });
       queryClient.invalidateQueries({ queryKey: ['componentReviewData', category] });

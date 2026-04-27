@@ -28,7 +28,7 @@ import {
 } from '../productImageStore.js';
 import { fullResetProductImages } from '../productImageFullReset.js';
 import { runEvalView, runEvalHero, runEvalCarouselLoop } from '../carouselBuild.js';
-import { writeCarouselSlot, clearCarouselWinners, resolveCarouselSlots, deleteEvalRecord, extractEvalState } from '../imageEvaluator.js';
+import { writeCarouselSlot, clearCarouselWinners, clearAllCarouselWinners, resolveCarouselSlots, deleteEvalRecord, extractEvalState } from '../imageEvaluator.js';
 import { compilePifPreviewPrompt } from '../productImagePreviewPrompt.js';
 import { resolveProductImageDependencyStatus } from '../productImageIdentityDependencies.js';
 
@@ -429,6 +429,23 @@ function buildPifSummaryResponse({ row, runs, specDb, category, productId, produ
 
 export function registerProductImageFinderRoutes(ctx) {
   const store = (specDb) => specDb.getFinderStore('productImageFinder');
+
+  const projectCarouselClearResult = ({ specDb, category, productId, result }) => {
+    const finderStore = store(specDb);
+    const carouselSlots = result.carousel_slots || {};
+    const evalState = extractEvalState(result);
+    finderStore.updateSummaryField(productId, 'carousel_slots', JSON.stringify(carouselSlots));
+    finderStore.updateSummaryField(productId, 'eval_state', JSON.stringify(evalState));
+    for (const run of (result.runs || [])) {
+      if (run.run_number == null) continue;
+      finderStore.updateRunJson(productId, run.run_number, {
+        selected: run.selected || {},
+        response: run.response || {},
+      });
+    }
+    writePifVariantProgress({ specDb, category, productId });
+    return { carouselSlots, evalState };
+  };
 
   // Generic handler for GET list, GET single, DELETE run, DELETE all
   const genericHandler = createFinderRouteHandler({
@@ -1397,31 +1414,46 @@ export function registerProductImageFinderRoutes(ctx) {
         const result = clearCarouselWinners({ productId, productRoot, variantKey, variantId });
         if (!result) return jsonRes(res, 404, { error: 'product image data not found' });
 
-        const finderStore = store(specDb);
-        const carouselSlots = result.carousel_slots || {};
-        const evalState = extractEvalState(result);
-        finderStore.updateSummaryField(productId, 'carousel_slots', JSON.stringify(carouselSlots));
-        finderStore.updateSummaryField(productId, 'eval_state', JSON.stringify(evalState));
-        for (const run of (result.runs || [])) {
-          if (run.run_number == null) continue;
-          finderStore.updateRunJson(productId, run.run_number, {
-            selected: run.selected || {},
-            response: run.response || {},
-          });
-        }
-        writePifVariantProgress({ specDb, category, productId });
+        const { carouselSlots, evalState } = projectCarouselClearResult({ specDb, category, productId, result });
 
         emitDataChange({
           broadcastWs,
-          event: 'product-image-finder-evaluate',
+          event: 'product-image-finder-carousel-updated',
           category,
           entities: { productIds: [productId] },
-          meta: { productId, variantKey },
+          meta: { productId, variantKey, scope: 'variant' },
         });
 
         return jsonRes(res, 200, { ok: true, carousel_slots: carouselSlots, eval_state: evalState });
       } catch (err) {
         return jsonRes(res, 500, { error: 'clear carousel winners failed', message: err instanceof Error ? err.message : String(err) });
+      }
+    }
+
+    // ── Carousel Builder: clear all current winners for every variant ──
+    // POST /product-image-finder/:category/:productId/carousel-winners/clear-all
+    if (method === 'POST' && category && productId && parts[3] === 'carousel-winners' && parts[4] === 'clear-all') {
+      try {
+        const specDb = getSpecDb(category);
+        if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
+
+        const productRoot = defaultProductRoot();
+        const result = clearAllCarouselWinners({ productId, productRoot });
+        if (!result) return jsonRes(res, 404, { error: 'product image data not found' });
+
+        const { carouselSlots, evalState } = projectCarouselClearResult({ specDb, category, productId, result });
+
+        emitDataChange({
+          broadcastWs,
+          event: 'product-image-finder-carousel-updated',
+          category,
+          entities: { productIds: [productId] },
+          meta: { productId, scope: 'all' },
+        });
+
+        return jsonRes(res, 200, { ok: true, carousel_slots: carouselSlots, eval_state: evalState });
+      } catch (err) {
+        return jsonRes(res, 500, { error: 'clear all carousel winners failed', message: err instanceof Error ? err.message : String(err) });
       }
     }
 

@@ -23,6 +23,7 @@ import { buildCategoryContext } from '../../core/llm/prompts/categoryContext.js'
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { productImageFinderResponseSchema } from './productImageSchema.js';
 import { formatProductImageIdentityFactsBlock } from './productImageIdentityDependencies.js';
+import { buildPifPromptHistoryBlocks } from './productImagePromptHistory.js';
 
 // WHY: PIF is the evidence-refs exception across finders — the image URL IS
 // the evidence, and images don't flow through the publisher candidate gate.
@@ -736,7 +737,7 @@ Every image you return MUST use one of these view names: {{ALL_VIEW_KEYS}}
 
 {{IMAGE_REQUIREMENTS}}
 
-{{PREVIOUS_DISCOVERY}}Search strategy:
+{{PREVIOUS_DISCOVERY}}{{PIF_PROMPT_HISTORY}}Search strategy:
 - Search broadly: manufacturer product pages, press kits, retailer/distributor CDNs, regional and international retailer galleries, marketplace image assets, image-search leads, and review pages only as leads to official or product-gallery images
 - Older or regional pages may retain legacy edition images that current local retailer pages no longer show
 - Look for the specific {{VARIANT_TYPE_WORD}} variant page or color selector
@@ -763,6 +764,10 @@ export function buildProductImageFinderPrompt({
   familyModelCount = 1,
   ambiguityLevel = 'easy',
   previousDiscovery = { urlsChecked: [], queriesRun: [] },
+  imageHistoryEnabled = false,
+  linkValidationEnabled = false,
+  imageHistory = [],
+  linkValidationHistory = [],
   scopeLabel = "this variant's view searches",
   promptOverride = '',
   templateOverride = '',
@@ -832,6 +837,12 @@ export function buildProductImageFinderPrompt({
     queriesRun: previousDiscovery.queriesRun,
     scopeLabel,
   });
+  const pifPromptHistorySection = buildPifPromptHistoryBlocks({
+    imageHistoryEnabled,
+    linkValidationEnabled,
+    imageHistory,
+    linkValidationHistory,
+  });
 
   const template = templateOverride || promptOverride || PIF_VIEW_DEFAULT_TEMPLATE;
 
@@ -863,6 +874,7 @@ export function buildProductImageFinderPrompt({
     ALL_VIEW_KEYS: allViewKeys,
     IMAGE_REQUIREMENTS: imageRequirements,
     PREVIOUS_DISCOVERY: previousDiscoverySection,
+    PIF_PROMPT_HISTORY: pifPromptHistorySection,
     VARIANT_TYPE_WORD: variantType === 'edition' ? 'edition' : 'color',
     DISCOVERY_LOG_SHAPE: resolveGlobalPrompt('discoveryLogShape'),
   });
@@ -886,6 +898,10 @@ export const PRODUCT_IMAGE_FINDER_SPEC = {
     familyModelCount: domainArgs.familyModelCount || 1,
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
     previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
+    imageHistoryEnabled: Boolean(domainArgs.imageHistoryEnabled),
+    linkValidationEnabled: Boolean(domainArgs.linkValidationEnabled),
+    imageHistory: domainArgs.imageHistory || [],
+    linkValidationHistory: domainArgs.linkValidationHistory || [],
     scopeLabel: domainArgs.scopeLabel,
     promptOverride: domainArgs.promptOverride || '',
     viewQualityMap: domainArgs.viewQualityMap || null,
@@ -945,7 +961,7 @@ export const PIF_HERO_DEFAULT_TEMPLATE = `{{HERO_INSTRUCTIONS}}
 
 Every image you return MUST use the view name "hero".
 
-{{PREVIOUS_DISCOVERY}}Return JSON:
+{{PREVIOUS_DISCOVERY}}{{PIF_PROMPT_HISTORY}}Return JSON:
 - "images": [{ "view": "hero", "url": "direct-image-url", "source_page": "page-where-found", "alt_text": "image alt text if available" }, ...]
 {{DISCOVERY_LOG_SHAPE}}`;
 
@@ -959,6 +975,10 @@ export function buildHeroImageFinderPrompt({
   familyModelCount = 1,
   ambiguityLevel = 'easy',
   previousDiscovery = { urlsChecked: [], queriesRun: [] },
+  imageHistoryEnabled = false,
+  linkValidationEnabled = false,
+  imageHistory = [],
+  linkValidationHistory = [],
   scopeLabel = "this variant's hero searches",
   promptOverride = '',
   templateOverride = '',
@@ -986,6 +1006,12 @@ export function buildHeroImageFinderPrompt({
     urlsChecked: previousDiscovery.urlsChecked,
     queriesRun: previousDiscovery.queriesRun,
     scopeLabel,
+  });
+  const pifPromptHistorySection = buildPifPromptHistoryBlocks({
+    imageHistoryEnabled,
+    linkValidationEnabled,
+    imageHistory,
+    linkValidationHistory,
   });
 
   const heroInstructions = `Find high-quality lifestyle and contextual product images for: ${brand} ${model} — ${variantDesc}
@@ -1044,6 +1070,7 @@ Do NOT use images from editorial review sites when they are original review phot
     IDENTITY_WARNING: identityWarning,
     PRODUCT_IMAGE_IDENTITY_FACTS: formatProductImageIdentityFactsBlock(productImageIdentityFacts, { mode: 'discovery' }),
     PREVIOUS_DISCOVERY: discoverySection,
+    PIF_PROMPT_HISTORY: pifPromptHistorySection,
     HERO_INSTRUCTIONS: heroInstructions,
     DISCOVERY_LOG_SHAPE: resolveGlobalPrompt('discoveryLogShape'),
   });
@@ -1063,6 +1090,10 @@ export const HERO_IMAGE_FINDER_SPEC = {
     familyModelCount: domainArgs.familyModelCount || 1,
     ambiguityLevel: domainArgs.ambiguityLevel || 'easy',
     previousDiscovery: domainArgs.previousDiscovery || { urlsChecked: [], queriesRun: [] },
+    imageHistoryEnabled: Boolean(domainArgs.imageHistoryEnabled),
+    linkValidationEnabled: Boolean(domainArgs.linkValidationEnabled),
+    imageHistory: domainArgs.imageHistory || [],
+    linkValidationHistory: domainArgs.linkValidationHistory || [],
     scopeLabel: domainArgs.scopeLabel,
     promptOverride: domainArgs.promptOverride || '',
     productImageIdentityFacts: domainArgs.productImageIdentityFacts || [],

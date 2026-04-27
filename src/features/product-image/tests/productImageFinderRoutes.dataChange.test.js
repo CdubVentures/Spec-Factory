@@ -56,6 +56,46 @@ function writeProductImagesDocWithImages() {
   }, null, 2));
 }
 
+function writeProductImagesDocWithCarouselState() {
+  const productDir = path.join(defaultProductRoot(), PRODUCT_ID);
+  fs.mkdirSync(productDir, { recursive: true });
+  const blackTop = {
+    view: 'top',
+    filename: 'top-black.png',
+    variant_key: 'color:black',
+    variant_id: 'variant-black',
+    eval_best: true,
+    eval_reasoning: 'best black',
+  };
+  const whiteTop = {
+    view: 'top',
+    filename: 'top-white.png',
+    variant_key: 'color:white',
+    variant_id: 'variant-white',
+    eval_best: true,
+    eval_reasoning: 'best white',
+  };
+  fs.writeFileSync(path.join(productDir, 'product_images.json'), JSON.stringify({
+    product_id: PRODUCT_ID,
+    category: CATEGORY,
+    selected: { images: [blackTop, whiteTop] },
+    image_count: 2,
+    run_count: 1,
+    runs: [{
+      run_number: 1,
+      ran_at: '2026-04-26T20:00:00.000Z',
+      model: 'test-model',
+      selected: { images: [{ ...blackTop }, { ...whiteTop }] },
+      response: { images: [{ ...blackTop }, { ...whiteTop }] },
+    }],
+    evaluations: [{ eval_number: 1, variant_key: 'color:black', type: 'view' }],
+    carousel_slots: {
+      'color:black': { top: 'manual-black.png' },
+      'color:white': { top: 'manual-white.png' },
+    },
+  }, null, 2));
+}
+
 function readProductImagesDoc() {
   return JSON.parse(fs.readFileSync(
     path.join(defaultProductRoot(), PRODUCT_ID, 'product_images.json'),
@@ -63,20 +103,22 @@ function readProductImagesDoc() {
   ));
 }
 
-function createCtx(requestBody) {
+function createCtx(requestBody, options = {}) {
   const emitted = [];
   const summaryUpdates = [];
   const summaryUpserts = [];
   const runInserts = [];
+  const runJsonUpdates = [];
   const progressUpserts = [];
+  const variants = options.variants ?? [
+    {
+      variant_id: 'variant-black',
+      variant_key: 'color:black',
+    },
+  ];
   const specDb = {
     variants: {
-      listActive: () => [
-        {
-          variant_id: 'variant-black',
-          variant_key: 'color:black',
-        },
-      ],
+      listActive: () => variants,
     },
     upsertPifVariantProgress: (row) => progressUpserts.push(row),
     deletePifVariantProgressByProduct: () => {},
@@ -86,6 +128,7 @@ function createCtx(requestBody) {
         updateSummaryField: (...args) => summaryUpdates.push(args),
         upsert: (row) => summaryUpserts.push(row),
         insertRun: (row) => runInserts.push(row),
+        updateRunJson: (...args) => runJsonUpdates.push(args),
         getSetting: () => '',
       };
     },
@@ -103,6 +146,7 @@ function createCtx(requestBody) {
     _summaryUpdates: summaryUpdates,
     _summaryUpserts: summaryUpserts,
     _runInserts: runInserts,
+    _runJsonUpdates: runJsonUpdates,
     _progressUpserts: progressUpserts,
   };
 }
@@ -211,5 +255,53 @@ describe('productImageFinderRoutes data-change contract', () => {
     const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
     assert.equal(emitted?.payload?.event, 'product-image-finder-image-deleted');
     assert.deepEqual(emitted?.payload?.meta?.deletedImage, 'top-black.png');
+  });
+
+  it('clear-all carousel winners updates projections and emits the carousel-updated event', async () => {
+    writeProductImagesDocWithCarouselState();
+    const ctx = createCtx({}, {
+      variants: [
+        { variant_id: 'variant-black', variant_key: 'color:black' },
+        { variant_id: 'variant-white', variant_key: 'color:white' },
+      ],
+    });
+    const handler = registerProductImageFinderRoutes(ctx);
+
+    const result = await handler(
+      ['product-image-finder', CATEGORY, PRODUCT_ID, 'carousel-winners', 'clear-all'],
+      new URLSearchParams(),
+      'POST',
+      {},
+      {},
+    );
+
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.body.carousel_slots, {});
+
+    const doc = readProductImagesDoc();
+    assert.deepEqual(doc.carousel_slots, {});
+    assert.deepEqual(doc.evaluations, [{ eval_number: 1, variant_key: 'color:black', type: 'view' }]);
+    assert.equal(doc.selected.images[0].eval_best, undefined);
+    assert.equal(doc.selected.images[1].eval_best, undefined);
+    assert.equal(doc.runs[0].selected.images[0].eval_best, undefined);
+    assert.equal(doc.runs[0].response.images[1].eval_best, undefined);
+
+    assert.deepEqual(ctx._summaryUpdates[0], [PRODUCT_ID, 'carousel_slots', '{}']);
+    assert.deepEqual(ctx._summaryUpdates[1], [PRODUCT_ID, 'eval_state', '{}']);
+    assert.equal(ctx._runJsonUpdates.length, 1);
+
+    assert.equal(ctx._progressUpserts.length, 2);
+    for (const row of ctx._progressUpserts) {
+      assert.equal(row.priorityFilled, 0);
+      assert.equal(row.loopFilled, 0);
+      assert.equal(row.heroFilled, 0);
+      assert.equal(row.imageCount, 1);
+    }
+
+    const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
+    assert.equal(emitted?.payload?.event, 'product-image-finder-carousel-updated');
+    assert.equal(emitted?.payload?.category, CATEGORY);
+    assert.deepEqual(emitted?.payload?.entities?.productIds, [PRODUCT_ID]);
+    assert.equal(emitted?.payload?.meta?.scope, 'all');
   });
 });

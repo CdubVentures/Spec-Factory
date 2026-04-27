@@ -2,7 +2,8 @@
  * Threshold Reconciliation — re-evaluate all candidates against a new confidence threshold.
  *
  * Delegates the gate logic to evaluateFieldBuckets so reconcile, publish, and
- * republish all apply identical semantics. Manual overrides never touched.
+ * republish all apply identical semantics. Resolved SQL manual overrides are
+ * locks and are never touched.
  *
  * Tightening (threshold raised): buckets that no longer qualify are demoted
  *   and the field is removed from product.json.
@@ -14,7 +15,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { buildLinkedCandidates, persistPublishResult } from './publishCandidate.js';
+import { buildLinkedCandidates, getManualOverrideLock, persistPublishResult } from './publishCandidate.js';
 import { evaluateFieldBuckets } from './evidenceGate.js';
 
 function safeReadJson(filePath) {
@@ -67,11 +68,9 @@ export function reconcileThreshold({
       result.total_fields++;
       const fieldRule = fieldRules[fieldKey] || null;
       const jsonField = productFields[fieldKey];
-      const currentlyPublished = jsonField && jsonField.source !== 'manual_override'
-        ? serializeValue(jsonField.value)
-        : null;
+      const currentlyPublished = jsonField ? serializeValue(jsonField.value) : null;
 
-      if (jsonField?.source === 'manual_override' || candidates.some(c => c.metadata_json?.source === 'manual_override')) {
+      if (getManualOverrideLock({ specDb, productId, fieldKey, variantId: null })) {
         result.locked++;
         continue;
       }

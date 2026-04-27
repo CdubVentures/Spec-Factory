@@ -8,11 +8,26 @@ import type {
   ComponentReviewDocument,
   ComponentReviewBatchResult,
 } from '../../types/componentReview.ts';
+import {
+  patchComponentReviewDocumentAction,
+  restoreComponentReviewDocument,
+  type ComponentReviewDocumentSnapshot,
+} from './componentReviewCache.ts';
 
 interface ComponentReviewPanelProps {
   category: string;
   queryClient: QueryClient;
   componentType?: string;
+}
+
+interface ComponentReviewActionMutationBody {
+  review_id: string;
+  action: string;
+  merge_target?: string;
+}
+
+interface ComponentReviewActionMutationContext {
+  previousComponentReview?: ComponentReviewDocumentSnapshot;
 }
 
 function statusBadge(status: string): { label: string; className: string } {
@@ -149,9 +164,24 @@ export function ComponentReviewPanel({ category, queryClient, componentType }: C
     staleTime: 30_000,
   });
 
-  const actionMut = useMutation({
-    mutationFn: (body: { review_id: string; action: string; merge_target?: string }) =>
+  const actionMut = useMutation<unknown, Error, ComponentReviewActionMutationBody, ComponentReviewActionMutationContext>({
+    mutationFn: (body) =>
       api.post(`/review-components/${category}/component-review-action`, body),
+    onMutate: async (body) => {
+      await queryClient.cancelQueries({ queryKey: ['componentReview', category], exact: true });
+      const previousComponentReview = patchComponentReviewDocumentAction(queryClient, {
+        category,
+        reviewId: body.review_id,
+        action: body.action,
+        mergeTarget: body.merge_target,
+      });
+      return { previousComponentReview };
+    },
+    onError: (_error, _body, context) => {
+      if (context?.previousComponentReview) {
+        restoreComponentReviewDocument(queryClient, context.previousComponentReview);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['componentReview', category] });
       queryClient.invalidateQueries({ queryKey: ['componentReviewData', category] });

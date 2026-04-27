@@ -107,9 +107,14 @@ describe('publishCandidate', () => {
     assert.equal(dbRow.metadata_json.publish_result.status, 'below_threshold');
   });
 
-  it('skips when manual override is locked', () => {
+  it('skips when a resolved SQL manual override locks the scalar field', () => {
     ensureProductJson('pub-lock', {
-      fields: { weight: { value: 99, confidence: 1.0, source: 'manual_override', resolved_at: new Date().toISOString(), sources: [] } },
+      fields: { weight: { value: 99, confidence: 1.0, source: 'pipeline', resolved_at: new Date().toISOString(), sources: [] } },
+    });
+    seedCandidate(specDb, 'pub-lock', 'weight', 99, 1, {
+      status: 'resolved',
+      sourceType: 'manual_override',
+      metadataJson: { source: 'manual_override' },
     });
     const row = seedCandidate(specDb, 'pub-lock', 'weight', 58, 100);
 
@@ -121,8 +126,28 @@ describe('publishCandidate', () => {
     });
 
     assert.equal(result.status, 'manual_override_locked');
+    assert.equal(result.lockedValue, '99');
     const pj = readProductJson('pub-lock');
     assert.equal(pj.fields.weight.value, 99); // unchanged
+  });
+
+  it('does not treat a JSON-only manual override as a live scalar lock', () => {
+    ensureProductJson('pub-json-only-lock', {
+      fields: { weight: { value: 99, confidence: 1.0, source: 'manual_override', resolved_at: new Date().toISOString(), sources: [] } },
+    });
+    const row = seedCandidate(specDb, 'pub-json-only-lock', 'weight', 58, 100);
+
+    const result = publishCandidate({
+      specDb, category: 'mouse', productId: 'pub-json-only-lock', fieldKey: 'weight',
+      candidateRow: row, value: 58, unit: null, confidence: 100,
+      config: { publishConfidenceThreshold: 0.7 },
+      fieldRule, productRoot: PRODUCT_ROOT,
+    });
+
+    assert.equal(result.status, 'published');
+    const pj = readProductJson('pub-json-only-lock');
+    assert.equal(pj.fields.weight.value, 58);
+    assert.equal(pj.fields.weight.source, 'pipeline');
   });
 
   it('demotes previous resolved before publishing new', () => {

@@ -3458,9 +3458,31 @@
     },
     "flawless_sensor": {
       "ai_assist": {
-        "reasoning_note": ""
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Return true only when a source for the exact product or resolved sensor component states 1:1, raw, or flawless tracking, or zero/no smoothing, filtering, acceleration, prediction, angle snapping, or drift correction. Rated max acceleration in G is sensor tolerance, not pointer acceleration. Optional software features such as dynamic sensitivity, angle snapping, Motion Sync, or lift-off calibration do not make the sensor non-flawless when they are disableable or not default inherent tracking. Return false only when credible evidence says the exact sensor/firmware has a non-disableable tracking flaw such as built-in pointer acceleration, smoothing/interpolation, prediction/angle snapping, axis asymmetry, jitter, or speed inconsistency. Do not accept tracks flawlessly on glass, smooth-touch, smooth glide, or generic reviewer feel by itself. Do not infer false from omission, missing component rows, or absence on a flawless-list page; return unknown and explain searched sources.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
       },
-      "aliases": [],
+      "aliases": [
+        "1:1 tracking",
+        "flawless sensor",
+        "flawless tracking",
+        "no acceleration",
+        "no angle snapping",
+        "no drift correction",
+        "no filtering",
+        "no prediction",
+        "no smoothing",
+        "perfect sensor",
+        "raw tracking",
+        "true 1-to-1 tracking",
+        "zero acceleration",
+        "zero filtering",
+        "zero smoothing"
+      ],
       "availability": "sometimes",
       "component": null,
       "constraints": [],
@@ -3469,7 +3491,7 @@
         "type": "boolean"
       },
       "data_type": "boolean",
-      "difficulty": "easy",
+      "difficulty": "medium",
       "display_name": "Flawless Sensor",
       "enum": {
         "match": {},
@@ -3481,7 +3503,9 @@
         "tier_preference": [
           "tier1",
           "tier2",
-          "tier3"
+          "tier5",
+          "tier3",
+          "tier4"
         ]
       },
       "field_key": "flawless_sensor",
@@ -3504,20 +3528,28 @@
       "parse": {},
       "priority": {
         "availability": "sometimes",
-        "difficulty": "easy",
+        "difficulty": "medium",
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "spec_sheet",
-          "review"
+          "brand product pages",
+          "brand technology pages",
+          "brand press/blog posts",
+          "professional review/lab pages",
+          "curated sensor databases",
+          "product spec pages only as fallback"
         ],
         "domain_hints": [
+          "logitechg.com",
+          "steelseries.com",
+          "razer.com",
           "sensor.fyi",
+          "mousespecs.org",
           "eloshapes.com",
-          "techpowerup.com",
-          "mousespecs.org"
+          "rtings.com",
+          "techpowerup.com"
         ],
         "preferred_tiers": [
           "tier1",
@@ -3526,10 +3558,13 @@
         ],
         "query_terms": [
           "flawless sensor",
-          "no acceleration",
-          "no smoothing",
-          "no prediction",
-          "flawless tracking"
+          "true 1-to-1 tracking",
+          "zero smoothing filtering acceleration",
+          "no smoothing no acceleration no prediction",
+          "no angle snapping",
+          "raw tracking",
+          "sensor smoothing acceleration",
+          "sensor flawless tracking"
         ]
       },
       "ui": {
@@ -3537,7 +3572,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Sensor Identity",
-        "guidance_md": null,
+        "guidance_md": "Boolean yes/no only. Use true for exact-product or resolved-sensor evidence of 1:1/raw/flawless tracking, or zero/no smoothing, filtering, acceleration, prediction, angle snapping, or drift correction. Use false only for credible non-disableable tracking flaws. Omission or absence from curated lists is unknown, not false.",
         "label": "Flawless Sensor",
         "order": 40,
         "placeholder": "",
@@ -3799,15 +3834,36 @@
     },
     "grip": {
       "ai_assist": {
-        "reasoning_note": ""
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the supported or recommended hand grip styles for the exact mouse shell, not physical grip texture, rubber sides, coating, or aftermarket grip tape. Prefer explicit wording such as Grip Style, Supported Grip Types, recommended grip, best suited for, designed for, or a review conclusion about grip suitability. Normalize to palm, claw, and fingertip; map finger grip to fingertip and claw variants/hybrids to claw unless a source separately names another canonical style. If a source says all/universal/nearly all grip types with no stated exclusions, emit palm, claw, and fingertip. If a source says a style is merely possible but not ideal, omit it unless the source still clearly recommends or supports it for the exact product. Do not infer from photos, dimensions, or shape alone; use those only to corroborate or resolve conflicts. Do not union across size/shape siblings such as Mini, Pro, HyperSpeed, DEX, or wireless/wired remolds; use exact-product evidence, with color-only variants inheriting.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
       },
-      "aliases": [],
-      "availability": "always",
+      "aliases": [
+        "aggressive claw -> claw",
+        "all grip types -> palm + claw + fingertip",
+        "claw grip -> claw",
+        "claw/fingertip -> claw + fingertip",
+        "finger grip -> fingertip",
+        "fingertip grip -> fingertip",
+        "palm grip -> palm",
+        "palm style -> palm",
+        "palm/claw -> palm + claw",
+        "pincer claw -> claw",
+        "relaxed claw -> claw",
+        "tip grip -> fingertip",
+        "universal grip support -> palm + claw + fingertip"
+      ],
+      "availability": "sometimes",
       "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
+          "item_union": false,
           "sort": "none"
         },
         "shape": "list",
@@ -3859,20 +3915,29 @@
         ]
       },
       "priority": {
-        "availability": "always",
+        "availability": "sometimes",
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "review"
+          "product pages",
+          "support articles/FAQs",
+          "review pages",
+          "comparison/spec tables",
+          "grip/fit guides for definitions only"
         ],
         "domain_hints": [
-          "eloshapes.com",
+          "brand-official product/support page",
           "rtings.com",
           "mousespecs.org",
-          "techpowerup.com"
+          "gloriousgaming.com",
+          "razer.com",
+          "steelseries.com",
+          "endgamegear.com",
+          "logitech.com",
+          "logitechg.com"
         ],
         "preferred_tiers": [
           "tier1",
@@ -3881,11 +3946,17 @@
         ],
         "query_terms": [
           "grip style",
+          "supported grip types",
+          "recommended grip",
+          "best suited grip",
           "palm grip",
           "claw grip",
           "fingertip grip",
-          "recommended grip",
-          "grip type"
+          "all grip types",
+          "mouse hand size grip",
+          "designed for claw",
+          "designed for fingertip",
+          "designed for palm"
         ]
       },
       "ui": {
@@ -3907,22 +3978,53 @@
     },
     "hand_size": {
       "ai_assist": {
-        "reasoning_note": ""
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract recommended USER hand-size categories for the exact mouse/size edition, not the mouse physical body size. Normalize small to medium/S-M to [small, medium], medium to large/M-L to [medium, large], and extra large/x-large/XL to extra large. If a source gives grip-specific hand-size recommendations, union the hand-size categories recommended for any grip; do not store grip styles in this key and do not include categories the source explicitly says are not suitable. Treat most/nearly all hand sizes as broad compatibility only when the source also defines or enumerates categories; otherwise cite it but prefer unk or lower-confidence categories. Do not infer hand_size from dimensions, model names such as Mini/Large, EloShapes/Mousespecs Size Category, or left/right hand compatibility alone. Use exact-product evidence; do not copy values from sibling Mini/Max/Large/Dex/Pro/Minus models unless the source explicitly says the same hand-size guidance applies.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
       },
-      "aliases": [],
-      "availability": "always",
+      "aliases": [
+        "all hand sizes",
+        "extra large",
+        "extra-large",
+        "large hand sizes",
+        "large hands",
+        "larger hands",
+        "M/L",
+        "medium hands",
+        "medium to large",
+        "medium-sized hands",
+        "medium-to-large",
+        "mid hands",
+        "most hand sizes",
+        "nearly all hand sizes",
+        "not suited for smaller hands",
+        "S/M",
+        "small hand sizes",
+        "small hands",
+        "small to medium",
+        "small-sized hands",
+        "small-to-medium",
+        "x-large",
+        "X.Large",
+        "XL"
+      ],
+      "availability": "sometimes",
       "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
-          "dedupe": true,
-          "sort": "none"
+          "item_union": true,
+          "sort": "insert"
         },
         "shape": "list",
         "type": "string"
       },
       "data_type": "string",
-      "difficulty": "easy",
+      "difficulty": "medium",
       "display_name": "Hand Size",
       "enum": {
         "match": {},
@@ -3967,19 +4069,26 @@
         ]
       },
       "priority": {
-        "availability": "always",
-        "difficulty": "easy",
+        "availability": "sometimes",
+        "difficulty": "medium",
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "review"
+          "official product page",
+          "official size/shape guide",
+          "review-lab ergonomics methodology",
+          "product review ergonomics section",
+          "retailer/spec listing only when exact-product wording explicitly states hand size"
         ],
         "domain_hints": [
-          "eloshapes.com",
+          "razer.com",
+          "logitech.com",
+          "gloriousgaming.com",
+          "zowie.benq.com",
           "rtings.com",
-          "mousespecs.org"
+          "eloshapes.com"
         ],
         "preferred_tiers": [
           "tier1",
@@ -3987,10 +4096,17 @@
           "tier3"
         ],
         "query_terms": [
-          "hand size",
+          "hand size recommendation",
           "recommended hand size",
-          "hand length",
-          "suitable hand size"
+          "suitable hand size",
+          "small to medium hands",
+          "medium to large hands",
+          "fits small hands",
+          "fits large hands",
+          "palm grip hand recommendation",
+          "claw grip hand recommendation",
+          "fingertip grip hand recommendation",
+          "mouse shape guide"
         ]
       },
       "ui": {
@@ -7020,9 +7136,24 @@
     },
     "sensor": {
       "ai_assist": {
-        "reasoning_note": ""
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the exact tracking sensor identity used by the exact mouse model/edition. Return a component/model name, not generic technology such as optical, laser, DPI/IPS specs, or marketing claims. Prefer brand-official sensor names, then normalize maker prefixes and suffixes only through exact component aliases, for example Logitech HERO 2 -> HERO 2 and Razer Focus Pro 35K Optical Sensor Gen-2 -> Focus Pro 35K. Use variant identity aggressively: Pro/HyperSpeed/SE/DW/CW/wired changes can change the sensor, while colorways usually do not. For bare official numbers such as 3370 sensor or 3360 sensor, corroborate before expanding to a PixArt PAW/PMW canonical name; otherwise keep the bare official model or return unk if it is not a defensible model identity. If sources only say optical sensor, precision tracking, DPI, or tracking technology with no exact model/name, return unk for sensor and leave technology classification to sensor_type.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
       },
-      "aliases": [],
+      "aliases": [
+        "3360 sensor",
+        "3370 sensor",
+        "Logitech HERO 2",
+        "Razer Focus Pro 35K Optical Sensor Gen-2",
+        "Razer Focus Pro 45K Optical Sensor Gen-2",
+        "Razer Focus Pro 50K Optical Sensor Gen-3",
+        "TrueMove Core optical sensor",
+        "XS-1 Flagship Sensor"
+      ],
       "availability": "always",
       "component": {
         "ai": {
@@ -7112,16 +7243,19 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "spec_sheet",
-          "review",
-          "benchmark"
+          "manufacturer product/spec pages",
+          "official technology pages",
+          "official launch/news posts",
+          "professional reviews/lab pages",
+          "spec aggregator pages",
+          "authorized retailer spec tables for fallback corroboration"
         ],
         "domain_hints": [
           "eloshapes.com",
-          "sensor.fyi",
-          "techpowerup.com",
+          "mousespecs.org",
           "rtings.com",
-          "mousespecs.org"
+          "prosettings.net",
+          "maxgaming.com"
         ],
         "preferred_tiers": [
           "tier1",
@@ -7130,10 +7264,16 @@
         ],
         "query_terms": [
           "sensor",
-          "optical sensor",
           "sensor model",
           "sensor name",
-          "mouse sensor"
+          "optical sensor",
+          "exact sensor",
+          "mouse sensor",
+          "PAW",
+          "PMW",
+          "HERO",
+          "Focus Pro",
+          "TrueMove"
         ]
       },
       "ui": {
@@ -7155,9 +7295,38 @@
     },
     "sensor_brand": {
       "ai_assist": {
-        "reasoning_note": ""
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the canonical brand attached to the actual tracking sensor, not the mouse brand by default. Return a brand/company/family-owner name only, e.g. PixArt, Logitech, Razer, SteelSeries, Corsair, Microsoft, Avago. If the source gives a raw sensor part number such as PAW/PMW/PAN or ADNS, use the maker proved by the source or resolved sensor component; PAW/PMW are usually PixArt and ADNS is usually historical Avago, but do not rely on prefix alone without supporting evidence. If the source names a proprietary or rebadged family such as Logitech HERO, Razer Focus/Focus Pro/Focus X, SteelSeries TrueMove, Corsair MARKSMAN, or Microsoft BlueTrack, return the family owner as sensor_brand even when PixArt or another partner is mentioned as co-designer/OEM; this field is not the hidden silicon-OEM field. Do not emit the sensor model, DPI number, generation string, optical, laser, co-designed with PixArt, or the mouse brand unless the sensor itself is branded by that company. When sources disagree between marketed family owner and OEM/manufacturer, prefer the marketed sensor-family brand for this field and note the OEM evidence in discovery. Leave unk when the exact product/revision cannot be matched or when sources only state a generic optical/laser sensor with no defensible brand.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
       },
-      "aliases": [],
+      "aliases": [
+        "ADNS",
+        "Avago Technologies",
+        "BlueTrack",
+        "Focus Pro",
+        "Focus X",
+        "HERO",
+        "HERO 2",
+        "HERO 25K",
+        "MARKSMAN",
+        "MARKSMAN S",
+        "Mercury",
+        "PAN",
+        "PAW",
+        "Pixart",
+        "PixArt Imaging",
+        "PMW",
+        "Razer Focus",
+        "Razer Focus+",
+        "TrueMove",
+        "TrueMove Air",
+        "TrueMove Core",
+        "TrueMove Pro"
+      ],
       "availability": "always",
       "component": null,
       "constraints": [],
@@ -7175,7 +7344,7 @@
           "mark_needs_curation": true
         },
         "policy": "open_prefer_known",
-        "source": null
+        "source": "data_lists.mouse_sensor_brand"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -7214,14 +7383,28 @@
       "required_level": "mandatory",
       "search_hints": {
         "content_types": [
-          "spec_sheet",
-          "review"
+          "manufacturer product pages",
+          "official sensor technology pages",
+          "support FAQs/spec tables",
+          "professional review labs",
+          "specialist mouse databases",
+          "sensor datasheets",
+          "authorized retailer specs only as fallback/corroboration"
         ],
         "domain_hints": [
-          "sensor.fyi",
+          "brand-official product/support pages",
+          "logitechg.com",
+          "razer.com",
+          "steelseries.com",
+          "corsair.com",
+          "endgamegear.com",
+          "microsoft.com",
           "eloshapes.com",
+          "rtings.com",
+          "sensor.fyi",
+          "mousespecs.org",
           "techpowerup.com",
-          "mousespecs.org"
+          "pixart.com"
         ],
         "preferred_tiers": [
           "tier1",
@@ -7230,10 +7413,16 @@
         ],
         "query_terms": [
           "sensor brand",
+          "sensor model",
           "sensor manufacturer",
-          "PixArt",
-          "Razer Focus",
-          "HERO"
+          "PixArt PAW PMW",
+          "Avago ADNS",
+          "Razer Focus sensor",
+          "Logitech HERO sensor",
+          "SteelSeries TrueMove sensor",
+          "Corsair MARKSMAN sensor",
+          "Microsoft BlueTrack sensor",
+          "co-designed with PixArt"
         ]
       },
       "ui": {
@@ -7255,20 +7444,24 @@
     },
     "sensor_date": {
       "ai_assist": {
-        "reasoning_note": ""
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the announcement, launch, first-public availability, or first-supported date of the resolved sensor component, not the mouse product release date. Prefer exact sensor-level maker pages, datasheets, official technology pages, brand press releases, support/software release notes, or official launch posts. If a dated source says the sensor is new, first-ever, debuting, revealed, introduced, all-new, or first to feature in that product, the source publication/release date may be used as sensor_date. Do not use an ordinary product release date, retailer Date first available, review publication date, or mouse launch date unless the text explicitly ties that date to the sensor introduction or availability. Normalize exact dates as YYYY-MM-DD; when only month and year are proven, use YYYY-MM-01 only when month precision is accepted and note that precision in evidence. Do not invent a day from year-only evidence. Sensor date usually predates product release, but can post-date it for firmware-upgraded sensors or later renamed/tuned generations, so do not enforce sensor_date <= release_date as a hard rule.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
       },
       "aliases": [],
       "availability": "sometimes",
       "component": null,
-      "constraints": [
-        "sensor_date <= release_date"
-      ],
+      "constraints": [],
       "contract": {
         "shape": "scalar",
         "type": "date"
       },
       "data_type": "date",
-      "difficulty": "easy",
+      "difficulty": "medium",
       "display_name": "Sensor Date",
       "enum": {
         "match": {},
@@ -7316,18 +7509,33 @@
       },
       "priority": {
         "availability": "sometimes",
-        "difficulty": "easy",
+        "difficulty": "medium",
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "spec_sheet"
+          "official technology pages",
+          "manufacturer component pages",
+          "datasheets/spec PDFs",
+          "brand newsroom/press releases",
+          "support/software release notes",
+          "professional launch coverage",
+          "sensor/spec databases as fallback corroboration"
         ],
         "domain_hints": [
+          "pixart.com",
+          "logitech.com",
+          "logitechg.com",
+          "ir.logitech.com",
+          "razer.com",
+          "corsair.com",
+          "ir.corsair.com",
+          "asus.com",
+          "press.asus.com",
+          "rog.asus.com",
           "sensor.fyi",
-          "techpowerup.com",
-          "eloshapes.com"
+          "techpowerup.com"
         ],
         "preferred_tiers": [
           "tier1",
@@ -7335,10 +7543,18 @@
           "tier3"
         ],
         "query_terms": [
-          "sensor release date",
-          "sensor launch date",
-          "sensor announcement date",
-          "sensor generation date"
+          "<sensor> announcement date",
+          "<sensor> launch date",
+          "<sensor> introduced",
+          "<sensor> unveiled",
+          "<sensor> debuted",
+          "<sensor> first to feature",
+          "<sensor> first-ever",
+          "<sensor> firmware update",
+          "<sensor> software update",
+          "<sensor> datasheet",
+          "<sensor> PixArt",
+          "<brand> <sensor> press release"
         ]
       },
       "ui": {
@@ -7346,7 +7562,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Sensor Identity",
-        "guidance_md": "Extract the sensor component release/launch date, not the mouse product release date.\nNormalize to ISO date. Use YYYY-MM-DD when exact day is known; use the first day of the known month/year when only month or year is available.\nHard constraint: sensor_date must be less than or equal to release_date. If evidence would make sensor_date later than release_date, reject that candidate and output unk with conflict reason instead.",
+        "guidance_md": "Extract the sensor component announcement, launch, first-public availability, or first-supported date, not the ordinary mouse release date. Use product launch/source dates only when the cited text explicitly introduces, debuts, reveals, or first-supports the sensor. Normalize exact dates as YYYY-MM-DD; month-only precision may use YYYY-MM-01 with evidence explaining the precision. Treat sensor_date <= release_date as a soft sanity check only, because firmware upgrades, rebadges, or later tuned generations can post-date an original mouse release.",
         "label": "Sensor Date",
         "order": 38,
         "placeholder": "",
@@ -7354,7 +7570,7 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": null,
-        "tooltip_md": "Sensor release/launch date. Must be <= product release_date; reject later dates as conflicting evidence.",
+        "tooltip_md": "Sensor component announcement, launch, first-public availability, or first-supported date. Do not enforce sensor_date <= release_date as a hard rule.",
         "tooltip_source": null
       },
       "variance_policy": "authoritative"
@@ -7798,18 +8014,27 @@
     },
     "sensor_link": {
       "ai_assist": {
-        "reasoning_note": ""
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Return the URL for the exact sensor component used by the exact mouse variant, not the mouse product page, a retailer page, a review, or a general sensor database. Use product evidence only to establish the sensor identity, then resolve that identity to a component-level maker page, datasheet, support page, or technology page. For branded or proprietary sensors such as HERO, Focus, TrueMove, or Owl-Eye, use the brand official sensor technology/support page when it names the exact public sensor identity; do not force-map to an underlying PixArt part unless a credible source explicitly states the exact part. Prefer PixArt product-detail or official datasheet URLs for PixArt part numbers; use authorized component distributors only when maker pages are missing. If the exact sensor or component-level URL is not proven, return unknown rather than a product or source-database URL.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
       },
       "aliases": [],
-      "availability": "always",
+      "availability": "sometimes",
       "component": null,
-      "constraints": [],
+      "constraints": [
+        "exact sensor identity must be known before emitting sensor_link",
+        "link target must name the exact sensor or exact branded sensor variant"
+      ],
       "contract": {
         "shape": "scalar",
         "type": "url"
       },
       "data_type": "url",
-      "difficulty": "easy",
+      "difficulty": "medium",
       "display_name": "Sensor Link",
       "enum": {
         "match": {},
@@ -7824,8 +8049,8 @@
         "min_evidence_refs": 1,
         "tier_preference": [
           "tier1",
-          "tier2",
-          "tier3"
+          "tier3",
+          "tier2"
         ]
       },
       "field_key": "sensor_link",
@@ -7848,19 +8073,28 @@
       "output_shape": "scalar",
       "parse": {},
       "priority": {
-        "availability": "always",
-        "difficulty": "easy",
+        "availability": "sometimes",
+        "difficulty": "medium",
         "required_level": "non_mandatory"
       },
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "spec_sheet"
+          "manufacturer component HTML page",
+          "official datasheet/spec PDF",
+          "maker support or technology documentation",
+          "authorized component distributor part page"
         ],
         "domain_hints": [
-          "sensor.fyi",
-          "techpowerup.com",
-          "eloshapes.com"
+          "pixart.com/products-detail",
+          "pixart.com",
+          "razer.com/technology",
+          "logitechg.com",
+          "steelseries.com/innovation",
+          "epsglobal.com",
+          "codico.com",
+          "digikey.com",
+          "mouser.com"
         ],
         "preferred_tiers": [
           "tier1",
@@ -7868,9 +8102,12 @@
           "tier3"
         ],
         "query_terms": [
-          "sensor datasheet",
-          "sensor specifications page",
-          "sensor details"
+          "\"<sensor model> PixArt product\"",
+          "\"<sensor model> datasheet\"",
+          "\"<sensor model> General Datasheet\"",
+          "\"<sensor model> authorized distributor\"",
+          "\"<branded sensor name> official sensor\"",
+          "\"<branded sensor name> technology page\""
         ]
       },
       "ui": {
@@ -7878,7 +8115,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Sensor Identity",
-        "guidance_md": null,
+        "guidance_md": "Store the exact sensor component source URL: manufacturer component page, datasheet/spec PDF, official support/technology page naming the exact sensor, or authorized component distributor fallback. Product pages, reviews, consumer marketplaces, sensor databases, forums, and articles that merely mention the sensor are not valid sensor_link values.",
         "label": "Sensor Link",
         "order": 39,
         "placeholder": "",
@@ -7886,15 +8123,33 @@
         "short_label": null,
         "suffix": null,
         "tooltip_key": null,
-        "tooltip_md": "Define 'Sensor Link' according to contract. If not provable with evidence, output 'unk' with unknown_reason.",
+        "tooltip_md": "Exact sensor component URL only. Use unknown when no component-level maker/distributor source is proven.",
         "tooltip_source": null
-      }
+      },
+      "variance_policy": "authoritative"
     },
     "sensor_type": {
       "ai_assist": {
-        "reasoning_note": ""
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Normalize only the mouse motion-sensor technology into optical or laser. Treat phrases such as optical sensor, optical tracking, blue optical tracking, IR/infrared LED, and sensor-maker pages that place the chip under optical navigation as optical. Treat laser sensor, laser tracking, and Darkfield laser sensor as laser. Do not classify from marketing phrases like laser-grade, laser-accurate, advanced gaming sensor, DPI/IPS/G specs, or optical switch/encoder wording. Use the exact product/SKU evidence or the resolved sensor component; do not copy sibling-family values.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
       },
-      "aliases": [],
+      "aliases": [
+        "blue optical tracking -> optical",
+        "Darkfield laser sensor -> laser",
+        "high precision optical tracking -> optical",
+        "infrared LED -> optical when tied to the motion sensor",
+        "IR LED -> optical when tied to the motion sensor",
+        "laser sensor -> laser",
+        "laser tracking -> laser",
+        "LED illumination -> optical when tied to the motion sensor",
+        "optical sensor -> optical",
+        "optical tracking -> optical"
+      ],
       "availability": "always",
       "component": null,
       "constraints": [],
@@ -7955,9 +8210,14 @@
       "required_level": "non_mandatory",
       "search_hints": {
         "content_types": [
-          "spec_sheet"
+          "official product/spec page",
+          "official support/spec page",
+          "sensor-maker product page or datasheet",
+          "professional review/lab",
+          "sensor database as corroboration"
         ],
         "domain_hints": [
+          "pixart.com",
           "sensor.fyi",
           "eloshapes.com",
           "techpowerup.com"
@@ -7968,10 +8228,15 @@
           "tier3"
         ],
         "query_terms": [
+          "sensor technology",
           "sensor type",
-          "optical",
-          "laser",
-          "sensor technology"
+          "optical sensor",
+          "optical tracking",
+          "laser sensor",
+          "laser tracking",
+          "Darkfield laser",
+          "[sensor model] optical",
+          "[sensor model] laser"
         ]
       },
       "ui": {
@@ -9678,7 +9943,7 @@
       }
     }
   },
-  "generated_at": "2026-04-26T23:42:58.768Z",
+  "generated_at": "2026-04-27T02:48:22.414Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

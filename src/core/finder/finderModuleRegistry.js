@@ -200,6 +200,26 @@ export const FINDER_MODULES = Object.freeze([
         uiTip: 'Views mentioned in the ADDITIONAL section per Loop iteration (besides the focus view). Empty = none.' },
 
       // Image quality — flat primitives + optional per-view widget
+      // PIF prompt memory - accepted image context and validation outcome history.
+      { key: 'priorityViewRunImageHistoryEnabled', type: 'bool', default: false,
+        uiLabel: 'Priority View Run Image History', uiGroup: 'Image History',
+        uiTip: 'Inject accepted image history for the variant into Priority View Run prompts. Exact duplicates are discouraged, but better versions, alternate crops, and different useful angles remain welcome.' },
+      { key: 'individualViewRunImageHistoryEnabled', type: 'bool', default: false,
+        uiLabel: 'Individual View Run Image History', uiGroup: 'Image History',
+        uiTip: 'Inject accepted image history for the variant into per-view button prompts. Exact duplicates are discouraged without blocking better versions or alternate angles.' },
+      { key: 'loopRunImageHistoryEnabled', type: 'bool', default: false,
+        uiLabel: 'Loop Run Image History', uiGroup: 'Image History',
+        uiTip: 'Inject accepted image history for the variant into Loop prompts across view and hero iterations.' },
+      { key: 'priorityViewRunLinkValidationEnabled', type: 'bool', default: false,
+        uiLabel: 'Priority View Run Link Validation', uiGroup: 'Link Validation',
+        uiTip: 'Inject the link-validation checklist and known candidate outcomes into Priority View Run prompts.' },
+      { key: 'individualViewRunLinkValidationEnabled', type: 'bool', default: false,
+        uiLabel: 'Individual View Run Link Validation', uiGroup: 'Link Validation',
+        uiTip: 'Inject the link-validation checklist and known candidate outcomes into per-view button prompts.' },
+      { key: 'loopRunLinkValidationEnabled', type: 'bool', default: false,
+        uiLabel: 'Loop Run Link Validation', uiGroup: 'Link Validation',
+        uiTip: 'Inject the link-validation checklist and known candidate outcomes into Loop prompts across view and hero iterations.' },
+
       { key: 'minWidth', type: 'int', default: 800, min: 100, max: 8000,
         uiLabel: 'Min Width', uiGroup: 'Image Quality' },
       { key: 'minHeight', type: 'int', default: 600, min: 100, max: 8000,

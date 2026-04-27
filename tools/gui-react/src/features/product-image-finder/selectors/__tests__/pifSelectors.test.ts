@@ -356,6 +356,55 @@ describe('resolveSlots', () => {
     assert.equal(slots[0].filename, 'eval-top.png');
   });
 
+  it('prefers dependency-aligned required images over a mismatching eval winner', () => {
+    const images = [
+      makeImage({
+        view: 'top',
+        filename: 'top-no-wire.png',
+        eval_best: true,
+        eval_actual_view: 'top',
+        eval_usable_as_required_view: true,
+        eval_quality: 'pass',
+        eval_dependency_status: 'mismatch',
+        width: 1600,
+        height: 1000,
+      }),
+      makeImage({
+        view: 'top',
+        filename: 'top-wired.png',
+        eval_best: false,
+        eval_actual_view: 'top',
+        eval_usable_as_required_view: true,
+        eval_quality: 'pass',
+        eval_dependency_status: 'aligned',
+        width: 1200,
+        height: 800,
+      }),
+    ];
+    const slots = resolveSlots(['top'], 0, 'color:black', {}, images);
+    assert.deepEqual(slots.map(s => [s.slot, s.filename, s.source]), [
+      ['top', 'top-wired.png', 'eval'],
+    ]);
+  });
+
+  it('falls back to a dependency mismatch for a required slot when no better candidate exists', () => {
+    const images = [
+      makeImage({
+        view: 'top',
+        filename: 'top-no-wire.png',
+        eval_best: true,
+        eval_actual_view: 'top',
+        eval_usable_as_required_view: true,
+        eval_quality: 'pass',
+        eval_dependency_status: 'mismatch',
+      }),
+    ];
+    const slots = resolveSlots(['top'], 0, 'color:black', {}, images);
+    assert.deepEqual(slots.map(s => [s.slot, s.filename, s.source]), [
+      ['top', 'top-no-wire.png', 'eval'],
+    ]);
+  });
+
   it('resolves hero slots', () => {
     const images = [
       makeImage({ hero: true, hero_rank: 1, filename: 'hero1.png' }),
@@ -431,6 +480,66 @@ describe('resolveSlots', () => {
       ['front', null, 'empty'],
       ['top2', 'front-search-top.png', 'eval'],
       ['img1', 'generic-product.png', 'eval'],
+    ]);
+  });
+
+  it('does not use dependency mismatches or duplicates as numbered extra slots', () => {
+    const images = [
+      makeImage({
+        view: 'top',
+        filename: 'top-wired.png',
+        eval_best: true,
+        eval_actual_view: 'top',
+        eval_usable_as_required_view: true,
+        eval_usable_as_carousel_extra: true,
+        eval_duplicate: false,
+        eval_flags: [],
+        eval_dependency_status: 'aligned',
+      }),
+      makeImage({
+        view: 'top',
+        filename: 'top-no-wire.png',
+        eval_best: false,
+        eval_actual_view: 'top',
+        eval_usable_as_required_view: true,
+        eval_usable_as_carousel_extra: true,
+        eval_duplicate: false,
+        eval_flags: [],
+        eval_dependency_status: 'mismatch',
+        width: 1600,
+        height: 1000,
+      }),
+      makeImage({
+        view: 'top',
+        filename: 'top-wired-tight-crop.png',
+        eval_best: false,
+        eval_actual_view: 'top',
+        eval_usable_as_required_view: true,
+        eval_usable_as_carousel_extra: true,
+        eval_duplicate: true,
+        eval_flags: [],
+        eval_dependency_status: 'aligned',
+        width: 1500,
+        height: 900,
+      }),
+      makeImage({
+        view: 'top',
+        filename: 'top-wired-distinct.png',
+        eval_best: false,
+        eval_actual_view: 'top',
+        eval_usable_as_required_view: true,
+        eval_usable_as_carousel_extra: true,
+        eval_duplicate: false,
+        eval_flags: [],
+        eval_dependency_status: 'aligned',
+        width: 1200,
+        height: 800,
+      }),
+    ];
+    const slots = resolveSlots(['top'], 0, 'color:black', {}, images);
+    assert.deepEqual(slots.map(s => [s.slot, s.filename, s.source]), [
+      ['top', 'top-wired.png', 'eval'],
+      ['top2', 'top-wired-distinct.png', 'eval'],
     ]);
   });
 });

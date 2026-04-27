@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-26T21:25:42.189Z",
+  "generated_at": "2026-04-27T02:48:22.414Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -179,6 +179,25 @@
       "type": "boolean"
     },
     "adjustable_weight": {
+      "context_keywords": [
+        "adjustable weight",
+        "adjustable weights",
+        "center of gravity tuning",
+        "custom weight system",
+        "included weights",
+        "movable weights",
+        "optional extra weight",
+        "removable weights",
+        "repositionable weights",
+        "smart tunable weight system",
+        "tunable weight",
+        "tunable weight system",
+        "tuning weights",
+        "weight and balance",
+        "weight and balance configurations",
+        "weight system",
+        "weight tuning"
+      ],
       "patterns": [],
       "type": "boolean"
     },
@@ -268,6 +287,22 @@
       "type": "number"
     },
     "coating": {
+      "context_keywords": [
+        "glossy finish -> glossy",
+        "high-shine finish -> glossy",
+        "integrated side grip inserts -> rubber grips",
+        "matte finish -> matte",
+        "matte rubberized plastic -> rubberized",
+        "matte UV coating -> matte",
+        "rubber side grips -> rubber grips",
+        "rubberized plastic -> rubberized",
+        "rubbery full-shell coating -> rubberized",
+        "skin-friendly matte UV coating -> matte",
+        "Smooth-Touch Finish -> smooth-touch",
+        "soft-touch coating -> rubberized",
+        "Standard Matte -> matte",
+        "textured rubber grips -> rubber grips"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -425,10 +460,49 @@
       "type": "url"
     },
     "feet_material": {
+      "context_keywords": [
+        "100% PTFE -> PTFE (Virgin-Grade)",
+        "95% PTFE -> PTFE (95%)",
+        "aluminosilicate glass -> Glass",
+        "aluminum gliders -> Metal",
+        "Armor Boot -> Metal",
+        "black PTFE -> PTFE (Black-Dyed)",
+        "black Teflon -> PTFE (Black-Dyed)",
+        "ceramic pads -> Ceramic",
+        "ceramic skates -> Ceramic",
+        "dyed PTFE -> PTFE (Black-Dyed)",
+        "glass skates -> Glass",
+        "more than 95% PTFE -> PTFE (95%)",
+        "pure PTFE -> PTFE (Virgin-Grade)",
+        "Teflon -> PTFE",
+        "UHMW-PE -> UHMWPE",
+        "ultra-high molecular weight polyethylene -> UHMWPE",
+        "UPE -> UHMWPE",
+        "virgin PTFE -> PTFE (Virgin-Grade)",
+        "X'Glide -> Metal",
+        "zero-additive PTFE -> PTFE (Virgin-Grade)"
+      ],
       "patterns": [],
       "type": "string"
     },
     "flawless_sensor": {
+      "context_keywords": [
+        "1:1 tracking",
+        "flawless sensor",
+        "flawless tracking",
+        "no acceleration",
+        "no angle snapping",
+        "no drift correction",
+        "no filtering",
+        "no prediction",
+        "no smoothing",
+        "perfect sensor",
+        "raw tracking",
+        "true 1-to-1 tracking",
+        "zero acceleration",
+        "zero filtering",
+        "zero smoothing"
+      ],
       "patterns": [],
       "type": "boolean"
     },
@@ -437,14 +511,76 @@
       "type": "string"
     },
     "front_flare": {
+      "context_keywords": [
+        "button flare",
+        "button splay",
+        "flared front",
+        "flares inward at the front",
+        "flares outward at the front",
+        "front flare",
+        "front flared design",
+        "front flares inward",
+        "front flares outward",
+        "inward - aggressive",
+        "inward - moderate",
+        "inward - slight",
+        "narrows at front",
+        "outward - aggressive",
+        "outward - moderate",
+        "outward - slight",
+        "tapers inward at front",
+        "tapers outward at front",
+        "widens at front"
+      ],
       "patterns": [],
       "type": "string"
     },
     "grip": {
+      "context_keywords": [
+        "aggressive claw -> claw",
+        "all grip types -> palm + claw + fingertip",
+        "claw grip -> claw",
+        "claw/fingertip -> claw + fingertip",
+        "finger grip -> fingertip",
+        "fingertip grip -> fingertip",
+        "palm grip -> palm",
+        "palm style -> palm",
+        "palm/claw -> palm + claw",
+        "pincer claw -> claw",
+        "relaxed claw -> claw",
+        "tip grip -> fingertip",
+        "universal grip support -> palm + claw + fingertip"
+      ],
       "patterns": [],
       "type": "string"
     },
     "hand_size": {
+      "context_keywords": [
+        "all hand sizes",
+        "extra large",
+        "extra-large",
+        "large hand sizes",
+        "large hands",
+        "larger hands",
+        "M/L",
+        "medium hands",
+        "medium to large",
+        "medium-sized hands",
+        "medium-to-large",
+        "mid hands",
+        "most hand sizes",
+        "nearly all hand sizes",
+        "not suited for smaller hands",
+        "S/M",
+        "small hand sizes",
+        "small hands",
+        "small to medium",
+        "small-sized hands",
+        "small-to-medium",
+        "x-large",
+        "X.Large",
+        "XL"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -456,12 +592,38 @@
       "context_keywords": [
         "height",
         "height_mm",
-        "overall height"
+        "hump height",
+        "overall height",
+        "product height",
+        "profile height",
+        "vertical height"
       ],
       "patterns": [],
       "type": "number"
     },
     "honeycomb_frame": {
+      "context_keywords": [
+        "cage frame",
+        "cutout shell",
+        "exoskeleton",
+        "hex design",
+        "hex shell",
+        "holed shell",
+        "holey shell",
+        "honeycomb frame",
+        "honeycomb shell",
+        "mesh mouse",
+        "mesh shell",
+        "no honeycomb cutouts",
+        "open shell",
+        "partial-body perforation",
+        "perforated casing",
+        "perforated shell",
+        "removed all holes",
+        "skeletal shell",
+        "solid shell",
+        "speed holes"
+      ],
       "patterns": [],
       "type": "boolean"
     },
@@ -470,6 +632,21 @@
       "type": "boolean"
     },
     "hump": {
+      "context_keywords": [
+        "back hump",
+        "center hump",
+        "centered hump",
+        "centered rear hump",
+        "forward hump",
+        "front hump",
+        "highest point",
+        "hump apex",
+        "mid-positioned hump",
+        "middle hump",
+        "rear hump",
+        "rear-set hump",
+        "rearward hump"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -521,15 +698,46 @@
     },
     "lngth": {
       "context_keywords": [
+        "body length",
+        "front to back",
+        "front-to-back",
+        "L",
         "length",
         "length_mm",
         "lngth",
+        "LxWxH",
+        "mouse length",
         "overall length"
       ],
       "patterns": [],
       "type": "number"
     },
     "material": {
+      "context_keywords": [
+        "body material",
+        "bottom shell",
+        "built-in rubber side grips",
+        "carbon fiber composite",
+        "carbon fiber shell",
+        "case material",
+        "CFRP",
+        "chassis material",
+        "construction",
+        "enclosure material",
+        "exoskeleton",
+        "external casing",
+        "frame material",
+        "housing material",
+        "magnesium alloy shell",
+        "material composition",
+        "nylon outer shell",
+        "ocean plastic shell",
+        "outer shell",
+        "plastic parts",
+        "recycled plastic shell",
+        "shell material",
+        "top shell"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -667,10 +875,44 @@
       "type": "boolean"
     },
     "sensor": {
+      "context_keywords": [
+        "3360 sensor",
+        "3370 sensor",
+        "Logitech HERO 2",
+        "Razer Focus Pro 35K Optical Sensor Gen-2",
+        "Razer Focus Pro 45K Optical Sensor Gen-2",
+        "Razer Focus Pro 50K Optical Sensor Gen-3",
+        "TrueMove Core optical sensor",
+        "XS-1 Flagship Sensor"
+      ],
       "patterns": [],
       "type": "string"
     },
     "sensor_brand": {
+      "context_keywords": [
+        "ADNS",
+        "Avago Technologies",
+        "BlueTrack",
+        "Focus Pro",
+        "Focus X",
+        "HERO",
+        "HERO 2",
+        "HERO 25K",
+        "MARKSMAN",
+        "MARKSMAN S",
+        "Mercury",
+        "PAN",
+        "PAW",
+        "Pixart",
+        "PixArt Imaging",
+        "PMW",
+        "Razer Focus",
+        "Razer Focus+",
+        "TrueMove",
+        "TrueMove Air",
+        "TrueMove Core",
+        "TrueMove Pro"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -711,10 +953,38 @@
       "type": "url"
     },
     "sensor_type": {
+      "context_keywords": [
+        "blue optical tracking -> optical",
+        "Darkfield laser sensor -> laser",
+        "high precision optical tracking -> optical",
+        "infrared LED -> optical when tied to the motion sensor",
+        "IR LED -> optical when tied to the motion sensor",
+        "laser sensor -> laser",
+        "laser tracking -> laser",
+        "LED illumination -> optical when tied to the motion sensor",
+        "optical sensor -> optical",
+        "optical tracking -> optical"
+      ],
       "patterns": [],
       "type": "string"
     },
     "shape": {
+      "context_keywords": [
+        "ambi shape",
+        "ambi-ergo hybrid",
+        "ambidextrous shape",
+        "asymmetric",
+        "asymmetrical",
+        "ergo",
+        "ergonomic shape",
+        "ergonomic shell",
+        "hybrid shape",
+        "left-handed ergonomic",
+        "right-handed ergonomic",
+        "right-handed symmetrical",
+        "symmetric shape",
+        "symmetrical design"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -760,6 +1030,20 @@
       "type": "url"
     },
     "thumb_rest": {
+      "context_keywords": [
+        "extended thumb rest",
+        "rubberized thumb scoop",
+        "sculpted thumb rest",
+        "thumb cutout",
+        "thumb groove",
+        "thumb ledge",
+        "thumb platform",
+        "thumb rest",
+        "thumb scoop",
+        "thumb shelf",
+        "thumb support",
+        "thumb wing"
+      ],
       "patterns": [],
       "type": "boolean"
     },
@@ -769,9 +1053,20 @@
     },
     "weight": {
       "context_keywords": [
+        "actual weight",
+        "approx. weight",
+        "approximate weight",
+        "default weight",
+        "device weight",
+        "excluding cable",
+        "g",
+        "gram",
         "grams",
         "mass",
+        "mouse weight",
+        "net weight",
         "weight",
+        "weight without cable",
         "weight_g"
       ],
       "patterns": [],
@@ -779,7 +1074,14 @@
     },
     "width": {
       "context_keywords": [
+        "approximate size",
+        "body width",
+        "H x W x D",
+        "L x W x H",
+        "maximum width",
+        "mouse dimensions",
         "overall width",
+        "product dimensions",
         "width",
         "width_mm"
       ],

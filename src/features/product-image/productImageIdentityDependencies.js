@@ -180,7 +180,10 @@ export function formatProductImageIdentityFactsBlock(facts = [], { mode = 'disco
     return [
       'Product image identity guardrails:',
       ...lines,
-      'Use these facts to detect clear visual or source conflict with the exact product. If a candidate clearly conflicts, flag it as "wrong_product". If a fact is not visually testable or is ambiguous in the pixels, do not reject solely on that fact; use it as a source-identity and tie-break signal.',
+      'Use these facts to detect clear visual or source conflict with the exact product. Return dependency_status for every candidate: "aligned" when the visible/source evidence supports these facts, "unknown" when the fact is not visually testable, and "mismatch" when evidence conflicts.',
+      'Dependency-aligned images outrank mismatches. Prefer fewer accurate images over padding the carousel with dependency-mismatched images.',
+      'If connection is wired, a visible cable, cable exit, or reliable wired source evidence is a high-priority identity signal when comparable views are available.',
+      'If a candidate clearly conflicts, flag it as "wrong_product". If a fact is not visually testable or is ambiguous in the pixels, do not reject solely on that fact; use it as a source-identity and tie-break signal.',
     ].join('\n');
   }
 

@@ -99,17 +99,65 @@ describe('reconcileThreshold', () => {
     assert.equal(pj.fields.weight.confidence, 80);
   }));
 
-  it('skips manual overrides (locked)', withFreshEnv(({ specDb, root, ensureProductJson, seed }) => {
+  it('skips scalar fields locked by resolved SQL manual overrides', withFreshEnv(({ specDb, root, ensureProductJson, seed }) => {
     ensureProductJson('p1', {
-      fields: { weight: { value: 99, confidence: 1.0, source: 'manual_override', resolved_at: new Date().toISOString(), sources: [] } },
+      fields: { weight: { value: 99, confidence: 1.0, source: 'pipeline', resolved_at: new Date().toISOString(), sources: [] } },
     });
-    seed('p1', 'weight', 99, 1.0, 'resolved', { source: 'manual_override' });
+    specDb.insertFieldCandidate({
+      productId: 'p1',
+      fieldKey: 'weight',
+      value: '99',
+      sourceId: 'manual-p1-weight',
+      sourceType: 'manual_override',
+      model: '',
+      confidence: 1.0,
+      validationJson: {},
+      metadataJson: { source: 'manual_override' },
+      status: 'resolved',
+    });
+    seed('p1', 'weight', 58, 100, 'candidate');
 
     const result = reconcileThreshold({ specDb, category: 'mouse', threshold: 0.99, productRoot: root, dryRun: false });
 
     assert.equal(result.locked, 1);
     assert.equal(result.unpublished, 0);
     assert.ok(specDb.getResolvedFieldCandidate('p1', 'weight'));
+  }));
+
+  it('does not treat a JSON-only manual override as a live threshold lock', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
+    ensureProductJson('p1', {
+      fields: { weight: { value: 99, confidence: 1.0, source: 'manual_override', resolved_at: new Date().toISOString(), sources: [] } },
+    });
+    seed('p1', 'weight', 58, 100, 'candidate');
+
+    const result = reconcileThreshold({ specDb, category: 'mouse', threshold: 0.7, productRoot: root, dryRun: false });
+
+    assert.equal(result.locked, 0);
+    assert.equal(result.published, 1);
+    assert.equal(readProductJson('p1').fields.weight.value, 58);
+  }));
+
+  it('does not treat unresolved manual_override rows as live threshold locks', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
+    ensureProductJson('p1');
+    specDb.insertFieldCandidate({
+      productId: 'p1',
+      fieldKey: 'weight',
+      value: '99',
+      sourceId: 'manual-p1-weight-candidate',
+      sourceType: 'manual_override',
+      model: '',
+      confidence: 1.0,
+      validationJson: {},
+      metadataJson: { source: 'manual_override' },
+      status: 'candidate',
+    });
+    seed('p1', 'weight', 58, 100, 'candidate');
+
+    const result = reconcileThreshold({ specDb, category: 'mouse', threshold: 0.7, productRoot: root, dryRun: false });
+
+    assert.equal(result.locked, 0);
+    assert.equal(result.published, 1);
+    assert.equal(readProductJson('p1').fields.weight.value, 58);
   }));
 
   it('normalizes 0-100 confidence to 0-1 before comparison', withFreshEnv(({ specDb, root, ensureProductJson, seed }) => {

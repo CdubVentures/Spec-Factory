@@ -22,7 +22,7 @@ export interface DeleteTarget {
     | 'run' | 'loop' | 'all'
     | 'image' | 'images-all' | 'images-variant'
     | 'eval' | 'eval-all' | 'eval-variant'
-    | 'carousel-clear-variant'
+    | 'carousel-clear-variant' | 'carousel-clear-all'
     | 'variant' | 'variant-all'
     | 'key-unpublish' | 'key-delete'
     | 'key-unpublish-group' | 'key-delete-group'

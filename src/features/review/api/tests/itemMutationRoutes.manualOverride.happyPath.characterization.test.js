@@ -36,7 +36,7 @@ test('manual-override: broadcast event is review-manual-override', async () => {
   assert.equal(dataChange.payload.event, 'review-manual-override');
 });
 
-test('manual-override: envelope carries result object from submitCandidate', async () => {
+test('manual-override: envelope carries publisher result object', async () => {
   const { calls, context } = makeItemRouteHarness({
     readJsonBody: async () => ({ value: '85g', itemFieldStateId: 1 }),
   });
@@ -50,7 +50,6 @@ test('manual-override: envelope carries result object from submitCandidate', asy
   const body = calls.responses[0]?.body;
   assert.equal(body?.ok, true);
   assert.ok(body?.result, 'envelope includes result');
-  // result is the submitCandidate return value: {status, candidateId, value, validationResult, ...}
   assert.ok(Object.hasOwn(body.result, 'status'), 'result has status');
 });
 
@@ -107,13 +106,17 @@ test('broadcast payload carries productId + field in meta (broadcastExtra)', asy
   assert.ok(meta.field, 'meta.field present');
 });
 
-test('manual override does NOT insert into field_candidates (user input ≠ extraction)', async () => {
-  // WHY: Manual overrides are user input and live only in product.json. They
-  // must not pollute field_candidates; that table is reserved for pipeline /
-  // LLM-extracted candidates + their evidence. See writeManualOverride.test.js.
+test('manual override inserts a resolved SQL runtime row and preserves manual provenance', async () => {
+  // WHY: Review Grid and Overview read SQL as runtime state. Manual overrides
+  // must therefore become resolved SQL rows before the JSON rebuild mirror is
+  // written, otherwise refetch can reintroduce stale split-brain data.
   const insertCalls = [];
+  const demoteCalls = [];
   const specDb = makeSeededRuntimeSpecDb({
     getCompiledRules: () => ({ fields: { weight: { type: 'number' } } }),
+    demoteResolvedCandidates: (productId, fieldKey, variantId) => {
+      demoteCalls.push({ productId, fieldKey, variantId });
+    },
     insertFieldCandidate: (args) => { insertCalls.push(args); },
   });
   const { context } = makeItemRouteHarness({
@@ -127,5 +130,15 @@ test('manual override does NOT insert into field_candidates (user input ≠ extr
     req: {}, res: {}, context,
   });
 
-  assert.equal(insertCalls.length, 0, 'manual override must bypass field_candidates entirely');
+  assert.deepEqual(demoteCalls, [{ productId: 'mouse-foo-bar', fieldKey: 'weight', variantId: null }]);
+  assert.equal(insertCalls.length, 1, 'manual override must write one resolved SQL row');
+  assert.equal(insertCalls[0]?.productId, 'mouse-foo-bar');
+  assert.equal(insertCalls[0]?.fieldKey, 'weight');
+  assert.equal(insertCalls[0]?.value, '85g');
+  assert.equal(insertCalls[0]?.confidence, 1);
+  assert.equal(insertCalls[0]?.sourceType, 'manual_override');
+  assert.equal(insertCalls[0]?.status, 'resolved');
+  assert.equal(insertCalls[0]?.variantId, null);
+  assert.equal(insertCalls[0]?.metadataJson?.source, 'manual_override');
+  assert.equal(insertCalls[0]?.metadataJson?.reviewer, null);
 });

@@ -43,6 +43,10 @@ export interface ProductImageEntry {
   eval_duplicate?: boolean;
   /** Evaluator quality classification for carousel reuse. */
   eval_quality?: 'pass' | 'borderline' | 'fail' | string;
+  /** Dependency alignment against product_image_dependent identity facts. */
+  eval_dependency_status?: 'aligned' | 'unknown' | 'mismatch' | string;
+  /** Product image dependent fields that visibly/source-conflict with this image. */
+  eval_dependency_mismatch_keys?: string[];
   /** Selected as a hero shot by the carousel builder. */
   hero?: boolean;
   /** Order among hero shots (1 = primary). */

@@ -226,6 +226,8 @@ test('per-key LLM audit prompt gives component link fields authoritative compone
   assert.match(allText, /component _link fields/i);
   assert.match(allText, /manufacturer component page/i);
   assert.match(allText, /datasheet\/spec-sheet PDF/i);
+  assert.match(allText, /authorized component distributor/i);
+  assert.match(allText, /not eBay/i);
   assert.match(allText, /merely mention/i);
 });
 

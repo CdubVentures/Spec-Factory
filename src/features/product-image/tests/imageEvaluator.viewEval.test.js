@@ -118,6 +118,10 @@ describe('buildViewEvalPrompt', () => {
     assert.ok(result.includes('Product image identity guardrails'));
     assert.ok(result.includes('connection: wired'));
     assert.ok(result.includes('wrong_product'));
+    assert.ok(result.includes('dependency_status'));
+    assert.ok(result.includes('aligned'));
+    assert.ok(result.includes('mismatch'));
+    assert.ok(result.toLowerCase().includes('fewer accurate images'));
   });
 
   it('describes the JSON response format', () => {
@@ -200,6 +204,9 @@ describe('buildViewEvalPrompt', () => {
     assert.ok(lower.includes('actual_view'));
     assert.ok(lower.includes('usable_as_carousel_extra'));
     assert.ok(lower.includes('query intent'));
+    assert.ok(lower.includes('meaningfully different'));
+    assert.ok(lower.includes('same composition'));
+    assert.ok(lower.includes('slight zoom'));
   });
 
   it('rejects visually distinct sibling variants before ranking view quality', () => {
@@ -657,6 +664,8 @@ describe('evaluateViewCandidates', () => {
           usable_as_carousel_extra: true,
           quality: 'pass',
           duplicate: false,
+          dependency_status: 'aligned',
+          dependency_mismatch_keys: [],
           reasoning: 'Clean top view.',
         },
         {
@@ -667,6 +676,8 @@ describe('evaluateViewCandidates', () => {
           usable_as_carousel_extra: true,
           quality: 'pass',
           duplicate: false,
+          dependency_status: 'mismatch',
+          dependency_mismatch_keys: ['connection'],
           reasoning: 'Found by front query but pixels show top view.',
         },
         {
@@ -677,6 +688,8 @@ describe('evaluateViewCandidates', () => {
           usable_as_carousel_extra: true,
           quality: 'borderline',
           duplicate: false,
+          dependency_status: 'unknown',
+          dependency_mismatch_keys: [],
           reasoning: 'Useful generic product cutout.',
         },
       ],
@@ -696,13 +709,18 @@ describe('evaluateViewCandidates', () => {
     assert.equal(top.best, true);
     assert.equal(top.actualView, 'top');
     assert.equal(top.matchesRequestedView, true);
+    assert.equal(top.dependencyStatus, 'aligned');
+    assert.deepEqual(top.dependencyMismatchKeys, []);
     assert.equal(reclassified.best, false);
     assert.equal(reclassified.actualView, 'top');
     assert.equal(reclassified.matchesRequestedView, false);
     assert.equal(reclassified.usableAsRequiredView, true);
     assert.equal(reclassified.usableAsCarouselExtra, true);
+    assert.equal(reclassified.dependencyStatus, 'mismatch');
+    assert.deepEqual(reclassified.dependencyMismatchKeys, ['connection']);
     assert.equal(generic.actualView, 'generic');
     assert.equal(generic.quality, 'borderline');
+    assert.equal(generic.dependencyStatus, 'unknown');
   });
 
   it('does not mark a winner best when candidate classification says it is the wrong view', async () => {
@@ -848,6 +866,8 @@ describe('mergeEvaluation', () => {
             usableAsCarouselExtra: true,
             duplicate: false,
             quality: 'pass',
+            dependencyStatus: 'mismatch',
+            dependencyMismatchKeys: ['connection'],
           },
         ],
       }],
@@ -867,6 +887,8 @@ describe('mergeEvaluation', () => {
     assert.equal(img.eval_usable_as_carousel_extra, true);
     assert.equal(img.eval_duplicate, false);
     assert.equal(img.eval_quality, 'pass');
+    assert.equal(img.eval_dependency_status, 'mismatch');
+    assert.deepEqual(img.eval_dependency_mismatch_keys, ['connection']);
   });
 
   it('does not touch images from other variants', () => {

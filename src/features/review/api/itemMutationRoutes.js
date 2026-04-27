@@ -16,7 +16,7 @@ import {
 } from '../services/itemMutationService.js';
 import { submitCandidate } from '../../publisher/candidate-gate/submitCandidate.js';
 import { clearPublishedField } from '../../publisher/publish/clearPublishedField.js';
-import { writeManualOverride } from '../../publisher/publish/writeManualOverride.js';
+import { publishManualOverride } from '../../publisher/publish/publishManualOverride.js';
 import { wipePublisherStateForUnpub } from '../../publisher/publish/wipePublisherStateForUnpub.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { clearScalarFinderVariant, deleteScalarFinderVariantRuns } from '../../../core/finder/scalarFinderVariantCleaner.js';
@@ -345,6 +345,7 @@ async function handleReviewItemOverrideMutationEndpoint({
     getSpecDb,
     resolveGridFieldStateForMutation,
     broadcastWs,
+    productRoot,
   } = context || {};
   const category = parts[1];
   const mode = resolveItemOverrideMode(parts, method);
@@ -393,7 +394,7 @@ async function handleReviewItemOverrideMutationEndpoint({
         knownValues: null,
         componentDb: null,
         specDb,
-        productRoot: defaultProductRoot(),
+        productRoot: productRoot || defaultProductRoot(),
         metadata: { source: 'candidate_override', evidence: body?.candidateEvidence ?? null },
         config: { publishConfidenceThreshold: 0 },
         variantId: normalizedVariantId,
@@ -416,11 +417,10 @@ async function handleReviewItemOverrideMutationEndpoint({
       return true;
     }
 
-    // WHY: Manual overrides are user input, NOT extraction output. Write directly
-    // to product.json (published surface) and skip field_candidates entirely.
-    // Candidates/evidence remain reserved for pipeline/LLM runs.
-    const result = writeManualOverride({
-      productRoot: defaultProductRoot(),
+    const result = publishManualOverride({
+      specDb,
+      category,
+      productRoot: productRoot || defaultProductRoot(),
       productId,
       fieldKey: field,
       value: normalizeOverrideValue({ value, fieldRule }),

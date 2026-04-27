@@ -41,7 +41,7 @@ function seedCandidate(specDb, productId, fieldKey, value, confidence, variantId
     model: extra.model || 'test-model',
     validationJson: { valid: true, repairs: [], rejections: [] },
     metadataJson: extra.metadataJson ?? {},
-    status: 'candidate',
+    status: extra.status ?? 'candidate',
     variantId,
   });
   return specDb.getFieldCandidateBySourceId(productId, fieldKey, sourceId);
@@ -154,13 +154,20 @@ describe('publishCandidate — variant-scoped (branch 3)', () => {
     assert.ok(!pj.variant_fields?.[vid]?.release_date, 'no variant_fields entry');
   });
 
-  it('manual_override_locked respected per variant', () => {
+  it('manual_override_locked is read from SQL and respected per variant', () => {
     const vid = 'v_ffff9999';
-    ensureProductJson('vs-e', {
-      variant_fields: {
-        [vid]: { release_date: { value: '2020-01-01', source: 'manual_override', confidence: 100 } },
-      },
+    ensureProductJson('vs-e');
+    seedCandidate(specDb, 'vs-e', 'release_date', '2020-01-01', 1, vid, {
+      sourceId: 'manual-vs-e-v-black',
+      sourceType: 'manual_override',
+      metadataJson: { source: 'manual_override' },
+      status: 'resolved',
     });
+    const pj = readProductJson('vs-e');
+    pj.variant_fields = {
+      [vid]: { release_date: { value: '2020-01-01', source: 'pipeline', confidence: 100 } },
+    };
+    fs.writeFileSync(path.join(PRODUCT_ROOT, 'vs-e', 'product.json'), JSON.stringify(pj, null, 2));
     const row = seedCandidate(specDb, 'vs-e', 'release_date', '2024-09-09', 95, vid);
 
     const result = publishCandidate({
@@ -173,8 +180,31 @@ describe('publishCandidate — variant-scoped (branch 3)', () => {
 
     assert.equal(result.status, 'manual_override_locked');
     assert.equal(result.lockedValue, '2020-01-01');
-    const pj = readProductJson('vs-e');
-    assert.equal(pj.variant_fields[vid].release_date.value, '2020-01-01', 'manual value preserved');
+    const after = readProductJson('vs-e');
+    assert.equal(after.variant_fields[vid].release_date.value, '2020-01-01', 'manual value preserved');
+  });
+
+  it('JSON-only variant manual override does not lock publishing', () => {
+    const vid = 'v_jsononly9999';
+    ensureProductJson('vs-json-only-lock', {
+      variant_fields: {
+        [vid]: { release_date: { value: '2020-01-01', source: 'manual_override', confidence: 100 } },
+      },
+    });
+    const row = seedCandidate(specDb, 'vs-json-only-lock', 'release_date', '2024-09-09', 95, vid);
+
+    const result = publishCandidate({
+      specDb, category: 'mouse', productId: 'vs-json-only-lock', fieldKey: 'release_date',
+      candidateRow: row, value: '2024-09-09', unit: null, confidence: 95,
+      config: { publishConfidenceThreshold: 0.7 },
+      fieldRule: scalarDateRule, productRoot: PRODUCT_ROOT,
+      variantId: vid,
+    });
+
+    assert.equal(result.status, 'published');
+    const pj = readProductJson('vs-json-only-lock');
+    assert.equal(pj.variant_fields[vid].release_date.value, '2024-09-09');
+    assert.equal(pj.variant_fields[vid].release_date.source, 'pipeline');
   });
 
   it('resolves variantId from candidateRow when not explicitly passed', () => {

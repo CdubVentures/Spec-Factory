@@ -194,6 +194,7 @@
     "hand_size": {
       "policy": "open_prefer_known",
       "values": [
+        "extra large",
         "large",
         "medium",
         "small"
@@ -279,6 +280,10 @@
         "TI CC2462R"
       ]
     },
+    "mouse_sensor_brand": {
+      "policy": "open",
+      "values": []
+    },
     "mouse_side_connector": {
       "policy": "open_prefer_known",
       "values": [
@@ -321,6 +326,6 @@
       ]
     }
   },
-  "generated_at": "2026-04-26T23:42:58.768Z",
+  "generated_at": "2026-04-27T02:48:22.414Z",
   "version": 1
 }

@@ -1,11 +1,11 @@
 /**
- * Auto-publish a validated candidate to product.json fields[] + mark resolved in SQL.
+ * Auto-publish a validated candidate to SQL resolved state + product.json mirror.
  *
  * Called by submitCandidate() after the candidate dual-write succeeds.
  * Gates: confidence threshold, manual override lock.
  * Set union: list fields with item_union='set_union' merge into the published list.
  *
- * Dual-state: JSON SSOT (product.json fields[]) + SQL projection (field_candidates.status).
+ * Dual-state: SQL resolved state is the runtime authority; product.json is the mirror.
  */
 
 import fs from 'node:fs';
@@ -72,6 +72,25 @@ export function buildLinkedCandidates(specDb, productId, fieldKey, publishedValu
     }));
 }
 
+function isResolvedManualOverrideRow(row) {
+  if (!row || String(row.status || '').trim() !== 'resolved') return false;
+  const sourceType = String(row.source_type || '').trim();
+  const metadataSource = String(row.metadata_json?.source || '').trim();
+  return sourceType === 'manual_override' || metadataSource === 'manual_override';
+}
+
+export function getManualOverrideLock({ specDb, productId, fieldKey, variantId = null }) {
+  const rows = specDb?.getFieldCandidatesByProductAndField?.(productId, fieldKey, variantId) || [];
+  const row = rows.find(isResolvedManualOverrideRow) || null;
+  if (!row) return null;
+  return {
+    value: row.value,
+    candidateId: row.id ?? null,
+    sourceId: row.source_id || '',
+    variantId: row.variant_id ?? null,
+  };
+}
+
 /**
  * @param {{ specDb: object, category: string, productId: string, fieldKey: string, candidateRow: object, value: *, unit: string|null, confidence: number, config: object, fieldRule: object, productRoot: string, variantId?: string|null }} opts
  * @returns {{ status: 'published'|'below_threshold'|'manual_override_locked'|'skipped', value?: *, candidateId?: number, confidence?: number, threshold?: number }}
@@ -124,14 +143,13 @@ export function publishCandidate({
     return { status: 'skipped' };
   }
 
-  // --- Manual override lock ---
-  if (!productJson.fields) productJson.fields = {};
-  const existing = productJson.fields[fieldKey];
-  if (existing?.source === 'manual_override') {
+  const lock = getManualOverrideLock({ specDb, productId, fieldKey, variantId: null });
+  if (lock) {
     persistPublishResult(specDb, productId, fieldKey, serializeValue(value), { status: 'manual_override_locked' });
-    return { status: 'manual_override_locked', lockedValue: existing.value };
+    return { status: 'manual_override_locked', lockedValue: lock.value };
   }
 
+  if (!productJson.fields) productJson.fields = {};
   const publishedValue = evalResult.publishedValue;
   const serialized = serializeValue(publishedValue);
   const now = new Date().toISOString();
@@ -225,14 +243,14 @@ function publishVariantScopedCandidate({
     return { status: 'skipped' };
   }
 
-  if (!productJson.variant_fields) productJson.variant_fields = {};
-  if (!productJson.variant_fields[variantId]) productJson.variant_fields[variantId] = {};
-  const existing = productJson.variant_fields[variantId][fieldKey];
-  if (existing?.source === 'manual_override') {
+  const lock = getManualOverrideLock({ specDb, productId, fieldKey, variantId });
+  if (lock) {
     persistPublishResult(specDb, productId, fieldKey, serializeValue(value), { status: 'manual_override_locked' }, variantId);
-    return { status: 'manual_override_locked', lockedValue: existing.value };
+    return { status: 'manual_override_locked', lockedValue: lock.value };
   }
 
+  if (!productJson.variant_fields) productJson.variant_fields = {};
+  if (!productJson.variant_fields[variantId]) productJson.variant_fields[variantId] = {};
   const publishedValue = evalResult.publishedValue;
   const serialized = serializeValue(publishedValue);
   const now = new Date().toISOString();

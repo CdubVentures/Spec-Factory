@@ -8,6 +8,8 @@ No code edits were made during the audit that produced this document.
 
 Update note, 2026-04-26: this document was amended after the PIF image/popup performance work. That work changed runtime behavior and surfaced additional JSON/SQL/runtime-cache gaps; the addendum below records the new state and the remaining gaps.
 
+Re-audit note, 2026-04-26: the current checked-out tree was re-audited before starting implementation work. The re-audit changed this document only; no product source was changed and no test or GUI proof was run for this documentation pass.
+
 ## Contract Being Audited
 
 Spec Factory uses a dual-state model:
@@ -93,12 +95,60 @@ Mostly compliant:
 9. Deletion store SQL-first cleanup.
 10. Brand registry.
 
+## Current Re-Audit Snapshot
+
+This pass confirmed that the recommended fix order below is still accurate. The production mitigations already recorded in the addendum are present, and the first Review Override sub-slice now has a SQL-first manual override path.
+
+Implementation note, 2026-04-26: review-route manual overrides now call `publishManualOverride(...)`, which demotes the previous resolved row by scalar/variant scope, inserts a resolved `field_candidates` row with `source_type='manual_override'`, and mirrors the value to `product.json.fields` or `product.json.variant_fields`. Review Grid no longer synthesizes manual override rows from `product.json`; JSON-only overrides are treated as rebuild/audit data until reseeded into SQL.
+
+### Still Open
+
+| Area | Current status | Current proof in the checked-out tree | Implementation contract still needed |
+| --- | --- | --- | --- |
+| Review manual overrides | Mostly closed | `src/features/review/api/itemMutationRoutes.js` routes manual overrides through `publishManualOverride`; `src/features/publisher/publish/publishManualOverride.js` writes SQL first and mirrors JSON; `src/features/review/domain/reviewGridData.js` no longer merges JSON-only manual overrides; publisher locks now read resolved SQL manual override rows. | Finish the broader Review Override Family: consolidated review override JSON remains JSON-first. |
+| Consolidated review overrides | Open, same phase as manual overrides | `src/features/review/domain/overrideWorkflow.js` still imports consolidated override helpers and says JSON SSOT / DB sync removed; `src/features/review/domain/overrideHelpers.js` still lists and reads consolidated JSON directly. | Define review override runtime SQL state, read/write it first, and keep consolidated JSON as export/rebuild mirror. |
+| Publisher manual-override locks | Closed for active publisher paths | `src/features/publisher/publish/publishCandidate.js`, `reconcileThreshold.js`, and `republishField.js` read resolved SQL manual override rows by scalar/variant scope; JSON-only manual override entries are no longer live locks. | Keep `product.json` reseed coverage so deleted-DB rebuild recreates SQL locks. |
+| Global prompts | Open | `src/core/llm/prompts/globalPromptStore.js` still stores `.workspace/global/global-prompts.json`; `src/features/settings-authority/globalPromptsHandler.js` reads/writes that store directly. | Add appDb runtime source plus JSON mirror/reseed, then route GET/PUT through SQL-first persistence. |
+| Source strategy and spec seeds | Open | `src/features/indexing/sources/sourceFileService.js` says routes and orchestration consume `sources.json` instead of SQLite; `src/db/specDbSchema.js` says `source_strategy` table was removed; `specSeedsRoutes.js` writes `spec_seeds.json`. | Add SQL projections and SQL-first routes/readers, with JSON as rebuild mirror. |
+| Storage Manager run detail | Open | `src/features/indexing/api/storageManagerRoutes.js` still enriches `GET /storage/runs/:runId` from `run.json` for sources and identity. | Replace mutable detail enrichment with SQL joins / `run_artifacts` rows, leaving historical file fallback as explicit artifact policy only. |
+| Cross-cutting finder persistence | Open | `src/core/finder/finderJsonStore.js` still owns read/write/merge/delete of finder JSON files; `finderRoutes.js` delete-all calls JSON cleanup before SQL run cleanup; `discoveryHistoryScrub.js` and `variantCleanup.js` write JSON before updating SQL run blobs. | Introduce SQL-first finder history services and make JSON helpers mirror/rebuild-only. |
+| Key Finder | Open | `src/features/key/api/keyFinderRoutes.js` still uses key store JSON cleanup first for key/run/delete-all routes and then deletes/upserts SQL rows. | Move Key Finder list/detail/history/mutations to SQL-first contracts; mirror `key_finder.json` afterward. |
+| RDF/SKU scalar finder history | Open | `src/core/finder/variantScalarFieldProducer.js` still calls `mergeDiscovery(...)` before `store.insertRun(...)` and reads prior runs via the JSON `readRuns` callback. | Allocate/read run history from SQL first; write JSON mirror after SQL success. |
+| CEF prompt/runtime history | Open | CEF still participates in the shared finder JSON/run cleanup paths, and variant cleanup still treats JSON as the first mutation target. | Move CEF run history and prompt-history inputs to SQL-first services. |
+| PIF runtime state and progress | Open, partially mitigated | `src/features/product-image/productImageStore.js` still declares durable SSOT as `product_images.json`; `productImageFinderRoutes.js` says progress source of truth is `product_images.json` and has several JSON-first dual writes; `imageEvaluator.js` and `carouselBuild.js` append eval/carousel state to JSON before SQL projection. | Make PIF run/eval/carousel/image mutations SQL-first, materialize progress from SQL, mirror JSON after success, and keep rebuild from JSON. |
+| PIF asset/cache contract | Open, partially mitigated | Image files and derived caches still live on disk; route-local deletion code prunes some files and cache variants, but there is no single SQL metadata owner for binary assets. | Declare one asset metadata owner, make cache files derived/discardable, and prune derived cache on every image mutation path. |
+| PIF lightweight summary | Partial mitigation, still open as architecture debt | `GET /product-image-finder/:category/:productId/summary` reads SQL summary/runs, but `buildPifSummaryResponse(...)` is still route-local and hand-projected. | Move the summary contract to a schema/registry-backed projection shared with frontend types. |
+| IndexLab product URL history | Open | `indexlabUrlHistoryReader.js` reads `{productRoot}/{productId}/product.json::sources[]`; `runDiscoverySeedPlan.js` injects that into planning while SQL alternatives exist. | Replace with `url_crawl_ledger` or `crawl_sources` reader based on intended semantics. |
+| Design-call artifacts | Still undecided | `sourceCorpus.js` reads/writes `_source_intel/{category}/corpus.json`; `helpers.js` reads `_learning/*`; runtime overrides still read `_runtime/control/runtime_overrides.json`; catalog add/bulk add writes `product.json` before route-level SQL upsert. | Decide artifact vs runtime state, then either document an artifact exception or add SQL-first projection. |
+| Frontend propagation | Open beyond targeted mitigations | Brand rename still depends on already-loaded `impactData.product_details`; component/enum helpers patch `reviewProductsIndex` but product detail and candidate caches still wait for invalidation; direct component-review item actions patch `componentReview`, but batch/whole-row flows still invalidate; module settings do not publish a broad local propagation event; no central mutation projection registry exists. | Add server-normalized changed entities and a registry-driven frontend cache dispatcher that patches all loaded query families. |
+
+### Mitigations Already Present
+
+| Mitigation | Status | Remaining limit |
+| --- | --- | --- |
+| Product add/update/delete shared cache patching | Present | Optimistic cache patches do not prove backend SQL correctness after refetch. |
+| Brand rename cache cascade | Present when impact data is loaded | If the impact query is disabled/stale/failed/not loaded, rename relies on invalidation/refetch. |
+| Product-scoped catalog row refresh | Present | Only patches Overview/Indexing catalog rows for product-scoped data-change messages; SQL must already be correct. |
+| Direct Component Review item actions | Present | Patches `['componentReview', category]` for direct approve/merge/dismiss actions only; batch and whole-row flows still need exact changed-entity contracts. |
+| PIF bulk image delete frontend patch | Present | Backend path still reads/writes `product_images.json` first, then projects SQL. |
+| PIF thumbnail/preview URL variants | Present | Asset metadata/caches remain filesystem-first. |
+| Runtime settings active-tab propagation | Present | External-tab conflict/status UI and module setting consumer propagation remain incomplete. |
+
+### Start Here
+
+Continue Phase 1 with the remaining Review Override Family:
+
+- It has the clearest user-visible split-brain path.
+- Consolidated review overrides still need SQL-first runtime state.
+- Publisher lock checks now read SQL manual overrides; deleted-DB reseed coverage remains important.
+- The manual route/grid/publisher-lock slices now establish the SQL-first pattern needed by later finder/PIF migrations.
+
 ## Frontend Impact Matrix
 
 | Surface | Main query key(s) | Backend source | Stale when JSON-only? | Notes |
 | --- | --- | --- | --- | --- |
 | Overview catalog | `['catalog', category]` | SQL via `buildCatalogFromSql` | Yes | Reads products, candidates, variants, PIF progress, finder summaries. |
-| Review product grid | `['product', category, productId]`, `['reviewProductsIndex', category]` | Mixed SQL + JSON merge | Partially | Manual overrides currently appear because grid merges `product.json`; this masks SQL staleness. |
+| Review product grid | `['product', category, productId]`, `['reviewProductsIndex', category]` | SQL for manual override state plus mixed review artifacts | Partially | Manual overrides now appear only when projected into SQL; JSON-only manual overrides no longer mask stale SQL. |
 | Review catalog picker | `['catalog-review', category]` | SQL product list | Yes | Manual product.json edits do not update picker identity. |
 | Finder panels | `['key-finder', category]`, `['release-date-finder', category]`, `['sku-finder', category]`, `['color-edition-finder', category]`, `['product-image-finder', category]` | Mixed | Yes | Generic scalar routes are more SQL-based; Key Finder is still JSON-heavy. |
 | PIF Overview rings | `['catalog', category]` | `pif_variant_progress` SQL | Yes | If JSON images change but progress projection is stale, rings stay stale. |
@@ -117,6 +167,7 @@ Closed by the implementation:
 - Brand rename now patches exact affected products across shared product caches when Brand Manager has the impact product list loaded.
 - Review Grid row-wide actions and scalar override/clear flows now patch the Review Grid cache immediately and roll back on API failure.
 - Component Review inline edits and drawer override/accept flows now patch linked Review Grid fields immediately.
+- Component Review direct approve, merge-alias, and dismiss actions now patch the `['componentReview', category]` document immediately and roll back on API failure.
 - Enum Review accept, remove, confirm, drawer rename, and inline rename now patch linked Review Grid fields immediately.
 - Settings data-change fan-out now covers runtime settings, UI settings, finder families, Indexing LLM config, and prompt preview invalidation. Existing contracts verify global settings events fall back to the active category and dirty/flush-pending runtime settings are not overwritten by stale refetches.
 
@@ -207,33 +258,37 @@ Required fix:
 - Resolve the effective confirm value before mutation so every confirm path has a patchable value.
 - Roll back both `componentReviewData` and Review Grid on error.
 
-#### 4. Component Review Panel and Batch Actions Still Rely on Invalidation
+#### 4. Component Review Batch and Whole-Row Actions Still Rely on Invalidation
 
-Status: open gap.
+Status: partially mitigated; direct item actions are fixed, batch and whole-row workflows remain open.
 
 Files:
 
 - `tools/gui-react/src/pages/component-review/ComponentReviewPanel.tsx`
 - `tools/gui-react/src/pages/component-review/ComponentReviewDrawer.tsx`
 - `tools/gui-react/src/pages/component-review/ComponentSubTab.tsx`
+- `tools/gui-react/src/pages/component-review/componentReviewCache.ts`
 
 Current behavior:
 
-- Panel-level review actions, AI batch actions, and drawer "Accept Entire Row" still invalidate broad query families.
-- They do not patch linked product Review Grid fields, component review rows, enum review rows, product detail caches, or candidate caches.
+- Direct Panel/Drawer approve, merge-alias, and dismiss mutations patch `['componentReview', category]` immediately and restore the previous document on API failure.
+- Those direct actions still rely on success invalidation for `componentReviewData`, linked Review Grid fields, product detail caches, and candidate caches.
+- AI batch actions and drawer "Accept Entire Row" still invalidate broad query families instead of applying one deterministic changed-entity patch.
+- During this pass, the backend route search also found a contract gap: the UI calls `/review-components/:category/component-review` and `/review-components/:category/component-review-action`, but the checked backend route files expose layout/components/enums/impact plus override/confirm endpoints. If those routes are still intentionally external/generated, document that owner; otherwise add backend route tests before treating the UI mutation path as end-to-end fixed.
 
 Impact:
 
-- Single-cell edits are now instant, but batch/row workflows can still feel delayed.
-- Overview and Review Grid wait for backend processing and refetch.
+- Direct item status changes feel instant in the mounted component-review document.
+- Batch and whole-row workflows can still feel delayed because mounted surfaces wait for backend processing and refetch.
+- Product detail, Review Grid, Overview, and candidate metadata can still lag behind the direct item status patch.
 
 Required fix:
 
 - Define optimistic patch contracts for each batch action:
   - Accept entire component row.
-  - Approve/dismiss/merge component review item.
   - Run component AI review batch.
   - Batch enum accept/remove if added later.
+- Add or document the backend `component-review` and `component-review-action` route contract, then make it return exact changed entities where the frontend cannot infer them safely.
 - Use server response payloads where exact changed fields are too broad to infer safely.
 
 #### 5. Derived Metrics Are Not Optimistically Recomputed
@@ -349,46 +404,41 @@ Required fix:
 
 ### 1. Review Manual Overrides
 
-Status: definite violation.
+Status: active API/Grid mitigation complete; broader override family still open.
 
 Active route:
 
 - `src/features/review/api/itemMutationRoutes.js`
-- Imports `writeManualOverride` from `src/features/publisher/publish/writeManualOverride.js`.
-- The route comment says manual overrides write directly to `product.json` and skip `field_candidates`.
+- Calls `publishManualOverride(...)`.
+- The route writes resolved SQL runtime state first, then mirrors `product.json`.
 
 Read path:
 
 - `src/features/review/domain/reviewGridData.js`
-- Reads `.workspace/products/{productId}/product.json`.
-- Synthesizes `manual_override` rows into the review payload.
+- Reads manual override state from resolved `field_candidates` rows.
+- JSON-only manual overrides no longer synthesize Review Grid fields.
 
 Impact:
 
-- Review grid can show the manual override.
-- Overview coverage/confidence can miss it because Overview reads resolved `field_candidates`.
-- Publisher surfaces that rely on SQL-resolved candidates can disagree with `product.json`.
-- Data-change emits refreshes, but refetching SQL does not help if SQL was never updated.
+- Review Grid and Overview can converge after refetch because the mutation updates resolved SQL state.
+- `product.json` remains a rebuild/audit mirror.
+- Publisher lock reads use resolved SQL manual override rows and ignore JSON-only mirror state.
 
-Conflicting implementation already exists:
+Implementation:
 
 - `src/features/publisher/publish/publishManualOverride.js`
-- This writes a resolved SQL candidate and mirrors `product.json`.
-- It is not the active Review API path.
+- `src/features/publisher/publish/writeManualOverride.js` was retired.
 
-Tests currently protecting the wrong contract:
+Tests now protecting the SQL-first contract:
 
-- `src/features/publisher/publish/tests/writeManualOverride.test.js`
 - `src/features/review/api/tests/itemMutationRoutes.manualOverride.happyPath.characterization.test.js`
 - `src/features/review/api/tests/itemMutationRoutes.variantId.test.js`
+- `src/features/publisher/publish/tests/publishManualOverride.test.js`
+- `src/features/review/domain/tests/reviewGridData.resolvedSelection.characterization.test.js`
 
-Required fix:
+Remaining follow-up:
 
-- Route manual override through a SQL-first manual override service.
-- Store manual overrides as resolved SQL runtime state with `source_type = 'manual_override'`.
-- Mirror `product.json` after SQL succeeds.
-- Remove Review grid's product.json manual-override merge path.
-- Update tests to assert SQL candidate creation and SQL-based grid reads.
+- Add an Overview consistency test around the route-level mutation.
 
 ### 2. Consolidated Review Overrides
 
@@ -411,7 +461,7 @@ Impact:
 
 - Review finalize/metrics/workflow state can diverge from SQL runtime state.
 - Overview and product-level SQL consumers will not know about JSON-only review override changes unless a separate projection happens.
-- A future SQL-first manual override fix would be incomplete if consolidated override state remains JSON-only.
+- The SQL-first manual override fix remains incomplete at the broader workflow level while consolidated override state remains JSON-only.
 
 Tests currently protecting the wrong contract:
 
@@ -959,15 +1009,14 @@ Compliant parts:
 - Auto-publish marks SQL candidate status before mirroring published fields into `product.json`.
 - Review candidate delete removes SQL candidates first, then mirrors candidate/published cleanup into `product.json`.
 
-Remaining dependency:
+Closed dependency:
 
-- Auto-publish and republish still read `product.json.fields` / `variant_fields` to honor a `manual_override` lock.
-- Once manual override state moves to SQL, these lock checks must read SQL. Otherwise the publisher will keep depending on JSON for a live runtime decision.
+- Auto-publish, threshold reconcile, and republish read resolved SQL manual override rows to honor a `manual_override` lock.
+- JSON-only manual override entries no longer drive live publisher lock decisions.
 
-Required fix:
+Remaining requirement:
 
-- Include publisher manual-override lock reads in the Phase 1 manual override migration.
-- Keep `product.json.fields` as mirror/rebuild output after SQL state is resolved.
+- Keep `product.json.fields` / `variant_fields` as mirror/rebuild output after SQL state is resolved.
 
 ## Design-Call Items
 
@@ -1208,10 +1257,11 @@ Status:
 
 Tests that must change during the fixes:
 
-- Manual override JSON-only tests:
-  - `src/features/publisher/publish/tests/writeManualOverride.test.js`
+- Manual override SQL-first tests now updated:
+  - `src/features/publisher/publish/tests/publishManualOverride.test.js`
   - `src/features/review/api/tests/itemMutationRoutes.manualOverride.happyPath.characterization.test.js`
   - `src/features/review/api/tests/itemMutationRoutes.variantId.test.js`
+  - `src/features/review/domain/tests/reviewGridData.resolvedSelection.characterization.test.js`
 - Consolidated override JSON-SSOT tests:
   - `src/features/review/domain/tests/overrideWorkflowCharacterization.test.js`
   - `src/shared/tests/consolidatedOverrides.test.js`
@@ -1257,17 +1307,16 @@ Test strategy:
 
 Fix together:
 
-- Manual override API.
 - Consolidated review override workflow.
-- Review grid manual override merge.
-- Publisher/manual override tests.
+- Publisher manual-override lock reads.
 - Overview consistency tests.
 
 Contract after fix:
 
-- Manual/user override writes SQL runtime state first.
-- JSON `product.json` and consolidated override JSON mirror after SQL succeeds.
-- Review grid and Overview read SQL only for runtime override state.
+- Manual/user override API writes SQL runtime state first.
+- JSON `product.json` mirrors after SQL succeeds.
+- Consolidated override JSON must move behind the same SQL-first contract.
+- Review grid reads SQL only for manual override runtime state.
 
 Why first:
 

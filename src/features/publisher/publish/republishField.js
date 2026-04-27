@@ -1,4 +1,5 @@
 import { evaluateFieldBuckets } from './evidenceGate.js';
+import { getManualOverrideLock } from './publishCandidate.js';
 
 /**
  * Re-evaluate and republish a single field from its remaining candidates.
@@ -10,7 +11,7 @@ import { evaluateFieldBuckets } from './evidenceGate.js';
  * Caller owns product.json file I/O — this function mutates productJson in place.
  *
  * @param {{ specDb, productId: string, fieldKey: string, config: object, productJson: object, variantId?: string|null }} opts
- * @returns {{ status: 'republished'|'unpublished'|'unchanged' }}
+ * @returns {{ status: 'republished'|'unpublished'|'unchanged'|'manual_override_locked', lockedValue?: * }}
  */
 export function republishField({ specDb, productId, fieldKey, config, productJson, variantId }) {
   const isVariantScoped = variantId != null;
@@ -20,6 +21,16 @@ export function republishField({ specDb, productId, fieldKey, config, productJso
 
   if (!publishedContainer?.[fieldKey]) {
     return { status: 'unchanged' };
+  }
+
+  const lock = getManualOverrideLock({
+    specDb,
+    productId,
+    fieldKey,
+    variantId: isVariantScoped ? variantId : null,
+  });
+  if (lock) {
+    return { status: 'manual_override_locked', lockedValue: lock.value };
   }
 
   const remaining = specDb.getFieldCandidatesByProductAndField(

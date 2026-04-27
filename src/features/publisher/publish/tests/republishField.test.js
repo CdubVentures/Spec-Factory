@@ -94,6 +94,34 @@ describe('republishField', () => {
     assert.ok(rows.some(r => r.status === 'resolved'));
   }));
 
+  it('SQL manual override lock preserves the published scalar value', withFreshEnv(({ specDb, makeProductJson, seed }) => {
+    seed('mouse-001', 'weight', '99', 1, 'manual_override', 'resolved');
+    seed('mouse-001', 'weight', '60', 0.95);
+    const productJson = makeProductJson({
+      fields: { weight: { value: '99', confidence: 1, source: 'pipeline', sources: [], linked_candidates: [] } },
+    });
+
+    const result = republishField({ specDb, productId: 'mouse-001', fieldKey: 'weight', config: {}, productJson });
+
+    assert.equal(result.status, 'manual_override_locked');
+    assert.equal(result.lockedValue, '99');
+    assert.equal(productJson.fields.weight.value, '99');
+    assert.equal(productJson.fields.weight.source, 'pipeline');
+  }));
+
+  it('JSON-only manual override does not lock scalar republish', withFreshEnv(({ specDb, makeProductJson, seed }) => {
+    seed('mouse-001', 'weight', '58', 0.9);
+    const productJson = makeProductJson({
+      fields: { weight: { value: '99', confidence: 1, source: 'manual_override', sources: [], linked_candidates: [] } },
+    });
+
+    const result = republishField({ specDb, productId: 'mouse-001', fieldKey: 'weight', config: {}, productJson });
+
+    assert.equal(result.status, 'republished');
+    assert.equal(productJson.fields.weight.value, 58);
+    assert.equal(productJson.fields.weight.source, 'pipeline');
+  }));
+
   it('set_union: merges all above-threshold candidates arrays', withFreshEnv(({ specDb, makeProductJson, seed }) => {
     // Need a compiled rule that marks this field as set_union
     // Inject compiled rules via specDb mock

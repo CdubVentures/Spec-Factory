@@ -27,6 +27,7 @@ function resolveTitle(target: DeleteTarget, moduleLabel: string): string {
     case 'eval-all': return `Delete all ${target.count ?? 0} eval(s)?`;
     case 'eval-variant': return `Delete ${target.count ?? 0} eval(s) for variant?`;
     case 'carousel-clear-variant': return `Clear carousel winners for "${target.label ?? target.variantKey ?? ''}"?`;
+    case 'carousel-clear-all': return 'Clear all carousel winners?';
     case 'variant': return `Delete variant "${target.label}"?`;
     case 'variant-all': return `Delete all ${target.count ?? 0} variant(s)?`;
     case 'key-unpublish': return `Unresolve "${target.fieldKey ?? ''}"?`;
@@ -68,6 +69,8 @@ function resolveDefaultDescription(target: DeleteTarget, moduleLabel: string): s
       return `This will permanently remove ${target.count ?? 0} eval(s) for variant "${target.label ?? ''}" and reset its carousel selections.`;
     case 'carousel-clear-variant':
       return `This will clear the current carousel winner flags and manual slot overrides for variant "${target.label ?? target.variantKey ?? ''}". Images, runs, and eval history are preserved.`;
+    case 'carousel-clear-all':
+      return `This will clear current carousel winner flags and manual slot overrides for every variant. Images, runs, discovery history, and eval history are preserved.`;
     case 'variant':
       return `This will permanently strip this variant's values from all field candidates, remove its colors/editions from published values, delete all PIF data (images, runs, evals), and remove carousel slots. This cannot be undone.`;
     case 'variant-all':
