@@ -117,15 +117,14 @@
   font-size: var(--sf-token-font-size-label);
   font-weight: 500;
   color: rgb(var(--sf-color-text-primary-rgb));
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   display: inline-flex;
   align-items: center;
   gap: 6px;
 }
 .sf-ktp-row-label-text {
+  flex: 1 1 auto;
   min-width: 0;
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }

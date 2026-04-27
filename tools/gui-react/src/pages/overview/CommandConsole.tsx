@@ -1,4 +1,5 @@
 import { memo, useCallback, useMemo, useState, type ReactNode } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import type { CatalogRow } from '../../types/product.ts';
 import { useReservedKeysQuery } from '../../features/key-finder/api/keyFinderQueries.ts';
 import {
@@ -18,6 +19,7 @@ import {
   dispatchKfAll,
   dispatchKfPickedKeys,
   dispatchCefDeleteAll,
+  dispatchPifCarouselClearAll,
   dispatchPifDeleteAll,
   dispatchRdfDeleteAll,
   dispatchSkuDeleteAll,
@@ -36,6 +38,7 @@ import { selectActiveProductsForType, formatActiveWarnMessage } from './commandC
 import { estimatePifEvalOperationCount } from './commandConsoleBatchEstimates.ts';
 import { CommandConsoleModelStrip } from './CommandConsoleModelStrip.tsx';
 import { CommandConsoleKeysDropdown } from './CommandConsoleKeysDropdown.tsx';
+import { zeroCatalogPifCarouselProgress } from '../../features/product-image-finder/state/pifDeleteOptimism.ts';
 import {
   useSmartSelectSize,
   SMART_SELECT_SIZE_MIN,
@@ -93,6 +96,11 @@ export interface CommandConsoleProps {
 }
 
 const CONFIRM_THRESHOLD = 50;
+const PIF_CAROUSEL_CLEAR_TITLE = 'Clear current PIF carousel winners across selected products. Images, runs, discovery history, and eval history are preserved.';
+
+function pifCarouselClearDescription(productCount: number): string {
+  return `This will clear current PIF carousel winner flags and manual slot overrides for all variants across ${productCount} selected product(s). Images, runs, discovery history, and eval history are preserved.`;
+}
 
 function confirmLargeBatch(opCount: number, productCount: number): boolean {
   if (opCount <= CONFIRM_THRESHOLD) return true;
@@ -300,6 +308,7 @@ function pipelineStatusText(state: PipelineState): string | null {
 // cascade into the 600-line console subtree. Re-renders only when category
 // or allRows reference changes (allRows = catalog query result, stable).
 export const CommandConsole = memo(function CommandConsoleInner({ category, allRows }: CommandConsoleProps) {
+  const queryClient = useQueryClient();
   const selectedIds = useOverviewSelectionStore((s) => s.byCategory[category]);
   const selectedSize = useSelectionSize(category);
   const clear = useOverviewSelectionStore((s) => s.clear);
@@ -467,7 +476,7 @@ export const CommandConsole = memo(function CommandConsoleInner({ category, allR
     void pipeline.start(selectedProducts);
   }, [pipelineRunning, selectedProducts, pipeline]);
 
-  // ── Bulk Delete-All across selected products ──────────────────────
+  // ── Bulk drawer data actions across selected products ─────────────
   // Three confirmation gates before any DELETE fires:
   //   1. confirmActiveDispatch — informational warn if collisions exist
   //   2. confirmLargeBatch     — guard against accidental N>50 fan-outs
@@ -475,6 +484,9 @@ export const CommandConsole = memo(function CommandConsoleInner({ category, allR
   //      finder-specific blast radius spelled out
   const [bulkDeleteFinder, setBulkDeleteFinder] = useState<BulkDeleteFinder | null>(null);
   const [bulkDeletePending, setBulkDeletePending] = useState(false);
+  const [bulkPifCarouselClearOpen, setBulkPifCarouselClearOpen] = useState(false);
+  const [bulkPifCarouselClearPending, setBulkPifCarouselClearPending] = useState(false);
+  const bulkDrawerPending = bulkDeletePending || bulkPifCarouselClearPending;
 
   const requestBulkDelete = useCallback((finder: BulkDeleteFinder) => {
     if (selectedProducts.length === 0) return;
@@ -502,6 +514,40 @@ export const CommandConsole = memo(function CommandConsoleInner({ category, allR
       setBulkDeleteFinder(null);
     }
   }, [bulkDeleteFinder, category, selectedProducts]);
+
+  const requestBulkPifCarouselClear = useCallback(() => {
+    if (selectedProducts.length === 0) return;
+    if (!confirmActiveDispatch('pif', 'PIF carousel clear')) return;
+    if (!confirmLargeBatch(selectedProducts.length, selectedProducts.length)) return;
+    setBulkPifCarouselClearOpen(true);
+  }, [selectedProducts, confirmActiveDispatch]);
+
+  const confirmBulkPifCarouselClear = useCallback(async () => {
+    if (selectedProducts.length === 0) return;
+    const catalogQueryKey = ['catalog', category] as const;
+    const previousCatalog = queryClient.getQueryData<CatalogRow[]>(catalogQueryKey);
+
+    setBulkPifCarouselClearPending(true);
+    queryClient.setQueryData<CatalogRow[] | undefined>(
+      catalogQueryKey,
+      (current) => selectedProducts.reduce<CatalogRow[] | undefined>(
+        (rows, row) => zeroCatalogPifCarouselProgress(rows, { productId: row.productId }),
+        current,
+      ),
+    );
+
+    try {
+      const result = await dispatchPifCarouselClearAll(category, selectedProducts);
+      if (result.failures > 0) {
+        queryClient.setQueryData<CatalogRow[] | undefined>(catalogQueryKey, previousCatalog);
+      }
+    } finally {
+      void queryClient.invalidateQueries({ queryKey: catalogQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ['product-image-finder', category] });
+      setBulkPifCarouselClearPending(false);
+      setBulkPifCarouselClearOpen(false);
+    }
+  }, [category, queryClient, selectedProducts]);
 
   const bulkDeleteCount = selectedProducts.length;
   const bulkDeleteCopy = bulkDeleteFinder ? BULK_DELETE_COPY[bulkDeleteFinder] : null;
@@ -614,8 +660,8 @@ export const CommandConsole = memo(function CommandConsoleInner({ category, allR
           ]}
         />
 
-        {/* Bulk Delete-All drawer — fans out per-finder DELETE
-            across every selected product. Hidden chevron when
+        {/* Bulk data drawer: PIF carousel clear plus per-finder DELETE
+            fan-outs across every selected product. Hidden chevron when
             nothing is selected so users can't accidentally arm it. */}
         <div className="sf-cc-chips-trailing">
           <PromptDrawerChevron
@@ -635,8 +681,8 @@ export const CommandConsole = memo(function CommandConsoleInner({ category, allR
                 id: 'bulk-del-cef',
                 label: BULK_DELETE_COPY.cef.label,
                 onClick: () => requestBulkDelete('cef'),
-                disabled: noneSelected || bulkDeletePending,
-                intent: noneSelected || bulkDeletePending ? 'locked' : 'delete',
+                disabled: noneSelected || bulkDrawerPending,
+                intent: 'delete',
                 width: ACTION_BUTTON_WIDTH.standardHeader,
                 title: BULK_DELETE_COPY.cef.title,
               },
@@ -644,17 +690,26 @@ export const CommandConsole = memo(function CommandConsoleInner({ category, allR
                 id: 'bulk-del-pif',
                 label: BULK_DELETE_COPY.pif.label,
                 onClick: () => requestBulkDelete('pif'),
-                disabled: noneSelected || bulkDeletePending,
-                intent: noneSelected || bulkDeletePending ? 'locked' : 'delete',
+                disabled: noneSelected || bulkDrawerPending,
+                intent: 'delete',
                 width: ACTION_BUTTON_WIDTH.standardHeader,
                 title: BULK_DELETE_COPY.pif.title,
+              },
+              {
+                id: 'bulk-clear-pif-carousel',
+                label: 'Eval',
+                onClick: requestBulkPifCarouselClear,
+                disabled: noneSelected || bulkDrawerPending,
+                intent: 'delete',
+                width: ACTION_BUTTON_WIDTH.keyRow,
+                title: PIF_CAROUSEL_CLEAR_TITLE,
               },
               {
                 id: 'bulk-del-rdf',
                 label: BULK_DELETE_COPY.rdf.label,
                 onClick: () => requestBulkDelete('rdf'),
-                disabled: noneSelected || bulkDeletePending,
-                intent: noneSelected || bulkDeletePending ? 'locked' : 'delete',
+                disabled: noneSelected || bulkDrawerPending,
+                intent: 'delete',
                 width: ACTION_BUTTON_WIDTH.standardHeader,
                 title: BULK_DELETE_COPY.rdf.title,
               },
@@ -662,8 +717,8 @@ export const CommandConsole = memo(function CommandConsoleInner({ category, allR
                 id: 'bulk-del-sku',
                 label: BULK_DELETE_COPY.sku.label,
                 onClick: () => requestBulkDelete('sku'),
-                disabled: noneSelected || bulkDeletePending,
-                intent: noneSelected || bulkDeletePending ? 'locked' : 'delete',
+                disabled: noneSelected || bulkDrawerPending,
+                intent: 'delete',
                 width: ACTION_BUTTON_WIDTH.standardHeader,
                 title: BULK_DELETE_COPY.sku.title,
               },
@@ -671,8 +726,8 @@ export const CommandConsole = memo(function CommandConsoleInner({ category, allR
                 id: 'bulk-del-kf',
                 label: BULK_DELETE_COPY.kf.label,
                 onClick: () => requestBulkDelete('kf'),
-                disabled: noneSelected || bulkDeletePending,
-                intent: noneSelected || bulkDeletePending ? 'locked' : 'delete',
+                disabled: noneSelected || bulkDrawerPending,
+                intent: 'delete',
                 width: ACTION_BUTTON_WIDTH.standardHeader,
                 title: BULK_DELETE_COPY.kf.title,
               },
@@ -728,6 +783,18 @@ export const CommandConsole = memo(function CommandConsoleInner({ category, allR
           isPending={bulkDeletePending}
           moduleLabel={bulkDeleteCopy.label}
           descriptionOverrides={{ all: bulkDeleteCopy.description(bulkDeleteCount) }}
+        />
+      )}
+      {bulkPifCarouselClearOpen && (
+        <FinderDeleteConfirmModal
+          target={{ kind: 'carousel-clear-all', count: bulkDeleteCount }}
+          onConfirm={() => { void confirmBulkPifCarouselClear(); }}
+          onCancel={() => setBulkPifCarouselClearOpen(false)}
+          isPending={bulkPifCarouselClearPending}
+          moduleLabel="PIF"
+          confirmLabel="Clear"
+          pendingLabel="Clearing..."
+          descriptionOverrides={{ 'carousel-clear-all': pifCarouselClearDescription(bulkDeleteCount) }}
         />
       )}
     </aside>

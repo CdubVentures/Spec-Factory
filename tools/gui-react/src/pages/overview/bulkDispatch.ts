@@ -672,6 +672,23 @@ const RDF_DELETE: FinderDeleteRoute = { type: 'rdf', prefix: 'release-date-finde
 const SKU_DELETE: FinderDeleteRoute = { type: 'skf', prefix: 'sku-finder' };
 const KF_DELETE: FinderDeleteRoute = { type: 'kf', prefix: 'key-finder' };
 
+interface SyncMutationResponse {
+  readonly ok: boolean;
+}
+
+export function dispatchPifCarouselClearAll(
+  category: string,
+  products: readonly CatalogRow[],
+  optionsInput?: DispatchOptionsInput,
+): Promise<BulkDispatchResult> {
+  const options = resolveOptions(optionsInput);
+  return dispatchTasks(products, options, async (row) => {
+    const url = `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.productId)}/carousel-winners/clear-all`;
+    await api.post<SyncMutationResponse>(url);
+    return '';
+  });
+}
+
 function dispatchFinderDeleteAll(
   route: FinderDeleteRoute,
   category: string,

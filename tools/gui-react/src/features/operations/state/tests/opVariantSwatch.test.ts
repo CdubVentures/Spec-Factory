@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { variantHexPartsForOp } from '../opVariantSwatch.ts';
+import { shouldFetchOpVariantAtoms } from '../useOpVariantAtomsMap.ts';
 import type { Operation } from '../operationsStore.ts';
 
 const HEX_MAP = new Map<string, string>([
@@ -137,5 +138,76 @@ describe('variantHexPartsForOp', () => {
       );
       assert.deepEqual(result, ['#3A3F41']);
     });
+  });
+});
+
+describe('shouldFetchOpVariantAtoms', () => {
+  it('does not fetch for PIF/RDF operations without a variant key', () => {
+    assert.equal(
+      shouldFetchOpVariantAtoms({
+        type: 'pif',
+        category: 'mouse',
+        productId: 'mouse-1',
+        variantKey: '',
+      }),
+      false,
+    );
+    assert.equal(
+      shouldFetchOpVariantAtoms({
+        type: 'rdf',
+        category: 'mouse',
+        productId: 'mouse-1',
+        variantKey: undefined,
+      }),
+      false,
+    );
+  });
+
+  it('fetches only for PIF/RDF variant operations with category and product identity', () => {
+    assert.equal(
+      shouldFetchOpVariantAtoms({
+        type: 'pif',
+        category: 'mouse',
+        productId: 'mouse-1',
+        variantKey: 'edition:launch',
+      }),
+      true,
+    );
+    assert.equal(
+      shouldFetchOpVariantAtoms({
+        type: 'rdf',
+        category: 'mouse',
+        productId: 'mouse-1',
+        variantKey: 'color:black',
+      }),
+      true,
+    );
+    assert.equal(
+      shouldFetchOpVariantAtoms({
+        type: 'cef',
+        category: 'mouse',
+        productId: 'mouse-1',
+        variantKey: 'color:black',
+      }),
+      false,
+    );
+    assert.equal(
+      shouldFetchOpVariantAtoms({
+        type: 'pif',
+        category: '',
+        productId: 'mouse-1',
+        variantKey: 'color:black',
+      }),
+      false,
+    );
+    assert.equal(
+      shouldFetchOpVariantAtoms({
+        type: 'pif',
+        category: 'mouse',
+        productId: '',
+        variantKey: 'color:black',
+      }),
+      false,
+    );
   });
 });

@@ -19,7 +19,7 @@ The review grid, LLM-assisted review, and component review surfaces are **active
 - `src/features/review/index.js` exports:
   - `registerReviewRoutes`, `createReviewRouteContext` (HTTP surface)
   - Grid assembly: `buildFieldLabelsMap`, `buildReviewLayout`, `buildProductReviewPayload`, `writeProductReviewArtifacts`
-  - Overrides: `resolveOverrideFilePath`, `readReviewArtifacts`, `setOverrideFromCandidate`, `setManualOverride`, `approveGreenOverrides`, `buildReviewMetrics`, `finalizeOverrides`
+  - Overrides: `resolveOverrideFilePath`, `readReviewArtifacts`, `setOverrideFromCandidate`, `setManualOverride`, `approveGreenOverrides`, `buildReviewMetrics`, `finalizeOverrides`, `rebuildReviewOverridesFromJson`
   - Component/enum review: `resolvePropertyFieldMeta`, `buildComponentReviewLayout`, `buildComponentReviewPayloads`, `buildEnumReviewPayloads`
   - Cascade impact: `findProductsReferencingComponent`, `cascadeComponentChange`, `cascadeEnumChange`
   - Candidate deletion: `deleteCandidateBySourceId`, `deleteAllCandidatesForField`
@@ -51,6 +51,7 @@ The review grid, LLM-assisted review, and component review surfaces are **active
 ## Domain Invariants
 - Review state derived from SpecDb — never cached independently.
 - Override workflows are idempotent.
+- Review overrides write SQL first and mirror consolidated JSON only for audit/deleted-DB rebuild.
 - Component mutations validate against field rules before persisting.
 - Forward-investment fields retained (do not trim).
 - Successful review mutations emit data-change events so downstream clients can refresh.

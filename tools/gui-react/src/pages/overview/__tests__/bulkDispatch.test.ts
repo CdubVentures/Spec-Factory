@@ -11,6 +11,7 @@ import {
   dispatchRdfLoop,
   dispatchRdfRun,
   dispatchCefDeleteAll,
+  dispatchPifCarouselClearAll,
   dispatchPifDeleteAll,
   dispatchRdfDeleteAll,
   dispatchSkuDeleteAll,
@@ -22,10 +23,12 @@ import type { CatalogRow } from '../../../types/product.ts';
 import type { PifVariantProgressGen, ScalarVariantProgressGen } from '../../../types/product.generated.ts';
 
 const originalGet = api.get;
+const originalPost = api.post;
 const originalDel = api.del;
 
 afterEach(() => {
   (api as unknown as { get: typeof originalGet }).get = originalGet;
+  (api as unknown as { post: typeof originalPost }).post = originalPost;
   (api as unknown as { del: typeof originalDel }).del = originalDel;
   useOperationsStore.getState().clear();
 });
@@ -487,6 +490,14 @@ function delRecorder(calls: string[], failures: ReadonlySet<string> = new Set())
   }) as typeof api.del;
 }
 
+function postRecorder(calls: string[], failures: ReadonlySet<string> = new Set()): typeof api.post {
+  return (async (path: string) => {
+    calls.push(path);
+    if (failures.has(path)) throw new Error(`mock failure: ${path}`);
+    return { ok: true } as never;
+  }) as typeof api.post;
+}
+
 describe('Overview bulk Delete-All dispatchers', () => {
   it('dispatchCefDeleteAll fires DELETE /color-edition-finder/:cat/:pid per selected product', async () => {
     const calls: string[] = [];
@@ -513,6 +524,29 @@ describe('Overview bulk Delete-All dispatchers', () => {
       '/product-image-finder/mouse/p2',
     ]);
     assert.equal(result.scheduled, 2);
+  });
+
+  it('dispatchPifCarouselClearAll clears PIF carousel winners per selected product without deleting PIF data', async () => {
+    const calls: string[] = [];
+    (api as unknown as { post: typeof api.post }).post = postRecorder(
+      calls,
+      new Set(['/product-image-finder/mouse/p2/carousel-winners/clear-all']),
+    );
+
+    const result = await dispatchPifCarouselClearAll(
+      'mouse',
+      [product('p1'), product('p2'), product('p3')],
+      { staggerMs: 0 },
+    );
+
+    assert.deepEqual(calls, [
+      '/product-image-finder/mouse/p1/carousel-winners/clear-all',
+      '/product-image-finder/mouse/p2/carousel-winners/clear-all',
+      '/product-image-finder/mouse/p3/carousel-winners/clear-all',
+    ]);
+    assert.equal(result.scheduled, 3);
+    assert.equal(result.failures, 1);
+    assert.deepEqual(result.operationIds, []);
   });
 
   it('dispatchRdfDeleteAll fires DELETE /release-date-finder/:cat/:pid per selected product', async () => {

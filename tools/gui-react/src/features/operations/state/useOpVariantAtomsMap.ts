@@ -22,11 +22,17 @@ interface CefResult {
  * single network request. Non-variant ops (cef, pipeline RUN, etc.) skip the
  * fetch entirely.
  */
-export function useOpVariantAtomsMap(
-  op: Pick<Operation, 'type' | 'category' | 'productId'>,
-): ReadonlyMap<string, readonly string[]> {
+export function shouldFetchOpVariantAtoms(
+  op: Pick<Operation, 'type' | 'category' | 'productId' | 'variantKey'>,
+): boolean {
   const isVariantOp = op.type === 'pif' || op.type === 'rdf';
-  const enabled = isVariantOp && Boolean(op.category) && Boolean(op.productId);
+  return isVariantOp && Boolean(op.category) && Boolean(op.productId) && Boolean(op.variantKey);
+}
+
+export function useOpVariantAtomsMap(
+  op: Pick<Operation, 'type' | 'category' | 'productId' | 'variantKey'>,
+): ReadonlyMap<string, readonly string[]> {
+  const enabled = shouldFetchOpVariantAtoms(op);
 
   const { data } = useQuery<CefResult>({
     queryKey: ['color-edition-finder', op.category, op.productId],

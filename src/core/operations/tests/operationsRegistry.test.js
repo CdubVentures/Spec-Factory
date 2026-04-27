@@ -73,6 +73,23 @@ describe('registerOperation', () => {
     assert.deepEqual(op.stages, ['LLM', 'Validate']);
   });
 
+  it('stores IndexLab link identity when provided', () => {
+    registerOperation({
+      ...VALID_OP,
+      indexLabLinkIdentity: {
+        productId: 'mouse-001-white',
+        brand: 'Corsair',
+        baseModel: 'M75 Air',
+      },
+    });
+    const op = listOperations()[0];
+    assert.deepEqual(op.indexLabLinkIdentity, {
+      productId: 'mouse-001-white',
+      brand: 'Corsair',
+      baseModel: 'M75 Air',
+    });
+  });
+
   it('stores subType when provided', () => {
     registerOperation({ ...VALID_OP, subType: 'view' });
     assert.equal(listOperations()[0].subType, 'view');
@@ -506,6 +523,24 @@ describe('broadcastWs integration', () => {
     initOperationsRegistry({ broadcastWs: spy });
     registerOperation({ ...VALID_OP, subType: 'hero' });
     assert.equal(spy.calls[0].data.operation.subType, 'hero');
+  });
+
+  it('register broadcast includes IndexLab link identity', () => {
+    const spy = makeBroadcastSpy();
+    initOperationsRegistry({ broadcastWs: spy });
+    registerOperation({
+      ...VALID_OP,
+      indexLabLinkIdentity: {
+        productId: 'mouse-001-white',
+        brand: 'Corsair',
+        baseModel: 'M75 Air',
+      },
+    });
+    assert.deepEqual(spy.calls[0].data.operation.indexLabLinkIdentity, {
+      productId: 'mouse-001-white',
+      brand: 'Corsair',
+      baseModel: 'M75 Air',
+    });
   });
 
   it('updateProgressText broadcasts upsert with progressText', () => {

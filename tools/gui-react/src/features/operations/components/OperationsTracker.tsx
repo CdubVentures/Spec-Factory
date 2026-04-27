@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useCallback, useState, useRef, memo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useOperationsStore, type Operation } from '../state/operationsStore.ts';
 import { LoopProgressRouter } from './LoopProgressRouter.tsx';
 import { variantHexPartsForOp } from '../state/opVariantSwatch.ts';
 import { useOpVariantAtomsMap } from '../state/useOpVariantAtomsMap.ts';
 import { sortOperations, readSortMode, writeSortMode, SORT_MODES, type OpSortMode } from '../state/opSort.ts';
-import { selectOperationPreviewStreamText } from '../state/operationStreamPreview.ts';
+import { createOperationPreviewStreamSelector } from '../state/operationStreamPreview.ts';
 import { selectActiveLlmCallSummaries } from '../state/operationCallSummaries.ts';
 import {
   cancelActiveOperations,
@@ -17,8 +16,6 @@ import {
   resolveOperationIndexLabLinkIdentity,
   selectVisibleOperationsMap,
 } from '../state/operationsTrackerSelectors.ts';
-import { parseCatalogRows } from '../../catalog/api/catalogParsers.ts';
-import type { CatalogRow } from '../../../types/product.ts';
 import { ColorSwatch, useFinderColorHexMap } from '../../../shared/ui/finder';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePersistedNullableTab } from '../../../stores/tabStore.ts';
@@ -160,10 +157,11 @@ const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confi
   // stays 0 for terminal ops — invalidating memo only when needed.
   readonly tick: number;
 }) {
-  const streamText = useOperationsStore((s) => selectOperationPreviewStreamText({
-    streamText: s.streamTexts.get(op.id) ?? '',
-    callStreams: s.callStreamTexts.get(op.id),
-  }));
+  const streamPreviewSelector = useMemo(
+    () => createOperationPreviewStreamSelector(op.id),
+    [op.id],
+  );
+  const streamText = useOperationsStore(streamPreviewSelector);
   const colorHexMap = useFinderColorHexMap();
   const variantAtomsMap = useOpVariantAtomsMap(op);
   const variantHexParts = variantHexPartsForOp(op, colorHexMap, variantAtomsMap);
@@ -171,14 +169,9 @@ const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confi
   const baseLabel = MODULE_LABELS[op.type] ?? op.type.toUpperCase().slice(0, 3);
   const label = op.subType ? `${baseLabel}.${op.subType[0]?.toUpperCase() ?? ''}` : baseLabel;
   const moduleTabId = resolveModuleTabId(op.type);
-  const { data: catalogRows = [] } = useQuery<CatalogRow[]>({
-    queryKey: ['catalog', op.category],
-    queryFn: () => api.parsedGet(`/catalog/${encodeURIComponent(op.category)}`, parseCatalogRows),
-    enabled: Boolean(moduleTabId && op.category && op.productId),
-  });
   const linkIdentity = useMemo(
-    () => resolveOperationIndexLabLinkIdentity(op, catalogRows),
-    [op, catalogRows],
+    () => resolveOperationIndexLabLinkIdentity(op),
+    [op],
   );
   const isDone = op.status === 'done';
   const isError = op.status === 'error';
@@ -224,9 +217,8 @@ const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confi
           // the Indexing Lab (same destination the Overview column popovers
           // use). IndexLabLink stops propagation so the parent card's
           // onClick (which opens the OperationDetailModal) does not fire.
-          // The active operation only carries productId, so the current
-          // catalog projection supplies the brand/model context required for
-          // variant-aware Indexing Lab selection.
+          // The active operation summary carries the brand/model context
+          // required for variant-aware Indexing Lab selection.
           if (!moduleTabId) return chip;
           return (
             <IndexLabLink

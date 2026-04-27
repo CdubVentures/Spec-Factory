@@ -49,4 +49,12 @@ test('setManualOverride writes a canonical manual override candidate id', async 
     'https://manufacturer.example/spec',
   );
   assert.equal(overridePayload.overrides.weight.override_value, '59');
+
+  const sqlRows = specDb.getFieldCandidatesByProductAndField(productId, 'weight', null);
+  assert.equal(sqlRows.length, 1);
+  assert.equal(sqlRows[0].status, 'resolved');
+  assert.equal(sqlRows[0].source_type, 'manual_override');
+  assert.equal(sqlRows[0].value, '59');
+  assert.equal(sqlRows[0].metadata_json.source, 'manual_override');
+  assert.equal(sqlRows[0].metadata_json.evidence.url, 'https://manufacturer.example/spec');
 });

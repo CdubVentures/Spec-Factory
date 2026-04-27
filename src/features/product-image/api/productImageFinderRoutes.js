@@ -56,6 +56,14 @@ function computePifProgressBuckets({ specDb, category }) {
   return { priorityKeys, loopExtrasKeys, heroEnabled, heroCount, satisfactionThreshold };
 }
 
+function buildOperationIndexLabLinkIdentity(productId, productRow = {}) {
+  return {
+    productId: String(productId || '').trim(),
+    brand: String(productRow?.brand || '').trim(),
+    baseModel: String(productRow?.base_model || productRow?.model || '').trim(),
+  };
+}
+
 /**
  * Count carousel slots with a resolved filename (user override OR eval winner /
  * ranked hero). This is the slot-occupancy count the Overview rings and the
@@ -681,6 +689,7 @@ export function registerProductImageFinderRoutes(ctx) {
         category,
         productId,
         productLabel: productRow ? `${productRow.brand || ''} ${productRow.model || ''}`.trim() : productId,
+        indexLabLinkIdentity: buildOperationIndexLabLinkIdentity(productId, productRow),
         stages: ['Processing'],
       });
 
@@ -861,6 +870,7 @@ export function registerProductImageFinderRoutes(ctx) {
         category,
         productId,
         productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+        indexLabLinkIdentity: buildOperationIndexLabLinkIdentity(productId, productRow),
         stages: ['Processing', 'Complete'],
       });
 
@@ -1001,6 +1011,7 @@ export function registerProductImageFinderRoutes(ctx) {
           category,
           productId,
           productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+          indexLabLinkIdentity: buildOperationIndexLabLinkIdentity(productId, productRow),
           variantKey: variantKey || '',
           stages: ['Discovery', 'Download', 'Processing', 'Complete'],
         });
@@ -1124,6 +1135,7 @@ export function registerProductImageFinderRoutes(ctx) {
           category,
           productId,
           productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+          indexLabLinkIdentity: buildOperationIndexLabLinkIdentity(productId, productRow),
           variantKey,
           stages: ['Evaluating', 'Heroes', 'Complete'],
         });
@@ -1220,6 +1232,7 @@ export function registerProductImageFinderRoutes(ctx) {
           category,
           productId,
           productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+          indexLabLinkIdentity: buildOperationIndexLabLinkIdentity(productId, productRow),
           variantKey,
           stages: ['Evaluating', 'Complete'],
         });
@@ -1304,6 +1317,7 @@ export function registerProductImageFinderRoutes(ctx) {
           category,
           productId,
           productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+          indexLabLinkIdentity: buildOperationIndexLabLinkIdentity(productId, productRow),
           variantKey,
           stages: ['Heroes', 'Complete'],
         });
@@ -1526,6 +1540,7 @@ export function registerProductImageFinderRoutes(ctx) {
           category,
           productId,
           productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+          indexLabLinkIdentity: buildOperationIndexLabLinkIdentity(productId, productRow),
           variantKey: variantKey || '',
           stages,
         });

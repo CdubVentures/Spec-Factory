@@ -83,6 +83,12 @@ export function createFieldCandidateStore({ db, category, stmts }) {
       .map(hydrateRow);
   }
 
+  function getAllByCategory() {
+    return db.prepare(
+      'SELECT * FROM field_candidates WHERE category = ? ORDER BY product_id, field_key, confidence DESC'
+    ).all(category).map(hydrateRow);
+  }
+
   function deleteByProduct(productId) {
     stmts._deleteFieldCandidatesByProduct.run(category, String(productId || ''));
   }
@@ -311,6 +317,12 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     ).run(id);
   }
 
+  function updateMetadata(id, metadataJson) {
+    db.prepare(
+      `UPDATE field_candidates SET metadata_json = ?, updated_at = datetime('now') WHERE id = ?`,
+    ).run(JSON.stringify(metadataJson ?? {}), Number(id));
+  }
+
   // WHY: Variant deletion needs to update candidate values (splice items from
   // JSON arrays) without changing source_id or other columns.
   function updateValue(productId, fieldKey, sourceId, newValue) {
@@ -321,7 +333,7 @@ export function createFieldCandidateStore({ db, category, stmts }) {
   }
 
   return {
-    upsert, get, getByProductAndField, getAllByProduct, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getTopCandidate, getDistinctProducts,
-    insert, getBySourceId, getBySourceIdAndVariant, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue, deleteByVariantId, deleteByProductFieldVariant, resetConfidence,
+    upsert, get, getByProductAndField, getAllByProduct, getAllByCategory, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getTopCandidate, getDistinctProducts,
+    insert, getBySourceId, getBySourceIdAndVariant, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue, deleteByVariantId, deleteByProductFieldVariant, resetConfidence, updateMetadata,
   };
 }

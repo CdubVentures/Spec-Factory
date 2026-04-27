@@ -115,6 +115,28 @@ describe('operations tracker selectors', () => {
     });
   });
 
+  it('prefers operation-carried Indexing link identity over catalog rows', () => {
+    const op = makeOperation({
+      productId: 'p1-white',
+      productLabel: 'Corsair M65 RGB Ultra',
+      type: 'kf',
+      indexLabLinkIdentity: {
+        productId: 'p1-white',
+        brand: 'Corsair',
+        baseModel: 'M65 RGB Ultra',
+      },
+    });
+    const catalogRows = [
+      makeCatalogRow({ productId: 'p1-white', brand: 'Wrong Brand', base_model: 'Wrong Model' }),
+    ];
+
+    assert.deepEqual(resolveOperationIndexLabLinkIdentity(op, catalogRows), {
+      productId: 'p1-white',
+      brand: 'Corsair',
+      baseModel: 'M65 RGB Ultra',
+    });
+  });
+
   it('falls back to operation identity while the catalog row is still loading', () => {
     const op = makeOperation({
       productId: 'p1-white',
@@ -122,7 +144,7 @@ describe('operations tracker selectors', () => {
       type: 'kf',
     });
 
-    assert.deepEqual(resolveOperationIndexLabLinkIdentity(op, []), {
+    assert.deepEqual(resolveOperationIndexLabLinkIdentity(op), {
       productId: 'p1-white',
       brand: '',
       baseModel: '',

@@ -181,7 +181,7 @@ export function reviewKeys(storage, category, productId) {
 
 export async function readOverrideFile(filePath, { specDb = null, category = '', productId = '' } = {}) {
   // Phase 1b: product_review_state / getOverriddenFieldsForProduct retired.
-  // Fall through directly to consolidated JSON (the durable SSOT).
+  // Fall through directly to consolidated JSON (audit/rebuild mirror).
   // WHY: Overlap 0d — fallback to consolidated JSON (handles edit→rebuild gap)
   try {
     const { readProductFromConsolidated } = await import('../../../shared/consolidatedOverrides.js');
@@ -262,6 +262,104 @@ export function buildCandidateOverrideEntry({
   };
 }
 
+export function buildCandidateOverrideSourceId({ productId, field, candidateId }) {
+  return [
+    'candidate_override',
+    String(productId || '').trim(),
+    normalizeField(field),
+    String(candidateId || '').trim(),
+  ].filter(Boolean).join(':');
+}
+
+export function isRuntimeOverrideCandidate(row = {}) {
+  if (String(row.status || '').trim() !== 'resolved') return false;
+  if ((row.variant_id ?? null) !== null) return false;
+  const metadata = isObject(row.metadata_json) ? row.metadata_json : {};
+  const source = String(metadata.source || row.source_type || '').trim();
+  return source === 'manual_override'
+    || source === 'candidate_override'
+    || metadata.override_source === 'candidate_selection';
+}
+
+export function buildOverrideEntryFromRuntimeCandidate(row = {}, { category, productId }) {
+  const metadata = isObject(row.metadata_json) ? row.metadata_json : {};
+  const evidence = isObject(metadata.evidence) ? metadata.evidence : {};
+  const field = normalizeField(row.field_key);
+  const source = String(metadata.source || row.source_type || '').trim();
+  const overrideSource = String(metadata.override_source || '').trim()
+    || (source === 'candidate_override' ? 'candidate_selection' : 'manual_entry');
+  const setAt = String(row.updated_at || row.submitted_at || nowIso()).trim();
+  return {
+    field,
+    override_source: overrideSource,
+    candidate_index: null,
+    override_value: String(row.value ?? '').trim(),
+    override_reason: String(metadata.reason || '').trim() || null,
+    override_provenance: evidence,
+    overridden_by: String(metadata.reviewer || '').trim() || null,
+    overridden_at: setAt,
+    validated: null,
+    candidate_id: String(metadata.candidate_id || row.source_id || '').trim(),
+    value: String(row.value ?? '').trim(),
+    source: {
+      host: source === 'manual_override' ? 'manual-override.local' : null,
+      source_id: String(evidence.source_id || row.source_id || '').trim() || null,
+      method: source === 'manual_override' ? 'manual_override' : 'candidate_override',
+      tier: 1,
+      evidence_key: String(evidence.url || '').trim() || null,
+    },
+    set_at: setAt,
+    product_id: productId,
+    category,
+  };
+}
+
+export function buildRuntimeOverrideEntries({ rows = [], category, productId }) {
+  const byField = new Map();
+  for (const row of toArray(rows)) {
+    if (!isRuntimeOverrideCandidate(row)) continue;
+    const field = normalizeField(row.field_key);
+    if (!field || byField.has(field)) continue;
+    byField.set(field, buildOverrideEntryFromRuntimeCandidate(row, { category, productId }));
+  }
+  return [...byField.entries()];
+}
+
+export function buildRuntimeOverrideDocs({ rows = [], category }) {
+  const byProduct = new Map();
+  for (const row of toArray(rows)) {
+    if (!isRuntimeOverrideCandidate(row)) continue;
+    const productId = String(row.product_id || '').trim();
+    const field = normalizeField(row.field_key);
+    if (!productId || !field) continue;
+    const metadata = isObject(row.metadata_json) ? row.metadata_json : {};
+    const existing = byProduct.get(productId) || {
+      category,
+      product_id: productId,
+      review_status: 'in_progress',
+      reviewed_by: null,
+      reviewed_at: null,
+      review_time_seconds: null,
+      runtime_gate: null,
+      overrides: {},
+    };
+    const status = String(metadata.review_status || '').trim();
+    if (status) existing.review_status = status;
+    if (metadata.reviewed_by !== undefined) existing.reviewed_by = metadata.reviewed_by;
+    if (metadata.reviewed_at !== undefined) existing.reviewed_at = metadata.reviewed_at;
+    if (metadata.review_time_seconds !== undefined) existing.review_time_seconds = metadata.review_time_seconds;
+    if (metadata.runtime_gate !== undefined) existing.runtime_gate = metadata.runtime_gate;
+    if (!existing.overrides[field]) {
+      existing.overrides[field] = buildOverrideEntryFromRuntimeCandidate(row, { category, productId });
+    }
+    byProduct.set(productId, existing);
+  }
+  return [...byProduct.entries()].map(([productId, payload]) => ({
+    path: `sql://field_candidates/${category}/${productId}`,
+    payload,
+  }));
+}
+
 export function buildCandidateMap(rows = []) {
   const byField = new Map();
   for (const row of rows) {
@@ -312,8 +410,13 @@ export async function readReviewProductPayload({ storage, config = {}, category,
 }
 
 export async function listOverrideDocs(helperRoot, category, { specDb = null } = {}) {
-  // WHY: DB writes removed from overrideWorkflow — product_review_state may be empty.
-  // Always read from consolidated JSON (the durable SSOT).
+  if (typeof specDb?.getAllFieldCandidatesByCategory === 'function') {
+    return buildRuntimeOverrideDocs({
+      rows: specDb.getAllFieldCandidatesByCategory(),
+      category,
+    });
+  }
+
   try {
     const { readConsolidatedOverrides } = await import('../../../shared/consolidatedOverrides.js');
     const consolidated = await readConsolidatedOverrides({ config: { categoryAuthorityRoot: helperRoot }, category });

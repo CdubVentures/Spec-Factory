@@ -832,6 +832,11 @@ export function registerKeyFinderRoutes(ctx) {
           category,
           productId,
           productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+          indexLabLinkIdentity: {
+            productId,
+            brand: productRow.brand || '',
+            baseModel: productRow.base_model || productRow.model || '',
+          },
           // WHY: Per-key scope — frontend's useRunningFieldKeys picks this up via
           // WS broadcast so the row's running pill survives past the optimistic
           // useFireAndForget window.

@@ -37,9 +37,17 @@ export function selectOperationById(
 }
 
 export function resolveOperationIndexLabLinkIdentity(
-  op: Pick<Operation, 'productId'>,
-  catalogRows: readonly CatalogRow[],
+  op: Pick<Operation, 'productId' | 'indexLabLinkIdentity'>,
+  catalogRows: readonly CatalogRow[] = [],
 ): OperationIndexLabLinkIdentity {
+  if (op.indexLabLinkIdentity) {
+    return {
+      productId: op.indexLabLinkIdentity.productId || op.productId,
+      brand: op.indexLabLinkIdentity.brand || '',
+      baseModel: op.indexLabLinkIdentity.baseModel || '',
+    };
+  }
+
   const row = catalogRows.find((entry) => entry.productId === op.productId);
   return {
     productId: row?.productId ?? op.productId,

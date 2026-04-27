@@ -116,12 +116,19 @@ export interface LlmCallSummary {
   readonly responseStatus: 'pending' | 'done';
 }
 
+export interface OperationIndexLabLinkIdentityPayload {
+  readonly productId: string;
+  readonly brand: string;
+  readonly baseModel: string;
+}
+
 export interface Operation {
   readonly id: string;
   readonly type: string;
   readonly category: string;
   readonly productId: string;
   readonly productLabel: string;
+  readonly indexLabLinkIdentity?: OperationIndexLabLinkIdentityPayload;
   readonly stages: readonly string[];
   readonly currentStageIndex: number;
   readonly status: 'queued' | 'running' | 'done' | 'error' | 'cancelled';

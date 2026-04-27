@@ -1,10 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
 
 import {
   finalizeOverrides,
   setOverrideFromCandidate,
 } from '../overrideWorkflow.js';
+import { resolveConsolidatedOverridePath } from '../../../../shared/consolidatedOverrides.js';
 import {
   createReviewOverrideHarness,
   seedFieldRulesArtifacts,
@@ -27,6 +29,39 @@ test('finalizeOverrides requires applyOverrides before mutating', async (t) => {
     field: 'weight',
     candidateId: 'cand_1',
   });
+
+  const previewFinalize = await finalizeOverrides({
+    storage,
+    config,
+    category,
+    productId,
+    specDb,
+    applyOverrides: false,
+  });
+
+  assert.equal(previewFinalize.applied, false);
+  assert.equal(previewFinalize.reason, 'apply_overrides_flag_not_set');
+  assert.deepStrictEqual(previewFinalize.pending_fields, ['weight']);
+});
+
+test('finalizeOverrides previews pending fields from SQL when consolidated JSON is missing', async (t) => {
+  const harness = await createReviewOverrideHarness(t, {
+    productId: 'mouse-review-finalize-sql-authority',
+  });
+  const { storage, config, category, productId, specDb } = harness;
+  await seedFieldRulesArtifacts(harness);
+  await seedReviewCandidates(harness);
+  seedLatestArtifacts(harness);
+  await setOverrideFromCandidate({
+    storage,
+    config,
+    category,
+    productId,
+    specDb,
+    field: 'weight',
+    candidateId: 'cand_1',
+  });
+  await fs.rm(resolveConsolidatedOverridePath({ config, category }), { force: true });
 
   const previewFinalize = await finalizeOverrides({
     storage,

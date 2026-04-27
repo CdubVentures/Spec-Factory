@@ -379,6 +379,9 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           }, { onSuccess: dismiss });
         }
         break;
+      case 'carousel-clear-all':
+        clearAllCarouselWinnersMut.mutate(undefined, { onSuccess: dismiss });
+        break;
       case 'images-all':
       case 'images-variant':
         if (deleteTarget.filenames?.length) {
@@ -392,7 +395,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
       default:
         deleteAllMut.mutate(undefined, { onSuccess: dismiss });
     }
-  }, [deleteTarget, deleteRunMut, deleteRunsBatchMut, deleteAllMut, deleteImageMut, deleteImagesMut, deleteEvalMut, clearCarouselWinnersMut]);
+  }, [deleteTarget, deleteRunMut, deleteRunsBatchMut, deleteAllMut, deleteImageMut, deleteImagesMut, deleteEvalMut, clearCarouselWinnersMut, clearAllCarouselWinnersMut]);
 
   const hasCefData = Boolean(variants.length);
   const effectiveResult = isError ? null : pifData;
@@ -566,6 +569,15 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               tertiaryTitle="Data:"
               tertiaryLabelClass="sf-delete-label"
               tertiaryActions={[
+                {
+                  id: 'clear-all-carousels',
+                  label: 'Clear All',
+                  onClick: () => setDeleteTarget({ kind: 'carousel-clear-all', count: carouselAgg.filled }),
+                  disabled: clearAllCarouselWinnersMut.isPending || carouselAgg.filled === 0,
+                  intent: clearAllCarouselWinnersMut.isPending ? 'locked' : 'delete',
+                  width: ACTION_BUTTON_WIDTH.standardHeader,
+                  title: 'Clear current carousel winners and manual slot overrides for every variant. Images, runs, discovery history, and eval history are preserved.',
+                },
                 {
                   id: 'del-all',
                   label: 'Delete All',
@@ -828,10 +840,10 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           target={deleteTarget}
           onConfirm={handleConfirmDelete}
           onCancel={() => setDeleteTarget(null)}
-          isPending={deleteRunMut.isPending || deleteRunsBatchMut.isPending || deleteAllMut.isPending || deleteImageMut.isPending || deleteImagesMut.isPending || deleteEvalMut.isPending || clearCarouselWinnersMut.isPending}
+          isPending={deleteRunMut.isPending || deleteRunsBatchMut.isPending || deleteAllMut.isPending || deleteImageMut.isPending || deleteImagesMut.isPending || deleteEvalMut.isPending || clearCarouselWinnersMut.isPending || clearAllCarouselWinnersMut.isPending}
           moduleLabel="PIF"
-          confirmLabel={deleteTarget.kind === 'carousel-clear-variant' ? 'Clear' : undefined}
-          pendingLabel={deleteTarget.kind === 'carousel-clear-variant' ? 'Clearing...' : undefined}
+          confirmLabel={deleteTarget.kind === 'carousel-clear-variant' || deleteTarget.kind === 'carousel-clear-all' ? 'Clear' : undefined}
+          pendingLabel={deleteTarget.kind === 'carousel-clear-variant' || deleteTarget.kind === 'carousel-clear-all' ? 'Clearing...' : undefined}
           descriptionOverrides={{
             // WHY: Server-side onAfterDeleteAll cascade now wipes image
             // files, evaluations, carousel slots, and the SQL projection

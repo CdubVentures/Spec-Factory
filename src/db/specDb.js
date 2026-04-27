@@ -560,6 +560,7 @@ export class SpecDb {
   getFieldCandidate(pid, fk, val) { return this._fieldCandidateStore.get(pid, fk, val); }
   getFieldCandidatesByProductAndField(pid, fk, variantId) { return this._fieldCandidateStore.getByProductAndField(pid, fk, variantId); }
   getAllFieldCandidatesByProduct(pid) { return this._fieldCandidateStore.getAllByProduct(pid); }
+  getAllFieldCandidatesByCategory() { return this._fieldCandidateStore.getAllByCategory(); }
   deleteFieldCandidatesByProduct(pid) { this._fieldCandidateStore.deleteByProduct(pid); }
   deleteFieldCandidatesByProductAndField(pid, fk) { this._fieldCandidateStore.deleteByProductAndField(pid, fk); }
   deleteFieldCandidateByValue(pid, fk, val) { this._fieldCandidateStore.deleteByProductFieldValue(pid, fk, val); }
@@ -634,6 +635,7 @@ export class SpecDb {
   deleteFieldCandidatesByVariantId(pid, vid) { this._fieldCandidateStore.deleteByVariantId(pid, vid); }
   deleteFieldCandidatesByProductFieldVariant(pid, fk, vid) { this._fieldCandidateStore.deleteByProductFieldVariant(pid, fk, vid); }
   resetFieldCandidateConfidence(id) { this._fieldCandidateStore.resetConfidence(id); }
+  updateFieldCandidateMetadata(id, metadataJson) { this._fieldCandidateStore.updateMetadata(id, metadataJson); }
 
   // ── Field candidate evidence (relational projection) ─────────────
   insertFieldCandidateEvidence(opts) { this._fieldCandidateEvidenceStore.insert(opts); }

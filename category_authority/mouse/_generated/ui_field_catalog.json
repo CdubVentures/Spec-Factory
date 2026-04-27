@@ -1598,10 +1598,17 @@
     },
     {
       "aliases": [
+        "counts per inch",
         "cpi",
+        "dots per inch",
         "dpi",
+        "DPI/CPI",
         "max dpi",
-        "maximum dpi"
+        "max resolution",
+        "maximum dpi",
+        "maximum sensitivity",
+        "sensitivity (DPI)",
+        "sensor resolution"
       ],
       "array_handling": "none",
       "availability": "always",
@@ -1611,7 +1618,7 @@
       "display_mode": "all",
       "examples": [],
       "group": "Sensor Performance",
-      "guidance_md": null,
+      "guidance_md": "Extract the maximum effective mouse sensor resolution/sensitivity for the exact product as integer DPI/CPI. CPI and DPI are equivalent here. Use the highest value from a proven range or fixed settings list. Reject default/current DPI stages, player/eDPI settings, in-game sensitivity, polling/report rate, IPS, acceleration, and sibling sensor-generation values.",
       "key": "dpi",
       "label": "Max DPI",
       "order": 41,
@@ -1623,7 +1630,7 @@
       "suffix": "dpi",
       "surfaces": {},
       "tooltip_key": "dpi",
-      "tooltip_md": "Max DPI (or max CPI) as integer. Do not list steps; store maximum unless field_rules later adds a steps field.",
+      "tooltip_md": "Maximum DPI/CPI as an integer for the exact product or exact resolved sensor version.",
       "tooltip_source": "hbs_tooltipsMouse.js",
       "type": "number",
       "unit": "dpi"
@@ -1632,17 +1639,23 @@
       "aliases": [
         "inches per second",
         "ips",
-        "max ips"
+        "max ips",
+        "max speed",
+        "max tracking speed",
+        "maximum speed",
+        "maximum tracking speed",
+        "sensor speed",
+        "tracking speed"
       ],
       "array_handling": "none",
-      "availability": "always",
+      "availability": "sometimes",
       "canonical_key": "ips",
       "difficulty": "easy",
       "display_decimals": 0,
       "display_mode": "all",
       "examples": [],
       "group": "Sensor Performance",
-      "guidance_md": null,
+      "guidance_md": "Extract maximum sensor tracking speed as numeric IPS for the exact product or exact resolved sensor. Max speed/tracking speed/inches per second can qualify when tied to sensor motion tracking. Do not use scroll speed, DPI/CPI, polling rate, acceleration, or sibling comparison-table values.",
       "key": "ips",
       "label": "Max IPS",
       "order": 42,
@@ -1661,19 +1674,23 @@
     },
     {
       "aliases": [
-        "acceleration",
-        "g",
-        "max acceleration"
+        "acceleration (g)",
+        "g acceleration",
+        "max acceleration",
+        "max acceleration (g)",
+        "maximum acceleration",
+        "sensor acceleration",
+        "tracking acceleration"
       ],
       "array_handling": "none",
-      "availability": "always",
+      "availability": "sometimes",
       "canonical_key": "acceleration",
       "difficulty": "easy",
       "display_decimals": 0,
       "display_mode": "all",
       "examples": [],
       "group": "Sensor Performance",
-      "guidance_md": null,
+      "guidance_md": "Extract maximum rated sensor tracking acceleration in G as a number. Do not convert zero/no acceleration processing claims to 0, and do not confuse grams of weight with acceleration.",
       "key": "acceleration",
       "label": "Max Acceleration",
       "order": 43,
@@ -1692,11 +1709,23 @@
     },
     {
       "aliases": [
+        "0.125 ms",
+        "0.25 ms",
+        "0.5 ms",
+        "1 ms report rate",
+        "4K polling",
+        "8 ms",
+        "8K polling",
+        "hyper-polling",
+        "HyperPolling",
         "hz",
+        "max polling rate",
+        "maximum polling rate",
         "polling",
         "polling rate",
         "polling_rate",
-        "report rate"
+        "report rate",
+        "USB report rate"
       ],
       "array_handling": "none",
       "availability": "always",
@@ -1706,7 +1735,7 @@
       "display_mode": "high",
       "examples": [],
       "group": "Sensor Performance",
-      "guidance_md": null,
+      "guidance_md": "Extract supported polling/report/USB report rates in Hz for the exact SKU and receiver bundle. Return explicitly selectable rates; if only an up-to/maximum rate is proven, return only that maximum. Convert response-time shorthand such as 1 ms to 1000 Hz and 0.125 ms to 8000 Hz. Do not union across variants unless the requested identity is a family-level listing.",
       "key": "polling_rate",
       "label": "Polling Rate",
       "order": 44,
@@ -1718,7 +1747,7 @@
       "suffix": "Hz",
       "surfaces": {},
       "tooltip_key": "polling_rate",
-      "tooltip_md": "Polling rate options in Hz. Normalize to list of integers, sorted ascending; common values: 125/250/500/1000/2000/4000/8000.",
+      "tooltip_md": "Polling/report rate options in Hz. Normalize to a deduped descending list; do not invent lower steps from a maximum-only claim.",
       "tooltip_source": "hbs_tooltipsMouse.js",
       "type": "number",
       "unit": "Hz"
@@ -2752,6 +2781,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-27T02:48:22.414Z",
+  "generated_at": "2026-04-27T03:06:50.885Z",
   "version": 1
 }

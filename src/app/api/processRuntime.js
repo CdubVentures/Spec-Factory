@@ -216,6 +216,11 @@ export function createProcessRuntime({
           category: category || '',
           productId: productId || '',
           productLabel,
+          indexLabLinkIdentity: {
+            productId: productId || '',
+            brand: brand || '',
+            baseModel: baseModel || '',
+          },
           stages: [...PIPELINE_OP_STAGES],
         });
         pipelineOpId = op.id;

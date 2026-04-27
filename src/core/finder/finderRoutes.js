@@ -441,6 +441,11 @@ export function createFinderRouteHandler(finderConfig) {
             category,
             productId,
             productLabel: `${productRow.brand || ''} ${productRow.model || ''}`.trim(),
+            indexLabLinkIdentity: {
+              productId,
+              brand: productRow.brand || '',
+              baseModel: productRow.base_model || productRow.model || '',
+            },
             stages,
           };
           if (isLoopPost) opArgs.subType = 'loop';

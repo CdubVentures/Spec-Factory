@@ -14,7 +14,7 @@ Own all product, component, and enum review workflows: grid state assembly, cand
 - `candidateInfrastructure.js` -- candidate management infrastructure
 - `componentImpact.js`, `componentReviewData.js`, `componentReviewHelpers.js` -- component review
 - `enumReviewData.js` -- enum review data
-- `overrideWorkflow.js`, `overrideHelpers.js` -- override handling
+- `overrideWorkflow.js`, `overrideHelpers.js`, `reviewOverrideReseed.js` -- override handling and deleted-DB SQL projection rebuild from consolidated JSON
 - `confidenceColor.js` -- confidence color mapping
 - `qaJudge.js` -- QA judgment logic
 - `varianceEvaluator.js` -- variance evaluation
@@ -30,5 +30,6 @@ Own all product, component, and enum review workflows: grid state assembly, cand
 - All runtime dependencies are injected via factory arguments -- no global imports of DB or storage.
 - Grid state mutations are transactional within a single SpecDb instance.
 - Candidate operations operate on the per-category SpecDb, never cross-category.
+- Review overrides write resolved `field_candidates` rows first; consolidated override JSON is an audit/rebuild mirror.
 - `buildProductReviewPayload` emits `variant_values` for **both** variant-dependent attributes (release_date, future discontinued/SKU/price) **and** variant-generator fields (colors, editions). Generator entries are derived from the active `variants` table — each entry keyed by `variant_id`, value = combo/slug, enriched with `variant_label`, `variant_type`, `color_atoms`, `edition_slug`, `variant_key`. Publishing semantics are unaffected (generators still publish to `fields[]`, not `variant_fields[vid][]`); this is a drawer-payload enrichment so the UI can render per-variant rows with swatches and per-variant source lists.
 - Published-value `source_timestamp` comes from the winning resolved row's `updated_at`; `missingCount` still increments for fields with no resolvable value so coverage math stays accurate even when a row is omitted from the sparse fields map.

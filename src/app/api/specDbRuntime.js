@@ -6,6 +6,7 @@ import { rebuildReleaseDateFinderFromJson } from '../../features/release-date/re
 import { rebuildSkuFinderFromJson } from '../../features/sku/skuStore.js';
 import { rebuildKeyFinderFromJson } from '../../features/key/keyStore.js';
 import { rebuildFieldCandidatesFromJson, rebuildPublishedFieldsFromJson } from '../../features/publisher/index.js';
+import { rebuildReviewOverridesFromJson } from '../../features/review/index.js';
 import { reseedFieldKeyOrderFromJson } from '../../features/studio/fieldKeyOrderReseed.js';
 import { reseedFieldStudioMapFromJson } from '../../features/studio/fieldStudioMapReseed.js';
 import { buildReseedSurfaces } from '../../db/seedRegistry.js';
@@ -66,6 +67,7 @@ export function createSpecDbRuntime({
     reseedFieldStudioMapFromJson,
     rebuildFieldCandidatesFromJson,
     rebuildPublishedFieldsFromJson,
+    rebuildReviewOverridesFromJson,
   });
   const reseedPhases = reseedSurfaces.map(surface => ({
     name: surface.key,

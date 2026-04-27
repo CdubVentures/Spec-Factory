@@ -2,7 +2,8 @@
 //
 // Reads and writes the per-category consolidated overrides.json (v2 format).
 // One file per category at: category_authority/{cat}/_overrides/overrides.json
-// This is the JSON SSOT for override state. SQL tables are derived cache.
+// SQL runtime rows are authority for live override decisions. This file is the
+// consolidated JSON mirror for audit/rebuild/export metadata.
 //
 // WHY src/shared/: consumed by seed.js and overrideWorkflow — crosses feature boundaries.
 

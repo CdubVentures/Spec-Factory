@@ -15,7 +15,7 @@ interface PifRunWithImages {
   readonly selected?: {
     readonly images?: readonly ProductImageEntry[];
   };
-  readonly response?: {
+  readonly response?: object & {
     readonly images?: readonly ProductImageEntry[];
   };
 }

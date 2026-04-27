@@ -10,6 +10,7 @@ export {
   buildProductReviewPayload, writeProductReviewArtifacts,
   resolveOverrideFilePath, readReviewArtifacts, setOverrideFromCandidate,
   setManualOverride, approveGreenOverrides, buildReviewMetrics, finalizeOverrides,
+  rebuildReviewOverridesFromJson,
   resolvePropertyFieldMeta, buildComponentReviewLayout,
   buildComponentReviewPayloads, buildEnumReviewPayloads,
   findProductsReferencingComponent, cascadeComponentChange, cascadeEnumChange,

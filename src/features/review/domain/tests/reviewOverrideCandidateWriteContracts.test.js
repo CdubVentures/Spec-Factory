@@ -38,4 +38,13 @@ test('setOverrideFromCandidate writes helper override entries from review candid
   assert.equal(overridePayload.overrides.weight.override_value, '59');
   assert.equal(overridePayload.overrides.weight.override_source, 'candidate_selection');
   assert.equal(overridePayload.overrides.weight.override_provenance.snippet_id, 'snp_weight_1');
+
+  const sqlRows = specDb.getFieldCandidatesByProductAndField(productId, 'weight', null);
+  const resolvedRow = sqlRows.find((row) => row.status === 'resolved');
+  assert.ok(resolvedRow);
+  assert.equal(resolvedRow.source_type, 'candidate_override');
+  assert.equal(resolvedRow.value, '59');
+  assert.equal(resolvedRow.metadata_json.source, 'candidate_override');
+  assert.equal(resolvedRow.metadata_json.override_source, 'candidate_selection');
+  assert.equal(resolvedRow.metadata_json.candidate_id, 'cand_1');
 });

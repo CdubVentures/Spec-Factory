@@ -11,7 +11,7 @@ import { initOperationsRegistry, registerOperation, updateStage, updateProgressT
 | Function | Purpose |
 |----------|---------|
 | `initOperationsRegistry({ broadcastWs })` | One-time boot wiring (called from `guiServerRuntime.js`) |
-| `registerOperation({ type, subType?, category, productId, productLabel, stages })` | Start tracking → returns `{ id }` |
+| `registerOperation({ type, subType?, category, productId, productLabel, indexLabLinkIdentity?, stages })` | Start tracking → returns `{ id }` |
 | `updateStage({ id, stageIndex?, stageName? })` | Advance current stage |
 | `updateProgressText({ id, text })` | Set free-form progress text on running op |
 | `completeOperation({ id })` | Mark done (auto-evicts after 60s) |
@@ -35,6 +35,7 @@ None. `broadcastWs` is injected at init — no direct imports from other modules
 - IDs are UUIDs — globally unique
 - `currentStageIndex` is always within `[0, stages.length)`
 - `subType` defaults to `''` — optional variant label (e.g. `'view'`, `'hero'`, `'loop'`, `'process'`)
+- `indexLabLinkIdentity` is optional summary metadata: `{ productId, brand, baseModel }`
 - `progressText` defaults to `''` — free-form progress string, only settable on running ops
 - Active-operation list/API/WS surfaces stay summary-only; full `llmCalls` are fetched by explicit operation id
 - Completed/failed ops auto-evict from the Map after 60 seconds

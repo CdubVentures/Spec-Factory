@@ -10,6 +10,8 @@ Update note, 2026-04-26: this document was amended after the PIF image/popup per
 
 Re-audit note, 2026-04-26: the current checked-out tree was re-audited before starting implementation work. The re-audit changed this document only; no product source was changed and no test or GUI proof was run for this documentation pass.
 
+Implementation update, 2026-04-27: Review override active runtime paths now write/read SQL first, and consolidated override JSON now has deleted-DB reseed coverage for resolved manual/candidate override rows.
+
 ## Contract Being Audited
 
 Spec Factory uses a dual-state model:
@@ -56,23 +58,25 @@ But invalidation cannot fix a missing SQL projection. If the SQL row did not cha
 
 ## Executive Summary
 
-The previous audit was directionally correct, but incomplete. The largest missing item is the broader review override workflow. Manual overrides are only one JSON-only path; consolidated review overrides are another separate JSON-SSOT path.
+The previous audit was directionally correct, but incomplete. The largest missing item was the broader review override workflow. Its active runtime paths are now SQL-first, and deleted-DB reseed coverage now exists for resolved manual/candidate override rows. Overview consistency proof remains.
 
 Definite violations:
 
-1. Review manual overrides.
-2. Consolidated review overrides.
-3. Global prompts.
-4. Source strategy and spec seeds.
-5. Storage Manager run detail.
-6. Cross-cutting finder run persistence, delete-all, and discovery-history scrub paths.
-7. Key Finder routes and prompt history.
-8. Scalar finder prompt history for RDF/SKU.
-9. CEF prompt/runtime history.
-10. PIF progress, mutations, prompt history, and some evaluation/carousel paths.
-11. PIF binary image asset inventory and derived-image cache lifecycle are still filesystem-first.
-12. PIF lightweight summary is SQL-backed, but still route-local and hand-projected instead of schema/registry-driven.
-13. IndexLab product URL history.
+1. Global prompts.
+2. Source strategy and spec seeds.
+3. Storage Manager run detail.
+4. Cross-cutting finder run persistence, delete-all, and discovery-history scrub paths.
+5. Key Finder routes and prompt history.
+6. Scalar finder prompt history for RDF/SKU.
+7. CEF prompt/runtime history.
+8. PIF progress, mutations, prompt history, and some evaluation/carousel paths.
+9. PIF binary image asset inventory and derived-image cache lifecycle are still filesystem-first.
+10. PIF lightweight summary is SQL-backed, but still route-local and hand-projected instead of schema/registry-driven.
+11. IndexLab product URL history.
+
+Review override follow-up proof still needed:
+
+1. Overview consistency after review override mutation.
 
 Design-call items:
 
@@ -97,16 +101,20 @@ Mostly compliant:
 
 ## Current Re-Audit Snapshot
 
-This pass confirmed that the recommended fix order below is still accurate. The production mitigations already recorded in the addendum are present, and the first Review Override sub-slice now has a SQL-first manual override path.
+This pass confirmed that the recommended fix order below is still accurate. The production mitigations already recorded in the addendum are present, and the Review Override sub-slices now have SQL-first write paths plus consolidated JSON reseed coverage.
 
 Implementation note, 2026-04-26: review-route manual overrides now call `publishManualOverride(...)`, which demotes the previous resolved row by scalar/variant scope, inserts a resolved `field_candidates` row with `source_type='manual_override'`, and mirrors the value to `product.json.fields` or `product.json.variant_fields`. Review Grid no longer synthesizes manual override rows from `product.json`; JSON-only overrides are treated as rebuild/audit data until reseeded into SQL.
+
+Implementation note, 2026-04-26: consolidated review override write paths in `src/features/review/domain/overrideWorkflow.js` now project into SQL before updating `category_authority/{category}/_overrides/overrides.json`. `setManualOverride(...)` writes a resolved `manual_override` row; `setOverrideFromCandidate(...)` and `approveGreenOverrides(...)` write resolved `candidate_override` rows with `metadata_json.override_source='candidate_selection'`. `finalizeOverrides(...)` now derives pending/applied override entries from those resolved SQL rows, so missing or stale consolidated JSON no longer controls finalize. `buildReviewMetrics(...)` and `listOverrideDocs(...)` now read SQL override rows when `specDb` is available; finalize stamps review status metadata on those rows before mirroring JSON.
+
+Implementation note, 2026-04-27: `rebuildReviewOverridesFromJson(...)` now reseeds resolved `manual_override` and `candidate_override` rows from consolidated override JSON into `field_candidates`. The reseed surface is registered as `review_overrides` in `seedRegistry`, wired into `specDbRuntime`, and covered by idempotence and registry tests.
 
 ### Still Open
 
 | Area | Current status | Current proof in the checked-out tree | Implementation contract still needed |
 | --- | --- | --- | --- |
-| Review manual overrides | Mostly closed | `src/features/review/api/itemMutationRoutes.js` routes manual overrides through `publishManualOverride`; `src/features/publisher/publish/publishManualOverride.js` writes SQL first and mirrors JSON; `src/features/review/domain/reviewGridData.js` no longer merges JSON-only manual overrides; publisher locks now read resolved SQL manual override rows. | Finish the broader Review Override Family: consolidated review override JSON remains JSON-first. |
-| Consolidated review overrides | Open, same phase as manual overrides | `src/features/review/domain/overrideWorkflow.js` still imports consolidated override helpers and says JSON SSOT / DB sync removed; `src/features/review/domain/overrideHelpers.js` still lists and reads consolidated JSON directly. | Define review override runtime SQL state, read/write it first, and keep consolidated JSON as export/rebuild mirror. |
+| Review manual overrides | Mostly closed | `src/features/review/api/itemMutationRoutes.js` routes manual overrides through `publishManualOverride`; `src/features/publisher/publish/publishManualOverride.js` writes SQL first and mirrors JSON; `src/features/review/domain/reviewGridData.js` no longer merges JSON-only manual overrides; publisher locks now read resolved SQL manual override rows; `rebuildReviewOverridesFromJson(...)` reseeds consolidated manual override mirrors into SQL. | Add an Overview consistency test around the route-level mutation. |
+| Consolidated review overrides | Active runtime paths SQL-first; deleted-DB reseed covered | `src/features/review/domain/overrideWorkflow.js` writes `setManualOverride(...)`, `setOverrideFromCandidate(...)`, and `approveGreenOverrides(...)` to resolved `field_candidates` rows before mirroring consolidated JSON. `finalizeOverrides(...)`, `buildReviewMetrics(...)`, and `listOverrideDocs(...)` read resolved SQL override rows even when consolidated JSON is missing or stale. `src/features/review/domain/reviewOverrideReseed.js` and `seedRegistry` rebuild those SQL rows from consolidated JSON. | Add Overview consistency proof. |
 | Publisher manual-override locks | Closed for active publisher paths | `src/features/publisher/publish/publishCandidate.js`, `reconcileThreshold.js`, and `republishField.js` read resolved SQL manual override rows by scalar/variant scope; JSON-only manual override entries are no longer live locks. | Keep `product.json` reseed coverage so deleted-DB rebuild recreates SQL locks. |
 | Global prompts | Open | `src/core/llm/prompts/globalPromptStore.js` still stores `.workspace/global/global-prompts.json`; `src/features/settings-authority/globalPromptsHandler.js` reads/writes that store directly. | Add appDb runtime source plus JSON mirror/reseed, then route GET/PUT through SQL-first persistence. |
 | Source strategy and spec seeds | Open | `src/features/indexing/sources/sourceFileService.js` says routes and orchestration consume `sources.json` instead of SQLite; `src/db/specDbSchema.js` says `source_strategy` table was removed; `specSeedsRoutes.js` writes `spec_seeds.json`. | Add SQL projections and SQL-first routes/readers, with JSON as rebuild mirror. |
@@ -139,8 +147,8 @@ Implementation note, 2026-04-26: review-route manual overrides now call `publish
 Continue Phase 1 with the remaining Review Override Family:
 
 - It has the clearest user-visible split-brain path.
-- Consolidated review overrides still need SQL-first runtime state.
-- Publisher lock checks now read SQL manual overrides; deleted-DB reseed coverage remains important.
+- Consolidated review override writes/finalize/metrics/listing are SQL-projected.
+- Publisher lock checks now read SQL manual overrides; deleted-DB reseed coverage now protects the consolidated mirror path.
 - The manual route/grid/publisher-lock slices now establish the SQL-first pattern needed by later finder/PIF migrations.
 
 ## Frontend Impact Matrix
@@ -442,38 +450,52 @@ Remaining follow-up:
 
 ### 2. Consolidated Review Overrides
 
-Status: definite violation.
+Status: active runtime paths SQL-first; deleted-DB rebuild covered; Overview proof still needed.
 
 Files:
 
 - `src/shared/consolidatedOverrides.js`
 - `src/features/review/domain/overrideWorkflow.js`
 - `src/features/review/domain/overrideHelpers.js`
+- `src/features/review/domain/reviewOverrideReseed.js`
 - `src/features/review/domain/reviewGridHelpers.js`
 
 Current contract:
 
-- `category_authority/{category}/_overrides/overrides.json` is treated as the override SSOT.
-- `readProductFromConsolidated(...)` and `upsertProductInConsolidated(...)` are used in review workflow code.
-- Some comments/tests explicitly state SQL sync was removed.
+- `setManualOverride(...)` writes a resolved SQL `manual_override` row before mirroring consolidated JSON.
+- `setOverrideFromCandidate(...)` and `approveGreenOverrides(...)` write resolved SQL `candidate_override` rows before mirroring consolidated JSON.
+- `finalizeOverrides(...)` builds pending/applied override entries from resolved SQL override rows and mirrors finalize metadata back to consolidated JSON.
+- `finalizeOverrides(...)` stamps review status metadata onto resolved SQL override rows before mirroring JSON.
+- `buildReviewMetrics(...)` and `listOverrideDocs(...)` read SQL override rows when `specDb` is available.
+- `category_authority/{category}/_overrides/overrides.json` is now the audit/rebuild/export mirror for these active runtime paths.
+- `rebuildReviewOverridesFromJson(...)` projects consolidated JSON mirrors back into resolved SQL override rows after DB deletion.
 
 Impact:
 
-- Review finalize/metrics/workflow state can diverge from SQL runtime state.
-- Overview and product-level SQL consumers will not know about JSON-only review override changes unless a separate projection happens.
-- The SQL-first manual override fix remains incomplete at the broader workflow level while consolidated override state remains JSON-only.
+- Review write actions now project selected overrides into SQL, so Overview and product-level SQL consumers can converge after refetch.
+- Finalize now ignores missing/stale consolidated JSON for pending/applied override values.
+- Metrics/listing now ignore missing/stale consolidated JSON when SQL rows are present.
+- Deleted-DB rebuild now reseeds resolved override rows and review metadata from the consolidated mirror.
 
-Tests currently protecting the wrong contract:
+Tests now protecting the SQL-first write contract:
+
+- `src/features/review/domain/tests/reviewManualOverrideCanonicalId.test.js`
+- `src/features/review/domain/tests/reviewOverrideCandidateWriteContracts.test.js`
+- `src/features/review/domain/tests/reviewOverrideApprovalContracts.test.js`
+- `src/features/review/domain/tests/reviewOverrideFinalizeApplyContracts.test.js`
+- `src/features/review/domain/tests/reviewOverrideFinalizePreviewGuard.test.js`
+- `src/features/review/domain/tests/reviewOverrideMetricsContracts.test.js`
+- `src/features/review/domain/tests/reviewOverrideReseedContracts.test.js`
+- `src/db/tests/seedRegistry.test.js`
+
+Tests still covering consolidated JSON mirror behavior:
 
 - `src/features/review/domain/tests/overrideWorkflowCharacterization.test.js`
 - `src/shared/tests/consolidatedOverrides.test.js`
 
 Required fix:
 
-- Define the SQL runtime state for review overrides.
-- Convert workflow reads to SQL.
-- Convert workflow writes to SQL first.
-- Mirror consolidated JSON after SQL succeeds.
+- Add Overview consistency proof after a review override mutation.
 - Keep JSON as rebuild/export/import artifact only.
 
 ### 3. Global Prompts
@@ -1262,8 +1284,14 @@ Tests that must change during the fixes:
   - `src/features/review/api/tests/itemMutationRoutes.manualOverride.happyPath.characterization.test.js`
   - `src/features/review/api/tests/itemMutationRoutes.variantId.test.js`
   - `src/features/review/domain/tests/reviewGridData.resolvedSelection.characterization.test.js`
-- Consolidated override JSON-SSOT tests:
-  - `src/features/review/domain/tests/overrideWorkflowCharacterization.test.js`
+- Consolidated override SQL-first write/finalize/metrics tests now updated:
+  - `src/features/review/domain/tests/reviewManualOverrideCanonicalId.test.js`
+  - `src/features/review/domain/tests/reviewOverrideCandidateWriteContracts.test.js`
+  - `src/features/review/domain/tests/reviewOverrideApprovalContracts.test.js`
+  - `src/features/review/domain/tests/reviewOverrideFinalizeApplyContracts.test.js`
+  - `src/features/review/domain/tests/reviewOverrideFinalizePreviewGuard.test.js`
+  - `src/features/review/domain/tests/reviewOverrideMetricsContracts.test.js`
+- Consolidated override mirror tests still JSON-based by design:
   - `src/shared/tests/consolidatedOverrides.test.js`
 - Key Finder JSON-route tests:
   - `src/features/key/tests/keyFinderRoutes.summary.test.js`
@@ -1307,15 +1335,14 @@ Test strategy:
 
 Fix together:
 
-- Consolidated review override workflow.
-- Publisher manual-override lock reads.
 - Overview consistency tests.
 
 Contract after fix:
 
 - Manual/user override API writes SQL runtime state first.
 - JSON `product.json` mirrors after SQL succeeds.
-- Consolidated override JSON must move behind the same SQL-first contract.
+- Consolidated override writes/finalize/metrics/listing are SQL-projected.
+- Consolidated override mirrors reseed resolved manual/candidate override SQL rows after DB deletion.
 - Review grid reads SQL only for manual override runtime state.
 
 Why first:

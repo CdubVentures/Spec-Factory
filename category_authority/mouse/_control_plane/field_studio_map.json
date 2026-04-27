@@ -962,12 +962,25 @@
   ],
   "field_overrides": {
     "acceleration": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the sensor maximum rated tracking acceleration in G/gravities, usually shown as Max Acceleration (G), up to 50G acceleration, or a sensor datasheet Acceleration row. Return only the numeric value. Do not treat zero acceleration, no acceleration, or zero smoothing/acceleration/filtering as 0; those describe pointer/processing behavior and belong to other fields. Do not read grams/weight values such as 54g as acceleration. If a component datasheet lists multiple operating modes, use the highest gaming/high-performance/corded value under the upper_bound policy, not low-power or office-mode values. Prefer exact product official specs; otherwise use the resolved exact sensor maker/authorized distributor datasheet or official sensor technology page. Product-level official specs override a generic sensor row. Do not infer acceleration from DPI or IPS alone, and do not copy sibling-model/family values unless the source explicitly applies to the exact product.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
       "aliases": [
-        "acceleration",
         "max acceleration",
-        "g"
+        "maximum acceleration",
+        "max acceleration (g)",
+        "acceleration (g)",
+        "g acceleration",
+        "tracking acceleration",
+        "sensor acceleration"
       ],
-      "availability": "always",
+      "availability": "sometimes",
       "canonical_key": "acceleration",
       "component": null,
       "constraints": [],
@@ -1035,7 +1048,7 @@
         "unit": "g"
       },
       "priority": {
-        "availability": "always",
+        "availability": "sometimes",
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
@@ -1043,21 +1056,35 @@
       "round": "int",
       "search_hints": {
         "content_types": [
-          "spec_sheet",
-          "review"
+          "official product tech specs",
+          "official support/spec table",
+          "official sensor technology page",
+          "component datasheet or product-brief PDF",
+          "authorized component distributor page",
+          "professional review/spec table",
+          "specs aggregator only as fallback/corroboration"
         ],
         "domain_hints": [
+          "razer.com",
+          "mysupport.razer.com",
+          "logitechg.com",
+          "corsair.com",
+          "steelseries.com",
+          "pixart.com",
+          "codico.com",
           "sensor.fyi",
-          "mousespecs.org",
           "eloshapes.com",
+          "mousespecs.org",
           "techpowerup.com"
         ],
         "query_terms": [
-          "max acceleration",
-          "acceleration",
-          "G",
-          "g-force",
-          "max G"
+          "\"max acceleration\"",
+          "\"Max Acceleration (G)\"",
+          "\"up to\" \"G acceleration\"",
+          "\"tracking\" \"G acceleration\"",
+          "\"sensor\" \"acceleration\"",
+          "\"IPS\" \"acceleration\"",
+          "\"zero smoothing\" \"acceleration\" ambiguity check"
         ]
       },
       "selection_policy": {},
@@ -1069,7 +1096,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Sensor Performance",
-        "guidance_md": null,
+        "guidance_md": "Extract maximum rated sensor tracking acceleration in G as a number. Do not convert zero/no acceleration processing claims to 0, and do not confuse grams of weight with acceleration.",
         "label": "Max Acceleration",
         "order": 43,
         "placeholder": "",
@@ -1083,7 +1110,8 @@
       "unit": "g",
       "value_form": "single",
       "value_form_sample": "scalar",
-      "variance_policy": "upper_bound"
+      "variance_policy": "upper_bound",
+      "variant_dependent": false
     },
     "adjustable_scroll_wheel": {
       "aliases": [],
@@ -3881,13 +3909,29 @@
       "value_form_sample": "scalar"
     },
     "dpi": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the maximum effective mouse sensor resolution/sensitivity for the exact product as a numeric DPI/CPI value. Treat CPI and DPI as equivalent. If a source gives a range or fixed list of settings, return the highest value. Prefer current manufacturer product/support/spec pages or exact sensor/component pages; use review, retailer, or spec-database sources only as corroboration or fallback. When official/current sources conflict with stale retailer or aggregator values, use the official/current value and log the conflict. Do not submit default/current DPI stages, eDPI/player settings, in-game sensitivity, polling/report rate, IPS, acceleration, or resolution accuracy. Do not copy values across sibling models, editions, or sensor generations unless the source explicitly applies to the exact product/sensor version.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
+        "cpi",
         "dpi",
+        "DPI/CPI",
         "max dpi",
         "maximum dpi",
-        "cpi"
+        "maximum sensitivity",
+        "sensitivity (DPI)",
+        "max resolution",
+        "sensor resolution",
+        "dots per inch",
+        "counts per inch"
       ],
-      "availability": "always",
+      "availability": "sometimes",
       "canonical_key": "dpi",
       "component": null,
       "constraints": [],
@@ -3908,15 +3952,18 @@
       "difficulty": "medium",
       "display_name": "Max DPI",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "integer 100-60000"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": null
+        "source": "component_db.sensor"
       },
       "enum_policy": "open",
+      "enum_source": "component_db.sensor",
       "evidence": {
         "min_evidence_refs": 2,
         "tier_preference": [
@@ -3955,7 +4002,7 @@
         "unit": "dpi"
       },
       "priority": {
-        "availability": "always",
+        "availability": "sometimes",
         "difficulty": "medium",
         "required_level": "mandatory"
       },
@@ -3963,25 +4010,32 @@
       "round": "int",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "manufacturer product/spec pages",
+          "official support/spec FAQs",
+          "official sensor/technology pages",
+          "press releases/newsroom posts",
+          "lab/review pages",
+          "retailer spec tables as fallback",
+          "spec databases as fallback"
         ],
         "domain_hints": [
           "eloshapes.com",
           "rtings.com",
-          "mousespecs.org",
+          "lttlabs.com",
           "techpowerup.com",
-          "prosettings.net"
+          "mousespecs.org"
         ],
         "query_terms": [
           "DPI",
           "CPI",
           "max DPI",
-          "resolution",
-          "sensitivity",
+          "maximum sensitivity",
+          "sensor resolution",
+          "DPI/CPI",
           "dots per inch",
-          "counts per inch"
+          "counts per inch",
+          "mouse maximum sensitivity",
+          "sensor specs"
         ]
       },
       "selection_policy": {},
@@ -3993,7 +4047,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Sensor Performance",
-        "guidance_md": null,
+        "guidance_md": "Extract the maximum effective mouse sensor resolution/sensitivity for the exact product as integer DPI/CPI. CPI and DPI are equivalent here. Use the highest value from a proven range or fixed settings list. Reject default/current DPI stages, player/eDPI settings, in-game sensitivity, polling/report rate, IPS, acceleration, and sibling sensor-generation values.",
         "label": "Max DPI",
         "order": 41,
         "placeholder": "",
@@ -4001,13 +4055,14 @@
         "short_label": null,
         "suffix": "dpi",
         "tooltip_key": "dpi",
-        "tooltip_md": "Max DPI (or max CPI) as integer. Do not list steps; store maximum unless field_rules later adds a steps field.",
+        "tooltip_md": "Maximum DPI/CPI as an integer for the exact product or exact resolved sensor version.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "dpi",
       "value_form": "single",
       "value_form_sample": "scalar",
-      "variance_policy": "upper_bound"
+      "variance_policy": "upper_bound",
+      "variant_dependent": false
     },
     "editions": {
       "consumers": {
@@ -6157,12 +6212,27 @@
       }
     },
     "ips": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract the mouse sensor maximum tracking speed, normalized to a numeric IPS value. Accept source labels such as max speed, Max. speed, tracking speed, max tracking speed, IPS, and inches per second when they describe sensor motion tracking, not scroll-wheel speed, DPI/CPI, polling rate, or acceleration. Prefer exact-product manufacturer product/support/spec pages; use the resolved sensor component or specialized mouse databases only when the exact product/sensor identity is proven and no product-level spec conflicts. Apply upper_bound only among values that apply to the exact product or exact resolved sensor; never take a higher IPS from a sibling model or comparison-table column. Normalize >, +, and up to wording to the numeric ceiling, for example >888 IPS or 888+ IPS becomes 888. If the source gives mm/s or m/s, convert to inches per second and round to 0 decimals; if only DPI/CPI or polling rate is found, return unknown.",
+        "variant_inventory_usage": {
+          "enabled": false
+        }
+      },
       "aliases": [
         "ips",
+        "inches per second",
         "max ips",
-        "inches per second"
+        "max speed",
+        "maximum speed",
+        "max tracking speed",
+        "maximum tracking speed",
+        "tracking speed",
+        "sensor speed"
       ],
-      "availability": "always",
+      "availability": "sometimes",
       "canonical_key": "ips",
       "component": null,
       "constraints": [],
@@ -6183,7 +6253,9 @@
       "difficulty": "easy",
       "display_name": "Max IPS",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "numeric IPS only"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6229,7 +6301,7 @@
         "unit": "ips"
       },
       "priority": {
-        "availability": "always",
+        "availability": "sometimes",
         "difficulty": "easy",
         "required_level": "non_mandatory"
       },
@@ -6237,10 +6309,20 @@
       "round": "int",
       "search_hints": {
         "content_types": [
-          "spec_sheet",
-          "review"
+          "manufacturer product/spec/support HTML",
+          "official news/press pages",
+          "official datasheets/spec PDFs",
+          "specialized mouse sensor/product databases as fallback",
+          "professional reviews as corroboration"
         ],
         "domain_hints": [
+          "brand/manufacturer product or support page",
+          "support.logi.com",
+          "logitechg.com",
+          "razer.com",
+          "mysupport.razer.com",
+          "steelseries.com",
+          "rog.asus.com",
           "sensor.fyi",
           "eloshapes.com",
           "mousespecs.org",
@@ -6248,9 +6330,13 @@
         ],
         "query_terms": [
           "IPS",
-          "tracking speed",
-          "inches per second",
-          "max tracking speed"
+          "\"max speed\"",
+          "\"Max. speed\"",
+          "\"max tracking speed\"",
+          "\"tracking speed\"",
+          "\"inches per second\"",
+          "\"sensor IPS\"",
+          "\"sensor speed\""
         ]
       },
       "selection_policy": {},
@@ -6262,7 +6348,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Sensor Performance",
-        "guidance_md": null,
+        "guidance_md": "Extract maximum sensor tracking speed as numeric IPS for the exact product or exact resolved sensor. Max speed/tracking speed/inches per second can qualify when tied to sensor motion tracking. Do not use scroll speed, DPI/CPI, polling rate, acceleration, or sibling comparison-table values.",
         "label": "Max IPS",
         "order": 42,
         "placeholder": "",
@@ -6276,7 +6362,8 @@
       "unit": "ips",
       "value_form": "single",
       "value_form_sample": "scalar",
-      "variance_policy": "upper_bound"
+      "variance_policy": "upper_bound",
+      "variant_dependent": false
     },
     "lift": {
       "aliases": [
@@ -8263,25 +8350,48 @@
       "value_form_sample": "scalar"
     },
     "polling_rate": {
+      "ai_assist": {
+        "pif_priority_images": {
+          "enabled": false
+        },
+        "reasoning_note": "Extract supported polling/report/USB report rates in Hz for the exact mouse and exact variant/receiver bundle. Treat report rate, USB report rate, HyperPolling, 8K/4K polling, and response-time shorthand as this field: 8 ms=125 Hz, 1 ms=1000 Hz, 0.5 ms=2000 Hz, 0.25 ms=4000 Hz, 0.125 ms=8000 Hz. Return every explicitly selectable rate for the exact SKU/mode when a source lists them. If sources only prove up to or maximum polling rate, return the proven maximum only; do not invent standard lower steps. Do not union across color/edition/sensor/receiver variants unless the requested product identity is explicitly a family-level listing and the site variant policy asks for family union. Optional dongles, receivers, firmware upgrades, or wired/wireless/Bluetooth limits count only when the source says the exact product supports them; record the condition in evidence/log notes. Prefer official product specs, support FAQs, manuals, or professional lab pages over retailer/spec-table data when conflicts occur.",
+        "variant_inventory_usage": {
+          "enabled": true
+        }
+      },
       "aliases": [
-        "polling_rate",
+        "Hz",
+        "hz",
         "polling",
         "polling rate",
-        "hz",
-        "report rate"
+        "polling_rate",
+        "report rate",
+        "USB report rate",
+        "max polling rate",
+        "maximum polling rate",
+        "HyperPolling",
+        "hyper-polling",
+        "8K polling",
+        "4K polling",
+        "1 ms report rate",
+        "0.125 ms",
+        "0.25 ms",
+        "0.5 ms",
+        "8 ms"
       ],
-      "availability": "always",
+      "availability": "sometimes",
       "canonical_key": "polling_rate",
       "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
           "dedupe": true,
+          "item_union": false,
           "sort": "desc"
         },
         "range": {
           "max": 16000,
-          "min": 125
+          "min": 50
         },
         "rounding": {
           "decimals": 0,
@@ -8295,7 +8405,9 @@
       "difficulty": "medium",
       "display_name": "Polling Rate",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "numeric Hz list"
+        },
         "new_value_policy": {},
         "policy": "open_prefer_known",
         "source": null
@@ -8362,7 +8474,7 @@
         "unit": "Hz"
       },
       "priority": {
-        "availability": "always",
+        "availability": "sometimes",
         "difficulty": "medium",
         "required_level": "mandatory"
       },
@@ -8370,13 +8482,17 @@
       "round": "int",
       "search_hints": {
         "content_types": [
-          "product_page",
-          "spec_sheet",
-          "review"
+          "official product specs",
+          "support FAQ",
+          "manufacturer press release/news",
+          "HTML manuals/user guides",
+          "professional review/lab pages",
+          "authorized retailer specs as fallback/conflict check"
         ],
         "domain_hints": [
-          "eloshapes.com",
           "rtings.com",
+          "lttlabs.com",
+          "eloshapes.com",
           "mousespecs.org",
           "prosettings.net",
           "techpowerup.com"
@@ -8384,11 +8500,22 @@
         "query_terms": [
           "polling rate",
           "report rate",
+          "USB report rate",
+          "max polling rate",
+          "maximum polling rate",
           "Hz",
-          "USB polling rate",
-          "wireless polling rate",
-          "4000Hz",
-          "8000Hz"
+          "8000 Hz",
+          "4000 Hz",
+          "2000 Hz",
+          "1000 Hz",
+          "8K polling",
+          "4K polling",
+          "HyperPolling",
+          "hyper-polling",
+          "0.125 ms",
+          "1 ms report rate",
+          "wired wireless Bluetooth polling rate",
+          "receiver dongle polling rate"
         ]
       },
       "selection_policy": {},
@@ -8400,7 +8527,7 @@
         "display_mode": "high",
         "examples": [],
         "group": "Sensor Performance",
-        "guidance_md": null,
+        "guidance_md": "Extract supported polling/report/USB report rates in Hz for the exact SKU and receiver bundle. Return explicitly selectable rates; if only an up-to/maximum rate is proven, return only that maximum. Convert response-time shorthand such as 1 ms to 1000 Hz and 0.125 ms to 8000 Hz. Do not union across variants unless the requested identity is a family-level listing.",
         "label": "Polling Rate",
         "order": 44,
         "placeholder": "",
@@ -8408,12 +8535,13 @@
         "short_label": null,
         "suffix": "Hz",
         "tooltip_key": "polling_rate",
-        "tooltip_md": "Polling rate options in Hz. Normalize to list of integers, sorted ascending; common values: 125/250/500/1000/2000/4000/8000.",
+        "tooltip_md": "Polling/report rate options in Hz. Normalize to a deduped descending list; do not invent lower steps from a maximum-only claim.",
         "tooltip_source": "hbs_tooltipsMouse.js"
       },
       "unit": "Hz",
       "value_form": "set",
-      "value_form_sample": "list"
+      "value_form_sample": "list",
+      "variant_dependent": true
     },
     "price_range": {
       "aliases": [],

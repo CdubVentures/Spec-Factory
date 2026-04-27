@@ -18,6 +18,8 @@ export {
   finalizeOverrides,
 } from './overrideWorkflow.js';
 
+export { rebuildReviewOverridesFromJson } from './reviewOverrideReseed.js';
+
 export {
   resolvePropertyFieldMeta,
   buildComponentReviewLayout,

@@ -240,6 +240,21 @@ export function buildReseedSurfaces(deps) {
           : '',
     },
     {
+      key: 'review_overrides',
+      label: 'Review Overrides (resolved runtime override candidates)',
+      scope: 'reseed',
+      tables: ['field_candidates'],
+      shouldRun: null,
+      execute: (ctx) => deps.rebuildReviewOverridesFromJson({
+        specDb: ctx.db,
+        helperRoot: ctx.helperRoot,
+      }),
+      formatLog: (category, result) =>
+        result.overrides_seeded > 0
+          ? `${category}: ${result.overrides_seeded} review overrides re-seeded`
+          : '',
+    },
+    {
       key: 'pif_variant_progress',
       label: 'PIF Variant Progress',
       scope: 'reseed',

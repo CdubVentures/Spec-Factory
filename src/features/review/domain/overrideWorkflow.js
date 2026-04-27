@@ -7,6 +7,7 @@ import {
   readProductFromConsolidated,
   resolveConsolidatedOverridePath,
 } from '../../../shared/consolidatedOverrides.js';
+import { publishManualOverride } from '../../publisher/publish/publishManualOverride.js';
 import { buildProductReviewPayload } from './reviewGridData.js';
 import { isObject, toArray, normalizeToken, parseDateMs } from './reviewNormalization.js';
 import { toFloat } from '../../../shared/valueNormalizers.js';
@@ -29,11 +30,99 @@ import {
   listOverrideDocs,
   writeStorageJson,
   normalizeQuoteSpan,
+  isRuntimeOverrideCandidate,
+  buildRuntimeOverrideEntries,
+  buildCandidateOverrideSourceId,
 } from './overrideHelpers.js';
 
 export function resolveOverrideFilePath({ config = {}, category, productId }) {
   const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
   return path.join(helperRoot, category, '_overrides', `${productId}.overrides.json`);
+}
+
+function assertRuntimeOverrideDb(specDb) {
+  if (
+    !specDb
+    || typeof specDb.demoteResolvedCandidates !== 'function'
+    || typeof specDb.insertFieldCandidate !== 'function'
+  ) {
+    throw new Error('review override requires runtime field_candidates write access');
+  }
+}
+
+function writeCandidateOverrideToRuntime({
+  specDb,
+  productId,
+  field,
+  candidate = {},
+  entry = {},
+  reviewer = '',
+  reason = '',
+}) {
+  assertRuntimeOverrideDb(specDb);
+  const value = String(entry.override_value ?? candidate.value ?? '').trim();
+  const sourceId = buildCandidateOverrideSourceId({
+    productId,
+    field,
+    candidateId: entry.candidate_id || candidate.candidate_id,
+  });
+  const score = toFloat(candidate.score, NaN);
+
+  specDb.demoteResolvedCandidates(productId, field, null);
+  specDb.deleteFieldCandidateBySourceId?.(productId, field, sourceId);
+  specDb.insertFieldCandidate({
+    productId,
+    fieldKey: field,
+    sourceId,
+    sourceType: 'candidate_override',
+    value,
+    unit: null,
+    confidence: Number.isFinite(score) ? score : 1,
+    model: '',
+    validationJson: { valid: true, repairs: [], rejections: [] },
+    metadataJson: {
+      source: 'candidate_override',
+      override_source: 'candidate_selection',
+      candidate_id: String(entry.candidate_id || candidate.candidate_id || ''),
+      reviewer: String(reviewer || '').trim() || null,
+      reason: String(reason || '').trim() || null,
+      evidence: entry.override_provenance || null,
+    },
+    status: 'resolved',
+    variantId: null,
+  });
+
+  return sourceId;
+}
+
+function markRuntimeOverridesFinalized({
+  specDb,
+  rows = [],
+  reviewer = '',
+  reviewedAt,
+  reviewTimeSeconds,
+  saveAsDraft = false,
+  runtimeGateResult = {},
+}) {
+  if (typeof specDb?.updateFieldCandidateMetadata !== 'function') {
+    throw new Error('review finalize requires runtime field_candidates metadata write access');
+  }
+  for (const row of toArray(rows)) {
+    if (!isRuntimeOverrideCandidate(row)) continue;
+    const metadata = isObject(row.metadata_json) ? row.metadata_json : {};
+    specDb.updateFieldCandidateMetadata(row.id, {
+      ...metadata,
+      review_status: saveAsDraft ? 'draft' : 'approved',
+      reviewed_by: String(reviewer || '').trim() || null,
+      reviewed_at: reviewedAt,
+      review_time_seconds: reviewTimeSeconds,
+      runtime_gate: {
+        applied: Boolean(runtimeGateResult.applied),
+        failure_count: (runtimeGateResult.failures || []).length,
+        warning_count: (runtimeGateResult.warnings || []).length,
+      },
+    });
+  }
 }
 
 export async function readReviewArtifacts({ storage, category, productId }) {
@@ -142,6 +231,15 @@ export async function setOverrideFromCandidate({
     reason,
     setAt
   });
+  writeCandidateOverrideToRuntime({
+    specDb,
+    productId,
+    field: normalizedField,
+    candidate,
+    entry,
+    reviewer,
+    reason,
+  });
   current.category = category;
   current.product_id = productId;
   current.review_started_at = startedAt;
@@ -152,7 +250,7 @@ export async function setOverrideFromCandidate({
     [normalizedField]: entry
   };
 
-  // WHY: JSON SSOT is the durable write. DB sync removed — will route through publisher pipeline.
+  // WHY: SQL is the runtime projection; consolidated JSON remains the audit/rebuild mirror.
   await upsertProductInConsolidated({ config, category, productId, productEntry: current });
 
   const consolidatedPath = resolveConsolidatedOverridePath({ config, category });
@@ -198,6 +296,45 @@ export async function setManualOverride({
   };
 
   const setAt = nowIso();
+  const entry = {
+    field: normalizedField,
+    override_source: 'manual_entry',
+    candidate_index: null,
+    override_value: nextValue,
+    override_reason: String(reason || '').trim() || null,
+    override_provenance: normalizedEvidence,
+    overridden_by: String(reviewer || '').trim() || null,
+    overridden_at: setAt,
+    validated: null,
+    candidate_id: manualCandidateId({
+      category,
+      productId,
+      field: normalizedField,
+      value: nextValue,
+      evidence: normalizedEvidence,
+    }),
+    value: nextValue,
+    source: {
+      host: 'manual-override.local',
+      source_id: normalizedEvidence.source_id,
+      method: 'manual_override',
+      tier: 1,
+      evidence_key: normalizedEvidence.url
+    },
+    set_at: setAt
+  };
+  assertRuntimeOverrideDb(specDb);
+  publishManualOverride({
+    specDb,
+    category,
+    productId,
+    fieldKey: normalizedField,
+    value: nextValue,
+    reviewer,
+    reason,
+    evidence: normalizedEvidence,
+  });
+
   current.category = category;
   current.product_id = productId;
   current.review_started_at = startedAt;
@@ -205,36 +342,10 @@ export async function setManualOverride({
   current.updated_at = setAt;
   current.overrides = {
     ...(isObject(current.overrides) ? current.overrides : {}),
-    [normalizedField]: {
-      field: normalizedField,
-      override_source: 'manual_entry',
-      candidate_index: null,
-      override_value: nextValue,
-      override_reason: String(reason || '').trim() || null,
-      override_provenance: normalizedEvidence,
-      overridden_by: String(reviewer || '').trim() || null,
-      overridden_at: setAt,
-      validated: null,
-      candidate_id: manualCandidateId({
-        category,
-        productId,
-        field: normalizedField,
-        value: nextValue,
-        evidence: normalizedEvidence,
-      }),
-      value: nextValue,
-      source: {
-        host: 'manual-override.local',
-        source_id: normalizedEvidence.source_id,
-        method: 'manual_override',
-        tier: 1,
-        evidence_key: normalizedEvidence.url
-      },
-      set_at: setAt
-    }
+    [normalizedField]: entry
   };
 
-  // WHY: JSON SSOT is the durable write. DB sync removed — will route through publisher pipeline.
+  // WHY: SQL is the runtime projection; consolidated JSON remains the audit/rebuild mirror.
   await upsertProductInConsolidated({ config, category, productId, productEntry: current });
 
   const consolidatedPath = resolveConsolidatedOverridePath({ config, category });
@@ -280,6 +391,7 @@ export async function approveGreenOverrides({
   const overrides = isObject(current.overrides) ? { ...current.overrides } : {};
   const approvedFields = [];
   const skipped = [];
+  const runtimeWrites = [];
 
   for (const [fieldRaw, stateRaw] of Object.entries(payload.fields || {})) {
     const field = normalizeField(fieldRaw);
@@ -305,16 +417,33 @@ export async function approveGreenOverrides({
       continue;
     }
     const setAt = nowIso();
-    overrides[field] = buildCandidateOverrideEntry({
+    const resolvedReason = String(reason || '').trim() || 'bulk_approve_green';
+    const entry = buildCandidateOverrideEntry({
       candidate,
       category,
       productId,
       field,
       reviewer,
-      reason: String(reason || '').trim() || 'bulk_approve_green',
+      reason: resolvedReason,
       setAt
     });
+    overrides[field] = entry;
+    runtimeWrites.push({
+      field,
+      candidate,
+      entry,
+      reason: resolvedReason,
+    });
     approvedFields.push(field);
+  }
+
+  for (const runtimeWrite of runtimeWrites) {
+    writeCandidateOverrideToRuntime({
+      specDb,
+      productId,
+      reviewer,
+      ...runtimeWrite,
+    });
   }
 
   current.category = category;
@@ -324,7 +453,7 @@ export async function approveGreenOverrides({
   current.updated_at = nowIso();
   current.overrides = overrides;
 
-  // WHY: JSON SSOT is the durable write. DB sync removed — will route through publisher pipeline.
+  // WHY: SQL is the runtime projection; consolidated JSON remains the audit/rebuild mirror.
   await upsertProductInConsolidated({ config, category, productId, productEntry: current });
 
   const consolidatedPath = resolveConsolidatedOverridePath({ config, category });
@@ -407,10 +536,14 @@ export async function finalizeOverrides({
   specDb = null
 }) {
   const consolidatedPath = resolveConsolidatedOverridePath({ config, category });
-  // WHY: Overlap 0d — read from consolidated JSON SSOT
+  // WHY: Consolidated JSON carries audit/finalize metadata; SQL rows below are runtime authority.
   const overrideDoc = await readProductFromConsolidated({ config, category, productId });
-  const overrides = isObject(overrideDoc?.overrides) ? overrideDoc.overrides : {};
-  const overrideEntries = Object.entries(overrides);
+  const allCandidates = toArray(specDb?.getAllFieldCandidatesByProduct?.(productId));
+  const overrideEntries = buildRuntimeOverrideEntries({
+    rows: allCandidates,
+    category,
+    productId,
+  });
   if (!overrideEntries.length) {
     return {
       applied: false,
@@ -426,7 +559,6 @@ export async function finalizeOverrides({
   if (!dbProduct) {
     throw new Error(`Product not found for finalize: ${productId}`);
   }
-  const allCandidates = toArray(specDb?.getAllFieldCandidatesByProduct?.(productId));
   const resolvedByField = new Map();
   for (const c of allCandidates) {
     if (String(c.status || '').trim() === 'resolved') {
@@ -444,6 +576,7 @@ export async function finalizeOverrides({
   };
   const provenance = {};
   const summary = {};
+  const overrides = Object.fromEntries(overrideEntries);
 
   if (!applyOverrides) {
     return {
@@ -631,11 +764,20 @@ export async function finalizeOverrides({
   }
 
   const reviewedAt = nowIso();
-  const startedAtMs = parseDateMs(overrideDoc.review_started_at);
+  const startedAtMs = parseDateMs(overrideDoc?.review_started_at);
   const reviewedAtMs = parseDateMs(reviewedAt);
   const reviewTimeSeconds = startedAtMs > 0 && reviewedAtMs >= startedAtMs
     ? Math.round((reviewedAtMs - startedAtMs) / 1000)
     : null;
+  markRuntimeOverridesFinalized({
+    specDb,
+    rows: allCandidates,
+    reviewer,
+    reviewedAt,
+    reviewTimeSeconds,
+    saveAsDraft,
+    runtimeGateResult,
+  });
   const nextOverrideDoc = {
     ...(isObject(overrideDoc) ? overrideDoc : {}),
     category,
@@ -653,7 +795,7 @@ export async function finalizeOverrides({
     },
     overrides
   };
-  // WHY: Overlap 0d — consolidated JSON is SSOT, replaces per-product disk write
+  // WHY: SQL override rows are runtime authority; consolidated JSON mirrors finalize metadata.
   await upsertProductInConsolidated({ config, category, productId, productEntry: nextOverrideDoc });
 
   return {

@@ -153,11 +153,11 @@ export function resolveRingColor(
   for (const issue of issues) {
     if (dismissedKeys[issue.key]) continue;
     if (!issue.ringFields.includes(field)) continue;
-    if (issue.severity === 'error') return 'var(--sf-error)';
+    if (issue.severity === 'error') return 'var(--sf-error, #dc2626)';
     if (issue.severity === 'warning') maxSeverity = 'warning';
     if (issue.severity === 'info' && !maxSeverity) maxSeverity = 'info';
   }
-  if (maxSeverity === 'warning') return 'var(--sf-warning)';
-  if (maxSeverity === 'info') return 'var(--sf-info)';
+  if (maxSeverity === 'warning') return 'var(--sf-warning, #d97706)';
+  if (maxSeverity === 'info') return 'var(--sf-info, #2563eb)';
   return null;
 }

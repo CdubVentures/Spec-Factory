@@ -41,6 +41,7 @@ function makeStubReseedDeps() {
       reseedFieldStudioMapFromJson: stub('reseedFieldStudioMapFromJson'),
       rebuildFieldCandidatesFromJson: stub('rebuildFieldCandidatesFromJson'),
       rebuildPublishedFieldsFromJson: stub('rebuildPublishedFieldsFromJson'),
+      rebuildReviewOverridesFromJson: stub('rebuildReviewOverridesFromJson'),
     },
     calls,
   };
@@ -245,10 +246,10 @@ describe('buildCategorySurfaces', () => {
 // ── buildReseedSurfaces ─────────────────────────────────────────────────────
 
 describe('buildReseedSurfaces', () => {
-  it('returns exactly 8 entries', () => {
+  it('returns exactly 9 entries', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
-    assert.equal(surfaces.length, 8);
+    assert.equal(surfaces.length, 9);
   });
 
   it('every entry has scope "reseed", execute (fn), formatLog (fn)', () => {
@@ -261,7 +262,7 @@ describe('buildReseedSurfaces', () => {
     }
   });
 
-  const expectedReseedKeys = ['checkpoint', 'color_edition', 'product_images', 'pif_variant_progress', 'field_key_order', 'field_studio_map', 'field_candidates', 'published_fields'];
+  const expectedReseedKeys = ['checkpoint', 'color_edition', 'product_images', 'pif_variant_progress', 'field_key_order', 'field_studio_map', 'field_candidates', 'published_fields', 'review_overrides'];
   it('contains all expected keys', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
@@ -293,10 +294,10 @@ describe('buildReseedSurfaces', () => {
     assert.equal(entry.shouldRun({ indexLabRoot: null }), false);
   });
 
-  it('color_edition, product_images, field_key_order, field_studio_map, field_candidates, published_fields shouldRun is null', () => {
+  it('color_edition, product_images, field_key_order, field_studio_map, field_candidates, published_fields, review_overrides shouldRun is null', () => {
     const { deps } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);
-    for (const key of ['color_edition', 'product_images', 'field_key_order', 'field_studio_map', 'field_candidates', 'published_fields']) {
+    for (const key of ['color_edition', 'product_images', 'field_key_order', 'field_studio_map', 'field_candidates', 'published_fields', 'review_overrides']) {
       const entry = surfaces.find(s => s.key === key);
       assert.equal(entry.shouldRun, null, `${key} shouldRun`);
     }
@@ -333,6 +334,17 @@ describe('buildReseedSurfaces', () => {
     const call = calls.find(c => c.name === 'rebuildFieldCandidatesFromJson');
     assert.ok(call);
     assert.deepEqual(call.args[0], { specDb: fakeDb, productRoot: '/prod' });
+  });
+
+  it('review_overrides.execute calls deps.rebuildReviewOverridesFromJson', () => {
+    const { deps, calls } = makeStubReseedDeps();
+    const surfaces = buildReseedSurfaces(deps);
+    const entry = surfaces.find(s => s.key === 'review_overrides');
+    const fakeDb = { name: 'testDb' };
+    entry.execute({ db: fakeDb, helperRoot: '/helpers' });
+    const call = calls.find(c => c.name === 'rebuildReviewOverridesFromJson');
+    assert.ok(call);
+    assert.deepEqual(call.args[0], { specDb: fakeDb, helperRoot: '/helpers' });
   });
 });
 

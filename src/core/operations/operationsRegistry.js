@@ -65,6 +65,15 @@ function compactObject(value) {
   return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined));
 }
 
+function normalizeIndexLabLinkIdentity(value, fallbackProductId = '') {
+  if (!value || typeof value !== 'object') return null;
+  const productId = String(value.productId || fallbackProductId || '').trim();
+  const brand = String(value.brand || '').trim();
+  const baseModel = String(value.baseModel || value.base_model || '').trim();
+  if (!productId && !brand && !baseModel) return null;
+  return { productId, brand, baseModel };
+}
+
 function isPendingLlmCall(call) {
   return call?.response === null || call?.response === undefined;
 }
@@ -153,10 +162,11 @@ export function initOperationsRegistry({ broadcastWs }) {
  * waiting on a per-key queue lock — use setStatus to transition to 'running'
  * once the lock is acquired.
  */
-export function registerOperation({ type, subType, category, productId, productLabel, variantKey, variantId, fieldKey, stages, status }) {
+export function registerOperation({ type, subType, category, productId, productLabel, indexLabLinkIdentity, variantKey, variantId, fieldKey, stages, status }) {
   if (!type) throw new Error('type is required');
   const id = crypto.randomUUID();
   const initialStatus = status === 'queued' ? 'queued' : 'running';
+  const normalizedIndexLabLinkIdentity = normalizeIndexLabLinkIdentity(indexLabLinkIdentity, productId);
   const operation = {
     id,
     type,
@@ -164,6 +174,7 @@ export function registerOperation({ type, subType, category, productId, productL
     category: category || '',
     productId: productId || '',
     productLabel: productLabel || '',
+    ...(normalizedIndexLabLinkIdentity ? { indexLabLinkIdentity: normalizedIndexLabLinkIdentity } : {}),
     variantKey: variantKey || '',
     variantId: variantId || '',
     // WHY: keyFinder uses fieldKey instead of variantKey for per-key scope.
