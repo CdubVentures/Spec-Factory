@@ -13,6 +13,7 @@ This boundary coordinates studio-facing control-plane actions while delegating s
 ## Domain Invariants
 - Studio enum consistency requires a concrete category and returns structured no-op responses when review is disabled or there is no pending work.
 - Saved studio maps must validate before persistence, and empty overwrites are rejected unless explicitly forced.
+- Key-order patch imports validate strict `key-order-patch.v1` JSON before writing SQL or the durable `field_key_order.json` mirror; imports may add/reorder keys but must never delete an existing key.
 - Preferred studio-map resolution favors valid and populated payloads over weaker alternatives.
 - Mutations that change studio-derived artifacts invalidate caches and emit data-change events for downstream consumers.
 - EG-locked fields (registry-driven via `EG_PRESET_REGISTRY`) are always present, non-deletable, with locked contract/parse/enum settings. Only `EG_EDITABLE_PATHS` are user-editable. O(1): add a builder + registry entry in `egPresets.js` to add a new locked default. Propagation: seeded at category creation, injected at compile time, backfilled at studio payload load, sanitized on save.

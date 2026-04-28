@@ -77,7 +77,7 @@ export const STUDIO_TIPS: Record<string, string> = {
   rounding_mode: 'nearest: standard rounding, floor: always down, ceil: always up.',
 
   // Tab 2: Key Navigator - Priority
-  key_section_priority: 'Extraction priority controls scheduling, routing, and model/search effort.',
+  key_section_priority: 'Extraction priority controls scheduling, routing, and model/search budget.',
   required_level: 'Field importance. mandatory: essential for publish (identity + critical data). non_mandatory: nice-to-have.',
   availability: 'How often this data exists. always: every product, sometimes: ~half, rare: editorial/niche only.',
   difficulty: 'Extraction difficulty. easy: directly stated, medium: some inference, hard: buried/inconsistent, very_hard: needs multi-source synthesis or physical measurement.',

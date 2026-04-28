@@ -157,6 +157,24 @@ describe('storageManagerRoutes', () => {
       strictEqual(result.body.sources[0].total_size, 175);
     });
 
+    it('does not fall back to run.json when SQL detail projection is unavailable', async () => {
+      let resolvedRunDirectory = false;
+      const ctx = buildMockCtx({
+        resolveIndexLabRunDirectory: async () => {
+          resolvedRunDirectory = true;
+          return '/fake/path/run-001/indexlab';
+        },
+        readRunDetailState: async () => null,
+      });
+      const handler = createStorageManagerHandler(ctx);
+      const result = await handler(['storage', 'runs', 'run-001'], new URLSearchParams(), 'GET', {}, {});
+
+      strictEqual(result.status, 200);
+      strictEqual(resolvedRunDirectory, false);
+      deepStrictEqual(result.body.sources, []);
+      deepStrictEqual(result.body.identity, {});
+    });
+
     it('returns 404 for unknown run', async () => {
       const ctx = buildMockCtx();
       const handler = createStorageManagerHandler(ctx);

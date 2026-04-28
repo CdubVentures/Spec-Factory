@@ -1,4 +1,7 @@
 // ── Column defs, presets, cell renderers for the workbench table ──────
+// WHY: Column order mirrors the Key Navigator panel order so the two
+// surfaces are 1:1. Adding a new field = add to KeyNavigator panel + add a
+// matching column entry here.
 import type { ColumnDef } from '@tanstack/react-table';
 import type { WorkbenchRow, ColumnPreset } from './workbenchTypes.ts';
 
@@ -16,6 +19,24 @@ const reqBadge: Record<string, string> = {
   optional: 'sf-chip-neutral',
   editorial: 'sf-chip-success',
   commerce: 'sf-chip-warning',
+  mandatory: 'sf-chip-danger',
+  non_mandatory: 'sf-chip-neutral',
+};
+
+// WHY: open_prefer_known is opaque. Humanize so authors can read the table.
+const ENUM_POLICY_HUMAN: Record<string, { label: string; tip: string }> = {
+  open: {
+    label: 'Open',
+    tip: 'Any value accepted. No enum gating.',
+  },
+  closed: {
+    label: 'Closed',
+    tip: 'Value must match one of the known options from the configured source.',
+  },
+  open_prefer_known: {
+    label: 'Open \u00b7 prefer known',
+    tip: 'Open enum, but prefer known values from the configured source. New values accepted only with clear evidence.',
+  },
 };
 
 // ── Cell Renderers ───────────────────────────────────────────────────
@@ -49,9 +70,7 @@ function CompileStatusDot({ row }: { row: WorkbenchRow }) {
 function BooleanBadge({ value }: { value: boolean }) {
   return (
     <span className={`px-1.5 py-0.5 text-[11px] rounded font-medium ${
-      value
-        ? 'sf-chip-success'
-        : 'sf-chip-neutral'
+      value ? 'sf-chip-success' : 'sf-chip-neutral'
     }`}>
       {value ? 'Yes' : 'No'}
     </span>
@@ -64,6 +83,52 @@ function RequiredBadge({ value }: { value: string }) {
       {value}
     </span>
   );
+}
+
+function BoolIconCell({ value, title }: { value: boolean; title?: string }) {
+  return (
+    <span
+      className={`inline-flex items-center justify-center w-4 h-4 text-[12px] ${value ? 'sf-status-text-info' : 'sf-status-text-muted'}`}
+      title={title || (value ? 'On' : 'Off')}
+    >
+      {value ? '\u2713' : '\u2014'}
+    </span>
+  );
+}
+
+function FilledCheckCell({ filled, title }: { filled: boolean; title?: string }) {
+  return (
+    <span
+      className={`inline-flex items-center justify-center w-4 h-4 text-[12px] ${filled ? 'sf-status-text-info' : 'sf-status-text-muted'}`}
+      title={title || (filled ? 'Filled' : 'Empty')}
+    >
+      {filled ? '\u2611' : '\u2610'}
+    </span>
+  );
+}
+
+function EnumPolicyHumanizedCell({ value }: { value: string }) {
+  const meta = ENUM_POLICY_HUMAN[value];
+  if (!meta) {
+    return <span className="font-mono text-xs">{value || '\u2014'}</span>;
+  }
+  return (
+    <span className="text-xs sf-text-muted truncate" title={meta.tip}>
+      {meta.label}
+    </span>
+  );
+}
+
+function MutedOrEmDash({ value }: { value: string | undefined }) {
+  return value
+    ? <span className="font-mono text-xs truncate">{value}</span>
+    : <span className="sf-status-text-muted">—</span>;
+}
+
+function CountCell({ value, accent = 'info' }: { value: number; accent?: 'info' | 'warning' }) {
+  if (value <= 0) return <span className="sf-status-text-muted">0</span>;
+  const cls = accent === 'warning' ? 'sf-status-text-warning' : 'sf-status-text-info';
+  return <span className={`text-xs font-medium ${cls}`}>{value}</span>;
 }
 
 // ── Inline editable cell wrappers ────────────────────────────────────
@@ -133,7 +198,7 @@ export function buildColumns(
   allSelected: boolean,
 ): ColumnDef<WorkbenchRow, unknown>[] {
   return [
-    // Select checkbox
+    // Pinned: select checkbox
     {
       id: 'select',
       size: 36,
@@ -156,7 +221,7 @@ export function buildColumns(
       ),
     },
 
-    // Status dot
+    // Pinned: status dot
     {
       id: 'status',
       header: '',
@@ -164,7 +229,7 @@ export function buildColumns(
       cell: ({ row }) => <CompileStatusDot row={row.original} />,
     },
 
-    // Group (always pinned)
+    // Pinned: group
     {
       accessorKey: 'group',
       header: 'Group',
@@ -174,7 +239,7 @@ export function buildColumns(
       ),
     },
 
-    // Display name (always pinned, shows dirty dot)
+    // Pinned: display name
     {
       accessorKey: 'displayName',
       header: 'Field',
@@ -182,11 +247,65 @@ export function buildColumns(
       cell: ({ row }) => <FieldNameCell row={row.original} />,
     },
 
-    // Required level (inline editable)
+    // ── Contract block ────────────────────────────────────────
+    {
+      accessorKey: 'variantDependent',
+      header: 'Variant Dep',
+      size: 80,
+      cell: ({ row }) => (
+        <BoolIconCell value={row.original.variantDependent} title="Variant Dependent" />
+      ),
+    },
+    {
+      accessorKey: 'pifDependent',
+      header: 'PIF Dep',
+      size: 70,
+      cell: ({ row }) => (
+        <BoolIconCell value={row.original.pifDependent} title="Product Image Dependent" />
+      ),
+    },
+    {
+      accessorKey: 'contractType',
+      header: 'Type',
+      size: 80,
+      cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span>,
+    },
+    {
+      accessorKey: 'contractShape',
+      header: 'Shape',
+      size: 75,
+      cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span>,
+    },
+    {
+      accessorKey: 'contractUnit',
+      header: 'Unit',
+      size: 60,
+      cell: ({ getValue }) => <MutedOrEmDash value={getValue() as string} />,
+    },
+    {
+      accessorKey: 'contractRange',
+      header: 'Range',
+      size: 90,
+      cell: ({ getValue }) => <MutedOrEmDash value={getValue() as string} />,
+    },
+    {
+      accessorKey: 'listRulesSummary',
+      header: 'List Rules',
+      size: 130,
+      cell: ({ getValue }) => <MutedOrEmDash value={getValue() as string} />,
+    },
+    {
+      accessorKey: 'roundingSummary',
+      header: 'Rounding',
+      size: 90,
+      cell: ({ getValue }) => <MutedOrEmDash value={getValue() as string} />,
+    },
+
+    // ── Priority block ───────────────────────────────────────
     {
       accessorKey: 'requiredLevel',
       header: 'Required',
-      size: 100,
+      size: 110,
       cell: ({ row }) => (
         <InlineSelectCell
           value={row.original.requiredLevel}
@@ -199,48 +318,40 @@ export function buildColumns(
         />
       ),
     },
-
-    // Availability
     { accessorKey: 'availability', header: 'Availability', size: 100 },
-
-    // Difficulty
     { accessorKey: 'difficulty', header: 'Difficulty', size: 90 },
 
-    // Effort
-    { accessorKey: 'effort', header: 'Effort', size: 60 },
-
-    // Contract type
+    // ── Ai Assist block ──────────────────────────────────────
     {
-      accessorKey: 'contractType',
-      header: 'Type',
+      accessorKey: 'variantInventoryUsage',
+      header: 'Variant Inv',
       size: 80,
-      cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span>,
+      cell: ({ row }) => (
+        <BoolIconCell value={row.original.variantInventoryUsage} title="Use Variant Inventory Context" />
+      ),
     },
-
-    // Contract shape
     {
-      accessorKey: 'contractShape',
-      header: 'Shape',
-      size: 75,
-      cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span>,
+      accessorKey: 'pifPriorityImages',
+      header: 'PIF Pri Img',
+      size: 80,
+      cell: ({ row }) => (
+        <BoolIconCell value={row.original.pifPriorityImages} title="Use PIF Priority Images" />
+      ),
     },
-
-    // Contract unit
     {
-      accessorKey: 'contractUnit',
-      header: 'Unit',
+      accessorKey: 'reasoningNoteFilled',
+      header: 'Note',
       size: 60,
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v ? <span className="font-mono text-xs">{v}</span> : <span className="sf-status-text-muted">\u2014</span>;
-      },
+      cell: ({ row }) => (
+        <FilledCheckCell filled={row.original.reasoningNoteFilled} title="Extraction Guidance filled" />
+      ),
     },
 
-    // Enum policy (inline editable)
+    // ── Enum block ───────────────────────────────────────────
     {
       accessorKey: 'enumPolicy',
       header: 'Enum Policy',
-      size: 120,
+      size: 130,
       cell: ({ row }) => {
         const policy = row.original.enumPolicy;
         return (
@@ -251,86 +362,25 @@ export function buildColumns(
             cellId={{ key: row.original.key, column: 'enumPolicy' }}
             onStartEdit={onStartEdit}
             onCommit={(v) => onInlineCommit(row.original.key, 'enumPolicy', v)}
+            renderValue={(v) => <EnumPolicyHumanizedCell value={v} />}
           />
         );
       },
     },
-
-    // Enum source
     {
       accessorKey: 'enumSource',
       header: 'Enum Source',
       size: 140,
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v ? <span className="font-mono text-xs truncate">{v}</span> : <span className="sf-status-text-muted">\u2014</span>;
-      },
+      cell: ({ getValue }) => <MutedOrEmDash value={getValue() as string} />,
     },
-
-    // Known values count
     {
       accessorKey: 'knownValuesCount',
       header: 'KV Count',
       size: 70,
-      cell: ({ getValue }) => {
-        const n = getValue() as number;
-        return n > 0
-          ? <span className="text-xs font-medium sf-status-text-info">{n}</span>
-          : <span className="sf-status-text-muted">0</span>;
-      },
+      cell: ({ getValue }) => <CountCell value={getValue() as number} accent="info" />,
     },
 
-    // Min evidence refs
-    { accessorKey: 'minEvidenceRefs', header: 'Min Refs', size: 65 },
-
-    // Tier preference
-    {
-      accessorKey: 'tierPreference',
-      header: 'Tiers',
-      size: 120,
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v ? <span className="text-xs sf-status-text-muted truncate">{v}</span> : <span className="sf-status-text-muted">\u2014</span>;
-      },
-    },
-
-    // Aliases count
-    { accessorKey: 'aliasesCount', header: 'Aliases', size: 65 },
-
-    // Query terms count
-    { accessorKey: 'queryTermsCount', header: 'Q Terms', size: 65 },
-
-    // Domain hints count
-    { accessorKey: 'domainHintsCount', header: 'D Hints', size: 65 },
-
-    // Content types count
-    { accessorKey: 'contentTypesCount', header: 'C Types', size: 65 },
-
-    // Constraints count
-    {
-      accessorKey: 'constraintsCount',
-      header: 'Constraints',
-      size: 85,
-      cell: ({ getValue }) => {
-        const n = getValue() as number;
-        return n > 0
-          ? <span className="text-xs font-medium sf-status-text-warning">{n}</span>
-          : <span className="sf-status-text-muted">0</span>;
-      },
-    },
-
-    // Constraint variables
-    {
-      accessorKey: 'constraintVariables',
-      header: 'Constraint Vars',
-      size: 220,
-      cell: ({ getValue }) => {
-        const v = getValue() as string;
-        return v ? <span className="text-xs sf-status-text-muted truncate">{v}</span> : <span className="sf-status-text-muted">—</span>;
-      },
-    },
-
-    // Component type
+    // ── Components block ─────────────────────────────────────
     {
       accessorKey: 'componentType',
       header: 'Component',
@@ -341,29 +391,124 @@ export function buildColumns(
           <span className="sf-purple-bg-soft sf-status-text-info px-1.5 py-0.5 text-[11px] rounded font-medium">
             {v}
           </span>
-        ) : <span className="sf-status-text-muted">\u2014</span>;
+        ) : <span className="sf-status-text-muted">—</span>;
+      },
+    },
+    {
+      accessorKey: 'matchCfgSummary',
+      header: 'Match Cfg',
+      size: 130,
+      cell: ({ getValue }) => <MutedOrEmDash value={getValue() as string} />,
+    },
+    {
+      accessorKey: 'belongsToComponent',
+      header: 'Belongs To',
+      size: 100,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return v ? (
+          <span
+            className="sf-purple-bg-soft sf-status-text-info px-1.5 py-0.5 text-[11px] rounded font-medium"
+            title={`This field is a property of the "${v}" component`}
+          >
+            {v}
+          </span>
+        ) : <span className="sf-status-text-muted">—</span>;
+      },
+    },
+    {
+      accessorKey: 'propertyVariance',
+      header: 'Variance',
+      size: 110,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        if (!v) return <span className="sf-status-text-muted">—</span>;
+        const isOverride = v === 'override_allowed';
+        const cls = isOverride ? 'sf-chip-teal-strong' : 'sf-bg-surface-soft-strong sf-text-muted';
+        const label = isOverride ? 'override' : v;
+        return (
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${cls}`}
+            title={isOverride ? 'Products can override this value without triggering review' : `Variance policy: ${v}`}
+          >
+            {label}
+          </span>
+        );
       },
     },
 
-    // UI input control
+    // ── Constraints block ────────────────────────────────────
+    {
+      accessorKey: 'constraintsCount',
+      header: 'Constraints',
+      size: 85,
+      cell: ({ getValue }) => <CountCell value={getValue() as number} accent="warning" />,
+    },
+    {
+      accessorKey: 'constraintVariables',
+      header: 'Constraint Vars',
+      size: 220,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return v ? <span className="text-xs sf-status-text-muted truncate">{v}</span> : <span className="sf-status-text-muted">—</span>;
+      },
+    },
+
+    // ── Evidence block ───────────────────────────────────────
+    { accessorKey: 'minEvidenceRefs', header: 'Min Refs', size: 65 },
+    {
+      accessorKey: 'tierPreference',
+      header: 'Tiers',
+      size: 120,
+      cell: ({ getValue }) => {
+        const v = getValue() as string;
+        return v ? <span className="text-xs sf-status-text-muted truncate">{v}</span> : <span className="sf-status-text-muted">—</span>;
+      },
+    },
+
+    // ── Tooltip block ────────────────────────────────────────
+    {
+      accessorKey: 'tooltipMdFilled',
+      header: 'Tooltip',
+      size: 70,
+      cell: ({ row }) => (
+        <FilledCheckCell filled={row.original.tooltipMdFilled} title="Display Tooltip filled" />
+      ),
+    },
+
+    // ── Search block ─────────────────────────────────────────
+    { accessorKey: 'aliasesCount', header: 'Aliases', size: 65 },
+    { accessorKey: 'queryTermsCount', header: 'Q Terms', size: 65 },
+    { accessorKey: 'domainHintsCount', header: 'D Hints', size: 65 },
+    { accessorKey: 'contentTypesCount', header: 'C Types', size: 65 },
+
+    // ── UI legacy (debug/all only) ───────────────────────────
     {
       accessorKey: 'uiInputControl',
       header: 'Input',
       size: 90,
       cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span>,
     },
-
-    // UI order
     { accessorKey: 'uiOrder', header: 'Order', size: 55 },
 
-    // Draft dirty indicator
+    // ── Meta block ───────────────────────────────────────────
+    {
+      accessorKey: 'egLocked',
+      header: 'EG',
+      size: 50,
+      cell: ({ row }) => (
+        row.original.egLocked
+          ? <span title="EG-managed (locked)">{'\u{1F512}'}</span>
+          : <span className="sf-status-text-muted">{'\u2014'}</span>
+      ),
+    },
     {
       accessorKey: 'draftDirty',
       header: 'Dirty',
       size: 50,
       cell: ({ getValue }) => (getValue() as boolean)
         ? <span className="w-2 h-2 rounded-full sf-dot-warning inline-block" title="Modified" />
-        : <span className="sf-status-text-muted">\u2014</span>,
+        : <span className="sf-status-text-muted">—</span>,
     },
   ];
 }
@@ -378,41 +523,57 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   ],
   contract: [
     ...ALWAYS_VISIBLE,
-    'requiredLevel', 'contractType', 'contractShape', 'contractUnit',
-    'constraintsCount', 'constraintVariables',
-    'availability', 'difficulty', 'effort',
+    'variantDependent', 'pifDependent',
+    'contractType', 'contractShape', 'contractUnit',
+    'contractRange', 'listRulesSummary', 'roundingSummary',
   ],
-  parsing: [
+  priority: [
     ...ALWAYS_VISIBLE,
+    'requiredLevel', 'availability', 'difficulty',
+  ],
+  aiAssist: [
+    ...ALWAYS_VISIBLE,
+    'variantInventoryUsage', 'pifPriorityImages', 'reasoningNoteFilled',
   ],
   enums: [
     ...ALWAYS_VISIBLE,
     'enumPolicy', 'enumSource', 'knownValuesCount',
   ],
+  components: [
+    ...ALWAYS_VISIBLE,
+    'componentType', 'matchCfgSummary', 'belongsToComponent', 'propertyVariance',
+  ],
+  constraints: [
+    ...ALWAYS_VISIBLE,
+    'constraintsCount', 'constraintVariables',
+  ],
   evidence: [
     ...ALWAYS_VISIBLE,
     'minEvidenceRefs', 'tierPreference',
   ],
+  tooltip: [
+    ...ALWAYS_VISIBLE,
+    'tooltipMdFilled',
+  ],
   search: [
     ...ALWAYS_VISIBLE,
-    'aliasesCount', 'queryTermsCount', 'domainHintsCount', 'contentTypesCount', 'constraintsCount', 'constraintVariables', 'componentType',
+    'aliasesCount', 'queryTermsCount', 'domainHintsCount', 'contentTypesCount',
   ],
   debug: [
     ...ALWAYS_VISIBLE,
     'requiredLevel', 'contractType', 'enumPolicy', 'enumSource',
-    'constraintsCount', 'constraintVariables', 'componentType', 'uiInputControl', 'uiOrder', 'draftDirty',
+    'constraintsCount', 'componentType', 'uiInputControl', 'uiOrder', 'egLocked', 'draftDirty',
   ],
   all: [], // empty = show all
 };
 
 export function getPresetVisibility(preset: ColumnPreset): Record<string, boolean> | undefined {
-  if (preset === 'all') return undefined; // show everything
+  if (preset === 'all') return undefined;
   const visible = new Set(PRESET_COLUMNS[preset]);
   const vis: Record<string, boolean> = {};
   for (const { id } of ALL_COLUMN_IDS_WITH_LABELS) {
     vis[id] = visible.has(id);
   }
-  // Always visible columns are always true
   for (const id of ALWAYS_VISIBLE) {
     vis[id] = true;
   }
@@ -420,37 +581,64 @@ export function getPresetVisibility(preset: ColumnPreset): Record<string, boolea
 }
 
 export const ALL_COLUMN_IDS_WITH_LABELS: { id: string; label: string }[] = [
-  { id: 'requiredLevel', label: 'Required Level' },
-  { id: 'availability', label: 'Availability' },
-  { id: 'difficulty', label: 'Difficulty' },
-  { id: 'effort', label: 'Effort' },
+  // Contract
+  { id: 'variantDependent', label: 'Variant Dep' },
+  { id: 'pifDependent', label: 'PIF Dep' },
   { id: 'contractType', label: 'Type' },
   { id: 'contractShape', label: 'Shape' },
   { id: 'contractUnit', label: 'Unit' },
+  { id: 'contractRange', label: 'Range' },
+  { id: 'listRulesSummary', label: 'List Rules' },
+  { id: 'roundingSummary', label: 'Rounding' },
+  // Priority
+  { id: 'requiredLevel', label: 'Required' },
+  { id: 'availability', label: 'Availability' },
+  { id: 'difficulty', label: 'Difficulty' },
+  // Ai Assist
+  { id: 'variantInventoryUsage', label: 'Variant Inv' },
+  { id: 'pifPriorityImages', label: 'PIF Pri Img' },
+  { id: 'reasoningNoteFilled', label: 'Note' },
+  // Enum
   { id: 'enumPolicy', label: 'Enum Policy' },
   { id: 'enumSource', label: 'Enum Source' },
   { id: 'knownValuesCount', label: 'KV Count' },
-  { id: 'minEvidenceRefs', label: 'Min Refs' },
-  { id: 'tierPreference', label: 'Tiers' },
-  { id: 'aliasesCount', label: 'Aliases' },
-  { id: 'queryTermsCount', label: 'Query Terms' },
-  { id: 'domainHintsCount', label: 'Domain Hints' },
-  { id: 'contentTypesCount', label: 'Content Types' },
+  // Components
+  { id: 'componentType', label: 'Component' },
+  { id: 'matchCfgSummary', label: 'Match Cfg' },
+  { id: 'belongsToComponent', label: 'Belongs To' },
+  { id: 'propertyVariance', label: 'Variance' },
+  // Constraints
   { id: 'constraintsCount', label: 'Constraints' },
   { id: 'constraintVariables', label: 'Constraint Vars' },
-  { id: 'componentType', label: 'Component' },
+  // Evidence
+  { id: 'minEvidenceRefs', label: 'Min Refs' },
+  { id: 'tierPreference', label: 'Tiers' },
+  // Tooltip
+  { id: 'tooltipMdFilled', label: 'Tooltip' },
+  // Search
+  { id: 'aliasesCount', label: 'Aliases' },
+  { id: 'queryTermsCount', label: 'Q Terms' },
+  { id: 'domainHintsCount', label: 'D Hints' },
+  { id: 'contentTypesCount', label: 'C Types' },
+  // UI legacy
   { id: 'uiInputControl', label: 'Input Control' },
   { id: 'uiOrder', label: 'Order' },
+  // Meta
+  { id: 'egLocked', label: 'EG' },
   { id: 'draftDirty', label: 'Dirty' },
 ];
 
 export const PRESET_LABELS: { id: ColumnPreset; label: string }[] = [
   { id: 'minimal', label: 'Minimal' },
   { id: 'contract', label: 'Contract' },
-  { id: 'parsing', label: 'Parsing' },
-  { id: 'enums', label: 'Enums' },
+  { id: 'priority', label: 'Priority' },
+  { id: 'aiAssist', label: 'Ai Assist' },
+  { id: 'enums', label: 'Enum Policy' },
+  { id: 'components', label: 'Components' },
+  { id: 'constraints', label: 'Constraints' },
   { id: 'evidence', label: 'Evidence' },
-  { id: 'search', label: 'Search & Aliases' },
+  { id: 'tooltip', label: 'Tooltip' },
+  { id: 'search', label: 'Search Hints' },
   { id: 'debug', label: 'Debug' },
   { id: 'all', label: 'All' },
 ];

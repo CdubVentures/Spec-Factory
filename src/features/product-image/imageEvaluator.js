@@ -914,6 +914,17 @@ function nextExtraSlotKey({ actualView, slotCounts }) {
   return count === 1 ? actualView : `${actualView}${count}`;
 }
 
+function pushManualCarouselSlot({ result, slot, override, usedSlots, markUsed }) {
+  if (usedSlots.has(slot)) return;
+  usedSlots.add(slot);
+  if (!override || override === '__cleared__') {
+    result.push({ slot, filename: null, source: 'empty' });
+    return;
+  }
+  result.push({ slot, filename: override, source: 'user' });
+  markUsed(override);
+}
+
 export function resolveCarouselSlots({ viewBudget, carouselSlotViews, heroCount, variantKey, variantId, carouselSlots, images }) {
   const variantSlots = carouselSlots?.[variantKey] || {};
   const variantImages = (images || []).filter(img => matchVariant(img, { variantId, variantKey }));
@@ -923,6 +934,7 @@ export function resolveCarouselSlots({ viewBudget, carouselSlotViews, heroCount,
   const result = [];
   const usedFilenames = new Set();
   const usedHashes = new Set();
+  const usedSlots = new Set();
   const slotCounts = new Map();
 
   for (const view of viewOrder) {
@@ -942,10 +954,12 @@ export function resolveCarouselSlots({ viewBudget, carouselSlotViews, heroCount,
     const override = variantSlots[view];
     if (override === '__cleared__') {
       result.push({ slot: view, filename: null, source: 'empty' });
+      usedSlots.add(view);
       continue;
     }
     if (override) {
       result.push({ slot: view, filename: override, source: 'user' });
+      usedSlots.add(view);
       markUsed(override);
       continue;
     }
@@ -955,10 +969,12 @@ export function resolveCarouselSlots({ viewBudget, carouselSlotViews, heroCount,
       .sort(sortCandidatesByQuality)[0];
     if (evalWinner) {
       result.push({ slot: view, filename: evalWinner.filename, source: 'eval' });
+      usedSlots.add(view);
       markUsed(evalWinner.filename);
       continue;
     }
     result.push({ slot: view, filename: null, source: 'empty' });
+    usedSlots.add(view);
   }
 
   const extraImages = variantImages
@@ -980,14 +996,17 @@ export function resolveCarouselSlots({ viewBudget, carouselSlotViews, heroCount,
     const override = variantSlots[slotKey];
     if (override === '__cleared__') {
       result.push({ slot: slotKey, filename: null, source: 'empty' });
+      usedSlots.add(slotKey);
       continue;
     }
     if (override) {
       result.push({ slot: slotKey, filename: override, source: 'user' });
+      usedSlots.add(slotKey);
       markUsed(override);
       continue;
     }
     result.push({ slot: slotKey, filename: img.filename, source: 'eval' });
+    usedSlots.add(slotKey);
     markUsed(img.filename);
   }
 
@@ -1001,13 +1020,21 @@ export function resolveCarouselSlots({ viewBudget, carouselSlotViews, heroCount,
     const override = variantSlots[slotKey];
     if (override === '__cleared__') {
       result.push({ slot: slotKey, filename: null, source: 'empty' });
+      usedSlots.add(slotKey);
     } else if (override) {
       result.push({ slot: slotKey, filename: override, source: 'user' });
+      usedSlots.add(slotKey);
     } else if (heroImages[i]) {
       result.push({ slot: slotKey, filename: heroImages[i].filename, source: 'eval' });
+      usedSlots.add(slotKey);
     } else {
       result.push({ slot: slotKey, filename: null, source: 'empty' });
+      usedSlots.add(slotKey);
     }
+  }
+
+  for (const [slot, override] of Object.entries(variantSlots)) {
+    pushManualCarouselSlot({ result, slot, override, usedSlots, markUsed });
   }
 
   return result;

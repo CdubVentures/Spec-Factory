@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { propagateVariantRenames, remapOrphanedVariantKeys } from '../variantPropagation.js';
+import { propagateVariantDelete, propagateVariantRenames, remapOrphanedVariantKeys } from '../variantPropagation.js';
 
 const TMP_ROOT = path.join('.tmp', '_test_variant_propagation');
 const PRODUCT_ROOT = path.join(TMP_ROOT, 'products');
@@ -504,5 +504,51 @@ describe('remapOrphanedVariantKeys', () => {
 
     assert.equal(result.updated, true);
     assert.equal(result.counts.images, 0);
+  });
+});
+
+describe('propagateVariantDelete', () => {
+  before(() => {
+    fs.mkdirSync(PRODUCT_ROOT, { recursive: true });
+  });
+
+  after(() => cleanup());
+
+  it('updates SQL projection before mirroring product_images.json', () => {
+    const productId = 'delete-sql-first';
+    writePifDoc(productId, makeFullDoc(productId));
+    const jsonSnapshotsAtSqlWrite = [];
+    const summaryUpdates = [];
+    const specDb = {
+      getFinderStore: () => ({
+        updateSummaryField: (...args) => {
+          jsonSnapshotsAtSqlWrite.push(readPifDoc(productId));
+          summaryUpdates.push(args);
+        },
+        removeRun: () => {},
+        updateBookkeeping: () => {},
+      }),
+    };
+
+    const result = propagateVariantDelete({
+      productId,
+      productRoot: PRODUCT_ROOT,
+      variantId: 'v_aaa11111',
+      variantKey: 'color:black',
+      specDb,
+    });
+
+    assert.equal(result.updated, true);
+    assert.ok(summaryUpdates.length > 0, 'SQL projection was updated');
+    assert.equal(jsonSnapshotsAtSqlWrite[0].selected.images.length, 3);
+    assert.ok(
+      jsonSnapshotsAtSqlWrite[0].selected.images.some((img) => img.variant_key === 'color:black'),
+      'JSON mirror still has deleted variant when SQL projection starts',
+    );
+
+    const finalDoc = readPifDoc(productId);
+    assert.equal(finalDoc.selected.images.length, 1);
+    assert.equal(finalDoc.selected.images[0].variant_key, 'color:white');
+    assert.equal(finalDoc.carousel_slots['color:black'], undefined);
   });
 });

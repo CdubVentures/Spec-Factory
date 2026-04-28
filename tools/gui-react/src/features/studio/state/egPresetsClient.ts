@@ -104,7 +104,6 @@ export function buildEgColorPreset(ctx?: EgPresetCtx): FieldRule {
       required_level: 'expected',
       availability: 'expected',
       difficulty: 'easy',
-      effort: 3,
     },
     evidence: {
       min_evidence_refs: 1,
@@ -150,7 +149,6 @@ export function buildEgEditionPreset(ctx?: EgPresetCtx): FieldRule {
       required_level: 'optional',
       availability: 'sometimes',
       difficulty: 'easy',
-      effort: 3,
     },
     evidence: {
       min_evidence_refs: 1,
@@ -196,7 +194,6 @@ export function buildEgReleaseDatePreset(_ctx?: EgPresetCtx): FieldRule {
       required_level: 'expected',
       availability: 'sometimes',
       difficulty: 'medium',
-      effort: 4,
     },
     evidence: {
       min_evidence_refs: 1,
@@ -242,7 +239,6 @@ export function buildEgSkuPreset(_ctx?: EgPresetCtx): FieldRule {
       required_level: 'required',
       availability: 'sometimes',
       difficulty: 'hard',
-      effort: 5,
     },
     evidence: {
       min_evidence_refs: 1,

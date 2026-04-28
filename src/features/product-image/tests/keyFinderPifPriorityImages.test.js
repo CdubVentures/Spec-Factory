@@ -27,10 +27,13 @@ function writeImageFile(root, productId, filename) {
   fs.writeFileSync(path.join(dir, filename), ONE_PIXEL_PNG);
 }
 
-function makeSpecDb({ viewConfig, defaultColor = 'black', variants = [] } = {}) {
+function makeSpecDb({ viewConfig, defaultColor = 'black', variants = [], pifRow = null } = {}) {
   return {
     getFinderStore: (id) => (id === 'productImageFinder'
-      ? { getSetting: (key) => (key === 'viewConfig' ? viewConfig || '' : '') }
+      ? {
+        getSetting: (key) => (key === 'viewConfig' ? viewConfig || '' : ''),
+        get: () => pifRow,
+      }
       : null),
     getColorEditionFinder: () => ({ default_color: defaultColor }),
     variants: {
@@ -46,58 +49,47 @@ test('resolveKeyFinderPifPriorityImageContext selects default-color eval winners
     for (const filename of ['top-black.png', 'left-black.png', 'bottom-black.png', 'top-white.png']) {
       writeImageFile(root, productId, filename);
     }
-    writeProductImages({
-      productId,
-      productRoot: root,
-      data: {
-        product_id: productId,
-        category: CATEGORY,
-        selected: {
-          images: [
-            {
-              filename: 'top-black.png',
-              view: 'top',
-              variant_id: 'v_black',
-              variant_key: 'color:black',
-              variant_label: 'Black',
-              variant_type: 'color',
-              eval_best: true,
-              eval_reasoning: 'Best top view.',
-              eval_source: 'https://cdn.example/top-black.png',
-              bytes: 123,
-            },
-            {
-              filename: 'left-black.png',
-              view: 'left',
-              variant_id: 'v_black',
-              variant_key: 'color:black',
-              variant_label: 'Black',
-              variant_type: 'color',
-              eval_best: true,
-              eval_reasoning: 'Best left view.',
-              bytes: 456,
-            },
-            {
-              filename: 'bottom-black.png',
-              view: 'bottom',
-              variant_id: 'v_black',
-              variant_key: 'color:black',
-              eval_best: true,
-            },
-            {
-              filename: 'top-white.png',
-              view: 'top',
-              variant_id: 'v_white',
-              variant_key: 'color:white',
-              variant_label: 'White',
-              variant_type: 'color',
-              eval_best: true,
-            },
-          ],
-        },
-        carousel_slots: {},
+    const sqlImages = [
+      {
+        filename: 'top-black.png',
+        view: 'top',
+        variant_id: 'v_black',
+        variant_key: 'color:black',
+        variant_label: 'Black',
+        variant_type: 'color',
+        eval_best: true,
+        eval_reasoning: 'Best top view.',
+        eval_source: 'https://cdn.example/top-black.png',
+        bytes: 123,
       },
-    });
+      {
+        filename: 'left-black.png',
+        view: 'left',
+        variant_id: 'v_black',
+        variant_key: 'color:black',
+        variant_label: 'Black',
+        variant_type: 'color',
+        eval_best: true,
+        eval_reasoning: 'Best left view.',
+        bytes: 456,
+      },
+      {
+        filename: 'bottom-black.png',
+        view: 'bottom',
+        variant_id: 'v_black',
+        variant_key: 'color:black',
+        eval_best: true,
+      },
+      {
+        filename: 'top-white.png',
+        view: 'top',
+        variant_id: 'v_white',
+        variant_key: 'color:white',
+        variant_label: 'White',
+        variant_type: 'color',
+        eval_best: true,
+      },
+    ];
 
     const ctx = await resolveKeyFinderPifPriorityImageContext({
       specDb: makeSpecDb({
@@ -106,6 +98,13 @@ test('resolveKeyFinderPifPriorityImageContext selects default-color eval winners
           { key: 'left', priority: true, description: 'Left' },
           { key: 'bottom', priority: false, description: 'Bottom' },
         ]),
+        pifRow: {
+          product_id: productId,
+          category: CATEGORY,
+          images: sqlImages,
+          carousel_slots: {},
+          eval_state: {},
+        },
         variants: [
           { variant_id: 'v_black', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'] },
           { variant_id: 'v_white', variant_key: 'color:white', variant_type: 'color', variant_label: 'White', color_atoms: ['white'] },
@@ -197,6 +196,61 @@ test('resolveKeyFinderPifPriorityImageContext reads SQL projection before produc
     assert.equal(ctx.images[0].preview_url, '/api/v1/product-image-finder/mouse/kf-pif-sql-first/images/top-black.png?v=321');
     assert.equal(ctx.images[0].original_url, 'https://cdn.example/sql-top.png');
     assert.equal(ctx.images[0].eval_reasoning, 'SQL top winner.');
+  } finally {
+    cleanup(root);
+  }
+});
+
+test('resolveKeyFinderPifPriorityImageContext does not read product_images.json when SQL projection is missing', async () => {
+  const root = makeRoot();
+  const productId = 'kf-pif-json-fallback-blocked';
+  try {
+    writeImageFile(root, productId, 'top-black.png');
+    writeProductImages({
+      productId,
+      productRoot: root,
+      data: {
+        product_id: productId,
+        category: CATEGORY,
+        selected: {
+          images: [
+            {
+              filename: 'top-black.png',
+              view: 'top',
+              variant_id: 'v_black',
+              variant_key: 'color:black',
+              eval_best: true,
+            },
+          ],
+        },
+        carousel_slots: {},
+      },
+    });
+
+    const ctx = await resolveKeyFinderPifPriorityImageContext({
+      specDb: {
+        getFinderStore: (id) => (id === 'productImageFinder'
+          ? {
+            getSetting: (key) => (key === 'viewConfig'
+              ? JSON.stringify([{ key: 'top', priority: true, description: 'Top' }])
+              : ''),
+            get: () => null,
+          }
+          : null),
+        getColorEditionFinder: () => ({ default_color: 'black' }),
+        variants: {
+          listActive: () => [
+            { variant_id: 'v_black', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'] },
+          ],
+        },
+      },
+      product: { product_id: productId, category: CATEGORY },
+      productRoot: root,
+      fieldRule: { ai_assist: { pif_priority_images: { enabled: true } } },
+    });
+
+    assert.equal(ctx.status, 'no_images');
+    assert.deepEqual(ctx.images, []);
   } finally {
     cleanup(root);
   }

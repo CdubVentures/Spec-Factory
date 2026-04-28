@@ -14,7 +14,6 @@ import { applyCascadeEffects } from '../state/fieldCascadeRegistry.ts';
 const PRIORITY_SIGNAL_PATHS = new Set([
   'priority.required_level',
   'priority.difficulty',
-  'priority.effort',
 ]);
 
 // WHY: component path sets full object; extract .type for cascade comparison.
@@ -79,7 +78,6 @@ function applyLegacyAliasCoupling(
   if (path === 'priority.required_level') rule.required_level = value;
   if (path === 'priority.availability') rule.availability = value;
   if (path === 'priority.difficulty') rule.difficulty = value;
-  if (path === 'priority.effort') rule.effort = value;
   if (path === 'evidence.min_evidence_refs') rule.min_evidence_refs = value;
   if (path === 'enum.policy') rule.enum_policy = value;
   if (path === 'enum.source') rule.enum_source = value;

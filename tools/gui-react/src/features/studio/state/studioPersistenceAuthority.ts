@@ -1,10 +1,24 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
-import type { StudioConfig } from '../../../types/studio.ts';
+import type { FieldStudioMapResponse, StudioConfig } from '../../../types/studio.ts';
 
 interface StudioPersistenceAuthorityOptions {
   category: string;
   onStudioDocsSaved?: () => void;
+}
+
+type StudioQueryClient = ReturnType<typeof useQueryClient>;
+
+function patchStudioConfigCache({
+  queryClient,
+  category,
+  response,
+}: {
+  queryClient: StudioQueryClient;
+  category: string;
+  response: FieldStudioMapResponse;
+}): void {
+  queryClient.setQueryData(['studio-config', category], response);
 }
 
 export function useStudioPersistenceAuthority({
@@ -15,19 +29,20 @@ export function useStudioPersistenceAuthority({
 
   // WHY: Single PUT — server validates + normalizes. No pre-flight POST needed.
   const persistStudioMap = async (body: StudioConfig) => {
-    return api.put<unknown>(`/studio/${category}/field-studio-map`, body);
+    return api.put<FieldStudioMapResponse>(`/studio/${category}/field-studio-map`, body);
   };
 
   const saveMapMut = useMutation({
     mutationFn: (body: StudioConfig) => persistStudioMap(body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['studio-config', category] });
+    onSuccess: (response) => {
+      patchStudioConfigCache({ queryClient, category, response });
     },
   });
 
   const saveStudioDocsMut = useMutation({
     mutationFn: (body: StudioConfig) => persistStudioMap(body),
-    onSuccess: () => {
+    onSuccess: (response) => {
+      patchStudioConfigCache({ queryClient, category, response });
       onStudioDocsSaved?.();
     },
     onError: (error: Error) => {

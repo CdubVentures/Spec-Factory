@@ -33,7 +33,7 @@ test('parseWorkbenchSessionState sanitizes malformed structures', async () => {
   const { parseWorkbenchSessionState } = await loadWorkbenchSessionStateModule();
 
   const parsed = parseWorkbenchSessionState(JSON.stringify({
-    columnVisibility: { displayName: false, requiredLevel: true, effort: 'bad' },
+    columnVisibility: { displayName: false, requiredLevel: true, availability: 'bad' },
     sorting: [
       { id: 'group', desc: true },
       { id: '', desc: false },
@@ -64,7 +64,7 @@ test('read/write workbench session state round-trips through localStorage', asyn
 
   withWindowStub({ localStorage, sessionStorage }, () => {
     writeWorkbenchSessionState('mouse', {
-      columnVisibility: { displayName: false, effort: true },
+      columnVisibility: { displayName: false, enumPolicy: true },
       sorting: [{ id: 'group', desc: false }],
       globalFilter: 'sensor',
       rowSelection: { sensor: true, weight: false },
@@ -77,7 +77,7 @@ test('read/write workbench session state round-trips through localStorage', asyn
 
   const loaded = withWindowStub({ localStorage, sessionStorage }, () => readWorkbenchSessionState('mouse'));
   assert.deepEqual(loaded, {
-    columnVisibility: { displayName: false, effort: true },
+    columnVisibility: { displayName: false, enumPolicy: true },
     sorting: [{ id: 'group', desc: false }],
     globalFilter: 'sensor',
     rowSelection: { sensor: true },

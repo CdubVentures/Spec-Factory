@@ -58,7 +58,7 @@ async function loadIndexingRunMutationsModule() {
   );
 }
 
-test('start mutation invalidates the full indexlab run-list family for structured picker keys', async () => {
+test('start mutation does not broadly invalidate run lists before process/start returns', async () => {
   globalThis.__indexingRunMutationsHarness = {
     invalidations: [],
     removedQueries: [],
@@ -115,12 +115,10 @@ test('start mutation invalidates the full indexlab run-list family for structure
     assert.deepEqual(globalThis.__indexingRunMutationsHarness.selectedRunIds, [
       'mouse-logitech-g-pro-wireless-run-1234567',
     ]);
-    assert.deepEqual(
-      globalThis.__indexingRunMutationsHarness.invalidations.find((entry) =>
-        JSON.stringify(entry.queryKey) === JSON.stringify(['indexlab', 'runs'])
-      ),
-      { queryKey: ['indexlab', 'runs'] },
-    );
+    assert.deepEqual(globalThis.__indexingRunMutationsHarness.invalidations, []);
+    assert.deepEqual(globalThis.__indexingRunMutationsHarness.removedQueries, [
+      { queryKey: ['indexing', 'domain-checklist'] },
+    ]);
   } finally {
     delete globalThis.__indexingRunMutationsHarness;
   }

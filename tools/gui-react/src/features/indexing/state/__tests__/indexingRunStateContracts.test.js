@@ -111,7 +111,7 @@ test('run view actions publish status and refresh both shared and run-scoped que
     .filter((entry) => entry.kind === 'removeQueries')
     .map((entry) => JSON.stringify(entry.queryKey));
 
-  assert.equal(invalidatedKeys.includes(JSON.stringify(['runtime-ops'])), true);
+  assert.equal(invalidatedKeys.includes(JSON.stringify(['runtime-ops'])), false);
   assert.equal(invalidatedKeys.includes(JSON.stringify(['runtime-ops', 'run-123'])), true);
   assert.equal(invalidatedKeys.includes(JSON.stringify(['indexlab', 'run', 'run-123', 'events'])), true);
   assert.equal(invalidatedKeys.includes(JSON.stringify(['indexing', 'domain-checklist'])), true);

@@ -1,9 +1,12 @@
-export { ContractTab } from './WorkbenchDrawerContractTab.tsx';
-export { DepsTab } from './WorkbenchDrawerDepsTab.tsx';
-export {
-  EnumTab,
-  EvidenceTab,
-  PreviewTab,
-  SearchTab,
-  type BadgeSlot,
-} from './WorkbenchDrawerSimpleTabs.tsx';
+// WHY: Re-export the shared body components used by the workbench drawer's
+// 9-way dispatcher. Centralized so tests can stub a single module.
+export { KeyContractBody } from '../components/key-sections/bodies/KeyContractBody.tsx';
+export { KeyPriorityBody } from '../components/key-sections/bodies/KeyPriorityBody.tsx';
+export { KeyAiAssistBody } from '../components/key-sections/bodies/KeyAiAssistBody.tsx';
+export { KeyEnumBody } from '../components/key-sections/bodies/KeyEnumBody.tsx';
+export { KeyComponentsBody } from '../components/key-sections/bodies/KeyComponentsBody.tsx';
+export { KeyConstraintsBody } from '../components/key-sections/bodies/KeyConstraintsBody.tsx';
+export { KeyEvidenceBody } from '../components/key-sections/bodies/KeyEvidenceBody.tsx';
+export { KeyTooltipBody } from '../components/key-sections/bodies/KeyTooltipBody.tsx';
+export { KeySearchHintsBody } from '../components/key-sections/bodies/KeySearchHintsBody.tsx';
+export type { BadgeSlot } from './workbenchTypes.ts';

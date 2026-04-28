@@ -179,7 +179,7 @@ test('Key Finder field delete events invalidate the owning finder and review sur
   assert.equal(hasQueryKey(keys, ['publisher', 'published', 'mouse']), true);
 });
 
-test('component impact regression: component events invalidate componentImpact', () => {
+test('component impact regression: component events invalidate componentImpact by category', () => {
   const keys = resolveDataChangeInvalidationQueryKeys({
     message: {
       type: 'data-change',
@@ -189,7 +189,7 @@ test('component impact regression: component events invalidate componentImpact',
     categories: ['mouse'],
   });
 
-  assert.equal(hasQueryKey(keys, ['componentImpact']), true);
+  assert.equal(hasQueryKey(keys, ['componentImpact', 'mouse']), true);
   assert.equal(hasQueryKey(keys, ['componentReviewData', 'mouse']), true);
   assert.equal(hasQueryKey(keys, ['candidates', 'mouse']), true);
   assert.equal(hasQueryKey(keys, ['studio-component-db', 'mouse']), true);
@@ -204,7 +204,7 @@ test('event fallback mapping works when domains are omitted', () => {
     categories: ['mouse'],
   });
 
-  assert.equal(hasQueryKey(keys, ['componentImpact']), true);
+  assert.equal(hasQueryKey(keys, ['componentImpact', 'mouse']), true);
   assert.equal(hasQueryKey(keys, ['candidates', 'mouse']), true);
 });
 
@@ -225,7 +225,7 @@ test('invalidateDataChangeQueries deduplicates repeated domains and categories',
   });
 
   assert.deepEqual(invalidated, queryKeys);
-  const componentImpactCount = queryKeys.filter((queryKey) => JSON.stringify(queryKey) === JSON.stringify(['componentImpact'])).length;
+  const componentImpactCount = queryKeys.filter((queryKey) => JSON.stringify(queryKey) === JSON.stringify(['componentImpact', 'mouse'])).length;
   assert.equal(componentImpactCount, 1);
 });
 

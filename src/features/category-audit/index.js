@@ -10,6 +10,7 @@
 export { generateCategoryAuditReport } from './reportBuilder.js';
 export { generatePerKeyDocs } from './perKeyDocBuilder.js';
 export { generatePromptAuditReports } from './promptAuditReportBuilder.js';
+export { generateKeysOrderAuditReport } from './keysOrderReportBuilder.js';
 export { extractReportData } from './reportData.js';
 export { extractPromptAuditData } from './promptAuditData.js';
 export {
@@ -22,4 +23,13 @@ export {
   parseFieldStudioPatchFileName,
   validateFieldStudioPatchDocument,
 } from './fieldStudioPatch.js';
+export {
+  KEY_ORDER_PATCH_SCHEMA_VERSION,
+  applyKeyOrderPatchDocument,
+  buildKeyOrderPatchChangeLog,
+  expectedKeyOrderPatchFileName,
+  parseKeyOrderPatchPayloadFiles,
+  previewKeyOrderPatchDocument,
+  validateKeyOrderPatchDocument,
+} from './keyOrderPatch.js';
 export { registerCategoryAuditRoutes } from './api/categoryAuditRoutes.js';

@@ -1,15 +1,18 @@
 ﻿import { useState, useMemo, useCallback, useEffect, useRef } from "react";
-import { KeyPrioritySection } from "./key-sections/KeyPrioritySection.tsx";
-import { KeyComponentsSection } from "./key-sections/KeyComponentsSection.tsx";
 import { KeyContractSection } from "./key-sections/KeyContractSection.tsx";
+import { KeyPrioritySection } from "./key-sections/KeyPrioritySection.tsx";
+import { KeyAiAssistSection } from "./key-sections/KeyAiAssistSection.tsx";
+import { KeyEnumSection } from "./key-sections/KeyEnumSection.tsx";
+import { KeyComponentsSection } from "./key-sections/KeyComponentsSection.tsx";
+import { KeyConstraintsSection } from "./key-sections/KeyConstraintsSection.tsx";
 import { KeyEvidenceSection } from "./key-sections/KeyEvidenceSection.tsx";
+import { KeyTooltipSection } from "./key-sections/KeyTooltipSection.tsx";
+import { KeySearchHintsSection } from "./key-sections/KeySearchHintsSection.tsx";
 import { KeyStickyHeader } from "./key-sections/KeyStickyHeader.tsx";
-import { KeyHintsSection } from "./key-sections/KeyHintsSection.tsx";
 import { KeyBulkPasteModal } from "./KeyBulkPasteModal.tsx";
 import { usePersistedToggle } from "../../../stores/collapseStore.ts";
 import { usePersistedTab } from "../../../stores/tabStore.ts";
 import { JsonViewer } from "../../../shared/ui/data-display/JsonViewer.tsx";
-import { EnumConfigurator } from "./EnumConfigurator.tsx";
 import { SystemBadges } from "../workbench/SystemBadges.tsx";
 import {
   useStudioFieldRulesActions,
@@ -26,20 +29,16 @@ import {
   type BulkKeyRow,
 } from "../state/keyUtils.ts";
 import DraggableKeyList from "./DraggableKeyList.tsx";
-import { Section } from "./Section.tsx";
 import {
   type BulkGridRow,
 } from "../../../shared/ui/forms/BulkPasteGrid.tsx";
 import {
-  arrN,
   strN,
 } from "../state/nestedValueHelpers.ts";
 import { displayLabel } from "../state/studioDisplayLabel.ts";
-import { KeyConstraintEditor } from "./KeyConstraintEditor.tsx";
 import {
   selectCls,
   inputCls,
-  STUDIO_TIPS,
 } from "./studioConstants.ts";
 
 import type { StudioPageActivePanelKeyProps as KeyNavigatorTabProps } from "./studioPagePanelContracts.ts";
@@ -613,30 +612,27 @@ export function KeyNavigatorTab({
                 disabled={isSelectedEgLocked}
               />
 
-
-              {/* ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Enum ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ */}
-              <Section
-                title="Enum Policy"
-                persistKey={`studio:keyNavigator:section:enum:${category}`}
-                titleTooltip={STUDIO_TIPS.key_section_enum}
+              <KeyAiAssistSection
+                selectedKey={selectedKey}
+                currentRule={currentRule}
+                updateField={updateField}
+                category={category}
+                BadgeRenderer={B}
+                saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
                 disabled={isSelectedEgLocked}
-              >
-                <EnumConfigurator
-                  fieldKey={selectedKey}
-                  rule={currentRule}
-                  knownValues={knownValues}
-                  enumLists={enumLists}
-                  contractType={strN(
-                    currentRule,
-                    "contract.type",
-                  )}
-                  onUpdate={(path, value) =>
-                    updateField(selectedKey, path, value)
-                  }
-                  isEgLocked={isSelectedEgLocked}
-                  renderLabelSuffix={(path) => <B p={path} />}
-                />
-              </Section>
+              />
+
+              <KeyEnumSection
+                selectedKey={selectedKey}
+                currentRule={currentRule}
+                updateField={updateField}
+                category={category}
+                BadgeRenderer={B}
+                saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
+                knownValues={knownValues}
+                enumLists={enumLists}
+                disabled={isSelectedEgLocked}
+              />
 
               <KeyComponentsSection
                 selectedKey={selectedKey}
@@ -651,27 +647,17 @@ export function KeyNavigatorTab({
                 disabled={isSelectedEgLocked}
               />
 
-              <Section
-                title={
-                  <span className="flex items-center gap-1">
-                    Cross-Field Constraints
-                    <B p="constraints" />
-                  </span>
-                }
-                persistKey={`studio:keyNavigator:section:constraints:${category}`}
-                titleTooltip={STUDIO_TIPS.key_section_constraints}
+              <KeyConstraintsSection
+                selectedKey={selectedKey}
+                currentRule={currentRule}
+                updateField={updateField}
+                category={category}
+                BadgeRenderer={B}
+                saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
+                fieldOrder={activeFieldOrder}
+                editedRules={editedRules}
                 disabled={isSelectedEgLocked}
-              >
-                <KeyConstraintEditor
-                  currentKey={selectedKey}
-                  constraints={arrN(currentRule, "constraints")}
-                  onChange={(next) =>
-                    updateField(selectedKey, "constraints", next)
-                  }
-                  fieldOrder={activeFieldOrder}
-                  rules={editedRules}
-                />
-              </Section>
+              />
 
               <KeyEvidenceSection
                 selectedKey={selectedKey}
@@ -683,7 +669,16 @@ export function KeyNavigatorTab({
                 disabled={isSelectedEgLocked}
               />
 
-              <KeyHintsSection
+              <KeyTooltipSection
+                selectedKey={selectedKey}
+                currentRule={currentRule as Record<string, unknown>}
+                updateField={updateField}
+                category={category}
+                BadgeRenderer={B}
+                saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
+              />
+
+              <KeySearchHintsSection
                 selectedKey={selectedKey}
                 currentRule={currentRule as Record<string, unknown>}
                 updateField={updateField}
@@ -707,7 +702,8 @@ export function KeyNavigatorTab({
           })() : (
             <div className="text-sm sf-text-subtle mt-12 text-center">
               Select a key from the list to configure its field rule. Each key
-              has Contract, Priority, Parse, Enum, Evidence, UI, and Search
+              has Contract, Priority, Ai Assist, Enum Policy, Components,
+              Cross-Field Constraints, Evidence, Tooltip, and Search Hints
               settings.
             </div>
           )}

@@ -20,9 +20,13 @@ import type { StudioPageActivePanelContractProps as Props } from '../components/
 const PRESET_TAB_IDS = [
   'minimal',
   'contract',
-  'parsing',
+  'priority',
+  'aiAssist',
   'enums',
+  'components',
+  'constraints',
   'evidence',
+  'tooltip',
   'search',
   'debug',
   'all',
@@ -72,7 +76,7 @@ export function FieldRulesWorkbench({
   autoSaveLocked,
   autoSaveLockReason,
 }: Props) {
-  const { editedRules, editedFieldOrder } = useStudioFieldRulesState();
+  const { editedRules, editedFieldOrder, egLockedKeys } = useStudioFieldRulesState();
   const { updateField } = useStudioFieldRulesActions();
 
   // ── Table state ──────────────────────────────────────────────────
@@ -109,8 +113,8 @@ export function FieldRulesWorkbench({
 
   // ── Build rows ───────────────────────────────────────────────────
   const rows = useMemo(
-    () => buildWorkbenchRows(editedFieldOrder, editedRules, guardrails, knownValues),
-    [editedFieldOrder, editedRules, guardrails, knownValues],
+    () => buildWorkbenchRows(editedFieldOrder, editedRules, guardrails, knownValues, egLockedKeys, componentSources),
+    [editedFieldOrder, editedRules, guardrails, knownValues, egLockedKeys, componentSources],
   );
 
   useEffect(() => {
@@ -214,7 +218,7 @@ export function FieldRulesWorkbench({
   const drawerOpen = drawerKey !== null && drawerRule !== null;
 
   return (
-    <div className={`grid ${drawerOpen ? 'grid-cols-[1fr,480px]' : 'grid-cols-1'} gap-3 sf-text-primary sf-border-default sf-border-soft`}>
+    <div className={`grid ${drawerOpen ? 'grid-cols-[1fr,640px]' : 'grid-cols-1'} gap-3 sf-text-primary sf-border-default sf-border-soft`}>
       <div className="overflow-hidden sf-surface-card sf-bg-surface-soft">
         <WorkbenchColumnPresets
           activePreset={activePreset}

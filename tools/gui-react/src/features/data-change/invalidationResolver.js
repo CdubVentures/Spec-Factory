@@ -38,7 +38,7 @@ const FALLBACK_QUERY_TEMPLATES = Object.freeze([
   ['enumReviewData', CATEGORY_TOKEN],
   ['queue', CATEGORY_TOKEN],
   ['source-strategy', CATEGORY_TOKEN],
-  ['componentImpact'],
+  ['componentImpact', CATEGORY_TOKEN],
   ['storage'],
   ['storage', 'overview'],
   ['indexlab', 'runs'],

@@ -174,10 +174,10 @@ test('POST /category-audit/:category/generate-per-key-docs writes the per-key tr
     assert.ok(captured.body.basePath.endsWith(path.join('mouse', 'per-key')));
     assert.ok(captured.body.counts.written >= 1);
     assert.ok(captured.body.reservedKeysPath.endsWith('_reserved-keys.md'));
-    // Verify the sensor doc landed where we expect
-    const sensorHtml = path.join(captured.body.basePath, 'general', 'sensor.html');
-    const content = await fs.readFile(sensorHtml, 'utf8');
-    assert.ok(content.startsWith('<!DOCTYPE html>'));
+    // Verify the sensor doc landed directly under per-key with its group in the file title.
+    const sensorMd = path.join(captured.body.basePath, '01-sensor--general.md');
+    const content = await fs.readFile(sensorMd, 'utf8');
+    assert.ok(content.startsWith('# `01-sensor--general`'));
     assert.ok(content.includes('sensor'));
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
@@ -205,15 +205,48 @@ test('POST /category-audit/:category/generate-all-reports writes category and pe
     assert.ok(captured.body.promptAudit.summary.mdPath.endsWith(path.join('mouse', 'summary', 'mouse-prompt-audit-summary.md')));
     assert.ok(captured.body.promptAudit.perPromptReports.basePath.endsWith(path.join('mouse', 'per-prompt')));
     assert.ok(captured.body.promptAudit.perPromptReports.count >= 8);
+    assert.ok(captured.body.keysOrderAudit.basePath.endsWith(path.join('mouse', 'keys-order')));
 
     const categoryMd = await fs.readFile(captured.body.categoryReport.mdPath, 'utf8');
-    const sensorMd = await fs.readFile(path.join(captured.body.perKeyDocs.basePath, 'general', 'sensor.md'), 'utf8');
+    const sensorMd = await fs.readFile(path.join(captured.body.perKeyDocs.basePath, '01-sensor--general.md'), 'utf8');
     const promptAuditMd = await fs.readFile(captured.body.promptAudit.summary.mdPath, 'utf8');
+    const keysOrderPrompt = await fs.readFile(captured.body.keysOrderAudit.promptPath, 'utf8');
     assert.ok(categoryMd.includes('Product Image Dependent'));
     assert.ok(!categoryMd.includes('Full field contract authoring order'), 'category summary does not duplicate per-key scripts');
     assert.ok(sensorMd.includes('Full field contract authoring order'));
     assert.ok(promptAuditMd.includes('Prompt Surface Matrix'));
+    assert.ok(keysOrderPrompt.includes('key-order-patch.v1'));
     assert.equal(await fs.readFile(humanChangeFile, 'utf8'), '{"schema_version":"field-studio-patch.v1"}');
+  } finally {
+    await fs.rm(tmp, { recursive: true, force: true });
+  }
+});
+
+test('POST /category-audit/:category/generate-keys-order-audit writes the keys-order report pack', async () => {
+  const tmp = await fs.mkdtemp(path.join(os.tmpdir(), 'category-audit-routes-'));
+  const categoryAuthorityRoot = path.join(tmp, 'category_authority');
+  const reportsRoot = path.join(tmp, 'reports');
+  try {
+    await setupFixtureCategory(path.join(categoryAuthorityRoot, 'mouse'));
+    await fs.mkdir(path.join(categoryAuthorityRoot, 'mouse', '_control_plane'), { recursive: true });
+    await fs.writeFile(
+      path.join(categoryAuthorityRoot, 'mouse', '_control_plane', 'field_key_order.json'),
+      JSON.stringify({ order: ['__grp::General', 'sensor'] }),
+    );
+    const { ctx, captured } = mockCtx({ reportsRoot, categoryAuthorityRoot });
+    const handler = registerCategoryAuditRoutes(ctx);
+    await handler(['category-audit', 'mouse', 'generate-keys-order-audit'], null, 'POST', { body: {} }, {});
+
+    assert.equal(captured.status, 200);
+    assert.equal(captured.body.category, 'mouse');
+    assert.ok(captured.body.basePath.endsWith(path.join('mouse', 'keys-order')));
+    assert.ok(captured.body.htmlPath.endsWith(path.join('mouse', 'keys-order', 'mouse-keys-order-audit.html')));
+    assert.ok(captured.body.mdPath.endsWith(path.join('mouse', 'keys-order', 'mouse-keys-order-audit.md')));
+    assert.ok(captured.body.promptPath.endsWith(path.join('mouse', 'keys-order', 'mouse-keys-order-prompt.md')));
+
+    const prompt = await fs.readFile(captured.body.promptPath, 'utf8');
+    assert.match(prompt, /key-order-patch\.v1/);
+    assert.match(prompt, /Never delete existing keys/i);
   } finally {
     await fs.rm(tmp, { recursive: true, force: true });
   }

@@ -9,7 +9,10 @@
  *     → 200 { basePath, counts, reservedKeysPath, generatedAt }
  *   POST /category-audit/:category/generate-all-reports
  *     body: { consumer?: 'key_finder', templateOverride?: string }
- *     → 200 { categoryReport, perKeyDocs }
+ *     → 200 { categoryReport, perKeyDocs, promptAudit, keysOrderAudit }
+ *   POST /category-audit/:category/generate-keys-order-audit
+ *     body: {}
+ *     → 200 { basePath, htmlPath, mdPath, promptPath, generatedAt, stats }
  *     → 400 on unknown category / consumer / bad body
  *
  * Synchronous — pure file I/O + rendering, no LLM calls, no network.
@@ -23,6 +26,7 @@ import { resolveGlobalPrompt } from '../../../core/llm/prompts/globalPromptRegis
 import { generateCategoryAuditReport } from '../reportBuilder.js';
 import { generatePerKeyDocs } from '../perKeyDocBuilder.js';
 import { generatePromptAuditReports } from '../promptAuditReportBuilder.js';
+import { generateKeysOrderAuditReport } from '../keysOrderReportBuilder.js';
 
 const RESOLVED_GLOBAL_FRAGMENT_KEYS = [
   'identityIntro',
@@ -95,6 +99,17 @@ function promptAuditResponse(result) {
       basePath: result.perPromptReports.basePath,
       count: result.perPromptReports.count,
     },
+    generatedAt: result.generatedAt,
+    stats: result.stats,
+  };
+}
+
+function keysOrderAuditResponse(result) {
+  return {
+    basePath: result.basePath,
+    htmlPath: result.htmlPath,
+    mdPath: result.mdPath,
+    promptPath: result.promptPath,
     generatedAt: result.generatedAt,
     stats: result.stats,
   };
@@ -254,6 +269,48 @@ export function registerCategoryAuditRoutes(ctx) {
       });
     }
 
+    if (parts[1] && parts[2] === 'generate-keys-order-audit' && method === 'POST') {
+      const category = parts[1];
+      try {
+        await readJsonBody(req);
+      } catch {
+        jsonRes(res, 400, { error: 'invalid_json_body' });
+        return true;
+      }
+
+      let loadedRules;
+      try {
+        loadedRules = await loadFieldRules(category, { config });
+      } catch (err) {
+        const msg = String(err?.message || err);
+        if (msg.startsWith('missing_field_rules') || msg.includes('category')) {
+          return jsonRes(res, 400, { error: 'unknown_category', category, details: msg });
+        }
+        throw err;
+      }
+
+      const fieldGroupsPath = path.join(helperRoot, category, '_generated', 'field_groups.json');
+      const fieldGroups = (await readJsonIfExists(fieldGroupsPath)) || { group_index: {} };
+      const compileReportPath = path.join(helperRoot, category, '_generated', '_compile_report.json');
+      const compileSummary = await readJsonIfExists(compileReportPath);
+      const fieldKeyOrderPath = path.join(helperRoot, category, '_control_plane', 'field_key_order.json');
+      const fieldKeyOrderDoc = await readJsonIfExists(fieldKeyOrderPath);
+      const fieldKeyOrder = Array.isArray(fieldKeyOrderDoc?.order) ? fieldKeyOrderDoc.order : null;
+
+      const result = await generateKeysOrderAuditReport({
+        category,
+        loadedRules,
+        fieldGroups,
+        fieldKeyOrder,
+        compileSummary,
+        outputRoot,
+      });
+      return jsonRes(res, 200, {
+        category,
+        ...keysOrderAuditResponse(result),
+      });
+    }
+
     if (parts[1] && parts[2] === 'generate-all-reports' && method === 'POST') {
       const category = parts[1];
       let body = {};
@@ -315,6 +372,16 @@ export function registerCategoryAuditRoutes(ctx) {
           globalFragments,
           outputRoot,
         });
+        const keysOrderAudit = await generateKeysOrderAuditReport({
+          category,
+          loadedRules,
+          fieldGroups,
+          fieldKeyOrder,
+          globalFragments,
+          tierBundles,
+          compileSummary,
+          outputRoot,
+        });
         return jsonRes(res, 200, {
           category,
           consumer,
@@ -335,6 +402,7 @@ export function registerCategoryAuditRoutes(ctx) {
               : null,
           },
           promptAudit: promptAuditResponse(promptAudit),
+          keysOrderAudit: keysOrderAuditResponse(keysOrderAudit),
         });
       } catch (err) {
         const msg = String(err?.message || err);

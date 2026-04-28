@@ -145,7 +145,7 @@ export function CompileReportsTab({
           onClick={handleGenerateKeyFinderAudit}
           disabled={auditPending}
           className={`${btnPrimary} h-10 min-h-10 w-56 inline-flex items-center justify-center whitespace-nowrap shrink-0`}
-          title="Generate the category audit plus all per-key HTML and Markdown key-finder docs at .workspace/reports/."
+          title="Generate the category audit plus flat per-key Markdown key-finder docs at .workspace/reports/."
         >
           {auditPending ? "Generating..." : "Generate Key Finder Audit Reports"}
         </button>

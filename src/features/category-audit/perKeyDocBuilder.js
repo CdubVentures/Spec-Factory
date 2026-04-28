@@ -1,8 +1,8 @@
 /**
- * Per-key doc generator. Emits a folder tree of paired HTML + Markdown briefs,
- * one pair per non-reserved field in a category, organized by field group.
+ * Per-key doc generator. Emits one flat, sorted Markdown brief per field key.
  *
- *   <outputRoot>/<category>/per-key/<group>/<field_key>.{html,md}
+ *   <outputRoot>/<category>/per-key/<NN>-<field_key>--<group>.md
+ *   <outputRoot>/<category>/per-key/<NN>-<field_key>--<group>.reserved.md
  *   <outputRoot>/<category>/per-key/_reserved-keys.md
  *
  * Each per-key doc shows:
@@ -17,11 +17,11 @@
  *   - Per-slot breakdown
  *
  * Synchronous file I/O, no LLM, no network. Reserved keys (colors, editions,
- * release_date, sku, and any other non-keyFinder module fieldKeys) are skipped
- * and collected into a single _reserved-keys.md summary at the category root.
+ * release_date, sku, and any other non-keyFinder module fieldKeys) become
+ * same-folder reserved stubs and are collected into _reserved-keys.md.
  *
  * Single export:
- *   - generatePerKeyDocs(opts) → { basePath, written, skipped, reservedKeysPath, generatedAt }
+ *   - generatePerKeyDocs(opts) -> { basePath, written, skipped, reservedKeysPath, generatedAt }
  */
 
 import fs from 'node:fs/promises';
@@ -31,10 +31,8 @@ import { extractReportData } from './reportData.js';
 import { composePerKeyPromptPreview, detectReservedKey } from './perKeyPromptPreview.js';
 import { buildPerKeyDocStructure } from './perKeyDocStructure.js';
 import { FIELD_RULE_SCHEMA } from './contractSchemaCatalog.js';
-import { renderHtmlFromStructure } from './reportHtml.js';
 import { renderMarkdownFromStructure } from './reportMarkdown.js';
 import { archiveExistingReportTree, ensureAuditorResponsesDir } from './reportArchive.js';
-import { escapeHtml } from './reportHtml.js';
 
 function groupRecordsByGroup(records) {
   const out = new Map();
@@ -48,82 +46,78 @@ function groupRecordsByGroup(records) {
 
 function buildReservedKeysSummary(reservedEntries, category, generatedAt) {
   if (reservedEntries.length === 0) {
-    return `# Reserved keys \u2014 \`${category}\`\n\n_Generated ${generatedAt}_\n\nNo reserved keys in this category's compiled rules.\n`;
+    return `# Reserved keys - \`${category}\`\n\n_Generated ${generatedAt}_\n\nNo reserved keys in this category's per-key order.\n`;
   }
-  const rows = reservedEntries.map((r) => `| \`${r.fieldKey}\` | ${r.ownerLabel} | \`${r.owner}\` |`);
+  const rows = reservedEntries.map((r) => `| \`${r.fieldKey}\` | \`${r.group || 'ungrouped'}\` | ${r.ownerLabel} | \`${r.owner}\` |`);
   return [
-    `# Reserved keys \u2014 \`${category}\``,
+    `# Reserved keys - \`${category}\``,
     '',
     `_Generated ${generatedAt}_`,
     '',
     'These fields are NOT handled by keyFinder. They are owned by dedicated finder modules (CEF for colors/editions, RDF for release_date, SKF for sku) or compile-time defaults.',
     '',
-    'Per-key docs are skipped for these because keyFinder never builds a prompt for them \u2014 there is nothing to show. To configure discovery for these fields, open the owning module\u2019s settings.',
+    'Per-key docs are reserved stubs for these because keyFinder never builds a prompt for them. To configure discovery for these fields, open the owning module settings.',
     '',
-    '| Field key | Owner | Module id |',
-    '| --- | --- | --- |',
+    '| Field key | Group | Owner | Module id |',
+    '| --- | --- | --- | --- |',
     ...rows,
     '',
   ].join('\n');
 }
 
-function buildReservedStub({ category, fieldKey, ordinal, total, info }) {
+function safeFileSegment(value) {
+  const normalized = String(value || 'ungrouped')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+  return normalized || 'ungrouped';
+}
+
+function buildReservedStub({ category, fieldKey, group, fileTitle, ordinal, total, info }) {
   return [
-    `# ${fieldKey} \u2014 reserved`,
+    `# ${fileTitle} - reserved`,
     '',
     `Position ${ordinal} of ${total} in the \`${category}\` Key Navigator order.`,
     '',
-    `This field is owned by **${info.ownerLabel || 'OTHER'}** (\`${info.owner || 'other_finder'}\`). keyFinder does not build a prompt for it; see [\`../_reserved-keys.md\`](../_reserved-keys.md).`,
+    `Field key: \`${fieldKey}\` | Group: \`${group}\``,
+    '',
+    `This field is owned by **${info.ownerLabel || 'OTHER'}** (\`${info.owner || 'other_finder'}\`). keyFinder does not build a prompt for it; see [\`_reserved-keys.md\`](_reserved-keys.md).`,
     '',
   ].join('\n');
 }
 
-async function writeSortedFolder({ basePath, fieldKeyOrder, written, skipped, category }) {
-  if (!Array.isArray(fieldKeyOrder)) return null;
-  const fields = fieldKeyOrder.filter(
-    (entry) => typeof entry === 'string' && !entry.startsWith('__grp::'),
-  );
-  if (fields.length === 0) return null;
+function resolveGroupForField(fieldKey, record, fieldGroups) {
+  if (record?.group) return record.group;
+  const groupIndex = fieldGroups?.group_index || {};
+  const match = Object.entries(groupIndex).find(([, fieldKeys]) => (
+    Array.isArray(fieldKeys) && fieldKeys.includes(fieldKey)
+  ));
+  return match?.[0] || 'ungrouped';
+}
 
-  const writtenMap = new Map(written.map((w) => [w.fieldKey, w]));
-  const reservedInfo = new Map(skipped.map((s) => [s.fieldKey, s]));
+function buildOrderedFields(fieldKeyOrder, reportData) {
+  const seen = new Set();
+  const add = (fieldKey) => {
+    if (typeof fieldKey !== 'string') return false;
+    if (fieldKey.startsWith('__grp::')) return false;
+    if (seen.has(fieldKey)) return false;
+    seen.add(fieldKey);
+    return true;
+  };
 
-  const sortedDir = path.join(basePath, 'sorted');
-  await fs.mkdir(sortedDir, { recursive: true });
-
-  const total = fields.length;
-  const width = Math.max(2, String(total).length);
-  const entries = [];
-
-  for (let i = 0; i < fields.length; i += 1) {
-    const fieldKey = fields[i];
-    const ordinalNum = i + 1;
-    const ordinal = String(ordinalNum).padStart(width, '0');
-
-    const reserved = reservedInfo.get(fieldKey) || detectReservedKey(fieldKey);
-    if (reserved) {
-      const stubPath = path.join(sortedDir, `${ordinal}-${fieldKey}.reserved.md`);
-      const stubText = buildReservedStub({
-        category,
-        fieldKey,
-        ordinal: ordinalNum,
-        total,
-        info: reserved,
-      });
-      await fs.writeFile(stubPath, stubText, 'utf8');
-      entries.push({ fieldKey, ordinal, sortedPath: stubPath, reserved: true });
-      continue;
+  const ordered = [];
+  if (Array.isArray(fieldKeyOrder)) {
+    for (const fieldKey of fieldKeyOrder) {
+      if (add(fieldKey)) ordered.push(fieldKey);
     }
-
-    const w = writtenMap.get(fieldKey);
-    if (!w) continue; // navigator entry not in compiled rules — silent skip
-    const md = await fs.readFile(w.mdPath, 'utf8');
-    const dest = path.join(sortedDir, `${ordinal}-${fieldKey}.md`);
-    await fs.writeFile(dest, md, 'utf8');
-    entries.push({ fieldKey, ordinal, sortedPath: dest, reserved: false });
   }
 
-  return { basePath: sortedDir, count: entries.length, entries };
+  for (const record of reportData.keys || []) {
+    if (add(record.fieldKey)) ordered.push(record.fieldKey);
+  }
+
+  return ordered;
 }
 
 function buildNavigatorOrdinalMap(fieldKeyOrder) {
@@ -148,18 +142,29 @@ function resolvePerKeyCategoryPath(outputRoot, category) {
   return basePath;
 }
 
+function withFlatTitle(structure, fileTitle, displayName) {
+  return {
+    ...structure,
+    sections: structure.sections.map((section, index) => (
+      index === 0
+        ? { ...section, title: `\`${fileTitle}\` - ${displayName}` }
+        : section
+    )),
+  };
+}
+
 /**
  * @param {object} opts
  * @param {string} opts.category
- * @param {object} opts.loadedRules          — from loadFieldRules()
- * @param {object} opts.fieldGroups          — { group_index } from field_groups.json
- * @param {object} opts.globalFragments      — resolved global prompt strings
- * @param {object} opts.tierBundles          — parsed keyFinderTierSettingsJson
+ * @param {object} opts.loadedRules          - from loadFieldRules()
+ * @param {object} opts.fieldGroups          - { group_index } from field_groups.json
+ * @param {object} opts.globalFragments      - resolved global prompt strings
+ * @param {object} opts.tierBundles          - parsed keyFinderTierSettingsJson
  * @param {object} [opts.compileSummary]
- * @param {string} opts.outputRoot           — absolute; the root of .workspace/reports (per-key is appended)
+ * @param {string} opts.outputRoot           - absolute; the root of .workspace/reports
  * @param {Date}   [opts.now]
- * @param {string} [opts.templateOverride]   — optional per-category discoveryPromptTemplate
- * @param {string[]} [opts.fieldKeyOrder]    — Key Navigator order (mixed __grp:: separators + field keys). When provided, a sorted/ folder is emitted under the category root with NN-<fieldKey>.md entries duplicating the canonical group-folder Markdown brief, plus reserved-marker stubs for keys owned by other finder modules.
+ * @param {string} [opts.templateOverride]   - optional per-category discoveryPromptTemplate
+ * @param {string[]} [opts.fieldKeyOrder]    - Key Navigator order (mixed __grp:: separators + field keys). Direct per-key Markdown files use this order and reserve marker stubs are emitted for keys owned by other finder modules.
  */
 export async function generatePerKeyDocs({
   category,
@@ -198,17 +203,49 @@ export async function generatePerKeyDocs({
 
   const byGroup = groupRecordsByGroup(reportData.keys);
   const navigatorOrdinals = buildNavigatorOrdinalMap(fieldKeyOrder);
+  const orderedFields = buildOrderedFields(fieldKeyOrder, reportData);
+  const total = orderedFields.length;
+  const width = Math.max(2, String(total).length);
+  const recordByFieldKey = new Map((reportData.keys || []).map((record) => [record.fieldKey, record]));
   const written = [];
   const skipped = [];
+  const entries = [];
 
-  for (const record of reportData.keys) {
-    const reserved = detectReservedKey(record.fieldKey);
+  for (let index = 0; index < orderedFields.length; index += 1) {
+    const fieldKey = orderedFields[index];
+    const record = recordByFieldKey.get(fieldKey);
+    const reserved = detectReservedKey(fieldKey);
+    if (!record && !reserved) continue;
+
+    const ordinalNum = index + 1;
+    const ordinal = String(ordinalNum).padStart(width, '0');
+    const group = resolveGroupForField(fieldKey, record, fieldGroups);
+    const fileTitle = `${ordinal}-${fieldKey}--${safeFileSegment(group)}`;
+
     if (reserved) {
-      skipped.push({ fieldKey: record.fieldKey, owner: reserved.owner, ownerLabel: reserved.ownerLabel });
+      const skippedEntry = {
+        fieldKey,
+        group,
+        owner: reserved.owner,
+        ownerLabel: reserved.ownerLabel,
+      };
+      skipped.push(skippedEntry);
+      const mdPath = path.join(basePath, `${fileTitle}.reserved.md`);
+      const stubText = buildReservedStub({
+        category,
+        fieldKey,
+        group,
+        fileTitle,
+        ordinal: ordinalNum,
+        total,
+        info: skippedEntry,
+      });
+      await fs.writeFile(mdPath, stubText, 'utf8');
+      entries.push({ fieldKey, group, ordinal, sortedPath: mdPath, reserved: true });
       continue;
     }
 
-    const preview = composePerKeyPromptPreview(record.rawRule, record.fieldKey, {
+    const preview = composePerKeyPromptPreview(record.rawRule, fieldKey, {
       category,
       tierBundles,
       templateOverride,
@@ -225,38 +262,26 @@ export async function generatePerKeyDocs({
       groups: reportData.groups || [],
       componentInventory: reportData.components || [],
       preview,
-      navigatorOrdinal: navigatorOrdinals.get(record.fieldKey) || '',
+      navigatorOrdinal: navigatorOrdinals.get(fieldKey) || ordinal,
     });
 
-    const documentTitle = `Per-Key Doc \u2014 ${category}/${record.fieldKey}`;
-    const subtitleHtml = `Per-key brief \u00B7 category: <code>${escapeHtml(category)}</code> \u00B7 group: <code>${escapeHtml(record.group)}</code> \u00B7 generated ${escapeHtml(generatedAt)}`;
-    const subtitleLine = `_Per-key brief \u00B7 category: \`${category}\` \u00B7 group: \`${record.group}\` \u00B7 generated ${generatedAt}_`;
+    const subtitleLine = `_Per-key brief | category: \`${category}\` | group: \`${group}\` | generated ${generatedAt}_`;
+    const mdText = renderMarkdownFromStructure(
+      withFlatTitle(structure, fileTitle, record.displayName),
+      { subtitleLine },
+    );
 
-    const htmlText = renderHtmlFromStructure(structure, { documentTitle, subtitleHtml });
-    const mdText = renderMarkdownFromStructure(structure, { subtitleLine });
-
-    const groupDir = path.join(basePath, record.group || 'ungrouped');
-    await fs.mkdir(groupDir, { recursive: true });
-    const htmlPath = path.join(groupDir, `${record.fieldKey}.html`);
-    const mdPath = path.join(groupDir, `${record.fieldKey}.md`);
-    await fs.writeFile(htmlPath, htmlText, 'utf8');
+    const mdPath = path.join(basePath, `${fileTitle}.md`);
     await fs.writeFile(mdPath, mdText, 'utf8');
-    written.push({ fieldKey: record.fieldKey, group: record.group, htmlPath, mdPath });
+    written.push({ fieldKey, group, htmlPath: null, mdPath });
+    entries.push({ fieldKey, group, ordinal, sortedPath: mdPath, reserved: false });
   }
 
-  // Reserved-keys summary. Always emitted (even when empty) so the folder has
-  // a single well-known index of non-keyFinder keys.
   const reservedKeysPath = path.join(basePath, '_reserved-keys.md');
   const reservedText = buildReservedKeysSummary(skipped, category, generatedAt);
   await fs.writeFile(reservedKeysPath, reservedText, 'utf8');
 
-  const sorted = await writeSortedFolder({
-    basePath,
-    fieldKeyOrder,
-    written,
-    skipped,
-    category,
-  });
+  const sorted = { basePath, count: entries.length, entries };
 
   return {
     basePath,

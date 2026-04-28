@@ -73,7 +73,7 @@ export const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['componentReview', CATEGORY_TOKEN],
     ['componentReviewData', CATEGORY_TOKEN],
     ['enumReviewData', CATEGORY_TOKEN],
-    ['componentImpact'],
+    ['componentImpact', CATEGORY_TOKEN],
   ]),
   queue: Object.freeze([
     ['queue', CATEGORY_TOKEN],
@@ -87,7 +87,7 @@ export const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['componentReview', CATEGORY_TOKEN],
     ['componentReviewData', CATEGORY_TOKEN],
     ['enumReviewData', CATEGORY_TOKEN],
-    ['componentImpact'],
+    ['componentImpact', CATEGORY_TOKEN],
   ]),
   suggestions: Object.freeze([
     ['candidates', CATEGORY_TOKEN],
@@ -101,7 +101,7 @@ export const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['reviewProductsIndex', CATEGORY_TOKEN],
     ['product', CATEGORY_TOKEN],
     ['candidates', CATEGORY_TOKEN],
-    ['componentImpact'],
+    ['componentImpact', CATEGORY_TOKEN],
   ]),
   enum: withAuthoritySnapshot([
     ['enumReviewData', CATEGORY_TOKEN],
@@ -115,7 +115,7 @@ export const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['catalog-review', CATEGORY_TOKEN],
     ['reviewProductsIndex', CATEGORY_TOKEN],
     ['candidates', CATEGORY_TOKEN],
-    ['componentImpact'],
+    ['componentImpact', CATEGORY_TOKEN],
   ]),
   'color-registry': Object.freeze([
     ['colors'],

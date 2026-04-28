@@ -25,23 +25,36 @@ interface Props {
   onNavigate: (key: string) => void;
 }
 
+// WHY: Tab order mirrors the Key Navigator panel order exactly so the two
+// surfaces are 1:1. Adding a panel = add an entry here AND a body component.
 const DRAWER_TABS: { id: DrawerTab; label: string }[] = [
   { id: 'contract', label: 'Contract' },
-  { id: 'enum', label: 'Enum' },
+  { id: 'priority', label: 'Priority' },
+  { id: 'aiAssist', label: 'Ai Assist' },
+  { id: 'enum', label: 'Enum Policy' },
+  { id: 'components', label: 'Components' },
+  { id: 'constraints', label: 'Cross-Field Constraints' },
   { id: 'evidence', label: 'Evidence' },
-  { id: 'search', label: 'Search & Aliases' },
-  { id: 'deps', label: 'Deps' },
-  { id: 'preview', label: 'Preview' },
+  { id: 'tooltip', label: 'Tooltip / Guidance' },
+  { id: 'search', label: 'Search Hints & Aliases' },
 ];
 
 const DRAWER_TAB_IDS = [
   'contract',
+  'priority',
+  'aiAssist',
   'enum',
+  'components',
+  'constraints',
   'evidence',
+  'tooltip',
   'search',
-  'deps',
-  'preview',
 ] as const satisfies ReadonlyArray<DrawerTab>;
+
+// WHY: When a key is EG-locked (preset-managed), only Tooltip and Search Hints
+// stay editable — matches Key Navigator where KeyTooltipSection and
+// KeySearchHintsSection do not pass `disabled`, while every other section does.
+const EG_EDITABLE_TABS: ReadonlySet<DrawerTab> = new Set(['tooltip', 'search']);
 
 const TEXT_GRAY_400 = 'sf-text-subtle';
 const TEXT_GRAY_500 = 'sf-text-subtle';
@@ -94,6 +107,8 @@ export function WorkbenchDrawer({
     non_mandatory: 'sf-chip-neutral',
   };
 
+  const tabIsLocked = isEgLocked && !EG_EDITABLE_TABS.has(activeTab);
+
   return (
     <div className={DRAWER_SHELL_CLASS} style={{ maxHeight: 'calc(100vh - 340px)' }}>
       <div className={DRAWER_HEADER_CLASS}>
@@ -134,9 +149,9 @@ export function WorkbenchDrawer({
           </div>
         </div>
 
-        <div className="flex gap-0.5 mt-3 -mb-px">
+        <div className="flex flex-wrap gap-0.5 mt-3 -mb-px">
           {DRAWER_TABS.map((tab) => {
-            const isLockedTab = isEgLocked && tab.id !== 'search';
+            const isLockedTab = isEgLocked && !EG_EDITABLE_TABS.has(tab.id);
             return (
               <button
                 key={tab.id}
@@ -157,11 +172,11 @@ export function WorkbenchDrawer({
       {isEgLocked && (
         <div className="mx-4 mt-3 px-3 py-2 rounded sf-surface-alt sf-border-soft border text-[11px] sf-text-subtle flex items-center gap-2">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-          <span>EG-managed field. Only search hints and aliases can be customized.</span>
+          <span>EG-managed field. Only Tooltip / Guidance and Search Hints &amp; Aliases can be customized.</span>
         </div>
       )}
 
-      <div className={`p-4 space-y-3 ${isEgLocked && activeTab !== 'search' ? 'pointer-events-none opacity-40' : ''}`}>
+      <div className={`p-4 space-y-3 ${tabIsLocked ? 'pointer-events-none opacity-40' : ''}`}>
         <WorkbenchDrawerTabContent
           activeTab={activeTab}
           category={category}
@@ -171,10 +186,11 @@ export function WorkbenchDrawer({
           enumLists={enumLists}
           componentDb={componentDb}
           componentSources={componentSources}
+          fieldOrder={fieldOrder}
           onUpdate={update}
           onNavigate={onNavigate}
           isEgLocked={isEgLocked}
-          disabled={isEgLocked && activeTab !== 'search'}
+          disabled={tabIsLocked}
           B={B}
         />
       </div>

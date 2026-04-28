@@ -44,6 +44,7 @@ export interface StudioPageShellProps {
   compileProcessRunning: boolean;
   processRunning: boolean;
   onRunCompile: () => void;
+  onImportPatches: () => void;
   onRefresh: () => void | Promise<void>;
   activePanel: ReactNode;
 }
@@ -72,6 +73,7 @@ export function StudioPageShell({
   compileProcessRunning,
   processRunning,
   onRunCompile,
+  onImportPatches,
   onRefresh,
   activePanel,
 }: StudioPageShellProps) {
@@ -256,6 +258,23 @@ export function StudioPageShell({
                   </Tooltip.Content>
                 </Tooltip.Portal>
               </Tooltip.Root>
+            </button>
+
+            <button
+              onClick={onImportPatches}
+              className={`${btnSecondary} relative h-11 min-h-11 text-sm rounded inline-flex items-center justify-center overflow-visible whitespace-nowrap ${actionBtnWidth}`}
+            >
+              <span className="w-full text-center font-medium truncate">
+                Import JSON
+              </span>
+              <span className="absolute top-0 right-0 -ml-1 translate-x-1/2 -translate-y-1/2">
+                <Tip
+                  text={
+                    "Import JSON\n\n" +
+                    "Validate strict auditor response files, preview the Field Studio map changes, then apply them."
+                  }
+                />
+              </span>
             </button>
 
             <button

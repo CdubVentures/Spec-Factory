@@ -10,7 +10,10 @@ import {
   applyFieldStudioPatchDocuments,
   expectedFieldStudioPatchFileName,
   importFieldStudioPatchDirectory,
+  importFieldStudioPatchDocuments,
   loadFieldStudioPatchDocuments,
+  parseFieldStudioPatchPayloadFiles,
+  previewFieldStudioPatchDocuments,
   validateFieldStudioPatchDocument,
 } from '../fieldStudioPatch.js';
 
@@ -212,4 +215,112 @@ test('applyFieldStudioPatchDocuments applies multiple validated key files as one
   const next = applyFieldStudioPatchDocuments(baseMap(), docs);
   assert.equal(next.field_overrides.design.enum.policy, 'closed');
   assert.equal(next.field_overrides.weight.evidence.min_evidence_refs, 2);
+});
+
+test('parseFieldStudioPatchPayloadFiles validates uploaded JSON files against category and filename', () => {
+  const docs = parseFieldStudioPatchPayloadFiles({
+    category: 'mouse',
+    files: [
+      {
+        fileName: 'mouse-07-design.field-studio-patch.v1.json',
+        content: JSON.stringify(validPatch()),
+      },
+    ],
+  });
+
+  assert.equal(docs.length, 1);
+  assert.equal(docs[0].source_file, 'mouse-07-design.field-studio-patch.v1.json');
+  assert.equal(docs[0].field_key, 'design');
+
+  assert.throws(
+    () => parseFieldStudioPatchPayloadFiles({
+      category: 'keyboard',
+      files: [
+        {
+          fileName: 'mouse-07-design.field-studio-patch.v1.json',
+          content: JSON.stringify(validPatch()),
+        },
+      ],
+    }),
+    /does not match requested category/i,
+  );
+});
+
+test('previewFieldStudioPatchDocuments returns a change log for key edits and component additions', () => {
+  const componentPatch = validPatch({
+    field_key: 'switch_type',
+    navigator_ordinal: 12,
+    patch: {
+      field_overrides: {
+        switch_type: {
+          component: { type: 'switch' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'switch',
+          roles: {
+            properties: [
+              {
+                field_key: 'switch_type',
+                variance_policy: 'authoritative',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  const preview = previewFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: baseMap(),
+    patchDocs: [validPatch(), componentPatch],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: ['normalized ok'],
+      normalized: map,
+    }),
+  });
+
+  assert.equal(preview.valid, true);
+  assert.deepEqual(preview.files.map((file) => file.fieldKey), ['design', 'switch_type']);
+  assert.ok(
+    preview.changes.some((change) => (
+      change.kind === 'field_override'
+      && change.action === 'updated'
+      && change.path === 'field_overrides.design.enum.policy'
+      && change.before === 'open_prefer_known'
+      && change.after === 'closed'
+    )),
+  );
+  assert.ok(
+    preview.changes.some((change) => (
+      change.kind === 'component_source'
+      && change.action === 'added'
+      && change.componentType === 'switch'
+    )),
+  );
+  assert.deepEqual(preview.validation.warnings, ['normalized ok']);
+});
+
+test('importFieldStudioPatchDocuments applies uploaded docs through full map validation', () => {
+  const result = importFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: baseMap(),
+    patchDocs: [validPatch()],
+    validateFieldStudioMap: (map) => ({
+      valid: map.field_overrides.design.enum.policy === 'closed',
+      errors: [],
+      normalized: {
+        ...map,
+        version: 3,
+      },
+    }),
+  });
+
+  assert.equal(result.applied.length, 1);
+  assert.equal(result.fieldStudioMap.version, 3);
+  assert.equal(result.changes.length > 0, true);
 });

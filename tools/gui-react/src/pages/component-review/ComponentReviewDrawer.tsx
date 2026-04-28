@@ -28,6 +28,7 @@ import {
   type ComponentReviewDocumentSnapshot,
   type LinkedReviewProductFieldSnapshot,
 } from './componentReviewCache.ts';
+import { invalidateComponentImpactForCategory } from './componentImpactInvalidation.ts';
 import type { ComponentReviewItem, ComponentPropertyState, ComponentReviewPayload, ComponentReviewFlaggedItem } from '../../types/componentReview.ts';
 
 interface ComponentImpactResult {
@@ -811,7 +812,7 @@ export function ComponentReviewDrawer({
       queryClient.invalidateQueries({ queryKey: ['componentReviewData', category, componentType] });
       queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
       queryClient.invalidateQueries({ queryKey: ['product', category] });
-      queryClient.invalidateQueries({ queryKey: ['componentImpact'] });
+      invalidateComponentImpactForCategory({ queryClient, category });
     },
   });
 
@@ -867,7 +868,7 @@ export function ComponentReviewDrawer({
       queryClient.invalidateQueries({ queryKey: ['componentReviewData', category, componentType] });
       queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
       queryClient.invalidateQueries({ queryKey: ['product', category] });
-      queryClient.invalidateQueries({ queryKey: ['componentImpact'] });
+      invalidateComponentImpactForCategory({ queryClient, category });
     },
   });
 
@@ -1314,7 +1315,7 @@ export function ComponentReviewDrawer({
       queryClient.invalidateQueries({ queryKey: ['componentReview', category] });
       queryClient.invalidateQueries({ queryKey: ['componentReviewData', category] });
       queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-      queryClient.invalidateQueries({ queryKey: ['componentImpact'] });
+      invalidateComponentImpactForCategory({ queryClient, category });
     },
   });
 

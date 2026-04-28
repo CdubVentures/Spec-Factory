@@ -120,8 +120,6 @@ export function useIndexingRunMutations(input: UseIndexingRunMutationsInput) {
         removeRunScopedQueries(optimisticRunId);
       }
       queryClient.removeQueries({ queryKey: ['indexing', 'domain-checklist'] });
-      queryClient.invalidateQueries({ queryKey: ['indexlab', 'runs'] });
-      queryClient.invalidateQueries({ queryKey: ['runtime-ops'] });
       return { previousRunId };
     },
     onError: (_error, _variables, context) => {

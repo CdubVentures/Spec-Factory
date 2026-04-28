@@ -84,7 +84,7 @@ export function createStorageManagerHandler(opts) {
     if (parts[1] === 'runs') {
       const runId = parts[2] ? String(parts[2]).trim() : '';
 
-      // GET /storage/runs/:runId — single run detail (includes sources from run.json)
+      // GET /storage/runs/:runId — single run detail.
       if (runId && !parts[3] && method === 'GET') {
         const meta = typeof readRunMeta === 'function'
           ? await readRunMeta(runId)
@@ -103,58 +103,7 @@ export function createStorageManagerHandler(opts) {
           });
         }
 
-        // WHY: Enrich with sources + identity from run.json for URL-level expansion.
-        let sources = [];
-        let identity = {};
-        try {
-          const runDir = typeof resolveIndexLabRunDirectory === 'function'
-            ? await resolveIndexLabRunDirectory(runId)
-            : '';
-          if (runDir) {
-            const { default: fsPromises } = await import('node:fs/promises');
-            const { join } = await import('node:path');
-            const raw = await fsPromises.readFile(join(runDir, 'run.json'), 'utf-8').catch(() => '');
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              sources = Array.isArray(parsed.sources) ? parsed.sources : [];
-              identity = parsed.identity && typeof parsed.identity === 'object' ? parsed.identity : {};
-              // WHY: Enrich each source with per-artifact file sizes from disk.
-              for (const source of sources) {
-                let urlSize = 0;
-                if (source.html_file) {
-                  try {
-                    const st = await fsPromises.stat(join(runDir, 'html', source.html_file));
-                    source.html_size = st.size; urlSize += st.size;
-                  } catch { /* file may not exist */ }
-                }
-                if (source.video_file) {
-                  try {
-                    const st = await fsPromises.stat(join(runDir, 'video', source.video_file));
-                    source.video_size = st.size; urlSize += st.size;
-                  } catch { /* file may not exist */ }
-                }
-                // WHY: Screenshots are named screenshot-{worker_id}-{hash}-{idx}-{type}.jpg
-                if (source.screenshot_count > 0 && source.worker_id) {
-                  try {
-                    const ssDir = join(runDir, 'screenshots');
-                    const prefix = `screenshot-${source.worker_id}-`;
-                    const ssFiles = await fsPromises.readdir(ssDir);
-                    let ssSize = 0;
-                    for (const f of ssFiles) {
-                      if (f.startsWith(prefix)) {
-                        const st = await fsPromises.stat(join(ssDir, f)).catch(() => null);
-                        if (st) ssSize += st.size;
-                      }
-                    }
-                    if (ssSize > 0) { source.screenshot_size = ssSize; urlSize += ssSize; }
-                  } catch { /* screenshots dir may not exist */ }
-                }
-                source.total_size = urlSize;
-              }
-            }
-          }
-        } catch { /* best-effort */ }
-        return jsonRes(res, 200, { run_id: runId, ...meta, sources, identity });
+        return jsonRes(res, 200, { run_id: runId, ...meta, sources: [], identity: {} });
       }
 
       // DELETE /storage/runs/:runId — delete single run (full cascade)

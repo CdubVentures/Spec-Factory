@@ -559,6 +559,48 @@ describe('resolveCarouselSlots', () => {
     assert.equal(hero1.source, 'empty');
   });
 
+  it('renders manually added empty per-variant placeholders outside configured slots', () => {
+    const result = resolveCarouselSlots({
+      viewBudget: ['left'],
+      heroCount: 0,
+      variantKey: 'color:black',
+      carouselSlots: {
+        'color:black': {
+          top: '__cleared__',
+          top3: '__cleared__',
+          hero_1: '__cleared__',
+        },
+      },
+      images: [],
+    });
+
+    assert.deepEqual(result.map(s => [s.slot, s.filename, s.source]), [
+      ['left', null, 'empty'],
+      ['top', null, 'empty'],
+      ['top3', null, 'empty'],
+      ['hero_1', null, 'empty'],
+    ]);
+  });
+
+  it('renders manually filled per-variant placeholders even without eval candidates', () => {
+    const result = resolveCarouselSlots({
+      viewBudget: ['left'],
+      heroCount: 0,
+      variantKey: 'color:black',
+      carouselSlots: {
+        'color:black': {
+          top3: 'manual-top-3.png',
+        },
+      },
+      images: [],
+    });
+
+    assert.deepEqual(result.map(s => [s.slot, s.filename, s.source]), [
+      ['left', null, 'empty'],
+      ['top3', 'manual-top-3.png', 'user'],
+    ]);
+  });
+
   it('fills an empty required slot from a classified candidate found in another view search', () => {
     const result = resolveCarouselSlots({
       viewBudget: ['top', 'front'],

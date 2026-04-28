@@ -63,7 +63,6 @@ export async function refreshIndexingPageData(input: RefreshIndexingPageDataInpu
     input.queryClient.invalidateQueries({ queryKey: ['catalog', input.category, 'indexing'], exact: true }),
     input.queryClient.invalidateQueries({ queryKey: ['indexlab', 'runs'] }),
     buildProductHistoryInvalidation(input.queryClient, input.category, productId),
-    input.queryClient.invalidateQueries({ queryKey: ['runtime-ops'] }),
     input.queryClient.invalidateQueries({ queryKey: ['indexlab', 'run'] }),
   ];
   const token = String(input.selectedIndexLabRunId || '').trim();
@@ -97,4 +96,3 @@ export function removeRunScopedQueries(input: RemoveRunScopedQueriesInput): void
   }
   input.queryClient.removeQueries({ queryKey: ['runtime-ops', token] });
 }
-

@@ -32,6 +32,8 @@ export const VIEW_PRIORITY_ORDER: Readonly<Record<string, readonly string[]>> = 
 export const GENERIC_VIEW_ORDER: readonly string[] = ['top', 'left', 'angle', 'sangle', 'front', 'bottom', 'right', 'rear', 'hero'];
 const CANONICAL_EXTRA_VIEWS = new Set(['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle']);
 const DISQUALIFYING_EXTRA_FLAGS = new Set(['watermark', 'badge', 'cropped', 'wrong_product', 'other']);
+export const MANUAL_CAROUSEL_SLOT_BASES = ['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle', 'hero'] as const;
+export type ManualCarouselSlotBase = typeof MANUAL_CAROUSEL_SLOT_BASES[number];
 
 interface GalleryImageRun {
   readonly run_number: number;
@@ -216,6 +218,39 @@ function nextExtraSlotKey(actualView: string, slotCounts: Map<string, number>): 
   return count === 1 ? actualView : `${actualView}${count}`;
 }
 
+export function resolveNextManualCarouselSlotKey(base: ManualCarouselSlotBase, existingSlots: readonly string[]): string {
+  const existing = new Set(existingSlots);
+  if (base === 'hero') {
+    for (let index = 1; ; index += 1) {
+      const slot = `hero_${index}`;
+      if (!existing.has(slot)) return slot;
+    }
+  }
+
+  if (!existing.has(base)) return base;
+  for (let index = 2; ; index += 1) {
+    const slot = `${base}${index}`;
+    if (!existing.has(slot)) return slot;
+  }
+}
+
+function pushManualSlot(
+  result: ResolvedSlot[],
+  slot: string,
+  override: string | null | undefined,
+  usedSlots: Set<string>,
+  markUsed: (filename: string | null) => void,
+): void {
+  if (usedSlots.has(slot)) return;
+  usedSlots.add(slot);
+  if (!override || override === '__cleared__') {
+    result.push({ slot, filename: null, source: 'empty' });
+    return;
+  }
+  result.push({ slot, filename: override, source: 'user' });
+  markUsed(override);
+}
+
 export function resolveSlots(
   viewBudget: string[],
   heroCount: number,
@@ -230,6 +265,7 @@ export function resolveSlots(
   const viewOrderIndex = new Map(viewOrder.map((view, index) => [view, index]));
   const usedFilenames = new Set<string>();
   const usedHashes = new Set<string>();
+  const usedSlots = new Set<string>();
   const slotCounts = new Map<string, number>();
 
   for (const view of viewOrder) {
@@ -245,8 +281,12 @@ export function resolveSlots(
 
   for (const view of viewOrder) {
     const userOverride = varSlots[view];
-    if (userOverride) {
+    if (userOverride === '__cleared__') {
+      result.push({ slot: view, filename: null, source: 'empty' });
+      usedSlots.add(view);
+    } else if (userOverride) {
       result.push({ slot: view, filename: userOverride, source: 'user' });
+      usedSlots.add(view);
       markUsed(userOverride);
     } else {
       const evalWinner = images
@@ -255,6 +295,7 @@ export function resolveSlots(
       result.push(evalWinner
         ? { slot: view, filename: evalWinner.filename, source: 'eval' }
         : { slot: view, filename: null, source: 'empty' });
+      usedSlots.add(view);
       if (evalWinner) markUsed(evalWinner.filename);
     }
   }
@@ -275,11 +316,16 @@ export function resolveSlots(
   for (const img of extraImages) {
     const slotKey = nextExtraSlotKey(actualViewForImage(img), slotCounts);
     const userOverride = varSlots[slotKey];
-    if (userOverride) {
+    if (userOverride === '__cleared__') {
+      result.push({ slot: slotKey, filename: null, source: 'empty' });
+      usedSlots.add(slotKey);
+    } else if (userOverride) {
       result.push({ slot: slotKey, filename: userOverride, source: 'user' });
+      usedSlots.add(slotKey);
       markUsed(userOverride);
     } else {
       result.push({ slot: slotKey, filename: img.filename, source: 'eval' });
+      usedSlots.add(slotKey);
       markUsed(img.filename);
     }
   }
@@ -291,13 +337,23 @@ export function resolveSlots(
   for (let i = 0; i < heroCount; i++) {
     const slotKey = `hero_${i + 1}`;
     const userOverride = varSlots[slotKey];
-    if (userOverride) {
+    if (userOverride === '__cleared__') {
+      result.push({ slot: slotKey, filename: null, source: 'empty' });
+      usedSlots.add(slotKey);
+    } else if (userOverride) {
       result.push({ slot: slotKey, filename: userOverride, source: 'user' });
+      usedSlots.add(slotKey);
     } else if (heroes[i]) {
       result.push({ slot: slotKey, filename: heroes[i].filename, source: 'eval' });
+      usedSlots.add(slotKey);
     } else {
       result.push({ slot: slotKey, filename: null, source: 'empty' });
+      usedSlots.add(slotKey);
     }
+  }
+
+  for (const [slot, override] of Object.entries(varSlots)) {
+    pushManualSlot(result, slot, override, usedSlots, markUsed);
   }
 
   return result;
@@ -457,7 +513,11 @@ export function derivePifCarouselAggregate(input: PifCarouselAggregateInput): Pi
       images,
       carouselSlotViews,
     );
-    return sum + slots.filter(slot => slot.filename && slot.filename !== '__cleared__').length;
+    return sum + slots.filter(slot =>
+      !slot.slot.startsWith('hero_')
+      && slot.filename
+      && slot.filename !== '__cleared__',
+    ).length;
   }, 0);
 
   return { filled, total, allComplete: filled >= total };

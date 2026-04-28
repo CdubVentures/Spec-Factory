@@ -42,7 +42,22 @@ function collectNodes(node, predicate, results = []) {
   return results;
 }
 
+function makeBodyStub(name) {
+  return `export function ${name}(props) { return { type: '${name}', props }; }`;
+}
+
 async function loadWorkbenchDrawerTabContentModule() {
+  const bodyNames = [
+    'KeyContractBody',
+    'KeyPriorityBody',
+    'KeyAiAssistBody',
+    'KeyEnumBody',
+    'KeyComponentsBody',
+    'KeyConstraintsBody',
+    'KeyEvidenceBody',
+    'KeyTooltipBody',
+    'KeySearchHintsBody',
+  ];
   return loadBundledModule(
     'tools/gui-react/src/features/studio/workbench/WorkbenchDrawerTabContent.tsx',
     {
@@ -60,26 +75,12 @@ async function loadWorkbenchDrawerTabContentModule() {
           export const jsxs = jsx;
           export const Fragment = Symbol.for('fragment');
         `,
-        './WorkbenchDrawerTabPanels.tsx': `
-          export function ContractTab(props) {
-            return { type: 'ContractTab', props };
-          }
-          export function EnumTab(props) {
-            return { type: 'EnumTab', props };
-          }
-          export function EvidenceTab(props) {
-            return { type: 'EvidenceTab', props };
-          }
-          export function SearchTab(props) {
-            return { type: 'SearchTab', props };
-          }
-          export function DepsTab(props) {
-            return { type: 'DepsTab', props };
-          }
-          export function PreviewTab(props) {
-            return { type: 'PreviewTab', props };
+        '../state/studioFieldRulesController.ts': `
+          export function useStudioFieldRulesState() {
+            return { editedRules: {} };
           }
         `,
+        './WorkbenchDrawerTabPanels.tsx': bodyNames.map(makeBodyStub).join('\n'),
       },
     },
   );
@@ -94,6 +95,7 @@ function buildBaseProps() {
     enumLists: [{ field: 'dpi', values: ['800'] }],
     componentDb: { sensor: [{ name: 'Hero', maker: 'Logitech', aliases: [] }] },
     componentSources: [{ component_type: 'sensor', roles: { properties: [] } }],
+    fieldOrder: ['dpi', 'weight'],
     onUpdate() {},
     onNavigate() {},
     B() {
@@ -102,70 +104,70 @@ function buildBaseProps() {
   };
 }
 
-test('WorkbenchDrawerTabContent routes contract tab props without rendering unrelated tabs', async () => {
+const TAB_TO_BODY = [
+  ['contract', 'KeyContractBody'],
+  ['priority', 'KeyPriorityBody'],
+  ['aiAssist', 'KeyAiAssistBody'],
+  ['enum', 'KeyEnumBody'],
+  ['components', 'KeyComponentsBody'],
+  ['constraints', 'KeyConstraintsBody'],
+  ['evidence', 'KeyEvidenceBody'],
+  ['tooltip', 'KeyTooltipBody'],
+  ['search', 'KeySearchHintsBody'],
+];
+
+for (const [tabId, bodyName] of TAB_TO_BODY) {
+  test(`WorkbenchDrawerTabContent routes ${tabId} tab to ${bodyName}`, async () => {
+    const { WorkbenchDrawerTabContent } = await loadWorkbenchDrawerTabContentModule();
+
+    const tree = renderNode(
+      WorkbenchDrawerTabContent({
+        ...buildBaseProps(),
+        activeTab: tabId,
+      }),
+    );
+
+    const matched = collectNodes(tree, (node) => node.type === bodyName);
+    assert.equal(matched.length, 1, `${tabId} should render exactly one ${bodyName}`);
+    assert.equal(matched[0].props.selectedKey, 'dpi');
+    assert.equal(typeof matched[0].props.updateField, 'function');
+
+    // Ensure no other body slipped through
+    for (const [, otherBody] of TAB_TO_BODY) {
+      if (otherBody === bodyName) continue;
+      const others = collectNodes(tree, (node) => node.type === otherBody);
+      assert.equal(others.length, 0, `${tabId} should NOT render ${otherBody}`);
+    }
+  });
+}
+
+test('WorkbenchDrawerTabContent threads enum-specific data into the Enum tab', async () => {
   const { WorkbenchDrawerTabContent } = await loadWorkbenchDrawerTabContentModule();
 
   const tree = renderNode(
-    WorkbenchDrawerTabContent({
-      ...buildBaseProps(),
-      activeTab: 'contract',
-    }),
-  );
-
-  const contractNode = collectNodes(tree, (node) => node.type === 'ContractTab')[0];
-
-  assert.ok(contractNode);
-  assert.equal(contractNode.props.fieldKey, 'dpi');
-  assert.equal(contractNode.props.rule.priority.required_level, 'required');
-  assert.equal(typeof contractNode.props.onUpdate, 'function');
-});
-
-test('WorkbenchDrawerTabContent routes enum and preview tabs with their feature data', async () => {
-  const { WorkbenchDrawerTabContent } = await loadWorkbenchDrawerTabContentModule();
-
-  const enumTree = renderNode(
     WorkbenchDrawerTabContent({
       ...buildBaseProps(),
       activeTab: 'enum',
     }),
   );
-  const enumNode = collectNodes(enumTree, (node) => node.type === 'EnumTab')[0];
 
+  const enumNode = collectNodes(tree, (node) => node.type === 'KeyEnumBody')[0];
   assert.ok(enumNode);
-  assert.equal(enumNode.props.category, 'mouse');
-
-  const previewTree = renderNode(
-    WorkbenchDrawerTabContent({
-      ...buildBaseProps(),
-      activeTab: 'preview',
-    }),
-  );
-  const previewNode = collectNodes(previewTree, (node) => node.type === 'PreviewTab')[0];
-
-  assert.ok(previewNode);
-  assert.equal(previewNode.props.fieldKey, 'dpi');
-  assert.deepEqual(previewNode.props.knownValues, { dpi: ['800'] });
-  assert.equal(previewNode.props.componentDb.sensor[0].name, 'Hero');
+  assert.deepEqual(enumNode.props.knownValues, { dpi: ['800'] });
+  assert.equal(enumNode.props.enumLists[0].field, 'dpi');
 });
 
-test('WorkbenchDrawerTabContent routes deps tab with navigation and component-source inputs', async () => {
+test('WorkbenchDrawerTabContent threads constraints data into the Constraints tab', async () => {
   const { WorkbenchDrawerTabContent } = await loadWorkbenchDrawerTabContentModule();
-  const onNavigate = () => {};
 
   const tree = renderNode(
     WorkbenchDrawerTabContent({
       ...buildBaseProps(),
-      activeTab: 'deps',
-      onNavigate,
+      activeTab: 'constraints',
     }),
   );
 
-  const depsNode = collectNodes(tree, (node) => node.type === 'DepsTab')[0];
-  const searchNode = collectNodes(tree, (node) => node.type === 'SearchTab')[0];
-
-  assert.ok(depsNode);
-  assert.equal(depsNode.props.fieldKey, 'dpi');
-  assert.equal(depsNode.props.onNavigate, onNavigate);
-  assert.equal(depsNode.props.componentSources[0].component_type, 'sensor');
-  assert.equal(searchNode, undefined);
+  const node = collectNodes(tree, (n) => n.type === 'KeyConstraintsBody')[0];
+  assert.ok(node);
+  assert.deepEqual(node.props.fieldOrder, ['dpi', 'weight']);
 });

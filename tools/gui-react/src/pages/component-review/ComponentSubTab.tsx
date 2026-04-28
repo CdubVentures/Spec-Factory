@@ -21,6 +21,7 @@ import {
   updateLinkedReviewProductFields,
   type LinkedReviewProductFieldSnapshot,
 } from './componentReviewCache.ts';
+import { invalidateComponentImpactForCategory } from './componentImpactInvalidation.ts';
 import type { ComponentReviewPayload, ComponentReviewItem, ComponentPropertyState, ComponentReviewDocument, ComponentReviewFlaggedItem } from '../../types/componentReview.ts';
 
 /** Extended item type that can carry synthetic-row metadata */
@@ -324,7 +325,7 @@ export function ComponentSubTab({
       queryClient.invalidateQueries({ queryKey: ['componentReviewData', category, data.componentType] });
       queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
       queryClient.invalidateQueries({ queryKey: ['product', category] });
-      queryClient.invalidateQueries({ queryKey: ['componentImpact'] });
+      invalidateComponentImpactForCategory({ queryClient, category });
     },
   });
 

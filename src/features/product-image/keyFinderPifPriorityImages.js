@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { readProductImages } from './productImageStore.js';
 import { resolveViewConfig } from './productImageLlmAdapter.js';
 import { createThumbnailBase64, resolveCarouselSlots } from './imageEvaluator.js';
 import { matchVariant } from './variantMatch.js';
@@ -53,10 +52,8 @@ function readSqlProductImages({ finderStore, productId }) {
   };
 }
 
-function readPifPrioritySource({ finderStore, productId, productRoot }) {
-  const sqlDoc = readSqlProductImages({ finderStore, productId });
-  if (sqlDoc) return sqlDoc;
-  return readProductImages({ productId, productRoot });
+function readPifPrioritySource({ finderStore, productId }) {
+  return readSqlProductImages({ finderStore, productId });
 }
 
 function getDefaultColor(specDb, productId) {
@@ -168,7 +165,7 @@ export async function resolveKeyFinderPifPriorityImageContext({
   };
 
   const root = productRoot || defaultProductRoot();
-  const pifDoc = readPifPrioritySource({ finderStore, productId, productRoot: root });
+  const pifDoc = readPifPrioritySource({ finderStore, productId });
   const allImages = pifDoc?.selected?.images || [];
   const slots = resolveCarouselSlots({
     viewBudget: priorityViews,

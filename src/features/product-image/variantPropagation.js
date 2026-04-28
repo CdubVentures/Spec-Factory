@@ -376,11 +376,6 @@ export function propagateVariantDelete({ productId, variantId, variantKey, produ
     counts.carouselSlots = 1;
   }
 
-  writePifJson(productId, productRoot, doc);
-
-  // 5. Delete orphaned image files from disk
-  unlinkOrphanedImages(productRoot, productId, variantFilenames, doc);
-
   // WHY: SQL must stay in sync with JSON (CQRS — UI reads from DB).
   if (specDb) {
     const finderStore = specDb.getFinderStore('productImageFinder');
@@ -411,6 +406,11 @@ export function propagateVariantDelete({ productId, variantId, variantKey, produ
       }
     }
   }
+
+  writePifJson(productId, productRoot, doc);
+
+  // 5. Delete orphaned image files from disk
+  unlinkOrphanedImages(productRoot, productId, variantFilenames, doc);
 
   return { updated: true, counts };
 }

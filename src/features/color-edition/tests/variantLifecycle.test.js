@@ -976,6 +976,91 @@ describe('deleteVariant', () => {
     assert.ok(!pj.candidates.release_date, 'JSON: release_date entry removed when emptied');
   }));
 
+  it('keeps product.json candidate mirrors unchanged until the local SQL cascade is complete', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
+    specDb.variants.syncFromRegistry(PID, [
+      { variant_id: 'v_target', variant_key: 'color:red', variant_type: 'color', variant_label: 'Red', color_atoms: ['red'], created_at: '2026-04-14T00:00:00Z' },
+      { variant_id: 'v_keep', variant_key: 'color:blue', variant_type: 'color', variant_label: 'Blue', color_atoms: ['blue'], created_at: '2026-04-14T00:00:00Z' },
+    ]);
+    seedCefSummary(specDb);
+    ensureProductJson(PID, {
+      candidates: {
+        colors: [
+          { value: ['red', 'blue'], source_id: 'cef-col-1', source_type: 'cef', confidence: 95 },
+        ],
+        release_date: [
+          { value: '2026-07-01', source_id: 'feature-rel-1', source_type: 'feature', confidence: 90, variant_id: 'v_target' },
+        ],
+      },
+    });
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { colors: ['red', 'blue'], editions: {}, default_color: 'red' },
+      variant_registry: [
+        { variant_id: 'v_target', variant_key: 'color:red', variant_type: 'color', color_atoms: ['red'] },
+        { variant_id: 'v_keep', variant_key: 'color:blue', variant_type: 'color', color_atoms: ['blue'] },
+      ], runs: [], run_count: 1, next_run_number: 2,
+    });
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'colors', sourceId: 'cef-col-1', sourceType: 'cef',
+      value: '["red","blue"]', confidence: 95, model: '', validationJson: {}, metadataJson: {},
+    });
+    specDb.insertFieldCandidate({
+      productId: PID, fieldKey: 'release_date', sourceId: 'feature-rel-1', sourceType: 'feature',
+      value: '2026-07-01', confidence: 90, model: '', validationJson: {}, metadataJson: {}, variantId: 'v_target',
+    });
+
+    const originalCascade = specDb.deleteFieldCandidatesByVariantId.bind(specDb);
+    const productJsonAtCascadeDelete = [];
+    specDb.deleteFieldCandidatesByVariantId = (...args) => {
+      productJsonAtCascadeDelete.push(readProductJson(PID).candidates);
+      return originalCascade(...args);
+    };
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_target', productRoot: root });
+
+    assert.equal(productJsonAtCascadeDelete.length, 1);
+    assert.deepEqual(productJsonAtCascadeDelete[0].colors[0].value, ['red', 'blue']);
+    assert.equal(productJsonAtCascadeDelete[0].release_date.length, 1);
+
+    const pj = readProductJson(PID);
+    assert.deepEqual(pj.candidates.colors[0].value, ['blue']);
+    assert.equal(pj.candidates.release_date, undefined);
+  }));
+
+  it('updates published CEF SQL before mirroring the CEF variant registry JSON', withEnv(({ specDb, root, ensureProductJson, readCefJson, ensureCefJson }) => {
+    specDb.variants.syncFromRegistry(PID, [
+      { variant_id: 'v_target', variant_key: 'color:red', variant_type: 'color', variant_label: 'Red', color_atoms: ['red'], created_at: '2026-04-14T00:00:00Z' },
+      { variant_id: 'v_keep', variant_key: 'color:blue', variant_type: 'color', variant_label: 'Blue', color_atoms: ['blue'], created_at: '2026-04-14T00:00:00Z' },
+    ]);
+    seedCefSummary(specDb);
+    ensureProductJson(PID);
+    ensureCefJson(PID, {
+      product_id: PID, category: 'mouse',
+      selected: { colors: ['red', 'blue'], editions: {}, default_color: 'red' },
+      variant_registry: [
+        { variant_id: 'v_target', variant_key: 'color:red', variant_type: 'color', color_atoms: ['red'] },
+        { variant_id: 'v_keep', variant_key: 'color:blue', variant_type: 'color', color_atoms: ['blue'] },
+      ], runs: [], run_count: 1, next_run_number: 2,
+    });
+
+    const finderStore = specDb.getFinderStore('colorEditionFinder');
+    const originalUpdateSummaryField = finderStore.updateSummaryField.bind(finderStore);
+    const cefJsonAtSummaryUpdate = [];
+    finderStore.updateSummaryField = (...args) => {
+      cefJsonAtSummaryUpdate.push(readCefJson(PID));
+      return originalUpdateSummaryField(...args);
+    };
+
+    deleteVariant({ specDb, productId: PID, variantId: 'v_target', productRoot: root });
+
+    assert.ok(cefJsonAtSummaryUpdate.length > 0, 'CEF summary SQL was updated');
+    assert.ok(
+      cefJsonAtSummaryUpdate[0].variant_registry.some((entry) => entry.variant_id === 'v_target'),
+      'CEF JSON mirror still contains deleted variant when published SQL projection starts',
+    );
+    assert.equal(readCefJson(PID).variant_registry.some((entry) => entry.variant_id === 'v_target'), false);
+  }));
+
   it('leaves CEF NULL-variant candidates untouched while cascading feature-source rows', withEnv(({ specDb, root, ensureProductJson, readProductJson, ensureCefJson }) => {
     specDb.variants.syncFromRegistry(PID, [
       { variant_id: 'v_target', variant_key: 'color:red', variant_type: 'color', variant_label: 'Red', color_atoms: ['red'], created_at: '2026-04-14T00:00:00Z' },

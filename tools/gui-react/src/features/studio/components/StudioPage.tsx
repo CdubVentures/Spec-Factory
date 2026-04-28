@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePersistedTab } from "../../../stores/tabStore.ts";
 import { useQueryClient } from "@tanstack/react-query";
 import { useShallow } from "zustand/react/shallow";
@@ -17,6 +17,7 @@ import {
 } from "../state/studioPageShellController.ts";
 import { STUDIO_TAB_IDS, type StudioTabId } from "../state/studioPageTabs.ts";
 import { useStudioPageQueries } from "../state/useStudioPageQueries.ts";
+import { FieldStudioPatchImportModal } from "./FieldStudioPatchImportModal.tsx";
 import { StudioPageShell } from "./StudioPageShell.tsx";
 import type { StudioConfig } from "../../../types/studio.ts";
 
@@ -57,6 +58,7 @@ export function StudioPage() {
   const setAutoSaveEnabled = useUiSettingsStore((s) => s.setAutoSaveEnabled);
   const autoSaveMapEnabled = useUiSettingsStore((s) => s.autoSaveMapEnabled);
   const setAutoSaveMapEnabled = useUiSettingsStore((s) => s.setAutoSaveMapEnabled);
+  const [patchImportOpen, setPatchImportOpen] = useState(false);
 
   // WHY: processRunning drives artifact polling — true when IndexLab OR compile/validate is running
   const anyRunning = Boolean(processStatus.running) || opsState.anyStudioOpRunning;
@@ -221,33 +223,42 @@ export function StudioPage() {
   );
 
   return (
-    <StudioPageShell
-      category={category}
-      activeTab={activeTab}
-      onSelectTab={setActiveTab}
-      reportsTabRunning={studioPageShellControllerState.shellState.reportsTabRunning}
-      fieldCount={studioPageShellControllerState.shellState.fieldCount}
-      compileErrorsCount={studioPageShellControllerState.shellState.compileErrorsCount}
-      compileWarningsCount={studioPageShellControllerState.shellState.compileWarningsCount}
-      authorityConflictVersion={studioPageShellControllerState.shellState.authorityConflictVersion}
-      authorityConflictDetectedAt={studioPageShellControllerState.shellState.authorityConflictDetectedAt}
-      onReloadAuthoritySnapshot={reloadAuthoritySnapshot}
-      onKeepLocalChangesForAuthorityConflict={keepLocalChangesForAuthorityConflict}
-      saveStatusLabel={studioPageShellControllerState.shellState.saveStatusLabel}
-      saveStatusDot={studioPageShellControllerState.shellState.saveStatusDot}
-      savePending={studioPageShellControllerState.shellState.savePending}
-      autoSaveAllEnabled={studioPageShellControllerState.shellState.autoSaveAllEnabled}
-      onSaveEdits={() => saveFromStore({ force: true })}
-      onToggleAutoSaveAll={() => setAutoSaveAllEnabled(!autoSaveAllEnabled)}
-      compileStatusLabel={studioPageShellControllerState.shellState.compileStatusLabel}
-      compileStatusDot={studioPageShellControllerState.shellState.compileStatusDot}
-      compilePending={studioPageShellControllerState.shellState.compilePending}
-      compileProcessRunning={studioPageShellControllerState.shellState.compileProcessRunning}
-      processRunning={studioPageShellControllerState.shellState.processRunning}
-      onRunCompile={runCompileFromStudio}
-      onRefresh={refreshStudioData}
-      activePanel={activePanel}
-    />
+    <>
+      <StudioPageShell
+        category={category}
+        activeTab={activeTab}
+        onSelectTab={setActiveTab}
+        reportsTabRunning={studioPageShellControllerState.shellState.reportsTabRunning}
+        fieldCount={studioPageShellControllerState.shellState.fieldCount}
+        compileErrorsCount={studioPageShellControllerState.shellState.compileErrorsCount}
+        compileWarningsCount={studioPageShellControllerState.shellState.compileWarningsCount}
+        authorityConflictVersion={studioPageShellControllerState.shellState.authorityConflictVersion}
+        authorityConflictDetectedAt={studioPageShellControllerState.shellState.authorityConflictDetectedAt}
+        onReloadAuthoritySnapshot={reloadAuthoritySnapshot}
+        onKeepLocalChangesForAuthorityConflict={keepLocalChangesForAuthorityConflict}
+        saveStatusLabel={studioPageShellControllerState.shellState.saveStatusLabel}
+        saveStatusDot={studioPageShellControllerState.shellState.saveStatusDot}
+        savePending={studioPageShellControllerState.shellState.savePending}
+        autoSaveAllEnabled={studioPageShellControllerState.shellState.autoSaveAllEnabled}
+        onSaveEdits={() => saveFromStore({ force: true })}
+        onToggleAutoSaveAll={() => setAutoSaveAllEnabled(!autoSaveAllEnabled)}
+        compileStatusLabel={studioPageShellControllerState.shellState.compileStatusLabel}
+        compileStatusDot={studioPageShellControllerState.shellState.compileStatusDot}
+        compilePending={studioPageShellControllerState.shellState.compilePending}
+        compileProcessRunning={studioPageShellControllerState.shellState.compileProcessRunning}
+        processRunning={studioPageShellControllerState.shellState.processRunning}
+        onRunCompile={runCompileFromStudio}
+        onImportPatches={() => setPatchImportOpen(true)}
+        onRefresh={refreshStudioData}
+        activePanel={activePanel}
+      />
+      <FieldStudioPatchImportModal
+        category={category}
+        open={patchImportOpen}
+        onClose={() => setPatchImportOpen(false)}
+        onApplied={refreshStudioData}
+      />
+    </>
   );
 
 }

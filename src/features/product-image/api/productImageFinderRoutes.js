@@ -88,11 +88,12 @@ function countSlotFillsAndImages({ fullImages, carouselSlots, variantKey, varian
     (img) => (img?.variant_key || '') === (variantKey || '') || (variantId && img?.variant_id === variantId),
   ).length;
   const scoredSet = new Set(carouselScoredViews);
-  const filledViews = viewResolved.filter((s) => s.filename && s.filename !== '__cleared__');
+  const filledViews = viewResolved.filter((s) =>
+    !s.slot.startsWith('hero_') && s.filename && s.filename !== '__cleared__');
   return {
     priorityFilled: filledViews.length,
     loopFilled: filledViews.filter((s) => !scoredSet.has(s.slot)).length,
-    heroFilled: filled(heroResolved),
+    heroFilled: filled(heroResolved.filter((s) => s.slot.startsWith('hero_'))),
     imageCount,
   };
 }

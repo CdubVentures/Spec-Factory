@@ -7,6 +7,7 @@ import {
   sortByPriorityAndSize,
   groupImagesByVariant,
   resolveSlots,
+  resolveNextManualCarouselSlotKey,
   resolveRunMode,
   resolveLoopId,
   buildModeBadge,
@@ -350,6 +351,15 @@ describe('resolveSlots', () => {
     assert.equal(slots[0].filename, 'user-top.png');
   });
 
+  it('__cleared__ sentinel blocks eval auto-fill', () => {
+    const images = [makeImage({ view: 'top', filename: 'eval-top.png', eval_best: true })];
+    const carouselSlots = { 'color:black': { top: '__cleared__' } };
+    const slots = resolveSlots(['top'], 0, 'color:black', carouselSlots, images);
+    assert.deepEqual(slots.map(s => [s.slot, s.filename, s.source]), [
+      ['top', null, 'empty'],
+    ]);
+  });
+
   it('eval winner fills slot when no user override', () => {
     const images = [makeImage({ view: 'top', filename: 'eval-top.png', eval_best: true })];
     const slots = resolveSlots(['top'], 0, 'color:black', {}, images);
@@ -567,6 +577,52 @@ describe('resolveSlots', () => {
 });
 
 /* ── resolveRunMode ───────────────────────────────────────────────── */
+
+describe('resolveSlots manual placeholders', () => {
+  it('renders manually added empty per-variant placeholders outside configured slots', () => {
+    const slots = resolveSlots(['left'], 0, 'color:black', {
+      'color:black': {
+        top: '__cleared__',
+        top3: '__cleared__',
+        hero_1: '__cleared__',
+      },
+    }, []);
+    assert.deepEqual(slots.map(s => [s.slot, s.filename, s.source]), [
+      ['left', null, 'empty'],
+      ['top', null, 'empty'],
+      ['top3', null, 'empty'],
+      ['hero_1', null, 'empty'],
+    ]);
+  });
+
+  it('renders manually filled per-variant placeholders even without eval candidates', () => {
+    const slots = resolveSlots(['left'], 0, 'color:black', {
+      'color:black': {
+        top3: 'manual-top-3.png',
+      },
+    }, []);
+    assert.deepEqual(slots.map(s => [s.slot, s.filename, s.source]), [
+      ['left', null, 'empty'],
+      ['top3', 'manual-top-3.png', 'user'],
+    ]);
+  });
+});
+
+describe('resolveNextManualCarouselSlotKey', () => {
+  it('uses the base view for the first manually added view slot', () => {
+    assert.equal(resolveNextManualCarouselSlotKey('top', []), 'top');
+  });
+
+  it('uses the next available numbered view slot when the base exists', () => {
+    assert.equal(resolveNextManualCarouselSlotKey('top', ['top']), 'top2');
+    assert.equal(resolveNextManualCarouselSlotKey('top', ['top', 'top2', 'top4']), 'top3');
+  });
+
+  it('uses hero_N keys for manually added hero slots', () => {
+    assert.equal(resolveNextManualCarouselSlotKey('hero', []), 'hero_1');
+    assert.equal(resolveNextManualCarouselSlotKey('hero', ['hero_1', 'hero_2']), 'hero_3');
+  });
+});
 
 describe('resolveRunMode', () => {
   it('returns top-level mode', () => {
@@ -905,6 +961,30 @@ describe('derivePifCarouselAggregate', () => {
     });
 
     assert.deepEqual(aggregate, { filled: 2, total: 2, allComplete: true });
+  });
+
+  it('does not count manual hero placeholders as carousel view fills', () => {
+    const imageGroups = [
+      {
+        key: 'color:black',
+        label: 'Black',
+        type: 'color' as const,
+        images: [],
+      },
+    ];
+    const variants = [
+      { key: 'color:black', label: 'Black', type: 'color' as const },
+    ];
+
+    const aggregate = derivePifCarouselAggregate({
+      imageGroups,
+      variants,
+      carouselSlots: { 'color:black': { hero_1: 'manual-hero.png' } },
+      scoredViewSlots: ['top'],
+      carouselSlotViews: ['top'],
+    });
+
+    assert.deepEqual(aggregate, { filled: 0, total: 1, allComplete: false });
   });
 });
 

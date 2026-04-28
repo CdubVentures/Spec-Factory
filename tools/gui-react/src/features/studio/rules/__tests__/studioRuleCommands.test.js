@@ -95,11 +95,6 @@ test('priority signal coupling no longer auto-generates reasoning_note after kno
     key: 'weight',
     command: createSetFieldValueCommand('priority.difficulty', 'hard'),
   });
-  applyStudioRuleCommand({
-    rule,
-    key: 'weight',
-    command: createSetFieldValueCommand('priority.effort', 7),
-  });
 
   // reasoning_note is NOT auto-generated (coupling is a no-op)
   assert.equal(rule.ai_assist?.reasoning_note, undefined);
@@ -111,7 +106,7 @@ test('priority signal coupling no longer auto-generates reasoning_note after kno
   applyStudioRuleCommand({
     rule: manualRule,
     key: 'weight',
-    command: createSetFieldValueCommand('priority.effort', 4),
+    command: createSetFieldValueCommand('priority.difficulty', 'medium'),
   });
   assert.equal(manualRule.ai_assist?.reasoning_note, 'Check manufacturer spec sheets first');
 });

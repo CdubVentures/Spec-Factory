@@ -165,56 +165,78 @@ export function computePublishedArraysFromVariants(variants) {
  * @param {{ specDb, productId: string, productRoot?: string }} opts
  * @returns {{ colors: string[], editions: string[], defaultColor: string }}
  */
-export function derivePublishedFromVariants({ specDb, productId, productRoot }) {
-  productRoot = productRoot || defaultProductRoot();
+function computePublishedProjection({ specDb, productId }) {
   const variants = specDb.variants.listActive(productId);
-
   const { colors, editions, defaultColor } = computePublishedArraysFromVariants(variants);
-  const colorsConfidence = aggregateCefFieldConfidence(specDb, productId, 'colors', variants);
-  const editionsConfidence = aggregateCefFieldConfidence(specDb, productId, 'editions', variants);
+  return {
+    colors,
+    editions,
+    defaultColor,
+    colorsConfidence: aggregateCefFieldConfidence(specDb, productId, 'colors', variants),
+    editionsConfidence: aggregateCefFieldConfidence(specDb, productId, 'editions', variants),
+    now: new Date().toISOString(),
+  };
+}
 
-  const now = new Date().toISOString();
+function writePublishedSql({ specDb, productId, projection }) {
   const finderStore = specDb.getFinderStore?.('colorEditionFinder');
   if (finderStore) {
-    finderStore.updateSummaryField(productId, 'colors', JSON.stringify(colors));
-    finderStore.updateSummaryField(productId, 'editions', JSON.stringify(editions));
-    finderStore.updateSummaryField(productId, 'default_color', defaultColor);
+    finderStore.updateSummaryField(productId, 'colors', JSON.stringify(projection.colors));
+    finderStore.updateSummaryField(productId, 'editions', JSON.stringify(projection.editions));
+    finderStore.updateSummaryField(productId, 'default_color', projection.defaultColor);
   }
+}
 
+function mirrorPublishedProductJson({ productRoot, productId, projection }) {
   // Mirror product.json fields[colors] and fields[editions]
   const productJson = readProductJson(productRoot, productId);
   if (productJson) {
     if (!productJson.fields) productJson.fields = {};
 
-    if (colors.length > 0) {
+    if (projection.colors.length > 0) {
       productJson.fields.colors = {
-        value: colors,
-        confidence: colorsConfidence,
+        value: projection.colors,
+        confidence: projection.colorsConfidence,
         source: 'variant_registry',
-        resolved_at: now,
+        resolved_at: projection.now,
         sources: [{ source: 'variant_registry' }],
       };
     } else {
       delete productJson.fields.colors;
     }
 
-    if (editions.length > 0) {
+    if (projection.editions.length > 0) {
       productJson.fields.editions = {
-        value: editions,
-        confidence: editionsConfidence,
+        value: projection.editions,
+        confidence: projection.editionsConfidence,
         source: 'variant_registry',
-        resolved_at: now,
+        resolved_at: projection.now,
         sources: [{ source: 'variant_registry' }],
       };
     } else {
       delete productJson.fields.editions;
     }
 
-    productJson.updated_at = now;
+    productJson.updated_at = projection.now;
     writeProductJson(productRoot, productId, productJson);
   }
+}
 
-  return { colors, editions, defaultColor };
+function publishedResult(projection) {
+  return {
+    colors: projection.colors,
+    editions: projection.editions,
+    defaultColor: projection.defaultColor,
+  };
+}
+
+export function derivePublishedFromVariants({ specDb, productId, productRoot }) {
+  productRoot = productRoot || defaultProductRoot();
+  const projection = computePublishedProjection({ specDb, productId });
+  writePublishedSql({ specDb, productId, projection });
+  mirrorPublishedProductJson({ productRoot, productId, projection });
+
+  return publishedResult(projection);
 }
 
 // ── Remove variant from JSON SSOT ───────────────────────────────────
@@ -270,8 +292,7 @@ function removeVariantFromJson({ productId, variantId, productRoot }) {
  *
  * @param {{ specDb, productId: string, variant: object }} opts
  */
-function stripVariantFromCandidates({ specDb, productId, variant, productRoot }) {
-  // Determine which fields and values this variant contributes
+function getVariantCandidateStrips(variant) {
   const strips = [];
 
   if (variant.variant_type === 'color') {
@@ -291,7 +312,10 @@ function stripVariantFromCandidates({ specDb, productId, variant, productRoot })
       strips.push({ fieldKey: 'colors', values: [combo] });
     }
   }
+  return strips;
+}
 
+function stripVariantFromCandidateSql({ specDb, productId, strips }) {
   for (const { fieldKey, values } of strips) {
     if (values.length === 0) continue;
     const removeSet = new Set(values);
@@ -324,7 +348,9 @@ function stripVariantFromCandidates({ specDb, productId, variant, productRoot })
       specDb.updateFieldCandidateValue(productId, fieldKey, row.source_id, JSON.stringify(filtered));
     }
   }
+}
 
+function stripVariantFromCandidateJson({ productId, productRoot, strips }) {
   // WHY: product.json.candidates must stay in sync with SQL (dual-write).
   // Candidate values can be parsed arrays or stringified JSON strings.
   const productJson = readProductJson(productRoot, productId);
@@ -373,11 +399,13 @@ function stripVariantFromCandidates({ specDb, productId, variant, productRoot })
  * NULL variant_id rows (CEF-source, pipeline) are NOT touched here —
  * those go through stripVariantFromCandidates value matching.
  */
-function cascadeVariantIdFromCandidates({ specDb, productId, variantId, productRoot }) {
+function cascadeVariantIdFromCandidateSql({ specDb, productId, variantId }) {
   if (!variantId) return;
-
   specDb.deleteFieldCandidatesByVariantId(productId, variantId);
+}
 
+function cascadeVariantIdFromCandidateJson({ productId, variantId, productRoot }) {
+  if (!variantId) return;
   const productJson = readProductJson(productRoot, productId);
   if (!productJson) return;
 
@@ -443,19 +471,30 @@ export function deleteVariant({ specDb, productId, variantId, productRoot }) {
   // 1. Remove from variants table
   specDb.variants.remove(productId, variantId);
 
-  // 2. Strip variant's values from CEF-source field_candidates (SQL + JSON)
-  stripVariantFromCandidates({ specDb, productId, variant, productRoot });
+  const candidateStrips = getVariantCandidateStrips(variant);
 
-  // 3. Cascade variant-anchored feature-source candidates by variant_id (SQL + JSON)
-  cascadeVariantIdFromCandidates({ specDb, productId, variantId, productRoot });
+  // 2. Strip variant values from CEF-source field_candidates in SQL.
+  stripVariantFromCandidateSql({ specDb, productId, strips: candidateStrips });
 
-  // 4. Remove from JSON SSOT
+  // 3. Delete variant-anchored feature-source candidates in SQL.
+  cascadeVariantIdFromCandidateSql({ specDb, productId, variantId });
+
+  // 4. Re-derive published SQL from remaining variants before JSON mirrors.
+  const publishedProjection = computePublishedProjection({ specDb, productId });
+  writePublishedSql({ specDb, productId, projection: publishedProjection });
+  const published = publishedResult(publishedProjection);
+
+  // 5. Mirror local candidate cleanup to product.json after SQL cascade.
+  stripVariantFromCandidateJson({ productId, productRoot, strips: candidateStrips });
+  cascadeVariantIdFromCandidateJson({ productId, variantId, productRoot });
+
+  // 6. Remove from JSON SSOT
   removeVariantFromJson({ productId, variantId, productRoot });
 
-  // 5. Re-derive published state from remaining variants
-  const published = derivePublishedFromVariants({ specDb, productId, productRoot });
+  // 7. Mirror published product.json fields from the SQL-projected state.
+  mirrorPublishedProductJson({ productRoot, productId, projection: publishedProjection });
 
-  // 6. Cascade to PIF (variantArtifactProducer — custom disk + eval cleanup)
+  // 8. Cascade to PIF (variantArtifactProducer - custom disk + eval cleanup)
   const pifResult = propagateVariantDelete({
     productId,
     variantId: variant.variant_id,
@@ -464,7 +503,7 @@ export function deleteVariant({ specDb, productId, variantId, productRoot }) {
     specDb,
   });
 
-  // 7. Generic cascade: every variantFieldProducer module strips its own history.
+  // 9. Generic cascade: every variantFieldProducer module strips its own history.
   // O(1) scaling: a new variantFieldProducer entry in finderModuleRegistry
   // automatically gets this cleanup — no edits here required.
   const fieldProducerResults = {};

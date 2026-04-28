@@ -37,7 +37,9 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
     if (nextRunId === previousActiveRunIdRef.current) return;
     previousActiveRunIdRef.current = nextRunId;
     queryClient.invalidateQueries({ queryKey: ['indexlab', 'run'] });
-    queryClient.invalidateQueries({ queryKey: ['runtime-ops'] });
+    if (nextRunId) {
+      queryClient.invalidateQueries({ queryKey: ['runtime-ops', nextRunId] });
+    }
     queryClient.invalidateQueries({ queryKey: ['indexing', 'domain-checklist'] });
   }, [activeRunId, queryClient]);
 

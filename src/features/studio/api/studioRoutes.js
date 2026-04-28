@@ -3,6 +3,16 @@ import { executeCommand } from '../../../core/operations/commandExecutor.js';
 import { hashJson } from '../../../ingest/compileUtils.js';
 import { normalizeFieldStudioMap } from '../../../ingest/compileMapNormalization.js';
 import {
+  importFieldStudioPatchDocuments,
+  parseFieldStudioPatchPayloadFiles,
+  previewFieldStudioPatchDocuments,
+} from '../../category-audit/fieldStudioPatch.js';
+import {
+  applyKeyOrderPatchDocument,
+  parseKeyOrderPatchPayloadFiles,
+  previewKeyOrderPatchDocument,
+} from '../../category-audit/keyOrderPatch.js';
+import {
   buildPendingEnumValuesFromSuggestions,
   buildStudioComponentDbFromSpecDb,
   buildStudioKnownValuesFromSpecDb,
@@ -25,6 +35,98 @@ import {
   sanitizeEgLockedOverrides,
   resolveEgLockedKeys,
 } from '../contracts/egPresets.js';
+
+function readCurrentFieldStudioMap({ category, getSpecDb }) {
+  const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+  const row = specDb?.getFieldStudioMap?.() ?? null;
+  if (!row) return {};
+  try {
+    const parsed = JSON.parse(row.map_json);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+async function readCurrentFieldKeyOrder({ category, getSpecDb, config, HELPER_ROOT, fs, path }) {
+  const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+  const row = specDb?.getFieldKeyOrder?.(category) ?? null;
+  if (row?.order_json) {
+    try {
+      const parsed = JSON.parse(row.order_json);
+      if (Array.isArray(parsed)) return parsed;
+    } catch { /* fall through to JSON mirror */ }
+  }
+
+  if (typeof fs?.readFile !== 'function') return [];
+  const jsonPath = path.join(
+    config?.categoryAuthorityRoot || HELPER_ROOT || 'category_authority',
+    category,
+    '_control_plane',
+    'field_key_order.json',
+  );
+  try {
+    const parsed = JSON.parse(await fs.readFile(jsonPath, 'utf8'));
+    return Array.isArray(parsed?.order) ? parsed.order : [];
+  } catch {
+    return [];
+  }
+}
+
+function readCompiledFieldKeys({ category, getSpecDb }) {
+  const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+  const compiled = specDb?.getCompiledRules?.() ?? null;
+  const fields = compiled?.fields || compiled?.rules?.fields || {};
+  return Object.keys(fields);
+}
+
+async function writeFieldKeyOrderMirror({ category, order, config, HELPER_ROOT, fs, path }) {
+  const authorityRoot = config?.categoryAuthorityRoot || HELPER_ROOT || 'category_authority';
+  const fkoPath = path.join(authorityRoot, category, '_control_plane', 'field_key_order.json');
+  await fs.mkdir(path.dirname(fkoPath), { recursive: true });
+  await fs.writeFile(fkoPath, `${JSON.stringify({ order }, null, 2)}\n`, 'utf8');
+  return fkoPath;
+}
+
+function sanitizeFieldStudioMapForSave({ fieldStudioMap, appDb }) {
+  const normalizedFieldStudioMap = { ...fieldStudioMap };
+  if (!normalizedFieldStudioMap.field_overrides) return normalizedFieldStudioMap;
+  const saveColors = appDb ? appDb.listColors().map((c) => c.name) : [];
+  const saveCtx = saveColors.length > 0 ? { colorNames: saveColors } : undefined;
+  normalizedFieldStudioMap.field_overrides = sanitizeEgLockedOverrides(
+    normalizedFieldStudioMap.field_overrides,
+    normalizedFieldStudioMap.eg_toggles,
+    saveCtx,
+  );
+  return normalizedFieldStudioMap;
+}
+
+async function writeAuditorResponsePatchFiles({ category, outputRoot, docs, fs, path }) {
+  const responsesDir = path.resolve(outputRoot, category, 'auditors-responses');
+  const categoryRoot = path.resolve(outputRoot, category);
+  if (responsesDir !== categoryRoot && !responsesDir.startsWith(`${categoryRoot}${path.sep}`)) {
+    throw new Error(`unsafe auditor responses path for ${category}`);
+  }
+  await fs.mkdir(responsesDir, { recursive: true });
+  for (const doc of docs) {
+    const fileName = path.basename(String(doc.source_file || ''));
+    const filePath = path.resolve(responsesDir, fileName);
+    if (!fileName || !filePath.startsWith(`${responsesDir}${path.sep}`)) {
+      throw new Error(`unsafe auditor response filename "${doc.source_file || ''}"`);
+    }
+    const { source_file, source_path, ...storedDoc } = doc;
+    await fs.writeFile(filePath, `${JSON.stringify(storedDoc, null, 2)}\n`, 'utf8');
+  }
+  return responsesDir;
+}
+
+function patchImportResponse(preview, extras = {}) {
+  const { fieldStudioMap, validation, ...rest } = preview;
+  return {
+    ...rest,
+    ...extras,
+  };
+}
 
 export function registerStudioRoutes(ctx) {
   const {
@@ -349,12 +451,205 @@ export function registerStudioRoutes(ctx) {
           },
         });
         return jsonRes(res, 200, {
-          file_path: '',
+          file_path: `specDb:${category}`,
           map_hash: mapHash,
+          map: normalizedFieldStudioMap,
           field_studio_map: normalizedFieldStudioMap,
         });
       } catch (err) {
         return jsonRes(res, 500, { error: 'save_failed', message: err.message });
+      }
+    }
+
+    // Studio Field Studio patch preview/apply.
+    if (parts[0] === 'studio' && parts[1] && parts[2] === 'field-studio-patches' && ['preview', 'apply'].includes(parts[3]) && method === 'POST') {
+      if (!hasStudioMapHandlers) {
+        return jsonRes(res, 500, { error: 'studio_map_handlers_missing' });
+      }
+      const category = parts[1];
+      const action = parts[3];
+      let body = {};
+      try {
+        body = (await readJsonBody(req)) || {};
+      } catch {
+        return jsonRes(res, 400, { error: 'invalid_json_body' });
+      }
+
+      try {
+        const docs = parseFieldStudioPatchPayloadFiles({ category, files: body.files });
+        const currentMap = readCurrentFieldStudioMap({ category, getSpecDb });
+        if (action === 'preview') {
+          const preview = previewFieldStudioPatchDocuments({
+            category,
+            fieldStudioMap: currentMap,
+            patchDocs: docs,
+            validateFieldStudioMap,
+          });
+          if (!preview.valid) {
+            return jsonRes(res, 400, {
+              error: 'invalid_field_studio_patch_import',
+              ...patchImportResponse(preview),
+            });
+          }
+          return jsonRes(res, 200, patchImportResponse(preview));
+        }
+
+        const result = importFieldStudioPatchDocuments({
+          category,
+          fieldStudioMap: currentMap,
+          patchDocs: docs,
+          validateFieldStudioMap,
+        });
+        const saveReadyFieldStudioMap = sanitizeFieldStudioMapForSave({
+          fieldStudioMap: result.fieldStudioMap,
+          appDb,
+        });
+        const outputRoot = path.resolve(config?.localInputRoot || '.workspace', 'reports');
+        const storageDir = await writeAuditorResponsePatchFiles({
+          category,
+          outputRoot,
+          docs,
+          fs,
+          path,
+        });
+        const mapHash = hashJson(saveReadyFieldStudioMap);
+        const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+        if (specDb) {
+          specDb.upsertFieldStudioMap(JSON.stringify(saveReadyFieldStudioMap), mapHash);
+        }
+        saveFieldStudioMap({ category, fieldStudioMap: saveReadyFieldStudioMap, config }).catch((err) => {
+          console.warn(`[studio-map] JSON export failed (non-critical): ${err.message}`);
+        });
+        sessionCache.invalidateSessionCache(category);
+        reviewLayoutByCategory.delete(category);
+        emitDataChange({
+          broadcastWs,
+          event: 'field-studio-map-saved',
+          category,
+          categories: [category],
+          domains: ['studio', 'mapping', 'review-layout', 'labels'],
+          meta: {
+            imported_patch_files: result.applied.length,
+            imported_changes: result.changes.length,
+          },
+        });
+        return jsonRes(res, 200, {
+          category,
+          valid: true,
+          applied: result.applied,
+          files: result.applied,
+          changes: result.changes,
+          errors: [],
+          warnings: Array.isArray(result.validation?.warnings) ? result.validation.warnings : [],
+          map_hash: mapHash,
+          storageDir,
+        });
+      } catch (err) {
+        return jsonRes(res, 400, {
+          error: 'invalid_field_studio_patch_import',
+          message: err.message,
+        });
+      }
+    }
+
+    // Studio key-order patch preview/apply.
+    if (parts[0] === 'studio' && parts[1] && parts[2] === 'key-order-patches' && ['preview', 'apply'].includes(parts[3]) && method === 'POST') {
+      const category = parts[1];
+      const action = parts[3];
+      let body = {};
+      try {
+        body = (await readJsonBody(req)) || {};
+      } catch {
+        return jsonRes(res, 400, { error: 'invalid_json_body' });
+      }
+
+      const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
+      if (!specDb) {
+        return jsonRes(res, 503, { error: 'specdb_not_ready', message: `SpecDb not ready for ${category}` });
+      }
+
+      try {
+        const currentOrder = await readCurrentFieldKeyOrder({
+          category,
+          getSpecDb,
+          config,
+          HELPER_ROOT,
+          fs,
+          path,
+        });
+        const existingFieldKeys = readCompiledFieldKeys({ category, getSpecDb });
+        const docs = parseKeyOrderPatchPayloadFiles({
+          category,
+          files: body.files,
+          currentOrder,
+          existingFieldKeys,
+        });
+        const patchDoc = docs[0];
+
+        if (action === 'preview') {
+          const preview = previewKeyOrderPatchDocument({
+            category,
+            currentOrder,
+            existingFieldKeys,
+            patchDoc,
+          });
+          return jsonRes(res, 200, preview);
+        }
+
+        const result = applyKeyOrderPatchDocument(patchDoc, {
+          category,
+          currentOrder,
+          existingFieldKeys,
+        });
+        specDb.setFieldKeyOrder(category, JSON.stringify(result.order));
+        await writeFieldKeyOrderMirror({
+          category,
+          order: result.order,
+          config,
+          HELPER_ROOT,
+          fs,
+          path,
+        });
+        const outputRoot = path.resolve(config?.localInputRoot || '.workspace', 'reports');
+        const storageDir = await writeAuditorResponsePatchFiles({
+          category,
+          outputRoot,
+          docs,
+          fs,
+          path,
+        });
+        sessionCache.invalidateSessionCache(category);
+        reviewLayoutByCategory.delete(category);
+        emitDataChange({
+          broadcastWs,
+          event: 'field-key-order-saved',
+          category,
+          categories: [category],
+          domains: ['studio', 'mapping', 'review-layout'],
+          meta: {
+            order_length: result.order.length,
+            imported_patch_files: docs.length,
+            imported_changes: result.changes.length,
+          },
+        });
+        return jsonRes(res, 200, {
+          category,
+          valid: true,
+          applied: result.files,
+          files: result.files,
+          changes: result.changes,
+          order: result.order,
+          errors: [],
+          warnings: result.document.rename_keys.length > 0
+            ? ['rename_keys are review proposals only; importer does not rename field rule files']
+            : [],
+          storageDir,
+        });
+      } catch (err) {
+        return jsonRes(res, 400, {
+          error: 'invalid_key_order_patch_import',
+          message: err.message,
+        });
       }
     }
 

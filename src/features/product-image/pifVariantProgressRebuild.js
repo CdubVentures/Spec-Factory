@@ -92,7 +92,8 @@ export function rebuildPifVariantProgressFromJson({ specDb, productRoot }) {
         if (v.variant_id && img?.variant_id === v.variant_id) return true;
         return (img?.variant_key || '') === (v.variant_key || '');
       }).length;
-      const filledViews = viewResolved.filter((s) => s.filename && s.filename !== '__cleared__');
+      const filledViews = viewResolved.filter((s) =>
+        !s.slot.startsWith('hero_') && s.filename && s.filename !== '__cleared__');
 
       specDb.upsertPifVariantProgress({
         productId,
@@ -102,7 +103,7 @@ export function rebuildPifVariantProgressFromJson({ specDb, productRoot }) {
         priorityTotal: carouselScoredViews.length,
         loopFilled: filledViews.filter((s) => !scoredSet.has(s.slot)).length,
         loopTotal: carouselExtraTarget,
-        heroFilled: countFilled(heroResolved),
+        heroFilled: countFilled(heroResolved.filter((s) => s.slot.startsWith('hero_'))),
         heroTarget: heroEnabled ? heroCount : 0,
         imageCount,
       });

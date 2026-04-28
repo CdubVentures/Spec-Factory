@@ -24,6 +24,7 @@ import { useFieldLabels } from '../../../hooks/useFieldLabels.ts';
 import { computeReviewDashboardMetrics, deriveReviewKpiCards } from '../selectors/reviewMetricsSelectors.ts';
 import { useDebouncedCallback } from '../../../hooks/useDebounce.ts';
 import { readReviewGridSessionState, writeReviewGridSessionState } from '../state/reviewGridSessionState.ts';
+import { invalidateReviewThresholdCaches } from '../state/reviewThresholdInvalidation.ts';
 import type { ReviewLayout, ProductsIndexResponse, CandidateResponse, CandidateDeleteResponse, ReviewCandidate } from '../../../types/review.ts';
 import { parseCatalogProducts } from '../../catalog/api/catalogParsers.ts';
 import {
@@ -196,8 +197,7 @@ export function ReviewPage() {
   );
   useEffect(() => {
     if (publishConfidenceThreshold == null) return;
-    queryClient.invalidateQueries({ queryKey: ['candidates'] });
-    queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
+    invalidateReviewThresholdCaches({ queryClient, category });
   }, [publishConfidenceThreshold, queryClient, category]);
 
   useEffect(() => {

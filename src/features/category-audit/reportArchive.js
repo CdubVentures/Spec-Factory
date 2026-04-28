@@ -2,7 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 const REPORT_ARCHIVE_RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
-const ARCHIVABLE_TREES = new Set(['per-key', 'per-prompt']);
+const ARCHIVABLE_TREES = new Set(['per-key', 'per-prompt', 'keys-order']);
 
 function assertSafeCategoryPath(outputRoot, category, targetPath, label) {
   const root = path.resolve(outputRoot);

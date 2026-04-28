@@ -5095,9 +5095,11 @@
       "display_name": "Flawless Sensor",
       "enum": {
         "new_value_policy": {},
-        "policy": "closed"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "enum_policy": "closed",
+      "enum_source": "yes_no",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -10126,7 +10128,12 @@
       ],
       "availability": "sometimes",
       "canonical_key": "sensor",
-      "component": null,
+      "component": {
+        "allow_new_components": true,
+        "require_identity_evidence": true,
+        "source": "component_db.sensor",
+        "type": "sensor"
+      },
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -12631,6 +12638,7 @@
       },
       "value_form": "single",
       "value_form_sample": "scalar",
+      "variance_policy": "authoritative",
       "variant_dependent": false
     },
     "switch_link": {

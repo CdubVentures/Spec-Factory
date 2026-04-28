@@ -166,6 +166,14 @@ function stripPatchMetadata(patchDoc) {
   return doc;
 }
 
+function safeSourceFileName(fileName) {
+  const base = path.basename(String(fileName || ''));
+  if (!base) {
+    throw new Error('fileName is required');
+  }
+  return base;
+}
+
 export function validateFieldStudioPatchDocument(doc, { category = null, fileName = null } = {}) {
   if (!isObject(doc)) {
     throw new Error('Field Studio patch must be a JSON object');
@@ -227,6 +235,141 @@ function componentKey(row) {
 
 function propertyKey(row) {
   return row?.field_key || row?.key || '';
+}
+
+function jsonChanged(before, after) {
+  return JSON.stringify(before) !== JSON.stringify(after);
+}
+
+function pathValue(value, parts) {
+  return parts.reduce((current, part) => current?.[part], value);
+}
+
+function flattenLeafPaths(value, prefix = []) {
+  if (!isObject(value)) return [prefix];
+  const keys = Object.keys(value);
+  if (keys.length === 0) return [prefix];
+  return keys.flatMap((key) => flattenLeafPaths(value[key], [...prefix, key]));
+}
+
+function pushChange(changes, seen, change) {
+  const key = `${change.kind}:${change.path}`;
+  if (seen.has(key)) return;
+  seen.add(key);
+  changes.push(change);
+}
+
+function patchFileSummary(doc) {
+  return {
+    fileName: doc.source_file || expectedFieldStudioPatchFileName({
+      category: doc.category,
+      fieldKey: doc.field_key,
+      navigatorOrdinal: doc.navigator_ordinal ?? null,
+    }),
+    fieldKey: doc.field_key,
+    navigatorOrdinal: doc.navigator_ordinal ?? null,
+    verdict: doc.verdict,
+  };
+}
+
+function dataListByField(map, fieldKey) {
+  const rows = Array.isArray(map?.data_lists) ? map.data_lists : [];
+  return rows.find((row) => row?.field === fieldKey);
+}
+
+function componentSourceByType(map, type) {
+  const rows = Array.isArray(map?.component_sources) ? map.component_sources : [];
+  return rows.find((row) => componentKey(row) === type);
+}
+
+function componentPropertyByKey(row, fieldKey) {
+  const properties = Array.isArray(row?.roles?.properties) ? row.roles.properties : [];
+  return properties.find((prop) => propertyKey(prop) === fieldKey);
+}
+
+export function buildFieldStudioPatchChangeLog({ before, after, patchDocs }) {
+  const changes = [];
+  const seen = new Set();
+
+  for (const rawDoc of patchDocs || []) {
+    const doc = validateFieldStudioPatchDocument(stripPatchMetadata(rawDoc), { category: rawDoc?.category });
+    const fieldKey = doc.field_key;
+
+    if (isObject(doc.patch.field_overrides?.[fieldKey])) {
+      const leafPaths = flattenLeafPaths(doc.patch.field_overrides[fieldKey]);
+      for (const leafPath of leafPaths) {
+        const fullPath = ['field_overrides', fieldKey, ...leafPath];
+        const beforeValue = pathValue(before, fullPath);
+        const afterValue = pathValue(after, fullPath);
+        if (!jsonChanged(beforeValue, afterValue)) continue;
+        pushChange(changes, seen, {
+          kind: 'field_override',
+          action: beforeValue === undefined ? 'added' : 'updated',
+          path: fullPath.join('.'),
+          label: `${fieldKey} ${leafPath.join('.') || 'override'}`,
+          fieldKey,
+          before: beforeValue,
+          after: afterValue,
+        });
+      }
+    }
+
+    if (Array.isArray(doc.patch.data_lists)) {
+      for (const row of doc.patch.data_lists) {
+        const beforeRow = dataListByField(before, row.field);
+        const afterRow = dataListByField(after, row.field);
+        if (!jsonChanged(beforeRow, afterRow)) continue;
+        pushChange(changes, seen, {
+          kind: 'data_list',
+          action: beforeRow ? 'updated' : 'added',
+          path: `data_lists.${row.field}`,
+          label: `${row.field} data list`,
+          fieldKey: row.field,
+          before: beforeRow,
+          after: afterRow,
+        });
+      }
+    }
+
+    if (Array.isArray(doc.patch.component_sources)) {
+      for (const row of doc.patch.component_sources) {
+        const type = componentKey(row);
+        const beforeRow = componentSourceByType(before, type);
+        const afterRow = componentSourceByType(after, type);
+        if (jsonChanged(beforeRow, afterRow)) {
+          pushChange(changes, seen, {
+            kind: 'component_source',
+            action: beforeRow ? 'updated' : 'added',
+            path: `component_sources.${type}`,
+            label: `${type} component source`,
+            componentType: type,
+            before: beforeRow,
+            after: afterRow,
+          });
+        }
+
+        const incomingProperties = Array.isArray(row.roles?.properties) ? row.roles.properties : [];
+        for (const prop of incomingProperties) {
+          const key = propertyKey(prop);
+          const beforeProp = componentPropertyByKey(beforeRow, key);
+          const afterProp = componentPropertyByKey(afterRow, key);
+          if (!jsonChanged(beforeProp, afterProp)) continue;
+          pushChange(changes, seen, {
+            kind: 'component_property',
+            action: beforeProp ? 'updated' : 'added',
+            path: `component_sources.${type}.roles.properties.${key}`,
+            label: `${type}.${key} component property`,
+            fieldKey: key,
+            componentType: type,
+            before: beforeProp,
+            after: afterProp,
+          });
+        }
+      }
+    }
+  }
+
+  return changes;
 }
 
 function mergeProperties(existing = [], incoming = []) {
@@ -303,6 +446,100 @@ export function applyFieldStudioPatchDocuments(fieldStudioMap, patchDocs) {
     (current, doc) => applyFieldStudioPatchDocument(current, doc),
     fieldStudioMap,
   );
+}
+
+export function parseFieldStudioPatchPayloadFiles({ category, files }) {
+  if (!Array.isArray(files) || files.length === 0) {
+    throw new Error('files must be a non-empty array');
+  }
+
+  return files.map((file, index) => {
+    if (!isObject(file)) {
+      throw new Error(`files[${index}] must be an object`);
+    }
+    const fileName = safeSourceFileName(file.fileName || file.name);
+    const content = file.content ?? file.text;
+    if (typeof content !== 'string') {
+      throw new Error(`${fileName}: content must be a string`);
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(content);
+    } catch (err) {
+      throw new Error(`${fileName}: invalid JSON (${err.message})`);
+    }
+    const doc = validateFieldStudioPatchDocument(parsed, { category, fileName });
+    return { ...doc, source_file: fileName };
+  });
+}
+
+export function previewFieldStudioPatchDocuments({
+  category,
+  fieldStudioMap,
+  patchDocs,
+  validateFieldStudioMap = null,
+}) {
+  if (!category) throw new Error('category is required');
+  if (!Array.isArray(patchDocs) || patchDocs.length === 0) {
+    throw new Error('patchDocs must be a non-empty array');
+  }
+
+  const docs = patchDocs.map((doc) => validateFieldStudioPatchDocument(
+    stripPatchMetadata(doc),
+    { category, fileName: doc?.source_file || null },
+  )).map((doc, index) => ({
+    ...doc,
+    source_file: patchDocs[index]?.source_file || expectedFieldStudioPatchFileName({
+      category: doc.category,
+      fieldKey: doc.field_key,
+      navigatorOrdinal: doc.navigator_ordinal ?? null,
+    }),
+  }));
+
+  const before = cloneJson(fieldStudioMap || {});
+  const patched = applyFieldStudioPatchDocuments(before, docs);
+  const validation = typeof validateFieldStudioMap === 'function'
+    ? validateFieldStudioMap(patched, { category })
+    : { valid: true, errors: [], warnings: [], normalized: patched };
+  const normalized = isObject(validation?.normalized) ? validation.normalized : patched;
+
+  return {
+    category,
+    valid: validation?.valid !== false,
+    files: docs.map(patchFileSummary),
+    changes: buildFieldStudioPatchChangeLog({ before, after: normalized, patchDocs: docs }),
+    errors: Array.isArray(validation?.errors) ? validation.errors : [],
+    warnings: Array.isArray(validation?.warnings) ? validation.warnings : [],
+    validation,
+    fieldStudioMap: normalized,
+  };
+}
+
+export function importFieldStudioPatchDocuments({
+  category,
+  fieldStudioMap,
+  patchDocs,
+  validateFieldStudioMap = null,
+}) {
+  const preview = previewFieldStudioPatchDocuments({
+    category,
+    fieldStudioMap,
+    patchDocs,
+    validateFieldStudioMap,
+  });
+
+  if (!preview.valid) {
+    const details = preview.errors.length > 0 ? preview.errors.join('; ') : 'unknown validation error';
+    throw new Error(`patched field_studio_map failed validation: ${details}`);
+  }
+
+  return {
+    category,
+    applied: preview.files,
+    changes: preview.changes,
+    fieldStudioMap: preview.fieldStudioMap,
+    validation: preview.validation,
+  };
 }
 
 export async function loadFieldStudioPatchDocuments({ category, inputDir }) {
