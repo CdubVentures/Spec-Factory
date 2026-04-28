@@ -123,7 +123,10 @@ export const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   ...Object.fromEntries(
     FINDER_MODULES.map((mod) => [
       mod.routePrefix,
-      Object.freeze([[mod.routePrefix, CATEGORY_TOKEN]]),
+      Object.freeze([
+        [mod.routePrefix, CATEGORY_TOKEN],
+        ['finder-runs-for-history', mod.id, CATEGORY_TOKEN],
+      ]),
     ]),
   ),
   categories: Object.freeze([

@@ -56,7 +56,8 @@ export function rebuildSkuFinderFromJson({ specDb, productRoot }) {
     const productId = data.product_id || entry.name;
     const candidates = data.selected?.candidates || [];
 
-    specDb.getFinderStore('skuFinder').upsert({
+    const finderStore = specDb.getFinderStore('skuFinder');
+    finderStore.upsert({
       category: data.category,
       product_id: productId,
       candidates,
@@ -67,8 +68,11 @@ export function rebuildSkuFinderFromJson({ specDb, productRoot }) {
     });
 
     const runs = Array.isArray(data.runs) ? data.runs : [];
+    if (typeof finderStore.removeAllRuns === 'function') {
+      finderStore.removeAllRuns(productId);
+    }
     for (const run of runs) {
-      specDb.getFinderStore('skuFinder').insertRun({
+      finderStore.insertRun({
         category: data.category,
         product_id: productId,
         run_number: run.run_number,

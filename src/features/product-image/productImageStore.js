@@ -97,7 +97,8 @@ export function rebuildProductImageFinderFromJson({ specDb, productRoot }) {
 
     const productId = data.product_id || entry.name;
 
-    specDb.getFinderStore('productImageFinder').upsert(buildProductImageFinderSqlSummaryRow({
+    const finderStore = specDb.getFinderStore('productImageFinder');
+    finderStore.upsert(buildProductImageFinderSqlSummaryRow({
       category: data.category,
       productId,
       data,
@@ -105,8 +106,11 @@ export function rebuildProductImageFinderFromJson({ specDb, productRoot }) {
     }));
 
     const runs = Array.isArray(data.runs) ? data.runs : [];
+    if (typeof finderStore.removeAllRuns === 'function') {
+      finderStore.removeAllRuns(productId);
+    }
     for (const run of runs) {
-      specDb.getFinderStore('productImageFinder').insertRun({
+      finderStore.insertRun({
         category: data.category,
         product_id: productId,
         run_number: run.run_number,

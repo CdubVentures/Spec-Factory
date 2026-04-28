@@ -157,6 +157,16 @@ test('finder discovery-history scrub events invalidate the owning finder query',
   assert.equal(hasQueryKey(keys, ['release-date-finder', 'mouse']), true);
 });
 
+test('finder run events invalidate the shared discovery-history drawer query', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: { type: 'data-change', event: 'key-finder-run' },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['key-finder', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['finder-runs-for-history', 'keyFinder', 'mouse']), true);
+});
+
 test('Key Finder field delete events invalidate the owning finder and review surfaces', () => {
   const keys = resolveDataChangeInvalidationQueryKeys({
     message: { type: 'data-change', event: 'key-finder-field-deleted' },

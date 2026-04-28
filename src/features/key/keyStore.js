@@ -514,6 +514,9 @@ export function rebuildKeyFinderFromJson({ specDb, productRoot }) {
       run_count: data.run_count || runs.length,
     });
 
+    if (typeof store.removeAllRuns === 'function') {
+      store.removeAllRuns(productId);
+    }
     for (const rawRun of runs) {
       const run = normalizeUnknownRunForStorage(rawRun);
       store.insertRun({
