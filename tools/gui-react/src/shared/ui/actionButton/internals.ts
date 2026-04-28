@@ -10,7 +10,9 @@ export type ActionButtonIntent =
   | 'history'
   | 'delete'
   | 'stop'
-  | 'neutral';
+  | 'neutral'
+  | 'componentResolver'
+  | 'componentResolverLocked';
 
 const INTENT_CLASS_MAP: Record<ActionButtonIntent, string> = {
   spammable: 'sf-primary-button',
@@ -20,9 +22,11 @@ const INTENT_CLASS_MAP: Record<ActionButtonIntent, string> = {
   delete: 'sf-delete-button',
   stop: 'sf-danger-button-solid',
   neutral: 'sf-neutral-button',
+  componentResolver: 'sf-warning-button-solid',
+  componentResolverLocked: 'sf-warning-button-solid',
 };
 
-const LOCKING_INTENTS = new Set<ActionButtonIntent>(['locked', 'stop']);
+const LOCKING_INTENTS = new Set<ActionButtonIntent>(['locked', 'stop', 'componentResolverLocked']);
 
 export function resolveIntentClassName(intent: ActionButtonIntent): string {
   return INTENT_CLASS_MAP[intent];

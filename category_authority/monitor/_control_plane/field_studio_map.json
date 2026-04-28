@@ -2,9 +2,6 @@
   "component_sources": [],
   "data_lists": [
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "panel_type",
       "header_row": 0,
@@ -32,20 +29,12 @@
       ],
       "mode": "scratch",
       "normalize": "uppercase_first",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "adaptive_sync",
       "header_row": 0,
@@ -61,20 +50,12 @@
       ],
       "mode": "scratch",
       "normalize": "uppercase_first",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "hdr_support",
       "header_row": 0,
@@ -95,20 +76,12 @@
       ],
       "mode": "scratch",
       "normalize": "uppercase_first",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "backlight_type",
       "header_row": 0,
@@ -128,20 +101,12 @@
       ],
       "mode": "scratch",
       "normalize": "uppercase_first",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "panel_coating",
       "header_row": 0,
@@ -157,20 +122,12 @@
       ],
       "mode": "scratch",
       "normalize": "uppercase_first",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "panel_bit_depth",
       "header_row": 0,
@@ -185,20 +142,12 @@
       ],
       "mode": "scratch",
       "normalize": "lowercase",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "resolution",
       "header_row": 0,
@@ -218,20 +167,12 @@
       ],
       "mode": "scratch",
       "normalize": "lowercase",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "aspect_ratio",
       "header_row": 0,
@@ -247,20 +188,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "motion_blur_reduction",
       "header_row": 0,
@@ -282,20 +215,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "subpixel_layout",
       "header_row": 0,
@@ -310,20 +235,12 @@
       ],
       "mode": "scratch",
       "normalize": "uppercase",
-      "priority": {
-        "availability": "always",
-        "difficulty": "hard",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "vesa_mount",
       "header_row": 0,
@@ -338,20 +255,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "osd_type",
       "header_row": 0,
@@ -365,20 +274,12 @@
       ],
       "mode": "scratch",
       "normalize": "uppercase_first",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "audio_output",
       "header_row": 0,
@@ -390,20 +291,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "cable_type",
       "header_row": 0,
@@ -418,20 +311,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "cables_included",
       "header_row": 0,
@@ -447,20 +332,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "category",
       "header_row": 0,
@@ -469,20 +346,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "color",
       "header_row": 0,
@@ -500,20 +369,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "crosshair_overlay",
       "header_row": 0,
@@ -523,20 +384,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "curved",
       "header_row": 0,
@@ -546,20 +399,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "curve_radius",
       "header_row": 0,
@@ -575,20 +420,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "daisy_chain",
       "header_row": 0,
@@ -600,20 +437,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "discontinued",
       "header_row": 0,
@@ -623,20 +452,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "displayport_ports",
       "header_row": 0,
@@ -648,20 +469,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "energy_rating",
       "header_row": 0,
@@ -676,20 +489,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "factory_calibrated",
       "header_row": 0,
@@ -699,20 +504,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "flicker_free",
       "header_row": 0,
@@ -722,20 +519,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "frc",
       "header_row": 0,
@@ -745,20 +534,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "hdmi_ports",
       "header_row": 0,
@@ -771,20 +552,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "headphone_jack",
       "header_row": 0,
@@ -794,20 +567,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "kvm_switch",
       "header_row": 0,
@@ -817,20 +582,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "low_blue_light",
       "header_row": 0,
@@ -840,20 +597,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "material",
       "header_row": 0,
@@ -866,20 +615,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "overdrive",
       "header_row": 0,
@@ -897,20 +638,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "panel_manufacturer",
       "header_row": 0,
@@ -929,20 +662,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "pip_pbp",
       "header_row": 0,
@@ -955,20 +680,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "pivot_rotation",
       "header_row": 0,
@@ -979,20 +696,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "price_range",
       "header_row": 0,
@@ -1005,20 +714,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "refresh_rate",
       "header_row": 0,
@@ -1045,20 +746,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "screen_size",
       "header_row": 0,
@@ -1086,20 +779,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "speakers",
       "header_row": 0,
@@ -1115,20 +800,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "usb_c_ports",
       "header_row": 0,
@@ -1140,20 +817,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "usb_hub",
       "header_row": 0,
@@ -1170,20 +839,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "variable_refresh_rate",
       "header_row": 0,
@@ -1193,20 +854,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "wall_mountable",
       "header_row": 0,
@@ -1216,20 +869,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "warranty",
       "header_row": 0,
@@ -1242,20 +887,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "wide_color_gamut",
       "header_row": 0,
@@ -1265,20 +902,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "hdmi_version",
       "header_row": 0,
@@ -1292,20 +921,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "displayport_version",
       "header_row": 0,
@@ -1321,20 +942,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "display_stream_compression",
       "header_row": 0,
@@ -1346,20 +959,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "thunderbolt_ports",
       "header_row": 0,
@@ -1371,20 +976,12 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "thunderbolt_version",
       "header_row": 0,
@@ -1396,20 +993,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "ethernet_rj45",
       "header_row": 0,
@@ -1422,20 +1011,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "webcam",
       "header_row": 0,
@@ -1449,20 +1030,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "microphone",
       "header_row": 0,
@@ -1474,20 +1047,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "native_colors",
       "header_row": 0,
@@ -1498,20 +1063,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "text_clarity",
       "header_row": 0,
@@ -1523,20 +1080,12 @@
       ],
       "mode": "scratch",
       "normalize": "uppercase_first",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "gradient_handling",
       "header_row": 0,
@@ -1548,20 +1097,12 @@
       ],
       "mode": "scratch",
       "normalize": "uppercase_first",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "ps5_compatibility",
       "header_row": 0,
@@ -1572,20 +1113,12 @@
       ],
       "mode": "scratch",
       "normalize": "uppercase_first",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "xbox_series_xs_compatibility",
       "header_row": 0,
@@ -1596,20 +1129,12 @@
       ],
       "mode": "scratch",
       "normalize": "uppercase_first",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "macos_compatibility",
       "header_row": 0,
@@ -1620,20 +1145,12 @@
       ],
       "mode": "scratch",
       "normalize": "uppercase_first",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "colors",
       "header_row": 0,
@@ -1718,11 +1235,6 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",

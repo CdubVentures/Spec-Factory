@@ -117,7 +117,7 @@ export function reviewKeys(storage, category, productId) {
 
 // ── Field Contract ──────────────────────────────────────────────────
 
-export function normalizeFieldContract(rule = {}) {
+export function normalizeFieldContract(rule = {}, { belongsToComponent = null } = {}) {
   const contract = isObject(rule.contract) ? rule.contract : {};
   const level = ruleRequiredLevel(rule);
   const enu = isObject(rule.enum) ? rule.enum : null;
@@ -128,6 +128,15 @@ export function normalizeFieldContract(rule = {}) {
   const componentType = enumSource.startsWith('component_db.')
     ? enumSource.slice('component_db.'.length)
     : null;
+  // WHY: identity-projection block carries the parent component_type + facet
+  // (brand|link). The frontend uses it to flag force-made <component>_brand /
+  // <component>_link fields with the dedicated icon.
+  const identityProjection = isObject(rule.component_identity_projection)
+    ? {
+        component_type: String(rule.component_identity_projection.component_type || '').trim() || null,
+        facet: String(rule.component_identity_projection.facet || '').trim().toLowerCase() || null,
+      }
+    : null;
   return {
     type: String(contract.type || 'string'),
     shape: String(contract.shape || 'scalar').trim().toLowerCase() || 'scalar',
@@ -136,6 +145,11 @@ export function normalizeFieldContract(rule = {}) {
     component_type: componentType,
     enum_source: enu?.source || null,
     min_evidence_refs: toInt(evidence.min_evidence_refs, 1),
+    // WHY: icon-strip inputs — surfaced so the review grid renders the same
+    // taxonomy icons as Key Navigator + Studio Workbench without a sidecar fetch.
+    product_image_dependent: rule.product_image_dependent === true,
+    component_identity_projection: identityProjection,
+    belongs_to_component: belongsToComponent || null,
   };
 }
 

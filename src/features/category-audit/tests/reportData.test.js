@@ -126,6 +126,10 @@ function callExtract(overrides = {}) {
   });
 }
 
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 test('extractReportData returns category + ISO timestamp + expected top-level keys', () => {
   const data = callExtract();
   assert.equal(data.category, 'mouse');
@@ -217,6 +221,40 @@ test('extractReportData builds component inventory with identity + subfields', (
   assert.equal(sensorComp.entityCount, 2);
   assert.deepEqual(sensorComp.identityFields, ['sensor']);
   assert.deepEqual(sensorComp.subfields.sort(), ['dpi']);
+});
+
+test('extractReportData carries component DB property hints independently of live Mapping Studio rows', () => {
+  const loadedRules = cloneJson(fixtureLoadedRules());
+  loadedRules.rules.fields.sensor_date = {
+    field_key: 'sensor_date',
+    display_name: 'Sensor Date',
+    priority: { required_level: 'non_mandatory', availability: 'sometimes', difficulty: 'medium' },
+    contract: { type: 'date', shape: 'scalar' },
+    enum: { policy: 'open', source: null, values: [] },
+    aliases: [],
+    search_hints: { domain_hints: [], query_terms: [], content_types: [], preferred_tiers: [] },
+    constraints: [],
+    ai_assist: { reasoning_note: 'Find the sensor release date.' },
+    evidence: { min_evidence_refs: 1 },
+    group: 'sensor_performance',
+    ui: { label: 'Sensor Date', group: 'Sensor & Performance' },
+  };
+  loadedRules.componentDBs.sensor.items[0].properties.sensor_date = '2020-01-01';
+
+  const data = callExtract({ loadedRules });
+  const sensorDate = data.keys.find((k) => k.fieldKey === 'sensor_date');
+  assert.equal(sensorDate.component, null, 'not currently mapped as a live component subfield');
+  assert.deepEqual(sensorDate.componentDbProperty, {
+    type: 'sensor',
+    types: ['sensor'],
+    relation: 'db_property_hint',
+    source: 'component_db.sensor',
+  });
+
+  const sensorComp = data.components.find((c) => c.type === 'sensor');
+  assert.deepEqual(sensorComp.subfields, ['dpi']);
+  assert.deepEqual(sensorComp.unmappedFieldProperties, ['sensor_date']);
+  assert.deepEqual(sensorComp.dbOnlyProperties, ['ips']);
 });
 
 test('extractReportData carries Mapping Studio component source rows for per-key docs', () => {

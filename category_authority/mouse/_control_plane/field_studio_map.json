@@ -1,15 +1,7 @@
 {
   "component_sources": [
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "component_type": "sensor",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "roles": {
         "properties": [
           {
@@ -40,15 +32,7 @@
       }
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "component_type": "switch",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "hard",
-        "required_level": "non_mandatory"
-      },
       "roles": {
         "properties": [
           {
@@ -81,15 +65,7 @@
       }
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "component_type": "encoder",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "roles": {
         "properties": [
           {
@@ -119,385 +95,37 @@
   ],
   "data_lists": [
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
-      "field": "form_factor",
+      "field": "cable_type",
       "header_row": 0,
       "manual_values": [
-        "ambidextrous",
-        "right",
-        "left"
+        "braided",
+        "paracord",
+        "rubber",
+        "ultraweave"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
+      "normalize": "lowercase_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": "Keep chips to structural shell categories. Use ergonomic for non-mirrored/asymmetrical sculpted shells; use hybrid only when a credible source explicitly says hybrid or describes a symmetrical/ambi top-front mixed with ergonomic/asymmetric side/back shaping; use symmetrical for mirrored/ambi-style shells, including right-handed symmetrical mice."
-      },
-      "delimiter": "",
-      "field": "shape",
-      "header_row": 0,
-      "manual_values": [
-        "ergonomic",
-        "hybrid",
-        "symmetrical"
-      ],
-      "mode": "scratch",
-      "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": "Closed placement vocabulary only. Do not store source prose, grip recommendations, or height-only terms as chips."
-      },
-      "delimiter": "",
-      "field": "hump",
-      "header_row": 0,
-      "manual_values": [
-        "front",
-        "center",
-        "back - minimal",
-        "back - moderate",
-        "back - aggressive"
-      ],
-      "mode": "scratch",
-      "normalize": "casefold + trim + normalize hyphen/dash spacing",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": "Keep the public chips direction-only; normalize source degree words such as slight/moderate/aggressive away unless a future schema intentionally stores flare intensity."
-      },
-      "delimiter": "",
-      "field": "front_flare",
-      "header_row": 0,
-      "manual_values": [
-        "flat",
-        "inward",
-        "outward"
-      ],
-      "mode": "scratch",
-      "normalize": "casefold + trim + map degree-qualified direction phrases to canonical direction",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": "Keep the enum closed. Normalize source wording to only laser or optical; never create public chips such as Darkfield, BlueTrack, LED, HERO, Focus Pro, TrueMove, or sensor model names."
-      },
-      "delimiter": "",
-      "field": "sensor_type",
-      "header_row": 0,
-      "manual_values": [
-        "laser",
-        "optical"
-      ],
-      "mode": "scratch",
-      "normalize": "lowercase, trim, exact semantic alias mapping only",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": "Keep open_prefer_known. Add a new chip only when product-level spec, official launch material, or an explicit teardown proves the part; do not create public chips from generic MCU family, CPU-core, or dongle-only wording."
-      },
-      "delimiter": "",
-      "field": "mcu",
-      "header_row": 0,
-      "manual_values": [
-        "CompX CX52850",
-        "Holtek HT32F52352",
-        "Nordic nRF52832",
-        "Nordic nRF52833",
-        "Nordic nRF52840",
-        "Nordic nRF54L15",
-        "Nordic nRF54H20",
-        "Nuvoton M483",
-        "Nuvoton M484SIDAE",
-        "NXP LPC11U68",
-        "NXP LPC54605J512",
-        "Realtek RTL8762G",
-        "STM32F072CBU6",
-        "STM32L412C8U6",
-        "Telink 8273"
-      ],
-      "mode": "scratch",
-      "normalize": "trim, collapse spaces, case-insensitive maker/part matching, preserve canonical maker + part casing",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": "Keep the four coarse technology chips only; brand, generation, model, lifecycle, force, and marketing names are source phrases or component identity, not enum values."
-      },
-      "delimiter": "",
-      "field": "switch_type",
-      "header_row": 0,
-      "manual_values": [
-        "inductive",
-        "mechanical",
-        "optical",
-        "optical / mechanical"
-      ],
-      "mode": "scratch",
-      "normalize": "lowercase, trim, normalize slash spacing around `optical / mechanical`",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": "Use the canonical brand only. Store the exact switch model/name in mouse.switch; do not create enum chips from model suffixes, click ratings, switch type, colorways, or marketing phrases."
-      },
-      "delimiter": "",
-      "field": "mouse_switch_brand",
-      "header_row": 0,
-      "manual_values": [
-        "Omron",
-        "Kailh",
-        "Huano",
-        "TTC",
-        "Zippy",
-        "HNCHK",
-        "Razer",
-        "Logitech",
-        "SteelSeries",
-        "ROG",
-        "Glorious",
-        "Raesha"
-      ],
-      "mode": "scratch",
-      "normalize": "trim; preserve canonical brand capitalization; map unambiguous switch model prefixes/names to maker; keep model/lifetime/type terms out of brand chips",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": "Keep closed. Protocol names normalize through connectivity, not this chip list; `hybrid` means wired-data + wireless connection, not hybrid switch/sensor technology."
-      },
-      "delimiter": "",
-      "field": "connection",
-      "header_row": 0,
-      "manual_values": [
-        "hybrid",
-        "wired",
-        "wireless"
-      ],
-      "mode": "scratch",
-      "normalize": "lower_trim",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": "Use buyer-facing host connection modes only; brand-specific wireless names and source wording map to canonical chips, not new enum values."
-      },
-      "delimiter": "",
-      "field": "connectivity",
-      "header_row": 0,
-      "manual_values": [
-        "USB Wired",
-        "2.4GHz RF Dongle",
-        "Bluetooth"
-      ],
-      "mode": "scratch",
-      "normalize": "trim; case-insensitive; collapse whitespace; normalize 2.4g/2.4 ghz/2.4ghz and bt/ble/bluetooth le source phrases through aliases",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
-      "delimiter": "",
-      "field": "polling",
-      "header_row": 0,
-      "manual_values": [],
-      "mode": "scratch",
-      "normalize": "lower_trim",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": "Store only canonical count + type values. Add an unlisted `<N> zone (rgb|led)` only when direct evidence proves a real zone/programmable-LED count beyond the curated list; do not create chips from platform names or lighting-effect names."
-      },
-      "delimiter": "",
-      "field": "lighting",
-      "header_row": 0,
-      "manual_values": [
-        "1 zone (led)",
-        "1 zone (rgb)",
-        "2 zone (led)",
-        "2 zone (rgb)",
-        "3 zone (led)",
-        "3 zone (rgb)",
-        "4 zone (led)",
-        "4 zone (rgb)",
-        "5 zone (led)",
-        "5 zone (rgb)",
-        "6 zone (led)",
-        "6 zone (rgb)",
-        "7 zone (led)",
-        "7 zone (rgb)",
-        "8 zone (rgb)",
-        "9 zone (rgb)",
-        "10 zone (rgb)",
-        "11 zone (rgb)",
-        "12 zone (rgb)",
-        "13 zone (rgb)",
-        "none"
-      ],
-      "mode": "scratch",
-      "normalize": "lower_trim",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": "Keep public chips to material or material-grade classes; accept newly evidenced stock feet materials with AI review instead of forcing them into PTFE or unk."
-      },
-      "delimiter": "",
-      "field": "feet_material",
-      "header_row": 0,
-      "manual_values": [
-        "Ceramic",
-        "Glass",
-        "Metal",
-        "PTFE",
-        "PTFE (95%)",
-        "PTFE (Black-Dyed)",
-        "PTFE (Virgin-Grade)",
-        "UHMWPE"
-      ],
-      "mode": "scratch",
-      "normalize": "canonical material class plus ptfe grade normalization",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
-      "delimiter": "",
-      "field": "lift_notes",
-      "header_row": 0,
-      "manual_values": [],
-      "mode": "scratch",
-      "normalize": "lower_trim",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": "Keep chips to factory hand-contact shell finish or built-in side grips. Do not create new values from generic feel adjectives, aftermarket grip tape, cable/scroll-wheel/feet material, or mousepad surface wording."
-      },
       "delimiter": "",
       "field": "coating",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "coatinge",
       "header_row": 0,
       "manual_values": [
         "matte",
@@ -508,50 +136,12 @@
       ],
       "mode": "scratch",
       "normalize": "lowercase canonical phrase; trim/collapse whitespace; preserve meaningful hyphens such as smooth-touch",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
-      "delimiter": "",
-      "field": "encoder_steps",
-      "header_row": 0,
-      "manual_values": [
-        "5",
-        "16",
-        "18",
-        "20",
-        "24",
-        "25",
-        "26",
-        "30",
-        "59"
-      ],
-      "mode": "scratch",
-      "normalize": "lower_trim",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
-      "row_end": 0,
-      "row_start": 2,
-      "sheet": "",
-      "value_column": ""
-    },
-    {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "colors",
       "header_row": 0,
@@ -636,69 +226,60 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": "Closed three-chip consumer vocabulary. Normalize source wording to palm, claw, and fingertip; do not create public chips for modifier, hybrid, \"all grip,\" or accessory/tape wording."
-      },
       "delimiter": "",
-      "field": "grip",
+      "field": "computer_side_connector",
       "header_row": 0,
       "manual_values": [
-        "palm",
-        "claw",
-        "fingertip"
+        "USB-A",
+        "USB-C",
+        "PS/2"
+      ],
+      "mode": "scratch",
+      "normalize": "trim/casefold; canonicalize usb type a/usb-a/type-a/full-size usb to usb-a, usb type c/usb-c/type-c to usb-c, ps2/ps/2/mini-din-6 to ps/2",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "connection",
+      "header_row": 0,
+      "manual_values": [
+        "hybrid",
+        "wired",
+        "wireless"
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": "Store only canonical user hand-size buckets. Range phrases become multiple canonical values; do not create chips from marketing phrases, model-size names, grip styles, or mouse-body size labels."
-      },
       "delimiter": "",
-      "field": "hand_size",
+      "field": "connectivity",
       "header_row": 0,
       "manual_values": [
-        "small",
-        "medium",
-        "large",
-        "extra large"
+        "USB Wired",
+        "2.4GHz RF Dongle",
+        "Bluetooth"
       ],
       "mode": "scratch",
-      "normalize": "casefold + trim + collapse spaces + normalize hyphen/slash ranges",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
+      "normalize": "trim; case-insensitive; collapse whitespace; normalize 2.4g/2.4 ghz/2.4ghz and bt/ble/bluetooth le source phrases through aliases",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": "Treat this as a closed design/edition taxonomy, not a free-text aesthetic description."
-      },
       "delimiter": "",
       "field": "design",
       "header_row": 0,
@@ -710,94 +291,186 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": "Keep the four curated chips for now; do not add brand cable-technology names unless curated as generic/material classes or intentionally public chips."
-      },
       "delimiter": "",
-      "field": "cable_type",
+      "field": "encoder",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "encoder_brand",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "encoder_steps",
       "header_row": 0,
       "manual_values": [
-        "braided",
-        "paracord",
-        "rubber",
-        "ultraweave"
+        "5",
+        "16",
+        "18",
+        "20",
+        "24",
+        "25",
+        "26",
+        "30",
+        "59"
       ],
       "mode": "scratch",
-      "normalize": "lowercase_trim",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
+      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": "Keep public chips to connector standards; do not create chips from marketing names, receiver names, cable branding, or generic \"USB\" wording."
-      },
       "delimiter": "",
-      "field": "computer_side_connector",
+      "field": "feet_material",
       "header_row": 0,
       "manual_values": [
-        "USB-A",
-        "USB-C",
-        "PS/2"
+        "Ceramic",
+        "Glass",
+        "Metal",
+        "PTFE",
+        "PTFE (95%)",
+        "PTFE (Black-Dyed)",
+        "PTFE (Virgin-Grade)",
+        "UHMWPE"
       ],
       "mode": "scratch",
-      "normalize": "trim/casefold; canonicalize usb type a/usb-a/type-a/full-size usb to usb-a, usb type c/usb-c/type-c to usb-c, ps2/ps/2/mini-din-6 to ps/2",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
+      "normalize": "canonical material class plus ptfe grade normalization",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": "Normalize by the connector on the mouse body, not by cable marketing name, receiver/dongle connector, dock connector, or computer-side connector. Add Lightning as a known public chip for Apple Magic Mouse-era products."
-      },
       "delimiter": "",
-      "field": "mouse_side_connector",
+      "field": "form_factor",
       "header_row": 0,
       "manual_values": [
-        "USB-C",
-        "Micro-B",
-        "Lightning",
-        "n/a"
+        "ambidextrous",
+        "right",
+        "left"
       ],
       "mode": "scratch",
-      "normalize": "casefold, trim, hyphen/space-insensitive normalization for usb connector phrases",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
+      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": "The canonical values describe LOD capability/behavior, not the numeric LOD height or the selectable low/medium/high setting labels."
-      },
+      "delimiter": "",
+      "field": "front_flare",
+      "header_row": 0,
+      "manual_values": [
+        "flat",
+        "inward",
+        "outward"
+      ],
+      "mode": "scratch",
+      "normalize": "casefold + trim + map degree-qualified direction phrases to canonical direction",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "grip",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "gripd",
+      "header_row": 0,
+      "manual_values": [
+        "palm",
+        "claw",
+        "fingertip"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "hand_size",
+      "header_row": 0,
+      "manual_values": [
+        "small",
+        "medium",
+        "large",
+        "extra large"
+      ],
+      "mode": "scratch",
+      "normalize": "casefold + trim + collapse spaces + normalize hyphen/slash ranges",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "hump",
+      "header_row": 0,
+      "manual_values": [
+        "front",
+        "center",
+        "back - minimal",
+        "back - moderate",
+        "back - aggressive"
+      ],
+      "mode": "scratch",
+      "normalize": "casefold + trim + normalize hyphen/dash spacing",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "lift_notes",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
       "delimiter": "",
       "field": "lift_settings",
       "header_row": 0,
@@ -809,20 +482,46 @@
       ],
       "mode": "scratch",
       "normalize": "lowercase; trim; collapse whitespace and hyphen variants for matching only",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": "Keep the public chip list small. Map source wording to the most specific existing material chip when exact: carbon fiber composite/CFRP -> carbon fiber; magnesium body/shell/chassis -> magnesium alloy; nylon outer shell with bio-based wording -> bio-based nylon; recycled/post-consumer/ocean plastic shell -> plastic unless a separate sustainability field or curated recycled-plastic chip is intentionally added. Prefer aluminum/magnesium alloy/carbon fiber/polycarbonate/ABS/PBT over generic metal/plastic when the source states the specific material."
-      },
+      "delimiter": "",
+      "field": "lighting",
+      "header_row": 0,
+      "manual_values": [
+        "1 zone (led)",
+        "1 zone (rgb)",
+        "2 zone (led)",
+        "2 zone (rgb)",
+        "3 zone (led)",
+        "3 zone (rgb)",
+        "4 zone (led)",
+        "4 zone (rgb)",
+        "5 zone (led)",
+        "5 zone (rgb)",
+        "6 zone (led)",
+        "6 zone (rgb)",
+        "7 zone (led)",
+        "7 zone (rgb)",
+        "8 zone (rgb)",
+        "9 zone (rgb)",
+        "10 zone (rgb)",
+        "11 zone (rgb)",
+        "12 zone (rgb)",
+        "13 zone (rgb)",
+        "none"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
       "delimiter": "",
       "field": "material",
       "header_row": 0,
@@ -841,49 +540,40 @@
       ],
       "mode": "scratch",
       "normalize": "lowercase; trim; collapse punctuation/hyphen variants; singular canonical material names",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": "Public chips must be company/sensor-family owner names only. Do not create chips for sensor models, performance specs, part numbers, or co-development phrases."
-      },
       "delimiter": "",
-      "field": "mouse_sensor_brand",
+      "field": "mcu",
       "header_row": 0,
       "manual_values": [
-        "PixArt",
-        "Logitech",
-        "Razer",
-        "SteelSeries",
-        "Corsair",
-        "Microsoft",
-        "Avago",
-        "Broadcom"
+        "CompX CX52850",
+        "Holtek HT32F52352",
+        "Nordic nRF52832",
+        "Nordic nRF52833",
+        "Nordic nRF52840",
+        "Nordic nRF54L15",
+        "Nordic nRF54H20",
+        "Nuvoton M483",
+        "Nuvoton M484SIDAE",
+        "NXP LPC11U68",
+        "NXP LPC54605J512",
+        "Realtek RTL8762G",
+        "STM32F072CBU6",
+        "STM32L412C8U6",
+        "Telink 8273"
       ],
       "mode": "scratch",
-      "normalize": "trim, collapse whitespace, canonical brand capitalization, strip sensor model/spec suffixes",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
+      "normalize": "trim, collapse spaces, case-insensitive maker/part matching, preserve canonical maker + part casing",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": "Keep policy open_prefer_known. These values seed common public chips; accept new brands only when the source names a real maker/brand, not a model suffix or generic type."
-      },
       "delimiter": "",
       "field": "mouse_encoder_brands",
       "header_row": 0,
@@ -899,11 +589,213 @@
       ],
       "mode": "scratch",
       "normalize": "casefold, trim, collapse punctuation, alias-to-brand",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "mouse_sensor_brand",
+      "header_row": 0,
+      "manual_values": [
+        "PixArt",
+        "Logitech",
+        "Razer",
+        "SteelSeries",
+        "Corsair",
+        "Microsoft",
+        "Avago",
+        "Broadcom"
+      ],
+      "mode": "scratch",
+      "normalize": "trim, collapse whitespace, canonical brand capitalization, strip sensor model/spec suffixes",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "mouse_switch_brand",
+      "header_row": 0,
+      "manual_values": [
+        "Omron",
+        "Kailh",
+        "Huano",
+        "TTC",
+        "Zippy",
+        "HNCHK",
+        "Razer",
+        "Logitech",
+        "SteelSeries",
+        "ROG",
+        "Glorious",
+        "Raesha"
+      ],
+      "mode": "scratch",
+      "normalize": "trim; preserve canonical brand capitalization; map unambiguous switch model prefixes/names to maker; keep model/lifetime/type terms out of brand chips",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "mouse_side_connector",
+      "header_row": 0,
+      "manual_values": [
+        "USB-C",
+        "Micro-B",
+        "Lightning",
+        "n/a"
+      ],
+      "mode": "scratch",
+      "normalize": "casefold, trim, hyphen/space-insensitive normalization for usb connector phrases",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "polling",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "polling_rate",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "price_range",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "sensor",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "sensor_brand",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "sensor_type",
+      "header_row": 0,
+      "manual_values": [
+        "laser",
+        "optical"
+      ],
+      "mode": "scratch",
+      "normalize": "lowercase, trim, exact semantic alias mapping only",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "shape",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "shapee",
+      "header_row": 0,
+      "manual_values": [
+        "ergonomic",
+        "hybrid",
+        "symmetrical"
+      ],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "switch",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "switch_brand",
+      "header_row": 0,
+      "manual_values": [],
+      "mode": "scratch",
+      "normalize": "lower_trim",
+      "row_end": 0,
+      "row_start": 2,
+      "sheet": "",
+      "value_column": ""
+    },
+    {
+      "delimiter": "",
+      "field": "switch_type",
+      "header_row": 0,
+      "manual_values": [
+        "inductive",
+        "mechanical",
+        "optical",
+        "optical / mechanical"
+      ],
+      "mode": "scratch",
+      "normalize": "lowercase, trim, normalize slash spacing around `optical / mechanical`",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -2943,9 +2835,14 @@
           "accept_if_evidence": true,
           "mark_needs_curation": false
         },
-        "policy": "closed"
+        "policy": "closed",
+        "source": "data_lists.colors"
       },
       "enum_policy": "closed",
+      "enum_source": {
+        "ref": "colors",
+        "type": "known_values"
+      },
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -4411,9 +4308,11 @@
           "accept_if_evidence": true,
           "mark_needs_curation": true
         },
-        "policy": "open_prefer_known"
+        "policy": "open_prefer_known",
+        "source": "data_lists.encoder"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.encoder",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -4550,30 +4449,16 @@
       "availability": "sometimes",
       "canonical_key": "encoder_brand",
       "component": null,
+      "component_identity_projection": {
+        "component_type": "encoder",
+        "facet": "brand"
+      },
       "constraints": [
         "encoder_brand should be the maker/brand token for the exact encoder identity when encoder is known; do not include encoder model, color, height, step count, type, or lifespan."
       ],
-      "contract": {
-        "shape": "scalar",
-        "type": "string",
-        "unit": null
-      },
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Encoder Brand",
-      "enum": {
-        "match": {
-          "format_hint": "canonical maker/brand name only; no encoder model, type, color, size, height, lifespan, or step count"
-        },
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open_prefer_known",
-        "source": "data_lists.mouse_encoder_brands"
-      },
-      "enum_policy": "open_prefer_known",
-      "enum_source": "data_lists.mouse_encoder_brands",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -4667,7 +4552,6 @@
         "examples": [],
         "group": "Encoder & MCU",
         "guidance_md": "Store only the canonical encoder maker/brand. Exact encoder model/color/grade/height/step/type/lifespan belongs in encoder or component properties, not this chip.",
-        "label": "Encoder Brand",
         "order": 77,
         "placeholder": "",
         "prefix": null,
@@ -4678,31 +4562,21 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "variant_dependent": false
+      "value_form_sample": "scalar"
     },
     "encoder_link": {
       "aliases": [],
       "availability": "sometimes",
       "canonical_key": "encoder_link",
       "component": null,
-      "constraints": [],
-      "contract": {
-        "list_rules": {},
-        "shape": "scalar",
-        "type": "url",
-        "unit": null
+      "component_identity_projection": {
+        "component_type": "encoder",
+        "facet": "link"
       },
+      "constraints": [],
       "data_type": "url",
       "difficulty": "medium",
       "display_name": "Encoder Link",
-      "enum": {
-        "match": {},
-        "new_value_policy": {},
-        "policy": "open",
-        "source": null
-      },
-      "enum_policy": "open",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -4764,7 +4638,6 @@
         "examples": [],
         "group": "Encoder & MCU",
         "guidance_md": null,
-        "label": "Encoder Link",
         "order": 78,
         "placeholder": "",
         "prefix": null,
@@ -7172,9 +7045,10 @@
         },
         "new_value_policy": {},
         "policy": "open_prefer_known",
-        "source": null
+        "source": "data_lists.lighting"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.lighting",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -9210,9 +9084,11 @@
       "display_name": "Polling Rate",
       "enum": {
         "new_value_policy": {},
-        "policy": "open_prefer_known"
+        "policy": "open_prefer_known",
+        "source": "data_lists.polling_rate"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.polling_rate",
       "evidence": {
         "min_evidence_refs": 2,
         "tier_preference": [
@@ -9362,9 +9238,10 @@
         "match": {},
         "new_value_policy": {},
         "policy": "open_prefer_known",
-        "source": null
+        "source": "data_lists.price_range"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.price_range",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -10050,6 +9927,10 @@
         "type": "sensor"
       },
       "constraints": [],
+      "contract": {
+        "shape": "scalar",
+        "type": "string"
+      },
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Sensor",
@@ -10058,9 +9939,11 @@
           "accept_if_evidence": true,
           "mark_needs_curation": true
         },
-        "policy": "open_prefer_known"
+        "policy": "open_prefer_known",
+        "source": "data_lists.sensor"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.sensor",
       "evidence": {
         "min_evidence_refs": 2,
         "tier_preference": [
@@ -10209,28 +10092,14 @@
       "availability": "sometimes",
       "canonical_key": "sensor_brand",
       "component": null,
-      "constraints": [],
-      "contract": {
-        "shape": "scalar",
-        "type": "string",
-        "unit": null
+      "component_identity_projection": {
+        "component_type": "sensor",
+        "facet": "brand"
       },
+      "constraints": [],
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Sensor Brand",
-      "enum": {
-        "match": {
-          "format_hint": "canonical brand/company name in Title Case or official stylization; no sensor model numbers or spec suffixes"
-        },
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open_prefer_known",
-        "source": "data_lists.mouse_sensor_brand"
-      },
-      "enum_policy": "open_prefer_known",
-      "enum_source": "data_lists.mouse_sensor_brand",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -10330,7 +10199,6 @@
         "examples": [],
         "group": "Sensor Identity",
         "guidance_md": null,
-        "label": "Sensor Brand",
         "order": 36,
         "placeholder": "",
         "prefix": null,
@@ -10341,8 +10209,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "variant_dependent": false
+      "value_form_sample": "scalar"
     },
     "sensor_date": {
       "ai_assist": {
@@ -11075,24 +10942,17 @@
       "availability": "sometimes",
       "canonical_key": "sensor_link",
       "component": null,
+      "component_identity_projection": {
+        "component_type": "sensor",
+        "facet": "link"
+      },
       "constraints": [
         "exact sensor identity must be known before emitting sensor_link",
         "link target must name the exact sensor or exact branded sensor variant"
       ],
-      "contract": {
-        "shape": "scalar",
-        "type": "url",
-        "unit": null,
-        "variance_policy": "authoritative"
-      },
       "data_type": "url",
       "difficulty": "medium",
       "display_name": "Sensor Link",
-      "enum": {
-        "new_value_policy": {},
-        "policy": "open"
-      },
-      "enum_policy": "open",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -11174,7 +11034,6 @@
         "examples": [],
         "group": "Sensor Identity",
         "guidance_md": "Store the exact sensor component source URL: manufacturer component page, datasheet/spec PDF, official support/technology page naming the exact sensor, or authorized component distributor fallback. Product pages, reviews, consumer marketplaces, sensor databases, forums, and articles that merely mention the sensor are not valid sensor_link values.",
-        "label": "Sensor Link",
         "order": 39,
         "placeholder": "",
         "prefix": null,
@@ -11186,8 +11045,7 @@
       },
       "value_form": "single",
       "value_form_sample": "scalar",
-      "variance_policy": "authoritative",
-      "variant_dependent": false
+      "variance_policy": "authoritative"
     },
     "sensor_type": {
       "ai_assist": {
@@ -11383,10 +11241,10 @@
       "enum": {
         "match": {},
         "new_value_policy": {},
-        "policy": "closed",
+        "policy": "open_prefer_known",
         "source": "data_lists.shape"
       },
-      "enum_policy": "closed",
+      "enum_policy": "open_prefer_known",
       "enum_source": "data_lists.shape",
       "evidence": {
         "min_evidence_refs": 1,
@@ -12249,9 +12107,11 @@
           "accept_if_evidence": true,
           "mark_needs_curation": true
         },
-        "policy": "open_prefer_known"
+        "policy": "open_prefer_known",
+        "source": "data_lists.switch"
       },
       "enum_policy": "open_prefer_known",
+      "enum_source": "data_lists.switch",
       "evidence": {
         "min_evidence_refs": 2,
         "tier_preference": [
@@ -12398,28 +12258,14 @@
       "availability": "sometimes",
       "canonical_key": "switch_brand",
       "component": null,
-      "constraints": [],
-      "contract": {
-        "shape": "scalar",
-        "type": "string",
-        "unit": null
+      "component_identity_projection": {
+        "component_type": "switch",
+        "facet": "brand"
       },
+      "constraints": [],
       "data_type": "string",
       "difficulty": "medium",
       "display_name": "Switch Brand",
-      "enum": {
-        "match": {
-          "format_hint": "Canonical switch-maker/proprietary-switch brand string, e.g. Omron, Kailh, Huano, TTC, Razer, Logitech, ROG."
-        },
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open_prefer_known",
-        "source": "data_lists.mouse_switch_brand"
-      },
-      "enum_policy": "open_prefer_known",
-      "enum_source": "data_lists.mouse_switch_brand",
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -12527,7 +12373,6 @@
         "examples": [],
         "group": "Switch Identity",
         "guidance_md": "Extract the primary left/right click switch brand as shipped on the exact SKU. Normalize exact switch models to the canonical maker/proprietary brand list. Do not infer from mouse brand, generic optical/mechanical wording, click rating, quiet clicks, or optional replacement switch packs.",
-        "label": "Switch Brand",
         "order": 57,
         "placeholder": "",
         "prefix": null,
@@ -12539,8 +12384,7 @@
       },
       "value_form": "single",
       "value_form_sample": "scalar",
-      "variance_policy": "authoritative",
-      "variant_dependent": false
+      "variance_policy": "authoritative"
     },
     "switch_link": {
       "ai_assist": {
@@ -12567,28 +12411,18 @@
       "availability": "sometimes",
       "canonical_key": "switch_link",
       "component": null,
+      "component_identity_projection": {
+        "component_type": "switch",
+        "facet": "link"
+      },
       "constraints": [
         "exact switch identity must be known before emitting switch_link",
         "link target must name the exact switch model, exact switch family variant, or exact branded switch generation/technology",
         "switch_link must not point to mouse product pages, reviews, specs aggregators, consumer marketplaces, resale listings, forum posts, or articles that merely mention the component"
       ],
-      "contract": {
-        "shape": "scalar",
-        "type": "url",
-        "unit": null
-      },
       "data_type": "url",
       "difficulty": "medium",
       "display_name": "Switch Link",
-      "enum": {
-        "match": {
-          "format_hint": "absolute https URL"
-        },
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        }
-      },
       "evidence": {
         "min_evidence_refs": 1,
         "tier_preference": [
@@ -12673,7 +12507,6 @@
         "examples": [],
         "group": "Switch Identity",
         "guidance_md": "Return the exact switch component URL, not a mouse product/review/spec page. Valid targets are maker component pages, maker datasheets/spec PDFs, official exact proprietary switch-technology pages, or authorized component distributor pages for the exact part. Return unknown if the exact switch identity or component URL is not proven.",
-        "label": "Switch Link",
         "order": 59,
         "placeholder": "",
         "prefix": null,
@@ -12684,8 +12517,7 @@
         "tooltip_source": null
       },
       "value_form": "single",
-      "value_form_sample": "scalar",
-      "variant_dependent": false
+      "value_form_sample": "scalar"
     },
     "switch_type": {
       "ai_assist": {

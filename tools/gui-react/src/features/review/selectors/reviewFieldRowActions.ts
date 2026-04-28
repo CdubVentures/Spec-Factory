@@ -27,7 +27,6 @@ export interface ReviewProductHeaderActionRow {
 }
 
 export interface ReviewFieldRowActionState {
-  readonly variantIconVisible: boolean;
   readonly actions: readonly ReviewFieldRowAction[];
 }
 
@@ -71,7 +70,6 @@ export function isVariantOwnedReviewField(input: ReviewFieldRowActionStateInput)
 export function deriveReviewFieldRowActionState(input: ReviewFieldRowActionStateInput): ReviewFieldRowActionState {
   const variantOwned = isVariantOwnedReviewField(input);
   return {
-    variantIconVisible: variantOwned,
     actions: variantOwned ? [] : SCALAR_ROW_ACTIONS,
   };
 }

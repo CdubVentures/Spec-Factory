@@ -45,10 +45,39 @@ const SENSOR_MODEL_RULE = {
   ai_assist: { reasoning_note: '' },
 };
 
+const SENSOR_COMPONENT_RULE = {
+  field_key: 'sensor',
+  display_name: 'Sensor',
+  contract: { type: 'string', shape: 'scalar' },
+  difficulty: 'very_hard',
+  required_level: 'mandatory',
+  availability: 'rare',
+  group: 'sensor_performance',
+  enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
+  evidence: { min_evidence_refs: 1 },
+  ai_assist: { reasoning_note: '' },
+};
+
+const SENSOR_BRAND_RULE = {
+  field_key: 'sensor_brand',
+  display_name: 'Sensor Brand',
+  contract: { type: 'string', shape: 'scalar' },
+  difficulty: 'medium',
+  required_level: 'mandatory',
+  availability: 'rare',
+  group: 'sensor_performance',
+  enum: { policy: 'open_prefer_known' },
+  component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+  evidence: { min_evidence_refs: 1 },
+  ai_assist: { reasoning_note: '' },
+};
+
 const COMPILED_FIELD_RULES = {
   fields: {
     polling_rate: POLLING_RATE_RULE,
     sensor_model: SENSOR_MODEL_RULE,
+    sensor: SENSOR_COMPONENT_RULE,
+    sensor_brand: SENSOR_BRAND_RULE,
   },
   known_values: {},
 };
@@ -1127,4 +1156,108 @@ test('discovery log scope reads prior history from SQL before stale JSON', async
   assert.ok(!urls.includes('https://JSON-STALE.example.com'), 'stale JSON URL must not be injected when SQL runs exist');
   assert.ok(queries.includes('sql prior q'));
   assert.ok(!queries.includes('json stale q'));
+});
+
+test('component identity submission passes aliases as publisher metadata', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setupForProduct('kf-component-aliases');
+  const submitCalls = [];
+  const response = {
+    result: {
+      primary_field_key: 'sensor',
+      results: {
+        sensor: {
+          value: 'PAW3950',
+          confidence: 91,
+          unknown_reason: '',
+          component_aliases: ['PixArt 3950', 'PMW3950'],
+          brand_aliases: ['PixArt Imaging'],
+          evidence_refs: [
+            {
+              url: 'https://pixart.example/paw3950',
+              tier: 'tier1',
+              confidence: 95,
+              supporting_evidence: 'PAW3950 sensor listed by PixArt',
+              evidence_kind: 'direct_quote',
+            },
+          ],
+        },
+      },
+      discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+    },
+    usage: null,
+  };
+
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: 'kf-component-aliases' },
+    fieldKey: 'sensor',
+    category: 'mouse',
+    specDb, appDb: { componentDb: null }, config: {},
+    broadcastWs: null,
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async () => response,
+    _submitCandidateOverride: async (args) => {
+      submitCalls.push(args);
+      return { status: 'accepted', publishResult: { status: 'published' } };
+    },
+  });
+
+  assert.equal(submitCalls.length, 1);
+  assert.deepEqual(submitCalls[0].metadata.component_identity_aliases, {
+    component: ['PixArt 3950', 'PMW3950'],
+    brand: ['PixArt Imaging'],
+  });
+});
+
+test('component brand submission passes aliases as publisher metadata', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setupForProduct('kf-component-brand-aliases');
+  const submitCalls = [];
+  const response = {
+    result: {
+      primary_field_key: 'sensor_brand',
+      results: {
+        sensor_brand: {
+          value: 'PixArt',
+          confidence: 92,
+          unknown_reason: '',
+          component_aliases: ['PAW-3950'],
+          brand_aliases: ['PixArt Imaging'],
+          evidence_refs: [
+            {
+              url: 'https://pixart.example/paw3950-brand',
+              tier: 'tier1',
+              confidence: 95,
+              supporting_evidence: 'PAW3950 sensor maker is PixArt',
+              evidence_kind: 'direct_quote',
+            },
+          ],
+        },
+      },
+      discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+    },
+    usage: null,
+  };
+
+  await runKeyFinder({
+    product: { ...PRODUCT, product_id: 'kf-component-brand-aliases' },
+    fieldKey: 'sensor_brand',
+    category: 'mouse',
+    specDb, appDb: { componentDb: null }, config: {},
+    broadcastWs: null,
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async () => response,
+    _submitCandidateOverride: async (args) => {
+      submitCalls.push(args);
+      return { status: 'accepted', publishResult: { status: 'published' } };
+    },
+  });
+
+  assert.equal(submitCalls.length, 1);
+  assert.deepEqual(submitCalls[0].metadata.component_identity_aliases, {
+    component: ['PAW-3950'],
+    brand: ['PixArt Imaging'],
+  });
 });

@@ -30,7 +30,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.adaptive_sync"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -128,7 +128,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.aspect_ratio"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -225,7 +225,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.audio_output"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -321,7 +321,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.backlight_type"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -1012,7 +1012,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.cable_type"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -1112,7 +1112,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.cables_included"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -1211,7 +1211,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.category"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -1308,7 +1308,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.color"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2224,7 +2224,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.curve_radius"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2692,7 +2692,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.display_stream_compression"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2789,7 +2789,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.displayport_ports"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2887,7 +2887,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.displayport_version"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -3085,7 +3085,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.energy_rating"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -3181,7 +3181,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.ethernet_rj45"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -3655,7 +3655,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.gradient_handling"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -3943,7 +3943,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.hdmi_ports"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -4041,7 +4041,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.hdmi_version"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -4143,7 +4143,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.hdr_support"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -5450,7 +5450,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.macos_compatibility"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -5544,7 +5544,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.material"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -5854,7 +5854,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.microphone"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -6228,7 +6228,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.native_colors"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -6323,7 +6323,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.osd_type"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -6820,7 +6820,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.panel_bit_depth"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -6917,7 +6917,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.panel_coating"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -7014,7 +7014,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.panel_manufacturer"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -7111,7 +7111,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.panel_type"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -7712,7 +7712,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.price_range"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -7807,7 +7807,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.ps5_compatibility"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -8015,7 +8015,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.refresh_rate"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -8219,7 +8219,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.resolution"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -8750,7 +8750,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.screen_size"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -8937,7 +8937,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.speakers"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -9034,7 +9034,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.subpixel_layout"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -9223,7 +9223,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.text_clarity"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -9319,7 +9319,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.thunderbolt_ports"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -9416,7 +9416,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.thunderbolt_version"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -9609,7 +9609,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.usb_c_ports"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -9705,7 +9705,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.usb_hub"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -10194,7 +10194,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.vesa_mount"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -10479,7 +10479,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.warranty"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -10574,7 +10574,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.webcam"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -11076,7 +11076,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.xbox_series_xs_compatibility"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -11148,7 +11148,7 @@
       }
     }
   },
-  "generated_at": "2026-04-28T06:44:32.811Z",
+  "generated_at": "2026-04-28T20:41:56.626Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",

@@ -1,6 +1,7 @@
-// RED: Review matrix field-column row action contract.
+// Review matrix field-column row action contract.
 // Ordinary scalar keys expose row-wide Unpublish all/Delete all actions.
-// Variant-owned keys only show the SVG signal and never expose row reset.
+// Variant-owned keys suppress destructive row actions (the icon strip is now
+// derived independently in ReviewMatrix from the rule projection).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -20,30 +21,27 @@ test('ordinary scalar key exposes row-wide unpublish and delete actions', async 
     variantDependent: false,
   });
 
-  assert.equal(state.variantIconVisible, false);
   assert.deepEqual(state.actions.map((action) => action.kind), ['unpublish-all', 'delete-all']);
   assert.deepEqual(state.actions.map((action) => action.label), ['Unpublish all', 'Delete all']);
 });
 
-test('variant-dependent key shows variant icon and suppresses destructive row actions', async () => {
+test('variant-dependent key suppresses destructive row actions', async () => {
   const { deriveReviewFieldRowActionState } = await load();
   const state = deriveReviewFieldRowActionState({
     fieldKey: 'release_date',
     variantDependent: true,
   });
 
-  assert.equal(state.variantIconVisible, true);
   assert.deepEqual(state.actions, []);
 });
 
-test('variant generator key shows variant icon even without variantDependent flag', async () => {
+test('variant generator key suppresses destructive row actions even without variantDependent flag', async () => {
   const { deriveReviewFieldRowActionState } = await load();
   const state = deriveReviewFieldRowActionState({
     fieldKey: 'colors',
     variantDependent: false,
   });
 
-  assert.equal(state.variantIconVisible, true);
   assert.deepEqual(state.actions, []);
 });
 

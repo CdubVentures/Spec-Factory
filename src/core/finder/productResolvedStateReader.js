@@ -160,6 +160,201 @@ export function resolveProductComponentInventory({
  *
  * @returns {{type: string, relation: 'parent'|'subfield_of', parentFieldKey: string} | null}
  */
+// Component prompt table helpers.
+function clean(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function parseJsonList(value) {
+  if (Array.isArray(value)) return value.map((v) => String(v).trim()).filter(Boolean);
+  const raw = String(value ?? '').trim();
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.map((v) => String(v).trim()).filter(Boolean) : [raw];
+  } catch {
+    return [raw];
+  }
+}
+
+function stringifyPromptValue(value) {
+  if (value === null || value === undefined) return '';
+  if (Array.isArray(value)) return value.map((item) => stringifyPromptValue(item)).filter(Boolean).join('; ');
+  if (typeof value === 'object') return JSON.stringify(value);
+  return String(value).trim();
+}
+
+function readComponentProjection(fieldRule = {}) {
+  const projection = fieldRule?.component_identity_projection;
+  if (!projection || typeof projection !== 'object') return null;
+  const componentType = clean(projection.component_type);
+  const facet = clean(projection.facet).toLowerCase();
+  if (!componentType || !['brand', 'link'].includes(facet)) return null;
+  return { componentType, facet };
+}
+
+function resolvePropertyColumns({ componentType, componentRelationIndex, componentRows }) {
+  const sourcesEntry = componentRelationIndex?.componentSourcesIndex?.get(componentType) || null;
+  const sourceKeys = Array.isArray(sourcesEntry?.propertyKeys) ? sourcesEntry.propertyKeys : [];
+  const keys = sourceKeys.length > 0
+    ? sourceKeys
+    : Array.from(new Set(
+      (Array.isArray(componentRows) ? componentRows : [])
+        .flatMap((row) => (Array.isArray(row?.properties) ? row.properties : []))
+        .map((prop) => clean(prop?.property_key || prop?.field_key || prop?.key))
+        .filter(Boolean),
+    ));
+  return keys.map((fieldKey) => ({
+    field_key: fieldKey,
+    variancePolicy: clean(sourcesEntry?.variancePolicies?.[fieldKey]) || 'authoritative',
+  }));
+}
+
+function normalizeComponentPromptRow(row, propertyColumns) {
+  const identity = row?.identity && typeof row.identity === 'object' ? row.identity : row;
+  const rawProperties = Array.isArray(row?.properties) ? row.properties : [];
+  const propertyByKey = new Map();
+  for (const prop of rawProperties) {
+    const key = clean(prop?.property_key || prop?.field_key || prop?.key);
+    if (!key) continue;
+    propertyByKey.set(key, prop);
+  }
+  const properties = {};
+  for (const column of propertyColumns) {
+    const prop = propertyByKey.get(column.field_key);
+    properties[column.field_key] = prop && Object.prototype.hasOwnProperty.call(prop, 'value')
+      ? prop.value
+      : '';
+  }
+  return {
+    name: clean(identity?.canonical_name || identity?.component_name || row?.name),
+    brand: clean(identity?.maker || identity?.brand || identity?.component_maker || row?.maker),
+    aliases: (Array.isArray(row?.aliases) ? row.aliases : [])
+      .map((alias) => clean(alias?.alias || alias))
+      .filter(Boolean),
+    links: parseJsonList(identity?.links ?? row?.links),
+    properties,
+  };
+}
+
+function readComponentRows({ specDb, componentType, componentRelationIndex }) {
+  const rawRows = typeof specDb?.getAllComponentsForType === 'function'
+    ? specDb.getAllComponentsForType(componentType) || []
+    : [];
+  const propertyColumns = resolvePropertyColumns({
+    componentType,
+    componentRelationIndex,
+    componentRows: rawRows,
+  });
+  const rows = rawRows
+    .map((row) => normalizeComponentPromptRow(row, propertyColumns))
+    .filter((row) => row.name || row.brand || row.aliases.length > 0 || row.links.length > 0);
+  rows.sort((a, b) => a.name.localeCompare(b.name) || a.brand.localeCompare(b.brand));
+  return { rows, propertyColumns };
+}
+
+function readResolvedCandidateValue(specDb, productId, fieldKey) {
+  const row = typeof specDb?.getResolvedFieldCandidate === 'function'
+    ? specDb.getResolvedFieldCandidate(productId, fieldKey)
+    : null;
+  return stringifyPromptValue(row?.value);
+}
+
+function resolveComponentIdentitySelector({ specDb, productId, componentType }) {
+  const links = typeof specDb?.getItemComponentLinks === 'function'
+    ? specDb.getItemComponentLinks(productId) || []
+    : [];
+  const linked = links.find((row) =>
+    clean(row?.field_key) === componentType || clean(row?.component_type) === componentType);
+  const linkedName = clean(linked?.component_name);
+  const linkedBrand = clean(linked?.component_maker);
+  if (linkedName || linkedBrand) {
+    return { name: linkedName, brand: linkedBrand, source: 'item_component_links' };
+  }
+  const name = readResolvedCandidateValue(specDb, productId, componentType);
+  const brand = readResolvedCandidateValue(specDb, productId, `${componentType}_brand`);
+  return { name, brand, source: name || brand ? 'published_fields' : '' };
+}
+
+function matchesComponentSelector(row, selector) {
+  const wantedName = clean(selector?.name).toLowerCase();
+  const wantedBrand = clean(selector?.brand).toLowerCase();
+  if (!wantedName && !wantedBrand) return false;
+  const nameMatches = !wantedName || row.name.toLowerCase() === wantedName;
+  const brandMatches = !wantedBrand || row.brand.toLowerCase() === wantedBrand;
+  return nameMatches && brandMatches;
+}
+
+/**
+ * Resolve component table/row prompt context for the current Key Finder target.
+ *
+ * @returns {{mode: 'full_table'|'resolved_row', componentType: string, fieldKey: string, propertyColumns: Array<object>, rows: Array<object>, selector: object|null} | null}
+ */
+export function resolveComponentPromptContext({
+  specDb,
+  productId,
+  fieldKey,
+  fieldRule,
+  componentRelationIndex,
+} = {}) {
+  if (!specDb || !fieldKey || !fieldRule || !componentRelationIndex) return null;
+
+  let mode = '';
+  let componentType = '';
+  if (isParentRule(fieldRule, fieldKey)) {
+    mode = 'full_table';
+    componentType = fieldKey;
+  } else {
+    const projection = readComponentProjection(fieldRule);
+    if (projection?.facet === 'brand') {
+      mode = 'full_table';
+      componentType = projection.componentType;
+    } else if (projection?.facet === 'link') {
+      mode = 'resolved_row';
+      componentType = projection.componentType;
+    } else {
+      const parentKey = componentRelationIndex.subfieldToParent.get(fieldKey);
+      if (parentKey) {
+        mode = 'resolved_row';
+        componentType = parentKey;
+      }
+    }
+  }
+  if (!mode || !componentType) return null;
+
+  const { rows, propertyColumns } = readComponentRows({
+    specDb,
+    componentType,
+    componentRelationIndex,
+  });
+  if (mode === 'full_table') {
+    return {
+      mode,
+      componentType,
+      fieldKey,
+      propertyColumns,
+      rows,
+      selector: null,
+    };
+  }
+
+  const selector = resolveComponentIdentitySelector({ specDb, productId, componentType });
+  return {
+    mode,
+    componentType,
+    fieldKey,
+    propertyColumns,
+    rows: rows.filter((row) => matchesComponentSelector(row, selector)),
+    selector,
+  };
+}
+
+/**
+ * Pure relation pointer for one key. This intentionally emits no component
+ * data; table/row data is resolved by resolveComponentPromptContext.
+ *
+ * @returns {{type: string, relation: 'parent'|'subfield_of', parentFieldKey: string} | null}
+ */
 export function resolveKeyComponentRelation({
   fieldKey,
   fieldRule,

@@ -16,16 +16,31 @@ const TOP_LEVEL_KEYS = new Set([
 ]);
 const PATCH_KEYS = new Set(['data_lists', 'field_overrides', 'component_sources']);
 const AUDIT_KEYS = new Set(['sources_checked', 'products_checked', 'conclusion', 'open_questions']);
+const DATA_LIST_PATCH_KEYS = new Set(['field', 'normalize', 'manual_values']);
+const COMPONENT_SOURCE_PATCH_KEYS = new Set(['component_type', 'roles']);
+const COMPONENT_ROLE_PATCH_KEYS = new Set(['properties']);
+const COMPONENT_PROPERTY_PATCH_KEYS = new Set([
+  'field_key',
+  'type',
+  'unit',
+  'variance_policy',
+  'tolerance',
+  'constraints',
+  'component_only',
+]);
 const RETIRED_DATA_LIST_KEYS = new Set([
   'mode',
   'sheet',
   'value_column',
   'column',
+  'delimiter',
   'header_row',
   'row_start',
   'start_row',
   'row_end',
   'end_row',
+  'priority',
+  'ai_assist',
 ]);
 const RETIRED_COMPONENT_SOURCE_KEYS = new Set([
   'type',
@@ -46,6 +61,8 @@ const RETIRED_COMPONENT_SOURCE_KEYS = new Set([
   'alias_columns',
   'link_columns',
   'property_columns',
+  'priority',
+  'ai_assist',
 ]);
 const RETIRED_COMPONENT_ROLE_KEYS = new Set(['primary_identifier', 'maker', 'aliases', 'links']);
 const RETIRED_COMPONENT_PROPERTY_KEYS = new Set(['key', 'property_key', 'column', 'col']);
@@ -176,7 +193,10 @@ function validatePatchBlock(patch, fieldKey) {
       }
       for (const key of Object.keys(row)) {
         if (RETIRED_DATA_LIST_KEYS.has(key)) {
-          throw new Error(`patch.data_lists[${index}].${key} is retired; use field and manual_values only`);
+          throw new Error(`patch.data_lists[${index}].${key} is retired; use field, normalize, and manual_values only`);
+        }
+        if (!DATA_LIST_PATCH_KEYS.has(key)) {
+          throw new Error(`patch.data_lists[${index}].${key} is not allowed; use field, normalize, and manual_values only`);
         }
       }
     });
@@ -194,6 +214,9 @@ function validatePatchBlock(patch, fieldKey) {
         if (RETIRED_COMPONENT_SOURCE_KEYS.has(key)) {
           throw new Error(`patch.component_sources[${index}].${key} is retired; use component_type and roles.properties[] only`);
         }
+        if (!COMPONENT_SOURCE_PATCH_KEYS.has(key)) {
+          throw new Error(`patch.component_sources[${index}].${key} is not allowed; use component_type and roles.properties[] only`);
+        }
       }
       const componentType = row.component_type;
       if (!componentType) {
@@ -204,8 +227,10 @@ function validatePatchBlock(patch, fieldKey) {
         if (RETIRED_COMPONENT_ROLE_KEYS.has(key)) {
           throw new Error(`patch.component_sources[${index}].roles.${key} is retired; roles may only carry properties`);
         }
+        if (!COMPONENT_ROLE_PATCH_KEYS.has(key)) {
+          throw new Error(`patch.component_sources[${index}].roles.${key} is not allowed; roles may only carry properties`);
+        }
       }
-      if (componentType === fieldKey) return;
       const properties = Array.isArray(roles.properties) ? roles.properties : [];
       properties.forEach((prop, propIndex) => {
         if (!isObject(prop)) return;
@@ -213,8 +238,12 @@ function validatePatchBlock(patch, fieldKey) {
           if (RETIRED_COMPONENT_PROPERTY_KEYS.has(key)) {
             throw new Error(`patch.component_sources[${index}].roles.properties[${propIndex}].${key} is retired; use field_key`);
           }
+          if (!COMPONENT_PROPERTY_PATCH_KEYS.has(key)) {
+            throw new Error(`patch.component_sources[${index}].roles.properties[${propIndex}].${key} is not allowed; use field_key, type, unit, variance_policy, tolerance, constraints, and component_only only`);
+          }
         }
       });
+      if (componentType === fieldKey) return;
       const touchesField = properties.some((prop) => prop?.field_key === fieldKey);
       if (!touchesField) {
         throw new Error(`patch.component_sources[${index}] must identify ${fieldKey} as a component property`);
@@ -354,25 +383,31 @@ function componentPropertyByKey(row, fieldKey) {
 
 function enumSourceForRule(rule, fieldKey = '') {
   if (!isObject(rule)) return '';
-  if (typeof rule.enum?.source === 'string') return rule.enum.source;
-  if (typeof rule.enum_source === 'string') return rule.enum_source;
+  const explicitSource = typeof rule.enum?.source === 'string'
+    ? rule.enum.source
+    : (typeof rule.enum_source === 'string' ? rule.enum_source : '');
   if (isObject(rule.enum_source) && rule.enum_source.type === 'component_db') {
     const ref = normalizeFieldKey(rule.enum_source.ref || '');
     return ref ? `component_db.${ref}` : '';
   }
-  if (isObject(rule.component) && typeof rule.component.source === 'string' && rule.component.source.startsWith('component_db.')) {
-    return rule.component.source;
-  }
+  if (explicitSource.startsWith('component_db.')) return explicitSource;
   const normalizedFieldKey = normalizeFieldKey(fieldKey || rule.field_key || rule.key || '');
+  if (isObject(rule.component) && typeof rule.component.source === 'string' && rule.component.source.startsWith('component_db.')) {
+    const ref = normalizeFieldKey(rule.component.source.slice('component_db.'.length));
+    const componentType = normalizeFieldKey(rule.component.type || ref);
+    if (normalizedFieldKey && componentType && componentType === normalizedFieldKey) {
+      return rule.component.source;
+    }
+  }
   const inferredComponentType = normalizeFieldKey(
-    rule.field_studio_hints?.component_db
-    || rule.parse?.component_type
+    rule.parse?.component_type
     || rule.parse_rules?.component_type
     || '',
   );
   if (normalizedFieldKey && inferredComponentType && inferredComponentType === normalizedFieldKey) {
     return `component_db.${inferredComponentType}`;
   }
+  if (explicitSource) return explicitSource;
   return '';
 }
 

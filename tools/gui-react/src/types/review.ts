@@ -21,6 +21,11 @@ export interface ReviewLayoutRow {
     // published state is per-variant (variantFieldProducer class). Drives the
     // review drawer's "Published Variant Values" table + candidate variant labels.
     variant_dependent?: boolean;
+    // WHY: icon-strip inputs — surfaced by normalizeFieldContract so the review
+    // grid renders the same taxonomy icons as Key Navigator + Studio Workbench.
+    product_image_dependent?: boolean;
+    component_identity_projection?: { component_type: string | null; facet: string | null } | null;
+    belongs_to_component?: string | null;
   };
 }
 

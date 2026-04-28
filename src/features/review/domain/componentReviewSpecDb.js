@@ -5,6 +5,7 @@
 
 import path from 'node:path';
 import { confidenceColor } from './confidenceColor.js';
+import { fanOutCandidates } from './candidateFanOut.js';
 import { evaluateVarianceBatch } from './varianceEvaluator.js';
 import { loadComponentDbsFromSpecDb } from '../../../db/helpers/componentDbLoader.js';
 import {
@@ -36,6 +37,23 @@ import {
 import { resolvePropertyFieldMeta } from './componentReviewHelpers.js';
 
 // ── SpecDb-primary component payloads ────────────────────────────────
+
+function buildPublishedProductCandidates({ specDb, productIds = [], fieldKey = '' } = {}) {
+  if (!specDb || typeof specDb.getFieldCandidatesByProductAndField !== 'function') {
+    return [];
+  }
+  const rows = [];
+  for (const productId of productIds) {
+    const linkedProductId = String(productId || '').trim();
+    if (!linkedProductId) continue;
+    const fieldRows = specDb.getFieldCandidatesByProductAndField(linkedProductId, fieldKey) || [];
+    for (const row of fieldRows) {
+      if (String(row?.status || '').trim() !== 'resolved') continue;
+      rows.push(row);
+    }
+  }
+  return fanOutCandidates(rows).filter((candidate) => candidate.status === 'resolved');
+}
 
 export async function buildComponentReviewPayloadsSpecDb({ config = {}, category, componentType, specDb, fieldRules = null }) {
   const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
@@ -198,6 +216,21 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
     const nameKeyState = null;
     const makerKeyState = null;
     const componentKeyStateByProperty = new Map();
+    let linkedProducts = [];
+    let linkedProductIds = [];
+    try {
+      const linkRows = specDb.getProductsForComponent(componentType, itemName, itemMaker);
+      linkedProductIds = linkRows.map(r => r.product_id);
+      linkedProducts = linkRows.map(r => ({
+        product_id: r.product_id,
+        field_key: r.field_key,
+        match_type: r.match_type || 'exact',
+        match_score: r.match_score ?? null,
+      }));
+    } catch {
+      linkedProducts = [];
+      linkedProductIds = [];
+    }
 
     // Build ref_* candidate helper for component DB reference data
     const buildRefCandidate = (id, rawValue, dbGeneratedAt) => rawValue != null && rawValue !== '' ? [{
@@ -305,6 +338,31 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       source_timestamp: linksTimestamp,
       overridden: linksOverridden,
     }));
+    const linkCandidates = buildPublishedProductCandidates({
+      specDb,
+      productIds: linkedProductIds,
+      fieldKey: `${componentType}_link`,
+    });
+    const links_state = {
+      selected: {
+        value: null,
+        confidence: 0,
+        status: 'unknown',
+        color: 'gray',
+      },
+      needs_review: false,
+      reason_codes: [],
+      source: 'unknown',
+      source_timestamp: null,
+      variance_policy: null,
+      constraints: [],
+      overridden: false,
+      candidate_count: linkCandidates.length,
+      candidates: linkCandidates,
+      accepted_candidate_id: null,
+      enum_values: null,
+      enum_policy: null,
+    };
 
     // Build properties
     const properties = {};
@@ -313,48 +371,35 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
 
     for (const key of propertyColumns) {
       const dbRow = propMap[key];
-      const propertyKeyState = componentKeyStateByProperty.get(key) || null;
-      const rawValue = propertyKeyState?.selected_value ?? dbRow?.value ?? null;
-      const hasRawValue = rawValue !== null && rawValue !== '' && rawValue !== '-';
-      const isOverridden = Boolean(dbRow?.overridden);
-      const source = dbRow?.source || (hasRawValue ? 'component_db' : 'unknown');
-      const confidence = hasRawValue || isOverridden ? (dbRow?.confidence ?? 1.0) : 0;
       const variance = dbRow?.variance_policy || null;
       const meta = resolvePropertyFieldMeta(key, fieldRules);
       const fieldConstraints = meta?.constraints?.length > 0
         ? meta.constraints
         : (dbRow?.constraints ? JSON.parse(dbRow.constraints) : []);
-      const baseNeedsReview = Boolean(dbRow?.needs_review) || (!hasRawValue && !isOverridden);
-      const needsReview = isSharedLanePending(propertyKeyState, baseNeedsReview);
-      const laneNeedsReview = propertyKeyState ? isSharedLanePending(propertyKeyState, false) : false;
-      if (needsReview) itemFlags++;
-
-      const reasonCodes = [];
-      if (laneNeedsReview) reasonCodes.push('pending_ai');
-      if (!hasRawValue && !isOverridden) reasonCodes.push('missing_value');
-      if (isOverridden) reasonCodes.push('manual_override');
-      for (const c of fieldConstraints) reasonCodes.push(`constraint:${c}`);
+      const candidates = buildPublishedProductCandidates({
+        specDb,
+        productIds: linkedProductIds,
+        fieldKey: key,
+      });
 
       properties[key] = {
         slot_id: dbRow?.id ?? null,
         selected: {
-          value: rawValue,
-          confidence,
-          status: isOverridden ? 'override' : (source === 'user' ? 'override' : (hasRawValue ? 'reference' : 'unknown')),
-          color: confidenceColor(confidence, reasonCodes),
+          value: null,
+          confidence: 0,
+          status: 'unknown',
+          color: 'gray',
         },
-        needs_review: needsReview,
-        reason_codes: reasonCodes,
-        source: isOverridden ? 'user' : (source === 'component_db' ? 'reference' : source),
-        source_timestamp: isOverridden ? (String(dbRow?.updated_at || '').trim() || null) : null,
+        needs_review: false,
+        reason_codes: [],
+        source: 'unknown',
+        source_timestamp: null,
         variance_policy: variance,
         constraints: fieldConstraints,
-        overridden: isOverridden,
-        candidate_count: 0,
-        candidates: [],
-        accepted_candidate_id: String(propertyKeyState?.selected_candidate_id || '').trim()
-          || dbRow?.accepted_candidate_id
-          || null,
+        overridden: false,
+        candidate_count: candidates.length,
+        candidates,
+        accepted_candidate_id: null,
         enum_values: meta?.enum_values ?? null,
         enum_policy: meta?.enum_policy ?? null,
       };
@@ -364,21 +409,8 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
 
     // SpecDb enrichment: product-level candidates from SQLite
     const laneSlug = componentLaneSlug(itemName, itemMaker);
-    let linkedProducts = [];
     try {
-      const linkRows = specDb.getProductsForComponent(componentType, itemName, itemMaker);
-      const productIds = linkRows.map(r => r.product_id);
-      linkedProducts = linkRows.map(r => ({
-        product_id: r.product_id,
-        field_key: r.field_key,
-        match_type: r.match_type || 'exact',
-        match_score: r.match_score ?? null,
-      }));
-
-      if (productIds.length > 0) {
-        const linkFieldKey = linkRows[0]?.field_key || componentType;
-        const brandFieldKey = `${componentType}_brand`;
-
+      if (linkedProductIds.length > 0) {
         // Variance evaluation
         for (const key of propertyColumns) {
           const prop = properties[key];
@@ -412,7 +444,7 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
         // WHY: Linked products are specDb evidence that this component name is confirmed
         // across multiple products. Surface them as specdb candidates for name review.
         const existingNameCandidateIds = new Set(name_tracked.candidates.map((c) => String(c?.candidate_id || '').trim()));
-        for (const linkRow of linkRows) {
+        for (const linkRow of linkedProducts) {
           const candidateId = buildComponentReviewSyntheticCandidateId({
             productId: linkRow.product_id,
             fieldKey: '__name',
@@ -455,14 +487,6 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       fallbackCandidateId: `component_${slugify(componentType)}_${laneSlug}_maker`,
       fallbackQuote: `Selected ${componentType} maker retained for authoritative review`,
     });
-    for (const key of propertyColumns) {
-      const prop = properties[key];
-      if (!prop) continue;
-      ensureTrackedStateCandidateInvariant(prop, {
-        fallbackCandidateId: `component_${slugify(componentType)}_${laneSlug}_${slugify(key)}`,
-        fallbackQuote: `Selected ${key} retained for authoritative review`,
-      });
-    }
 
     const confidenceValues = propertyColumns
       .map((key) => Number.parseFloat(String(properties[key]?.selected?.confidence ?? '')))
@@ -482,6 +506,7 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       name_tracked,
       maker_tracked,
       links_tracked,
+      links_state,
       properties,
       linked_products: linkedProducts,
       review_status: reviewStatus,

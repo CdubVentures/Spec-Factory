@@ -13,6 +13,8 @@ import {
   type ReviewFieldRowActionKind,
   type ReviewProductHeaderActionKind,
 } from '../selectors/reviewFieldRowActions.ts';
+import { KeyTypeIconStrip } from '../../../shared/ui/icons/KeyTypeIcons.tsx';
+import { deriveKeyTypeIcons, deriveOwningComponent } from '../../../shared/ui/icons/keyTypeIconHelpers.ts';
 import type { ReviewLayout, ProductReviewPayload, CellMode, ReviewLayoutRow } from '../../../types/review.ts';
 
 interface ReviewMatrixProps {
@@ -52,23 +54,6 @@ const COL_WIDTH = 170;
 const ROW_HEIGHT = 30;
 const FIELD_COL_WIDTH = 190;
 const HEADER_HEIGHT = 56;
-
-function VariantKeyIcon() {
-  return (
-    <svg
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.6"
-      className="sf-review-matrix-variant-icon"
-      aria-hidden="true"
-    >
-      <path d="M8 2.25v11.5M3.5 5.25h9M3.5 10.75h9" />
-      <path d="M5.75 2.25c1.2 1.55 1.8 3.47 1.8 5.75s-.6 4.2-1.8 5.75M10.25 2.25C9.05 3.8 8.45 5.72 8.45 8s.6 4.2 1.8 5.75" />
-      <circle cx="8" cy="8" r="5.75" />
-    </svg>
-  );
-}
 
 function MenuChevronIcon() {
   return (
@@ -117,6 +102,15 @@ function FieldHeaderCell({
     variantDependent: row.field_rule.variant_dependent === true,
   });
   const hasActions = actionState.actions.length > 0 && typeof onFieldRowAction === 'function';
+  // WHY: same icon strip the Key Navigator + Workbench render — derived from
+  // the field_rule projection that buildReviewLayout now surfaces.
+  const iconInput = {
+    rule: row.field_rule as unknown as Record<string, unknown>,
+    fieldKey: row.key,
+    belongsToComponent: row.field_rule.belongs_to_component || '',
+  };
+  const iconKinds = deriveKeyTypeIcons(iconInput);
+  const owningComponent = deriveOwningComponent(iconInput);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -140,7 +134,6 @@ function FieldHeaderCell({
     const parts: string[] = [`Type: ${r.type}`];
     if (r.required) parts.push('Required');
     if (r.units) parts.push(`Units: ${r.units}`);
-    if (actionState.variantIconVisible) parts.push('Variant key');
     return parts.join(' - ');
   })();
 
@@ -172,7 +165,9 @@ function FieldHeaderCell({
           }}
         >
           <span className="sf-review-matrix-field-label">{row.label}</span>
-          {actionState.variantIconVisible && <VariantKeyIcon />}
+          {iconKinds.length > 0 && (
+            <KeyTypeIconStrip kinds={iconKinds} owningComponent={owningComponent} />
+          )}
           {hasActions && <MenuChevronIcon />}
         </button>
         {open && hasActions && (

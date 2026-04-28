@@ -136,25 +136,113 @@ const VARIANCE_LABEL = {
   override_allowed: '(override allowed)',
 };
 
-function buildProductComponentsBlock(inventory) {
-  const list = Array.isArray(inventory) ? inventory : [];
-  if (list.length === 0) return '';
-  const lines = ['Components on this product:'];
-  for (const entry of list) {
-    const type = String(entry.componentType || entry.parentFieldKey || '').trim();
-    if (!type) continue;
-    const resolved = String(entry.resolvedValue || '').trim();
-    lines.push(resolved ? `- ${type}: ${resolved}` : `- ${type}: (unidentified)`);
-    const subs = Array.isArray(entry.subfields) ? entry.subfields : [];
-    for (const sf of subs) {
-      if (!sf || !sf.field_key) continue;
-      const value = Array.isArray(sf.value) ? `[${sf.value.join(', ')}]` : String(sf.value);
-      const policy = String(sf.variancePolicy || 'authoritative');
-      const suffix = VARIANCE_LABEL[policy] || VARIANCE_LABEL.authoritative;
-      lines.push(`    ${sf.field_key}: ${value}   ${suffix}`);
-    }
+function promptCell(value) {
+  if (value === null || value === undefined) return '';
+  if (Array.isArray(value)) return value.map((item) => promptCell(item)).filter(Boolean).join('; ');
+  if (typeof value === 'object') return JSON.stringify(value).replace(/\|/g, '/');
+  return String(value).trim().replace(/\|/g, '/');
+}
+
+function componentTableHeader(propertyColumns = []) {
+  return [
+    'Name',
+    'Brand',
+    'Aliases',
+    'Links',
+    ...propertyColumns.map((column) => {
+      const key = String(column?.field_key || '').trim();
+      const policy = String(column?.variancePolicy || 'authoritative').trim() || 'authoritative';
+      return key ? `${key} (${policy})` : '';
+    }).filter(Boolean),
+  ];
+}
+
+function componentTableRow(row, propertyColumns = []) {
+  return [
+    row?.name,
+    row?.brand,
+    row?.aliases,
+    row?.links,
+    ...propertyColumns.map((column) => row?.properties?.[column.field_key]),
+  ].map(promptCell);
+}
+
+function buildMarkdownTable(headers, rows) {
+  if (!Array.isArray(headers) || headers.length === 0 || !Array.isArray(rows) || rows.length === 0) return '';
+  const lines = [];
+  lines.push(`| ${headers.join(' | ')} |`);
+  lines.push(`| ${headers.map(() => '---').join(' | ')} |`);
+  for (const row of rows) {
+    lines.push(`| ${row.join(' | ')} |`);
   }
   return lines.join('\n');
+}
+
+function buildComponentPromptContextBlock(context) {
+  if (!context || typeof context !== 'object') return '';
+  const componentType = String(context.componentType || '').trim();
+  if (!componentType) return '';
+  const rows = Array.isArray(context.rows) ? context.rows : [];
+  const propertyColumns = Array.isArray(context.propertyColumns) ? context.propertyColumns : [];
+  if (context.mode === 'full_table') {
+    if (rows.length === 0) return '';
+    return [
+      `COMPONENT_CANDIDATE_TABLE ${componentType}`,
+      'Use this table to resolve the component Name and Brand together. Aliases are metadata for matching only, not separate output targets.',
+      buildMarkdownTable(
+        componentTableHeader(propertyColumns),
+        rows.map((row) => componentTableRow(row, propertyColumns)),
+      ),
+    ].join('\n');
+  }
+  if (context.mode === 'resolved_row') {
+    const selector = context.selector || {};
+    const selectorLine = [
+      selector.name ? `Name=${selector.name}` : '',
+      selector.brand ? `Brand=${selector.brand}` : '',
+    ].filter(Boolean).join(', ');
+    if (rows.length === 0) {
+      return [
+        `RESOLVED_COMPONENT_ROW ${componentType}`,
+        `No component table row matched the published component identity${selectorLine ? ` (${selectorLine})` : ''}.`,
+      ].join('\n');
+    }
+    return [
+      `RESOLVED_COMPONENT_ROW ${componentType}`,
+      'Product-linked component row for this item. Use this row as component identity context for component links and component attributes.',
+      buildMarkdownTable(
+        componentTableHeader(propertyColumns),
+        rows.map((row) => componentTableRow(row, propertyColumns)),
+      ),
+    ].join('\n');
+  }
+  return '';
+}
+
+function buildProductComponentsBlock(inventory, componentPromptContext) {
+  const blocks = [];
+  const list = Array.isArray(inventory) ? inventory : [];
+  if (list.length > 0) {
+    const lines = ['Components on this product:'];
+    for (const entry of list) {
+      const type = String(entry.componentType || entry.parentFieldKey || '').trim();
+      if (!type) continue;
+      const resolved = String(entry.resolvedValue || '').trim();
+      lines.push(resolved ? `- ${type}: ${resolved}` : `- ${type}: (unidentified)`);
+      const subs = Array.isArray(entry.subfields) ? entry.subfields : [];
+      for (const sf of subs) {
+        if (!sf || !sf.field_key) continue;
+        const value = Array.isArray(sf.value) ? `[${sf.value.join(', ')}]` : String(sf.value);
+        const policy = String(sf.variancePolicy || 'authoritative');
+        const suffix = VARIANCE_LABEL[policy] || VARIANCE_LABEL.authoritative;
+        lines.push(`    ${sf.field_key}: ${value}   ${suffix}`);
+      }
+    }
+    blocks.push(lines.join('\n'));
+  }
+  const componentBlock = buildComponentPromptContextBlock(componentPromptContext);
+  if (componentBlock) blocks.push(componentBlock);
+  return blocks.join('\n\n');
 }
 
 function buildProductScopedFactsBlock(productScopedFacts, { knownFieldsInjectionEnabled } = {}) {
@@ -392,6 +480,20 @@ function describeValueShape(fieldRule) {
   return shape === 'list' ? `array of ${element}` : element;
 }
 
+function includesComponentAliasMetadata(fieldKey, fieldRule) {
+  const key = String(fieldKey || '').trim();
+  const enumSource = String(fieldRule?.enum?.source || fieldRule?.enum_source || '').trim();
+  if (key && enumSource === `component_db.${key}`) return true;
+  const projection = fieldRule?.component_identity_projection;
+  return String(projection?.facet || '').trim().toLowerCase() === 'brand';
+}
+
+function pushComponentAliasShapeLines(lines, entry, indent) {
+  if (!includesComponentAliasMetadata(entry.fieldKey, entry.fieldRule)) return;
+  lines.push(`${indent}"component_aliases": ["..."] (optional metadata; aliases for the component name only; omit when none),`);
+  lines.push(`${indent}"brand_aliases": ["..."] (optional metadata; aliases for the component brand/maker only; omit when none),`);
+}
+
 function buildReturnJsonShape(primaryEntry, passengerEntries) {
   const primaryKey = primaryEntry.fieldKey;
   const passengerKeys = passengerEntries.map((p) => p.fieldKey);
@@ -403,6 +505,7 @@ function buildReturnJsonShape(primaryEntry, passengerEntries) {
   lines.push(`      "value": <${describeValueShape(primaryEntry.fieldRule)}> | "unk",`);
   lines.push(`      "confidence": 0-100,`);
   lines.push(`      "unknown_reason": "..." (required when value is "unk"; empty string otherwise),`);
+  pushComponentAliasShapeLines(lines, primaryEntry, '      ');
   lines.push(`      "evidence_refs": [{ "url", "tier", "confidence": 0-100, "supporting_evidence", "evidence_kind" }]`);
   lines.push(`    }${passengerKeys.length ? ',' : ''}`);
   for (let i = 0; i < passengerEntries.length; i++) {
@@ -412,6 +515,7 @@ function buildReturnJsonShape(primaryEntry, passengerEntries) {
     lines.push(`      "value": <${describeValueShape(p.fieldRule)}> | "unk",`);
     lines.push(`      "confidence": 0-100,`);
     lines.push(`      "unknown_reason": "..." (required when value is "unk"; empty string otherwise),`);
+    pushComponentAliasShapeLines(lines, p, '      ');
     lines.push(`      "evidence_refs": [{ "url", "tier", "confidence": 0-100, "supporting_evidence", "evidence_kind" }]`);
     lines.push(`    }${last ? '' : ','}`);
   }
@@ -458,6 +562,7 @@ export function buildKeyFinderPrompt({
   pifPriorityImageContext = {},
   componentContext = { primary: null, passengers: [] },
   productComponents = [],
+  componentPromptContext = null,
   injectionKnobs = DEFAULT_KNOBS,
   category = '',
   familySize = 1,
@@ -523,7 +628,7 @@ export function buildKeyFinderPrompt({
     ADDITIONAL_CROSS_FIELD_CONSTRAINTS: buildAdditionalCrossFieldConstraintsBlock(passengerList),
     ADDITIONAL_COMPONENT_KEYS: buildAdditionalComponentKeysBlock(passengerList, componentContext?.passengers, knobs),
 
-    PRODUCT_COMPONENTS: buildProductComponentsBlock(productComponents),
+    PRODUCT_COMPONENTS: buildProductComponentsBlock(productComponents, componentPromptContext),
     PRODUCT_SCOPED_FACTS: buildProductScopedFactsBlock(productScopedFacts, knobs),
     VARIANT_INVENTORY: buildVariantInventoryBlock(variantInventory, { product, siblingsExcluded }),
     FIELD_IDENTITY_USAGE: buildFieldIdentityUsageBlock(fieldIdentityUsage, variantInventory),

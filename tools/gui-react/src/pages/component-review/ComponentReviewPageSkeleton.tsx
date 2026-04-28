@@ -16,16 +16,13 @@ export type ComponentReviewContentSkeletonMode = 'components' | 'enums';
 
 const baseTabCls = 'px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer rounded sf-nav-item';
 const inactiveTabCls = 'sf-text-muted';
-const metricLabels = ['Components', 'Avg Confidence', 'Flags'] as const;
+const metricLabels = ['Components'] as const;
 const placeholderTabs = ['Switches', 'Sensors', 'Encoders', 'Cables', 'Enum Lists'] as const;
 const componentColumns: readonly ComponentReviewColumn[] = [
   { id: 'name' },
   { id: 'maker' },
-  { id: 'origin' },
   { id: 'aliases' },
-  { id: 'linked_products' },
-  { id: 'flags' },
-  { id: 'ai' },
+  { id: 'links' },
 ];
 const componentRows = Array.from({ length: 8 }, (_value, index) => `component-${index}`);
 const enumFields = Array.from({ length: 8 }, (_value, index) => `field-${index}`);
@@ -45,12 +42,6 @@ function MetricCardSkeleton({ label }: { readonly label: string }) {
 function PageShellSkeleton({ category }: ComponentReviewPageSkeletonProps) {
   return (
     <div className="space-y-3" data-region="component-review-loading-page">
-      <div className="flex items-center justify-end" data-region="component-review-loading-debug-row">
-        <button type="button" className="px-2.5 py-1 rounded sf-text-label font-medium border transition-colors sf-icon-button" disabled>
-          Debug LP+ID OFF
-        </button>
-      </div>
-
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3" data-region="component-review-loading-metrics">
         {metricLabels.map((label) => (
           <MetricCardSkeleton key={label} label={label} />
@@ -78,32 +69,6 @@ function PageShellSkeleton({ category }: ComponentReviewPageSkeletonProps) {
 
       <ComponentReviewContentSkeleton mode="components" />
       <span className="sr-only">Loading component review for {category}</span>
-    </div>
-  );
-}
-
-function ComponentReviewPanelSkeleton() {
-  return (
-    <div className="mb-3" data-region="component-review-loading-panel">
-      <div className="px-3 py-2 sf-surface-elevated flex items-center justify-between rounded">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-semibold">Component Review</span>
-          <span className="px-2 py-0.5 rounded-full sf-text-nano font-medium sf-chip-accent">
-            <SkeletonBlock className="sf-skel-caption" />
-          </span>
-          <span className="px-2 py-0.5 rounded-full sf-text-nano font-medium sf-chip-warning">
-            <SkeletonBlock className="sf-skel-caption" />
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button type="button" className="px-2 py-1 sf-text-nano font-medium rounded sf-run-ai-button disabled:opacity-50" disabled>
-            Run AI Review All
-          </button>
-          <button type="button" className="px-2 py-1 sf-text-nano font-medium rounded sf-icon-button" disabled>
-            Show Details
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -142,10 +107,7 @@ function ComponentTableSkeleton() {
 
 function ComponentTabSkeleton() {
   return (
-    <>
-      <ComponentReviewPanelSkeleton />
-      <ComponentTableSkeleton />
-    </>
+    <ComponentTableSkeleton />
   );
 }
 
@@ -168,10 +130,23 @@ function EnumValueSkeleton({ row }: { readonly row: string }) {
   return (
     <div className="w-full px-3 py-1 flex items-center gap-2 rounded" data-region="component-review-loading-enum-value" data-skeleton-row={row}>
       <SkeletonBlock className="sf-skel-bar" />
-      <span className="px-1.5 py-0.5 rounded sf-text-nano font-medium sf-run-ai-button flex-shrink-0">
-        <SkeletonBlock className="sf-skel-caption" />
-      </span>
     </div>
+  );
+}
+
+function EnumValueGroupSkeleton({ title, offset = 0 }: { readonly title: string; readonly offset?: number }) {
+  return (
+    <section className="p-2 space-y-1">
+      <div className="px-1 py-1 flex items-center justify-between">
+        <h3 className="text-xs font-medium sf-text-muted">{title}</h3>
+        <span className="sf-text-nano sf-text-muted"><SkeletonBlock className="sf-skel-caption" /></span>
+      </div>
+      <div className="space-y-0.5">
+        {enumValues.slice(offset, offset + 5).map((row) => (
+          <EnumValueSkeleton key={`${title}-${row}`} row={row} />
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -192,23 +167,9 @@ function EnumTabSkeleton() {
       <div className="border sf-border-default rounded-lg overflow-y-auto max-h-[calc(100vh-320px)] min-w-0" data-region="component-review-loading-enum-values">
         <div className="sticky top-0 sf-surface-elevated px-3 py-2 border-b sf-border-default flex items-center justify-between">
           <p className="text-xs font-medium sf-text-muted"><SkeletonBlock className="sf-skel-caption" /></p>
-          <button type="button" className="px-2 py-0.5 sf-run-ai-button sf-text-nano rounded disabled:opacity-50" disabled>
-            Run AI Review
-          </button>
         </div>
-        <div className="p-1 space-y-0.5">
-          {enumValues.map((row) => (
-            <EnumValueSkeleton key={row} row={row} />
-          ))}
-        </div>
-        <div className="sticky bottom-0 sf-surface-elevated border-t sf-border-default p-2">
-          <div className="flex gap-2">
-            <input type="text" className="flex-1 sf-drawer-input text-sm" placeholder="Add new value..." disabled />
-            <button type="button" className="px-3 py-1 text-sm sf-primary-button rounded disabled:opacity-50" disabled>
-              Add
-            </button>
-          </div>
-        </div>
+        <EnumValueGroupSkeleton title="Manual values" />
+        <EnumValueGroupSkeleton title="Discovered values" offset={5} />
       </div>
     </div>
   );

@@ -325,6 +325,63 @@ describe('Overview bulk dispatch contracts', () => {
     ]);
   });
 
+  it('skips component brand/link keys whose parent component is not published', async () => {
+    (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
+      if (path.endsWith('/bundling-config')) return { sortAxisOrder: '' } as never;
+      if (path.endsWith('/summary')) {
+        return [
+          { field_key: 'sensor', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component' },
+          { field_key: 'sensor_brand', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component_brand', component_parent_key: 'sensor', run_blocked_reason: 'component_parent_unpublished' },
+          { field_key: 'sensor_link', difficulty: 'medium', required_level: 'non_mandatory', availability: 'sometimes', dedicated_run: true, component_run_kind: 'component_link', component_parent_key: 'sensor', run_blocked_reason: 'component_parent_unpublished' },
+          { field_key: 'dpi', difficulty: 'easy', required_level: 'mandatory', availability: 'always' },
+        ] as never;
+      }
+      throw new Error(`unexpected GET ${path}`);
+    };
+
+    const calls: BulkFireParams[] = [];
+    await dispatchKfAll(
+      'mouse',
+      [product('p1')],
+      new Set(),
+      'run',
+      fireRecorder(calls),
+      {
+        staggerMs: 0,
+        awaitPassengersRegistered: async () => 'registered',
+      },
+    );
+
+    assert.deepEqual(calls.map((call) => call.fieldKey), ['dpi', 'sensor']);
+  });
+
+  it('dispatchKfPickedKeys ignores picked component brand/link keys while blocked', async () => {
+    (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
+      if (path.endsWith('/bundling-config')) return { sortAxisOrder: '' } as never;
+      if (path.endsWith('/summary')) {
+        return [
+          { field_key: 'sensor_brand', difficulty: 'medium', required_level: 'mandatory', availability: 'always', run_blocked_reason: 'component_parent_unpublished' },
+          { field_key: 'dpi', difficulty: 'easy', required_level: 'mandatory', availability: 'always' },
+        ] as never;
+      }
+      throw new Error(`unexpected GET ${path}`);
+    };
+    const calls: BulkFireParams[] = [];
+    await dispatchKfPickedKeys(
+      'mouse',
+      [product('p1')],
+      new Set(),
+      new Set(['sensor_brand', 'dpi']),
+      'run',
+      fireRecorder(calls),
+      {
+        staggerMs: 0,
+        awaitPassengersRegistered: async () => 'registered',
+      },
+    );
+    assert.deepEqual(calls.map((call) => call.fieldKey), ['dpi']);
+  });
+
   it('skips KeyFinder Loop for a product that already has an active Loop chain', async () => {
     let getCount = 0;
     (api as unknown as { get: typeof originalGet }).get = async () => {

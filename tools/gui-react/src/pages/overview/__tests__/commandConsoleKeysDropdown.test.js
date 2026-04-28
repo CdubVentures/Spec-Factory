@@ -118,6 +118,7 @@ function setupDefaultGlobals() {
     data: [
       { field_key: 'release_year', difficulty: 'easy', availability: 'always', required_level: 'mandatory', variant_dependent: false, published: false, last_status: null },
       { field_key: 'weight_g', difficulty: 'medium', availability: 'sometimes', required_level: 'mandatory', variant_dependent: false, published: false, last_status: null },
+      { field_key: 'sensor_brand', difficulty: 'medium', availability: 'always', required_level: 'mandatory', variant_dependent: false, published: false, last_status: null, dedicated_run: true, component_run_kind: 'component_brand', component_parent_key: 'sensor', component_dependency_satisfied: false, run_blocked_reason: 'component_parent_unpublished' },
       { field_key: 'cef_color', difficulty: 'easy', availability: 'always', required_level: 'mandatory', variant_dependent: false, published: false, last_status: null },
       { field_key: 'serial_number', difficulty: 'hard', availability: 'rare', required_level: 'non_mandatory', variant_dependent: true, published: false, last_status: null },
       { field_key: 'review_score', difficulty: 'easy', availability: 'always', required_level: 'mandatory', variant_dependent: false, published: true, last_status: 'resolved' },
@@ -160,6 +161,7 @@ test('Keys dropdown filters reserved + variant_dependent keys', async () => {
   // Eligible keys must appear.
   assert.ok(findText(tree, 'release_year'), 'eligible key release_year must appear');
   assert.ok(findText(tree, 'weight_g'), 'eligible key weight_g must appear');
+  assert.ok(findText(tree, 'sensor_brand'), 'blocked component resolver key still appears');
   assert.ok(findText(tree, 'review_score'), 'resolved-but-eligible key must still appear');
 });
 
@@ -244,4 +246,25 @@ test('Run picked invokes onRunPicked callback with the picked set', async () => 
   assert.equal(runBtn.props.disabled, false, 'Run picked must enable after pick');
   runBtn.props.onClick();
   assert.deepEqual(received, ['release_year', 'weight_g']);
+});
+
+test('component brand/link rows are visible but cannot be picked until the parent component publishes', async () => {
+  setupDefaultGlobals();
+  let received = null;
+  const onRunPicked = (set) => { received = Array.from(set).sort(); };
+
+  const { CommandConsoleKeysDropdown } = await loadModule();
+  let tree = renderDropdown(CommandConsoleKeysDropdown, { onRunPicked });
+  const inputs = collectByType(tree, 'input');
+  const sensorBrandCheckbox = inputs.find((n) => n.props?.['aria-label'] === 'Pick sensor_brand');
+  assert.ok(sensorBrandCheckbox, 'blocked component brand row must render');
+  assert.equal(sensorBrandCheckbox.props.disabled, true, 'blocked component brand cannot be selected');
+
+  sensorBrandCheckbox.props.onChange();
+  tree = renderDropdown(CommandConsoleKeysDropdown, { onRunPicked });
+  const buttons = collectByType(tree, 'button');
+  const runBtn = buttons.find((b) => findText(b, 'Run picked'));
+  assert.equal(runBtn.props.disabled, true, 'disabled component selection must not enable Run picked');
+  runBtn.props.onClick();
+  assert.equal(received, null, 'blocked component key must not dispatch');
 });

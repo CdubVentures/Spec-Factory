@@ -16,6 +16,8 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { KeyTypeIconStrip } from '../../../shared/ui/icons/KeyTypeIcons.tsx';
+import type { KeyTypeIconKind } from '../../../shared/ui/icons/keyTypeIconHelpers.ts';
 
 interface DraggableKeyListProps {
   fieldOrder: string[];
@@ -31,6 +33,7 @@ interface DraggableKeyListProps {
   onRenameGroup: (oldName: string, newName: string) => void;
   existingGroups: string[];
   egLockedKeys?: readonly string[];
+  iconInfoByKey?: Record<string, { kinds: readonly KeyTypeIconKind[]; owningComponent: string }>;
 }
 
 function SortableGroupHeader({
@@ -145,6 +148,8 @@ function SortableKeyItem({
   isSelected,
   isEdited,
   isEgLocked,
+  iconKinds,
+  owningComponent,
   label,
   onSelectKey,
 }: {
@@ -153,6 +158,8 @@ function SortableKeyItem({
   isSelected: boolean;
   isEdited: boolean;
   isEgLocked: boolean;
+  iconKinds: readonly KeyTypeIconKind[];
+  owningComponent: string;
   label: string;
   onSelectKey: (key: string) => void;
 }) {
@@ -163,6 +170,16 @@ function SortableKeyItem({
     opacity: isDragging ? 0.4 : 1,
   };
 
+  // WHY: gray label = "you can't freely edit this key's contract here".
+  // Two reasons fire the same gray treatment; tooltip distinguishes them.
+  const isIdentityProjection = iconKinds.includes('component_identity_projection');
+  const isLockedForDisplay = isEgLocked || isIdentityProjection;
+  const lockReason = isIdentityProjection
+    ? 'Generated component identity \u2014 derived from the parent component link'
+    : isEgLocked
+      ? 'EG defaults locked \u2014 toggle off in the key editor to edit'
+      : '';
+
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-1">
       <span
@@ -172,21 +189,21 @@ function SortableKeyItem({
       >
         &#x2630;
       </span>
-      {isEgLocked && (
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"
-          className="sf-text-subtle flex-shrink-0" aria-label="EG-locked field">
-          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
-          <path d="M7 11V7a5 5 0 0110 0v4"/>
-        </svg>
+      {iconKinds.length > 0 && (
+        <KeyTypeIconStrip
+          kinds={iconKinds}
+          owningComponent={owningComponent}
+          extraTooltip={lockReason || undefined}
+        />
       )}
       <button
         onClick={() => onSelectKey(keyName)}
+        title={!iconKinds.length && lockReason ? lockReason : undefined}
         className={`block flex-1 text-left px-2 py-1 text-sm rounded ${
           isSelected
             ? 'bg-accent/10 text-accent font-medium'
             : 'hover:opacity-90'
-        }${isEdited ? ' border-l-2 sf-border-warning-soft' : ''}`}
+        }${isEdited ? ' border-l-2 sf-border-warning-soft' : ''}${isLockedForDisplay ? ' sf-text-muted' : ''}`}
       >
         {label}
       </button>
@@ -208,6 +225,7 @@ export default function DraggableKeyList({
   onRenameGroup,
   existingGroups,
   egLockedKeys = [],
+  iconInfoByKey,
 }: DraggableKeyListProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -270,6 +288,8 @@ export default function DraggableKeyList({
               isSelected={selectedKey === item}
               isEdited={!!editedRules[item]?._edited}
               isEgLocked={egLockedKeys.includes(item)}
+              iconKinds={iconInfoByKey?.[item]?.kinds ?? []}
+              owningComponent={iconInfoByKey?.[item]?.owningComponent ?? ''}
               label={displayLabel(item, editedRules[item] || rules[item])}
               onSelectKey={onSelectKey}
             />

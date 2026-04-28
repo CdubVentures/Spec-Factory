@@ -1,5 +1,4 @@
 import { useMemo, useEffect } from 'react';
-import { usePersistedToggle } from '../../stores/collapseStore.ts';
 import { usePersistedTab } from '../../stores/tabStore.ts';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../api/client.ts';
@@ -10,7 +9,6 @@ import { MetricRow } from '../../shared/ui/data-display/MetricRow.tsx';
 import { ComponentSubTab } from './ComponentSubTab.tsx';
 import { EnumSubTab } from './EnumSubTab.tsx';
 import { ComponentReviewContentSkeleton, ComponentReviewPageSkeleton } from './ComponentReviewPageSkeleton.tsx';
-import { pct } from '../../utils/formatting.ts';
 import type { ComponentReviewLayout, ComponentReviewPayload } from '../../types/componentReview.ts';
 
 const baseCls = 'px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors cursor-pointer rounded sf-nav-item';
@@ -25,7 +23,6 @@ export function ComponentReviewPage() {
   const activeSubTab = useComponentReviewStore((s) => s.activeSubTab);
   const setActiveSubTab = useComponentReviewStore((s) => s.setActiveSubTab);
   const [persistedSubTab, setPersistedSubTab] = usePersistedTab<string>(subTabPersistKey, '');
-  const [debugLinkedProducts, toggleDebugLinkedProducts] = usePersistedToggle('componentReview:debugLinkedProducts', false);
   const queryClient = useQueryClient();
 
   const { data: layout, isLoading: layoutLoading } = useQuery({
@@ -92,8 +89,6 @@ export function ComponentReviewPage() {
     if (componentData) {
       return [
         { label: 'Components', value: componentData.metrics.total },
-        { label: 'Avg Confidence', value: pct(componentData.metrics.avg_confidence) },
-        { label: 'Flags', value: componentData.metrics.flags },
       ];
     }
     return null;
@@ -108,20 +103,6 @@ export function ComponentReviewPage() {
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-end">
-        <button
-          onClick={() => toggleDebugLinkedProducts()}
-          className={`px-2.5 py-1 rounded sf-text-label font-medium border transition-colors ${
-            debugLinkedProducts
-              ? 'sf-chip-info sf-border-default'
-              : 'sf-icon-button'
-          }`}
-          title="Toggle linked-product and identity debug overlays."
-        >
-          Debug LP+ID {debugLinkedProducts ? 'ON' : 'OFF'}
-        </button>
-      </div>
-
       {/* Metrics */}
       {metrics && <MetricRow metrics={metrics} />}
 
@@ -156,7 +137,6 @@ export function ComponentReviewPage() {
           data={enumDataFromStore}
           category={category}
           queryClient={queryClient}
-          debugLinkedProducts={debugLinkedProducts}
         />
       )}
 
@@ -165,7 +145,6 @@ export function ComponentReviewPage() {
           data={componentData}
           category={category}
           queryClient={queryClient}
-          debugLinkedProducts={debugLinkedProducts}
         />
       )}
     </div>

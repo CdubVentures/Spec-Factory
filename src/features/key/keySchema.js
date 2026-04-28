@@ -24,7 +24,11 @@ export function perKeyShape(valueKey) {
     valueType: 'string',
     includeEvidenceKind: true,
   }).omit({ discovery_log: true });
-  return base.extend({ [valueKey]: z.unknown() });
+  return base.extend({
+    [valueKey]: z.unknown(),
+    component_aliases: z.array(z.string()).optional(),
+    brand_aliases: z.array(z.string()).optional(),
+  });
 }
 
 const PER_KEY_VALUE = perKeyShape('value');

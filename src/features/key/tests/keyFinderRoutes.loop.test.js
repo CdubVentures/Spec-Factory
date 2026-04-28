@@ -42,6 +42,30 @@ const COMPILED_FIELD_RULES = {
   known_values: {},
 };
 
+const COMPONENT_FIELD_RULES = {
+  fields: {
+    sensor: {
+      ...POLLING_RATE_RULE,
+      field_key: 'sensor',
+      group: 'sensor_identity',
+      enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
+    },
+    sensor_brand: {
+      ...POLLING_RATE_RULE,
+      field_key: 'sensor_brand',
+      group: 'sensor_identity',
+      component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+    },
+    sensor_link: {
+      ...POLLING_RATE_RULE,
+      field_key: 'sensor_link',
+      group: 'sensor_identity',
+      component_identity_projection: { component_type: 'sensor', facet: 'link' },
+    },
+  },
+  known_values: {},
+};
+
 const PRODUCT_ROW = {
   product_id: 'kf-loop-001',
   category: 'mouse',
@@ -218,5 +242,30 @@ describe('POST /key-finder/:cat/:pid — mode dispatch', () => {
 
     const err400 = responses.find((r) => r.status === 400 && r.body.error === 'invalid_mode');
     assert.ok(err400, 'unknown mode rejected with invalid_mode');
+  });
+
+  it('rejects component brand/link runs until the parent component key is published', async () => {
+    const { ctx, responses } = makeCtx({
+      specDb: makeSpecDbStub({
+        getCompiledRules: () => COMPONENT_FIELD_RULES,
+        getResolvedFieldCandidate: () => null,
+      }),
+    });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(
+      ['key-finder', 'mouse', PRODUCT_ROW.product_id],
+      null,
+      'POST',
+      { body: { field_key: 'sensor_brand', mode: 'run' } },
+      {},
+    );
+
+    const err409 = responses.find((r) => r.status === 409);
+    assert.ok(err409, 'expected component dependency conflict');
+    assert.equal(err409.body.error, 'component_parent_unpublished');
+    assert.equal(err409.body.field_key, 'sensor_brand');
+    assert.equal(err409.body.component_parent_key, 'sensor');
+    assert.equal(listOperations().length, 0, 'blocked run must not register an operation');
   });
 });

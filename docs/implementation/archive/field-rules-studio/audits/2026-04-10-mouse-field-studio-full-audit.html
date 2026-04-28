@@ -567,12 +567,12 @@
   <div class="finding sev-high">
     <div class="finding-header">
       <span class="finding-id id-high">H11</span>
-      <span class="finding-title">Empty ai_assist.reasoning_note on all component sources</span>
+      <span class="finding-title">Legacy component-source guidance field retired</span>
     </div>
     <div class="finding-body">
-      <p>All 4 component_sources (sensor, switch, encoder, material) have <code>ai_assist.reasoning_note: ""</code>. The keyboard category provides substantive reasoning notes that guide the LLM on why each component is important and how to prioritize its data.</p>
+      <p>The legacy component-source guidance field has been retired; component source rows now carry mapping structure and review priority only.</p>
     </div>
-    <div class="rec-box"><strong>Fix:</strong> Add reasoning notes to each component source explaining its role in the mouse specification hierarchy.</div>
+    <div class="rec-box"><strong>Fix:</strong> No component-source guidance field action; keep component role guidance on key-level rules when needed.</div>
   </div>
 
   <div class="finding sev-high">

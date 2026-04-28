@@ -1,7 +1,3 @@
-import {
-  DEFAULT_PRIORITY_PROFILE,
-  normalizeAiAssistConfig,
-} from "./studioPriority.ts";
 import type { ComponentSource, ComponentSourceProperty, FieldRule } from "../../../types/studio.ts";
 
 export interface PropertyMapping {
@@ -82,7 +78,5 @@ export function createEmptyComponentSource(): ComponentSource {
     roles: {
       properties: [],
     },
-    priority: { ...DEFAULT_PRIORITY_PROFILE },
-    ai_assist: normalizeAiAssistConfig(undefined),
   };
 }

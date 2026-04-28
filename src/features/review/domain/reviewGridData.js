@@ -119,6 +119,24 @@ export async function buildReviewLayout({
     }
   }
 
+  // WHY: studioMap.component_sources[].roles.properties[] declares which
+  // fields are sibling attributes of which component. The frontend uses
+  // this to flag component-attribute keys; surface it once here so each
+  // row carries belongs_to_component without a separate API call.
+  const propertyOwnership = new Map();
+  if (isObject(studioMap) && Array.isArray(studioMap.component_sources)) {
+    for (const src of studioMap.component_sources) {
+      const compType = String(src?.component_type || '').trim();
+      if (!compType) continue;
+      const props = Array.isArray(src?.roles?.properties) ? src.roles.properties : [];
+      for (const prop of props) {
+        const key = normalizeField(prop?.field_key);
+        if (!key || propertyOwnership.has(key)) continue;
+        propertyOwnership.set(key, compType);
+      }
+    }
+  }
+
   const rows = [];
   for (const field of fieldSource) {
     const rule = isObject(fields[field]) ? fields[field] : {};
@@ -126,16 +144,19 @@ export async function buildReviewLayout({
     const sourceHints = extractFieldStudioHints(rule);
     const sourceRow = toInt(sourceHints.row, parseFieldStudioRowFromCell(sourceHints.key_cell));
     const positionalGroup = positionalGroupMap.get(normalizeField(field));
-    const fieldRuleBase = normalizeFieldContract(rule);
+    const normalizedKey = normalizeField(field);
+    const fieldRuleBase = normalizeFieldContract(rule, {
+      belongsToComponent: propertyOwnership.get(normalizedKey) || null,
+    });
     rows.push({
       source_row: sourceRow > 0 ? sourceRow : null,
       group: positionalGroup || String(ui.group || '').trim(),
-      key: normalizeField(field),
+      key: normalizedKey,
       label: String(ui.label || field),
       field_rule: {
         ...fieldRuleBase,
         // WHY: derived flag; authored field-rule value wins, falls back to module class.
-        variant_dependent: isVariantDependentField(normalizeField(field), specDb),
+        variant_dependent: isVariantDependentField(normalizedKey, specDb),
       },
       _order: toInt(ui.order, Number.MAX_SAFE_INTEGER)
     });

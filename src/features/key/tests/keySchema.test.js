@@ -106,6 +106,19 @@ test('perKeyShape defaults fill in for missing optional fields', () => {
   assert.equal(Object.prototype.hasOwnProperty.call(parsed, 'discovery_log'), false);
 });
 
+test('perKeyShape accepts optional component identity alias metadata', () => {
+  const schema = perKeyShape('value');
+  const parsed = schema.parse({
+    ...MIN_PER_KEY,
+    value: 'PAW3950',
+    component_aliases: ['PixArt 3950', 'PMW3950'],
+    brand_aliases: ['PixArt Imaging'],
+  });
+
+  assert.deepEqual(parsed.component_aliases, ['PixArt 3950', 'PMW3950']);
+  assert.deepEqual(parsed.brand_aliases, ['PixArt Imaging']);
+});
+
 test('perKeyShape accepts native JSON types per contract (number, boolean, array, string, "unk")', () => {
   const schema = perKeyShape('value');
   assert.equal(schema.parse({ ...MIN_PER_KEY, value: 1000 }).value, 1000);         // number

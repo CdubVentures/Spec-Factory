@@ -273,12 +273,14 @@ function buildComponentInventorySection(reportData) {
 
   const overview = {
     kind: 'table',
-    headers: ['Type', 'Entities', 'Identity fields', 'Subfields'],
+    headers: ['Type', 'Entities', 'Identity fields', 'Subfields', 'Field-backed DB properties not currently mapped', 'DB-only properties'],
     rows: reportData.components.map((c) => [
       c.type,
       String(c.entityCount),
       c.identityFields.length === 0 ? '-' : c.identityFields.join(', '),
       c.subfields.length === 0 ? '-' : c.subfields.join(', '),
+      c.unmappedFieldProperties?.length ? c.unmappedFieldProperties.join(', ') : '-',
+      c.dbOnlyProperties?.length ? c.dbOnlyProperties.join(', ') : '-',
     ]),
   };
   blocks.push({ kind: 'subheading', level: 3, text: 'Overview' });
@@ -286,6 +288,12 @@ function buildComponentInventorySection(reportData) {
 
   for (const c of reportData.components) {
     const subBlocks = [];
+    if (c.unmappedFieldProperties?.length || c.dbOnlyProperties?.length) {
+      subBlocks.push({
+        kind: 'paragraph',
+        text: `Current component DB hints: field-backed DB properties not currently mapped ${c.unmappedFieldProperties?.length ? c.unmappedFieldProperties.map((field) => `\`${field}\``).join(', ') : '-'}; DB-only properties ${c.dbOnlyProperties?.length ? c.dbOnlyProperties.map((field) => `\`${field}\``).join(', ') : '-'}. These are evidence for from-scratch setup, not the authority. The auditor still decides component identity, component attribute, or standalone for every key.`,
+      });
+    }
     if (c.entities.length > 0) {
       const propKeys = Array.from(new Set(c.entities.flatMap((e) => Object.keys(e.properties)))).sort();
       subBlocks.push({
@@ -679,6 +687,21 @@ function buildPerKeyBlocks(key, adapterPreview) {
     if (adapterPreview.componentRel) {
       blocks.push({ kind: 'codeBlock', lang: 'text', text: adapterPreview.componentRel });
     }
+  }
+  if (key.componentDbProperty) {
+    blocks.push({ kind: 'subheading', level: 4, text: 'Component relation' });
+    blocks.push({
+      kind: 'note',
+      tone: 'info',
+      text: `Existing component DB hint: \`${key.fieldKey}\` exists in \`${key.componentDbProperty.source}\` but is not currently mapped in \`component_sources.${key.componentDbProperty.type}.roles.properties[]\`. Use this only as setup evidence; the auditor still decides whether this key is a component identity, component attribute, or standalone.`,
+    });
+  }
+  if (!key.component) {
+    blocks.push({ kind: 'subheading', level: 4, text: 'Component setup decision' });
+    blocks.push({
+      kind: 'paragraph',
+      text: 'Classify this key from scratch as component identity, component attribute, or standalone. Do not wait for an existing component DB property before proposing a component attribute. If it is an attribute, choose the parent component and add the field to patch.component_sources roles.properties[]. If it is an identity, use enum.source = component_db.<component_type>.',
+    });
   }
 
   // Extraction guidance — always show a heading so a reviewer seeing NO

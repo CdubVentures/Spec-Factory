@@ -25,6 +25,7 @@ import {
 import { deriveStudioPageViewState } from './studioPageDerivedState.ts';
 import {
   buildStudioPersistMap as buildStudioPersistMapPayload,
+  shouldFlushStudioMapPayloadOnUnmount,
   shouldPersistStudioMapPayload,
   shouldPersistStudioDocsAttempt,
 } from './studioPagePersistence.ts';
@@ -250,7 +251,7 @@ export function useStudioPageDocsController({
       const force = options?.force === true;
       const snap = getStudioFieldRulesSnapshot();
       const payload = buildStudioPersistMap(snap);
-      if (!shouldPersistStudioMapPayload({ payload, force })) {
+      if (!shouldPersistStudioMapPayload({ payload, force: false })) {
         return;
       }
       const nextFingerprint = autoSaveFingerprint(payload);
@@ -386,7 +387,7 @@ export function useStudioPageDocsController({
       if (isDomainFlushedByUnload('studioDocs')) return;
       const snap = getStudioFieldRulesSnapshot();
       const payload = buildStudioPersistMap(snap);
-      if (!shouldPersistStudioMapPayload({ payload, force: true })) {
+      if (!shouldFlushStudioMapPayloadOnUnmount(payload)) {
         return;
       }
       const nextFingerprint = autoSaveFingerprint(payload);

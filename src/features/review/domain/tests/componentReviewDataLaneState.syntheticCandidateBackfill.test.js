@@ -9,7 +9,7 @@ import {
   upsertComponentLane,
 } from './helpers/componentReviewRowHarness.js';
 
-test('component payload synthesizes backing candidate for selected non-user value when candidate id is missing', async (t) => {
+test('component payload does not synthesize attribute candidates without published product evidence', async (t) => {
   const { config, specDb } = await createComponentRowHarness(t);
   upsertComponentLane(specDb, {
     componentType: 'sensor',
@@ -40,10 +40,7 @@ test('component payload synthesizes backing candidate for selected non-user valu
 
   assert.ok(row, 'expected PAW3395/PixArt row');
   assert.ok(prop, 'expected dpi_max property');
-  assert.equal(
-    prop.candidates.some((candidate) => candidate.candidate_id === 'missing_component_candidate'),
-    true,
-  );
-  assert.equal(prop.candidate_count >= 1, true);
-  assert.equal(prop.selected.value, '26000');
+  assert.deepEqual(prop.candidates, []);
+  assert.equal(prop.candidate_count, 0);
+  assert.equal(prop.selected.value, null);
 });

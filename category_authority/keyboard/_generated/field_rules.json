@@ -554,7 +554,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.adjustable_feet"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -649,7 +649,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.adjustable_input_granularity"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -744,7 +744,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.analog_input"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -840,7 +840,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.anti_ghosting"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -935,7 +935,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.arrow_keys"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -1031,7 +1031,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.backlighting"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -1535,7 +1535,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.bluetooth_version"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -1941,7 +1941,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.cable_type"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2036,7 +2036,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.case_material"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2130,7 +2130,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.category"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2225,7 +2225,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.charging_method"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2324,7 +2324,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.color"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2550,7 +2550,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.compatible_os"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2656,7 +2656,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.connection"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -2966,7 +2966,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.detachable_cable"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -3059,7 +3059,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.discontinued"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -3154,7 +3154,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.doubleshot"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -3350,7 +3350,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.foam_dampening"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -3444,7 +3444,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.form_factor"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -3540,7 +3540,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.function_row"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -3636,7 +3636,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.gasket_mount"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -4040,7 +4040,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.hot_swappable"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -4141,7 +4141,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.included_accessories"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -4347,7 +4347,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.key_rollover"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -4442,7 +4442,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.keycap_material"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -4537,7 +4537,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.keycap_profile"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -4739,7 +4739,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.knob_dial"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -4837,7 +4837,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.layout"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -4935,7 +4935,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.layout_standard"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -5034,7 +5034,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.legends"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -5130,7 +5130,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.macro_keys"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -5226,7 +5226,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.media_controls"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -5415,7 +5415,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.mounting_style"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -5605,7 +5605,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.multi_device_pairing"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -5909,7 +5909,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.numpad"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -6005,7 +6005,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.onboard_memory"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -6204,7 +6204,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.os_mode_switch"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -6299,7 +6299,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.per_key_rgb"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -6395,7 +6395,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.plate_material"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -6796,7 +6796,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.qmk_via_support"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -6893,7 +6893,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.rapid_trigger"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -7090,7 +7090,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.rgb_zones"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -7291,7 +7291,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.shine_through"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -7588,7 +7588,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.socd_cleaning"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -7683,7 +7683,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.software"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -7778,7 +7778,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.software_required"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -7873,7 +7873,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.sound_dampening"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -7968,7 +7968,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.sound_profile"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -8063,7 +8063,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.south_facing_leds"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -8158,7 +8158,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.stabilizer_lubed"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -8253,7 +8253,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.stabilizer_mount"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -8348,7 +8348,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.stabilizer_type"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -8442,7 +8442,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.switch_brand"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -8538,7 +8538,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.switch_compatibility"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -8633,7 +8633,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.switch_feel"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -8936,7 +8936,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.switch_output_type"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -9034,7 +9034,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.switch_pin_support"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -9433,7 +9433,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.typing_noise"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 2,
@@ -9527,7 +9527,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.usb_passthrough"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -10016,7 +10016,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.wired_interface"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -10115,7 +10115,7 @@
           "mark_needs_curation": true
         },
         "policy": "open",
-        "source": "data_lists.wireless_technology"
+        "source": null
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -10194,7 +10194,7 @@
       }
     }
   },
-  "generated_at": "2026-04-28T06:44:30.978Z",
+  "generated_at": "2026-04-28T20:41:54.134Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",

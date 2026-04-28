@@ -23,6 +23,7 @@ import { buildPassengers } from './keyPassengerBuilder.js';
 import {
   buildComponentRelationIndex,
   resolveProductComponentInventory,
+  resolveComponentPromptContext,
   resolveKeyComponentRelation,
   resolveKeyFinderRuntimeContext,
 } from '../../core/finder/productResolvedStateReader.js';
@@ -186,10 +187,25 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
     specDb, productId: product.product_id,
     compiledRulesFields: engine.rules, componentRelationIndex,
   });
+  const componentPromptContext = resolveComponentPromptContext({
+    specDb,
+    productId: product.product_id,
+    fieldKey,
+    fieldRule,
+    componentRelationIndex,
+  });
   const componentKeysInInventory = new Set();
   for (const c of productComponents) {
     componentKeysInInventory.add(c.parentFieldKey);
     for (const sf of c.subfields) componentKeysInInventory.add(sf.field_key);
+  }
+  if (componentPromptContext?.componentType) {
+    componentKeysInInventory.add(componentPromptContext.componentType);
+    componentKeysInInventory.add(`${componentPromptContext.componentType}_brand`);
+    componentKeysInInventory.add(`${componentPromptContext.componentType}_link`);
+    for (const column of componentPromptContext.propertyColumns || []) {
+      if (column?.field_key) componentKeysInInventory.add(column.field_key);
+    }
   }
 
   const componentContext = settings.componentInjectionEnabled
@@ -242,6 +258,7 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
     pifPriorityImageContext,
     componentContext,
     productComponents,
+    componentPromptContext,
     injectionKnobs,
     category: product.category,
     familySize,

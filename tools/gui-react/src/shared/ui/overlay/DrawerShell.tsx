@@ -94,9 +94,10 @@ interface DrawerValueRowProps {
   confidence: number;
   source?: string;
   sourceTimestamp?: string | null;
+  showConfidence?: boolean;
 }
 
-export function DrawerValueRow({ color, value, confidence, source, sourceTimestamp }: DrawerValueRowProps) {
+export function DrawerValueRow({ color, value, confidence, source, sourceTimestamp, showConfidence = true }: DrawerValueRowProps) {
   return (
     <div className="space-y-0.5">
       <div className="flex items-center gap-2">
@@ -109,9 +110,11 @@ export function DrawerValueRow({ color, value, confidence, source, sourceTimesta
             {source}
           </span>
         )}
-        <span className="sf-drawer-meta text-xs ml-auto">
-          {pct(confidence)}
-        </span>
+        {showConfidence && (
+          <span className="sf-drawer-meta text-xs ml-auto">
+            {pct(confidence)}
+          </span>
+        )}
       </div>
       {sourceTimestamp && (
         <div className="sf-text-nano sf-drawer-meta pl-5">

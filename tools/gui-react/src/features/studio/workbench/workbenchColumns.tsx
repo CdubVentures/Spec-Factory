@@ -9,6 +9,8 @@ import {
   REQUIRED_LEVEL_OPTIONS,
   ENUM_POLICY_OPTIONS,
 } from '../../../registries/fieldRuleTaxonomy.ts';
+import { KeyTypeIconStrip } from '../../../shared/ui/icons/KeyTypeIcons.tsx';
+import { deriveKeyTypeIcons, deriveOwningComponent } from '../../../shared/ui/icons/keyTypeIconHelpers.ts';
 
 // ── Badge colors ─────────────────────────────────────────────────────
 const reqBadge: Record<string, string> = {
@@ -44,6 +46,13 @@ const COMPONENT_ENUM_POLICY_OPTIONS = ENUM_POLICY_OPTIONS.filter((value) => valu
 
 function FieldNameCell({ row }: { row: WorkbenchRow }) {
   const generatedIdentityLocked = row.componentLockKind === 'identity_projection';
+  const iconInput = {
+    rule: row._rule,
+    fieldKey: row.key,
+    belongsToComponent: row.belongsToComponent || '',
+  };
+  const iconKinds = deriveKeyTypeIcons(iconInput);
+  const owningComponent = deriveOwningComponent(iconInput);
   return (
     <div className="leading-tight">
       <div className="flex items-center gap-1">
@@ -53,6 +62,9 @@ function FieldNameCell({ row }: { row: WorkbenchRow }) {
         >
           {row.displayName}
         </span>
+        {iconKinds.length > 0 && (
+          <KeyTypeIconStrip kinds={iconKinds} owningComponent={owningComponent} />
+        )}
         {row.draftDirty && <span className="w-1.5 h-1.5 rounded-full sf-dot-warning flex-shrink-0" title="Modified" />}
       </div>
       <div

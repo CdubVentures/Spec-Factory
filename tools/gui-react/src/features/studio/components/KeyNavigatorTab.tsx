@@ -43,6 +43,12 @@ import {
 import type { StudioPageActivePanelKeyProps as KeyNavigatorTabProps } from "./studioPagePanelContracts.ts";
 import { getEgPresetForKey, EG_TOGGLEABLE_KEY_SET } from "../state/egPresetsClient.ts";
 import { isComponentIdentityProjectionLocked } from "../state/componentLockClient.ts";
+import { buildPropertyOwnership } from "../workbench/workbenchHelpers.ts";
+import {
+  deriveKeyTypeIcons,
+  deriveOwningComponent,
+  type KeyTypeIconKind,
+} from "../../../shared/ui/icons/keyTypeIconHelpers.ts";
 import {
   btnPrimary,
   btnSecondary,
@@ -68,6 +74,7 @@ export function KeyNavigatorTab({
   setAutoSaveEnabled,
   autoSaveLocked,
   autoSaveLockReason,
+  componentSources,
 }: KeyNavigatorTabProps) {
   const { editedRules, editedFieldOrder, egLockedKeys, egToggles, registeredColors } = useStudioFieldRulesState();
   const {
@@ -149,6 +156,34 @@ export function KeyNavigatorTab({
   const existingLabels = useMemo(() => {
     return activeFieldKeys.map((key) => displayLabel(key, editedRules[key]));
   }, [activeFieldKeys, editedRules]);
+
+  // WHY: derive the taxonomy icons (variant / pif / component_self /
+  // identity_projection / attribute) once for every key, plus the owning
+  // component_type used for color tinting so all keys in a component family
+  // share one hue.
+  const iconInfoByKey = useMemo<Record<string, { kinds: readonly KeyTypeIconKind[]; owningComponent: string }>>(() => {
+    const ownership = buildPropertyOwnership(componentSources, editedRules);
+    const knownComponentTypes = new Set<string>(
+      (componentSources || [])
+        .map((src) => String(src?.component_type || '').trim())
+        .filter(Boolean),
+    );
+    const map: Record<string, { kinds: readonly KeyTypeIconKind[]; owningComponent: string }> = {};
+    for (const key of activeFieldKeys) {
+      const rule = editedRules[key];
+      if (!rule) continue;
+      const input = {
+        rule: rule as Record<string, unknown>,
+        fieldKey: key,
+        belongsToComponent: ownership.get(key)?.componentType || '',
+        knownComponentTypes,
+      };
+      const kinds = deriveKeyTypeIcons(input);
+      const owningComponent = deriveOwningComponent(input);
+      if (kinds.length > 0) map[key] = { kinds, owningComponent };
+    }
+    return map;
+  }, [activeFieldKeys, editedRules, componentSources]);
 
   const bulkPreviewRows: BulkKeyRow[] = useMemo(() => {
     const filled = bulkGridRows.filter((r) => r.col1.trim() || r.col2.trim());
@@ -482,6 +517,7 @@ export function KeyNavigatorTab({
             onRenameGroup={handleRenameGroup}
             existingGroups={existingGroups}
             egLockedKeys={egLockedKeys}
+            iconInfoByKey={iconInfoByKey}
           />
         </div>
 

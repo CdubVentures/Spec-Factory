@@ -25,8 +25,37 @@ import { PromptDrawerChevron } from '../../../shared/ui/finder/PromptDrawerChevr
 import { RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { KeyTypeIconStrip } from '../../../shared/ui/icons/KeyTypeIcons.tsx';
+import { deriveKeyTypeIcons, deriveOwningComponent } from '../../../shared/ui/icons/keyTypeIconHelpers.ts';
 import type { KeyEntry, RidingPrimaries } from '../types.ts';
 import { LIVE_MODES, TOOLTIPS } from '../types.ts';
+
+// WHY: KeyEntry doesn't carry the raw rule object — keyFinder summary only
+// emits the targeted lineage signals (component_run_kind, component_parent_key,
+// belongs_to_component). Synthesize a rule-shaped object so the shared
+// deriveKeyTypeIcons predicate can run unchanged across all 4 surfaces.
+function buildKeyTypeIconInput(entry: KeyEntry) {
+  const rule: Record<string, unknown> = {
+    variant_dependent: entry.variant_dependent,
+    product_image_dependent: entry.product_image_dependent,
+  };
+  if (entry.component_run_kind === 'component') {
+    rule.enum = { source: `component_db.${entry.field_key}` };
+  } else if (
+    entry.component_run_kind === 'component_brand'
+    || entry.component_run_kind === 'component_link'
+  ) {
+    rule.component_identity_projection = {
+      component_type: entry.component_parent_key,
+      facet: entry.component_run_kind === 'component_brand' ? 'brand' : 'link',
+    };
+  }
+  return {
+    rule,
+    fieldKey: entry.field_key,
+    belongsToComponent: entry.belongs_to_component || '',
+  };
+}
 
 interface KeyRowProps {
   readonly entry: KeyEntry;
@@ -117,13 +146,24 @@ function renderBundleCost(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, '');
 }
 
+function DedicatedCell({ title }: { readonly title: string }) {
+  return (
+    <span className="sf-text-subtle text-[11.5px] font-mono" title={title}>
+      N/A
+    </span>
+  );
+}
+
 /**
  * Render the Riding column — one chip per primary currently carrying this key
  * as a passenger, each with a live spinner. Empty state shows em-dash. List
  * updates live as ops complete: the selector filters on status='running', so
  * a primary's chip drops the moment its op terminates.
  */
-function RidingCell({ primaries }: { readonly primaries: RidingPrimaries }) {
+function RidingCell({ primaries, dedicated }: { readonly primaries: RidingPrimaries; readonly dedicated: boolean }) {
+  if (dedicated) {
+    return <DedicatedCell title="Component identity keys run dedicated and cannot ride as passengers." />;
+  }
   if (primaries.length === 0) {
     return <span className="sf-text-subtle text-[11.5px]">—</span>;
   }
@@ -152,7 +192,10 @@ function RidingCell({ primaries }: { readonly primaries: RidingPrimaries }) {
  * spinner. Empty when this key isn't running as a primary OR running solo.
  * Clears the instant the primary's op reaches terminal status.
  */
-function PassengersCell({ passengers }: { readonly passengers: RidingPrimaries }) {
+function PassengersCell({ passengers, dedicated }: { readonly passengers: RidingPrimaries; readonly dedicated: boolean }) {
+  if (dedicated) {
+    return <DedicatedCell title="Component identity keys run dedicated and cannot carry passengers." />;
+  }
   if (passengers.length === 0) {
     return <span className="sf-text-subtle text-[11.5px]">—</span>;
   }
@@ -250,11 +293,16 @@ function BundlePreviewText({
   passengers,
   pool,
   totalCost,
+  dedicated,
 }: {
   readonly passengers: ReadonlyArray<{ readonly field_key: string; readonly cost: number }>;
   readonly pool: number;
   readonly totalCost: number;
+  readonly dedicated: boolean;
 }) {
+  if (dedicated) {
+    return <DedicatedCell title="Dedicated component identity run. Passengers are forbidden." />;
+  }
   const used = renderBundleCost(totalCost);
   const capacity = renderBundleCost(pool);
   const passengerDetail = passengers.map((p) => `${p.field_key} (${renderBundleCost(p.cost)})`).join(', ');
@@ -308,13 +356,24 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
   // and Loop are independent ops with independent server-side locks.
   const loopRunning = entry.opMode === 'loop' && entry.opStatus === 'running';
   const loopQueued = entry.opMode === 'loop' && entry.opStatus === 'queued';
-  const loopDisabled = !LIVE_MODES.keyLoop || loopRunning || loopQueued;
+  const componentRunBlocked = entry.run_blocked_reason === 'component_parent_unpublished';
+  const componentResolverAction = entry.component_run_kind === 'component_brand';
+  const componentBlockTitle = componentRunBlocked
+    ? `Run ${entry.component_parent_key || 'the parent component'} first. Component brand/link are locked until the parent component has a published value.`
+    : '';
+  const runDisabled = !LIVE_MODES.keyRun || componentRunBlocked;
+  const loopDisabled = !LIVE_MODES.keyLoop || loopRunning || loopQueued || componentRunBlocked;
   const loopLabel = loopQueued ? 'Queued' : 'Loop';
   const loopTitle = loopRunning
     ? 'Loop running — use the side panel Stop button to cancel'
     : loopQueued
       ? 'Queued — waiting for its turn in the group Loop chain'
-      : TOOLTIPS.keyLoop;
+      : componentRunBlocked
+        ? componentBlockTitle
+        : TOOLTIPS.keyLoop;
+  const runTitle = componentRunBlocked ? componentBlockTitle : TOOLTIPS.keyRun;
+  const runIntent = componentResolverAction ? 'componentResolver' : 'spammable';
+  const loopIntent = componentResolverAction ? 'componentResolverLocked' : 'locked';
 
   // Unresolve / Delete: disabled while any op is in flight on this key (the
   // server enforces the same gate via 409 key_busy). Unresolve is also
@@ -326,10 +385,19 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
   const hasAnyData = entry.run_count > 0 || entry.candidate_count > 0 || entry.published;
   const deleteDisabled = entry.running || !hasAnyData;
 
+  const iconInput = buildKeyTypeIconInput(entry);
+  const iconKinds = deriveKeyTypeIcons(iconInput);
+  const owningComponent = deriveOwningComponent(iconInput);
+
   return (
     <tr className="border-b sf-border-soft hover:bg-[var(--sf-token-accent-light)]">
       <td className="px-3 py-2 align-middle">
-        <code className="text-[12.5px] font-medium sf-text-primary">{entry.field_key}</code>
+        <span className="inline-flex items-center gap-1.5">
+          {iconKinds.length > 0 && (
+            <KeyTypeIconStrip kinds={iconKinds} owningComponent={owningComponent} />
+          )}
+          <code className="text-[12.5px] font-medium sf-text-primary">{entry.field_key}</code>
+        </span>
       </td>
       <td className="px-3 py-2 align-middle whitespace-nowrap">
         <span className="inline-flex items-center gap-1">
@@ -367,12 +435,17 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
       </td>
       <td className="px-3 py-2 align-middle">
         {entry.bundle_pool === 0 ? (
-          <span className="text-[11.5px] sf-text-subtle" title="No bundling pool for this difficulty tier">—</span>
+          entry.dedicated_run ? (
+            <DedicatedCell title="Dedicated component identity run. Passengers are forbidden." />
+          ) : (
+            <span className="text-[11.5px] sf-text-subtle" title="No bundling pool for this difficulty tier">—</span>
+          )
         ) : (
           <BundlePreviewText
             passengers={entry.bundle_preview}
             pool={entry.bundle_pool}
             totalCost={entry.bundle_total_cost}
+            dedicated={entry.dedicated_run}
           />
         )}
       </td>
@@ -406,10 +479,10 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
         />
       </td>
       <td className="px-3 py-2 align-middle">
-        <RidingCell primaries={entry.ridingPrimaries} />
+        <RidingCell primaries={entry.ridingPrimaries} dedicated={entry.dedicated_run} />
       </td>
       <td className="px-3 py-2 align-middle">
-        <PassengersCell passengers={entry.activePassengers} />
+        <PassengersCell passengers={entry.activePassengers} dedicated={entry.dedicated_run} />
       </td>
       <td className="px-3 py-2 align-middle text-center">
         <ConfidenceRing confidence={confidenceRingValue} />
@@ -432,15 +505,15 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
       <td className="px-3 py-2 align-middle text-right whitespace-nowrap">
         <span className="inline-flex items-center gap-1">
           <RowActionButton
-            intent="spammable"
+            intent={runIntent}
             label="Run"
             onClick={() => onRun(entry.field_key)}
-            disabled={!LIVE_MODES.keyRun}
-            title={TOOLTIPS.keyRun}
+            disabled={runDisabled}
+            title={runTitle}
             width={ACTION_BUTTON_WIDTH.keyRow}
           />
           <RowActionButton
-            intent="locked"
+            intent={loopIntent}
             label={loopLabel}
             onClick={() => onLoop(entry.field_key)}
             disabled={loopDisabled}

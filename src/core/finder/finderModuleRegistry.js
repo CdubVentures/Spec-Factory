@@ -706,7 +706,7 @@ export const FINDER_MODULES = Object.freeze([
       // Context Injection — each knob independently toggles a distinct prompt slot
       { key: 'componentInjectionEnabled', type: 'bool', default: true,
         uiLabel: 'Component values', uiGroup: 'Context Injection',
-        uiTip: 'Inject a per-key relation pointer ("this key belongs to the sensor component" / "this key IS the sensor component identity") for the primary + each passenger. The resolved component inventory itself is always on \u2014 this only toggles the per-key pointer.' },
+        uiTip: 'Inject a per-key relation pointer ("this key belongs to the sensor component" / "this key IS the sensor component identity") for the primary + each passenger. The component candidate table/resolved row context itself is always on for component runs - this only toggles the short per-key pointer.' },
       { key: 'knownFieldsInjectionEnabled', type: 'bool', default: true,
         uiLabel: 'Known fields', uiGroup: 'Context Injection',
         uiTip: 'Inject already-published non-component field values on this product as a shared context block.' },

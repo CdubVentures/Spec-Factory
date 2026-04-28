@@ -112,23 +112,37 @@ function normalizeComponent(rule, componentRelations) {
   return null;
 }
 
-/** Build a reverse index: which component source/component_db lists this field_key as a property */
+function normalizeComponentDbProperty(fieldKey, component, componentRelations) {
+  if (!fieldKey || component) return null;
+  const types = componentRelations.dbPropertyOf[fieldKey] || [];
+  if (types.length === 0) return null;
+  const type = types[0];
+  return {
+    type,
+    types,
+    relation: 'db_property_hint',
+    source: `component_db.${type}`,
+  };
+}
+
+/** Build reverse indexes for live component-source mappings and raw component DB properties. */
 function buildComponentRelations(componentDBs, componentSources = []) {
   const subfieldOf = {};
   const identityOf = {};
+  const dbPropertySets = {};
+  const mappedPropertySetsByType = {};
   for (const row of componentSources || []) {
     const type = String(row?.component_type || '').trim();
     if (!type) continue;
+    if (!mappedPropertySetsByType[type]) mappedPropertySetsByType[type] = new Set();
     const properties = Array.isArray(row?.roles?.properties) ? row.roles.properties : [];
     for (const property of properties) {
-      if (property?.component_only === true) continue;
       const fieldKey = String(property?.field_key || '').trim();
       if (!fieldKey) continue;
+      mappedPropertySetsByType[type].add(fieldKey);
+      if (property?.component_only === true) continue;
       subfieldOf[fieldKey] = type;
     }
-  }
-  if ((componentSources || []).length > 0) {
-    return { subfieldOf, identityOf };
   }
   for (const [type, db] of Object.entries(componentDBs || {})) {
     const items = db?.items || db?.entries || [];
@@ -136,12 +150,24 @@ function buildComponentRelations(componentDBs, componentSources = []) {
     for (const item of sample) {
       const props = item?.properties || {};
       for (const propKey of Object.keys(props)) {
-        if (subfieldOf[propKey]) continue;
-        subfieldOf[propKey] = type;
+        if (!dbPropertySets[propKey]) dbPropertySets[propKey] = new Set();
+        dbPropertySets[propKey].add(type);
       }
     }
   }
-  return { subfieldOf, identityOf };
+  if ((componentSources || []).length === 0) {
+    for (const [propKey, typeSet] of Object.entries(dbPropertySets)) {
+      const [type] = [...typeSet].sort();
+      if (!subfieldOf[propKey]) subfieldOf[propKey] = type;
+    }
+  }
+  const dbPropertyOf = Object.fromEntries(
+    Object.entries(dbPropertySets).map(([fieldKey, typeSet]) => [fieldKey, [...typeSet].sort()]),
+  );
+  const mappedPropertiesByType = Object.fromEntries(
+    Object.entries(mappedPropertySetsByType).map(([type, propertySet]) => [type, [...propertySet].sort()]),
+  );
+  return { subfieldOf, identityOf, dbPropertyOf, mappedPropertiesByType };
 }
 
 function cloneJson(value) {
@@ -170,6 +196,7 @@ function buildKeyRecord(fieldKey, rule, enumsIndex, componentRelations) {
   const priority = normalizePriority(rule);
   const contract = normalizeContract(rule);
   const enumBlock = normalizeEnum(rule, enumsIndex);
+  const component = normalizeComponent(rule, componentRelations);
   const analysis = enumBlock.values.length > 0
     ? analyzeEnum(enumBlock.values, { contractType: contract.type })
     : null;
@@ -183,7 +210,8 @@ function buildKeyRecord(fieldKey, rule, enumsIndex, componentRelations) {
     aliases: Array.isArray(rule?.aliases) ? rule.aliases.filter(Boolean) : [],
     search_hints: normalizeSearchHints(rule),
     constraints: normalizeConstraints(rule),
-    component: normalizeComponent(rule, componentRelations),
+    component,
+    componentDbProperty: normalizeComponentDbProperty(fieldKey, component, componentRelations),
     ai_assist: normalizeAiAssist(rule),
     evidence: normalizeEvidence(rule),
     variant_dependent: rule?.variant_dependent === true,
@@ -245,8 +273,16 @@ function buildEnumInventory(enumsIndex, keysByField) {
   return entries.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-function buildComponentInventory(componentDBs, keysByField) {
+function componentPropertyKeys(items) {
+  return Array.from(new Set(
+    (Array.isArray(items) ? items : [])
+      .flatMap((item) => Object.keys(item?.properties || {})),
+  )).sort();
+}
+
+function buildComponentInventory(componentDBs, keysByField, componentRelations) {
   const list = [];
+  const knownFieldKeys = new Set(Object.keys(keysByField || {}));
   for (const [type, db] of Object.entries(componentDBs || {})) {
     const items = db?.items || Object.values(db?.entries || {});
     const identityFields = [];
@@ -255,6 +291,11 @@ function buildComponentInventory(componentDBs, keysByField) {
       if (k.component?.type === type && k.component.relation === 'parent') identityFields.push(fk);
       if (k.component?.type === type && k.component.relation === 'subfield_of') subfields.push(fk);
     }
+    const propertyKeys = componentPropertyKeys(items);
+    const mappedProperties = new Set([
+      ...subfields,
+      ...(componentRelations.mappedPropertiesByType?.[type] || []),
+    ]);
     list.push({
       type,
       entityCount: Array.isArray(items) ? items.length : 0,
@@ -268,6 +309,8 @@ function buildComponentInventory(componentDBs, keysByField) {
       })) : [],
       identityFields,
       subfields,
+      unmappedFieldProperties: propertyKeys.filter((key) => knownFieldKeys.has(key) && !mappedProperties.has(key)),
+      dbOnlyProperties: propertyKeys.filter((key) => !knownFieldKeys.has(key) && !mappedProperties.has(key)),
     });
   }
   return list.sort((a, b) => a.type.localeCompare(b.type));
@@ -355,7 +398,7 @@ export function extractReportData({
   const groupIndex = fieldGroups?.groupIndex || fieldGroups?.group_index || {};
   const groups = buildGroups(groupIndex, keysByField);
   const enums = buildEnumInventory(knownValuesEnums, keysByField);
-  const components = buildComponentInventory(componentDBs, keysByField);
+  const components = buildComponentInventory(componentDBs, keysByField, componentRelations);
   const stats = buildStats(keyRecords, groups);
 
   return {

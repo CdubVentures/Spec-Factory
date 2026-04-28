@@ -39,10 +39,12 @@ import {
   createKeyFinderCallLlm,
 } from './keyLlmAdapter.js';
 import { buildPassengers } from './keyPassengerBuilder.js';
+import { isDedicatedComponentKey } from './componentKeyContracts.js';
 import * as keyFinderRegistry from '../../core/operations/keyFinderRegistry.js';
 import {
   buildComponentRelationIndex,
   resolveProductComponentInventory,
+  resolveComponentPromptContext,
   resolveKeyComponentRelation,
   resolveKeyFinderRuntimeContext,
 } from '../../core/finder/productResolvedStateReader.js';
@@ -83,6 +85,42 @@ function normalizeUnknownPerKeyResultForStorage(perKey) {
 
 function isUnknownPerKeyValue(value) {
   return value === undefined || isUnknownSentinel(value);
+}
+
+function cleanAliasList(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const item of value) {
+    const text = String(item || '').trim();
+    const key = text.toLowerCase();
+    if (!text || seen.has(key)) continue;
+    seen.add(key);
+    out.push(text);
+  }
+  return out;
+}
+
+function componentAliasMetadataForPerKey({ fieldKey, fieldRule, perKey }) {
+  const key = String(fieldKey || '').trim();
+  const enumSource = String(fieldRule?.enum?.source || fieldRule?.enum_source || '').trim();
+  const projection = fieldRule?.component_identity_projection && typeof fieldRule.component_identity_projection === 'object'
+    ? fieldRule.component_identity_projection
+    : null;
+  const isComponentIdentity = key && enumSource === `component_db.${key}`;
+  const isComponentBrand = String(projection?.facet || '').trim().toLowerCase() === 'brand';
+  if (!isComponentIdentity && !isComponentBrand) return {};
+
+  const hasComponentAliases = Object.prototype.hasOwnProperty.call(perKey || {}, 'component_aliases');
+  const hasBrandAliases = Object.prototype.hasOwnProperty.call(perKey || {}, 'brand_aliases');
+  if (!hasComponentAliases && !hasBrandAliases) return {};
+
+  return {
+    component_identity_aliases: {
+      component: cleanAliasList(perKey?.component_aliases),
+      brand: cleanAliasList(perKey?.brand_aliases),
+    },
+  };
 }
 
 function normalizeUnknownResultsForStorage(results) {
@@ -272,7 +310,8 @@ export async function runKeyFinder(opts) {
   // per-key-finder-roadmap.html. Per-key Run is always solo when
   // alwaysSoloRun=true (default) regardless of bundlingEnabled — that's the
   // focused-key-run contract. Loop-mode ignores the knob and always packs.
-  const passengers = (forceSolo || (settings.alwaysSoloRun && mode === 'run'))
+  const dedicatedComponentRun = isDedicatedComponentKey(fieldKey, fieldRule);
+  const passengers = (dedicatedComponentRun || forceSolo || (settings.alwaysSoloRun && mode === 'run'))
     ? []
     : buildPassengers({
       primary: { fieldKey, fieldRule },
@@ -309,10 +348,25 @@ export async function runKeyFinder(opts) {
     specDb, productId: product.product_id,
     compiledRulesFields: engine.rules, componentRelationIndex,
   });
+  const componentPromptContext = resolveComponentPromptContext({
+    specDb,
+    productId: product.product_id,
+    fieldKey,
+    fieldRule,
+    componentRelationIndex,
+  });
   const componentKeysInInventory = new Set();
   for (const c of productComponents) {
     componentKeysInInventory.add(c.parentFieldKey);
     for (const sf of c.subfields) componentKeysInInventory.add(sf.field_key);
+  }
+  if (componentPromptContext?.componentType) {
+    componentKeysInInventory.add(componentPromptContext.componentType);
+    componentKeysInInventory.add(`${componentPromptContext.componentType}_brand`);
+    componentKeysInInventory.add(`${componentPromptContext.componentType}_link`);
+    for (const column of componentPromptContext.propertyColumns || []) {
+      if (column?.field_key) componentKeysInInventory.add(column.field_key);
+    }
   }
 
   const componentContext = settings.componentInjectionEnabled
@@ -369,6 +423,7 @@ export async function runKeyFinder(opts) {
     pifPriorityImageContext,
     componentContext,
     productComponents,
+    componentPromptContext,
     injectionKnobs,
     category,
     familySize,
@@ -496,6 +551,7 @@ export async function runKeyFinder(opts) {
           llm_thinking: persistedThinking,
           llm_web_search: persistedWebSearch,
           llm_effort_level: persistedEffort,
+          ...componentAliasMetadataForPerKey({ fieldKey, fieldRule, perKey }),
         },
         appDb,
         config,
@@ -559,6 +615,11 @@ export async function runKeyFinder(opts) {
           llm_thinking: persistedThinking,
           llm_web_search: persistedWebSearch,
           llm_effort_level: persistedEffort,
+          ...componentAliasMetadataForPerKey({
+            fieldKey: p.fieldKey,
+            fieldRule: p.fieldRule,
+            perKey: pResult,
+          }),
         },
         appDb,
         config,

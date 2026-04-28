@@ -80,21 +80,13 @@ test('studio component sources preserve component_only flag through migratePrope
   assert.equal(withFalse.component_only, undefined);
 });
 
-test('studio component sources create empty component rows with stable default priority and ai assist state', async () => {
+test('studio component sources create empty component rows without retired source priority', async () => {
   const { createEmptyComponentSource } = await loadStudioComponentSources();
 
   assert.deepEqual(createEmptyComponentSource(), {
     component_type: '',
     roles: {
       properties: [],
-    },
-    priority: {
-      required_level: 'non_mandatory',
-      availability: 'sometimes',
-      difficulty: 'medium',
-    },
-    ai_assist: {
-      reasoning_note: '',
     },
   });
 });

@@ -98,3 +98,31 @@ export function linkProductToComponent(
     matchScore,
   });
 }
+
+export function insertProductFieldCandidate(
+  specDb,
+  {
+    productId,
+    fieldKey,
+    value,
+    status = 'candidate',
+    confidence = 90,
+    sourceId = '',
+  },
+) {
+  specDb.insertFieldCandidate({
+    productId,
+    fieldKey,
+    sourceId: sourceId || `${productId}-${fieldKey}-${value}`,
+    sourceType: 'key_finder',
+    value,
+    confidence,
+    model: 'test-model',
+    validationJson: {},
+    metadataJson: {
+      method: 'finder',
+      evidence: { url: `https://example.test/${productId}`, quote: `${fieldKey}: ${value}` },
+    },
+    status,
+  });
+}

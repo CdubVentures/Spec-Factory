@@ -45,6 +45,10 @@ import { parseAxisOrder } from '../keyBundlerSortAxes.js';
 import { resolveKeyFinderFamilySize } from '../keyFamilySize.js';
 import { runKeyFinder } from '../keyFinder.js';
 import { runKeyFinderLoop } from '../keyFinderLoop.js';
+import {
+  resolveComponentKeyRunContract,
+  buildComponentPropertyOwnership,
+} from '../componentKeyContracts.js';
 import { compileKeyFinderPreviewPrompt } from '../keyFinderPreviewPrompt.js';
 import { readFieldRuleAiAssistToggleEnabled } from '../../../field-rules/fieldRuleSchema.js';
 import {
@@ -263,6 +267,13 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
   const budgetSettings = readBudgetSettings(specDb);
   const bundlingSettings = readBundlingSettings(specDb);
   const familySize = resolveFamilySize(specDb, productId);
+  // WHY: surface belongs_to_component for component-attribute rows so the
+  // KeyFinder column 1 icon strip can match the Navigator + Workbench +
+  // Review Grid taxonomy. studioMap is the SSOT for sibling-attribute
+  // declarations — empty Map when no studioMap is available.
+  const propertyOwnership = buildComponentPropertyOwnership(
+    typeof specDb?.getFieldStudioMap === 'function' ? specDb.getFieldStudioMap() : null,
+  );
 
   const newestByKey = new Map();
   const runCountByKey = new Map();
@@ -291,6 +302,15 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
   function computeBundlePreview(fk, rule) {
     const ruleDifficulty = rule?.difficulty || '';
     const pool = Number(bundlingSettings.bundlingPoolPerPrimary?.[ruleDifficulty]) || 0;
+    const componentContract = resolveComponentKeyRunContract({
+      fieldKey: fk,
+      fieldRule: rule,
+      specDb,
+      productId,
+    });
+    if (componentContract.dedicated_run) {
+      return { preview: [], pool, totalCost: 0 };
+    }
     if (!bundlingSettings.bundlingEnabled || !rule) {
       return { preview: [], pool, totalCost: 0 };
     }
@@ -350,6 +370,12 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       : { attempts: null, rawBudget: null };
     const { attempts: budget, rawBudget: raw_budget } = budgetResult;
     const { preview, pool, totalCost } = computeBundlePreview(fk, rule);
+    const componentContract = resolveComponentKeyRunContract({
+      fieldKey: fk,
+      fieldRule: rule,
+      specDb,
+      productId,
+    });
     const inFlight = keyFinderRegistry.count(productId, fk);
 
     // Concrete-evidence gate: shares the exact same check buildPassengers
@@ -401,6 +427,8 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       bundle_pool: pool,
       bundle_total_cost: totalCost,
       bundle_preview: preview,
+      ...componentContract,
+      belongs_to_component: propertyOwnership.get(fk) || '',
       last_run_number: run ? (run.run_number || null) : null,
       last_ran_at: run ? (run.ran_at || run.started_at || '') : null,
       last_status: lastStatus,
@@ -783,6 +811,21 @@ export function registerKeyFinderRoutes(ctx) {
             error: 'missing_field_rule',
             field_key: fieldKey,
             message: `Field rule "${fieldKey}" not found in compiled rules for "${category}"`,
+          });
+        }
+
+        const componentContract = resolveComponentKeyRunContract({
+          fieldKey,
+          fieldRule: compiled.fields[fieldKey],
+          specDb,
+          productId,
+        });
+        if (componentContract.run_blocked_reason === 'component_parent_unpublished') {
+          return jsonRes(res, 409, {
+            error: 'component_parent_unpublished',
+            field_key: fieldKey,
+            component_parent_key: componentContract.component_parent_key,
+            message: `${fieldKey} cannot run until ${componentContract.component_parent_key} has a published component value.`,
           });
         }
 

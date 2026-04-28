@@ -15,6 +15,7 @@ import { isReservedFieldKey } from '../../core/finder/finderExclusions.js';
 import { packBundle } from './keyBundler.js';
 import { isConcreteEvidence } from './keyConcreteEvidence.js';
 import { isPrimary as registryIsPrimary, count as registryCount } from '../../core/operations/keyFinderRegistry.js';
+import { isDedicatedComponentKey } from './componentKeyContracts.js';
 
 const CAP_KNOB_BY_TIER = Object.freeze({
   easy: 'bundlingOverlapCapEasy',
@@ -35,6 +36,7 @@ function capForTier(settings, tier) {
 
 export function buildPassengers({ primary, engineRules, specDb, productId, settings, familySize = undefined, variantCount = undefined }) {
   if (!settings?.bundlingEnabled) return [];
+  if (isDedicatedComponentKey(primary?.fieldKey, primary?.fieldRule)) return [];
   const primaryGroup = primary?.fieldRule?.group || '';
   if (!primaryGroup && settings.groupBundlingOnly) return [];
 
@@ -42,6 +44,7 @@ export function buildPassengers({ primary, engineRules, specDb, productId, setti
   for (const [fk, rule] of Object.entries(engineRules || {})) {
     if (!rule || fk === primary.fieldKey) continue;
     if (isReservedFieldKey(fk)) continue; // never bundle CEF/PIF/RDF/SKF-owned peers
+    if (isDedicatedComponentKey(fk, rule)) continue;
     if (settings.groupBundlingOnly && rule.group !== primaryGroup) continue;
     // Stamp the peer's live passenger-ride count so packBundle's sort can
     // round-robin within a same-tier group (peer with fewer rides packs first).

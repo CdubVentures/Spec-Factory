@@ -367,12 +367,6 @@ test('compileCategoryFieldStudio strips legacy component source workbook metadat
             },
           ],
         },
-        priority: {
-          required_level: 'non_mandatory',
-          availability: 'sometimes',
-          difficulty: 'medium',
-        },
-        ai_assist: { reasoning_note: '' },
       },
     ]);
     const generatedRoot = path.join(helperRoot, 'mouse', '_generated');

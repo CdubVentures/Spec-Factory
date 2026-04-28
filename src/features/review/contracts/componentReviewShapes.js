@@ -18,6 +18,7 @@ export const COMPONENT_REVIEW_ITEM_SHAPE = Object.freeze([
   { key: 'name_tracked', coerce: 'object' },
   { key: 'maker_tracked', coerce: 'object' },
   { key: 'links_tracked', coerce: 'array', itemType: 'unknown' },
+  { key: 'links_state', coerce: 'object' },
   { key: 'properties', coerce: 'object' },
   { key: 'linked_products', coerce: 'array', itemType: 'unknown', optional: true },
   { key: 'review_status', coerce: 'string', literals: ['pending', 'reviewed', 'approved'] },

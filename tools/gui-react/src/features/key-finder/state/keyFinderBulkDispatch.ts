@@ -9,16 +9,20 @@ function groupByName(groups: readonly KeyGroup[], groupName: string): KeyGroup |
 
 function keyList(group: KeyGroup | null, axisOrder?: readonly string[]): readonly string[] {
   if (!group) return [];
-  return sortKeysByPriority(group.keys, axisOrder).map((key) => key.field_key);
+  return sortKeysByPriority(group.keys.filter(isDispatchableKey), axisOrder).map((key) => key.field_key);
 }
 
 function allKeys(groups: readonly KeyGroup[], axisOrder?: readonly string[]): readonly string[] {
-  return sortKeysByPriority(groups.flatMap((group) => group.keys), axisOrder)
+  return sortKeysByPriority(groups.flatMap((group) => group.keys).filter(isDispatchableKey), axisOrder)
     .map((key) => key.field_key);
 }
 
+function isDispatchableKey(key: { readonly run_blocked_reason?: string }): boolean {
+  return !key.run_blocked_reason;
+}
+
 function loopEligible(group: KeyGroup): KeyGroup {
-  const keys = group.keys.filter((key) => key.last_status !== 'resolved' && !key.published);
+  const keys = group.keys.filter((key) => key.last_status !== 'resolved' && !key.published && isDispatchableKey(key));
   return {
     ...group,
     keys,

@@ -158,7 +158,14 @@ export function resolveDeclaredComponentPropertyColumns({ fieldRules = null, com
   const targetType = normalizeFieldKey(componentType);
   if (!targetType || !isObject(fieldRules)) return [];
 
-  const keys = new Set();
+  const keys = [];
+  const seen = new Set();
+  const addKey = (raw) => {
+    const key = normalizeFieldKey(raw);
+    if (!key || key.startsWith('__') || seen.has(key)) return;
+    seen.add(key);
+    keys.push(key);
+  };
   // Phase 2: parent identity comes from `enum.source === component_db.<self>`
   // and property_keys live in field_studio_map.component_sources (walked
   // below via the `component_db_sources` block). The legacy
@@ -180,13 +187,48 @@ export function resolveDeclaredComponentPropertyColumns({ fieldRules = null, com
     const roles = isObject(sourceDef?.roles) ? sourceDef.roles : {};
     for (const mapping of toArray(roles.properties)) {
       if (!isObject(mapping)) continue;
-      const key = normalizeFieldKey(mapping.field_key || mapping.key || mapping.property_key || '');
-      if (!key || key.startsWith('__')) continue;
-      keys.add(key);
+      addKey(mapping.field_key || mapping.key || mapping.property_key || '');
     }
   }
 
-  return [...keys].sort();
+  return keys;
+}
+
+function readComponentSourcesFromSpecDb(specDb = null) {
+  if (!specDb || typeof specDb.getFieldStudioMap !== 'function') return [];
+  const row = specDb.getFieldStudioMap();
+  const raw = row?.map_json;
+  if (!raw) return [];
+  try {
+    const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    return toArray(parsed?.component_sources);
+  } catch {
+    return [];
+  }
+}
+
+export function resolveDeclaredComponentTypeOrder({ fieldRules = null, specDb = null } = {}) {
+  const ordered = [];
+  const seen = new Set();
+  const addType = (raw) => {
+    const componentType = normalizeFieldKey(raw);
+    if (!componentType || seen.has(componentType)) return;
+    seen.add(componentType);
+    ordered.push(componentType);
+  };
+
+  for (const row of readComponentSourcesFromSpecDb(specDb)) {
+    addType(row?.component_type || row?.type || '');
+  }
+  if (ordered.length > 0) return ordered;
+
+  const componentSources = isObject(fieldRules?.component_db_sources)
+    ? fieldRules.component_db_sources
+    : (isObject(fieldRules?.rules?.component_db_sources) ? fieldRules.rules.component_db_sources : {});
+  for (const sourceType of Object.keys(componentSources)) {
+    addType(sourceType);
+  }
+  return ordered;
 }
 
 export function hasDeclaredComponentSource({ fieldRules = null, componentType = '' } = {}) {
@@ -214,13 +256,15 @@ export function resolveComponentReviewPropertyColumns({
   declaredComponentSource = false,
 } = {}) {
   if (declaredComponentSource) {
-    const keys = new Set();
+    const keys = [];
+    const seen = new Set();
     for (const raw of toArray(declaredColumns)) {
       const key = normalizeFieldKey(raw);
-      if (!key || key.startsWith('__')) continue;
-      keys.add(key);
+      if (!key || key.startsWith('__') || seen.has(key)) continue;
+      seen.add(key);
+      keys.push(key);
     }
-    return [...keys].sort((a, b) => a.localeCompare(b));
+    return keys;
   }
   return mergePropertyColumns(observedColumns, declaredColumns);
 }

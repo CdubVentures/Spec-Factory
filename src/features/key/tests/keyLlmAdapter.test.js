@@ -71,6 +71,31 @@ const CLICK_LATENCY_RULE = {
   ai_assist: { reasoning_note: '' },
 };
 
+const SENSOR_COMPONENT_RULE = {
+  field_key: 'sensor',
+  display_name: 'Sensor',
+  contract: { type: 'string', shape: 'scalar' },
+  difficulty: 'very_hard',
+  required_level: 'mandatory',
+  availability: 'rare',
+  enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
+  evidence: { min_evidence_refs: 1 },
+  ai_assist: { reasoning_note: '' },
+};
+
+const SENSOR_BRAND_RULE = {
+  field_key: 'sensor_brand',
+  display_name: 'Sensor Brand',
+  contract: { type: 'string', shape: 'scalar' },
+  difficulty: 'medium',
+  required_level: 'mandatory',
+  availability: 'rare',
+  enum: { policy: 'open_prefer_known' },
+  component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+  evidence: { min_evidence_refs: 1 },
+  ai_assist: { reasoning_note: '' },
+};
+
 const ALL_KNOBS_ON = {
   componentInjectionEnabled: true,
   knownFieldsInjectionEnabled: true,
@@ -931,6 +956,32 @@ test('RETURN_JSON_SHAPE keeps discovery_log at the run envelope only', () => {
   const passengerBlock = out.match(/"dpi": \{[\s\S]*?\n    \}/)?.[0] || '';
   assert.doesNotMatch(passengerBlock, /"discovery_log"/);
   assert.match(out, /Passenger evidence must come from the primary search session/i);
+});
+
+test('RETURN_JSON_SHAPE requests aliases as metadata for component identity keys', () => {
+  const out = buildKeyFinderPrompt({
+    product: PRODUCT,
+    primary: { fieldKey: 'sensor', fieldRule: SENSOR_COMPONENT_RULE },
+    category: 'mouse',
+    variantCount: 1,
+    injectionKnobs: ALL_KNOBS_ON,
+  });
+
+  assert.match(out, /"component_aliases": \["\.\.\."\] \(optional metadata; aliases for the component name only/);
+  assert.match(out, /"brand_aliases": \["\.\.\."\] \(optional metadata; aliases for the component brand\/maker only/);
+});
+
+test('RETURN_JSON_SHAPE requests aliases as metadata for component brand keys', () => {
+  const out = buildKeyFinderPrompt({
+    product: PRODUCT,
+    primary: { fieldKey: 'sensor_brand', fieldRule: SENSOR_BRAND_RULE },
+    category: 'mouse',
+    variantCount: 1,
+    injectionKnobs: ALL_KNOBS_ON,
+  });
+
+  assert.match(out, /"component_aliases": \["\.\.\."\] \(optional metadata; aliases for the component name only/);
+  assert.match(out, /"brand_aliases": \["\.\.\."\] \(optional metadata; aliases for the component brand\/maker only/);
 });
 
 // \u2500\u2500 Universal source-tier strategy + closer (global fragments) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500

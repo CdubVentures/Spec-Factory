@@ -51,8 +51,6 @@ const schemaCases = [
     valid: {
       field: 'connection',
       values: ['wired', 'wireless'],
-      priority: { availability: 'sometimes' },
-      ai_assist: { reasoning_note: '' },
       custom_passthrough: true,
     },
     invalid: { values: ['wired'] },
@@ -73,7 +71,6 @@ const schemaCases = [
           },
         ],
       },
-      priority: { difficulty: 'hard' },
       custom_passthrough: true,
     },
     invalid: { roles: { properties: [{ variance_policy: 'numeric' }] } },
@@ -87,7 +84,6 @@ const schemaCases = [
       sheet: 'Enums',
       value_column: 'D',
       manual_values: ['wired'],
-      ai_assist: { pif_priority_images: { enabled: true } },
       custom_passthrough: true,
     },
     invalid: { mode: 'sheet' },
@@ -188,4 +184,16 @@ test('AiAssistConfigSchema key surface is derived from field-rule schema ai_assi
     .sort();
 
   assert.deepEqual(Object.keys(AiAssistConfigSchema.shape).sort(), expectedKeys);
+});
+
+test('list schemas do not expose dead ai_assist or priority fields', () => {
+  assert.equal(Object.hasOwn(EnumEntrySchema.shape, 'ai_assist'), false);
+  assert.equal(Object.hasOwn(DataListEntrySchema.shape, 'ai_assist'), false);
+  assert.equal(Object.hasOwn(EnumEntrySchema.shape, 'priority'), false);
+  assert.equal(Object.hasOwn(DataListEntrySchema.shape, 'priority'), false);
+});
+
+test('component source schema does not expose retired ai_assist or priority fields', () => {
+  assert.equal(Object.hasOwn(ComponentSourceSchema.shape, 'priority'), false);
+  assert.equal(Object.hasOwn(ComponentSourceSchema.shape, 'ai_assist'), false);
 });

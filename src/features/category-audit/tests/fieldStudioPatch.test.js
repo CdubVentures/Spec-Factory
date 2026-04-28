@@ -60,7 +60,6 @@ function baseMap() {
         mode: 'scratch',
         normalize: 'lower_trim',
         manual_values: ['standard', 'limited'],
-        ai_assist: { reasoning_note: 'old enum note' },
       },
     ],
     field_overrides: {
@@ -142,6 +141,36 @@ test('validateFieldStudioPatchDocument rejects retired data-list mode', () => {
       },
     }), { category: 'mouse', fileName: 'mouse-07-design.field-studio-patch.v1.json' }),
     /data_lists\[0\]\.mode is retired/i,
+  );
+
+  assert.throws(
+    () => validateFieldStudioPatchDocument(validPatch({
+      patch: {
+        data_lists: [
+          {
+            field: 'design',
+            manual_values: ['standard'],
+            priority: { difficulty: 'hard' },
+          },
+        ],
+      },
+    }), { category: 'mouse', fileName: 'mouse-07-design.field-studio-patch.v1.json' }),
+    /data_lists\[0\]\.priority is retired/i,
+  );
+
+  assert.throws(
+    () => validateFieldStudioPatchDocument(validPatch({
+      patch: {
+        data_lists: [
+          {
+            field: 'design',
+            manual_values: ['standard'],
+            ai_assist: { reasoning_note: 'list guidance' },
+          },
+        ],
+      },
+    }), { category: 'mouse', fileName: 'mouse-07-design.field-studio-patch.v1.json' }),
+    /data_lists\[0\]\.ai_assist is retired/i,
   );
 });
 
@@ -370,6 +399,97 @@ test('previewFieldStudioPatchDocuments accepts existing component parent lock hi
   assert.equal(preview.valid, true);
 });
 
+test('previewFieldStudioPatchDocuments accepts legacy component hints even when enum.source is still data_lists', () => {
+  const componentPatch = validPatch({
+    field_key: 'switch_type',
+    navigator_ordinal: 12,
+    patch: {
+      field_overrides: {
+        switch_type: {
+          contract: { type: 'string', shape: 'scalar' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'switch',
+          roles: {
+            properties: [
+              {
+                field_key: 'switch_type',
+                type: 'string',
+                variance_policy: 'authoritative',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  const preview = previewFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: {
+      ...baseMap(),
+      selected_keys: ['design', 'weight', 'switch', 'switch_type'],
+      data_lists: [
+        ...baseMap().data_lists,
+        { field: 'switch', manual_values: ['Optical Switches'] },
+      ],
+      field_overrides: {
+        ...baseMap().field_overrides,
+        switch: {
+          field_key: 'switch',
+          enum: { policy: 'open_prefer_known', source: 'data_lists.switch' },
+          component: { type: 'switch', source: 'component_db.switch' },
+          field_studio_hints: { component_db: 'switch' },
+          parse: { component_type: 'switch' },
+        },
+      },
+    },
+    patchDocs: [componentPatch],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: map,
+    }),
+  });
+
+  assert.equal(preview.valid, true);
+});
+
+test('previewFieldStudioPatchDocuments does not treat stale field_studio_hints alone as component identity', () => {
+  const preview = previewFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: {
+      ...baseMap(),
+      selected_keys: ['design', 'weight', 'material'],
+      data_lists: [
+        ...baseMap().data_lists,
+        { field: 'material', manual_values: ['plastic'] },
+      ],
+      field_overrides: {
+        ...baseMap().field_overrides,
+        material: {
+          field_key: 'material',
+          contract: { type: 'string', shape: 'list' },
+          enum: { policy: 'open_prefer_known', source: 'data_lists.material' },
+          field_studio_hints: { component_db: 'material' },
+        },
+      },
+    },
+    patchDocs: [validPatch()],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: map,
+    }),
+  });
+
+  assert.equal(preview.valid, true);
+});
+
 test('validateFieldStudioPatchDocument rejects retired component source workbook fields', () => {
   assert.throws(
     () => validateFieldStudioPatchDocument(validPatch({
@@ -394,6 +514,150 @@ test('validateFieldStudioPatchDocument rejects retired component source workbook
       },
     }), { category: 'mouse' }),
     /component_sources\[0\]\.sheet is retired/i,
+  );
+
+  assert.throws(
+    () => validateFieldStudioPatchDocument(validPatch({
+      field_key: 'switch_type',
+      patch: {
+        component_sources: [
+          {
+            component_type: 'switch',
+            priority: { difficulty: 'hard' },
+            roles: {
+              properties: [
+                {
+                  field_key: 'switch_type',
+                  type: 'string',
+                  variance_policy: 'authoritative',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    }), { category: 'mouse' }),
+    /component_sources\[0\]\.priority is retired/i,
+  );
+
+  assert.throws(
+    () => validateFieldStudioPatchDocument(validPatch({
+      field_key: 'switch_type',
+      patch: {
+        component_sources: [
+          {
+            component_type: 'switch',
+            ai_assist: { reasoning_note: 'component guidance' },
+            roles: {
+              properties: [
+                {
+                  field_key: 'switch_type',
+                  type: 'string',
+                  variance_policy: 'authoritative',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    }), { category: 'mouse' }),
+    /component_sources\[0\]\.ai_assist is retired/i,
+  );
+
+  assert.throws(
+    () => validateFieldStudioPatchDocument(validPatch({
+      field_key: 'switch_type',
+      patch: {
+        component_sources: [
+          {
+            component_type: 'switch',
+            source_notes: 'do not allow extra source-level fields',
+            roles: {
+              properties: [
+                {
+                  field_key: 'switch_type',
+                  type: 'string',
+                  variance_policy: 'authoritative',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    }), { category: 'mouse' }),
+    /component_sources\[0\]\.source_notes is not allowed/i,
+  );
+
+  assert.throws(
+    () => validateFieldStudioPatchDocument(validPatch({
+      field_key: 'switch_type',
+      patch: {
+        component_sources: [
+          {
+            component_type: 'switch',
+            roles: {
+              notes: 'do not allow role metadata',
+              properties: [
+                {
+                  field_key: 'switch_type',
+                  type: 'string',
+                  variance_policy: 'authoritative',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    }), { category: 'mouse' }),
+    /component_sources\[0\]\.roles\.notes is not allowed/i,
+  );
+
+  assert.throws(
+    () => validateFieldStudioPatchDocument(validPatch({
+      field_key: 'switch_type',
+      patch: {
+        component_sources: [
+          {
+            component_type: 'switch',
+            roles: {
+              properties: [
+                {
+                  field_key: 'switch_type',
+                  type: 'string',
+                  variance_policy: 'authoritative',
+                  source_notes: 'do not allow property metadata',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    }), { category: 'mouse' }),
+    /component_sources\[0\]\.roles\.properties\[0\]\.source_notes is not allowed/i,
+  );
+
+  assert.throws(
+    () => validateFieldStudioPatchDocument(validPatch({
+      field_key: 'switch',
+      patch: {
+        component_sources: [
+          {
+            component_type: 'switch',
+            roles: {
+              properties: [
+                {
+                  field_key: 'switch_type',
+                  type: 'string',
+                  variance_policy: 'authoritative',
+                  source_notes: 'identity owner rows still use strict property shape',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    }), { category: 'mouse' }),
+    /component_sources\[0\]\.roles\.properties\[0\]\.source_notes is not allowed/i,
   );
 });
 

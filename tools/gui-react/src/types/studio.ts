@@ -60,8 +60,6 @@ export interface ComponentSource {
     properties?: ComponentSourceProperty[];
     [k: string]: unknown;
   };
-  priority?: PriorityProfile;
-  ai_assist?: AiAssistConfig;
   [k: string]: unknown;
 }
 
@@ -71,8 +69,6 @@ export interface EnumEntry {
   values?: string[];
   delimiter?: string;
   manual_values?: string[];
-  priority?: PriorityProfile;
-  ai_assist?: AiAssistConfig;
   [k: string]: unknown;
 }
 
@@ -81,8 +77,6 @@ export interface DataListEntry {
   normalize?: string;
   delimiter?: string;
   manual_values?: string[];
-  priority?: PriorityProfile;
-  ai_assist?: AiAssistConfig;
   mode?: string;
   sheet?: string;
   value_column?: string;

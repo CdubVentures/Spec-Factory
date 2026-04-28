@@ -207,6 +207,11 @@ export function KeyTierPopover({
                   <ul className="sf-ktp-group-rows">
                     {rows.map((r) => {
                       const busy = runningFieldKeys.has(r.field_key);
+                      const blocked = r.run_blocked_reason === 'component_parent_unpublished';
+                      const componentResolverAction = r.component_run_kind === 'component_brand';
+                      const runButtonClass = componentResolverAction ? 'sf-warning-button-solid' : 'sf-ktp-btn-primary';
+                      const loopButtonClass = componentResolverAction ? 'sf-warning-button-solid' : 'sf-ktp-btn-secondary';
+                      const blockedTitle = 'Run the parent component first. Component brand/link are locked until the parent component publishes.';
                       const stateClass = r.published
                         ? 'sf-ktp-row-done'
                         : r.last_status === 'below_threshold' ? 'sf-ktp-row-part' : '';
@@ -233,7 +238,8 @@ export function KeyTierPopover({
                             <span className="sf-ktp-row-action-cell">
                               <button
                                 type="button"
-                                className="sf-ktp-btn sf-ktp-btn-primary"
+                                className={`sf-ktp-btn ${runButtonClass}`}
+                                disabled={blocked}
                                 onClick={() => handleRun(r.field_key)}
                                 title="Run this key once — fire-and-forget; spam-click to queue multiple runs"
                               >
@@ -252,10 +258,10 @@ export function KeyTierPopover({
                             <span className="sf-ktp-row-action-cell">
                               <button
                                 type="button"
-                                className="sf-ktp-btn sf-ktp-btn-secondary"
-                                disabled={busy}
+                                className={`sf-ktp-btn ${loopButtonClass}`}
+                                disabled={busy || blocked}
                                 onClick={() => handleLoop(r.field_key)}
-                                title="Loop this key until the concrete gate passes or budget is spent"
+                                title={blocked ? blockedTitle : 'Loop this key until the concrete gate passes or budget is spent'}
                               >
                                 Loop
                               </button>

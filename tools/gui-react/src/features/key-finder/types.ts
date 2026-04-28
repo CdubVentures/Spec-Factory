@@ -11,6 +11,16 @@ export type KeyStatus =
   | 'unresolved'
   | null;
 
+export type ComponentRunKind =
+  | ''
+  | 'component'
+  | 'component_brand'
+  | 'component_link';
+
+export type KeyRunBlockedReason =
+  | ''
+  | 'component_parent_unpublished';
+
 /** One row returned by GET /key-finder/:cat/:pid/summary — one per eligible key. */
 export interface KeyFinderSummaryRow {
   readonly field_key: string;
@@ -47,6 +57,17 @@ export interface KeyFinderSummaryRow {
    *  UI can render "{field_key} (cost)" and the user can eyeball-sum against
    *  the primary's pool. Empty when bundlingEnabled=false or no eligible peers. */
   readonly bundle_preview: ReadonlyArray<{ readonly field_key: string; readonly cost: number }>;
+  readonly dedicated_run?: boolean;
+  readonly component_run_kind?: ComponentRunKind;
+  readonly component_parent_key?: string;
+  readonly component_dependency_satisfied?: boolean;
+  readonly run_blocked_reason?: KeyRunBlockedReason;
+  /** Owning component for sibling-attribute fields (e.g. `sensor_dpi_max` →
+   *  'sensor'). Sourced from studioMap.component_sources[].roles.properties[].
+   *  Empty string when the field is not a component attribute. Drives the
+   *  per-component color tint on the KeyRow taxonomy icon strip so all keys
+   *  in one component family read as one group at a glance. */
+  readonly belongs_to_component?: string;
   readonly last_run_number: number | null;
   readonly last_ran_at: string | null;
   readonly last_status: KeyStatus;
@@ -166,6 +187,13 @@ export interface KeyEntry {
   readonly bundle_pool: number;
   readonly bundle_total_cost: number;
   readonly bundle_preview: ReadonlyArray<{ readonly field_key: string; readonly cost: number }>;
+  readonly dedicated_run: boolean;
+  readonly component_run_kind: ComponentRunKind;
+  readonly component_parent_key: string;
+  readonly component_dependency_satisfied: boolean;
+  readonly run_blocked_reason: KeyRunBlockedReason;
+  /** Owning component for sibling-attribute fields. See KeyFinderSummaryRow. */
+  readonly belongs_to_component: string;
   readonly last_run_number: number | null;
   readonly last_value: unknown;
   readonly last_confidence: number | null;

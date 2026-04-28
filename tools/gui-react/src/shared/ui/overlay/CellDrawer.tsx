@@ -172,11 +172,12 @@ export interface CellDrawerProps {
     overridden?: boolean;
     acceptedCandidateId?: string | null;
   };
+  showCurrentConfidence?: boolean;
   badges: Array<{ label: string; className: string }>;
   isCurrentAccepted?: boolean;
 
   // Section 2: Manual override
-  onManualOverride: (value: string) => void;
+  onManualOverride?: (value: string) => void;
   manualOverrideLabel?: string;
   manualOverridePlaceholder?: string;
   isPending: boolean;
@@ -206,6 +207,7 @@ export function CellDrawer({
   subtitle,
   onClose,
   currentValue,
+  showCurrentConfidence = true,
   badges,
   isCurrentAccepted,
   onManualOverride,
@@ -290,6 +292,7 @@ export function CellDrawer({
           confidence={currentValue.confidence}
           source={currentValue.source}
           sourceTimestamp={currentValue.sourceTimestamp}
+          showConfidence={showCurrentConfidence}
         />
         <DrawerBadges badges={badges} />
         {currentValue.overridden && (
@@ -317,12 +320,14 @@ export function CellDrawer({
       </DrawerSection>
 
       {/* Section 2: Manual Override */}
-      <DrawerManualOverride
-        onApply={onManualOverride}
-        isPending={isPending}
-        label={manualOverrideLabel}
-        placeholder={manualOverridePlaceholder}
-      />
+      {onManualOverride && (
+        <DrawerManualOverride
+          onApply={onManualOverride}
+          isPending={isPending}
+          label={manualOverrideLabel}
+          placeholder={manualOverridePlaceholder}
+        />
+      )}
 
       {/* Section 3: Candidates */}
       {(candidates.length > 0 || candidatesLoading || onRunAIReview) && (
@@ -493,7 +498,7 @@ export function CellDrawer({
               </ActionTooltip>
             </>
           )}
-          {hasCandidateRows && (
+          {hasCandidateRows && onAcceptCandidate && (
             <div className="sf-text-caption sf-text-subtle text-center py-1">
               Click any candidate to override the published value
             </div>

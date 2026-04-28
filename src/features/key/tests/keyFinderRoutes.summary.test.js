@@ -68,6 +68,46 @@ const COMPILED_RULES_MOUSE = {
   },
 };
 
+const COMPILED_RULES_WITH_COMPONENT_IDENTITY = {
+  fields: {
+    sensor: {
+      field_key: 'sensor',
+      difficulty: 'medium',
+      availability: 'always',
+      required_level: 'mandatory',
+      group: 'sensor_identity',
+      enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
+      ui: { label: 'Sensor', group: 'sensor_identity' },
+    },
+    sensor_brand: {
+      field_key: 'sensor_brand',
+      difficulty: 'medium',
+      availability: 'always',
+      required_level: 'mandatory',
+      group: 'sensor_identity',
+      component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+      ui: { label: 'Sensor Brand', group: 'sensor_identity' },
+    },
+    sensor_link: {
+      field_key: 'sensor_link',
+      difficulty: 'medium',
+      availability: 'sometimes',
+      required_level: 'non_mandatory',
+      group: 'sensor_identity',
+      component_identity_projection: { component_type: 'sensor', facet: 'link' },
+      ui: { label: 'Sensor Link', group: 'sensor_identity' },
+    },
+    dpi: {
+      field_key: 'dpi',
+      difficulty: 'easy',
+      availability: 'always',
+      required_level: 'mandatory',
+      group: 'sensor_performance',
+      ui: { label: 'DPI', group: 'sensor_performance' },
+    },
+  },
+};
+
 function makeSpecDbStub({
   candidateCountByKey = {},
   publishedKeys = new Set(),
@@ -80,6 +120,7 @@ function makeSpecDbStub({
   activeVariants = [],
   productRows = [],
   fieldKeyOrder = null,
+  fieldStudioMap = null,
 } = {}) {
   const finderStore = {
     getSetting: (k) => (k in finderSettings ? String(finderSettings[k]) : ''),
@@ -100,6 +141,7 @@ function makeSpecDbStub({
       listActive: () => activeVariants,
     },
     getCompiledRules: () => compiledRules,
+    getFieldStudioMap: () => fieldStudioMap,
     getFieldKeyOrder: () => (Array.isArray(fieldKeyOrder)
       ? { order_json: JSON.stringify(fieldKeyOrder), updated_at: 1 }
       : null),
@@ -209,6 +251,168 @@ describe('GET /key-finder/:category/:productId/summary', () => {
       assert.equal(row.last_run_number, null, 'no runs → null');
       assert.equal(row.run_count, 0);
       assert.equal(row.last_status, null);
+    }
+  });
+
+  it('marks component identity keys as dedicated and blocks brand/link until parent publishes', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'component-prod'), { recursive: true });
+    const specDb = makeSpecDbStub({
+      compiledRules: COMPILED_RULES_WITH_COMPONENT_IDENTITY,
+      finderSettings: { bundlingEnabled: 'true' },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(
+      ['key-finder', 'mouse', 'component-prod', 'summary'],
+      null,
+      'GET',
+      {},
+      {},
+    );
+
+    const body = responses[0].body;
+    const byKey = Object.fromEntries(body.map((row) => [row.field_key, row]));
+    assert.equal(byKey.sensor.component_run_kind, 'component');
+    assert.equal(byKey.sensor.dedicated_run, true);
+    assert.equal(byKey.sensor.run_blocked_reason, '');
+    assert.deepEqual(byKey.sensor.bundle_preview, []);
+
+    assert.equal(byKey.sensor_brand.component_run_kind, 'component_brand');
+    assert.equal(byKey.sensor_brand.component_parent_key, 'sensor');
+    assert.equal(byKey.sensor_brand.component_dependency_satisfied, false);
+    assert.equal(byKey.sensor_brand.run_blocked_reason, 'component_parent_unpublished');
+    assert.equal(byKey.sensor_brand.dedicated_run, true);
+    assert.deepEqual(byKey.sensor_brand.bundle_preview, []);
+
+    assert.equal(byKey.sensor_link.component_run_kind, 'component_link');
+    assert.equal(byKey.sensor_link.component_parent_key, 'sensor');
+    assert.equal(byKey.sensor_link.run_blocked_reason, 'component_parent_unpublished');
+
+    assert.equal(byKey.dpi.dedicated_run, false);
+    assert.equal(byKey.dpi.run_blocked_reason, '');
+  });
+
+  it('unblocks component brand/link summary rows after the parent component publishes', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'component-published-prod'), { recursive: true });
+    const specDb = makeSpecDbStub({
+      compiledRules: COMPILED_RULES_WITH_COMPONENT_IDENTITY,
+      publishedKeys: new Set(['sensor']),
+      finderSettings: { bundlingEnabled: 'true' },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(
+      ['key-finder', 'mouse', 'component-published-prod', 'summary'],
+      null,
+      'GET',
+      {},
+      {},
+    );
+
+    const byKey = Object.fromEntries(responses[0].body.map((row) => [row.field_key, row]));
+    assert.equal(byKey.sensor_brand.component_dependency_satisfied, true);
+    assert.equal(byKey.sensor_brand.run_blocked_reason, '');
+    assert.equal(byKey.sensor_link.component_dependency_satisfied, true);
+    assert.equal(byKey.sensor_link.run_blocked_reason, '');
+  });
+
+  it('emits belongs_to_component for component-attribute fields declared in studioMap.component_sources', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'attribute-prod'), { recursive: true });
+    // Compiled rules include `sensor` (the component itself), `sensor_brand`
+    // (identity projection), `dpi` (a property of sensor), and `polling_rate`
+    // (unrelated). studioMap.component_sources declares dpi as a property
+    // of the sensor component.
+    const compiledRules = {
+      fields: {
+        sensor: {
+          field_key: 'sensor',
+          difficulty: 'medium',
+          availability: 'always',
+          required_level: 'mandatory',
+          enum: { source: 'component_db.sensor' },
+          ui: { label: 'Sensor', group: 'sensor_identity' },
+        },
+        sensor_brand: {
+          field_key: 'sensor_brand',
+          difficulty: 'medium',
+          availability: 'always',
+          required_level: 'mandatory',
+          component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+          ui: { label: 'Sensor Brand', group: 'sensor_identity' },
+        },
+        dpi: {
+          field_key: 'dpi',
+          difficulty: 'easy',
+          availability: 'always',
+          required_level: 'mandatory',
+          ui: { label: 'DPI', group: 'sensor_performance' },
+        },
+        polling_rate: {
+          field_key: 'polling_rate',
+          difficulty: 'easy',
+          availability: 'always',
+          required_level: 'mandatory',
+          ui: { label: 'Polling Rate', group: 'sensor_performance' },
+        },
+      },
+    };
+    const fieldStudioMap = {
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: {
+            properties: [
+              { field_key: 'dpi' },
+            ],
+          },
+        },
+      ],
+    };
+    const specDb = makeSpecDbStub({ compiledRules, fieldStudioMap });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(
+      ['key-finder', 'mouse', 'attribute-prod', 'summary'],
+      null,
+      'GET',
+      {},
+      {},
+    );
+
+    const byKey = Object.fromEntries(responses[0].body.map((row) => [row.field_key, row]));
+    // Property field declared under component_sources → owning component
+    assert.equal(byKey.dpi.belongs_to_component, 'sensor');
+    // Component-self row is NOT one of its own properties
+    assert.equal(byKey.sensor.belongs_to_component, '');
+    // Identity projection row is NOT a sibling property either
+    assert.equal(byKey.sensor_brand.belongs_to_component, '');
+    // Unrelated field
+    assert.equal(byKey.polling_rate.belongs_to_component, '');
+  });
+
+  it('emits belongs_to_component as empty string when studioMap is omitted', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'no-studio-prod'), { recursive: true });
+    const specDb = makeSpecDbStub();
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(
+      ['key-finder', 'mouse', 'no-studio-prod', 'summary'],
+      null,
+      'GET',
+      {},
+      {},
+    );
+
+    for (const row of responses[0].body) {
+      assert.equal(row.belongs_to_component, '');
     }
   });
 

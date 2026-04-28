@@ -5,6 +5,7 @@ import {
   CATEGORY,
   buildComponentReviewPayloads,
   createComponentRowHarness,
+  insertProductFieldCandidate,
   linkProductToComponent,
   upsertComponentLane,
 } from './helpers/componentReviewRowHarness.js';
@@ -38,6 +39,20 @@ test('component payload aggregates candidates from all linked products for every
       matchType: 'exact',
     });
   }
+  insertProductFieldCandidate(specDb, {
+    productId: 'mouse-agg-p1',
+    fieldKey: 'dpi_max',
+    value: '35000',
+    status: 'resolved',
+    confidence: 95,
+  });
+  insertProductFieldCandidate(specDb, {
+    productId: 'mouse-agg-p2',
+    fieldKey: 'dpi_max',
+    value: '34000',
+    status: 'candidate',
+    confidence: 99,
+  });
 
   const payload = await buildComponentReviewPayloads({
     config,
@@ -59,7 +74,13 @@ test('component payload aggregates candidates from all linked products for every
   for (const propKey of propertyKeys) {
     const prop = row.properties?.[propKey];
     assert.ok(prop, `property ${propKey} should exist`);
-    assert.ok(prop.candidates.length >= 1, `${propKey} has fallback candidate`);
+    assert.equal(prop.selected.value, null, `${propKey} has no component-level published value`);
     assert.equal(prop.candidate_count, prop.candidates.length);
   }
+  assert.deepEqual(
+    row.properties.dpi_max.candidates.map((candidate) => String(candidate.value)),
+    ['35000'],
+  );
+  assert.deepEqual(row.properties.ips.candidates, []);
+  assert.deepEqual(row.properties.acceleration.candidates, []);
 });

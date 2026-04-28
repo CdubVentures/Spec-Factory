@@ -23,9 +23,9 @@ test('resolveDeclaredComponentPropertyColumns reads component-db property roles 
         sensor: {
           roles: {
             properties: [
+              { key: 'tracking_speed' },
               { field_key: 'ips' },
               { property_key: '__shadow' },
-              { key: 'tracking_speed' },
             ],
           },
         },
@@ -35,7 +35,7 @@ test('resolveDeclaredComponentPropertyColumns reads component-db property roles 
 
   const cols = resolveDeclaredComponentPropertyColumns({ fieldRules, componentType: 'sensor' });
 
-  assert.deepEqual(cols, ['ips', 'shadow', 'tracking_speed']);
+  assert.deepEqual(cols, ['tracking_speed', 'ips', 'shadow']);
 });
 
 test('resolveDeclaredComponentPropertyColumns returns empty when the component type is missing', () => {

@@ -111,8 +111,6 @@ export const EnumEntrySchema = z.object({
   values: z.array(z.string()).optional(),
   delimiter: z.string().optional(),
   manual_values: z.array(z.string()).optional(),
-  priority: PriorityProfileSchema.optional(),
-  ai_assist: AiAssistConfigSchema.optional(),
 }).passthrough();
 
 export const ComponentSourcePropertySchema = z.object({
@@ -136,8 +134,6 @@ export const ComponentSourceSchema = z.object({
   roles: z.object({
     properties: z.array(ComponentSourcePropertySchema).optional(),
   }).passthrough().optional(),
-  priority: PriorityProfileSchema.optional(),
-  ai_assist: AiAssistConfigSchema.optional(),
 }).passthrough();
 
 export const DataListEntrySchema = z.object({
@@ -145,8 +141,6 @@ export const DataListEntrySchema = z.object({
   normalize: z.string().optional(),
   delimiter: z.string().optional(),
   manual_values: z.array(z.string()).optional(),
-  priority: PriorityProfileSchema.optional(),
-  ai_assist: AiAssistConfigSchema.optional(),
   mode: z.string().optional(),
   sheet: z.string().optional(),
   value_column: z.string().optional(),

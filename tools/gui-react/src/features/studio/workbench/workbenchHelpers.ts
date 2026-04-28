@@ -125,7 +125,7 @@ interface PropertyOwnership {
   variancePolicy: string;
 }
 
-function buildPropertyOwnership(
+export function buildPropertyOwnership(
   componentSources: readonly ComponentSource[] | undefined,
   rules: Record<string, Record<string, unknown>>,
 ): Map<string, PropertyOwnership> {

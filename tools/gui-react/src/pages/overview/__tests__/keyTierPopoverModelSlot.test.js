@@ -120,8 +120,8 @@ function collectByType(node, typeName, results = []) {
   return results;
 }
 
-function renderPopover(Component, tier) {
-  globalThis.__keyTierPopoverSummaryRows = SUMMARY_ROWS;
+function renderPopover(Component, tier, rows = SUMMARY_ROWS) {
+  globalThis.__keyTierPopoverSummaryRows = rows;
   return renderNode(Component({
     productId: 'p1',
     category: 'mouse',
@@ -160,4 +160,33 @@ test('KeyTierPopover mandatory model slot shows every difficulty model with row 
     chips.map((chip) => chip.props.label),
     ['easy', 'hard'],
   );
+});
+
+test('KeyTierPopover disables blocked component resolver Run and Loop buttons', async () => {
+  const { KeyTierPopover } = await loadModule();
+  const tree = renderPopover(KeyTierPopover, 'mandatory', [
+    {
+      field_key: 'sensor_brand',
+      group: 'sensor',
+      label: 'Sensor Brand',
+      difficulty: 'medium',
+      required_level: 'mandatory',
+      published: false,
+      last_status: null,
+      concrete_evidence: false,
+      dedicated_run: true,
+      component_run_kind: 'component_brand',
+      component_parent_key: 'sensor',
+      component_dependency_satisfied: false,
+      run_blocked_reason: 'component_parent_unpublished',
+    },
+  ]);
+  const buttons = collectByType(tree, 'button');
+  const run = buttons.find((button) => button.props.children === 'Run');
+  const loop = buttons.find((button) => button.props.children === 'Loop');
+
+  assert.equal(run.props.disabled, true);
+  assert.equal(loop.props.disabled, true);
+  assert.ok(String(run.props.className).includes('sf-warning-button-solid'));
+  assert.ok(String(loop.props.className).includes('sf-warning-button-solid'));
 });

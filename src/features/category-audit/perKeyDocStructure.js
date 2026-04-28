@@ -73,6 +73,180 @@ function buildPurposeSection(record, preview, category) {
   };
 }
 
+function detectArchetypes(record) {
+  const archetypes = [];
+  const type = String(record?.contract?.type || '').toLowerCase();
+  const shape = String(record?.contract?.shape || 'scalar').toLowerCase();
+  const enumSource = String(record?.enum?.source || '');
+  const enumPolicy = String(record?.enum?.policy || '');
+
+  const isComponentIdentity = (
+    record?.component?.relation === 'parent'
+    || (enumSource.startsWith('component_db.') && enumSource === `component_db.${record?.fieldKey}`)
+  );
+  if (isComponentIdentity) archetypes.push('component_identity');
+
+  const isComponentFacet = (
+    Boolean(record?.component_identity_projection?.facet)
+    || (record?.component?.relation === 'subfield_of' && !isComponentIdentity)
+    || Boolean(record?.componentDbProperty)
+  );
+  if (isComponentFacet) archetypes.push('component_facet');
+
+  if (type === 'boolean') archetypes.push('boolean');
+
+  const isNumeric = ['number', 'integer', 'float'].includes(type);
+  if (isNumeric && shape === 'scalar') archetypes.push('numeric_scalar');
+  if (isNumeric && shape === 'list') archetypes.push('numeric_list');
+
+  const hasEnum = Boolean(enumPolicy) || (Array.isArray(record?.enum?.values) && record.enum.values.length > 0) || enumSource.startsWith('data_lists.');
+  if (hasEnum && type === 'string' && shape === 'scalar' && !isComponentIdentity) archetypes.push('enum_scalar');
+  if (hasEnum && shape === 'list') archetypes.push('enum_list');
+
+  const pifEnabled = record?.ai_assist?.pif_priority_images?.enabled === true || record?.ai_assist?.pif_priority_images === true;
+  if (pifEnabled) archetypes.push('visual_judgment');
+
+  return archetypes;
+}
+
+const ARCHETYPE_REQUIRED_CONTENT = {
+  component_identity: [
+    'Canonical-form rule — what shape a valid identity takes (maker part number, branded line, etc.) and the `enum.match.format_hint` regex pattern that enforces it.',
+    'Anti-pattern bank — 4–6 concrete strings the LLM must reject (slugified marketing, host-brand-prefixed phrases, parenthesized PCB markings, generic class words, marketing adjectives).',
+    'Host-brand-leak rule — the audited product\'s brand never appears inside this component identity.',
+    'Identity-layer choice — host-branded line vs OEM model. Pick one and apply it across every facet of this component (identity + brand + link + properties).',
+    'Marketing-evidence facet decomposition — a single PDP sentence may answer the *type* facet but not the identity. Identity from marketing-only ⇒ unk.',
+    'Confidence ladder — component-page/teardown ≥90; branded-line marketing ≈70; generic-class marketing ≤40 ⇒ unk; sibling-inferred ⇒ unk.',
+    'PCB-marking strip rule — strip parenthesized grade/color/lot tokens before emit.',
+  ],
+  component_facet: [
+    'Same anti-pattern bank as the parent identity (so the facet doesn\'t accept slugified marketing either).',
+    'Brand-abbreviation expansion (when this is a brand facet) — emit the registered canonical from the data_list; raw 1–3 letter abbreviations without an alias mapping ⇒ unk.',
+    'Facet decomposition — if the source proves a different facet (e.g. type but not identity), do not copy the same string across facets.',
+    'For link facets — which kinds of pages are valid (maker component pages, datasheets, distributor part pages) vs invalid (host product pages, reviews, marketplace listings).',
+  ],
+  boolean: [
+    'Explicit affirmation rule for `true` — what evidence in what form proves the affirmative state.',
+    'Default-on-absence rule — ambiguous or absent evidence ⇒ `no`, never `yes`.',
+    'Distinguish from not-applicable when the field is conditional.',
+  ],
+  numeric_scalar: [
+    'Unit/symbol-strip rule — currency or unit symbols belong in `contract.unit`, never inside the value.',
+    'Range/sanity rule — realistic bounds so the LLM rejects wildly out-of-range extractions.',
+    'When multiple reportable forms exist (peak vs sustained, max vs nominal), name which form the field stores.',
+  ],
+  numeric_list: [
+    'Unit/symbol-strip rule applies to every list item.',
+    'Item ordering rule (descending numeric is conventional for capability lists).',
+    'Range/sanity rule per item.',
+  ],
+  enum_scalar: [
+    'Shape lock — emit a JSON string, never a 1-element list.',
+    'Granularity rule — emit the canonical the enum carries; sub-specs the enum doesn\'t carry stay out of the value.',
+    'Synonym-to-canonical rule — when source uses a synonym, emit the canonical the data_list defines; aliases handle the mapping.',
+  ],
+  enum_list: [
+    'List composition rule — product-wide union, per-variant union, or base/default-variant list.',
+    'Item ordering rule — descending numeric, alphabetic, or source order.',
+    'Pattern-conformant emission for pattern-bounded list enums.',
+  ],
+  visual_judgment: [
+    'Tier classification (A direct, B subtle, C non-visual) and the matching guidance shape.',
+    'For Tier B — name the view, define the visible feature precisely, give threshold or relative-measurement rules, name when to return unk.',
+    'Product-scoped variant interpretation — for yes/no fields, when one official edition with the visible trait makes the answer yes; for list-like visual fields, how to represent variant/design forms found.',
+  ],
+};
+
+function shortenForCell(value, limit = 80) {
+  const text = value === null || value === undefined ? '' : String(value);
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit - 3)}...`;
+}
+
+function buildBenchmarkDiffSection(record, benchmark) {
+  if (!benchmark || !Array.isArray(benchmark.rows) || benchmark.rows.length === 0) return null;
+  const summary = benchmark.fieldSummary || {};
+  const summaryParts = [];
+  if (typeof summary.correct === 'number') summaryParts.push(`correct ${summary.correct}`);
+  if (typeof summary.wrong === 'number') summaryParts.push(`wrong ${summary.wrong}`);
+  if (typeof summary.extra === 'number') summaryParts.push(`extra ${summary.extra}`);
+  if (typeof summary.missing === 'number') summaryParts.push(`missing ${summary.missing}`);
+  if (typeof summary.needs_review === 'number') summaryParts.push(`needs_review ${summary.needs_review}`);
+  if (typeof summary.scored === 'number') summaryParts.push(`scored ${summary.scored}`);
+  if (typeof summary.accuracy === 'number') summaryParts.push(`accuracy ${summary.accuracy}%`);
+
+  const blocks = [
+    {
+      kind: 'paragraph',
+      text: `Most recent benchmark for \`${record.fieldKey}\` (generated ${benchmark.generatedAt || 'unknown'}). Each row is one test product. Highest-leverage rows first (wrong, extra, missing, needs_review, then correct). Your enum + format_hint + reasoning_note must defeat every wrong/extra row and accept every benchmark expected value.`,
+    },
+  ];
+  if (summaryParts.length > 0) {
+    blocks.push({
+      kind: 'paragraph',
+      text: `Field-level scoreboard: ${summaryParts.join(' / ')}.`,
+    });
+  }
+
+  const headers = ['Product', 'Status', 'Benchmark expects', 'App produced', 'Confidence', 'Reason'];
+  const rows = benchmark.rows.map((row) => [
+    row.productLabel || '-',
+    row.status || '-',
+    shortenForCell(row.benchmark, 80),
+    shortenForCell(row.app, 80),
+    row.appConfidence == null ? '-' : String(row.appConfidence),
+    shortenForCell(row.reason, 60),
+  ]);
+  blocks.push({ kind: 'table', headers, rows });
+
+  return {
+    id: 'benchmark-diff',
+    title: 'Benchmark diff for this key (per-product expected vs extracted)',
+    level: 2,
+    blocks,
+  };
+}
+
+function buildSuccessBarSection(record) {
+  const archetypes = detectArchetypes(record);
+  const archetypeBlocks = archetypes.length > 0
+    ? archetypes.flatMap((archetype) => {
+      const items = ARCHETYPE_REQUIRED_CONTENT[archetype] || [];
+      if (items.length === 0) return [];
+      return [
+        { kind: 'subheading', level: 4, text: `${archetype.replace(/_/g, ' ')} archetype` },
+        { kind: 'bulletList', items },
+      ];
+    })
+    : [{ kind: 'paragraph', text: 'No archetype-specific content detected for this key beyond the universal rules. Apply the priority order above and the universal extraction rules from Part 1a.' }];
+
+  return {
+    id: 'success-bar',
+    title: 'The 95% bar — what determines benchmark success for this key',
+    level: 2,
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: `Your enum, format pattern, and \`reasoning_note\` for \`${record.fieldKey}\` will be applied as-is to a re-run of this key against every test product in the category benchmark. Success bar is **≥95% match** across all test products. The other settings are infrastructure; the three knobs below determine whether you clear the bar.`,
+      },
+      {
+        kind: 'bulletList',
+        items: [
+          '**Enum vocabulary** — the values the runtime LLM is locked to. Wrong vocabulary, wrong granularity, missing aliases, or unexpanded abbreviations cap the key below 95%.',
+          '**Format pattern** (`enum.match.format_hint`) — when the value has a structural shape, the format hint rejects slugified marketing and noise extractions before they\'re stored.',
+          '**Extraction guidance** (`ai_assist.reasoning_note`) — the only prose the runtime LLM literally reads on every extraction. Carries the anti-pattern bank, confidence ladder, and "when to return unk" rules the structured contract cannot express. This is the biggest of the three.',
+        ],
+      },
+      {
+        kind: 'paragraph',
+        text: 'When a benchmark exists for this category (`.workspace/reports/<category>/key-finder-benchmark/scorecard.json`), your enum canonicals MUST be the benchmark\'s exact strings (or carry explicit aliases mapping to them); your format_hint MUST accept every benchmark expected value; your guidance MUST defeat any prior-run wrong values.',
+      },
+      { kind: 'subheading', level: 3, text: 'Required content per archetype detected for this key' },
+      ...archetypeBlocks,
+    ],
+  };
+}
+
 function displayValue(value) {
   if (value === null || value === undefined || value === '') return '(unset)';
   if (Array.isArray(value)) return value.length === 0 ? '[]' : value.map((v) => `\`${v}\``).join(', ');
@@ -143,36 +317,62 @@ function buildDataListPatchExample(record, enumPatch) {
   }];
 }
 
+function componentPropertyTypeForContract(contract) {
+  const type = String(contract?.type || 'string');
+  return ['string', 'number', 'integer'].includes(type) ? type : 'string';
+}
+
+function buildSuggestedComponentProperty(record) {
+  const out = {
+    field_key: record.fieldKey,
+    type: componentPropertyTypeForContract(record.contract),
+    variance_policy: record.variance_policy || 'authoritative',
+  };
+  if (record.contract?.unit) out.unit = record.contract.unit;
+  const constraints = (record.constraints || [])
+    .map((constraint) => constraint?.raw || '')
+    .filter(Boolean);
+  if (constraints.length > 0) out.constraints = constraints;
+  return out;
+}
+
+function normalizeComponentSourceProperty(property) {
+  const out = {
+    field_key: property.field_key || property.key,
+    type: property.type || 'string',
+    unit: property.unit || '',
+    variance_policy: property.variance_policy || 'authoritative',
+  };
+  if (Array.isArray(property.constraints) && property.constraints.length > 0) {
+    out.constraints = property.constraints;
+  }
+  if (property.component_only === true) out.component_only = true;
+  if (property.tolerance !== null && property.tolerance !== undefined) {
+    out.tolerance = property.tolerance;
+  }
+  return out;
+}
+
 function buildComponentSourcePatchExample(record, componentSources) {
-  if (!record.component?.type) return [];
-  const existing = findComponentSource(componentSources, record.component.type);
-  if (!existing) return [];
-  const roles = existing.roles || {};
+  const componentType = record.component?.type || record.componentDbProperty?.type;
+  if (!componentType) return [];
+  const existing = findComponentSource(componentSources, componentType);
+  const roles = existing?.roles || {};
   const properties = Array.isArray(roles.properties) ? roles.properties : [];
+  const patchProperties = properties
+    .map((property) => normalizeComponentSourceProperty(property))
+    .filter((property) => property.field_key);
+  if (
+    record.componentDbProperty
+    && !patchProperties.some((property) => property.field_key === record.fieldKey)
+  ) {
+    patchProperties.push(buildSuggestedComponentProperty(record));
+  }
   return [{
-    component_type: componentSourceType(existing),
+    component_type: existing ? componentSourceType(existing) : componentType,
     roles: {
-      properties: properties
-        .map((property) => {
-          const out = {
-            field_key: property.field_key || property.key,
-            type: property.type || 'string',
-            unit: property.unit || '',
-            variance_policy: property.variance_policy || 'authoritative',
-          };
-          if (Array.isArray(property.constraints) && property.constraints.length > 0) {
-            out.constraints = property.constraints;
-          }
-          if (property.component_only === true) out.component_only = true;
-          if (property.tolerance !== null && property.tolerance !== undefined) {
-            out.tolerance = property.tolerance;
-          }
-          return out;
-        })
-        .filter((property) => property.field_key),
+      properties: patchProperties,
     },
-    ...(existing.priority ? { priority: cloneJson(existing.priority) } : {}),
-    ...(existing.ai_assist ? { ai_assist: cloneJson(existing.ai_assist) } : {}),
   }];
 }
 
@@ -231,6 +431,7 @@ function formatList(values) {
 }
 
 function formatComponentRelation(record) {
+  if (record?.componentDbProperty) return `DB hint: \`${record.componentDbProperty.type}\``;
   if (!record?.component) return '-';
   const relation = record.component.relation === 'parent' ? 'identity' : 'subfield';
   return `${relation}: \`${record.component.type}\``;
@@ -566,7 +767,12 @@ The JSON must be strict and importable:
 - null means clear this setting. Arrays replace arrays. Objects deep-merge.
 - field_overrides may patch only "${record.fieldKey}".
 - data_lists rows must use field "${record.fieldKey}".
-- component_sources rows declare component_type and may include "${record.fieldKey}" in roles.properties.
+- data_lists rows use only field, normalize, and manual_values.
+- component_sources rows use only component_type and roles.properties[].
+- component_sources[].roles may contain only properties.
+- component_sources[].roles.properties[] rows may contain only field_key, type, unit, variance_policy, tolerance, constraints, and component_only.
+- component_sources rows may include "${record.fieldKey}" in roles.properties.
+- Enum policy/source shape: open has no enum source; closed and open_prefer_known use the key-matched list data_lists.${record.fieldKey}. Do not invent custom list names.
 
 Expected file: ${fileName}
 Sort/key token: ${fieldToken}
@@ -581,7 +787,13 @@ For a keep verdict, return the same envelope with "patch": {}.
 
 Mapping Studio patch guidance:
 - Component Source Mapping belongs under patch.component_sources. Use it for component type and property variance only. Component entity names, makers, aliases, and source URLs are maintained through Component Review, not Field Studio patches.
-- Enum Data Lists belong under patch.data_lists. Use field, normalize, and manual_values; return the final ordered canonical values when replacing a list; keep aliases/source phrases out of public chips.
+- For every key, decide from scratch whether it is a component identity, component attribute, or standalone. Do not wait for an existing component DB property before proposing a component attribute. If this field should inherit from a resolved component, patch component_sources by adding "${record.fieldKey}" to roles.properties[] for the chosen component type. If no, leave component_sources unchanged and explain why it stays standalone.
+- A component identity patch may also define the component's normal product-backed attributes and strictly component-only attributes in the same component_sources row. Product-backed attributes have component_only omitted or false and publish as product fields. Strictly component-only attributes set "component_only": true and stay scoped to the component DB only.
+- Component source parameters: component_type is the parent component key and must match a self-locked parent field_overrides.<component_type>.enum.source = "component_db.<component_type>"; roles.properties is the attribute list. Source-level priority is retired; keep priority under field_overrides.<field_key>.priority.
+- Component identity keys cannot be open enum keys. They must self-lock with enum.source = "component_db.<same_key>" and the matching component_sources[].component_type.
+- Component attribute parameters: field_key is the product field or component-only attribute key; type is string, number, or integer; unit is the display/storage unit for numeric values; variance_policy controls how component values relate to product values; tolerance is an optional numeric margin for upper_bound, lower_bound, or range checks; constraints are cross-property rules; component_only true means the attribute is component-scoped and should not become a product field.
+- UI control mapping: Variance = Authoritative -> "variance_policy": "authoritative"; Variance = Upper Bound -> "variance_policy": "upper_bound"; Variance = Lower Bound -> "variance_policy": "lower_bound"; Variance = Range -> "variance_policy": "range"; Allow Product Override -> "variance_policy": "override_allowed"; Tolerance -> "tolerance": 5; Component only / scoped -> "component_only": true.
+- Enum Data Lists belong under patch.data_lists. Use only field, normalize, and manual_values; return the final ordered canonical values when replacing a list; keep aliases/source phrases out of public chips. List-level priority and AI guidance are retired; key priority and extraction guidance stay under patch.field_overrides.${record.fieldKey}.
 
 Key Navigator patch guidance:
 - Field contract, priority, evidence, enum policy, constraints, aliases, search_hints, and ai_assist belong under patch.field_overrides.${record.fieldKey}.
@@ -638,7 +850,7 @@ function formatComponentSourceCell(value) {
 }
 
 function buildComponentSourceMappingBlocks(record, componentSources) {
-  const c = record.component;
+  const c = record.component || record.componentDbProperty;
   if (!c?.type) return [];
   const source = findComponentSource(componentSources, c.type);
   if (!source) {
@@ -655,6 +867,7 @@ function buildComponentSourceMappingBlocks(record, componentSources) {
     component_type: componentSourceType(source),
     roles: { properties: [] },
   };
+  const displayPatchSource = buildComponentSourcePatchExample(record, [source])[0] || displaySource;
   const blocks = [
     { kind: 'subheading', level: 4, text: `Current component source mapping: ${c.type}` },
     {
@@ -684,20 +897,49 @@ function buildComponentSourceMappingBlocks(record, componentSources) {
         ])
         : [['-', '-', '-', '-', '-', '-', '-']],
     },
+    ...(record.componentDbProperty ? [{
+      kind: 'note',
+      tone: 'info',
+      text: `Patch example below keeps the current \`${c.type}\` mapping and appends \`${record.fieldKey}\` as a candidate component property row because the component DB already carries that property. Remove that row if the from-scratch audit decides this field should remain product-specific.`,
+    }] : []),
     {
       kind: 'codeBlock',
       lang: 'json',
-      text: JSON.stringify(displaySource, null, 2),
+      text: JSON.stringify(displayPatchSource, null, 2),
     },
   ];
   return blocks;
 }
 
+function buildFromScratchComponentDecisionBlocks(record) {
+  return [
+    { kind: 'subheading', level: 4, text: 'From-scratch component setup decision' },
+    {
+      kind: 'paragraph',
+      text: `Decide this key from scratch, even when current Mapping Studio rows are empty: Component identity, Component attribute, or Standalone. Component identity means the field value is the canonical component name and should use \`enum.source = component_db.<component_type>\`. Component attribute means this field belongs under a parent component and should be listed in \`component_sources.<component_type>.roles.properties[]\` with \`field_key\`, \`type\`, \`unit\`, \`variance_policy\`, and constraints as needed. Standalone means normal Field Navigator/Data List setup with no component_sources row.`,
+    },
+    {
+      kind: 'paragraph',
+      text: `Current component data is only evidence for the setup decision. A valid from-scratch setup can create a component identity or component attribute even when no current component DB property exists.`,
+    },
+  ];
+}
+
 function buildComponentSection(record, componentInventory, componentSources = []) {
   const c = record.component;
+  const componentGap = record.componentDbProperty;
+  const relevantType = c?.type || componentGap?.type;
   const blocks = [];
 
-  if (!c) {
+  blocks.push(...buildFromScratchComponentDecisionBlocks(record));
+
+  if (!c && componentGap) {
+    blocks.push({
+      kind: 'note',
+      tone: 'info',
+      text: `Existing component DB hint: \`${record.fieldKey}\` appears as a property in \`component_db/${componentGap.type}.json\`, but it is not currently mapped in \`component_sources.${componentGap.type}.roles.properties[]\`. Treat that as evidence to consider, not proof that this key must be component-backed. Concrete component entity values stay in Component Review.`,
+    });
+  } else if (!c) {
     blocks.push({ kind: 'paragraph', text: 'Standalone \u2014 no component relation. This key is not an identity for any `component_db/<type>.json` and does not appear as a subfield on any component entity.' });
   } else if (c.relation === 'parent') {
     blocks.push({
@@ -725,24 +967,26 @@ function buildComponentSection(record, componentInventory, componentSources = []
   } else {
     blocks.push({
       kind: 'table',
-      headers: ['Component', 'Entities', 'Identity fields', 'Subfields', 'Relevant to this key?'],
+      headers: ['Component', 'Entities', 'Identity fields', 'Subfields', 'Field-backed DB properties not currently mapped', 'DB-only properties', 'Relevant to this key?'],
       rows: inventory.map((entry) => [
         `\`${entry.type}\``,
         String(entry.entityCount),
         formatList(entry.identityFields),
         formatList(entry.subfields),
-        c?.type === entry.type ? 'yes' : '-',
+        formatList(entry.unmappedFieldProperties),
+        formatList(entry.dbOnlyProperties),
+        relevantType === entry.type ? 'yes' : '-',
       ]),
     });
   }
 
-  const relevant = c ? inventory.find((entry) => entry.type === c.type) : null;
+  const relevant = relevantType ? inventory.find((entry) => entry.type === relevantType) : null;
   blocks.push(...buildComponentSourceMappingBlocks(record, componentSources));
   if (relevant) {
-    blocks.push({ kind: 'subheading', level: 4, text: `Relevant component detail: ${c.type}` });
+    blocks.push({ kind: 'subheading', level: 4, text: `Relevant component detail: ${relevantType}` });
     blocks.push({
       kind: 'paragraph',
-      text: `Audit component variance here too. Confirm whether \`${record.fieldKey}\` should inherit from the \`${c.type}\` component database, whether the field-level \`variance_policy\` (\`${record.variance_policy || '(unset)'}\`) matches component property policy, and whether component constraints are present on the right property.`,
+      text: `Audit component variance here too. Confirm whether \`${record.fieldKey}\` should inherit from the \`${relevantType}\` component database, whether the field-level \`variance_policy\` (\`${record.variance_policy || '(unset)'}\`) matches component property policy, and whether component constraints are present on the right property.`,
     });
     blocks.push({
       kind: 'table',
@@ -928,10 +1172,13 @@ export function buildPerKeyDocStructure(keyRecord, {
   componentSources = [],
   preview,
   navigatorOrdinal = '',
+  benchmark = null,
 }) {
   const sections = [
     buildHeaderSection(keyRecord, category, generatedAt, preview),
     buildPurposeSection(keyRecord, preview, category),
+    buildSuccessBarSection(keyRecord),
+    buildBenchmarkDiffSection(keyRecord, benchmark),
     buildSearchRoutingSection(keyRecord, preview, category),
     buildAuthoringChecklistSection(keyRecord),
     buildCategoryKeyMapSection(keyRecord, allKeyRecords, groups),

@@ -138,12 +138,6 @@ test('normalizeFieldStudioMap characterizes representative normalized studio map
         normalize: 'lower_trim',
         delimiter: '',
         manual_values: ['wired', 'wireless'],
-        priority: {
-          required_level: 'mandatory',
-          availability: 'sometimes',
-          difficulty: 'medium',
-        },
-        ai_assist: { reasoning_note: 'enum note' },
       },
     ],
     enum_lists: [
@@ -156,12 +150,6 @@ test('normalizeFieldStudioMap characterizes representative normalized studio map
         delimiter: '',
         normalize: 'lower_trim',
         header_row: 0,
-        priority: {
-          required_level: 'mandatory',
-          availability: 'sometimes',
-          difficulty: 'medium',
-        },
-        ai_assist: { reasoning_note: 'enum note' },
       },
     ],
     enum_sources: [
@@ -174,12 +162,6 @@ test('normalizeFieldStudioMap characterizes representative normalized studio map
         end_row: null,
         delimiter: '',
         normalize: 'lower_trim',
-        priority: {
-          required_level: 'mandatory',
-          availability: 'sometimes',
-          difficulty: 'medium',
-        },
-        ai_assist: { reasoning_note: 'enum note' },
       },
     ],
     component_sources: [
@@ -195,12 +177,6 @@ test('normalizeFieldStudioMap characterizes representative normalized studio map
             },
           ],
         },
-        priority: {
-          required_level: 'non_mandatory',
-          availability: 'sometimes',
-          difficulty: 'very_hard',
-        },
-        ai_assist: { reasoning_note: 'component note' },
       },
     ],
     expectations: {

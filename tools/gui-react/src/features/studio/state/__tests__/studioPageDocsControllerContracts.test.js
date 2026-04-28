@@ -11,6 +11,18 @@ function stableEqual(a, b) {
   }
 }
 
+function wbMapWithComponentSources(selectedKeys = ['dpi']) {
+  return {
+    selected_keys: selectedKeys,
+    component_sources: [
+      {
+        component_type: 'sensor',
+        roles: { properties: [] },
+      },
+    ],
+  };
+}
+
 function createHarness(overrides = {}) {
   const originalSetTimeout = globalThis.setTimeout;
   const originalClearTimeout = globalThis.clearTimeout;
@@ -318,6 +330,39 @@ test('useStudioPageDocsController hydrates server rules and derives autosave sta
   }
 });
 
+test('forced studio docs save does not send an empty mapping payload', async () => {
+  const { useStudioPageDocsController } = await loadStudioPageDocsControllerModule();
+  const harness = createHarness({
+    authorityVersionToken: 'auth-v1',
+    queryClient: { invalidateQueries() {}, refetchQueries() { return Promise.resolve(); } },
+  });
+
+  try {
+    const result = renderHook(
+      useStudioPageDocsController,
+      {
+        category: 'mouse',
+        rules: { dpi: { label: 'DPI' } },
+        fieldOrder: ['dpi'],
+        wbMap: { selected_keys: ['dpi'] },
+        autoSaveAllEnabled: false,
+        autoSaveEnabled: false,
+        autoSaveMapEnabled: false,
+        mapSavedAt: '2026-03-01T00:00:00.000Z',
+        compiledAt: '2026-03-02T00:00:00.000Z',
+        queryClient: harness.queryClient,
+      },
+      harness,
+    );
+
+    result.saveFromStore({ force: true });
+
+    assert.deepEqual(harness.persistenceCalls, []);
+  } finally {
+    harness.restore();
+  }
+});
+
 test('useStudioPageDocsController opens an authority conflict when the server version changes over unsaved edits', async () => {
   const { useStudioPageDocsController } = await loadStudioPageDocsControllerModule();
   const harness = createHarness({
@@ -442,7 +487,7 @@ test('useStudioPageDocsController persists the current field-rules snapshot and 
         category: 'mouse',
         rules: { dpi: { label: 'DPI' } },
         fieldOrder: ['dpi'],
-        wbMap: { selected_keys: ['dpi'] },
+        wbMap: wbMapWithComponentSources(['dpi']),
         autoSaveAllEnabled: false,
         autoSaveEnabled: true,
         autoSaveMapEnabled: false,
@@ -460,7 +505,7 @@ test('useStudioPageDocsController persists the current field-rules snapshot and 
         category: 'mouse',
         rules: { dpi: { label: 'DPI' } },
         fieldOrder: ['dpi'],
-        wbMap: { selected_keys: ['dpi'] },
+        wbMap: wbMapWithComponentSources(['dpi']),
         autoSaveAllEnabled: false,
         autoSaveEnabled: true,
         autoSaveMapEnabled: false,
@@ -475,6 +520,12 @@ test('useStudioPageDocsController persists the current field-rules snapshot and 
       kind: 'saveStudioDocs',
       payload: {
         selected_keys: ['dpi'],
+        component_sources: [
+          {
+            component_type: 'sensor',
+            roles: { properties: [] },
+          },
+        ],
         field_overrides: {
           dpi: { label: 'DPI' },
         },
@@ -490,7 +541,7 @@ test('useStudioPageDocsController persists the current field-rules snapshot and 
         category: 'mouse',
         rules: { dpi: { label: 'DPI' } },
         fieldOrder: ['dpi'],
-        wbMap: { selected_keys: ['dpi'] },
+        wbMap: wbMapWithComponentSources(['dpi']),
         autoSaveAllEnabled: false,
         autoSaveEnabled: true,
         autoSaveMapEnabled: false,
@@ -523,7 +574,7 @@ test('save clears edit flags synchronously — no async race', async () => {
       category: 'mouse',
       rules: { dpi: { label: 'DPI' } },
       fieldOrder: ['dpi'],
-      wbMap: { selected_keys: ['dpi'] },
+      wbMap: wbMapWithComponentSources(['dpi']),
       autoSaveAllEnabled: false,
       autoSaveEnabled: true,
       autoSaveMapEnabled: false,
@@ -559,7 +610,7 @@ test('no false authority conflict dialog when version changes after own save', a
       category: 'mouse',
       rules: { dpi: { label: 'DPI' } },
       fieldOrder: ['dpi'],
-      wbMap: { selected_keys: ['dpi'] },
+      wbMap: wbMapWithComponentSources(['dpi']),
       autoSaveAllEnabled: false,
       autoSaveEnabled: false,
       autoSaveMapEnabled: false,
@@ -638,7 +689,7 @@ test('save failure resets save-in-progress and preserves edits', async () => {
       category: 'mouse',
       rules: { dpi: { label: 'DPI' } },
       fieldOrder: ['dpi'],
-      wbMap: { selected_keys: ['dpi'] },
+      wbMap: wbMapWithComponentSources(['dpi']),
       autoSaveAllEnabled: false,
       autoSaveEnabled: true,
       autoSaveMapEnabled: false,
@@ -673,7 +724,7 @@ test('edit after synchronous save keeps _edited flag — save cannot race with u
       category: 'mouse',
       rules: { dpi: { label: 'DPI' }, polling_rate: { label: 'Polling Rate' } },
       fieldOrder: ['dpi', 'polling_rate'],
-      wbMap: { selected_keys: ['dpi', 'polling_rate'] },
+      wbMap: wbMapWithComponentSources(['dpi', 'polling_rate']),
       autoSaveAllEnabled: false,
       autoSaveEnabled: true,
       autoSaveMapEnabled: false,

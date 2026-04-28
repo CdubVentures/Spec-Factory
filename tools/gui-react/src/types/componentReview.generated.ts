@@ -18,6 +18,7 @@ export interface ComponentReviewItemGen {
   name_tracked: Record<string, unknown>;
   maker_tracked: Record<string, unknown>;
   links_tracked: unknown[];
+  links_state: Record<string, unknown>;
   properties: Record<string, unknown>;
   linked_products?: unknown[];
   review_status: 'pending' | 'reviewed' | 'approved';

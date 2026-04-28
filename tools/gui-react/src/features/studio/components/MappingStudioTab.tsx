@@ -16,17 +16,10 @@ import {
   isDomainFlushedByUnload,
 } from "../../../stores/settingsUnloadGuard.ts";
 import {
-  DEFAULT_PRIORITY_PROFILE,
-  deriveComponentSourcePriority,
-  deriveListPriority,
-  hasExplicitPriority,
-  normalizeAiAssistConfig,
-  normalizePriorityProfile,
-} from "../state/studioPriority.ts";
-import {
   createEmptyComponentSource as emptyComponentSource,
 } from "../state/studioComponentSources.ts";
 import {
+  shouldFlushStudioMapPayloadOnUnmount,
   shouldPersistStudioMapPayload,
 } from "../state/studioPagePersistence.ts";
 import {
@@ -39,22 +32,15 @@ import type {
   StudioConfig,
   ComponentSource,
   EnumEntry,
-  PriorityProfile,
-  AiAssistConfig,
 } from "../../../types/studio.ts";
 import { EditableDataList } from "./EditableDataList.tsx";
 import { EditableComponentSource } from "./EditableComponentSource.tsx";
 import { useStudioFieldRulesState, useStudioFieldRulesActions } from "../state/studioFieldRulesController.ts";
-
-interface DataListEntry {
-  field: string;
-  normalize: string;
-  delimiter: string;
-  manual_values: string[];
-  priority?: PriorityProfile;
-  ai_assist?: AiAssistConfig;
-}
-
+import {
+  buildStudioEnumDataListSeedVersion,
+  deriveStudioEnumDataLists,
+  type StudioEnumDataListEntry,
+} from "../state/studioEnumDataLists.ts";
 
 // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Shared styles ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
 import { btnPrimary, btnSecondary, sectionCls, actionBtnWidth } from '../../../shared/ui/buttonClasses.ts';
@@ -91,7 +77,7 @@ export function MappingStudioTab({
   const { updateField } = useStudioFieldRulesActions();
   const [tooltipPath, setTooltipPath] = useState("");
   const [compSources, setCompSources] = useState<ComponentSource[]>([]);
-  const [dataLists, setDataLists] = useState<DataListEntry[]>([]);
+  const [dataLists, setDataLists] = useState<StudioEnumDataListEntry[]>([]);
   const [seededVersion, setSeededVersion] = useState("");
   const lastMapAutoSaveFingerprintRef = useRef("");
   const [showTooltipSource, toggleTooltipSource] = usePersistedToggle(
@@ -119,31 +105,27 @@ export function MappingStudioTab({
           ? wbMap.enum_lists
           : []
     ) as EnumEntry[];
+    const enumDataListSeedVersion = buildStudioEnumDataListSeedVersion({
+      rawEnumLists,
+      rules,
+      egLockedKeys,
+      knownValues,
+    });
     return [
       String(wbMap.version || ""),
       String(wbMap.version_snapshot || ""),
       String(wbMap.tooltip_source?.path || ""),
       String(componentSourceCount),
-      String(rawEnumLists.length),
+      enumDataListSeedVersion,
     ].join("|");
-  }, [wbMap]);
+  }, [wbMap, rules, egLockedKeys, knownValues]);
 
   useEffect(() => {
     if (seededVersion === mapSeedVersion) return;
     setTooltipPath(wbMap.tooltip_source?.path || "");
     const sources = wbMap.component_sources || [];
     const normalizedCompSources = (Array.isArray(sources) ? sources : []).map(
-      (src) => {
-        const source = (src || {}) as ComponentSource;
-        const inferredPriority = deriveComponentSourcePriority(source, rules);
-        return {
-          ...source,
-          priority: hasExplicitPriority(source.priority)
-            ? normalizePriorityProfile(source.priority)
-            : inferredPriority,
-          ai_assist: normalizeAiAssistConfig(source.ai_assist),
-        } as ComponentSource;
-      },
+      (src) => (src || {}) as ComponentSource,
     );
     setCompSources(normalizedCompSources);
     const rawEnumLists = (
@@ -153,40 +135,12 @@ export function MappingStudioTab({
           ? wbMap.enum_lists
           : []
     ) as EnumEntry[];
-    const seenFields = new Set<string>();
-    const seededLists: DataListEntry[] = [];
-    for (const el of rawEnumLists) {
-      seenFields.add(el.field);
-      seededLists.push({
-        field: el.field,
-        normalize: el.normalize || "lower_trim",
-        delimiter: el.delimiter || "",
-        manual_values: Array.isArray(el.values)
-          ? el.values
-          : Array.isArray(el.manual_values)
-            ? el.manual_values
-            : [],
-        priority: hasExplicitPriority(el.priority)
-          ? normalizePriorityProfile(el.priority)
-          : deriveListPriority(el.field, rules),
-        ai_assist: normalizeAiAssistConfig(el.ai_assist),
-      });
-    }
-    // WHY: EG-locked fields with known_values (e.g., colors from registry)
-    // appear as locked enum entries. O(1): driven by egLockedKeys + knownValues.
-    for (const egKey of egLockedKeys) {
-      if (seenFields.has(egKey)) continue;
-      const egValues = knownValues[egKey];
-      if (!Array.isArray(egValues) || egValues.length === 0) continue;
-      seededLists.push({
-        field: egKey,
-        normalize: 'lower_trim',
-        delimiter: '',
-        manual_values: egValues,
-        priority: deriveListPriority(egKey, rules),
-        ai_assist: normalizeAiAssistConfig(undefined),
-      });
-    }
+    const seededLists = deriveStudioEnumDataLists({
+      rawEnumLists,
+      rules,
+      egLockedKeys,
+      knownValues,
+    });
     setDataLists(seededLists);
     // WHY: assembleMap converts data_lists into the derived enum_lists on
     // save. The seeded fingerprint must use the same shape so the auto-save
@@ -198,17 +152,11 @@ export function MappingStudioTab({
       tooltip_source: {
         path: wbMap.tooltip_source?.path || "",
       },
-      component_sources: normalizedCompSources.map((src) => ({
-        ...src,
-        priority: normalizePriorityProfile(src.priority),
-        ai_assist: normalizeAiAssistConfig(src.ai_assist),
-      })),
+      component_sources: normalizedCompSources,
       enum_lists: seededLists.map((dl) => ({
         field: dl.field,
         normalize: dl.normalize,
         values: dl.manual_values,
-        priority: normalizePriorityProfile(dl.priority),
-        ai_assist: normalizeAiAssistConfig(dl.ai_assist),
       })),
     };
     lastMapAutoSaveFingerprintRef.current = shouldPersistStudioMapPayload({
@@ -231,17 +179,11 @@ export function MappingStudioTab({
       tooltip_source: {
         path: tooltipPath,
       },
-      component_sources: compSources.map((src) => ({
-        ...src,
-        priority: normalizePriorityProfile(src.priority),
-        ai_assist: normalizeAiAssistConfig(src.ai_assist),
-      })),
+      component_sources: compSources,
       enum_lists: dataLists.map((dl) => ({
         field: dl.field,
         normalize: dl.normalize,
         values: dl.manual_values,
-        priority: normalizePriorityProfile(dl.priority),
-        ai_assist: normalizeAiAssistConfig(dl.ai_assist),
       })),
     };
   }, [wbMap, tooltipPath, compSources, dataLists]);
@@ -318,7 +260,7 @@ export function MappingStudioTab({
     () => () => {
       if (isDomainFlushedByUnload('studioMap')) return;
       const nextMap = assembleMap();
-      if (!shouldPersistStudioMapPayload({ payload: nextMap, force: true })) return;
+      if (!shouldFlushStudioMapPayloadOnUnmount(nextMap)) return;
       const nextFingerprint = autoSaveFingerprint(nextMap);
       if (
         !shouldFlushStudioMapOnUnmount({
@@ -363,38 +305,11 @@ export function MappingStudioTab({
   }
 
   // ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ Data list handlers ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬ÃƒÂ¢"Ã¢â€šÂ¬
-  function addDataList() {
-    setDataLists((prev) => [
-      ...prev,
-      {
-        field: "",
-        normalize: "lower_trim",
-        delimiter: "",
-        manual_values: [],
-        priority: { ...DEFAULT_PRIORITY_PROFILE },
-        ai_assist: normalizeAiAssistConfig(undefined),
-      },
-    ]);
-  }
-
-  function removeDataList(idx: number) {
-    setDataLists((prev) => prev.filter((_, i) => i !== idx));
-  }
-
-  function updateDataList(idx: number, updates: Partial<DataListEntry>) {
+  function updateDataList(idx: number, updates: Partial<StudioEnumDataListEntry>) {
     setDataLists((prev) =>
       prev.map((dl, i) => (i === idx ? { ...dl, ...updates } : dl)),
     );
   }
-
-  // Detect duplicate field names in data lists
-  const duplicateDataListFields = useMemo(() => {
-    const counts: Record<string, number> = {};
-    for (const dl of dataLists) {
-      if (dl.field) counts[dl.field] = (counts[dl.field] || 0) + 1;
-    }
-    return new Set(Object.keys(counts).filter((k) => counts[k] > 1));
-  }, [dataLists]);
 
   return (
     <div className="space-y-6">
@@ -630,12 +545,6 @@ export function MappingStudioTab({
         </div>
         {showEnumSection ? (
           <div className="mt-3">
-            <div className="flex items-center justify-between mb-3">
-              <div></div>
-              <button onClick={addDataList} className={btnSecondary}>
-                + Add Enum
-              </button>
-            </div>
             {dataLists.length > 0 ? (
               <div className="space-y-3">
                 {dataLists.map((dl, idx) => {
@@ -645,9 +554,8 @@ export function MappingStudioTab({
                       <EditableDataList
                         entry={dl}
                         index={idx}
-                        isDuplicate={duplicateDataListFields.has(dl.field)}
+                        isDuplicate={false}
                         onUpdate={isLocked ? () => {} : (updates) => updateDataList(idx, updates)}
-                        onRemove={isLocked ? () => {} : () => removeDataList(idx)}
                       />
                       {isLocked && (
                         <div className="flex items-center gap-1.5 mt-1 px-2 text-[10px] sf-text-subtle">
@@ -661,8 +569,7 @@ export function MappingStudioTab({
               </div>
             ) : (
               <div className="text-sm sf-text-subtle text-center py-4">
-                No enums configured. Click "+ Add Enum" to define enum value
-                lists.
+                No enums configured.
               </div>
             )}
           </div>

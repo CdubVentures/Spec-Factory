@@ -540,3 +540,57 @@ describe('buildPassengers - variant-aware passenger cost', () => {
     );
   });
 });
+
+describe('buildPassengers - component identity keys are dedicated', () => {
+  const ENGINE_RULES = {
+    sensor: rule({
+      difficulty: 'medium',
+      required_level: 'mandatory',
+      enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
+    }),
+    sensor_brand: rule({
+      difficulty: 'medium',
+      component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+    }),
+    sensor_link: rule({
+      difficulty: 'medium',
+      component_identity_projection: { component_type: 'sensor', facet: 'link' },
+    }),
+    dpi: rule({ difficulty: 'easy' }),
+  };
+
+  it('component parent, brand, and link primaries never carry passengers', () => {
+    const specDb = makeSpecDb();
+    for (const fieldKey of ['sensor', 'sensor_brand', 'sensor_link']) {
+      const passengers = buildPassengers({
+        primary: { fieldKey, fieldRule: ENGINE_RULES[fieldKey] },
+        engineRules: ENGINE_RULES,
+        specDb,
+        productId: 'p1',
+        settings: { ...SETTINGS_BASE, passengerExcludeAtConfidence: 0, passengerExcludeMinEvidence: 0 },
+      });
+      assert.deepEqual(passengers, [], `${fieldKey} must run dedicated`);
+    }
+  });
+
+  it('component parent, brand, and link keys never ride as passengers', () => {
+    const specDb = makeSpecDb();
+    const passengers = buildPassengers({
+      primary: { fieldKey: 'dpi', fieldRule: ENGINE_RULES.dpi },
+      engineRules: ENGINE_RULES,
+      specDb,
+      productId: 'p1',
+      settings: {
+        ...SETTINGS_BASE,
+        passengerDifficultyPolicy: 'any_but_very_hard',
+        passengerExcludeAtConfidence: 0,
+        passengerExcludeMinEvidence: 0,
+      },
+    });
+    assert.deepEqual(
+      passengers.map((p) => p.fieldKey),
+      [],
+      'dedicated component identity keys must not be packed as peers',
+    );
+  });
+});

@@ -204,6 +204,72 @@ test('per-key LLM audit prompt requires a strict Field Studio JSON patch first',
   assert.doesNotMatch(allText, /Recommend closed when this key/i);
 });
 
+test('per-key LLM audit prompt teaches component identity attributes, component-only scope, and UI mappings', () => {
+  const rule = makeRule({
+    enum: { policy: 'open_prefer_known', source: 'component_db.sensor', values: [] },
+    ui: { label: 'Sensor' },
+  });
+  const record = makeKeyRecord('sensor', rule, {
+    component: { type: 'sensor', relation: 'parent', source: 'component_db.sensor' },
+  });
+  const componentSources = [
+    {
+      component_type: 'sensor',
+      roles: {
+        properties: [
+          {
+            field_key: 'dpi',
+            type: 'number',
+            unit: 'dpi',
+            variance_policy: 'upper_bound',
+            tolerance: 5,
+          },
+          {
+            field_key: 'sensor_native_resolution_steps',
+            type: 'integer',
+            variance_policy: 'authoritative',
+            component_only: true,
+          },
+        ],
+      },
+    },
+  ];
+  const preview = composePerKeyPromptPreview(rule, 'sensor', {
+    category: 'mouse',
+    componentRelation: record.component,
+  });
+  const structure = buildPerKeyDocStructure(record, {
+    ...BASE_OPTS,
+    preview,
+    componentSources,
+  });
+  const promptText = sectionPromptText(structure.sections.find((s) => s.id === 'llm-audit-prompt'));
+
+  assert.match(promptText, /normal product-backed attributes/i);
+  assert.match(promptText, /strictly component-only attributes/i);
+  assert.match(promptText, /Component only \/ scoped/i);
+  assert.match(promptText, /"component_only": true/);
+  assert.match(promptText, /Tolerance/i);
+  assert.match(promptText, /"tolerance": 5/);
+  assert.match(promptText, /Variance = Authoritative/i);
+  assert.match(promptText, /"variance_policy": "authoritative"/);
+  assert.match(promptText, /Variance = Upper Bound/i);
+  assert.match(promptText, /"variance_policy": "upper_bound"/);
+  assert.match(promptText, /Allow Product Override/i);
+  assert.match(promptText, /"variance_policy": "override_allowed"/);
+  assert.match(promptText, /"field_key": "sensor_native_resolution_steps"/);
+  assert.match(promptText, /component_type/i);
+  assert.match(promptText, /roles\.properties/i);
+  assert.match(promptText, /field_key/i);
+  assert.match(promptText, /\btype\b/i);
+  assert.match(promptText, /\bunit\b/i);
+  assert.match(promptText, /variance_policy/i);
+  assert.match(promptText, /\btolerance\b/i);
+  assert.match(promptText, /\bconstraints\b/i);
+  assert.match(promptText, /component_only/i);
+  assert.match(promptText, /Source-level priority is retired/i);
+});
+
 test('per-key LLM audit prompt omits mode for auditor-authored enum lists', () => {
   const rule = makeRule({
     enum: { policy: 'open_prefer_known', values: ['standard', 'limited edition'] },
@@ -272,6 +338,93 @@ test('component source examples are contextual and expose the full current sourc
   assert.match(componentText, /Current component source mapping/i);
   assert.match(componentText, /click_force/);
   assert.match(componentText, /override_allowed/);
+});
+
+test('standalone keys still get from-scratch component setup decision guidance', () => {
+  const rule = makeRule({
+    ui: { label: 'Grip Style' },
+  });
+  const record = makeKeyRecord('grip_style', rule);
+  const preview = composePerKeyPromptPreview(rule, 'grip_style', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview });
+  const componentSection = structure.sections.find((s) => s.id === 'component');
+  const componentText = JSON.stringify(componentSection);
+
+  assert.match(componentText, /From-scratch component setup decision/i);
+  assert.match(componentText, /Component identity/i);
+  assert.match(componentText, /Component attribute/i);
+  assert.match(componentText, /Standalone/i);
+  assert.match(componentText, /enum\.source = component_db/i);
+  assert.match(componentText, /component_sources/);
+});
+
+test('component DB property hints are shown as setup evidence, not setup-gated gaps', () => {
+  const rule = makeRule({
+    contract: { type: 'date', shape: 'scalar' },
+    ui: { label: 'Sensor Date' },
+  });
+  const record = makeKeyRecord('sensor_date', rule, {
+    group: 'sensor_performance',
+    componentDbProperty: {
+      type: 'sensor',
+      types: ['sensor'],
+      relation: 'db_property_hint',
+      source: 'component_db.sensor',
+    },
+  });
+  const componentSources = [
+    {
+      component_type: 'sensor',
+      roles: {
+        properties: [
+          {
+            field_key: 'dpi',
+            type: 'number',
+            unit: 'dpi',
+            variance_policy: 'upper_bound',
+          },
+        ],
+      },
+    },
+  ];
+  const preview = composePerKeyPromptPreview(rule, 'sensor_date', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, {
+    ...BASE_OPTS,
+    preview,
+    componentSources,
+    componentInventory: [{
+      type: 'sensor',
+      entityCount: 1,
+      entities: [{
+        name: 'PAW3950',
+        maker: 'PixArt',
+        aliases: [],
+        properties: { dpi: 30000, sensor_date: '2023-01-01', ips: 750 },
+      }],
+      identityFields: ['sensor'],
+      subfields: ['dpi'],
+      unmappedFieldProperties: ['sensor_date'],
+      dbOnlyProperties: ['ips'],
+    }],
+  });
+
+  const categoryMap = structure.sections.find((s) => s.id === 'category-key-map');
+  assert.match(JSON.stringify(categoryMap), /DB hint: `sensor`/);
+
+  const componentSection = structure.sections.find((s) => s.id === 'component');
+  const componentText = JSON.stringify(componentSection);
+  assert.match(componentText, /Existing component DB hint/i);
+  assert.match(componentText, /not proof that this key must be component-backed/i);
+  assert.match(componentText, /component_sources\.sensor\.roles\.properties\[\]/);
+  assert.match(componentText, /field-backed DB properties not currently mapped/i);
+  assert.match(componentText, /DB-only properties/i);
+
+  const promptText = sectionPromptText(structure.sections.find((s) => s.id === 'llm-audit-prompt'));
+  assert.match(promptText, /component identity, component attribute, or standalone/i);
+  assert.match(promptText, /"component_type": "sensor"/);
+  assert.match(promptText, /"field_key": "sensor_date"/);
+  assert.match(promptText, /"type": "string"/);
+  assert.match(promptText, /"variance_policy": "authoritative"/);
 });
 
 test('per-key LLM audit prompt uses navigator ordinal when available', () => {

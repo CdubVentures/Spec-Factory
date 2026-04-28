@@ -1,19 +1,15 @@
 import { useMemo, useCallback, useRef } from 'react';
-import { useQuery, useMutation, type QueryClient } from '@tanstack/react-query';
+import { useMutation, type QueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
-import { ActionTooltip } from '../../shared/ui/feedback/ActionTooltip.tsx';
 import { InlineCellEditor } from '../../shared/ui/forms/InlineCellEditor.tsx';
 import { ReviewValueCell } from '../../shared/ui/data-display/ReviewValueCell.tsx';
-import { LinkedProductsList } from './LinkedProductsList.tsx';
 import { useComponentReviewStore } from '../../stores/componentReviewStore.ts';
 import { api } from '../../api/client.ts';
-import { hasKnownValue, humanizeField } from '../../utils/fieldNormalize.ts';
+import { formatCellValue, humanizeField } from '../../utils/fieldNormalize.ts';
 import { useFieldLabels } from '../../hooks/useFieldLabels.ts';
-import { FlagIcon } from '../../shared/ui/icons/FlagIcon.tsx';
 import { ComponentReviewDrawer } from './ComponentReviewDrawer.tsx';
-import { ComponentReviewPanel } from './ComponentReviewPanel.tsx';
 import {
   buildComponentReviewGridLinkedProducts,
   cancelLinkedReviewProductFields,
@@ -22,19 +18,12 @@ import {
   type LinkedReviewProductFieldSnapshot,
 } from './componentReviewCache.ts';
 import { invalidateComponentImpactForCategory } from './componentImpactInvalidation.ts';
-import type { ComponentReviewPayload, ComponentReviewItem, ComponentPropertyState, ComponentReviewDocument, ComponentReviewFlaggedItem } from '../../types/componentReview.ts';
-
-/** Extended item type that can carry synthetic-row metadata */
-type ExtendedComponentReviewItem = ComponentReviewItem & {
-  _isSynthetic?: boolean;
-  _reviewItems?: ComponentReviewFlaggedItem[];
-};
+import type { ComponentReviewPayload, ComponentReviewItem } from '../../types/componentReview.ts';
 
 interface ComponentSubTabProps {
   data: ComponentReviewPayload;
   category: string;
   queryClient: QueryClient;
-  debugLinkedProducts?: boolean;
 }
 
 interface ComponentOverrideMutationBody {
@@ -52,7 +41,11 @@ interface ComponentOverrideMutationContext {
   previousLinkedReviewProductFields?: LinkedReviewProductFieldSnapshot;
 }
 
-/** Check if a selectedCell matches a specific row + property using row index for uniqueness */
+interface PropertyColumnAggregate {
+  variancePolicy: string | null;
+  constraints: readonly string[];
+}
+
 function isCellSelected(
   selectedCell: { name: string; maker: string; property: string; rowIndex: number } | null,
   rowIndex: number,
@@ -68,51 +61,17 @@ function toPositiveId(value: unknown): number | undefined {
   return id > 0 ? id : undefined;
 }
 
-function hasActionablePending(state?: ComponentReviewItem['name_tracked'] | ComponentPropertyState): boolean {
-  if (!state?.needs_review) return false;
-  const candidateRows = (state?.candidates || []).filter((candidate) => {
-    const candidateId = String(candidate?.candidate_id || '').trim();
-    return Boolean(candidateId) && hasKnownValue(candidate?.value);
-  });
-  return candidateRows.some((candidate) => !candidate?.is_synthetic_selected);
-}
-
-/**
- * Standalone editing cell that reads value from the store directly.
- * This prevents the columns useMemo from depending on cellEditValue,
- * which would cause full table re-renders on every keystroke.
- */
-function ComponentEditingCell({ onCommit, onCancel, className, enumValues, enumPolicy }: {
+function ComponentEditingCell({
+  onCommit,
+  onCancel,
+  className,
+}: {
   onCommit: () => void;
   onCancel: () => void;
   className?: string;
-  enumValues?: string[] | null;
-  enumPolicy?: string | null;
 }) {
   const cellEditValue = useComponentReviewStore((s) => s.cellEditValue);
   const setCellEditValue = useComponentReviewStore((s) => s.setCellEditValue);
-
-  if (enumPolicy === 'closed' && enumValues && enumValues.length > 0) {
-    return (
-      <select
-        value={cellEditValue}
-        onChange={(e) => {
-          setCellEditValue(e.target.value);
-          if (e.target.value) {
-            onCommit();
-          }
-        }}
-        className={className}
-        autoFocus
-        onClick={(e) => e.stopPropagation()}
-      >
-        <option value="">Select...</option>
-        {enumValues.map((v) => (
-          <option key={v} value={v}>{v}</option>
-        ))}
-      </select>
-    );
-  }
 
   return (
     <InlineCellEditor
@@ -126,8 +85,24 @@ function ComponentEditingCell({ onCommit, onCancel, className, enumValues, enumP
   );
 }
 
-/** Optimistically apply an override to the component review cache.
- *  User overrides → source='user', overridden=true. */
+function IdentityValueCell({
+  value,
+  selected,
+  className,
+}: {
+  value: unknown;
+  selected: boolean;
+  className?: string;
+}) {
+  return (
+    <div className={`min-w-0 ${selected ? 'ring-2 ring-accent ring-inset rounded px-0.5' : ''}`}>
+      <span className={`block truncate text-[11px] sf-text-primary ${className || ''}`} title={formatCellValue(value)}>
+        {formatCellValue(value)}
+      </span>
+    </div>
+  );
+}
+
 function applyComponentOptimisticOverride(
   payload: ComponentReviewPayload,
   rowIndex: number,
@@ -138,132 +113,105 @@ function applyComponentOptimisticOverride(
   return {
     ...payload,
     items: payload.items.map((item, i) => {
-      // Match on exact row index to avoid updating duplicate name+maker entries
       if (i !== rowIndex) return item;
-      const greenSelected = { value, confidence: 1.0, status: 'override', color: 'green' as const };
+      const selected = { value, confidence: 1.0, status: 'override', color: 'green' as const };
 
       if (property === '__name') {
-        return { ...item, name: value, name_tracked: { ...item.name_tracked, selected: greenSelected, source: 'user', source_timestamp: now, overridden: true, needs_review: false, reason_codes: ['manual_override'] } };
-      }
-      if (property === '__maker') {
-        return { ...item, maker: value, maker_tracked: { ...item.maker_tracked, selected: greenSelected, source: 'user', source_timestamp: now, overridden: true, needs_review: false, reason_codes: ['manual_override'] } };
+        return {
+          ...item,
+          name: value,
+          name_tracked: {
+            ...item.name_tracked,
+            selected,
+            source: 'user',
+            source_timestamp: now,
+            overridden: true,
+            needs_review: false,
+            reason_codes: ['manual_override'],
+          },
+        };
       }
 
-      const prop = item.properties[property];
-      if (!prop) return item;
-      return {
-        ...item,
-        properties: {
-          ...item.properties,
-          [property]: { ...prop, selected: greenSelected, source: 'user', source_timestamp: now, overridden: true, needs_review: false, reason_codes: ['manual_override'] },
-        },
-      };
+      if (property === '__maker') {
+        return {
+          ...item,
+          maker: value,
+          maker_tracked: {
+            ...item.maker_tracked,
+            selected,
+            source: 'user',
+            source_timestamp: now,
+            overridden: true,
+            needs_review: false,
+            reason_codes: ['manual_override'],
+          },
+        };
+      }
+
+      return item;
     }),
   };
+}
+
+function buildPropertyAggregates(
+  items: readonly ComponentReviewItem[],
+  propertyColumns: readonly string[],
+): ReadonlyMap<string, PropertyColumnAggregate> {
+  const map = new Map<string, { variancePolicy: string | null; constraints: readonly string[] }>();
+  for (const propKey of propertyColumns) {
+    map.set(propKey, { variancePolicy: null, constraints: [] });
+  }
+
+  for (const item of items) {
+    for (const propKey of propertyColumns) {
+      const aggregate = map.get(propKey);
+      if (!aggregate) continue;
+      const state = item.properties[propKey];
+      if (aggregate.variancePolicy === null && state?.variance_policy) {
+        aggregate.variancePolicy = state.variance_policy;
+      }
+      if (aggregate.constraints.length === 0 && (state?.constraints?.length ?? 0) > 0) {
+        aggregate.constraints = state!.constraints!;
+      }
+    }
+  }
+
+  return map;
+}
+
+function formatConstraintLabel(expr: string): string {
+  const opMatch = expr.match(/^(.+?)\s*(<=|>=|!=|==|<|>)\s*(.+)$/);
+  if (!opMatch) return expr;
+  return `${humanizeField(opMatch[1].trim())} ${opMatch[2]} ${humanizeField(opMatch[3].trim())}`;
+}
+
+function formatVarianceLabel(variancePolicy: string | null): string | null {
+  if (variancePolicy === 'upper_bound') return 'Upper';
+  if (variancePolicy === 'lower_bound') return 'Lower';
+  if (variancePolicy === 'authoritative') return 'Equal';
+  if (variancePolicy === 'range') return '+/-';
+  return null;
 }
 
 export function ComponentSubTab({
   data,
   category,
   queryClient,
-  debugLinkedProducts = false,
 }: ComponentSubTabProps) {
   const { getLabel } = useFieldLabels(category);
-  // Query component review items to show inline pending_ai indicators
-  const { data: reviewDoc } = useQuery({
-    queryKey: ['componentReview', category],
-    queryFn: () => api.get<ComponentReviewDocument>(`/review-components/${category}/component-review`),
-    staleTime: 30_000,
-  });
-  // Richer lookup maps for pending AI review items
-  // Index by matched_component (for fuzzy_flagged) AND by raw_query (for new_component
-  // items whose raw_query matches an existing DB row name — these shouldn't become
-  // synthetic rows, they should attach to the existing row as pending AI items).
-  // Case-insensitive map: lowercase name → actual DB row name
-  const existingNameMap = useMemo(
-    () => {
-      const map = new Map<string, string>();
-      for (const i of data.items) map.set(i.name.toLowerCase(), i.name);
-      return map;
-    },
-    [data.items],
-  );
-  const pendingAIByComponent = useMemo(() => {
-    const byComponent = new Map<string, ComponentReviewFlaggedItem[]>();
-    const pushPending = (rawName: string, reviewItem: ComponentReviewFlaggedItem) => {
-      const key = String(rawName || '').trim().toLowerCase();
-      if (!key) return;
-      const existing = byComponent.get(key) || [];
-      existing.push(reviewItem);
-      byComponent.set(key, existing);
-    };
-    if (reviewDoc?.items) {
-      for (const item of reviewDoc.items) {
-        if (item.status !== 'pending_ai') continue;
-        if (item.matched_component) {
-          const matchedDbName = existingNameMap.get(String(item.matched_component).toLowerCase()) || item.matched_component;
-          pushPending(matchedDbName, item);
-        } else {
-          // new_component item: check if raw_query matches an existing DB row (case-insensitive)
-          const dbName = existingNameMap.get(item.raw_query.toLowerCase());
-          if (dbName) {
-            // Attach to existing row using the actual DB name as key
-            pushPending(dbName, item);
-          }
-        }
-      }
-    }
-    return byComponent;
-  }, [reviewDoc?.items, existingNameMap]);
-  const mergedItems = useMemo<ExtendedComponentReviewItem[]>(
-    () => data.items,
-    [data.items],
+  const items = data.items;
+  const propertyAggregates = useMemo(
+    () => buildPropertyAggregates(items, data.property_columns),
+    [items, data.property_columns],
   );
 
-  // WHY: Single pass over (items × property_columns) so the columns useMemo
-  // does O(1) Map lookups instead of 4 × O(N) scans per property column.
-  // Preserves "first match wins" semantics for variancePolicy + constraints.
-  interface PropertyColumnAggregate {
-    aiCount: number;
-    flagCount: number;
-    variancePolicy: string | null;
-    constraints: readonly string[];
-  }
-  const propertyAggregates = useMemo<ReadonlyMap<string, PropertyColumnAggregate>>(() => {
-    const map = new Map<string, { aiCount: number; flagCount: number; variancePolicy: string | null; constraints: readonly string[] }>();
-    for (const propKey of data.property_columns) {
-      map.set(propKey, { aiCount: 0, flagCount: 0, variancePolicy: null, constraints: [] });
-    }
-    for (const item of mergedItems) {
-      for (const propKey of data.property_columns) {
-        const agg = map.get(propKey);
-        if (!agg) continue;
-        const state = item.properties[propKey];
-        if (item._isSynthetic || hasActionablePending(state)) {
-          agg.aiCount += 1;
-        }
-        if (!item._isSynthetic && state?.needs_review && !hasActionablePending(state)) {
-          agg.flagCount += 1;
-        }
-        if (agg.variancePolicy === null && state?.variance_policy) {
-          agg.variancePolicy = state.variance_policy;
-        }
-        if (agg.constraints.length === 0 && (state?.constraints?.length ?? 0) > 0) {
-          agg.constraints = state!.constraints!;
-        }
-      }
-    }
-    return map;
-  }, [data.property_columns, mergedItems]);
-
-  // Individual selectors: only re-render when these specific slices change.
-  // Critically, cellEditValue changes (typing) do NOT trigger a re-render here.
   const selectedEntity = useComponentReviewStore((s) => s.selectedEntity);
   const drawerOpen = useComponentReviewStore((s) => s.drawerOpen);
   const openDrawer = useComponentReviewStore((s) => s.openDrawer);
   const closeDrawer = useComponentReviewStore((s) => s.closeDrawer);
   const selectedCell = useComponentReviewStore((s) => s.selectedCell);
   const cellEditMode = useComponentReviewStore((s) => s.cellEditMode);
+  const selectComponentCell = useComponentReviewStore((s) => s.selectComponentCell);
   const selectAndEditComponentCell = useComponentReviewStore((s) => s.selectAndEditComponentCell);
   const cancelComponentEdit = useComponentReviewStore((s) => s.cancelComponentEdit);
   const commitComponentEdit = useComponentReviewStore((s) => s.commitComponentEdit);
@@ -278,8 +226,8 @@ export function ComponentSubTab({
         ? Boolean(toPositiveId(body?.componentIdentityId))
         : Boolean(toPositiveId(body?.componentValueId));
       if (!hasRequiredId) return {};
+
       const queryKey = ['componentReviewData', category, data.componentType];
-      // Use rowIndex from current selectedCell for precise targeting
       const { selectedCell: cell } = useComponentReviewStore.getState();
       const idx = cell?.rowIndex ?? -1;
       const previousComponentReviewData = queryClient.getQueryData<ComponentReviewPayload>(queryKey);
@@ -291,14 +239,18 @@ export function ComponentSubTab({
           linkedProducts: row.linked_products ?? [],
         })
         : [];
+
       await Promise.all([
         queryClient.cancelQueries({ queryKey }),
         linkedProducts.length > 0 ? cancelLinkedReviewProductFields(queryClient, category) : Promise.resolve(),
       ]);
-      // Guard: skip optimistic update for synthetic row indices (idx >= real items count)
+
       queryClient.setQueryData<ComponentReviewPayload>(queryKey, (old) =>
-        old && idx >= 0 && idx < old.items.length ? applyComponentOptimisticOverride(old, idx, body.property, body.value) : old,
+        old && idx >= 0 && idx < old.items.length
+          ? applyComponentOptimisticOverride(old, idx, body.property, body.value)
+          : old,
       );
+
       const previousLinkedReviewProductFields = linkedProducts.length > 0
         ? updateLinkedReviewProductFields(queryClient, {
           category,
@@ -311,6 +263,7 @@ export function ComponentSubTab({
           overridden: true,
         })
         : undefined;
+
       return { previousComponentReviewData, previousLinkedReviewProductFields };
     },
     onError: (_error, _body, context) => {
@@ -329,69 +282,57 @@ export function ComponentSubTab({
     },
   });
 
-  const runComponentAiMut = useMutation({
-    mutationFn: () =>
-      api.post(`/review-components/${category}/run-component-review-batch`, {}),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['componentReview', category] });
-      queryClient.invalidateQueries({ queryKey: ['componentReviewData', category, data.componentType] });
-      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
-    },
-  });
-
-  // Ref-stabilize overrideMut so handleCommitEdit doesn't change when mutation state cycles
   const overrideMutRef = useRef(overrideMut);
   overrideMutRef.current = overrideMut;
 
-  const handleCellClick = useCallback((row: ExtendedComponentReviewItem, columnId: string, _visualIndex: number) => {
-    // Compute original array index (visual index from TanStack may differ after sort/filter)
-    const originalIndex = mergedItems.indexOf(row);
-    const rowIndex = originalIndex >= 0 ? originalIndex : _visualIndex;
-    const isSynthetic = Boolean(row._isSynthetic);
+  const handleCellClick = useCallback((row: ComponentReviewItem, columnId: string, visualIndex: number) => {
+    const originalIndex = items.indexOf(row);
+    const rowIndex = originalIndex >= 0 ? originalIndex : visualIndex;
 
-    // Determine which property this column maps to
-    let property: string | null = null;
-    let currentValue = '';
     if (columnId === 'name') {
-      property = '__name';
-      currentValue = row.name || '';
-    } else if (columnId === 'maker') {
-      property = '__maker';
-      currentValue = row.maker || '';
-    } else if (columnId.startsWith('prop_')) {
-      property = columnId.replace(/^prop_/, '');
-      const v = row.properties[property]?.selected.value;
-      currentValue = v != null ? String(v) : '';
-    }
-
-    if (!property) {
-      clearComponentCell();
       openDrawer(data.componentType, row.name, row.maker, rowIndex);
+      selectAndEditComponentCell(row.name, row.maker, '__name', row.name || '', rowIndex);
       return;
     }
 
-    if (isSynthetic) {
-      // Synthetic rows: open drawer with cell selection but no inline editing
+    if (columnId === 'maker') {
       openDrawer(data.componentType, row.name, row.maker, rowIndex);
-      selectAndEditComponentCell(row.name, row.maker, property, currentValue, rowIndex);
-      // Immediately cancel edit mode since we can't edit synthetic rows inline
-      cancelComponentEdit();
+      selectAndEditComponentCell(row.name, row.maker, '__maker', row.maker || '', rowIndex);
       return;
     }
 
-    // If already editing this exact cell (by rowIndex), let the input handle clicks
-    const { selectedCell: currentSel, cellEditMode: currentEdit } = useComponentReviewStore.getState();
-    if (currentSel?.rowIndex === rowIndex && currentSel?.property === property && currentEdit) return;
+    if (columnId.startsWith('prop_')) {
+      const property = columnId.replace(/^prop_/, '');
+      openDrawer(data.componentType, row.name, row.maker, rowIndex);
+      selectComponentCell(row.name, row.maker, property, rowIndex);
+      return;
+    }
 
-    // Single click: select + open drawer + enter edit mode immediately
+    if (columnId === 'links') {
+      openDrawer(data.componentType, row.name, row.maker, rowIndex);
+      selectComponentCell(row.name, row.maker, '__links', rowIndex);
+      return;
+    }
+
+    clearComponentCell();
     openDrawer(data.componentType, row.name, row.maker, rowIndex);
-    selectAndEditComponentCell(row.name, row.maker, property, currentValue, rowIndex);
-  }, [data.componentType, mergedItems, openDrawer, selectAndEditComponentCell, clearComponentCell]);
+  }, [
+    clearComponentCell,
+    data.componentType,
+    items,
+    openDrawer,
+    selectAndEditComponentCell,
+    selectComponentCell,
+  ]);
 
-  // Use getState() + ref so this callback is stable regardless of mutation state or typing
   const handleCommitEdit = useCallback(() => {
-    const { selectedCell: cell, cellEditValue: editVal, originalCellEditValue: origVal } = useComponentReviewStore.getState();
-    if (cell && editVal != null && editVal !== origVal) {
+    const {
+      selectedCell: cell,
+      cellEditValue: editVal,
+      originalCellEditValue: origVal,
+    } = useComponentReviewStore.getState();
+
+    if (cell && cell.property.startsWith('__') && editVal != null && editVal !== origVal) {
       const queryKey = ['componentReviewData', category, data.componentType] as const;
       const payload = queryClient.getQueryData<ComponentReviewPayload>(queryKey);
       const row = (
@@ -402,18 +343,11 @@ export function ComponentSubTab({
         ? payload.items[cell.rowIndex]
         : payload?.items?.find((entry) => entry.name === cell.name && entry.maker === cell.maker);
       const componentIdentityId = toPositiveId(row?.component_identity_id);
-      const componentValueId = cell.property.startsWith('__')
-        ? undefined
-        : toPositiveId(row?.properties?.[cell.property]?.slot_id);
-      if (cell.property.startsWith('__')) {
-        if (!componentIdentityId) {
-          commitComponentEdit();
-          return;
-        }
-      } else if (!componentValueId) {
+      if (!componentIdentityId) {
         commitComponentEdit();
         return;
       }
+
       overrideMutRef.current.mutate({
         componentType: data.componentType,
         name: cell.name,
@@ -421,14 +355,14 @@ export function ComponentSubTab({
         property: cell.property,
         value: editVal,
         componentIdentityId,
-        componentValueId,
       });
     }
-    commitComponentEdit();
-  }, [data.componentType, commitComponentEdit, queryClient, category]);
 
-  const columns = useMemo<ColumnDef<ExtendedComponentReviewItem, unknown>[]>(() => {
-    const cols: ColumnDef<ExtendedComponentReviewItem, unknown>[] = [
+    commitComponentEdit();
+  }, [category, commitComponentEdit, data.componentType, queryClient]);
+
+  const columns = useMemo<ColumnDef<ComponentReviewItem, unknown>[]>(() => {
+    const cols: ColumnDef<ComponentReviewItem, unknown>[] = [
       {
         accessorKey: 'name',
         header: 'Name',
@@ -436,10 +370,8 @@ export function ComponentSubTab({
         cell: ({ row }) => {
           const isSelected = isCellSelected(selectedCell, row.index, '__name');
           const isEditing = isSelected && cellEditMode;
-          const isSynthetic = Boolean(row.original._isSynthetic);
-          const cellIsPendingAI = isSynthetic || hasActionablePending(row.original.name_tracked);
 
-          if (isEditing && !isSynthetic) {
+          if (isEditing) {
             return (
               <ComponentEditingCell
                 onCommit={handleCommitEdit}
@@ -450,19 +382,10 @@ export function ComponentSubTab({
           }
 
           return (
-            <ReviewValueCell
-              state={row.original.name_tracked}
+            <IdentityValueCell
+              value={row.original.name}
               selected={isSelected}
-              valueClassName="font-semibold"
-              valueMaxChars={cellIsPendingAI ? 50 : 60}
-              showConfidence
-              showOverrideBadge
-              pendingAIShared={cellIsPendingAI}
-              showLinkedProductBadge={debugLinkedProducts}
-              linkedProductCount={row.original.linked_products?.length ?? 0}
-              showSourceCountBadge={debugLinkedProducts}
-              sourceCount={row.original.name_tracked?.candidate_count ?? 0}
-              emptyWhenMissing={<span className="font-semibold sf-text-primary">{row.original.name}</span>}
+              className="font-semibold"
             />
           );
         },
@@ -474,8 +397,6 @@ export function ComponentSubTab({
         cell: ({ row }) => {
           const isSelected = isCellSelected(selectedCell, row.index, '__maker');
           const isEditing = isSelected && cellEditMode;
-          const isSynthetic = Boolean(row.original._isSynthetic);
-          const cellIsPendingAI = isSynthetic || hasActionablePending(row.original.maker_tracked);
 
           if (isEditing) {
             return (
@@ -488,56 +409,10 @@ export function ComponentSubTab({
           }
 
           return (
-            <ReviewValueCell
-              state={row.original.maker_tracked}
+            <IdentityValueCell
+              value={row.original.maker}
               selected={isSelected}
-              valueMaxChars={40}
-              showConfidence
-              showOverrideBadge
-              pendingAIShared={cellIsPendingAI}
-              showLinkedProductBadge={debugLinkedProducts}
-              linkedProductCount={row.original.linked_products?.length ?? 0}
-              showSourceCountBadge={debugLinkedProducts}
-              sourceCount={row.original.maker_tracked?.candidate_count ?? 0}
-              emptyWhenMissing={<span className="sf-text-muted">{row.original.maker || ''}</span>}
             />
-          );
-        },
-      },
-      {
-        id: 'links',
-        header: 'Link',
-        size: 180,
-        accessorFn: (row) => row.links.join(', '),
-        cell: ({ row }) => {
-          const links = row.original.links || [];
-          const firstLink = links[0] || '';
-          if (!firstLink) return null;
-          return (
-            <a
-              href={firstLink}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(event) => event.stopPropagation()}
-              className="text-[11px] sf-link-accent hover:underline truncate block max-w-[180px]"
-              title={links.join(', ')}
-            >
-              {firstLink}
-            </a>
-          );
-        },
-      },
-      {
-        id: 'discovered',
-        header: 'Origin',
-        size: 110,
-        accessorFn: (row) => (row.discovered ? 'Discovered' : ''),
-        cell: ({ row }) => {
-          if (!row.original.discovered) return null;
-          return (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium sf-component-origin-chip">
-              Discovered
-            </span>
           );
         },
       },
@@ -557,26 +432,18 @@ export function ComponentSubTab({
         },
       },
       {
-        id: 'linked_products',
-        header: 'Products',
-        size: 100,
-        accessorFn: (row) => row.linked_products?.length ?? 0,
+        id: 'links',
+        header: 'Links',
+        size: 180,
+        accessorFn: (row) => row.links_state?.candidate_count ?? 0,
         cell: ({ row }) => {
-          const count = row.original.linked_products?.length ?? 0;
-          if (count === 0) return <span className="text-[10px] sf-text-subtle">-</span>;
-          const isExpanded = row.getIsExpanded();
+          const isSelected = isCellSelected(selectedCell, row.index, '__links');
           return (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                row.toggleExpanded();
-              }}
-              className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium transition-colors ${isExpanded ? 'sf-component-linked-products-chip-open' : 'sf-component-linked-products-chip'}`}
-              title={`${count} linked product${count !== 1 ? 's' : ''} - click to ${isExpanded ? 'collapse' : 'expand'}`}
-            >
-              <span>{isExpanded ? '\u25BC' : '\u25B6'}</span>
-              <span>{count} product{count !== 1 ? 's' : ''}</span>
-            </button>
+            <ReviewValueCell
+              state={row.original.links_state}
+              selected={isSelected}
+              valueMaxChars={28}
+            />
           );
         },
       },
@@ -584,233 +451,94 @@ export function ComponentSubTab({
 
     for (const propKey of data.property_columns) {
       const aggregate = propertyAggregates.get(propKey);
-      const propAICount = aggregate?.aiCount ?? 0;
-      const propFlagCount = aggregate?.flagCount ?? 0;
-      const variancePolicy = aggregate?.variancePolicy ?? null;
-      const varianceLabel = variancePolicy === 'upper_bound' ? 'Upper'
-        : variancePolicy === 'lower_bound' ? 'Lower'
-        : variancePolicy === 'authoritative' ? 'Equal'
-        : variancePolicy === 'range' ? '+/-'
-        : null;
+      const varianceLabel = formatVarianceLabel(aggregate?.variancePolicy ?? null);
       const constraints = aggregate?.constraints ?? [];
 
       cols.push({
         id: `prop_${propKey}`,
         size: 160,
         header: () => (
-            <span className="flex flex-col gap-0.5" title={propKey}>
-              <span className="flex items-center gap-1">
-                {getLabel(propKey)}
-                {propAICount > 0 && (
-                  <span className="inline-flex items-center gap-0.5 sf-text-nano sf-component-header-ai-count">
-                    AI {propAICount}
-                  </span>
-                )}
-                {propFlagCount > 0 && (
-                  <span className="inline-flex items-center gap-0.5 sf-text-nano sf-component-header-flag-count">
-                    <FlagIcon className="w-2.5 h-2.5" />
-                    {propFlagCount}
-                  </span>
-                )}
+          <span className="flex flex-col gap-0.5" title={propKey}>
+            <span>{getLabel(propKey)}</span>
+            {varianceLabel && (
+              <span className="sf-text-micro sf-component-header-meta font-normal leading-tight">{varianceLabel}</span>
+            )}
+            {constraints.map((expr) => (
+              <span key={expr} className="sf-text-micro sf-component-header-meta font-normal leading-tight">
+                {formatConstraintLabel(expr)}
               </span>
-              {varianceLabel && (
-                <span className="sf-text-micro sf-component-header-meta font-normal leading-tight">{varianceLabel}</span>
-              )}
-              {constraints.map((expr) => {
-                const opMatch = expr.match(/^(.+?)\s*(<=|>=|!=|==|<|>)\s*(.+)$/);
-                const label = opMatch
-                  ? `${humanizeField(opMatch[1].trim())} ${opMatch[2]} ${humanizeField(opMatch[3].trim())}`
-                  : expr;
-                return (
-                  <span key={expr} className="sf-text-micro sf-component-header-meta font-normal leading-tight">{label}</span>
-                );
-              })}
-            </span>
+            ))}
+          </span>
         ),
-        accessorFn: (row) => {
-          const state = row.properties[propKey];
-          return state?.selected?.value ?? '';
-        },
+        accessorFn: (row) => row.properties[propKey]?.selected?.value ?? '',
         cell: ({ row }) => {
           const state = row.original.properties[propKey];
           const isSelected = isCellSelected(selectedCell, row.index, propKey);
-          const isEditing = isSelected && cellEditMode;
-          const isSynthetic = Boolean(row.original._isSynthetic);
-
-          if (isEditing && !isSynthetic) {
-            return (
-              <ComponentEditingCell
-                onCommit={handleCommitEdit}
-                onCancel={cancelComponentEdit}
-                className="w-full px-1 py-0.5 text-[11px] rounded sf-component-inline-editor"
-                enumValues={state?.enum_values}
-                enumPolicy={state?.enum_policy}
-              />
-            );
-          }
-
-          const flagCount = state?.needs_review ? (state.reason_codes?.length || 1) : 0;
-          const cellIsPendingAI = isSynthetic || hasActionablePending(state);
           return (
             <ReviewValueCell
               state={state}
               selected={isSelected}
               valueMaxChars={28}
-              showConfidence
-              showOverrideBadge
-              flagCount={flagCount}
-              pendingAIShared={cellIsPendingAI}
-              showLinkedProductBadge={debugLinkedProducts}
-              linkedProductCount={row.original.linked_products?.length ?? 0}
-              showSourceCountBadge={debugLinkedProducts}
-              sourceCount={state?.candidate_count ?? 0}
             />
           );
         },
       });
     }
 
-    cols.push({
-      id: 'flags',
-      header: 'Flags',
-      size: 65,
-      accessorFn: (row) => row.metrics.flags,
-      cell: ({ row }) => {
-        const flags = row.original.metrics.flags;
-        const isSynthetic = Boolean((row.original as ExtendedComponentReviewItem)._isSynthetic);
-        if (isSynthetic) {
-          return (
-            <span className="px-1.5 py-0.5 rounded sf-text-nano font-bold sf-review-ai-pending-badge" title="Pending AI Review">
-              AI
-            </span>
-          );
-        }
-        if (flags === 0) return <span className="text-xs sf-status-text-success">0</span>;
-        return (
-          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 text-xs rounded cursor-pointer sf-component-flag-chip" title="Click to review all flags">
-            <FlagIcon className="w-3 h-3" />
-            {flags}
-          </span>
-        );
-      },
-    });
-
-    cols.push({
-      id: 'ai',
-      header: 'AI',
-      size: 90,
-      cell: ({ row }) => {
-        const isSynthetic = Boolean((row.original as ExtendedComponentReviewItem)._isSynthetic);
-        const hasPending = isSynthetic || pendingAIByComponent.has(row.original.name.toLowerCase());
-        return (
-          <ActionTooltip
-            text={hasPending
-              ? 'Run AI Review for pending component/list matches in this category.'
-              : 'Run AI Review batch for this category.'
-            }
-          >
-            <button
-              onClick={(event) => {
-                event.stopPropagation();
-                runComponentAiMut.mutate();
-              }}
-              disabled={runComponentAiMut.isPending}
-              className="px-2 py-0.5 text-[10px] font-medium rounded sf-run-ai-button disabled:opacity-50"
-            >
-              {runComponentAiMut.isPending ? 'Running...' : 'Run AI'}
-            </button>
-          </ActionTooltip>
-        );
-      },
-    });
-
     return cols;
   }, [
-    data.property_columns,
-    mergedItems,
-    propertyAggregates,
-    pendingAIByComponent,
-    runComponentAiMut,
-    selectedCell,
-    cellEditMode,
-    handleCommitEdit,
     cancelComponentEdit,
-    debugLinkedProducts,
+    cellEditMode,
+    data.property_columns,
+    getLabel,
+    handleCommitEdit,
+    propertyAggregates,
+    selectedCell,
   ]);
 
-  const selectedItem = useMemo<ExtendedComponentReviewItem | null>(() => {
+  const selectedItem = useMemo<ComponentReviewItem | null>(() => {
     if (!drawerOpen || !selectedEntity) return null;
-    // Prefer exact rowIndex when it still points to the same identity.
-    // If identity changed (rename/maker edit), fallback to identity lookup, then rowIndex.
-    if (selectedEntity.rowIndex != null && selectedEntity.rowIndex >= 0 && selectedEntity.rowIndex < mergedItems.length) {
-      const byIndex = mergedItems[selectedEntity.rowIndex];
+    if (selectedEntity.rowIndex != null && selectedEntity.rowIndex >= 0 && selectedEntity.rowIndex < items.length) {
+      const byIndex = items[selectedEntity.rowIndex];
       if (byIndex.name === selectedEntity.name && byIndex.maker === selectedEntity.maker) {
         return byIndex;
       }
-      const byIdentity = mergedItems.find((item) => item.name === selectedEntity.name && item.maker === selectedEntity.maker) || null;
+      const byIdentity = items.find((item) => item.name === selectedEntity.name && item.maker === selectedEntity.maker) || null;
       return byIdentity || byIndex || null;
     }
-    // Fallback for flag navigation or stale index
-    return mergedItems.find((item) => item.name === selectedEntity.name && item.maker === selectedEntity.maker) || null;
-  }, [drawerOpen, selectedEntity, mergedItems]);
+    return items.find((item) => item.name === selectedEntity.name && item.maker === selectedEntity.maker) || null;
+  }, [drawerOpen, selectedEntity, items]);
 
   return (
     <Tooltip.Provider delayDuration={200}>
-      <ComponentReviewPanel category={category} queryClient={queryClient} componentType={data.componentType} />
       <div className={`grid ${drawerOpen && selectedItem ? 'grid-cols-[1fr,340px]' : 'grid-cols-1'} gap-3 min-w-0`}>
         <DataTable
           persistKey={`componentReview:table:${category}:${data.componentType}`}
-          data={mergedItems}
+          data={items}
           columns={columns}
           searchable
           maxHeight="max-h-[calc(100vh-320px)]"
           onCellClick={handleCellClick}
-          getRowClassName={(row: ExtendedComponentReviewItem) => {
-            if (row._isSynthetic) return 'sf-component-row-pending-ai';
-            if (pendingAIByComponent.has(row.name.toLowerCase())) return 'sf-component-row-pending-ai-soft';
-            return '';
-          }}
-          getCanExpand={(row: ExtendedComponentReviewItem) => (row.linked_products?.length ?? 0) > 0}
-          renderExpandedRow={(row: ExtendedComponentReviewItem) => {
-            if (!row.linked_products || row.linked_products.length === 0) return null;
-            return (
-              <LinkedProductsList
-                products={row.linked_products}
-                headerLabel={row.name}
-                maxHeight={200}
-                defaultExpanded
-              />
-            );
-          }}
         />
 
-        {drawerOpen && selectedItem && (() => {
-          const reviewItemsForDrawer = selectedItem._reviewItems
-            || pendingAIByComponent.get(selectedItem.name.toLowerCase())
-            || (selectedEntity?.name ? pendingAIByComponent.get(selectedEntity.name.toLowerCase()) : undefined)
-            || [];
-          return (
-            <ComponentReviewDrawer
-              item={selectedItem}
-              componentType={data.componentType}
-              category={category}
-              onClose={closeDrawer}
-              queryClient={queryClient}
-              focusedProperty={
-                selectedCell?.rowIndex != null
-                && selectedEntity?.rowIndex != null
-                && selectedCell.rowIndex === selectedEntity.rowIndex
-                  ? selectedCell.property
-                  : undefined
-              }
-              rowIndex={selectedEntity?.rowIndex}
-              pendingReviewItems={reviewItemsForDrawer}
-              isSynthetic={Boolean(selectedItem._isSynthetic)}
-              debugLinkedProducts={debugLinkedProducts}
-              propertyColumns={data?.property_columns}
-            />
-          );
-        })()}
+        {drawerOpen && selectedItem && (
+          <ComponentReviewDrawer
+            item={selectedItem}
+            componentType={data.componentType}
+            category={category}
+            onClose={closeDrawer}
+            queryClient={queryClient}
+            focusedProperty={
+              selectedCell?.rowIndex != null
+              && selectedEntity?.rowIndex != null
+              && selectedCell.rowIndex === selectedEntity.rowIndex
+                ? selectedCell.property
+                : undefined
+            }
+            rowIndex={selectedEntity?.rowIndex}
+            propertyColumns={data.property_columns}
+          />
+        )}
       </div>
     </Tooltip.Provider>
   );

@@ -29,6 +29,10 @@ describe('resolveIntentClassName', () => {
   it('neutral → sf-neutral-button (soft border, muted text)', () => {
     assert.equal(resolveIntentClassName('neutral'), 'sf-neutral-button');
   });
+  it('componentResolver intents map to the warning button class', () => {
+    assert.equal(resolveIntentClassName('componentResolver'), 'sf-warning-button-solid');
+    assert.equal(resolveIntentClassName('componentResolverLocked'), 'sf-warning-button-solid');
+  });
 });
 
 describe('shouldShowSpinner', () => {
@@ -59,10 +63,13 @@ describe('shouldShowSpinner', () => {
   it('neutral + busy=true → false (busy ignored for neutral)', () => {
     assert.equal(shouldShowSpinner('neutral', true), false);
   });
+  it('componentResolverLocked + busy=true shows spinner', () => {
+    assert.equal(shouldShowSpinner('componentResolverLocked', true), true);
+  });
 });
 
 describe('shouldBlockClick', () => {
-  const allIntents: ActionButtonIntent[] = ['spammable', 'locked', 'prompt', 'history', 'delete', 'stop', 'neutral'];
+  const allIntents: ActionButtonIntent[] = ['spammable', 'locked', 'prompt', 'history', 'delete', 'stop', 'neutral', 'componentResolver', 'componentResolverLocked'];
 
   it('disabled=true blocks every intent, regardless of busy', () => {
     for (const intent of allIntents) {
@@ -105,5 +112,10 @@ describe('shouldBlockClick', () => {
 
   it('neutral + busy=true (not disabled) → not blocked (busy ignored)', () => {
     assert.equal(shouldBlockClick('neutral', true, false), false);
+  });
+
+  it('componentResolver is spammable while componentResolverLocked blocks when busy', () => {
+    assert.equal(shouldBlockClick('componentResolver', true, false), false);
+    assert.equal(shouldBlockClick('componentResolverLocked', true, false), true);
   });
 });

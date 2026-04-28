@@ -170,6 +170,12 @@ export function shouldPersistStudioMapPayload({
   return hasStudioMapPayload(payload);
 }
 
+export function shouldFlushStudioMapPayloadOnUnmount(
+  payload: Pick<StudioConfig, 'component_sources' | 'data_lists' | 'enum_lists'>,
+): boolean {
+  return hasStudioMapPayload(payload);
+}
+
 export function shouldPersistStudioDocsAttempt({
   force,
   nextFingerprint,

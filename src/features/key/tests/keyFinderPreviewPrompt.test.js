@@ -97,11 +97,15 @@ function makeSpecDbStub({
   finderStore,
   productImageFinderStore = null,
   resolvedSet = new Set(),
+  resolvedValues = {},
   bucketsByFieldKey = {},
   activeVariants,
   productRows = [],
   compiledRules = COMPILED,
   fieldCandidateRows = {},
+  fieldStudioMap = { component_sources: [] },
+  itemComponentLinks = [],
+  componentRowsByType = {},
   pifProgressRows = [],
   colorEditionRow = { default_color: '' },
 } = {}) {
@@ -114,6 +118,7 @@ function makeSpecDbStub({
       return null;
     },
     getCompiledRules: () => compiledRules,
+    getFieldStudioMap: () => fieldStudioMap,
     getColorEditionFinder: () => colorEditionRow,
     getProduct: () => ({ product_id: PRODUCT.product_id, category: 'mouse', brand: PRODUCT.brand, model: PRODUCT.model, base_model: PRODUCT.base_model }),
     getAllProducts: () => productRows,
@@ -127,8 +132,14 @@ function makeSpecDbStub({
       return rows.filter((row) => (row.variant_id ?? null) === (variantId ?? null));
     },
     listPifVariantProgressByProduct: () => pifProgressRows,
-    getResolvedFieldCandidate: (_pid, fk) => (resolvedSet.has(fk) ? { value: 'X', confidence: 95 } : null),
-    getItemComponentLinks: () => [],
+    getResolvedFieldCandidate: (_pid, fk) => {
+      if (Object.prototype.hasOwnProperty.call(resolvedValues, fk)) {
+        return { value: resolvedValues[fk], confidence: 95, status: 'resolved' };
+      }
+      return resolvedSet.has(fk) ? { value: 'X', confidence: 95, status: 'resolved' } : null;
+    },
+    getItemComponentLinks: () => itemComponentLinks,
+    getAllComponentsForType: (componentType) => componentRowsByType[componentType] || [],
     // Bucket evaluator contract — drives isConcreteEvidence.
     listFieldBuckets: ({ fieldKey }) => {
       const b = bucketsByFieldKey[fieldKey];
@@ -182,11 +193,15 @@ function setup(productId, {
   settings = BUNDLING_ON,
   pifSettings = {},
   resolvedSet = new Set(),
+  resolvedValues = {},
   bucketsByFieldKey = {},
   activeVariants,
   productRows = [],
   compiledRules = COMPILED,
   fieldCandidateRows = {},
+  fieldStudioMap = { component_sources: [] },
+  itemComponentLinks = [],
+  componentRowsByType = {},
   pifProgressRows = [],
   colorEditionRow = { default_color: '' },
 } = {}) {
@@ -202,16 +217,99 @@ function setup(productId, {
     finderStore,
     productImageFinderStore,
     resolvedSet,
+    resolvedValues,
     bucketsByFieldKey,
     activeVariants,
     productRows,
     compiledRules,
     fieldCandidateRows,
+    fieldStudioMap,
+    itemComponentLinks,
+    componentRowsByType,
     pifProgressRows,
     colorEditionRow,
   });
   return { specDb };
 }
+
+const COMPONENT_SOURCES = [
+  {
+    component_type: 'sensor',
+    roles: {
+      properties: [
+        { field_key: 'dpi', type: 'number', unit: 'dpi', variance_policy: 'upper_bound' },
+        { field_key: 'ips', type: 'number', unit: 'ips', variance_policy: 'upper_bound' },
+      ],
+    },
+  },
+];
+
+const COMPONENT_COMPILED = {
+  fields: {
+    sensor: rule({
+      group: 'sensor_identity',
+      enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
+      contract: { type: 'string', shape: 'scalar' },
+    }),
+    sensor_brand: rule({
+      group: 'sensor_identity',
+      component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+      contract: { type: 'string', shape: 'scalar' },
+      enum: { policy: 'open' },
+    }),
+    sensor_link: rule({
+      group: 'sensor_identity',
+      component_identity_projection: { component_type: 'sensor', facet: 'link' },
+      contract: { type: 'url', shape: 'scalar' },
+      enum: { policy: 'open' },
+    }),
+    dpi: rule({
+      group: 'sensor_performance',
+      contract: { type: 'number', shape: 'scalar', unit: 'dpi' },
+    }),
+    ips: rule({
+      group: 'sensor_performance',
+      contract: { type: 'number', shape: 'scalar', unit: 'ips' },
+    }),
+  },
+  known_values: {},
+};
+
+const COMPONENT_ROWS_BY_TYPE = {
+  sensor: [
+    {
+      identity: {
+        id: 1,
+        component_type: 'sensor',
+        canonical_name: 'PAW3950',
+        maker: 'PixArt',
+        links: JSON.stringify(['https://www.pixart.com/products-detail/PAW3950']),
+      },
+      aliases: [
+        { alias: '3950' },
+        { alias: 'PixArt 3950' },
+      ],
+      properties: [
+        { property_key: 'dpi', value: 30000, unit: 'dpi', variance_policy: 'upper_bound' },
+        { property_key: 'ips', value: 750, unit: 'ips', variance_policy: 'upper_bound' },
+      ],
+    },
+    {
+      identity: {
+        id: 2,
+        component_type: 'sensor',
+        canonical_name: 'Focus Pro 35K',
+        maker: 'Razer',
+        links: JSON.stringify(['https://www.razer.com/technology/razer-focus-pro-sensor']),
+      },
+      aliases: [{ alias: 'Razer Focus Pro' }],
+      properties: [
+        { property_key: 'dpi', value: 35000, unit: 'dpi', variance_policy: 'upper_bound' },
+        { property_key: 'ips', value: 750, unit: 'ips', variance_policy: 'upper_bound' },
+      ],
+    },
+  ],
+};
 
 // ── Tests ─────────────────────────────────────────────────────────────
 
@@ -233,6 +331,88 @@ test('happy path: valid field_key returns envelope with compiled prompt', async 
   const userJson = JSON.parse(env.prompts[0].user);
   assert.equal(userJson.primary_field_key, 'polling_rate');
   assert.equal(typeof userJson.passenger_count, 'number');
+});
+
+test('component identity and brand prompts inject the full component candidate table', async (t) => {
+  t.after(cleanupTmp);
+  for (const fieldKey of ['sensor', 'sensor_brand']) {
+    const productId = `kfp-component-table-${fieldKey}`;
+    const { specDb } = setup(productId, {
+      settings: BUNDLING_OFF,
+      compiledRules: COMPONENT_COMPILED,
+      fieldStudioMap: { component_sources: COMPONENT_SOURCES },
+      componentRowsByType: COMPONENT_ROWS_BY_TYPE,
+    });
+
+    const env = await compileKeyFinderPreviewPrompt({
+      product: { ...PRODUCT, product_id: productId },
+      specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+      body: { field_key: fieldKey },
+    });
+
+    const system = env.prompts[0].system;
+    assert.match(system, /COMPONENT_CANDIDATE_TABLE sensor/);
+    assert.match(system, /resolve the component Name and Brand together/i);
+    assert.match(system, /Name \| Brand \| Aliases \| Links \| dpi \(upper_bound\) \| ips \(upper_bound\)/);
+    assert.match(system, /PAW3950 \| PixArt \| 3950; PixArt 3950 \| https:\/\/www\.pixart\.com\/products-detail\/PAW3950 \| 30000 \| 750/);
+    assert.match(system, /Focus Pro 35K \| Razer/);
+    assert.doesNotMatch(system, /RESOLVED_COMPONENT_ROW sensor/);
+  }
+});
+
+test('component link prompt injects only the resolved component row', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setup('kfp-component-link-row', {
+    settings: BUNDLING_OFF,
+    compiledRules: COMPONENT_COMPILED,
+    fieldStudioMap: { component_sources: COMPONENT_SOURCES },
+    componentRowsByType: COMPONENT_ROWS_BY_TYPE,
+    resolvedValues: { sensor: 'PAW3950', sensor_brand: 'PixArt' },
+  });
+
+  const env = await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: 'kfp-component-link-row' },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: { field_key: 'sensor_link' },
+  });
+
+  const system = env.prompts[0].system;
+  assert.match(system, /RESOLVED_COMPONENT_ROW sensor/);
+  assert.match(system, /Product-linked component row for this item/i);
+  assert.match(system, /PAW3950 \| PixArt \| 3950; PixArt 3950 \| https:\/\/www\.pixart\.com\/products-detail\/PAW3950 \| 30000 \| 750/);
+  assert.doesNotMatch(system, /COMPONENT_CANDIDATE_TABLE sensor/);
+  assert.doesNotMatch(system, /Focus Pro 35K/);
+});
+
+test('component attribute prompt injects only the linked component row', async (t) => {
+  t.after(cleanupTmp);
+  const { specDb } = setup('kfp-component-attribute-row', {
+    settings: BUNDLING_OFF,
+    compiledRules: COMPONENT_COMPILED,
+    fieldStudioMap: { component_sources: COMPONENT_SOURCES },
+    componentRowsByType: COMPONENT_ROWS_BY_TYPE,
+    itemComponentLinks: [
+      {
+        field_key: 'sensor',
+        component_type: 'sensor',
+        component_name: 'PAW3950',
+        component_maker: 'PixArt',
+      },
+    ],
+  });
+
+  const env = await compileKeyFinderPreviewPrompt({
+    product: { ...PRODUCT, product_id: 'kfp-component-attribute-row' },
+    specDb, appDb: null, config: {}, productRoot: PRODUCT_ROOT,
+    body: { field_key: 'dpi' },
+  });
+
+  const system = env.prompts[0].system;
+  assert.match(system, /RESOLVED_COMPONENT_ROW sensor/);
+  assert.match(system, /PAW3950 \| PixArt/);
+  assert.match(system, /dpi \(upper_bound\)/);
+  assert.doesNotMatch(system, /COMPONENT_CANDIDATE_TABLE sensor/);
+  assert.doesNotMatch(system, /Focus Pro 35K/);
 });
 
 test('prompt preview includes PIF priority image context and sidecar images when key knob is enabled', async (t) => {

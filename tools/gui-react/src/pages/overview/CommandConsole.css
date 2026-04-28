@@ -526,6 +526,13 @@
 .sf-cc-keys-row.is-picked {
   background: var(--sf-token-accent-light);
 }
+.sf-cc-keys-row.is-disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.sf-cc-keys-row.is-disabled:hover {
+  background: var(--sf-token-surface);
+}
 .sf-cc-keys-row-name {
   font-family: var(--sf-token-font-family-mono);
   font-size: var(--sf-token-font-size-label);

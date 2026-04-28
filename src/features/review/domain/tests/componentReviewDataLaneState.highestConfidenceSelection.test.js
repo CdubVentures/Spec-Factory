@@ -9,7 +9,7 @@ import {
   upsertComponentLane,
 } from './helpers/componentReviewRowHarness.js';
 
-test('component payload defaults non-user slot selection to highest-confidence candidate', async (t) => {
+test('component payload leaves attribute value blank when no product value is published', async (t) => {
   const { config, specDb } = await createComponentRowHarness(t);
   upsertComponentLane(specDb, {
     componentType: 'sensor',
@@ -39,8 +39,7 @@ test('component payload defaults non-user slot selection to highest-confidence c
 
   assert.ok(row, 'expected PAW3950/PixArt row');
   assert.ok(prop, 'expected dpi_max property');
-  // With candidates table removed, selected value comes from the DB lane value.
-  assert.equal(prop.selected.value, '32000');
-  assert.ok(prop.candidates.length >= 1, 'has fallback candidate');
+  assert.equal(prop.selected.value, null);
+  assert.deepEqual(prop.candidates, []);
   assert.equal(prop.candidate_count, prop.candidates.length);
 });

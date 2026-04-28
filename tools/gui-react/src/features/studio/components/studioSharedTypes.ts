@@ -1,16 +1,11 @@
-import type {
-  PriorityProfile,
-  AiAssistConfig,
-  StudioConfig,
-} from "../../../types/studio.ts";
+import type { StudioConfig } from "../../../types/studio.ts";
 
 export interface DataListEntry {
   field: string;
+  label?: string;
   normalize: string;
   delimiter: string;
   manual_values: string[];
-  priority?: PriorityProfile;
-  ai_assist?: AiAssistConfig;
 }
 
 export interface FieldStudioMapValidationResponse {

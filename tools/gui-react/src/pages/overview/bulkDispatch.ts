@@ -495,6 +495,7 @@ interface KeyFinderSummaryLike {
   readonly uses_pif_priority_images?: boolean;
   readonly last_status?: string | null;
   readonly published?: boolean;
+  readonly run_blocked_reason?: string;
 }
 
 interface KeyFinderBundlingConfigLike {
@@ -542,6 +543,7 @@ function filterAndSortKfKeys(
     if (!entry.field_key) return false;
     if (reservedKeys.has(entry.field_key)) return false;
     if (entry.variant_dependent === true) return false;
+    if (entry.run_blocked_reason) return false;
     if (pipelineBucket && classifyPipelineKfBucket(entry, reservedKeys) !== pipelineBucket) return false;
     if (mode === 'loop' && (entry.last_status === 'resolved' || entry.published)) return false;
     if (pickedFilter && !pickedFilter.has(entry.field_key)) return false;

@@ -16,11 +16,23 @@
 import { KEY_FINDER_VARIABLES } from '../key/keyFinderPromptContract.js';
 
 const AUDITOR_TASK_BODY = `
-You are auditing every field in this category's keyFinder pipeline. Your deliverable is a set of strict Field Studio JSON patch files that a human owner can import directly. Be specific: exact JSON settings are infinitely more useful than "add better guidance here".
+You are auditing every field in this category's keyFinder pipeline so the category can be set up from scratch. Your deliverable is a set of strict Field Studio JSON patch files that a human owner can import directly. Be specific: exact JSON settings are infinitely more useful than "add better guidance here".
 
 **Read order:** Part 1 (the system) -> Part 1a (Audit standard, the bar) -> Part 4 (enum inventory, biggest lever) -> Part 5 (component source mapping context) -> Part 6 (groups) -> Part 7 (per-key detail).
 
 **Your response leads with downloadable JSON patch files**, then the top 5-10 must-fix items (the "Highest-risk corrections" block below). Then field-by-field rationale. Then category-level asks. Then flags/open questions.
+
+**The three knobs that determine 95% benchmark success — in priority order:**
+1. **Enum vocabulary** — the values the runtime LLM is locked to. Wrong vocabulary, wrong granularity, missing aliases, or unexpanded abbreviations all cap the key below 95%.
+2. **Format pattern** (\`enum.match.format_hint\`) — when the value has a structural shape (maker part numbers, branded product lines, \`<N> zone (rgb)\` patterns, unit-bearing scalars), the format hint rejects slugified marketing and noise extractions before they're stored.
+3. **Extraction guidance** (\`ai_assist.reasoning_note\`) — the only prose the runtime LLM literally reads on every extraction. This is the biggest of the three because it carries the anti-pattern bank, the confidence ladder, and the "when to return unk" decision rules that the structured contract cannot express.
+
+Everything else (priority triple, evidence settings, search hints, constraints, ai_assist toggles) is supporting infrastructure. Mis-author any of the three above and no priority/evidence tweak will save the key. Author them tightly enough that a re-run of THIS key against every test product clears the 95% bar.
+
+**Benchmark-diff workflow (when a benchmark exists for the category):**
+- A benchmark file under \`.workspace/reports/<category>/key-finder-benchmark/scorecard.json\` lists the canonical expected value per product per key, plus the most recent extracted value and its correct/wrong/missing label.
+- Before locking each key's enum, format_hint, and \`reasoning_note\`, diff your proposed setup against the per-product expected values. Your enum canonicals MUST be the benchmark strings (or carry explicit aliases mapping to them); your format_hint MUST accept every benchmark expected value; your guidance MUST defeat the prior-run wrong values.
+- If no benchmark exists for the category, state that fact in the audit conclusion and call out which fields are highest-risk for un-validated drift.
 
 **Downloadable JSON patch files come first.** At the very top of your response, provide one downloadable \`.json\` file per changed key, named \`<category>-<sort_order>-<field_key>.field-studio-patch.v1.json\`. The human will place these files in \`.workspace/reports/<category>/auditors-responses/\` and import the folder. If your interface cannot attach files, provide one fenced \`json\` block per file, preceded by its filename. Do not return a \`.txt\` change file.
 
@@ -73,9 +85,28 @@ Returned JSON must be strict and importable:
         "roles": {
           "properties": [
             {
-              "field_key": "<field_key>",
+              "field_key": "<scalar_string_attribute>",
               "type": "string",
               "variance_policy": "authoritative"
+            },
+            {
+              "field_key": "<capability_ceiling_attribute>",
+              "type": "number",
+              "unit": "<unit>",
+              "variance_policy": "upper_bound",
+              "tolerance": 5
+            },
+            {
+              "field_key": "<dated_attribute_with_cross_invariant>",
+              "type": "string",
+              "variance_policy": "authoritative",
+              "constraints": ["<this_field> <= <peer_field>"]
+            },
+            {
+              "field_key": "<depth_only_attribute>",
+              "type": "integer",
+              "variance_policy": "authoritative",
+              "component_only": true
             }
           ]
         }
@@ -97,14 +128,23 @@ JSON rules:
 - \`patch\` may contain only \`field_overrides\`, \`data_lists\`, and \`component_sources\`.
 - \`field_overrides\` may patch only its own \`field_key\`.
 - \`data_lists\` rows must use the same \`field\` as \`field_key\`.
-- \`data_lists\` rows use \`field\`, \`normalize\`, and \`manual_values\`.
-- \`component_sources\` rows must declare \`component_type\` and may include the field in \`roles.properties\`.
+- \`data_lists\` rows use only \`field\`, \`normalize\`, and \`manual_values\`. Do not put priority, AI guidance, source metadata, delimiters, or parsing columns on enum lists.
+- \`component_sources\` rows use only \`component_type\` and \`roles.properties[]\`. Do not put priority, AI guidance, entity names, makers, aliases, links, source URLs, notes, or workbook/source metadata on component source rows.
+- \`component_sources[].roles\` may contain only \`properties\`.
+- \`component_sources[].roles.properties[]\` rows may contain only \`field_key\`, \`type\`, \`unit\`, \`variance_policy\`, \`tolerance\`, \`constraints\`, and \`component_only\`.
+- Enum policy/source shape: \`open\` has no enum source; \`closed\` and \`open_prefer_known\` use the key-matched list \`data_lists.<field_key>\`. Do not invent custom list names.
 - Omit unchanged setting paths entirely. \`null\` clears a setting. Arrays replace arrays. Objects deep-merge.
 - Do not include comments, markdown, trailing commas, prose sentinels, or implementation notes inside JSON.
 
 Mapping Studio guidance:
 - Component Source Mapping belongs under \`patch.component_sources\`. Use it for component type and component property variance. Component entity rows, aliases, makers, and source URLs are maintained through Component Review, not Field Studio patches.
-- Enum Data Lists belong under \`patch.data_lists\`. Return the final ordered canonical values when replacing a list; keep aliases/source phrases out of public chips.
+- For every key, decide whether it should be a component identity, component attribute, or standalone. Do not wait for an existing component DB property before proposing a component attribute. If the value should inherit from a resolved component, add the property row under \`patch.component_sources\`; if it should stay product-specific, explain that and leave component_sources unchanged.
+- **Patch ownership.** Each component identity has exactly one identity key. Two patch shapes apply, both merge cleanly: (1) **Identity-key audit owns the full roster** — when \`component_type === field_key\`, declare the full \`roles.properties[]\`, including every product-backed attribute AND every \`component_only\` depth attribute, in one file. (2) **Attribute-key audit declares only its own property row** — when the audited key is a property of an identity owned by another audit file, the validator requires the audited \`field_key\` to appear in \`roles.properties[]\` and rejects rows that don't; add or refine that one property and do not redeclare the full roster. Patch import merges row-by-row by \`component_type\` and property-by-property by \`field_key\`, so identity and attribute audits import together without overwriting each other.
+- Component source parameters: \`component_type\` is the parent component key and must match a self-locked \`field_overrides.<component_type>.enum.source = "component_db.<component_type>"\`; \`roles.properties\` is the attribute list. Source-level priority is retired; keep priority under \`field_overrides.<field_key>.priority\`.
+- Component identity keys cannot be open enum keys. They must self-lock with \`enum.source = "component_db.<same_key>"\` and the matching \`component_sources[].component_type\`.
+- Component attribute parameters: \`field_key\` is the product field or component-only attribute key; \`type\` is \`"string"\`, \`"number"\`, or \`"integer"\`; \`unit\` is the display/storage unit for numeric values; \`variance_policy\` controls how component values relate to product values; \`tolerance\` is an optional numeric margin for upper_bound, lower_bound, or range checks; \`constraints\` are cross-property rules; \`component_only\` true means the attribute is component-scoped and should not become a product field.
+- UI control mapping: Variance = Authoritative -> \`"variance_policy": "authoritative"\`; Variance = Upper Bound -> \`"variance_policy": "upper_bound"\`; Variance = Lower Bound -> \`"variance_policy": "lower_bound"\`; Variance = Range -> \`"variance_policy": "range"\`; Allow Product Override -> \`"variance_policy": "override_allowed"\`; Tolerance -> \`"tolerance": 5\`; Component only / scoped -> \`"component_only": true\`.
+- Enum Data Lists belong under \`patch.data_lists\`. Use only \`field\`, \`normalize\`, and \`manual_values\`; return the final ordered canonical values when replacing a list; keep aliases/source phrases out of public chips. List-level priority and AI guidance are retired; key priority and extraction guidance stay under \`field_overrides.<field_key>\`.
 
 Key Navigator guidance:
 - Field contract, priority, evidence, enum policy, constraints, aliases, search_hints, and ai_assist belong under \`patch.field_overrides.<field_key>\`.
@@ -305,6 +345,24 @@ Fields decided from product photography fall on a spectrum. Treat each tier diff
 - A field that IS a component identity must have \`enum.source\` set to \`component_db.<self>\` (locks contract.type=string + shape=scalar).
 - A field that is a PROPERTY of a component must appear in the relevant component database entity's \`properties\`.
 - Missing component DB entries for known real-world entities are component-data cleanup, not Field Studio setup. Report them outside the change file instead of asking the user to apply them as Mapping Studio/Key Navigator settings.
+
+**Universal extraction rules — apply to every category, every key:**
+
+These are the rules that make the difference between an extractor that hits 95% on the benchmark and one that doesn't. They are stated in category-agnostic form on purpose; "category" here means whatever the audit is for (mouse, keyboard, monitor, GPU, RAM kit, headphones, motherboard, etc.).
+
+1. **Component-identity canonical-form lock.** When \`enum.source = component_db.<X>\`, the key's value space is the universe of canonical component identities for that family. Author \`enum.match.format_hint\` describing the structural shape of a valid identity (maker part number, branded product line, capitalization, paren conventions). Without a format_hint, freeform extraction has no structural anchor and slugified marketing prose passes through.
+2. **Anti-pattern bank in \`reasoning_note\`.** Every component-identity field's guidance must list 4–6 concrete strings the LLM should REJECT as candidate identities. Categories of anti-patterns are universal: slugified marketing sentences (\`<long-hyphenated-token-string>\` with > 4 hyphen-tokens), strings containing the audited product's brand, parenthesized PCB markings (\`<initials>-(brand)-(color)\`), generic class words alone (\`optical\`, \`mechanical\`, \`infrared\`), and marketing adjectives (\`exclusive\`, \`enhanced\`, \`proprietary\`, \`precision\`).
+3. **Host-brand-leak rule.** A component identity must NOT contain the audited product's brand. The mouse brand never appears inside a switch identity; the monitor brand never appears inside a panel identity; the GPU brand never appears inside a chip identity. Exception: components genuinely OEM-co-branded for a specific product (rare; requires explicit teardown evidence pairing the OEM model + the product brand).
+4. **Marketing-evidence facet decomposition.** A single marketing sentence on a product detail page may answer the *type* facet (e.g. switch_type=optical, panel_type=ips, sensor_type=optical) but not the *identity* facet (the maker part / branded line). Guidance must teach the LLM to decompose the sentence per facet rather than slugify it into one value and replicate across facets.
+5. **Confidence ladder per evidence kind.** Per identity field, author the explicit ladder: component-page or teardown with exact part number → 90+; branded-line marketing on host PDP → 70; generic-class marketing only → 40 (return unk); inferred from sibling product without explicit evidence → 0 (return unk).
+6. **Brand-abbreviation expansion.** For any brand-named field, the canonical emit is the expanded brand from the data_list. Raw 1–3 letter abbreviations are rejected unless the abbreviation IS the registered canonical. Aliases capture every observed abbreviation form.
+7. **Identity-layer choice.** When a component family has both a brand-line name (host-branded, e.g. a vendor's named product line) and an OEM model (the underlying maker's part), the auditor picks ONE layer per category and applies it consistently across the family (identity + brand + link). State the choice in the parent identity field's \`reasoning_note\` so all related fields inherit it.
+8. **Numeric/unit-symbol discipline.** Currency or unit symbols belong in \`contract.unit\`, never inside the value. Author \`type=number\` + \`unit\` whenever the value is a number, or use a string \`format_hint\` that strips the symbol. A scalar value of \`"$149.99"\` is wrong; the value is \`149.99\` and the unit is \`$\`.
+9. **Shape lock.** A field with \`shape=scalar\` emits a JSON string, never a 1-element list. Granularity follows the enum vocabulary — emit the canonical the enum carries; sub-specs the enum doesn't carry belong in guidance, not the value.
+10. **Boolean evidence bar.** For every boolean field, author the explicit affirmation rule for \`true\`. Absence of a feature in evidence defaults to \`no\`, never \`yes\`. Ambiguous evidence → \`no\`. The runtime LLM cannot infer the rule; you must write it.
+11. **Enum vocabulary alignment.** When a benchmark or human-published reference exists for the category, the auditor's enum canonicals must be the reference's exact strings. Synonyms become aliases mapping to the canonical, not parallel canonicals. Where no reference exists, calibrate the vocabulary against 3–5 representative products and flag the un-validated risk.
+12. **PCB-marking strip rule.** Teardown PCB markings frequently include color, lot, or grade in parentheses. The component identity is the maker + model only. Strip parenthesized grade/color tokens before emitting; if removing them leaves only initials, return unk and let the brand facet carry the partial info.
+13. **\`format_hint\` requirement.** Every component-identity field with \`enum.policy ∈ {open, open_prefer_known}\` MUST set \`enum.match.format_hint\`. No exceptions. The hint exists to reject slugified marketing extractions at the publisher gate.
 `.trim();
 
 const PURPOSE_BODY = `
@@ -478,9 +536,11 @@ Compiled rules may store constraints as \`constraints\` string-DSL entries or as
 const COMPONENT_RELATIONS_BODY = `
 **Three field states relative to components:**
 
-- **Component identity (parent)** â€” e.g. \`sensor\`, \`switch\`, \`encoder\`, \`panel\`. The field's value IS the canonical component name. The compiled rule has \`enum.source = component_db.<self>\` (the lock contract). The prompt gets "This key IS the \`type\` component identity."
+- **Component identity (parent)** â€” the field's value IS the canonical component name. Universal across categories: a mouse may have \`sensor\` / \`switch\` / \`encoder\`; a keyboard may have \`switch\` / \`stabilizer\` / \`controller\`; a monitor may have \`panel\` / \`stand\`; a GPU may have \`gpu_chip\` / \`memory_module\` / \`cooler\`; a RAM kit may have \`dram_chip\`. The compiled rule has \`enum.source = component_db.<self>\` (the lock contract). The prompt gets "This key IS the \`type\` component identity."
 - **Component property (subfield)** â€” a product field that belongs to a component entity. It appears in \`field_studio_map.component_sources[X].roles.properties[]\`. When the parent identity is resolved on a product, the property values flow into the prompt as \`PRODUCT_COMPONENTS\` so the LLM doesn't re-extract them.
 - **Standalone** â€” most fields. No component relation. Treat as a normal product field rule.
+
+From-scratch setup rule: classify every key into one of those states. Existing component DB properties are useful hints, but not the authority. A key can become a component attribute even when the component DB does not already carry that property; a key can remain standalone even when a similarly named component DB property exists.
 
 **Lock contract on a parent identity key.** When \`enum.source = component_db.<self>\`, these auto-lock and cannot be edited:
 - \`contract.type\` â†' \`"string"\`
@@ -490,8 +550,9 @@ const COMPONENT_RELATIONS_BODY = `
 These stay editable on a parent: \`enum.policy\`, \`enum.pattern\`, plus standard non-component knobs (priority, ai_assist, evidence, ui, aliases, search_hints, constraints).
 
 **\`enum.policy\` on a parent identity controls new-component discovery:**
-- \`open\` or \`open_prefer_known\` â€” pipeline may suggest unknown components found in evidence; flagged for review.
-- \`closed\` â€” unmatched values rejected; no new-component suggestions.
+- \`open_prefer_known\` â€” recommended default for evolving categories. Pipeline accepts unknown components found in evidence (flagged for review) while preferring known entities. Use this when the entity set grows over time but most products still use a known component.
+- \`open\` â€” pipeline accepts any value with no known-list preference. Use when the entity space is too large or too volatile to enumerate (e.g. firmware build identifiers, brand-specific module designators).
+- \`closed\` â€” unmatched values rejected; no new-component suggestions. Use only when the entity set is small, finite, and every new entity should be a deliberate human-curation decision.
 
 **Setup lives in two places.** A complete component requires:
 1. **The parent field rule** â€” set \`enum.source = component_db.<self>\` and pick \`enum.policy\`. Lock applies automatically.
@@ -505,21 +566,34 @@ These stay editable on a parent: \`enum.policy\`, \`enum.pattern\`, plus standar
 - \`type\` â€” \`"string"\`, \`"number"\`, or \`"integer"\`. Drives engine matching behavior.
 - \`unit\` â€” display unit (\`"dpi"\`, \`"ips"\`, \`"g"\`).
 - \`variance_policy\` â€” see Variance below.
-- \`constraints\` â€” cross-property constraints.
-- \`component_only\` â€” boolean. When \`true\`, the property is tracked in the component DB but does NOT publish as a product field. Use for depth content destined for the component's own future site page (e.g. \`switch_life_span\` on a switch entity â€” meaningful for the switch's site page, not for every mouse that uses it). **The "are we missing depth properties to track?" decision lives in Component Review, not the per-key product audit.**
+- \`tolerance\` â€” optional numeric margin for \`upper_bound\`, \`lower_bound\`, or \`range\` variance checks. Mapping Studio's Tolerance control writes \`"tolerance": 5\` for a five-unit margin.
+- \`constraints\` â€” cross-property invariants. Big lever, not a footnote — see the dedicated section below.
+- \`component_only\` â€” boolean. When \`true\`, the property is tracked in the component DB but does NOT publish as a product field. Use for component-scoped depth content (for example, \`sensor_native_resolution_steps\` on a sensor entity). The JSON patch may declare the mapping; missing/stale concrete entity values still belong in Component Review, not the Field Studio patch.
 
 **Variance policy** tells the runtime LLM how the component DB value relates to the value on a particular product:
 - \`authoritative\` (default) â€” component value IS the product value. Product shouldn't override.
 - \`upper_bound\` â€” component gives the maximum possible value; product value may be at or below. Example: a sensor supports up to 25K DPI but firmware caps the mouse at 18K. Numeric only.
 - \`lower_bound\` â€” component gives the minimum; product value may be at or above. Numeric only.
-- \`range\` â€” component value is a reference; product value should fall within Â±tolerance. Numeric only. Tolerance is engine-fixed; if a property needs more flexibility, prefer splitting into multiple properties.
+- \`range\` â€” component value is a reference; product value should fall within the authored \`tolerance\` margin when present. Numeric only.
 - \`override_allowed\` â€” variance is permitted; product values may legitimately differ without flagging review. Use for properties that vary per implementation (e.g. firmware-imposed limits).
 
 **Numeric-only collapse.** \`upper_bound\`, \`lower_bound\`, \`range\` are meaningful only for numeric properties. For non-numeric properties (\`type: "string"\`), the engine auto-collapses to \`authoritative\` regardless of authored value.
 
-**No authored tolerance knob.** The engine uses an inline 10% fuzzy band for component identity matching only. Variance enforcement uses the policy alone â€” \`upper_bound\`/\`lower_bound\` ARE the boundary, \`range\` uses an engine-fixed tolerance, \`authoritative\` admits no variance, \`override_allowed\` admits all variance. Do not propose adding a tolerance knob.
+**Tolerance control.** Mapping Studio's Tolerance control writes \`"tolerance": <number>\` on a property row, in the property's \`unit\`. Use it only for numeric \`upper_bound\`, \`lower_bound\`, or \`range\` cases where a small product-vs-component margin is intentional. Do not add tolerance to string or authoritative properties.
 
-**PRODUCT_COMPONENTS prompt rendering.** When a parent identity is resolved on a product, the prompt block looks like:
+**Constraints on a property entry.** Cross-property invariants the engine validates after extraction. This is one of the highest-leverage knobs in component setup: it locks the relationship between a component value and a peer field that no other knob can express.
+
+DSL syntax: an array of strings, each shaped \`"<field> <op> <target>"\` where op is one of \`lte\` (\`<=\`), \`lt\` (\`<\`), \`gte\` (\`>=\`), \`gt\` (\`>\`), or \`eq\` (\`==\`). \`<field>\` and \`<target>\` reference field rule keys on the same product (peer component properties or peer field rules).
+
+Universal patterns (apply to any category):
+- **Date precedence** â€” a component release date must precede or equal the product release date: \`["component_release_date <= product_release_date"]\` on the component's release-date property. Applies anywhere a product builds on dated components (a monitor on a panel revision, a keyboard on a switch generation, a GPU on a chip rev).
+- **Capability ceiling** â€” a product's published value must not exceed a component capability: \`["product_max_value <= component_max_value"]\` on the component capability property. Applies to any "supports up to X" relationship (sensor max DPI vs mouse DPI; panel native refresh vs monitor refresh; chip rated clock vs card clock; module rated speed vs RAM kit speed).
+- **Floor** â€” a product's published value must meet a component minimum: \`["product_value >= component_min_value"]\`. Applies to any minimum-spec relationship.
+- **Equality lock** â€” product value must equal the component value: \`["product_field eq component_field"]\`. Applies when the product cannot legitimately differ from the component (most identity-derived values).
+
+Constraints on a \`component_only: true\` property are NOT enforced at runtime (the property never enters the runtime field set; compile emits a warning). Author the constraint on the published peer instead.
+
+**PRODUCT_COMPONENTS prompt rendering.** When a parent identity is resolved on a product, the prompt block looks like the example below. The same shape applies to any category — replace \`sensor\` with \`panel\` for a monitor, \`gpu_chip\` for a graphics card, \`switch\` for a keyboard, \`dram_chip\` for a RAM kit, etc.:
 
 \`\`\`
 sensor: Hero 25K
@@ -530,9 +604,25 @@ sensor: Hero 25K
 
 The variance suffix tells the runtime model whether each subfield value is a hard answer (\`authoritative\`) or a reference to compare against (\`bound\`/\`range\`).
 
+**Canonical-form lock for the parent identity field.** Every component-identity field with \`enum.policy ∈ {open, open_prefer_known}\` must carry an \`enum.match.format_hint\` describing the structural shape of a valid identity. Without it, slugified marketing prose passes through and the runtime extractor produces values like \`<long-hyphenated-marketing-sentence>\` with high confidence. Universal shape patterns: maker part number (\`<MAKER>-<MODEL_CODE>(<VARIANT>)\`), branded product line (\`<Maker> <Line> <Generation>\`), or maker + color/dot variant (\`<Maker> <Color> <Dot>\`). Pick the shape that matches the family and write the hint as a regex-ish pattern the publisher gate can validate.
+
+**Anti-pattern bank in the parent identity \`reasoning_note\`.** List 4–6 concrete strings the LLM should REJECT as candidate identities. The categories are universal across any category:
+- Slugified marketing sentences with > 4 hyphen-tokens.
+- Strings containing the audited product's brand (host-brand-leak — see below).
+- Parenthesized PCB markings (\`<initials>-(brand)-(color)\`).
+- Generic class words alone (the *type* facet wording, not the identity).
+- Marketing adjectives (\`exclusive\`, \`enhanced\`, \`proprietary\`, \`precision\`).
+- Bare retailer/SKU codes that aren't the maker's part number.
+
+**Host-brand-leak rule.** A component identity must not contain the audited product's brand unless the component is genuinely OEM-co-branded for that exact product (rare; requires explicit teardown or maker confirmation). The host product's brand belongs to the product, not the component. Author this rule in the identity field's \`reasoning_note\` so the runtime LLM rejects host-brand-prefixed phrases.
+
+**Identity-layer choice.** Many component families have two valid identity layers — a host-branded product line (\`<HostBrand> <NamedLine>\`) and the underlying OEM model (\`<MakerPrefix> <MakerModel>\`). The same physical component carries both names. Pick ONE layer per category and apply it consistently across the family (identity + brand + link + properties). State the choice in the parent identity field's \`reasoning_note\` so siblings inherit. Default rule: prefer the host-branded line when (a) the host consistently markets that line and (b) the OEM mapping appears only on teardowns. Otherwise prefer the OEM model.
+
+**PCB-marking strip rule.** Teardown PCB silkscreens often include color, grade, or lot codes in parentheses (\`<INITIALS> (<MakerName>) (<Color>)\`). The component identity is the maker + model only. The runtime LLM must strip parenthesized grade/color tokens before emitting; if removing them leaves only ambiguous initials, return unk and let the brand facet carry the partial info.
+
 **What NOT to author.** The legacy \`component.*\` block on field rules has been retired. A defensive bridge folds legacy authored \`component.source\` / \`component.type\` into \`enum.source\` automatically, but auditors should never write a \`component\` block in a patch. Use \`enum.source = component_db.<X>\` only.
 
-Component source rows accept only \`component_type\`, \`roles.properties[]\`, \`priority\`, and \`ai_assist\`.
+Component source rows accept only \`component_type\` and \`roles.properties[]\`. Property rows may include only \`field_key\`, \`type\`, \`unit\`, \`variance_policy\`, \`tolerance\`, \`constraints\`, and \`component_only\`.
 
 The per-key brief (Part 7) flags identity / property / standalone for the audited key and lists same-group siblings so the auditor can decide whether a hidden parent component should be extracted. Do not ask for concrete component entity row edits in the Field Studio change file â€” report missing/stale component data separately or address it through Component Review.
 `.trim();
@@ -623,6 +713,48 @@ The generic template auto-renders ~13 slots for every key call. \`ai_assist.reas
 - Output JSON envelope â€” rendered by \`RETURN_JSON_SHAPE\`.
 
 **Quick test before adding a sentence to a guidance cell:** if the concept is covered by a template slot in Part 2, delete the sentence. The generic template is authoritative â€” duplicating into guidance creates conflicting instructions that drift over time.
+
+**Required content per archetype.** Every \`reasoning_note\` must carry the archetype-specific rules below in addition to any field-specific judgment. This is what gives the runtime LLM enough discipline to clear the 95% benchmark bar.
+
+**Component-identity archetype** (key has \`enum.source = component_db.<self>\`):
+- The canonical-form rule: what shape a valid identity takes for this family (maker part number, branded line, etc.).
+- The anti-pattern bank: 4–6 concrete strings the LLM must reject (slugified marketing, host-brand-prefixed phrases, parenthesized PCB markings, generic class words, marketing adjectives).
+- The host-brand-leak rule.
+- The identity-layer choice (host-branded line vs OEM model) and why.
+- The marketing-evidence facet decomposition rule: a single PDP sentence may answer the *type* facet (e.g. \`switch_type=optical\`) but not the identity. Identity from marketing-only ⇒ unk.
+- The confidence ladder per evidence kind (component-page/teardown ≥90; branded-line marketing ≈70; generic-class marketing ≤40 ⇒ unk; sibling-inferred ⇒ unk).
+- The PCB-marking strip rule: parenthesized grade/color tokens are removed before emit.
+
+**Component-facet archetype** (\`component_identity_projection.facet\` is set — brand, type, link, or other facet of a parent identity):
+- The same anti-pattern bank as the parent identity.
+- The brand-abbreviation expansion rule (for brand facets): expand 1–3 letter abbreviations to the registered canonical from the data_list; raw abbreviations without an alias mapping ⇒ unk.
+- Facet decomposition: if the source proves a different facet (e.g. type but not identity), do not copy across facets.
+- For \`link\` facets: which kinds of pages are valid targets (maker component pages, datasheets, distributor part pages) vs invalid (host product pages, reviews, marketplace listings).
+
+**Boolean archetype**:
+- The explicit affirmation rule for \`true\`: what evidence in what form proves the affirmative state.
+- The default-on-absence rule: ambiguous or absent evidence ⇒ \`no\`, never \`yes\`.
+- Distinguish from not-applicable when the field is conditional.
+
+**Numeric scalar archetype** (\`type=number\` or \`integer\`):
+- The unit/symbol-strip rule: currency or unit symbols belong in \`contract.unit\`, never inside the value.
+- The range/sanity rule: realistic bounds for this measurement so the LLM rejects wildly out-of-range extractions.
+- For values with multiple reportable forms (e.g. peak vs sustained), specify which form the field stores.
+
+**Enum scalar archetype** (\`shape=scalar\` with a finite or pattern-bounded vocabulary):
+- The shape lock: emit a JSON string, never a 1-element list.
+- The granularity rule: emit the canonical the enum carries; sub-specs the enum doesn't carry stay out of the value.
+- The synonym-to-canonical rule: when source uses a synonym, emit the canonical the data_list defines; aliases handle the mapping.
+
+**Enum list archetype** (\`shape=list\`):
+- Whether the list is a product-wide union, a per-variant union, or a base/default-variant list.
+- Item ordering rules (descending numeric, alphabetic, source order).
+- Pattern-conformant value emission for pattern-bounded list enums.
+
+**Visual-judgment archetype** (priority view + visual-feature decision):
+- Tier A (direct visual) — one sentence naming the view + the feature.
+- Tier B (subtle visual) — 2–4 sentences: name the view, define the visible feature precisely, give threshold/relative-measurement rules, name when to return \`unk\`.
+- Tier C (non-visual) — no view mention.
 `.trim();
 
 export function buildTemplateSkeletonTable() {

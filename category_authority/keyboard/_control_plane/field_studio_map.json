@@ -2,9 +2,6 @@
   "component_sources": [],
   "data_lists": [
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "category",
       "header_row": 0,
@@ -13,20 +10,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "switch_name",
       "header_row": 0,
@@ -49,20 +38,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "switch_type",
       "header_row": 0,
@@ -78,20 +59,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "switch_brand",
       "header_row": 0,
@@ -109,20 +82,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "switch_feel",
       "header_row": 0,
@@ -135,20 +100,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "switch_output_type",
       "header_row": 0,
@@ -159,20 +116,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "hot_swappable",
       "header_row": 0,
@@ -185,20 +134,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "switch_pin_support",
       "header_row": 0,
@@ -212,20 +153,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "switch_compatibility",
       "header_row": 0,
@@ -240,20 +173,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "form_factor",
       "header_row": 0,
@@ -270,20 +195,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "layout",
       "header_row": 0,
@@ -298,20 +215,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "layout_standard",
       "header_row": 0,
@@ -322,20 +231,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "numpad",
       "header_row": 0,
@@ -346,20 +247,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "function_row",
       "header_row": 0,
@@ -369,20 +262,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "arrow_keys",
       "header_row": 0,
@@ -392,20 +277,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "keycap_material",
       "header_row": 0,
@@ -417,20 +294,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "keycap_profile",
       "header_row": 0,
@@ -446,20 +315,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "legends",
       "header_row": 0,
@@ -473,20 +334,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "shine_through",
       "header_row": 0,
@@ -498,20 +351,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "doubleshot",
       "header_row": 0,
@@ -521,20 +366,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "connection",
       "header_row": 0,
@@ -546,20 +383,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "wired_interface",
       "header_row": 0,
@@ -572,20 +401,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "wireless_technology",
       "header_row": 0,
@@ -598,20 +419,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "bluetooth_version",
       "header_row": 0,
@@ -625,20 +438,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "multi_device_pairing",
       "header_row": 0,
@@ -650,20 +455,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "cable_type",
       "header_row": 0,
@@ -677,20 +474,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "detachable_cable",
       "header_row": 0,
@@ -700,20 +489,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "usb_passthrough",
       "header_row": 0,
@@ -725,20 +506,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "key_rollover",
       "header_row": 0,
@@ -749,20 +522,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "anti_ghosting",
       "header_row": 0,
@@ -773,20 +538,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "rapid_trigger",
       "header_row": 0,
@@ -796,20 +553,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "analog_input",
       "header_row": 0,
@@ -820,20 +569,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "socd_cleaning",
       "header_row": 0,
@@ -846,20 +587,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "adjustable_input_granularity",
       "header_row": 0,
@@ -871,20 +604,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "hard",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "backlighting",
       "header_row": 0,
@@ -896,20 +621,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "rgb_zones",
       "header_row": 0,
@@ -923,20 +640,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "per_key_rgb",
       "header_row": 0,
@@ -946,20 +655,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "software",
       "header_row": 0,
@@ -975,20 +676,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "macro_keys",
       "header_row": 0,
@@ -1000,20 +693,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "media_controls",
       "header_row": 0,
@@ -1026,20 +711,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "onboard_memory",
       "header_row": 0,
@@ -1051,20 +728,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "knob_dial",
       "header_row": 0,
@@ -1075,20 +744,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "qmk_via_support",
       "header_row": 0,
@@ -1100,20 +761,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "os_mode_switch",
       "header_row": 0,
@@ -1125,20 +778,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "case_material",
       "header_row": 0,
@@ -1152,20 +797,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "plate_material",
       "header_row": 0,
@@ -1179,20 +816,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "mounting_style",
       "header_row": 0,
@@ -1206,20 +835,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "gasket_mount",
       "header_row": 0,
@@ -1230,20 +851,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "foam_dampening",
       "header_row": 0,
@@ -1256,20 +869,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "stabilizer_type",
       "header_row": 0,
@@ -1282,20 +887,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "stabilizer_mount",
       "header_row": 0,
@@ -1307,20 +904,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "stabilizer_lubed",
       "header_row": 0,
@@ -1331,20 +920,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "south_facing_leds",
       "header_row": 0,
@@ -1354,20 +935,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "adjustable_feet",
       "header_row": 0,
@@ -1378,20 +951,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "typing_noise",
       "header_row": 0,
@@ -1402,20 +967,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "hard",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "sound_profile",
       "header_row": 0,
@@ -1428,20 +985,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "hard",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "sound_dampening",
       "header_row": 0,
@@ -1453,20 +1002,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "charging_method",
       "header_row": 0,
@@ -1478,20 +1019,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "discontinued",
       "header_row": 0,
@@ -1501,20 +1034,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "color",
       "header_row": 0,
@@ -1530,20 +1055,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "always",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "included_accessories",
       "header_row": 0,
@@ -1559,20 +1076,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "software_required",
       "header_row": 0,
@@ -1583,20 +1092,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "compatible_os",
       "header_row": 0,
@@ -1610,20 +1111,12 @@
       ],
       "mode": "scratch",
       "normalize": "as_is",
-      "priority": {
-        "availability": "sometimes",
-        "difficulty": "easy",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
       "value_column": ""
     },
     {
-      "ai_assist": {
-        "reasoning_note": ""
-      },
       "delimiter": "",
       "field": "colors",
       "header_row": 0,
@@ -1708,11 +1201,6 @@
       ],
       "mode": "scratch",
       "normalize": "lower_trim",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
       "row_end": 0,
       "row_start": 2,
       "sheet": "",

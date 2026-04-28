@@ -14,6 +14,7 @@ import path from 'node:path';
 import { validateField } from '../validation/validateField.js';
 import { persistDiscoveredValue } from '../persistDiscoveredValues.js';
 import { publishCandidate as autoPublish, normalizeConfidence } from '../publish/publishCandidate.js';
+import { syncPublishedComponentIdentity } from '../publish/componentPublisher.js';
 import { readMinEvidenceRefs } from '../publish/evidenceGate.js';
 import { purgeInconsistentCandidate } from '../publish/purgeInconsistentCandidate.js';
 import { buildSourceId } from './buildSourceId.js';
@@ -318,6 +319,7 @@ export async function submitCandidate({
 
   // --- Auto-publish ---
   let publishResult = null;
+  let componentPublishResult = null;
   if (config) {
     publishResult = autoPublish({
       specDb, category, productId, fieldKey,
@@ -327,7 +329,19 @@ export async function submitCandidate({
       config, fieldRule, productRoot,
       variantId: normalizedVariantId,
     });
+    if (publishResult?.status === 'published') {
+      componentPublishResult = syncPublishedComponentIdentity({
+        specDb,
+        productId,
+        fieldKey,
+        fieldRule,
+        publishedValue: publishResult.value,
+        confidence,
+        variantId: normalizedVariantId,
+        metadata,
+      });
+    }
   }
 
-  return { status: 'accepted', candidateId, value: repairedValue, validationResult, publishResult };
+  return { status: 'accepted', candidateId, value: repairedValue, validationResult, publishResult, componentPublishResult };
 }

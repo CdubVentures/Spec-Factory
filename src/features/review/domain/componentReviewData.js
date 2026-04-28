@@ -8,6 +8,7 @@ import { toArray } from './reviewNormalization.js';
 import {
   resolveReviewEnabledEnumFieldSet,
   resolveDeclaredComponentPropertyColumns,
+  resolveDeclaredComponentTypeOrder,
   hasDeclaredComponentSource,
   resolveComponentReviewPropertyColumns,
   resolvePropertyFieldMeta,
@@ -31,7 +32,13 @@ export async function buildComponentReviewLayout({ config = {}, category, specDb
       .map((row) => String(row?.component_type || '').trim())
       .filter(Boolean)
   )];
-  const payloads = await Promise.all(componentTypes.map(async (componentType) => {
+  const declaredTypeOrder = resolveDeclaredComponentTypeOrder({ fieldRules, specDb });
+  const declaredOrderSet = new Set(declaredTypeOrder);
+  const orderedComponentTypes = [
+    ...declaredTypeOrder.filter((componentType) => componentTypes.includes(componentType)),
+    ...componentTypes.filter((componentType) => !declaredOrderSet.has(componentType)),
+  ];
+  const payloads = await Promise.all(orderedComponentTypes.map(async (componentType) => {
     const payload = await buildComponentReviewPayloadsSpecDb({
       config,
       category,

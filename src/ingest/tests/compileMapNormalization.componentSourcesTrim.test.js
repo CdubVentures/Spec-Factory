@@ -75,12 +75,6 @@ test('normalizeFieldStudioMap strips workbook metadata from component_sources ro
           },
         ],
       },
-      priority: {
-        required_level: 'non_mandatory',
-        availability: 'sometimes',
-        difficulty: 'medium',
-      },
-      ai_assist: { reasoning_note: 'review sensors' },
     },
   ]);
 });

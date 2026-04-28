@@ -3,10 +3,6 @@ import { usePersistedToggle } from "../../../stores/collapseStore.ts";
 import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
 import { StaticBadges } from "./StaticBadges.tsx";
 import {
-  normalizeAiAssistConfig,
-  normalizePriorityProfile,
-} from "../state/studioPriority.ts";
-import {
   VARIANCE_POLICIES,
   migrateProperty,
   type PropertyMapping,
@@ -21,8 +17,6 @@ import {
 import type {
   FieldRule,
   ComponentSource,
-  PriorityProfile,
-  AiAssistConfig,
 } from "../../../types/studio.ts";
 import { btnDanger } from "./studioSharedTypes.ts";
 
@@ -58,8 +52,6 @@ export function EditableComponentSource({
   const roles = source.roles || {
     properties: [],
   };
-  const sourcePriority = normalizePriorityProfile(source.priority);
-  const sourceAiAssist = normalizeAiAssistConfig(source.ai_assist);
 
   const [propertyRows, setPropertyRows] = useState<PropertyMapping[]>(() => {
     if (!Array.isArray(roles.properties)) return [];
@@ -69,10 +61,6 @@ export function EditableComponentSource({
   });
   const [pendingFieldKey, setPendingFieldKey] = useState("");
   const csKey = source.component_type || `idx-${index}`;
-  const [showAiSections, toggleCsAiSections] = usePersistedToggle(
-    `studio:compSource:${csKey}:ai`,
-    false,
-  );
   const [showAttributes, toggleAttributes] = usePersistedToggle(
     `studio:compSource:${csKey}:attrs`,
     false,
@@ -167,13 +155,6 @@ export function EditableComponentSource({
 
   function updateRoles(updates: Partial<typeof roles>) {
     onUpdate({ roles: { ...roles, ...updates } });
-  }
-
-  function updatePriority(updates: Partial<PriorityProfile>) {
-    onUpdate({ priority: { ...sourcePriority, ...updates } });
-  }
-  function updateAiAssist(updates: Partial<AiAssistConfig>) {
-    onUpdate({ ai_assist: { ...sourceAiAssist, ...updates } });
   }
 
   function removePropertyRow(pidx: number) {
@@ -380,138 +361,6 @@ export function EditableComponentSource({
           ))}
         </select>
       </div>
-
-      {/* Component-level full review priority */}
-      <button
-        type="button"
-        onClick={() => toggleCsAiSections()}
-        className="w-full flex items-center gap-2 mb-2"
-      >
-        <span className="inline-flex items-center justify-center w-5 h-5 border sf-border-soft rounded text-xs font-medium sf-text-muted">
-          {showAiSections ? "-" : "+"}
-        </span>
-        <span className="text-xs font-semibold sf-text-muted">
-          AI Review Priority
-        </span>
-      </button>
-      {showAiSections ? (
-        <div className="border sf-border-default rounded p-3 mb-4 sf-bg-surface-soft sf-dk-surface-900a20">
-          <div className="text-xs font-semibold sf-text-muted mb-2">
-            AI Review Priority
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <div className={labelCls}>
-                Required Level
-                <Tip
-                  style={{ position: "relative", left: "-3px", top: "-4px" }}
-                  text={STUDIO_TIPS.required_level}
-                />
-              </div>
-              <select
-                className={`${selectCls} w-full`}
-                value={sourcePriority.required_level}
-                onChange={(e) =>
-                  updatePriority({ required_level: e.target.value as PriorityProfile['required_level'] })
-                }
-              >
-                <option value="mandatory">mandatory</option>
-                <option value="non_mandatory">non_mandatory</option>
-              </select>
-            </div>
-            <div>
-              <div className={labelCls}>
-                Availability
-                <Tip
-                  style={{ position: "relative", left: "-3px", top: "-4px" }}
-                  text={STUDIO_TIPS.availability}
-                />
-              </div>
-              <select
-                className={`${selectCls} w-full`}
-                value={sourcePriority.availability}
-                onChange={(e) =>
-                  updatePriority({ availability: e.target.value as PriorityProfile['availability'] })
-                }
-              >
-                <option value="always">always</option>
-                <option value="sometimes">sometimes</option>
-                <option value="rare">rare</option>
-              </select>
-            </div>
-            <div>
-              <div className={labelCls}>
-                Difficulty
-                <Tip
-                  style={{ position: "relative", left: "-3px", top: "-4px" }}
-                  text={STUDIO_TIPS.difficulty}
-                />
-              </div>
-              <select
-                className={`${selectCls} w-full`}
-                value={sourcePriority.difficulty}
-                onChange={(e) => updatePriority({ difficulty: e.target.value as PriorityProfile['difficulty'] })}
-              >
-                <option value="easy">easy</option>
-                <option value="medium">medium</option>
-                <option value="hard">hard</option>
-                <option value="very_hard">very_hard</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {/* Extraction Guidance */}
-      {(() => {
-            const explicitNote = sourceAiAssist.reasoning_note || "";
-            const autoNote = [
-              `Full component table review for "${compType || "component"}".`,
-              `Required level ${sourcePriority.required_level}, difficulty ${sourcePriority.difficulty}.`,
-              "Resolve conflicts across sources and keep output normalized for component identity + properties.",
-            ].join(" ");
-            const hasExplicit = explicitNote.length > 0;
-
-            return (
-              <div className="border sf-border-default rounded p-3 mb-4 sf-bg-surface-soft sf-dk-surface-900a20">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={labelCls.replace(" mb-1", "")}>
-                    Extraction Guidance (sent to LLM)
-                    <Tip
-                      style={{
-                        position: "relative",
-                        left: "-3px",
-                        top: "-4px",
-                      }}
-                      text={STUDIO_TIPS.ai_reasoning_note}
-                    />
-                  </span>
-                  {!hasExplicit && (
-                    <span className="text-[9px] px-1.5 py-0.5 rounded sf-bg-surface-soft-strong sf-text-subtle sf-dk-surface-700 dark:sf-text-muted italic font-medium">
-                      Auto
-                    </span>
-                  )}
-                </div>
-                <textarea
-                  className={`${inputCls} w-full`}
-                  rows={3}
-                  value={explicitNote}
-                  onChange={(e) =>
-                    updateAiAssist({ reasoning_note: e.target.value })
-                  }
-                  placeholder={`Auto: ${autoNote}`}
-                />
-                {hasExplicit && (
-                  <button
-                    className="text-[10px] sf-link-accent hover:opacity-80 mt-1"
-                    onClick={() => updateAiAssist({ reasoning_note: "" })}
-                  >
-                    Clear &amp; revert to auto-generated guidance
-                  </button>
-                )}
-              </div>
-            );
-          })()}
 
       <div className="border-t sf-border-default pt-3">
           <div className="space-y-2">

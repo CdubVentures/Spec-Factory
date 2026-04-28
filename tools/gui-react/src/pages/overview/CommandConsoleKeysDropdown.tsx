@@ -49,6 +49,7 @@ interface PickerRow {
   readonly availability: string;
   readonly required_level: string;
   readonly resolved: boolean;
+  readonly run_blocked_reason: string;
 }
 
 function rowFromSummary(summary: KeyFinderSummaryRow): PickerRow {
@@ -58,6 +59,7 @@ function rowFromSummary(summary: KeyFinderSummaryRow): PickerRow {
     availability: summary.availability || '',
     required_level: summary.required_level || '',
     resolved: summary.published === true || summary.last_status === 'resolved',
+    run_blocked_reason: summary.run_blocked_reason || '',
   };
 }
 
@@ -135,17 +137,27 @@ export function CommandConsoleKeysDropdown({
     return sorted.filter((r) => r.field_key.toLowerCase().includes(needle));
   }, [allReady, summaryQuery.data, reservedSet, bundlingQuery.data, filterText]);
 
+  const blockedKeys = useMemo<ReadonlySet<string>>(
+    () => new Set(visibleRows.filter((row) => row.run_blocked_reason).map((row) => row.field_key)),
+    [visibleRows],
+  );
+  const runnablePicked = useMemo<ReadonlySet<string>>(
+    () => new Set([...picked].filter((fieldKey) => !blockedKeys.has(fieldKey))),
+    [picked, blockedKeys],
+  );
+
   const togglePick = useCallback((fieldKey: string) => {
+    if (blockedKeys.has(fieldKey)) return;
     setPicked((prev) => {
       const next = new Set(prev);
       if (next.has(fieldKey)) next.delete(fieldKey);
       else next.add(fieldKey);
       return next;
     });
-  }, []);
+  }, [blockedKeys]);
 
   const pickAll = useCallback(() => {
-    setPicked(new Set(visibleRows.map((r) => r.field_key)));
+    setPicked(new Set(visibleRows.filter((r) => !r.run_blocked_reason).map((r) => r.field_key)));
   }, [visibleRows]);
 
   const pickNone = useCallback(() => {
@@ -159,12 +171,12 @@ export function CommandConsoleKeysDropdown({
     settingsAuthority.saveSetting('alwaysSoloRun', alwaysSoloRun ? 'false' : 'true');
   }, [settingsAuthority, alwaysSoloRun]);
 
-  const runDisabled = picked.size === 0 || selectedProducts.length === 0 || settingsAuthority.isSaving;
+  const runDisabled = runnablePicked.size === 0 || selectedProducts.length === 0 || settingsAuthority.isSaving;
   const onClickRun = useCallback(() => {
     if (runDisabled) return;
-    onRunPicked(picked);
+    onRunPicked(runnablePicked);
     // Keep dropdown open so the user can keep tweaking and re-running.
-  }, [runDisabled, onRunPicked, picked]);
+  }, [runDisabled, onRunPicked, runnablePicked]);
 
   const triggerLabel = `Keys ${picked.size > 0 ? `(${picked.size})` : ''}\u00A0\u25BE`;
 
@@ -261,14 +273,17 @@ export function CommandConsoleKeysDropdown({
               ) : (
                 visibleRows.map((row) => {
                   const isPicked = picked.has(row.field_key);
+                  const blocked = Boolean(row.run_blocked_reason);
                   return (
                     <label
                       key={row.field_key}
-                      className={`sf-cc-keys-row ${isPicked ? 'is-picked' : ''}`}
+                      className={`sf-cc-keys-row ${isPicked ? 'is-picked' : ''} ${blocked ? 'is-disabled' : ''}`}
+                      title={blocked ? 'Run the parent component first. Component brand/link are locked until the parent component publishes.' : undefined}
                     >
                       <input
                         type="checkbox"
                         checked={isPicked}
+                        disabled={blocked}
                         onChange={() => togglePick(row.field_key)}
                         aria-label={`Pick ${row.field_key}`}
                       />
@@ -299,7 +314,7 @@ export function CommandConsoleKeysDropdown({
             <div className="sf-cc-keys-footer">
               <span className="sf-cc-keys-footer-meta">
                 {picked.size} picked · {selectedProducts.length} product{selectedProducts.length === 1 ? '' : 's'}
-                {' '}= {picked.size * selectedProducts.length} ops
+                {' '}= {runnablePicked.size * selectedProducts.length} ops
               </span>
               <button
                 type="button"
@@ -309,12 +324,12 @@ export function CommandConsoleKeysDropdown({
                 title={
                   selectedProducts.length === 0
                     ? 'Select products first'
-                    : picked.size === 0
+                    : runnablePicked.size === 0
                       ? 'Pick at least one key'
-                      : `Run ${picked.size} key${picked.size === 1 ? '' : 's'} across ${selectedProducts.length} product${selectedProducts.length === 1 ? '' : 's'}`
+                      : `Run ${runnablePicked.size} key${runnablePicked.size === 1 ? '' : 's'} across ${selectedProducts.length} product${selectedProducts.length === 1 ? '' : 's'}`
                 }
               >
-                Run picked ({picked.size})
+                Run picked ({runnablePicked.size})
               </button>
             </div>
           </>

@@ -5,6 +5,7 @@ import {
   CATEGORY,
   buildComponentReviewPayloads,
   createComponentRowHarness,
+  insertProductFieldCandidate,
   linkProductToComponent,
   upsertComponentLane,
 } from './helpers/componentReviewRowHarness.js';
@@ -48,6 +49,20 @@ test('component payload isolates same-name lanes by maker for linked-product can
   for (const productId of productsB) {
     linkProductToMaker(productId, makerB);
   }
+  insertProductFieldCandidate(specDb, {
+    productId: 'mouse-omron-a1',
+    fieldKey: propertyKey,
+    value: '55',
+    status: 'resolved',
+    confidence: 95,
+  });
+  insertProductFieldCandidate(specDb, {
+    productId: 'mouse-huano-b1',
+    fieldKey: propertyKey,
+    value: '65',
+    status: 'resolved',
+    confidence: 95,
+  });
 
   const payload = await buildComponentReviewPayloads({
     config,
@@ -74,10 +89,8 @@ test('component payload isolates same-name lanes by maker for linked-product can
   assert.equal(makerValuesA.has(makerB), false);
   assert.equal(makerValuesB.has(makerB), true);
   assert.equal(makerValuesB.has(makerA), false);
-  // With candidates table removed, property candidates come only from
-  // ensureTrackedStateCandidateInvariant (1 fallback per slot).
-  assert.ok(propCandidatesA.length >= 1, 'maker A property has fallback candidate');
-  assert.ok(propCandidatesB.length >= 1, 'maker B property has fallback candidate');
+  assert.equal(rowA.properties[propertyKey].selected.value, null);
+  assert.equal(rowB.properties[propertyKey].selected.value, null);
   assert.equal(propCandidatesA.every((candidate) => String(candidate?.value || '') === '55'), true);
   assert.equal(propCandidatesB.every((candidate) => String(candidate?.value || '') === '65'), true);
 });

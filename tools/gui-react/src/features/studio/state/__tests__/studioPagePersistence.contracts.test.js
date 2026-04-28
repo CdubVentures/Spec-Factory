@@ -138,12 +138,40 @@ test('studio page persistence identifies empty map payloads as unsafe to autosav
   );
   assert.equal(
     shouldPersistStudioMapPayload({
+      payload: { selected_keys: ['dpi'], field_overrides: { dpi: {} } },
+      force: true,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldPersistStudioMapPayload({
       payload: {
         selected_keys: ['dpi'],
         data_lists: [{ field: 'connection' }],
         field_overrides: { dpi: {} },
       },
       force: false,
+    }),
+    true,
+  );
+});
+
+test('studio page persistence blocks empty map payloads from unmount flushes', async () => {
+  const {
+    shouldFlushStudioMapPayloadOnUnmount,
+  } = await loadStudioPagePersistence();
+
+  assert.equal(shouldFlushStudioMapPayloadOnUnmount({}), false);
+  assert.equal(
+    shouldFlushStudioMapPayloadOnUnmount({
+      selected_keys: ['dpi'],
+      field_overrides: { dpi: {} },
+    }),
+    false,
+  );
+  assert.equal(
+    shouldFlushStudioMapPayloadOnUnmount({
+      component_sources: [{ component_type: 'sensor' }],
     }),
     true,
   );

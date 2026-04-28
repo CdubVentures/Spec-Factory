@@ -273,9 +273,6 @@ function MappingPanelSkeleton() {
       <div className={`${sectionCls} relative`} data-region="studio-loading-mapping-section">
         <MappingSectionHeaderSkeleton title="Enum" />
         <div className="mt-3 space-y-2">
-          <div className="flex items-center justify-between mb-3">
-            <button type="button" className={btnSecondary} disabled>+ Add Enum</button>
-          </div>
           {ENUM_ROWS.map((row) => (
             <EnumRowSkeleton key={row} row={row} />
           ))}

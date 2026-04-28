@@ -61,6 +61,7 @@ export interface ComponentReviewItem {
   name_tracked: ComponentPropertyState;
   maker_tracked: ComponentPropertyState;
   links_tracked: ComponentLinkTracked[];
+  links_state: ComponentPropertyState;
   properties: Record<string, ComponentPropertyState>;
   linked_products?: LinkedProduct[];
   review_status: 'pending' | 'reviewed' | 'approved';

@@ -7,8 +7,6 @@ import {
   normalizeToken,
   normalizeFieldKey,
   normalizeSourceMode,
-  normalizeReviewPriority,
-  normalizeReviewAiAssist,
   stableSortStrings,
   orderedUniqueStrings,
   colToIndex,
@@ -205,8 +203,6 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
     const normalizeMode = normalizeToken(row.normalize || 'lower_trim');
     const delimiter = normalizeText(row.delimiter || '');
     const rowHeader = asInt(row.header_row, 0);
-    const rowPriority = normalizeReviewPriority(row.priority);
-    const rowAiAssist = normalizeReviewAiAssist(row.ai_assist);
     const pushEnumRow = (bucket, columnRef) => {
       const field = shouldKeepEnumBucket({
         requestedBucket: bucket,
@@ -225,9 +221,7 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         row_end: rowEnd,
         delimiter,
         normalize: normalizeMode,
-        header_row: rowHeader,
-        priority: rowPriority,
-        ai_assist: rowAiAssist
+        header_row: rowHeader
       });
     };
     const columns = toArray(row.columns);
@@ -269,9 +263,7 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         row_end: asInt(row.row_end || row.end_row, 0),
         normalize: normalizeToken(row.normalize || 'lower_trim') || 'lower_trim',
         delimiter: normalizeText(row.delimiter || ''),
-        manual_values: rowManualValues,
-        priority: normalizeReviewPriority(row.priority),
-        ai_assist: normalizeReviewAiAssist(row.ai_assist)
+        manual_values: rowManualValues
       };
     });
   } else {
@@ -291,9 +283,7 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         row_end: asInt(row.row_end, 0),
         normalize: normalizeToken(row.normalize || 'lower_trim') || 'lower_trim',
         delimiter: normalizeText(row.delimiter || ''),
-        manual_values: [],
-        priority: normalizeReviewPriority(row.priority),
-        ai_assist: normalizeReviewAiAssist(row.ai_assist)
+        manual_values: []
       };
     });
     for (const row of enumRowsRaw) {
@@ -313,9 +303,7 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
           row_end: 0,
           normalize: normalizeToken(row.normalize || 'lower_trim') || 'lower_trim',
           delimiter: normalizeText(row.delimiter || ''),
-          manual_values: orderedUniqueStrings(rowValues.map((val) => String(val).trim()).filter(Boolean)),
-          priority: normalizeReviewPriority(row.priority),
-          ai_assist: normalizeReviewAiAssist(row.ai_assist)
+          manual_values: orderedUniqueStrings(rowValues.map((val) => String(val).trim()).filter(Boolean))
         });
       }
     }
@@ -369,15 +357,11 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         return out;
       })
       .filter((entry) => entry.field_key);
-    const rowPriority = normalizeReviewPriority(row.priority || row.review_priority);
-    const rowAiAssist = normalizeReviewAiAssist(row.ai_assist);
     return {
       component_type: normalizeToken(row.component_type || row.type || ''),
       roles: {
         properties: propertyMappings
-      },
-      priority: rowPriority,
-      ai_assist: rowAiAssist
+      }
     };
   });
   const tooltipSourceRaw = isObject(map.tooltip_source) ? map.tooltip_source : {};
@@ -434,9 +418,7 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         start_row: row.row_start,
         end_row: row.row_end > 0 ? row.row_end : null,
         delimiter: row.delimiter || '',
-        normalize: row.normalize,
-        priority: row.priority,
-        ai_assist: row.ai_assist
+        normalize: row.normalize
       })),
     component_sources: componentSheets
       .filter((row) => row.component_type)
@@ -444,9 +426,7 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         component_type: row.component_type,
         roles: {
           properties: row.roles.properties
-        },
-        priority: row.priority,
-        ai_assist: row.ai_assist
+        }
       })),
     expectations: isObject(map.expectations) ? {
       required_fields: stableSortStrings(toArray(map.expectations.required_fields).map((field) => normalizeFieldKey(field))),

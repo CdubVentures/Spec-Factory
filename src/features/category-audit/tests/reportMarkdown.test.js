@@ -95,6 +95,14 @@ test('renderMarkdown places auditor-task section before summary and includes ret
   assert.match(md, /Mapping Studio guidance:/);
   assert.match(md, /Component Source Mapping belongs/);
   assert.match(md, /component type and component property variance/i);
+  assert.match(md, /component identity, component attribute, or standalone/i);
+  assert.match(md, /do not wait for an existing component DB property/i);
+  assert.match(md, /Tolerance/i);
+  assert.match(md, /Component only \/ scoped/i);
+  assert.match(md, /component_type/i);
+  assert.match(md, /roles\.properties/i);
+  assert.match(md, /variance_policy/i);
+  assert.match(md, /component_only/i);
   assert.match(md, /Component Review/i);
   assert.match(md, /Enum Data Lists/i);
   assert.match(md, /Key Navigator guidance:/);

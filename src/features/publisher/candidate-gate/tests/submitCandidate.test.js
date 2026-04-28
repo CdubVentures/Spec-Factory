@@ -18,6 +18,13 @@ function sampleFieldRules() {
       enum: { policy: 'open' },
       priority: {},
     },
+    sensor: {
+      contract: { shape: 'scalar', type: 'string' },
+      parse: {},
+      enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
+      evidence: { min_evidence_refs: 1 },
+      priority: {},
+    },
     colors: {
       contract: {
         shape: 'list', type: 'string',
@@ -31,6 +38,16 @@ function sampleFieldRules() {
       contract: { shape: 'scalar', type: 'string' },
       parse: {},
       enum: { policy: 'open_prefer_known', match: { strategy: 'alias' } },
+      component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+      evidence: { min_evidence_refs: 1 },
+      priority: {},
+    },
+    sensor_link: {
+      contract: { shape: 'scalar', type: 'url' },
+      parse: {},
+      enum: { policy: 'open' },
+      component_identity_projection: { component_type: 'sensor', facet: 'link' },
+      evidence: { min_evidence_refs: 1 },
       priority: {},
     },
     coating: {
@@ -44,8 +61,9 @@ function sampleFieldRules() {
 
 function sampleKnownValues() {
   return {
+    sensor: { policy: 'open_prefer_known', values: ['PAW3950'] },
     colors: { policy: 'closed', values: ['black', 'white', 'red', 'blue'] },
-    sensor_brand: { policy: 'open_prefer_known', values: ['pixart', 'razer'] },
+    sensor_brand: { policy: 'open_prefer_known', values: ['PixArt', 'Razer'] },
     coating: { policy: 'closed', values: ['matte', 'glossy'] },
   };
 }
@@ -84,6 +102,21 @@ function readProductJson(productId) {
   try {
     return JSON.parse(fs.readFileSync(path.join(PRODUCT_ROOT, productId, 'product.json'), 'utf8'));
   } catch { return null; }
+}
+
+function evidenceRefsFor(url) {
+  return {
+    evidence_refs: [
+      { url, tier: 'tier1', confidence: 95, supporting_evidence: 'published component identity' },
+    ],
+  };
+}
+
+function componentAliasMetadata({ component = [], brand = [] } = {}) {
+  return {
+    ...evidenceRefsFor(`https://component.example.com/aliases-${component.length}-${brand.length}`),
+    component_identity_aliases: { component, brand },
+  };
 }
 
 describe('submitCandidate', async () => {
@@ -687,7 +720,160 @@ describe('submitCandidate', async () => {
     assert.ok(!('variant_id' in entry), 'no variant_id key in JSON for empty input');
   });
 
-  // ── HEAD-check gate (evidence URL verification) ──────────────────────
+  // --- Component publisher sync ---
+
+  it('links a product to a component identity after component and brand are both published', async () => {
+    ensureProductJson('mouse-component-pair');
+    const config = { publishConfidenceThreshold: 0.7, evidenceVerificationEnabled: false };
+
+    const nameResult = await submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-component-pair',
+      fieldKey: 'sensor',
+      value: 'PAW3950',
+      confidence: 95,
+      sourceMeta: { source: 'key_finder', run_number: 1 },
+      metadata: evidenceRefsFor('https://component.example.com/paw3950'),
+      config,
+      verifyEvidenceUrls: false,
+    });
+
+    assert.equal(nameResult.publishResult?.status, 'published');
+    assert.equal(nameResult.componentPublishResult?.status, 'waiting_for_pair');
+    assert.equal(specDb.getItemComponentLinks('mouse-component-pair').length, 0);
+
+    const brandResult = await submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-component-pair',
+      fieldKey: 'sensor_brand',
+      value: 'PixArt',
+      confidence: 96,
+      sourceMeta: { source: 'key_finder', run_number: 2 },
+      metadata: evidenceRefsFor('https://component.example.com/pixart'),
+      config,
+      verifyEvidenceUrls: false,
+    });
+
+    assert.equal(brandResult.publishResult?.status, 'published');
+    assert.deepEqual(brandResult.componentPublishResult, {
+      status: 'linked',
+      componentType: 'sensor',
+      componentName: 'PAW3950',
+      componentMaker: 'PixArt',
+    });
+
+    const identity = specDb.getComponentIdentity('sensor', 'PAW3950', 'PixArt');
+    assert.ok(identity, 'component_identity row is created');
+    const itemLinks = specDb.getItemComponentLinks('mouse-component-pair');
+    assert.equal(itemLinks.length, 1);
+    assert.equal(itemLinks[0].field_key, 'sensor');
+    assert.equal(itemLinks[0].component_type, 'sensor');
+    assert.equal(itemLinks[0].component_name, 'PAW3950');
+    assert.equal(itemLinks[0].component_maker, 'PixArt');
+    assert.equal(itemLinks[0].match_type, 'published_identity');
+  });
+
+  it('links component identity when brand publishes before the component name', async () => {
+    ensureProductJson('mouse-component-brand-first');
+    const config = { publishConfidenceThreshold: 0.7, evidenceVerificationEnabled: false };
+
+    const brandResult = await submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-component-brand-first',
+      fieldKey: 'sensor_brand',
+      value: 'PixArt',
+      confidence: 95,
+      sourceMeta: { source: 'key_finder', run_number: 1 },
+      metadata: evidenceRefsFor('https://component.example.com/brand-first-pixart'),
+      config,
+      verifyEvidenceUrls: false,
+    });
+
+    assert.equal(brandResult.publishResult?.status, 'published');
+    assert.equal(brandResult.componentPublishResult?.status, 'waiting_for_pair');
+    assert.equal(specDb.getItemComponentLinks('mouse-component-brand-first').length, 0);
+
+    const nameResult = await submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-component-brand-first',
+      fieldKey: 'sensor',
+      value: 'PAW3950',
+      confidence: 96,
+      sourceMeta: { source: 'key_finder', run_number: 2 },
+      metadata: evidenceRefsFor('https://component.example.com/brand-first-paw3950'),
+      config,
+      verifyEvidenceUrls: false,
+    });
+
+    assert.equal(nameResult.publishResult?.status, 'published');
+    assert.equal(nameResult.componentPublishResult?.status, 'linked');
+    assert.ok(specDb.getComponentIdentity('sensor', 'PAW3950', 'PixArt'));
+    assert.equal(specDb.getItemComponentLinks('mouse-component-brand-first').length, 1);
+  });
+
+  it('persists component and brand aliases from published component identity metadata', async () => {
+    ensureProductJson('mouse-component-aliases');
+    const config = { publishConfidenceThreshold: 0.7, evidenceVerificationEnabled: false };
+
+    await submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-component-aliases',
+      fieldKey: 'sensor',
+      value: 'PAW3950',
+      confidence: 95,
+      sourceMeta: { source: 'key_finder', run_number: 1 },
+      metadata: componentAliasMetadata({
+        component: ['PMW3950', 'PixArt 3950'],
+        brand: ['PixArt Imaging'],
+      }),
+      config,
+      verifyEvidenceUrls: false,
+    });
+
+    await submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-component-aliases',
+      fieldKey: 'sensor_brand',
+      value: 'PixArt',
+      confidence: 95,
+      sourceMeta: { source: 'key_finder', run_number: 2 },
+      metadata: componentAliasMetadata({
+        component: ['PAW-3950'],
+        brand: ['PixArt Inc.'],
+      }),
+      config,
+      verifyEvidenceUrls: false,
+    });
+
+    const row = specDb.getAllComponentsForType('sensor')
+      .find((entry) => entry.identity.canonical_name === 'PAW3950' && entry.identity.maker === 'PixArt');
+    const aliases = row.aliases.map((entry) => entry.alias).sort();
+    assert.deepEqual(aliases, ['PAW-3950', 'PMW3950', 'PixArt 3950', 'PixArt Imaging', 'PixArt Inc.'].sort());
+  });
+
+  it('does not sync component identities from variant-scoped publishes', async () => {
+    ensureProductJson('mouse-component-variant');
+    const config = { publishConfidenceThreshold: 0.7, evidenceVerificationEnabled: false };
+
+    const result = await submitCandidate({
+      ...baseDeps(specDb),
+      productId: 'mouse-component-variant',
+      fieldKey: 'sensor',
+      value: 'PAW3950',
+      confidence: 95,
+      sourceMeta: { source: 'key_finder', run_number: 1 },
+      metadata: evidenceRefsFor('https://component.example.com/variant-paw3950'),
+      config,
+      verifyEvidenceUrls: false,
+      variantId: 'v_white',
+    });
+
+    assert.equal(result.publishResult?.status, 'published');
+    assert.equal(result.componentPublishResult?.status, 'skipped_variant_scope');
+    assert.equal(specDb.getItemComponentLinks('mouse-component-variant').length, 0);
+  });
+
+  // --- HEAD-check gate (evidence URL verification) ---
 
   function stubFetch(handler) {
     const original = globalThis.fetch;
