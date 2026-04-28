@@ -289,6 +289,23 @@ export function clearPifCarouselSelections<TPifData extends ProductImageFinderRe
   };
 }
 
+interface PifCarouselClearServerState {
+  readonly carousel_slots?: Record<string, Record<string, string | null>>;
+}
+
+export function applyPifCarouselClearServerState<TPifData extends ProductImageFinderResult | ProductImageFinderSummary>(
+  data: TPifData | undefined,
+  serverState: PifCarouselClearServerState,
+  selector: PifVariantSelector = {},
+): TPifData | undefined {
+  const cleared = clearPifCarouselSelections(data, selector);
+  if (!cleared) return cleared;
+  return {
+    ...cleared,
+    carousel_slots: serverState.carousel_slots ?? cleared.carousel_slots,
+  };
+}
+
 export function zeroCatalogPifCarouselProgress<TCatalogRow extends Pick<CatalogRow, 'productId' | 'pifVariants'>>(
   rows: readonly TCatalogRow[] | undefined,
   target: { readonly productId: string; readonly variantKey?: string },

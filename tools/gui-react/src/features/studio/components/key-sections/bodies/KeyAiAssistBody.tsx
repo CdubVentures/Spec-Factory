@@ -115,11 +115,10 @@ function ExtractionGuidanceSubsection({
       STUDIO_NUMERIC_KNOB_BOUNDS.evidenceMinRefs.fallback,
     ),
   );
-  const componentType = strN(
-    currentRule,
-    "component.type",
-    strN(currentRule, "component_type"),
-  );
+  // Phase 2: componentType derives from `enum.source` (the lock contract).
+  const componentType = enumSource.startsWith("component_db.")
+    ? enumSource.slice("component_db.".length)
+    : "";
 
   const guidanceParts: string[] = [];
 

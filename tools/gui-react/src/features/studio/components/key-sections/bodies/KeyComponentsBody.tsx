@@ -36,7 +36,14 @@ export function KeyComponentsBody({
   editedRules,
   disabled,
 }: KeyComponentsBodyProps) {
-  const componentType = strN(currentRule, FIELD_RULE_COMPONENT_TYPE_CONTROL.path);
+  // Phase 2: derive componentType from `enum.source` (the lock contract).
+  // The `<select>` writes still go through the `component` path during the
+  // Phase-2 → Phase-3 transition so authored maps stay valid; Phase 3 deletes
+  // this body entirely and `EditableComponentSource` becomes the only writer.
+  const enumSourceForComponent = strN(currentRule, "enum.source");
+  const componentType = enumSourceForComponent.startsWith("component_db.")
+    ? enumSourceForComponent.slice("component_db.".length)
+    : "";
   return (
     <>
       <div className="grid grid-cols-4 gap-3">
@@ -85,7 +92,6 @@ export function KeyComponentsBody({
                     shape: strN(currentRule, "contract.shape") || null,
                     enumSource: strN(currentRule, "enum.source") || null,
                     enumPolicy: strN(currentRule, "enum.policy") || null,
-                    componentSource: strN(currentRule, "component.source") || null,
                   })}
                 </span>
               </span>

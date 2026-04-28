@@ -49,7 +49,6 @@ const FIELD_PATH_ALIAS_DELETE_MAP = {
   'search_hints.query_terms': [['search_hints', 'query_terms']],
   group: [['group']],
   constraints: [['constraints']],
-  'component.type': [['component', 'type'], ['component_db_ref']],
   aliases: [['aliases']],
   product_image_dependent: [['product_image_dependent']],
   'ai_assist.variant_inventory_usage': [['ai_assist', 'variant_inventory_usage']],

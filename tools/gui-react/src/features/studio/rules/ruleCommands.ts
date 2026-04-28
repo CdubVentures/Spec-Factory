@@ -16,14 +16,6 @@ const PRIORITY_SIGNAL_PATHS = new Set([
   'priority.difficulty',
 ]);
 
-// WHY: component path sets full object; extract .type for cascade comparison.
-const CASCADE_PATH_ALIASES: Record<string, (value: unknown) => { path: string; extracted: unknown }> = {
-  'component': (value) => ({
-    path: 'component.type',
-    extracted: value && typeof value === 'object' ? (value as Record<string, unknown>).type : '',
-  }),
-};
-
 export function createSetFieldValueCommand(
   path: string,
   value: unknown,
@@ -148,7 +140,7 @@ export function applyStudioRuleCommand({
   const prevValues: Record<string, unknown> = {
     'contract.type': getN(rule, 'contract.type'),
     'contract.shape': getN(rule, 'contract.shape'),
-    'component.type': getN(rule, 'component.type'),
+    'enum.source': getN(rule, 'enum.source'),
     'priority.required_level': getN(rule, 'priority.required_level'),
   };
 
@@ -163,18 +155,11 @@ export function applyStudioRuleCommand({
     applyPrioritySignalCoupling(rule);
   }
 
-  // WHY: Generic cascade engine replaces per-path manual coupling.
-  // All cascade rules live in fieldCascadeRegistry.ts (O(1) scaling).
-  let cascadePath = normalizedPath;
-  let cascadeNewVal: unknown = command.value;
-  const alias = CASCADE_PATH_ALIASES[normalizedPath];
-  if (alias) {
-    const resolved = alias(command.value);
-    cascadePath = resolved.path;
-    cascadeNewVal = resolved.extracted;
-  }
-  const prevVal = prevValues[cascadePath];
-  applyCascadeEffects(rule, cascadePath, prevVal, cascadeNewVal);
+  // WHY: Generic cascade engine — all cascade rules live in
+  // fieldCascadeRegistry.ts. Phase 2 retired the `component` path alias
+  // because the cascade now triggers on `enum.source` (the new SSOT linkage).
+  const prevVal = prevValues[normalizedPath];
+  applyCascadeEffects(rule, normalizedPath, prevVal, command.value);
 
   // WHY: Legacy alias sync for cascade-derived enum changes.
   const postEnumSource = getN(rule, 'enum.source');

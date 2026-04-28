@@ -39,6 +39,7 @@ import { estimatePifEvalOperationCount } from './commandConsoleBatchEstimates.ts
 import { CommandConsoleModelStrip } from './CommandConsoleModelStrip.tsx';
 import { CommandConsoleKeysDropdown } from './CommandConsoleKeysDropdown.tsx';
 import { zeroCatalogPifCarouselProgress } from '../../features/product-image-finder/state/pifDeleteOptimism.ts';
+import { invalidatePifCarouselClearAllQueries } from './pifCarouselClearInvalidation.ts';
 import {
   useSmartSelectSize,
   SMART_SELECT_SIZE_MIN,
@@ -542,8 +543,7 @@ export const CommandConsole = memo(function CommandConsoleInner({ category, allR
         queryClient.setQueryData<CatalogRow[] | undefined>(catalogQueryKey, previousCatalog);
       }
     } finally {
-      void queryClient.invalidateQueries({ queryKey: catalogQueryKey });
-      void queryClient.invalidateQueries({ queryKey: ['product-image-finder', category] });
+      invalidatePifCarouselClearAllQueries({ queryClient, category, products: selectedProducts });
       setBulkPifCarouselClearPending(false);
       setBulkPifCarouselClearOpen(false);
     }

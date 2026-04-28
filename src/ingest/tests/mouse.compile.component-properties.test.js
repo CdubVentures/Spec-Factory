@@ -205,10 +205,11 @@ test('FRC-05-C - buildStudioFieldRule auto-derives property_keys from component_
     const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
     const sensor = fieldRules.fields?.sensor;
     assert.ok(sensor, 'sensor field should exist in compiled output');
-    assert.ok(sensor.component, 'sensor field should have a component block');
-    // Phase 1: component.match.* retired from compile output. property_keys
-    // are now sourced at runtime from field_studio_map.component_sources.
-    assert.equal(sensor.component.match, undefined, 'component.match block should not be emitted');
+    // Phase 2: `component` block retired entirely from compile output.
+    // The single linkage is `enum.source = component_db.<X>`. property_keys
+    // come at runtime from field_studio_map.component_sources.
+    assert.equal(sensor.component, undefined, 'component block should not be emitted');
+    assert.equal(sensor.enum?.source, 'component_db.sensor', 'enum.source must carry the component_db linkage');
   } finally {
     await cleanup();
   }

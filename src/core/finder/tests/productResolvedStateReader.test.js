@@ -26,28 +26,27 @@ import {
 
 // ── Fixtures ────────────────────────────────────────────────────────────
 
-// Parent-component rule shape — Phase 1: property lists no longer live in the
-// compiled rule, so the test fixture only carries the type/source. The
-// property list comes via the SOURCES fixture below (mirroring
+// Parent-component rule shape — Phase 2: `component.*` retired entirely.
+// Parent identity = `enum.source === component_db.<self>`. Property list
+// comes via the SOURCES fixture below (mirroring
 // field_studio_map.component_sources, the runtime SSOT).
 function parentRule(type) {
   return {
     field_key: type,
-    component: {
-      type,
-      source: `component_db.${type}`,
-    },
+    enum: { source: `component_db.${type}`, policy: 'open_prefer_known' },
     contract: { type: 'string', shape: 'scalar' },
     group: type,
   };
 }
 
 function subfieldRule(key, contractType = 'string') {
-  return { field_key: key, component: null, contract: { type: contractType, shape: 'scalar' } };
+  // Phase 2: subfields no longer carry a component block; parent linkage
+  // is in field_studio_map.component_sources only.
+  return { field_key: key, contract: { type: contractType, shape: 'scalar' } };
 }
 
 function scalarRule(key) {
-  return { field_key: key, component: null, contract: { type: 'string', shape: 'scalar' } };
+  return { field_key: key, contract: { type: 'string', shape: 'scalar' } };
 }
 
 function variantRule(key) {
@@ -132,6 +131,32 @@ test('buildComponentRelationIndex: null rule object is skipped', () => {
   const idx = buildComponentRelationIndex({ missing: null, sensor: RULES.sensor }, SOURCES);
   assert.ok(idx.parentKeys.has('sensor'));
   assert.equal(idx.parentKeys.has('missing'), false);
+});
+
+// Phase 2: parent identity = `enum.source === component_db.<self>`. Verify the
+// boundary contract — cousin keys whose enum.source points at a *different*
+// component_db must NOT be flagged as parents of themselves.
+test('buildComponentRelationIndex: parent only when enum.source === component_db.<self>', () => {
+  const cousinSensor = {
+    field_key: 'sensor_alias',
+    enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
+    contract: { type: 'string', shape: 'scalar' },
+  };
+  const idx = buildComponentRelationIndex(
+    { sensor: RULES.sensor, sensor_alias: cousinSensor },
+    SOURCES,
+  );
+  assert.ok(idx.parentKeys.has('sensor'), 'self-locked sensor IS a parent');
+  assert.equal(
+    idx.parentKeys.has('sensor_alias'),
+    false,
+    'cousin pointing at component_db.sensor is NOT a parent of itself',
+  );
+});
+
+test('buildComponentRelationIndex: scalar field with no enum.source is not a parent', () => {
+  const idx = buildComponentRelationIndex({ polling_rate: RULES.polling_rate }, SOURCES);
+  assert.equal(idx.parentKeys.has('polling_rate'), false);
 });
 
 // ── resolveProductComponentInventory ────────────────────────────────────

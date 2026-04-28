@@ -33,7 +33,7 @@ test('resolveComponentRef exact match returns canonical name', () => {
   const attempts = [];
   const context = { identityObservations: [] };
   const result = resolveComponentRef('pixart 3395', {
-    rule: { component: { type: 'sensor' } },
+    rule: { enum: { source: 'component_db.sensor' } },
     fieldKey: 'sensor',
     rawCandidate: 'pixart 3395',
     lookupComponent: (db, q) => q === 'pixart 3395' ? { canonical_name: 'PAW3395' } : null,
@@ -73,7 +73,7 @@ test('resolveComponentRef auto-accepts when name score >= AUTO_ACCEPT (0.95)', (
   const attempts = [];
   const context = { identityObservations: [] };
   const result = resolveComponentRef('PAW 3395', {
-    rule: { component: { type: 'sensor' } },
+    rule: { enum: { source: 'component_db.sensor' } },
     fieldKey: 'sensor',
     rawCandidate: 'PAW 3395',
     lookupComponent: () => null,
@@ -98,7 +98,7 @@ test('resolveComponentRef flags for review when score >= FLAG_REVIEW (0.65) but 
   const attempts = [];
   const context = {};
   const result = resolveComponentRef('PAW3300', {
-    rule: { component: { type: 'sensor' } },
+    rule: { enum: { source: 'component_db.sensor' } },
     fieldKey: 'sensor',
     rawCandidate: 'PAW3300',
     lookupComponent: () => null,
@@ -118,24 +118,41 @@ test('resolveComponentRef flags for review when score >= FLAG_REVIEW (0.65) but 
 
 // ── resolveComponentRef: new component suggestion ─────────────────────────────
 
-test('resolveComponentRef suggests new component when allow_new_components is true', () => {
+test('resolveComponentRef suggests new component when enum.policy allows new (open / open_prefer_known)', () => {
+  // Phase 2: allow_new_components derived from enum.policy.
+  for (const policy of ['open', 'open_prefer_known']) {
+    const attempts = [];
+    const context = {};
+    const result = resolveComponentRef('HERO X2', {
+      rule: { enum: { source: 'component_db.sensor', policy } },
+      fieldKey: 'sensor',
+      rawCandidate: 'HERO X2',
+      lookupComponent: () => null,
+      fuzzyMatchComponent: () => ({ match: null, score: 0.2, alternatives: [] }),
+      rules: {},
+      context,
+      attempts
+    });
+    assert.equal(result.ok, true, `policy=${policy} should permit new suggestion`);
+    assert.equal(result.value, 'HERO X2');
+    assert.ok(attempts.includes('component:new_suggestion_flagged'));
+  }
+});
+
+test('resolveComponentRef rejects new suggestion when enum.policy is closed', () => {
   const attempts = [];
-  const context = {};
   const result = resolveComponentRef('HERO X2', {
-    rule: {
-      component: { type: 'sensor', allow_new_components: true }
-    },
+    rule: { enum: { source: 'component_db.sensor', policy: 'closed' } },
     fieldKey: 'sensor',
     rawCandidate: 'HERO X2',
     lookupComponent: () => null,
     fuzzyMatchComponent: () => ({ match: null, score: 0.2, alternatives: [] }),
     rules: {},
-    context,
+    context: {},
     attempts
   });
-  assert.equal(result.ok, true);
-  assert.equal(result.value, 'HERO X2');
-  assert.ok(attempts.includes('component:new_suggestion_flagged'));
+  assert.equal(result.ok, false);
+  assert.equal(result.reason_code, 'component_not_found');
 });
 
 // ── resolveComponentRef: rejection (no match, not allowed) ────────────────────
@@ -143,7 +160,7 @@ test('resolveComponentRef suggests new component when allow_new_components is tr
 test('resolveComponentRef returns component_not_found when no match and no allow_new', () => {
   const attempts = [];
   const result = resolveComponentRef('HERO X2', {
-    rule: { component: { type: 'sensor' } },
+    rule: { enum: { source: 'component_db.sensor' } },
     fieldKey: 'sensor',
     rawCandidate: 'HERO X2',
     lookupComponent: () => null,
@@ -164,7 +181,7 @@ test('resolveComponentRef property scoring uses caller-provided propertyKeys', (
   const attempts = [];
   const context = { identityObservations: [], extractedValues: { max_dpi: 26000 } };
   const result = resolveComponentRef('PAW 3395', {
-    rule: { component: { type: 'sensor' } },
+    rule: { enum: { source: 'component_db.sensor' } },
     fieldKey: 'sensor',
     rawCandidate: 'PAW 3395',
     lookupComponent: () => null,
@@ -192,7 +209,7 @@ test('resolveComponentRef upper_bound variance gives full credit when extracted 
   const attempts = [];
   const context = { identityObservations: [], extractedValues: { max_dpi: 20000 } };
   const result = resolveComponentRef('PAW 3395', {
-    rule: { component: { type: 'sensor' } },
+    rule: { enum: { source: 'component_db.sensor' } },
     fieldKey: 'sensor',
     rawCandidate: 'PAW 3395',
     lookupComponent: () => null,

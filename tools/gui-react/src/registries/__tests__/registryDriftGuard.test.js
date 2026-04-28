@@ -50,11 +50,11 @@ describe('registryDriftGuard - every monitored surface reads option lists from t
     assert.match(source, /from\s+['"][^'"]*registries\/fieldRuleTaxonomy/, 'must import from fieldRuleTaxonomy');
   });
 
-  it('KeyContractBody.tsx imports type/shape registry', () => {
+  it('KeyContractBody.tsx imports contract controls from field-rule schema registry', () => {
     const source = readSource('tools/gui-react/src/features/studio/components/key-sections/bodies/KeyContractBody.tsx');
-    assert.match(source, /VALID_TYPES/, 'must import VALID_TYPES');
-    assert.match(source, /VALID_SHAPES/, 'must import VALID_SHAPES');
-    assert.match(source, /from\s+['"][^'"]*typeShapeRegistry/, 'must import from typeShapeRegistry');
+    assert.match(source, /FIELD_RULE_CONTRACT_CONTROLS/, 'must import FIELD_RULE_CONTRACT_CONTROLS');
+    assert.match(source, /FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS/, 'must import dependency controls');
+    assert.match(source, /from\s+['"][^'"]*fieldRuleSchema/, 'must import from fieldRuleSchema');
   });
 
   for (const surface of SURFACE_FILES) {
@@ -75,7 +75,7 @@ describe('registryDriftGuard - every monitored surface reads option lists from t
         assert.equal(
           source.includes(literal),
           false,
-          `${surface} must not contain retired shape literal ${literal}. Use VALID_SHAPES from typeShapeRegistry instead.`,
+          `${surface} must not contain retired shape literal ${literal}. Use registry-derived shape options instead.`,
         );
       }
     });

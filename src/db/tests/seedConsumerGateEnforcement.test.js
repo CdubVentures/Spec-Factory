@@ -7,7 +7,7 @@ import path from 'node:path';
 import { SpecDb } from '../specDb.js';
 import { seedSpecDb } from '../seed.js';
 
-test('seed consumer gate disables component link creation when component.type is off', async () => {
+test('seed consumer gate disables component link creation when enum.source is off', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'seed-consumer-gate-'));
   const category = 'mouse';
   const config = {
@@ -52,9 +52,12 @@ test('seed consumer gate disables component link creation when component.type is
         fields: {
           sensor: {
             contract: { type: 'string', shape: 'scalar' },
-            component: { type: 'sensor' },
+            // Phase 2: enum.source is the SSOT linkage to a component_db.
+            // Gating it via consumers strips the link, so seed must skip
+            // component_link creation for this field.
+            enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
             consumers: {
-              'component.type': {
+              'enum.source': {
                 seed: false
               }
             }

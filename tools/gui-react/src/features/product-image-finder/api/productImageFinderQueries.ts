@@ -3,6 +3,7 @@ import { api } from '../../../api/client.ts';
 import { useDataChangeMutation } from '../../data-change/index.js';
 import { removeImageFromResult, removeImagesFromResult } from '../selectors/pifSelectors.ts';
 import {
+  applyPifCarouselClearServerState,
   clearPifCarouselSelections,
   decrementCatalogPifProgressForRemovedImages,
   removeImagesFromPifSummary,
@@ -79,6 +80,8 @@ interface ClearCarouselMutationContext {
 
 type CarouselClearResponse = {
   readonly ok: boolean;
+  readonly productId: string;
+  readonly category: string;
   readonly carousel_slots: Record<string, Record<string, string | null>>;
   readonly eval_state?: Record<string, unknown>;
 };
@@ -412,6 +415,17 @@ export function useClearCarouselWinnersMutation(category: string, productId: str
           queryClient.setQueryData<CatalogRow[]>(catalogQueryKey, context.previousCatalog);
         }
       },
+      onSuccess: (data, variables) => {
+        const selector = { variantKey: variables.variant_key, variantId: variables.variant_id };
+        queryClient.setQueryData<ProductImageFinderResult | undefined>(
+          queryKey,
+          (current) => applyPifCarouselClearServerState(current, data, selector),
+        );
+        queryClient.setQueryData<ProductImageFinderSummary | undefined>(
+          summaryQueryKey,
+          (current) => applyPifCarouselClearServerState(current, data, selector),
+        );
+      },
     },
   });
 }
@@ -466,6 +480,16 @@ export function useClearAllCarouselWinnersMutation(category: string, productId: 
         if (context?.previousCatalog) {
           queryClient.setQueryData<CatalogRow[]>(catalogQueryKey, context.previousCatalog);
         }
+      },
+      onSuccess: (data) => {
+        queryClient.setQueryData<ProductImageFinderResult | undefined>(
+          queryKey,
+          (current) => applyPifCarouselClearServerState(current, data),
+        );
+        queryClient.setQueryData<ProductImageFinderSummary | undefined>(
+          summaryQueryKey,
+          (current) => applyPifCarouselClearServerState(current, data),
+        );
       },
     },
   });

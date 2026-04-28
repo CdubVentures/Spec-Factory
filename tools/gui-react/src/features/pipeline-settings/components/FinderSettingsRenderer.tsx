@@ -8,6 +8,11 @@ import {
   type FinderIdWithSettings,
 } from '../state/finderSettingsRegistry.generated.ts';
 import { MODULE_SETTINGS_SCOPE_BY_ID } from '../state/moduleSettingsSections.generated.ts';
+import type { ModuleSettingsScope } from '../state/moduleSettingsSections.generated.ts';
+import {
+  filterFinderSettingsByEntryScope,
+  type FinderSettingsEntryScope,
+} from '../state/moduleSettingsEntryScope.ts';
 import { getSettingWidget } from './widgets/widgetRegistry.ts';
 // WHY: Side-effect import registers all built-in widgets with the registry at module load.
 import './widgets/index.ts';
@@ -15,14 +20,31 @@ import './widgets/index.ts';
 interface FinderSettingsRendererProps {
   finderId: string;
   category: string;
+  entryScope?: FinderSettingsEntryScope;
+  settingsScopeOverride?: ModuleSettingsScope;
 }
 
-export function FinderSettingsRenderer({ finderId, category }: FinderSettingsRendererProps) {
-  const { settings, isSaving, saveSetting, saveSettings } = useModuleSettingsAuthority({ category, moduleId: finderId });
+export function FinderSettingsRenderer({
+  finderId,
+  category,
+  entryScope,
+  settingsScopeOverride,
+}: FinderSettingsRendererProps) {
+  const { settings, isSaving, saveSetting, saveSettings } = useModuleSettingsAuthority({
+    category,
+    moduleId: finderId,
+    scopeOverride: settingsScopeOverride,
+  });
 
   const schema = isFinderIdWithSettings(finderId) ? FINDER_SETTINGS_REGISTRY[finderId] : null;
 
-  const { groups, claimedKeys } = useMemo(() => groupSchema(schema ?? []), [schema]);
+  const renderSchema = useMemo(() => {
+    if (!schema) return null;
+    if (!entryScope) return schema;
+    return filterFinderSettingsByEntryScope(finderId, entryScope);
+  }, [entryScope, finderId, schema]);
+
+  const { groups, claimedKeys } = useMemo(() => groupSchema(renderSchema ?? []), [renderSchema]);
 
   if (!schema) {
     return (
@@ -32,7 +54,7 @@ export function FinderSettingsRenderer({ finderId, category }: FinderSettingsRen
     );
   }
 
-  const visibleEntries = schema.filter((e) => !e.hidden && !claimedKeys.has(e.key));
+  const visibleEntries = (renderSchema ?? []).filter((e) => !e.hidden && !claimedKeys.has(e.key));
   if (visibleEntries.length === 0) {
     const scope = isFinderIdWithSettings(finderId) ? MODULE_SETTINGS_SCOPE_BY_ID[finderId] : 'category';
     return (

@@ -374,21 +374,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
 
   // ═══ Components ══════════════════════════════════════════════════════
 
-  { path: 'component.type', type: 'string', flatAliases: ['component_type'],
-    section: 'Components', key: 'Component Type',
-    consumers: {
-      'eng.component': { desc: 'Identifies the component type for component DB matching and identity resolution.' },
-      'rev.component': { desc: 'Validates component identity candidates against the known component database. Also used to resolve declared component property columns in the review surface. componentReviewHelpers.js:165.' },
-      'seed.schema': { desc: 'Creates component identity records and links in SpecDb via the compiled componentDBs.' },
-      'llm.kf': { desc: 'Rendered as the type label in the always-on PRODUCT_COMPONENTS inventory block and in the per-key relation pointer ("This key IS the {type} component identity" / "This key belongs to the {type} component"). keyLlmAdapter.js:211-216, 219-236; productResolvedStateReader.js:86, 108.' },
-    } },
-
-  { path: 'component.allow_new_components', type: 'presence', flatAliases: [],
-    section: 'Components', key: 'Allow New Components',
-    consumers: {
-      'eng.component': { desc: 'When true, extraction can create new component identities not in the existing DB.' },
-    } },
-
   { path: 'component_db_ref', type: 'string', flatAliases: [],
     section: 'Components', key: 'Component DB Reference',
     consumers: {

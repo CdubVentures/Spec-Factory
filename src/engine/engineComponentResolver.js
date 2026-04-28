@@ -65,7 +65,12 @@ export function resolveComponentRef(value, {
   attempts,
   propertyKeys = []
 }) {
-  const dbName = normalizeText(rule?.component?.type);
+  // Phase 2: dbName is derived from `enum.source` only — `component.*` is gone
+  // from compiled rules. The lock contract is `enum.source = component_db.<X>`.
+  const enumSource = String(rule?.enum?.source || '');
+  const dbName = enumSource.startsWith('component_db.')
+    ? enumSource.slice('component_db.'.length)
+    : '';
   if (!dbName) {
     return {
       ok: false,
@@ -92,7 +97,6 @@ export function resolveComponentRef(value, {
   }
 
   // Property-aware tiered scoring for component resolution
-  const componentRule = isObject(rule?.component) ? rule.component : {};
   const propKeys = toArray(propertyKeys);
   const fuzzy = fuzzyMatchComponent(dbName, query, FUZZY_THRESHOLD);
 
@@ -201,7 +205,11 @@ export function resolveComponentRef(value, {
     return { ok: true, value: fuzzy.match.canonical_name };
   }
 
-  if (componentRule.allow_new_components === true) {
+  // Phase 2: `allow_new_components` derived from enum.policy. Open / open_prefer_known
+  // policies allow suggesting new component identities; closed policies do not.
+  const enumPolicy = normalizeToken(rule?.enum?.policy || '');
+  const allowNewComponents = enumPolicy === 'open' || enumPolicy === 'open_prefer_known';
+  if (allowNewComponents) {
     const newValue = normalizeText(Array.isArray(value) ? value[0] : value);
     attempts.push('component:new_suggestion_flagged');
     return { ok: true, value: newValue };

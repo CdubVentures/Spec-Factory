@@ -10,10 +10,21 @@ import {
   validateTypeShapeCombo,
 } from '../typeShapeRegistry.ts';
 import type { FieldType, FieldShape } from '../typeShapeRegistry.ts';
+import { FIELD_RULE_CONTRACT_CONTROLS } from '../../../../../../../src/field-rules/fieldRuleSchema.js';
+
+function optionsFor(path: string): readonly string[] {
+  const control = FIELD_RULE_CONTRACT_CONTROLS.find((entry) => entry.path === path);
+  assert.ok(control?.options, `missing registry options for ${path}`);
+  return control.options;
+}
 
 describe('typeShapeRegistry', () => {
   describe('VALID_TYPES', () => {
     const expected: FieldType[] = ['string', 'number', 'integer', 'boolean', 'date', 'url', 'range', 'mixed_number_range'];
+
+    it('derives from FIELD_RULE_CONTRACT_CONTROLS', () => {
+      assert.deepEqual(VALID_TYPES, optionsFor('contract.type'));
+    });
 
     for (const type of expected) {
       it(`includes "${type}"`, () => {
@@ -31,6 +42,10 @@ describe('typeShapeRegistry', () => {
   });
 
   describe('VALID_SHAPES', () => {
+    it('derives from FIELD_RULE_CONTRACT_CONTROLS', () => {
+      assert.deepEqual(VALID_SHAPES, optionsFor('contract.shape'));
+    });
+
     it('includes scalar and list', () => {
       assert.ok(VALID_SHAPES.includes('scalar'));
       assert.ok(VALID_SHAPES.includes('list'));

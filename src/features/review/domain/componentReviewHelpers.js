@@ -159,17 +159,17 @@ export function resolveDeclaredComponentPropertyColumns({ fieldRules = null, com
   if (!targetType || !isObject(fieldRules)) return [];
 
   const keys = new Set();
+  // Phase 2: parent identity comes from `enum.source === component_db.<self>`
+  // and property_keys live in field_studio_map.component_sources (walked
+  // below via the `component_db_sources` block). The legacy
+  // `rule.component.match.property_keys` walk is gone.
   const fields = resolveFieldRulesEntries(fieldRules);
-  for (const rule of Object.values(fields)) {
+  for (const [fieldKey, rule] of Object.entries(fields)) {
     if (!isObject(rule)) continue;
-    const componentBlock = isObject(rule.component) ? rule.component : {};
-    if (normalizeFieldKey(componentBlock.type || '') !== targetType) continue;
-    const matchBlock = isObject(componentBlock.match) ? componentBlock.match : {};
-    for (const rawKey of toArray(matchBlock.property_keys)) {
-      const key = normalizeFieldKey(rawKey);
-      if (!key || key.startsWith('__')) continue;
-      keys.add(key);
-    }
+    const enumSource = String(rule?.enum?.source || '');
+    if (enumSource !== `component_db.${targetType}`) continue;
+    if (normalizeFieldKey(fieldKey) !== targetType) continue;
+    // Self-locked parent — record nothing here; properties come from sources walk.
   }
 
   const componentSources = isObject(fieldRules?.component_db_sources)

@@ -546,7 +546,10 @@ export function KeyNavigatorTab({
                   "enum.policy",
                   strN(currentRule, "enum_policy", "open"),
                 );
-                const ct = strN(currentRule, "component.type");
+                const ctEnumSource = strN(currentRule, "enum.source");
+                const ct = ctEnumSource.startsWith("component_db.")
+                  ? ctEnumSource.slice("component_db.".length)
+                  : "";
                 const chipCls =
                   "px-2 py-0.5 text-[11px] rounded-full font-medium";
                 const isComponent = !!ct;

@@ -107,52 +107,60 @@ test('cascade: scalar → list returns empty (gaining capabilities)', async () =
 });
 
 // ---------------------------------------------------------------------------
-// CASCADE_RULES — component.type transitions
+// CASCADE_RULES — enum.source transitions (Phase 2: enum.source is the SSOT
+// linkage to a component_db; setting it auto-locks the contract)
 // ---------------------------------------------------------------------------
 
-test('cascade: selecting component type cascades to enum', async () => {
+test('cascade: setting enum.source = component_db.X coerces contract + sets policy', async () => {
   const { collectCascadeEffects } = await loadCascadeRegistry();
-  const rule = {};
-  const effects = collectCascadeEffects(rule, 'component.type', '', 'sensor');
-
-  const derivedEnum = effects.find(e => e.path === 'enum.source');
-  assert.ok(derivedEnum, 'should cascade enum.source');
-  assert.equal(derivedEnum.resolvedValue, 'component_db.sensor');
-
-  const policySet = effects.find(e => e.path === 'enum.policy');
-  assert.ok(policySet, 'should cascade enum.policy');
-  assert.equal(policySet.value, 'open_prefer_known');
-});
-
-test('cascade: clearing component type clears component.* and reverts component_db enum', async () => {
-  const { collectCascadeEffects } = await loadCascadeRegistry();
-  const rule = {
-    component: { type: 'sensor', source: 'component_db.sensor' },
-    enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
-  };
-  const effects = collectCascadeEffects(rule, 'component.type', 'sensor', '');
+  const rule = { contract: { type: 'number', shape: 'list', unit: 'g' } };
+  const effects = collectCascadeEffects(rule, 'enum.source', '', 'component_db.sensor');
 
   const paths = effects.map(e => e.path);
-  assert.ok(paths.includes('component.source'), 'should clear component.source');
-  assert.ok(!paths.includes('component.match'), 'component.match retired in Phase 1');
-  // enum.source should clear because it starts with component_db.
-  const enumSourceEffect = effects.find(e => e.path === 'enum.source');
-  assert.ok(enumSourceEffect, 'should clear enum.source');
+  assert.ok(paths.includes('contract.type'), 'should coerce contract.type');
+  assert.ok(paths.includes('contract.shape'), 'should coerce contract.shape');
+  assert.ok(paths.includes('contract.unit'), 'should clear contract.unit');
+  assert.ok(paths.includes('enum.policy'), 'should set enum.policy=open_prefer_known');
+
+  const typeEffect = effects.find(e => e.path === 'contract.type');
+  assert.equal(typeEffect.value, 'string');
+  const shapeEffect = effects.find(e => e.path === 'contract.shape');
+  assert.equal(shapeEffect.value, 'scalar');
+  const policyEffect = effects.find(e => e.path === 'enum.policy');
+  assert.equal(policyEffect.value, 'open_prefer_known');
 });
 
-test('cascade: clearing component type does NOT revert non-component_db enum', async () => {
+test('cascade: clearing enum.source from component_db.X reverts only auto-applied policy', async () => {
   const { collectCascadeEffects } = await loadCascadeRegistry();
   const rule = {
-    component: { type: 'sensor', source: 'component_db.sensor' },
-    enum: { source: 'data_lists.custom', policy: 'closed' },
+    contract: { type: 'string', shape: 'scalar' },
+    enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
   };
-  const effects = collectCascadeEffects(rule, 'component.type', 'sensor', '');
+  const effects = collectCascadeEffects(rule, 'enum.source', 'component_db.sensor', '');
 
-  const enumSourceEffect = effects.find(e => e.path === 'enum.source');
-  assert.equal(enumSourceEffect, undefined, 'should NOT touch non-component_db enum.source');
+  const paths = effects.map(e => e.path);
+  // contract.type / contract.shape stay — caller picks new shape deliberately.
+  assert.ok(!paths.includes('contract.type'), 'contract.type stays');
+  assert.ok(!paths.includes('contract.shape'), 'contract.shape stays');
 
-  const enumPolicyEffect = effects.find(e => e.path === 'enum.policy');
-  assert.equal(enumPolicyEffect, undefined, 'should NOT touch enum.policy when not open_prefer_known');
+  const policyEffect = effects.find(e => e.path === 'enum.policy');
+  assert.ok(policyEffect, 'should clear enum.policy when it was open_prefer_known');
+});
+
+test('cascade: switching enum.source from data_lists.* to component_db.X locks contract', async () => {
+  const { collectCascadeEffects } = await loadCascadeRegistry();
+  const rule = { contract: { type: 'string', shape: 'list' }, enum: { source: 'data_lists.x' } };
+  const effects = collectCascadeEffects(rule, 'enum.source', 'data_lists.x', 'component_db.sensor');
+
+  const shapeEffect = effects.find(e => e.path === 'contract.shape');
+  assert.equal(shapeEffect.value, 'scalar');
+});
+
+test('cascade: setting enum.source = data_lists.X does NOT trigger component-lock', async () => {
+  const { collectCascadeEffects } = await loadCascadeRegistry();
+  const rule = { contract: { type: 'number', shape: 'scalar' } };
+  const effects = collectCascadeEffects(rule, 'enum.source', '', 'data_lists.custom');
+  assert.equal(effects.length, 0, 'data_lists.* should not trigger component-lock cascade');
 });
 
 // ---------------------------------------------------------------------------

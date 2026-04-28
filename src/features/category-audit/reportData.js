@@ -58,12 +58,17 @@ function normalizeEnum(rule, enumsIndex) {
   const e = rule?.enum || {};
   const source = e.source ? String(e.source) : '';
   const inlineValues = Array.isArray(e.values) ? e.values : [];
-  // data_lists.X → look up in known_values.enums.X if no inline values
+  // Phase 2: enum.source can be `data_lists.X` or `component_db.X` —
+  // both resolve to known_values.enums.X for the value pool.
   let resolvedValues = inlineValues;
-  if (inlineValues.length === 0 && source.startsWith('data_lists.')) {
-    const key = source.slice('data_lists.'.length);
-    const entry = enumsIndex[key];
-    if (entry && Array.isArray(entry.values)) resolvedValues = entry.values;
+  if (inlineValues.length === 0) {
+    let key = '';
+    if (source.startsWith('data_lists.')) key = source.slice('data_lists.'.length);
+    else if (source.startsWith('component_db.')) key = source.slice('component_db.'.length);
+    if (key) {
+      const entry = enumsIndex[key];
+      if (entry && Array.isArray(entry.values)) resolvedValues = entry.values;
+    }
   }
   return {
     policy: String(e.policy || ''),
@@ -92,12 +97,14 @@ function normalizeConstraints(rule) {
 }
 
 function normalizeComponent(rule, componentRelations) {
-  const c = rule?.component;
-  if (c && c.type) {
-    return { type: String(c.type), relation: 'parent', source: String(c.source || '') };
+  // Phase 2: parent identity comes from `enum.source === component_db.<self>`.
+  // Subfield detection unchanged: look up via componentRelations index.
+  const fieldKey = rule?.field_key;
+  const enumSource = String(rule?.enum?.source || '');
+  if (fieldKey && enumSource === `component_db.${fieldKey}`) {
+    return { type: String(fieldKey), relation: 'parent', source: enumSource };
   }
-  // Subfield detection: look up in componentRelations index built from component_db
-  const subfieldOf = componentRelations.subfieldOf[rule?.field_key];
+  const subfieldOf = componentRelations.subfieldOf[fieldKey];
   if (subfieldOf) return { type: subfieldOf, relation: 'subfield_of', source: `component_db.${subfieldOf}` };
   return null;
 }
@@ -207,7 +214,12 @@ function buildEnumInventory(enumsIndex, keysByField) {
   for (const [fk, key] of Object.entries(keysByField)) {
     const source = key.enum.source;
     if (!source) continue;
-    const enumName = source.startsWith('data_lists.') ? source.slice('data_lists.'.length) : source;
+    // Phase 2: enum.source can be `data_lists.<X>` (free-form value pools) or
+    // `component_db.<X>` (component-locked fields). Both resolve to the
+    // shared known_values entry keyed by the source tail.
+    let enumName = source;
+    if (source.startsWith('data_lists.')) enumName = source.slice('data_lists.'.length);
+    else if (source.startsWith('component_db.')) enumName = source.slice('component_db.'.length);
     if (!usage[enumName]) usage[enumName] = [];
     usage[enumName].push(fk);
   }

@@ -8,7 +8,6 @@ export interface DeriveInputControlOptions {
   shape?: string | null;
   enumSource?: string | null;
   enumPolicy?: string | null;
-  componentSource?: string | null;
 }
 
 const TYPE_TO_INPUT: Partial<Record<string, InputControl>> = {
@@ -24,10 +23,11 @@ export function deriveInputControl(opts: DeriveInputControlOptions): InputContro
   const shape = String(opts.shape || 'scalar');
   const enumSource = String(opts.enumSource || '');
   const enumPolicy = String(opts.enumPolicy || 'open');
-  const componentSource = String(opts.componentSource || '');
 
-  // 1. Component DB source (highest priority — check both enum.source and component.source)
-  if (componentSource.startsWith('component_db.') || enumSource.startsWith('component_db.')) {
+  // 1. Component DB source (highest priority). Phase 2: enum.source is the
+  // single authored linkage to a component_db; the legacy component.source
+  // path was retired alongside the rest of the rule.component.* block.
+  if (enumSource.startsWith('component_db.')) {
     return 'component_picker';
   }
 

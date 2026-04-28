@@ -43,8 +43,8 @@ function isKnownToken(v) {
 
 function extractComponentTypeFromRule(rule) {
   if (!isObject(rule)) return null;
-  const directType = String(rule?.component?.type || rule?.component_type || '').trim();
-  if (directType) return directType;
+  // Phase 2: enum.source is the only authored linkage. The legacy
+  // `rule.component.type` / `rule.component_type` reads are gone.
   const enumSource = String(rule?.enum?.source || rule?.enum_source || '').trim();
   if (enumSource.toLowerCase().startsWith('component_db.')) {
     const suffix = enumSource.slice('component_db.'.length);

@@ -1,3 +1,4 @@
+import { FIELD_RULE_ENUM_CONTROLS } from '../../../../../../src/field-rules/fieldRuleSchema.js';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import { SubSection } from './Section.tsx';
 import { selectCls, labelCls, STUDIO_TIPS } from './studioConstants.ts';
@@ -19,6 +20,16 @@ interface EnumConfiguratorProps {
 
 const VALUE_CHIP_CLS = 'inline-flex items-center px-2 py-0.5 text-xs rounded-full font-medium sf-chip-info-soft';
 
+function enumControl(controlId: string): typeof FIELD_RULE_ENUM_CONTROLS[number] {
+  const control = FIELD_RULE_ENUM_CONTROLS.find((entry) => entry.controlId === controlId);
+  if (!control) throw new Error(`Missing enum control metadata for ${controlId}`);
+  return control;
+}
+
+const ENUM_POLICY_CONTROL = enumControl('enum_policy');
+const ENUM_SOURCE_CONTROL = enumControl('enum_source');
+const ENUM_FORMAT_HINT_CONTROL = enumControl('enum_format_hint');
+
 // ── Component ────────────────────────────────────────────────────────
 export function EnumConfigurator({
   fieldKey,
@@ -30,8 +41,8 @@ export function EnumConfigurator({
   renderLabelSuffix,
   isEgLocked = false,
 }: EnumConfiguratorProps) {
-  const currentSource = strN(rule, 'enum.source', strN(rule, 'enum_source'));
-  const currentPolicy = strN(rule, 'enum.policy', strN(rule, 'enum_policy', 'open'));
+  const currentSource = strN(rule, ENUM_SOURCE_CONTROL.path, strN(rule, 'enum_source'));
+  const currentPolicy = strN(rule, ENUM_POLICY_CONTROL.path, strN(rule, 'enum_policy', String(ENUM_POLICY_CONTROL.fallback)));
   const isBoolean = contractType === 'boolean';
   const effectivePolicy = isBoolean ? 'closed' : currentPolicy;
 
@@ -43,7 +54,7 @@ export function EnumConfigurator({
   const selectedListEntry = enumLists.find((e) => e.field === selectedEnumList);
 
   function handleEnumListSelect(listName: string) {
-    onUpdate('enum.source', listName ? `data_lists.${listName}` : '');
+    onUpdate(ENUM_SOURCE_CONTROL.path, listName ? `data_lists.${listName}` : '');
   }
 
   // WHY: EG-locked fields show known_values as a read-only list.
@@ -57,7 +68,7 @@ export function EnumConfigurator({
         <div>
           <div className={`${labelCls} flex items-center`}>
             <span>Registered Values ({fieldKnownValues.length})</span>
-            {renderLabelSuffix?.('enum.policy')}
+            {renderLabelSuffix?.(ENUM_POLICY_CONTROL.path)}
           </div>
           <div className="max-h-64 overflow-y-auto flex flex-wrap gap-1 p-3 border sf-border-default rounded sf-surface-card">
             {fieldKnownValues.map((v) => (
@@ -92,25 +103,25 @@ export function EnumConfigurator({
         <div className={`grid ${isBoolean ? 'grid-cols-1' : 'grid-cols-2'} gap-3`}>
           <div>
             <div className={`${labelCls} flex items-center`}>
-              <span>Policy<Tip text={STUDIO_TIPS.enum_policy} /></span>
-              {renderLabelSuffix?.('enum.policy')}
+              <span>{ENUM_POLICY_CONTROL.label}<Tip text={STUDIO_TIPS[ENUM_POLICY_CONTROL.tooltipKey || '']} /></span>
+              {renderLabelSuffix?.(ENUM_POLICY_CONTROL.path)}
             </div>
             <select
               className={`${selectCls} w-full`}
               value={effectivePolicy}
-              onChange={(e) => onUpdate('enum.policy', e.target.value)}
+              onChange={(e) => onUpdate(ENUM_POLICY_CONTROL.path, e.target.value)}
               disabled={isBoolean}
             >
-              <option value="open">open</option>
-              <option value="closed">closed</option>
-              <option value="open_prefer_known">open_prefer_known</option>
+              {(ENUM_POLICY_CONTROL.options || []).map((value) => (
+                <option key={value} value={value}>{value}</option>
+              ))}
             </select>
           </div>
           {!isBoolean ? (
             <div>
               <div className={`${labelCls} flex items-center`}>
-                <span>Source<Tip text={STUDIO_TIPS.enum_source} /></span>
-                {renderLabelSuffix?.('enum.source')}
+                <span>{ENUM_SOURCE_CONTROL.label}<Tip text={STUDIO_TIPS[ENUM_SOURCE_CONTROL.tooltipKey || '']} /></span>
+                {renderLabelSuffix?.(ENUM_SOURCE_CONTROL.path)}
               </div>
               <select
                 className={`${selectCls} w-full`}
@@ -155,8 +166,9 @@ export function EnumConfigurator({
       {!isBoolean ? (
         <SubSection label="Format Pattern">
           <FormatPatternInput
-            value={strN(rule, 'enum.match.format_hint')}
-            onChange={(nextValue) => onUpdate('enum.match.format_hint', nextValue)}
+            fieldPath={ENUM_FORMAT_HINT_CONTROL.path}
+            value={strN(rule, ENUM_FORMAT_HINT_CONTROL.path)}
+            onChange={(nextValue) => onUpdate(ENUM_FORMAT_HINT_CONTROL.path, nextValue)}
             fieldKey={fieldKey}
             disabled={currentPolicy === 'closed'}
             disabledReason="N/A — closed enum"

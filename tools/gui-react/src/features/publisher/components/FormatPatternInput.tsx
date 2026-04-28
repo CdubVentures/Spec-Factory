@@ -8,6 +8,7 @@ import type { ReactNode } from 'react';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 
 interface FormatPatternInputProps {
+  fieldPath: string;
   value: string;
   onChange: (nextValue: string) => void;
   fieldKey?: string;
@@ -32,6 +33,7 @@ const TIP_TEXT =
   + 'Use XXXX for numeric tokens and YYYY for text tokens.';
 
 export function FormatPatternInput({
+  fieldPath,
   value,
   onChange,
   fieldKey,
@@ -50,7 +52,7 @@ export function FormatPatternInput({
           Format Pattern
           <Tip text={TIP_TEXT} />
         </span>
-        {renderLabelSuffix?.('enum.match.format_hint')}
+        {renderLabelSuffix?.(fieldPath)}
       </div>
       <input
         className={INPUT_CLS}

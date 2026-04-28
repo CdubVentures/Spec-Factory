@@ -56,7 +56,8 @@ export async function createEngineFixtureRoot() {
         required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
-        component_db_ref: 'sensor',
+        // Phase 2: enum.source is the SSOT linkage to a component_db.
+        enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
         contract: {
           type: 'string',
           shape: 'scalar'
@@ -174,7 +175,8 @@ export async function createAdvancedEngineFixtureRoot() {
         required_level: 'mandatory',
         difficulty: 'easy',
         availability: 'always',
-        component_db_ref: 'sensor',
+        // Phase 2: enum.source = component_db.<X> is the SSOT linkage.
+        enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
         contract: { type: 'component_ref', shape: 'scalar' }
       },
       dpi: {

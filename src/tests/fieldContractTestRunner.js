@@ -169,7 +169,6 @@ function extractAllKnobs(fieldRule, knownValues, componentDb) {
   const p = fieldRule?.parse || {};
   const e = fieldRule?.enum || {};
   const pri = fieldRule?.priority || {};
-  const comp = fieldRule?.component || {};
   const knobs = [];
 
   // contract.* — step numbers match phaseRegistry order (0-10)
@@ -208,11 +207,18 @@ function extractAllKnobs(fieldRule, knownValues, componentDb) {
   // priority.*
   if (shouldBlockUnkPublish(fieldRule)) knobs.push({ knob: 'priority.required_level', value: pri.required_level, step: 10, action: 'reject', code: 'unk_blocks_publish' });
 
-  // component.* — informational, no dedicated validation step in pipeline
-  if (p.component_type) {
+  // enum.source (component_db.*) — informational. Phase 2: this replaces the
+  // old `component.type` knob; the `enum.source = component_db.<X>` is the
+  // only authored linkage to a component DB.
+  const enumSourceText = String(e?.source || '');
+  if (enumSourceText.startsWith('component_db.')) {
+    const dbType = enumSourceText.slice('component_db.'.length);
     const itemCount = Object.keys(componentDb?.entries || {}).length;
-    knobs.push({ knob: 'component.type', value: `${p.component_type} (${itemCount} items in DB)`, step: null, action: 'info', code: null });
-    if (comp.allow_new_components) knobs.push({ knob: 'component.allow_new_components', value: 'true', step: null, action: 'pass-through', code: null });
+    knobs.push({ knob: 'enum.source', value: `${enumSourceText} (${itemCount} items in DB)`, step: null, action: 'info', code: null });
+    const enumPolicy = knownValues?.policy || e?.policy;
+    if (enumPolicy === 'open' || enumPolicy === 'open_prefer_known') {
+      knobs.push({ knob: 'enum.policy', value: 'allows new components', step: null, action: 'pass-through', code: null });
+    }
   }
 
   return knobs;

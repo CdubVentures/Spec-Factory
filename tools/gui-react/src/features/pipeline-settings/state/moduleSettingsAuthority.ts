@@ -30,7 +30,8 @@ function isKnownModuleId(id: string): id is ModuleSettingsModuleId {
   return id in MODULE_SETTINGS_SCOPE_BY_ID;
 }
 
-function resolveScope(moduleId: string): ModuleSettingsScope {
+function resolveScope(moduleId: string, scopeOverride?: ModuleSettingsScope): ModuleSettingsScope {
+  if (scopeOverride) return scopeOverride;
   return isKnownModuleId(moduleId) ? MODULE_SETTINGS_SCOPE_BY_ID[moduleId] : 'category';
 }
 
@@ -77,9 +78,10 @@ export async function putModuleSettings(args: {
   readonly moduleId: ModuleSettingsModuleId;
   readonly settings: Record<string, string>;
   readonly queryClient: QueryClient;
+  readonly scopeOverride?: ModuleSettingsScope;
 }): Promise<ModuleSettingsResponse> {
-  const { category, moduleId, settings, queryClient } = args;
-  const scope = resolveScope(moduleId);
+  const { category, moduleId, settings, queryClient, scopeOverride } = args;
+  const scope = resolveScope(moduleId, scopeOverride);
   const result = await api.put<ModuleSettingsResponse>(
     buildUrl(scope, category, moduleId),
     { settings },
@@ -91,12 +93,14 @@ export async function putModuleSettings(args: {
 export function useModuleSettingsAuthority({
   category,
   moduleId,
+  scopeOverride,
 }: {
   category: string;
   moduleId: string;
+  scopeOverride?: ModuleSettingsScope;
 }) {
   const queryClient = useQueryClient();
-  const scope = resolveScope(moduleId);
+  const scope = resolveScope(moduleId, scopeOverride);
   const queryKey = buildQueryKey(scope, category, moduleId);
 
   const {

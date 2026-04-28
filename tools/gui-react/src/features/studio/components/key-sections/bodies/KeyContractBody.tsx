@@ -26,15 +26,15 @@ import {
 
 const TIP_STYLE = { position: "relative" as const, left: "-3px", top: "-4px" };
 
-function contractControl(path: string): typeof FIELD_RULE_CONTRACT_CONTROLS[number] {
-  const control = FIELD_RULE_CONTRACT_CONTROLS.find((entry) => entry.path === path);
-  if (!control) throw new Error(`Missing contract control metadata for ${path}`);
+function contractControl(controlId: string): typeof FIELD_RULE_CONTRACT_CONTROLS[number] {
+  const control = FIELD_RULE_CONTRACT_CONTROLS.find((entry) => entry.controlId === controlId);
+  if (!control) throw new Error(`Missing contract control metadata for ${controlId}`);
   return control;
 }
 
-function dependencyControl(path: string): typeof FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS[number] {
-  const control = FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS.find((entry) => entry.path === path);
-  if (!control) throw new Error(`Missing contract dependency metadata for ${path}`);
+function dependencyControl(controlId: string): typeof FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS[number] {
+  const control = FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS.find((entry) => entry.controlId === controlId);
+  if (!control) throw new Error(`Missing contract dependency metadata for ${controlId}`);
   return control;
 }
 
@@ -48,16 +48,16 @@ function optionLabel(
 
 const VARIANT_DEPENDENT_CONTROL = dependencyControl("variant_dependent");
 const PRODUCT_IMAGE_DEPENDENT_CONTROL = dependencyControl("product_image_dependent");
-const CONTRACT_TYPE_CONTROL = contractControl("contract.type");
-const CONTRACT_SHAPE_CONTROL = contractControl("contract.shape");
-const CONTRACT_UNIT_CONTROL = contractControl("contract.unit");
-const CONTRACT_RANGE_MIN_CONTROL = contractControl("contract.range.min");
-const CONTRACT_RANGE_MAX_CONTROL = contractControl("contract.range.max");
-const CONTRACT_LIST_DEDUPE_CONTROL = contractControl("contract.list_rules.dedupe");
-const CONTRACT_LIST_SORT_CONTROL = contractControl("contract.list_rules.sort");
-const CONTRACT_LIST_ITEM_UNION_CONTROL = contractControl("contract.list_rules.item_union");
-const CONTRACT_ROUNDING_DECIMALS_CONTROL = contractControl("contract.rounding.decimals");
-const CONTRACT_ROUNDING_MODE_CONTROL = contractControl("contract.rounding.mode");
+const CONTRACT_TYPE_CONTROL = contractControl("contract_type");
+const CONTRACT_SHAPE_CONTROL = contractControl("contract_shape");
+const CONTRACT_UNIT_CONTROL = contractControl("contract_unit");
+const CONTRACT_RANGE_MIN_CONTROL = contractControl("contract_range_min");
+const CONTRACT_RANGE_MAX_CONTROL = contractControl("contract_range_max");
+const CONTRACT_LIST_DEDUPE_CONTROL = contractControl("contract_list_dedupe");
+const CONTRACT_LIST_SORT_CONTROL = contractControl("contract_list_sort");
+const CONTRACT_LIST_ITEM_UNION_CONTROL = contractControl("contract_list_item_union");
+const CONTRACT_ROUNDING_DECIMALS_CONTROL = contractControl("contract_rounding_decimals");
+const CONTRACT_ROUNDING_MODE_CONTROL = contractControl("contract_rounding_mode");
 
 export interface KeyContractBodyProps extends KeySectionBaseProps {}
 
@@ -112,8 +112,8 @@ export function KeyContractBody({
           </svg>
           <div className="flex flex-col min-w-0">
             <div className={`${labelCls} flex items-center m-0`}>
-              <span className="font-semibold">Variant Dependent</span>
-              <B p="variant_dependent" />
+              <span className="font-semibold">{VARIANT_DEPENDENT_CONTROL.label}</span>
+              <B p={VARIANT_DEPENDENT_CONTROL.path} />
             </div>
             <span className="sf-text-nano sf-text-subtle leading-tight">
               {variantDependent
@@ -126,9 +126,9 @@ export function KeyContractBody({
           type="button"
           role="switch"
           aria-checked={variantDependent}
-          aria-label={variantDependent ? "Per-variant (on)" : "Per-product (off)"}
+          aria-label={variantDependent ? VARIANT_DEPENDENT_CONTROL.trueAriaLabel : VARIANT_DEPENDENT_CONTROL.falseAriaLabel}
           disabled={disabled}
-          onClick={() => updateField(selectedKey, "variant_dependent", !variantDependent)}
+          onClick={() => updateField(selectedKey, VARIANT_DEPENDENT_CONTROL.path, !variantDependent)}
           className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full sf-switch-track transition focus:outline-none focus:ring-2 focus:ring-accent/25 ${variantDependent ? "sf-switch-track-on" : ""} disabled:opacity-60 disabled:cursor-not-allowed`}
         >
           <span
@@ -158,8 +158,8 @@ export function KeyContractBody({
           </svg>
           <div className="flex flex-col min-w-0">
             <div className={`${labelCls} flex items-center m-0`}>
-              <span className="font-semibold">Product Image Dependent</span>
-              <B p="product_image_dependent" />
+              <span className="font-semibold">{PRODUCT_IMAGE_DEPENDENT_CONTROL.label}</span>
+              <B p={PRODUCT_IMAGE_DEPENDENT_CONTROL.path} />
             </div>
             <span className="sf-text-nano sf-text-subtle leading-tight">
               {productImageDependent
@@ -172,9 +172,9 @@ export function KeyContractBody({
           type="button"
           role="switch"
           aria-checked={productImageDependent}
-          aria-label={productImageDependent ? "Product image dependent (on)" : "Product image dependent (off)"}
+          aria-label={productImageDependent ? PRODUCT_IMAGE_DEPENDENT_CONTROL.trueAriaLabel : PRODUCT_IMAGE_DEPENDENT_CONTROL.falseAriaLabel}
           disabled={disabled}
-          onClick={() => updateField(selectedKey, "product_image_dependent", !productImageDependent)}
+          onClick={() => updateField(selectedKey, PRODUCT_IMAGE_DEPENDENT_CONTROL.path, !productImageDependent)}
           className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full sf-switch-track transition focus:outline-none focus:ring-2 focus:ring-accent/25 ${productImageDependent ? "sf-switch-track-on" : ""} disabled:opacity-60 disabled:cursor-not-allowed`}
         >
           <span
@@ -188,30 +188,30 @@ export function KeyContractBody({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <div className={`${labelCls} flex items-center`}>
-              <span>Data Type<Tip style={TIP_STYLE} text={STUDIO_TIPS.data_type} /></span>
-              <B p="contract.type" />
+              <span>{CONTRACT_TYPE_CONTROL.label}<Tip style={TIP_STYLE} text={STUDIO_TIPS[CONTRACT_TYPE_CONTROL.tooltipKey || ""]} /></span>
+              <B p={CONTRACT_TYPE_CONTROL.path} />
             </div>
             <select
               className={`${selectCls} w-full`}
-              value={strN(currentRule, "contract.type", "string")}
-              onChange={(e) => updateField(selectedKey, "contract.type", e.target.value)}
+              value={strN(currentRule, CONTRACT_TYPE_CONTROL.path, String(CONTRACT_TYPE_CONTROL.fallback))}
+              onChange={(e) => updateField(selectedKey, CONTRACT_TYPE_CONTROL.path, e.target.value)}
               disabled={disabled}
             >
-              {VALID_TYPES.map((v) => <option key={v} value={v}>{v}</option>)}
+              {(CONTRACT_TYPE_CONTROL.options || []).map((v) => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
           <div>
             <div className={`${labelCls} flex items-center`}>
-              <span>Shape<Tip style={TIP_STYLE} text={STUDIO_TIPS.shape} /></span>
-              <B p="contract.shape" />
+              <span>{CONTRACT_SHAPE_CONTROL.label}<Tip style={TIP_STYLE} text={STUDIO_TIPS[CONTRACT_SHAPE_CONTROL.tooltipKey || ""]} /></span>
+              <B p={CONTRACT_SHAPE_CONTROL.path} />
             </div>
             <select
               className={`${selectCls} w-full`}
-              value={strN(currentRule, "contract.shape", "scalar")}
-              onChange={(e) => updateField(selectedKey, "contract.shape", e.target.value)}
+              value={strN(currentRule, CONTRACT_SHAPE_CONTROL.path, String(CONTRACT_SHAPE_CONTROL.fallback))}
+              onChange={(e) => updateField(selectedKey, CONTRACT_SHAPE_CONTROL.path, e.target.value)}
               disabled={disabled}
             >
-              {VALID_SHAPES.map((v) => <option key={v} value={v}>{v}</option>)}
+              {(CONTRACT_SHAPE_CONTROL.options || []).map((v) => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
         </div>
@@ -225,13 +225,13 @@ export function KeyContractBody({
         <div className="grid grid-cols-3 gap-3">
           <div>
             <div className={`${labelCls} flex items-center`}>
-              <span>Unit<Tip style={TIP_STYLE} text={STUDIO_TIPS.contract_unit} /></span>
-              <B p="contract.unit" />
+              <span>{CONTRACT_UNIT_CONTROL.label}<Tip style={TIP_STYLE} text={STUDIO_TIPS[CONTRACT_UNIT_CONTROL.tooltipKey || ""]} /></span>
+              <B p={CONTRACT_UNIT_CONTROL.path} />
             </div>
             <select
               className={selectCls}
-              value={strN(currentRule, "contract.unit")}
-              onChange={(e) => updateField(selectedKey, "contract.unit", e.target.value || null)}
+              value={strN(currentRule, CONTRACT_UNIT_CONTROL.path)}
+              onChange={(e) => updateField(selectedKey, CONTRACT_UNIT_CONTROL.path, e.target.value || null)}
               disabled={disabled || !numericAvailable}
             >
               <option value="">-- none --</option>
@@ -242,31 +242,31 @@ export function KeyContractBody({
           </div>
           <div>
             <div className={`${labelCls} flex items-center`}>
-              <span>Range Min<Tip style={TIP_STYLE} text={STUDIO_TIPS.contract_range} /></span>
-              <B p="contract.range.min" />
+              <span>{CONTRACT_RANGE_MIN_CONTROL.label}<Tip style={TIP_STYLE} text={STUDIO_TIPS[CONTRACT_RANGE_MIN_CONTROL.tooltipKey || ""]} /></span>
+              <B p={CONTRACT_RANGE_MIN_CONTROL.path} />
             </div>
             <input
               className={`${inputCls} w-full`}
               type="number"
               step={currentContractType === "integer" ? 1 : "any"}
-              value={strN(currentRule, "contract.range.min")}
-              onChange={(e) => updateField(selectedKey, "contract.range.min", parseContractRangeValue(e.target.value))}
-              placeholder="Min"
+              value={strN(currentRule, CONTRACT_RANGE_MIN_CONTROL.path)}
+              onChange={(e) => updateField(selectedKey, CONTRACT_RANGE_MIN_CONTROL.path, parseContractRangeValue(e.target.value))}
+              placeholder={CONTRACT_RANGE_MIN_CONTROL.placeholder}
               disabled={disabled || !numericAvailable}
             />
           </div>
           <div>
             <div className={`${labelCls} flex items-center`}>
-              <span>Range Max</span>
-              <B p="contract.range.max" />
+              <span>{CONTRACT_RANGE_MAX_CONTROL.label}</span>
+              <B p={CONTRACT_RANGE_MAX_CONTROL.path} />
             </div>
             <input
               className={`${inputCls} w-full`}
               type="number"
               step={currentContractType === "integer" ? 1 : "any"}
-              value={strN(currentRule, "contract.range.max")}
-              onChange={(e) => updateField(selectedKey, "contract.range.max", parseContractRangeValue(e.target.value))}
-              placeholder="Max"
+              value={strN(currentRule, CONTRACT_RANGE_MAX_CONTROL.path)}
+              onChange={(e) => updateField(selectedKey, CONTRACT_RANGE_MAX_CONTROL.path, parseContractRangeValue(e.target.value))}
+              placeholder={CONTRACT_RANGE_MAX_CONTROL.placeholder}
               disabled={disabled || !numericAvailable}
             />
           </div>
@@ -281,49 +281,48 @@ export function KeyContractBody({
         <div className="grid grid-cols-3 gap-3">
           <div>
             <div className={`${labelCls} flex items-center`}>
-              <span>Dedupe<Tip style={TIP_STYLE} text={STUDIO_TIPS.list_rules_dedupe} /></span>
-              <B p="contract.list_rules.dedupe" />
+              <span>{CONTRACT_LIST_DEDUPE_CONTROL.label}<Tip style={TIP_STYLE} text={STUDIO_TIPS[CONTRACT_LIST_DEDUPE_CONTROL.tooltipKey || ""]} /></span>
+              <B p={CONTRACT_LIST_DEDUPE_CONTROL.path} />
             </div>
             <select
               className={`${selectCls} w-full`}
-              value={boolN(currentRule, "contract.list_rules.dedupe", true) ? "yes" : "no"}
-              onChange={(e) => updateField(selectedKey, "contract.list_rules.dedupe", e.target.value === "yes")}
+              value={boolN(currentRule, CONTRACT_LIST_DEDUPE_CONTROL.path, Boolean(CONTRACT_LIST_DEDUPE_CONTROL.fallback)) ? "yes" : "no"}
+              onChange={(e) => updateField(selectedKey, CONTRACT_LIST_DEDUPE_CONTROL.path, e.target.value === "yes")}
               disabled={disabled || !listAvailable}
             >
-              <option value="yes">yes</option>
-              <option value="no">no</option>
+              {(CONTRACT_LIST_DEDUPE_CONTROL.options || []).map((v) => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
           <div>
             <div className={`${labelCls} flex items-center`}>
-              <span>Sort<Tip style={TIP_STYLE} text={STUDIO_TIPS.list_rules_sort} /></span>
-              <B p="contract.list_rules.sort" />
+              <span>{CONTRACT_LIST_SORT_CONTROL.label}<Tip style={TIP_STYLE} text={STUDIO_TIPS[CONTRACT_LIST_SORT_CONTROL.tooltipKey || ""]} /></span>
+              <B p={CONTRACT_LIST_SORT_CONTROL.path} />
             </div>
             <select
               className={`${selectCls} w-full`}
-              value={strN(currentRule, "contract.list_rules.sort", "none")}
-              onChange={(e) => updateField(selectedKey, "contract.list_rules.sort", e.target.value)}
+              value={strN(currentRule, CONTRACT_LIST_SORT_CONTROL.path, String(CONTRACT_LIST_SORT_CONTROL.fallback))}
+              onChange={(e) => updateField(selectedKey, CONTRACT_LIST_SORT_CONTROL.path, e.target.value)}
               disabled={disabled || !listAvailable}
             >
-              <option value="none">none</option>
-              <option value="asc">asc</option>
-              <option value="desc">desc</option>
+              {(CONTRACT_LIST_SORT_CONTROL.options || []).map((v) => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
           <div>
             <div className={`${labelCls} flex items-center`}>
-              <span>Item Union<Tip style={TIP_STYLE} text={STUDIO_TIPS.list_rules_item_union} /></span>
-              <B p="contract.list_rules.item_union" />
+              <span>{CONTRACT_LIST_ITEM_UNION_CONTROL.label}<Tip style={TIP_STYLE} text={STUDIO_TIPS[CONTRACT_LIST_ITEM_UNION_CONTROL.tooltipKey || ""]} /></span>
+              <B p={CONTRACT_LIST_ITEM_UNION_CONTROL.path} />
             </div>
             <select
               className={`${selectCls} w-full`}
-              value={strN(currentRule, "contract.list_rules.item_union")}
-              onChange={(e) => updateField(selectedKey, "contract.list_rules.item_union", e.target.value || undefined)}
+              value={strN(currentRule, CONTRACT_LIST_ITEM_UNION_CONTROL.path, String(CONTRACT_LIST_ITEM_UNION_CONTROL.fallback))}
+              onChange={(e) => updateField(selectedKey, CONTRACT_LIST_ITEM_UNION_CONTROL.path, e.target.value || undefined)}
               disabled={disabled || !listAvailable}
             >
-              <option value="">winner_only</option>
-              <option value="set_union">set_union</option>
-              <option value="ordered_union">ordered_union</option>
+              {(CONTRACT_LIST_ITEM_UNION_CONTROL.options || []).map((v, index) => (
+                <option key={v || "winner_only"} value={v}>
+                  {optionLabel(CONTRACT_LIST_ITEM_UNION_CONTROL, v, index)}
+                </option>
+              ))}
             </select>
           </div>
         </div>
@@ -337,19 +336,19 @@ export function KeyContractBody({
         <div className="grid grid-cols-2 gap-3">
           <div>
             <div className={`${labelCls} flex items-center`}>
-              <span>Rounding Decimals<Tip style={TIP_STYLE} text={STUDIO_TIPS.rounding_decimals} /></span>
-              <B p="contract.rounding.decimals" />
+              <span>{CONTRACT_ROUNDING_DECIMALS_CONTROL.label}<Tip style={TIP_STYLE} text={STUDIO_TIPS[CONTRACT_ROUNDING_DECIMALS_CONTROL.tooltipKey || ""]} /></span>
+              <B p={CONTRACT_ROUNDING_DECIMALS_CONTROL.path} />
             </div>
             <input
               className={`${inputCls} w-full`}
               type="number"
               min={STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.min}
               max={STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.max}
-              value={numN(currentRule, "contract.rounding.decimals", 0)}
+              value={numN(currentRule, CONTRACT_ROUNDING_DECIMALS_CONTROL.path, Number(CONTRACT_ROUNDING_DECIMALS_CONTROL.fallback))}
               onChange={(e) =>
                 updateField(
                   selectedKey,
-                  "contract.rounding.decimals",
+                  CONTRACT_ROUNDING_DECIMALS_CONTROL.path,
                   parseBoundedIntInput(
                     e.target.value,
                     STUDIO_NUMERIC_KNOB_BOUNDS.contractRoundingDecimals.min,
@@ -358,24 +357,22 @@ export function KeyContractBody({
                   ),
                 )
               }
-              disabled={disabled || !isFieldAvailable(currentRule, "contract.rounding.decimals")}
+              disabled={disabled || !isFieldAvailable(currentRule, CONTRACT_ROUNDING_DECIMALS_CONTROL.path)}
             />
           </div>
           <div>
             <div className={`${labelCls} flex items-center`}>
-              <span>Rounding Mode<Tip style={TIP_STYLE} text={STUDIO_TIPS.rounding_mode} /></span>
-              <B p="contract.rounding.mode" />
+              <span>{CONTRACT_ROUNDING_MODE_CONTROL.label}<Tip style={TIP_STYLE} text={STUDIO_TIPS[CONTRACT_ROUNDING_MODE_CONTROL.tooltipKey || ""]} /></span>
+              <B p={CONTRACT_ROUNDING_MODE_CONTROL.path} />
             </div>
             <select
               className={`${selectCls} w-full`}
-              value={strN(currentRule, "contract.rounding.mode", "nearest")}
-              onChange={(e) => updateField(selectedKey, "contract.rounding.mode", e.target.value)}
-              disabled={isStudioContractFieldDeferredLocked("contract.rounding.mode")}
+              value={strN(currentRule, CONTRACT_ROUNDING_MODE_CONTROL.path, String(CONTRACT_ROUNDING_MODE_CONTROL.fallback))}
+              onChange={(e) => updateField(selectedKey, CONTRACT_ROUNDING_MODE_CONTROL.path, e.target.value)}
+              disabled={isStudioContractFieldDeferredLocked(CONTRACT_ROUNDING_MODE_CONTROL.path)}
               title="Locked: applied at compile time"
             >
-              <option value="nearest">nearest</option>
-              <option value="floor">floor</option>
-              <option value="ceil">ceil</option>
+              {(CONTRACT_ROUNDING_MODE_CONTROL.options || []).map((v) => <option key={v} value={v}>{v}</option>)}
             </select>
           </div>
         </div>

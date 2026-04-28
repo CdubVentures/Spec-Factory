@@ -26,11 +26,12 @@ test('buildReviewLayout strips review-disabled rule paths before deriving field_
           evidence: {
             min_evidence_refs: 3,
           },
-          component: { type: 'sensor' },
+          // Phase 2: rule.component.* retired. The legacy `consumers['component.type']: { review: false }`
+          // override has no path to gate after retirement; component_type now derives from enum.source
+          // (and is null here because no component_db source is set).
           consumers: {
             'contract.type': { review: false },
             'evidence.min_evidence_refs': { review: false },
-            'component.type': { review: false },
           },
           field_studio_hints: {
             dataEntry: { sheet: 'dataEntry', row: 9, key_cell: 'B9' },

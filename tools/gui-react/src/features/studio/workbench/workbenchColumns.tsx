@@ -395,6 +395,22 @@ export function buildColumns(
       },
     },
     {
+      accessorKey: 'componentLocked',
+      header: 'Component Lock',
+      size: 110,
+      cell: ({ getValue }) => {
+        const locked = getValue() as boolean;
+        return locked ? (
+          <span
+            className="text-[12px]"
+            title="enum.source = component_db.<self> — this key IS a component identity"
+          >
+            🔧
+          </span>
+        ) : <span className="sf-status-text-muted">—</span>;
+      },
+    },
+    {
       accessorKey: 'belongsToComponent',
       header: 'Belongs To',
       size: 100,
@@ -535,7 +551,7 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   ],
   components: [
     ...ALWAYS_VISIBLE,
-    'componentType', 'belongsToComponent', 'propertyVariance',
+    'componentType', 'componentLocked', 'belongsToComponent', 'propertyVariance',
   ],
   constraints: [
     ...ALWAYS_VISIBLE,
@@ -598,6 +614,7 @@ export const ALL_COLUMN_IDS_WITH_LABELS: { id: string; label: string }[] = [
   { id: 'knownValuesCount', label: 'KV Count' },
   // Components
   { id: 'componentType', label: 'Component' },
+  { id: 'componentLocked', label: 'Component Lock' },
   { id: 'belongsToComponent', label: 'Belongs To' },
   { id: 'propertyVariance', label: 'Variance' },
   // Constraints

@@ -4,8 +4,11 @@ import assert from 'node:assert/strict';
 import {
   FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS,
   FIELD_RULE_COMPONENT_TYPE_CONTROL,
+  FIELD_RULE_CONTRACT_CONTROLS,
+  FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS,
   FIELD_RULE_CONSTRAINT_CONTROL,
   FIELD_RULE_EVIDENCE_CONTROLS,
+  FIELD_RULE_ENUM_CONTROLS,
   FIELD_RULE_PRIORITY_CONTROLS,
   FIELD_RULE_SEARCH_HINT_CONTROLS,
 } from '../../../../../../../src/field-rules/fieldRuleSchema.js';
@@ -43,6 +46,18 @@ function badgePaths(tree) {
   return collectNodes(tree, (node) => node.type === 'Badge')
     .map((node) => node.props?.p)
     .filter(Boolean);
+}
+
+function contractControl(controlId) {
+  const control = FIELD_RULE_CONTRACT_CONTROLS.find((entry) => entry.controlId === controlId);
+  assert.ok(control, `missing contract control ${controlId}`);
+  return control;
+}
+
+function enumControl(controlId) {
+  const control = FIELD_RULE_ENUM_CONTROLS.find((entry) => entry.controlId === controlId);
+  assert.ok(control, `missing enum control ${controlId}`);
+  return control;
 }
 
 function createBaseProps(overrides = {}) {
@@ -303,18 +318,17 @@ test('KeyContractBody characterizes contract badge paths and update paths', asyn
   const tree = renderNode(KeyContractBody(props));
 
   assert.deepEqual(badgePaths(tree), [
-    'variant_dependent',
-    'product_image_dependent',
-    'contract.type',
-    'contract.shape',
-    'contract.unit',
-    'contract.range.min',
-    'contract.range.max',
-    'contract.list_rules.dedupe',
-    'contract.list_rules.sort',
-    'contract.list_rules.item_union',
-    'contract.rounding.decimals',
-    'contract.rounding.mode',
+    ...FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS.map((control) => control.path),
+    contractControl('contract_type').path,
+    contractControl('contract_shape').path,
+    contractControl('contract_unit').path,
+    contractControl('contract_range_min').path,
+    contractControl('contract_range_max').path,
+    contractControl('contract_list_dedupe').path,
+    contractControl('contract_list_sort').path,
+    contractControl('contract_list_item_union').path,
+    contractControl('contract_rounding_decimals').path,
+    contractControl('contract_rounding_mode').path,
   ]);
 
   const switches = collectNodes(tree, (node) => node.type === 'button' && node.props?.role === 'switch');
@@ -343,18 +357,18 @@ test('KeyContractBody characterizes contract badge paths and update paths', asyn
     .props.onChange({ target: { value: 'floor' } });
 
   assert.deepEqual(updates, [
-    { key: 'design', path: 'variant_dependent', value: true },
-    { key: 'design', path: 'product_image_dependent', value: false },
-    { key: 'design', path: 'contract.type', value: 'integer' },
-    { key: 'design', path: 'contract.shape', value: 'scalar' },
-    { key: 'design', path: 'contract.unit', value: null },
-    { key: 'design', path: 'contract.range.min', value: 1.5 },
-    { key: 'design', path: 'contract.range.max', value: 12 },
-    { key: 'design', path: 'contract.list_rules.dedupe', value: true },
-    { key: 'design', path: 'contract.list_rules.sort', value: 'desc' },
-    { key: 'design', path: 'contract.list_rules.item_union', value: undefined },
-    { key: 'design', path: 'contract.rounding.decimals', value: 3 },
-    { key: 'design', path: 'contract.rounding.mode', value: 'floor' },
+    { key: 'design', path: FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS[0].path, value: true },
+    { key: 'design', path: FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS[1].path, value: false },
+    { key: 'design', path: contractControl('contract_type').path, value: 'integer' },
+    { key: 'design', path: contractControl('contract_shape').path, value: 'scalar' },
+    { key: 'design', path: contractControl('contract_unit').path, value: null },
+    { key: 'design', path: contractControl('contract_range_min').path, value: 1.5 },
+    { key: 'design', path: contractControl('contract_range_max').path, value: 12 },
+    { key: 'design', path: contractControl('contract_list_dedupe').path, value: true },
+    { key: 'design', path: contractControl('contract_list_sort').path, value: 'desc' },
+    { key: 'design', path: contractControl('contract_list_item_union').path, value: undefined },
+    { key: 'design', path: contractControl('contract_rounding_decimals').path, value: 3 },
+    { key: 'design', path: contractControl('contract_rounding_mode').path, value: 'floor' },
   ]);
 });
 
@@ -522,13 +536,86 @@ test('KeyEnumBody adapts EnumConfigurator path updates and badge suffixes', asyn
 
   assert.equal(node.props.fieldKey, 'design');
   assert.equal(node.props.contractType, 'string');
-  node.props.onUpdate('enum.policy', 'closed');
-  assert.deepEqual(renderNode(node.props.renderLabelSuffix('enum.policy')), {
+  node.props.onUpdate(enumControl('enum_policy').path, 'closed');
+  assert.deepEqual(renderNode(node.props.renderLabelSuffix(enumControl('enum_policy').path)), {
     type: 'Badge',
-    props: { p: 'enum.policy', children: undefined },
+    props: { p: enumControl('enum_policy').path, children: undefined },
   });
   assert.deepEqual(updates, [
-    { key: 'design', path: 'enum.policy', value: 'closed' },
+    { key: 'design', path: enumControl('enum_policy').path, value: 'closed' },
+  ]);
+});
+
+test('EnumConfigurator wires enum controls to registry-derived paths and options', async () => {
+  const { EnumConfigurator } = await loadBundledModule(
+    'tools/gui-react/src/features/studio/components/EnumConfigurator.tsx',
+    {
+      prefix: 'enum-configurator-contracts-',
+      stubs: {
+        'react/jsx-runtime': JSX_STUB,
+        '../../../shared/ui/feedback/Tip.tsx': TIP_STUB,
+        './Section.tsx': `
+          export function SubSection(props) {
+            return { type: 'SubSection', props };
+          }
+        `,
+        '../state/nestedValueHelpers.ts': NESTED_HELPERS_STUB,
+        '../../publisher/index.ts': `
+          export function FormatPatternInput(props) {
+            return { type: 'FormatPatternInput', props };
+          }
+        `,
+        './studioConstants.ts': `
+          export const labelCls = 'label';
+          export const selectCls = 'select';
+          export const STUDIO_TIPS = {
+            enum_policy: 'enum policy',
+            enum_source: 'enum source',
+          };
+        `,
+      },
+    },
+  );
+
+  const updates = [];
+  const tree = renderNode(EnumConfigurator({
+    fieldKey: 'design',
+    rule: {
+      contract: { type: 'string' },
+      enum: {
+        policy: 'open',
+        source: 'data_lists.colors',
+        match: { format_hint: 'XXXX' },
+      },
+    },
+    knownValues: { design: ['black'] },
+    enumLists: [{ field: 'colors', values: ['black'] }],
+    contractType: 'string',
+    onUpdate(path, value) {
+      updates.push({ path, value });
+    },
+    renderLabelSuffix(fieldPath) {
+      return { type: 'Badge', props: { p: fieldPath } };
+    },
+    isEgLocked: false,
+  }));
+
+  const selects = collectNodes(tree, (node) => node.type === 'select');
+  assert.deepEqual(
+    collectNodes(selects[0], (node) => node.type === 'option').map((node) => node.props.value),
+    enumControl('enum_policy').options,
+  );
+  selects[0].props.onChange({ target: { value: 'closed' } });
+  selects[1].props.onChange({ target: { value: 'colors' } });
+
+  const formatInput = collectNodes(tree, (node) => node.type === 'FormatPatternInput')[0];
+  assert.equal(formatInput.props.fieldPath, enumControl('enum_format_hint').path);
+  formatInput.props.onChange('YYYY');
+
+  assert.deepEqual(updates, [
+    { path: enumControl('enum_policy').path, value: 'closed' },
+    { path: enumControl('enum_source').path, value: 'data_lists.colors' },
+    { path: enumControl('enum_format_hint').path, value: 'YYYY' },
   ]);
 });
 

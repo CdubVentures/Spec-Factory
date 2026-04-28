@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { buildStudioFieldRule } from '../compileFieldRuleBuilder.js';
 
 function characterizeRule(rule) {
+  // Phase 2: `component` block retired — linkage is `enum.source` only.
   return {
     key: rule.key,
     data_type: rule.data_type,
@@ -17,7 +18,6 @@ function characterizeRule(rule) {
     parse: rule.parse,
     priority: rule.priority,
     evidence: rule.evidence,
-    component: rule.component,
     search_hints: rule.search_hints,
     ai_assist: rule.ai_assist,
   };
@@ -60,7 +60,6 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
           min_evidence_refs: 1,
           tier_preference: ['tier1', 'tier2', 'tier3'],
         },
-        component: null,
         search_hints: {
           domain_hints: ['manufacturer', 'support', 'manual', 'pdf'],
           preferred_tiers: ['tier1', 'tier2', 'tier3'],
@@ -126,7 +125,6 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
           min_evidence_refs: 2,
           tier_preference: ['tier2', 'tier1'],
         },
-        component: null,
         search_hints: {
           domain_hints: ['manufacturer', 'support', 'manual', 'pdf'],
           preferred_tiers: ['tier1', 'tier2', 'tier3'],
@@ -184,7 +182,6 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
           min_evidence_refs: 1,
           tier_preference: ['tier1', 'tier2', 'tier3'],
         },
-        component: null,
         search_hints: {
           domain_hints: ['manufacturer'],
           preferred_tiers: ['tier1', 'tier2', 'tier3'],
@@ -227,7 +224,6 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
           min_evidence_refs: 1,
           tier_preference: ['tier1', 'tier2', 'tier3'],
         },
-        component: null,
         search_hints: {
           domain_hints: ['manufacturer', 'support', 'manual', 'pdf'],
           preferred_tiers: ['tier1', 'tier2', 'tier3'],
@@ -237,7 +233,7 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
       },
     },
     {
-      label: 'component reference no longer emits component.match block (Phase 1 retirement)',
+      label: 'component reference no longer emits any component block (Phase 2 retirement)',
       input: {
         key: 'sensor',
         rule: {
@@ -279,7 +275,7 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
             mark_needs_curation: true,
           },
           policy: 'open_prefer_known',
-          source: null,
+          source: 'component_db.sensor',
         },
         parse: {},
         priority: {
@@ -291,19 +287,8 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
           min_evidence_refs: 1,
           tier_preference: ['tier1', 'tier2', 'tier3'],
         },
-        component: {
-          ai: {
-            context_level: 'properties_and_evidence',
-            mode: 'judge',
-            model_strategy: 'force_deep',
-            reasoning_note: 'match sensor',
-          },
-          allow_new_components: true,
-          priority: { difficulty: 'very_hard' },
-          require_identity_evidence: true,
-          source: 'component_db.sensor',
-          type: 'sensor',
-        },
+        // Phase 2: `component` block deleted from compile output entirely.
+        // Linkage lives in `enum.source = component_db.sensor` only.
         search_hints: {
           domain_hints: ['manufacturer', 'support', 'manual', 'pdf'],
           preferred_tiers: ['tier1', 'tier2', 'tier3'],

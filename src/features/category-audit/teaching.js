@@ -301,7 +301,7 @@ Fields decided from product photography fall on a spectrum. Treat each tier diff
 
 **Component discipline:**
 
-- A field that IS a component identity must have \`component.type\` set.
+- A field that IS a component identity must have \`enum.source\` set to \`component_db.<self>\` (locks contract.type=string + shape=scalar).
 - A field that is a PROPERTY of a component must appear in the relevant component database entity's \`properties\`.
 - Missing component DB entries for known real-world entities are component-data cleanup, not Field Studio setup. Report them outside the change file instead of asking the user to apply them as Mapping Studio/Key Navigator settings.
 `.trim();
@@ -328,7 +328,7 @@ A compiled field rule is the single source of truth for everything the LLM is to
 - **ai_assist.reasoning_note** â€” extraction guidance (free-form prose). The single editable slot per key that is NOT already covered by the generic template. See Part 1.13 for what this cell is FOR and NOT FOR.
 - **search_hints** â€” \`domain_hints\` (preferred source domains) + \`query_terms\` (search queries). Injected into the prompt so the LLM's web search prioritizes those angles.
 - **Cross-field constraints** â€” operators relating this field to another on the same product (\`lte\`, \`lt\`, \`gte\`, \`gt\`, \`eq\`, \`requires_when_value\`, \`requires_one_of\`).
-- **Component relation** â€” \`component.type\` when this field IS the identity of a component OR is a property of one. Drives the \`PRODUCT_COMPONENTS\` block.
+- **Component relation** â€” derived from \`enum.source = component_db.<X>\` when this field IS the identity of a component, or from the matching \`component_sources[X].roles.properties[]\` list when it's a property. Drives the \`PRODUCT_COMPONENTS\` block.
 - **Evidence** â€” \`min_evidence_refs\`, \`tier_preference\`. Controls the evidence contract injected into the prompt.
 `.trim();
 
@@ -477,8 +477,8 @@ Compiled rules may store constraints as \`constraints\` string-DSL entries or as
 const COMPONENT_RELATIONS_BODY = `
 Two kinds of fields interact with components:
 
-- **Component identity (parent)** â€” e.g. \`sensor\`, \`switch\`, \`encoder\`. The field's value IS the canonical component name. Its compiled rule has \`component.type\` set; the prompt gets a "This key IS the \`type\` component identity." pointer.
-- **Component subfield** â€” a product field can belong to a component entity. The rule has \`component: null\` but appears as a property in the component database. When the parent identity is resolved on a product, the subfield values flow into the prompt as \`PRODUCT_COMPONENTS\` so the LLM doesn't re-extract them.
+- **Component identity (parent)** â€” e.g. \`sensor\`, \`switch\`, \`encoder\`. The field's value IS the canonical component name. Its compiled rule has \`enum.source = component_db.<self>\` (the lock contract); the prompt gets a "This key IS the \`type\` component identity." pointer.
+- **Component subfield** â€” a product field can belong to a component entity. It appears as a property in \`field_studio_map.component_sources[X].roles.properties[]\`. When the parent identity is resolved on a product, the subfield values flow into the prompt as \`PRODUCT_COMPONENTS\` so the LLM doesn't re-extract them.
 
 The component inventory in Part 5 is context for whether the Field Studio mapping is configured correctly. Do not ask for concrete component entity row edits in the Field Studio change file; report missing/stale component data separately.
 `.trim();

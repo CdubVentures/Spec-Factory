@@ -22,16 +22,11 @@ function makeLoadedPayload() {
           enum_policy: 'closed',
           enum_source: 'data_lists.connection',
           constraints: ['connection != none'],
-          component: {
-            type: 'sensor'
-          },
-          component_db_ref: 'sensor',
           consumers: {
             'contract.shape': { seed: false },
             // WHY: parse.template retired — removed from consumer gate paths
             'enum.source': { indexlab: false },
-            constraints: { indexlab: false },
-            'component.type': { seed: false }
+            constraints: { indexlab: false }
           }
         }
       }
@@ -78,7 +73,7 @@ test('projectFieldRulesForConsumer strips indexlab-disabled paths and linked art
   assert.equal(projected.crossValidation.length, 0);
 });
 
-test('projectFieldRulesForConsumer strips seed-disabled aliases for contract.shape and component.type', () => {
+test('projectFieldRulesForConsumer strips seed-disabled aliases for contract.shape', () => {
   const loaded = makeLoadedPayload();
   const projected = projectFieldRulesForConsumer(loaded, 'seed');
 
@@ -86,8 +81,6 @@ test('projectFieldRulesForConsumer strips seed-disabled aliases for contract.sha
   assert.equal(rule.contract?.shape, undefined);
   assert.equal(rule.output_shape, undefined);
   assert.equal(rule.shape, undefined);
-  assert.equal(rule.component?.type, undefined);
-  assert.equal(rule.component_db_ref, undefined);
 });
 
 test('projectFieldRulesForConsumer does not mutate input payload', () => {

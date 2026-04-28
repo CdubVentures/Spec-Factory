@@ -1500,7 +1500,13 @@ export function registerProductImageFinderRoutes(ctx) {
           meta: { productId, variantKey, scope: 'variant' },
         });
 
-        return jsonRes(res, 200, { ok: true, carousel_slots: carouselSlots, eval_state: evalState });
+        return jsonRes(res, 200, {
+          ok: true,
+          productId,
+          category,
+          carousel_slots: carouselSlots,
+          eval_state: evalState,
+        });
       } catch (err) {
         return jsonRes(res, 500, { error: 'clear carousel winners failed', message: err instanceof Error ? err.message : String(err) });
       }
@@ -1527,7 +1533,13 @@ export function registerProductImageFinderRoutes(ctx) {
           meta: { productId, scope: 'all' },
         });
 
-        return jsonRes(res, 200, { ok: true, carousel_slots: carouselSlots, eval_state: evalState });
+        return jsonRes(res, 200, {
+          ok: true,
+          productId,
+          category,
+          carousel_slots: carouselSlots,
+          eval_state: evalState,
+        });
       } catch (err) {
         return jsonRes(res, 500, { error: 'clear all carousel winners failed', message: err instanceof Error ? err.message : String(err) });
       }

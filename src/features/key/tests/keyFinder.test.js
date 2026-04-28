@@ -652,14 +652,14 @@ const RULES_WITH_COMPONENT = {
   fields: {
     sensor: {
       field_key: 'sensor',
-      component: { type: 'sensor' },
       contract: { type: 'string', shape: 'scalar' },
       difficulty: 'hard', required_level: 'mandatory', availability: 'rare',
-      group: 'sensor_performance', enum: { policy: 'open' },
+      group: 'sensor_performance',
+      enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
       evidence: { min_evidence_refs: 1 }, ai_assist: { reasoning_note: '' },
     },
     sensor_type: {
-      field_key: 'sensor_type', component: null,
+      field_key: 'sensor_type',
       contract: { type: 'string', shape: 'scalar' },
       difficulty: 'medium', required_level: 'mandatory', availability: 'sometimes',
       group: 'sensor_performance', enum: { policy: 'open' },

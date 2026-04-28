@@ -13,11 +13,13 @@ function fixtureLoadedRules() {
           product_image_dependent: true,
           priority: { required_level: 'mandatory', availability: 'always', difficulty: 'hard' },
           contract: { type: 'string', shape: 'scalar' },
-          enum: { policy: 'open_prefer_known', source: 'data_lists.sensor', values: [] },
+          // Phase 2: enum.source is the SSOT linkage to component_db (no
+          // separate `component` block). data_lists.sensor merged into the
+          // component_db.sensor source.
+          enum: { policy: 'open_prefer_known', source: 'component_db.sensor', values: [] },
           aliases: ['PMW3395', 'PAW3395'],
           search_hints: { domain_hints: ['sensor.fyi'], query_terms: ['sensor'], content_types: [], preferred_tiers: [] },
           constraints: [],
-          component: { type: 'sensor', source: 'component_db.sensor' },
           ai_assist: {
             reasoning_note: 'Chip/model only.',
             variant_inventory_usage: { enabled: false },
@@ -37,7 +39,6 @@ function fixtureLoadedRules() {
           aliases: [],
           search_hints: { domain_hints: [], query_terms: [], content_types: [], preferred_tiers: [] },
           constraints: ['dpi <= 45000'],
-          component: null,
           ai_assist: { reasoning_note: '' },
           evidence: { min_evidence_refs: 1 },
           group: 'sensor_performance',
@@ -52,7 +53,6 @@ function fixtureLoadedRules() {
           aliases: [],
           search_hints: { domain_hints: [], query_terms: [], content_types: [], preferred_tiers: [] },
           constraints: [],
-          component: null,
           ai_assist: { reasoning_note: '' },
           evidence: { min_evidence_refs: 1 },
           group: 'general',

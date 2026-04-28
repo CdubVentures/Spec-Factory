@@ -45,6 +45,13 @@ import {
 import { simpleSimilarity, resolveComponentRef } from './engineComponentResolver.js';
 import { crossValidate as _crossValidate } from './engineCrossValidator.js';
 
+// Phase 2: parent-rule detection derives entirely from `enum.source`. The lock
+// contract is `enum.source = component_db.<X>` — no `component.*` block on
+// rules anymore.
+function isComponentParent(rule) {
+  return String(rule?.enum?.source || '').startsWith('component_db.');
+}
+
 function buildPropertyKeysByComponentType(componentSources) {
   const map = new Map();
   for (const source of toArray(componentSources)) {
@@ -507,8 +514,11 @@ export class FieldRulesEngine {
         };
       }
       value = urlValue;
-    } else if (type === 'component_ref' || normalizeText(rule?.component?.type)) {
-      const dbName = normalizeText(rule?.component?.type);
+    } else if (type === 'component_ref' || isComponentParent(rule)) {
+      const enumSource = String(rule?.enum?.source || '');
+      const dbName = enumSource.startsWith('component_db.')
+        ? enumSource.slice('component_db.'.length)
+        : '';
       const propertyKeys = dbName ? (this.propertyKeysByComponentType.get(dbName) || []) : [];
       const componentResult = resolveComponentRef(value, {
         rule, fieldKey: key, rawCandidate,

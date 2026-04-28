@@ -23,6 +23,7 @@ export interface FieldRuleSchemaEntry {
   doc: string;
   studioTipKey?: string;
   studioTip?: string;
+  studioControlId?: string;
   studioTogglePath?: string;
   studioControlLabel?: string;
   studioAriaLabel?: string;
@@ -87,6 +88,7 @@ export interface FieldRuleComponentTypeControl {
 }
 
 export interface FieldRuleContractDependencyControl {
+  controlId: string;
   path: string;
   label: string;
   trueDescription: string;
@@ -96,6 +98,7 @@ export interface FieldRuleContractDependencyControl {
 }
 
 export interface FieldRuleStudioControl {
+  controlId: string;
   path: string;
   label: string;
   tooltipKey?: string;

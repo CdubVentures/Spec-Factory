@@ -335,9 +335,6 @@ export function flattenSampleStyleOverride(overrideRaw = {}, baseRule = {}) {
     }
   }
   // WHY: component_reference was a parse_template. Now component detection is handled by contract.type + parse.component_type.
-  if (component && component.require_identity_evidence !== undefined) {
-    out.require_component_identity_evidence = component.require_identity_evidence === true;
-  }
 
   if (evidence.min_evidence_refs !== undefined && out.min_evidence_refs === undefined) {
     out.min_evidence_refs = asInt(evidence.min_evidence_refs, 1);
@@ -566,9 +563,17 @@ export function buildStudioFieldRule({
   const contractShape = contractType === 'boolean'
     ? 'scalar'
     : (shapeCandidates[0] || 'scalar');
+  // Phase 2 defensive bridge: if authoring carries `component.source = component_db.X`
+  // or `component.type = X` but no enum.source yet, fold the linkage into
+  // enum.source — that's the new SSOT. Pre-Phase-2 maps may still carry the
+  // component block; the nestedComponent emit was retired but the linkage must
+  // survive into the compiled rule via enum.source.
+  const componentBlockForSource = isObject(rule.component) ? rule.component : {};
+  const componentDerivedEnumSource = componentBlockForSource.source
+    || (componentBlockForSource.type ? `component_db.${componentBlockForSource.type}` : '');
   const source = contractType === 'boolean'
     ? createBooleanEnumSource()
-    : parseEnumSource(rule.enum_source || enumBlock.source, key);
+    : parseEnumSource(rule.enum_source || enumBlock.source || componentDerivedEnumSource, key);
   const sourceRef = sourceRefToString(source);
   const policy = contractType === 'boolean'
     ? 'closed'
@@ -688,42 +693,10 @@ export function buildStudioFieldRule({
         });
   }
 
-  const componentBlock = isObject(rule.component) ? rule.component : {};
-  const componentSource = parseEnumSource(componentBlock.source || (componentBlock.type ? `component_db.${componentBlock.type}` : ''), key);
-  const effectiveComponentSource = source?.type === 'component_db' ? source : componentSource;
-  const nestedComponent = effectiveComponentSource?.type === 'component_db'
-    ? {
-      type: normalizeText(componentBlock.type || effectiveComponentSource.ref),
-      source: sourceRefToString(effectiveComponentSource),
-      require_identity_evidence: componentBlock.require_identity_evidence !== false
-        && rule.require_component_identity_evidence !== false,
-      allow_new_components: componentBlock.allow_new_components !== false
-        && rule.allow_new_components !== false
-    }
-    : {};
-
-  // Extend component block with ai and priority sub-objects if authored.
-  // Phase 1: component.match.* retired — engine uses inline defaults; keyFinder
-  // readers source property_keys directly from field_studio_map.component_sources.
-  if (Object.keys(nestedComponent).length > 0) {
-    const aiInput = isObject(componentBlock.ai) ? componentBlock.ai : {};
-    const validAiModes = ['judge', 'planner', 'advisory', 'off'];
-    const validContextLevels = ['name_only', 'properties', 'properties_and_evidence'];
-    nestedComponent.ai = {
-      mode: validAiModes.includes(normalizeToken(aiInput.mode)) ? normalizeToken(aiInput.mode) : 'off',
-      model_strategy: normalizeToken(aiInput.model_strategy || '') || 'auto',
-      context_level: validContextLevels.includes(normalizeToken(aiInput.context_level))
-        ? normalizeToken(aiInput.context_level) : 'properties',
-      reasoning_note: normalizeText(aiInput.reasoning_note || ''),
-    };
-
-    const priorityInput = isObject(componentBlock.priority) ? componentBlock.priority : {};
-    const validDifficulties = ['easy', 'medium', 'hard', 'very_hard'];
-    nestedComponent.priority = {
-      difficulty: validDifficulties.includes(normalizeToken(priorityInput.difficulty))
-        ? normalizeToken(priorityInput.difficulty) : 'medium',
-    };
-  }
+  // Phase 2: `component.*` retired from compiled rules entirely. The single
+  // authored linkage is `enum.source = component_db.<X>`, already emitted by
+  // the nestedEnum block above. Consumers derive parent/property relations
+  // from `enum.source` + field_studio_map.component_sources.
 
   const nestedEvidence = isObject(rule.evidence) ? { ...rule.evidence } : {};
   nestedEvidence.min_evidence_refs = asInt(
@@ -922,7 +895,6 @@ export function buildStudioFieldRule({
       const candidate = normalizeFieldKey(rule.canonical_key || '');
       return candidate && candidate !== key ? candidate : null;
     })(),
-    component: Object.keys(nestedComponent).length ? nestedComponent : null,
     constraints: Array.isArray(rule.constraints) ? rule.constraints.filter(Boolean) : [],
     contract: outContract,
     data_type: nestedContract.type || 'string',

@@ -64,34 +64,34 @@ export const CASCADE_RULES: Record<string, CascadeRule[]> = {
     },
   ],
 
-  'component.type': [
+  // Phase 2: enum.source is the single authored linkage to a component_db.
+  // Setting `component_db.<X>` locks the contract into the only shape
+  // components support (string scalar) and biases the policy toward
+  // `open_prefer_known` (allowing new component identities to be flagged).
+  // Clearing the lock reverts only the auto-applied policy — contract
+  // type/shape stay so the user can pick a new shape deliberately.
+  'enum.source': [
     {
-      // WHY: selecting a component type auto-wires enum to component_db
-      when: (_old, new_) => !!new_,
+      when: (_old, new_) =>
+        typeof new_ === 'string' && new_.startsWith('component_db.'),
       effects: [
-        {
-          path: 'enum.source',
-          action: 'derive',
-          derive: (_old, new_) => `component_db.${new_}`,
-        },
+        { path: 'contract.type', action: 'set', value: 'string' },
+        { path: 'contract.shape', action: 'set', value: 'scalar' },
+        { path: 'contract.unit', action: 'clear' },
         { path: 'enum.policy', action: 'set', value: 'open_prefer_known' },
       ],
     },
     {
-      // WHY: clearing component type should revert component_db coupling
-      when: (old, new_) => !!old && !new_,
+      when: (old, new_) =>
+        typeof old === 'string'
+        && old.startsWith('component_db.')
+        && (!new_ || !String(new_).startsWith('component_db.')),
       effects: [
-        {
-          path: 'enum.source',
-          action: 'clear-if',
-          condition: (rule) => strN(rule, 'enum.source', '').startsWith('component_db.'),
-        },
         {
           path: 'enum.policy',
           action: 'clear-if',
           condition: (rule) => strN(rule, 'enum.policy') === 'open_prefer_known',
         },
-        { path: 'component.source', action: 'clear' },
       ],
     },
   ],

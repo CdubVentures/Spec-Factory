@@ -120,15 +120,20 @@ export function reviewKeys(storage, category, productId) {
 export function normalizeFieldContract(rule = {}) {
   const contract = isObject(rule.contract) ? rule.contract : {};
   const level = ruleRequiredLevel(rule);
-  const comp = isObject(rule.component) ? rule.component : null;
   const enu = isObject(rule.enum) ? rule.enum : null;
   const evidence = isObject(rule.evidence) ? rule.evidence : {};
+  // Phase 2: component_type derives from enum.source (lock contract is
+  // `enum.source === component_db.<X>`). The `rule.component` block is gone.
+  const enumSource = String(enu?.source || '');
+  const componentType = enumSource.startsWith('component_db.')
+    ? enumSource.slice('component_db.'.length)
+    : null;
   return {
     type: String(contract.type || 'string'),
     shape: String(contract.shape || 'scalar').trim().toLowerCase() || 'scalar',
     required: level === 'mandatory',
     units: contract.unit || null,
-    component_type: comp?.type || null,
+    component_type: componentType,
     enum_source: enu?.source || null,
     min_evidence_refs: toInt(evidence.min_evidence_refs, 1),
   };

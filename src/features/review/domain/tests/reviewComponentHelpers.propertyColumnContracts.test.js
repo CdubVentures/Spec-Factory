@@ -6,16 +6,15 @@ import {
   mergePropertyColumns,
 } from '../componentReviewHelpers.js';
 
-test('resolveDeclaredComponentPropertyColumns combines field-match keys with component-db property roles', () => {
+test('resolveDeclaredComponentPropertyColumns reads component-db property roles (Phase 2)', () => {
+  // Phase 2: rule.component.match.property_keys retired; the SSOT for property
+  // columns is `field_studio_map.component_sources` (passed through here as
+  // `rules.component_db_sources`). The legacy field-rule walk was removed.
   const fieldRules = {
     fields: {
-      dpi: {
-        component: {
-          type: 'sensor',
-          match: {
-            property_keys: ['dpi', 'max_dpi', '__hidden'],
-          },
-        },
+      // sensor parent — Phase 2 lock contract.
+      sensor: {
+        enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
       },
       weight: {},
     },
@@ -36,7 +35,7 @@ test('resolveDeclaredComponentPropertyColumns combines field-match keys with com
 
   const cols = resolveDeclaredComponentPropertyColumns({ fieldRules, componentType: 'sensor' });
 
-  assert.deepEqual(cols, ['dpi', 'hidden', 'ips', 'max_dpi', 'shadow', 'tracking_speed']);
+  assert.deepEqual(cols, ['ips', 'shadow', 'tracking_speed']);
 });
 
 test('resolveDeclaredComponentPropertyColumns returns empty when the component type is missing', () => {

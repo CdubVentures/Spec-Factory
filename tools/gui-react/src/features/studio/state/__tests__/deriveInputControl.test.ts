@@ -24,14 +24,11 @@ const CASES: TestCase[] = [
     input: { type: 'string', shape: 'scalar', enumSource: 'component_db.sensor', enumPolicy: 'open' },
     expected: 'component_picker',
   },
+  // Phase 2: enum.source is the single component_db linkage. The legacy
+  // componentSource parameter was retired alongside the rule.component.* block.
   {
-    description: 'component_db via component.source',
-    input: { type: 'string', shape: 'scalar', enumSource: 'data_lists.x', enumPolicy: 'open', componentSource: 'component_db.switch' },
-    expected: 'component_picker',
-  },
-  {
-    description: 'component_db both sources',
-    input: { type: 'string', shape: 'scalar', enumSource: 'component_db.encoder', enumPolicy: 'open', componentSource: 'component_db.encoder' },
+    description: 'component_db via enum.source — open policy',
+    input: { type: 'string', shape: 'scalar', enumSource: 'component_db.encoder', enumPolicy: 'open' },
     expected: 'component_picker',
   },
 

@@ -595,6 +595,8 @@ describe('productImageFinderRoutes data-change contract', () => {
     );
 
     assert.equal(result.status, 200);
+    assert.equal(result.body.productId, PRODUCT_ID);
+    assert.equal(result.body.category, CATEGORY);
     assert.deepEqual(result.body.carousel_slots, {});
 
     const doc = readProductImagesDoc();

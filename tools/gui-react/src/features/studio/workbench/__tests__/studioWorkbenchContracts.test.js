@@ -71,7 +71,7 @@ test('studio workbench contracts preserve core field metadata after publish-gate
   const newColumnIds = [
     'variantDependent', 'pifDependent', 'contractRange', 'listRulesSummary', 'roundingSummary',
     'variantInventoryUsage', 'pifPriorityImages', 'reasoningNoteFilled',
-    'belongsToComponent', 'propertyVariance',
+    'componentLocked', 'belongsToComponent', 'propertyVariance',
     'tooltipMdFilled',
     'egLocked',
   ];

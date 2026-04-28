@@ -17,8 +17,11 @@ import { isReservedFieldKey } from './finderExclusions.js';
 
 const LEGACY_VARIANT_USAGE_ACTIVE_MODES = new Set(['default', 'append', 'override']);
 
-function isParentRule(rule) {
-  return Boolean(rule && rule.component && typeof rule.component === 'object');
+// Phase 2: parent identity derives entirely from `enum.source`. A field key
+// IS a component parent iff its `enum.source` is exactly `component_db.<self>`.
+function isParentRule(rule, selfKey) {
+  if (!selfKey) return false;
+  return String(rule?.enum?.source || '') === `component_db.${selfKey}`;
 }
 
 /**
@@ -65,12 +68,11 @@ export function buildComponentRelationIndex(compiledRulesFields = {}, componentS
   const subfieldToParent = new Map();
   const componentSourcesIndex = buildComponentSourcesIndex(componentSources);
   for (const [fk, rule] of Object.entries(compiledRulesFields)) {
-    if (!isParentRule(rule)) continue;
+    if (!isParentRule(rule, fk)) continue;
     parentKeys.add(fk);
-    const type = String(rule.component?.type || '').trim();
-    const propertyKeys = type
-      ? (componentSourcesIndex.get(type)?.propertyKeys || [])
-      : [];
+    // Phase 2: parent identity = selfKey by lock-contract construction
+    // (enum.source === "component_db." + fk). The component_type is fk.
+    const propertyKeys = componentSourcesIndex.get(fk)?.propertyKeys || [];
     for (const sub of propertyKeys) {
       if (typeof sub === 'string' && sub) subfieldToParent.set(sub, fk);
     }
@@ -124,7 +126,8 @@ export function resolveProductComponentInventory({
     if (!rule) continue;
     const link = linkByFieldKey.get(parentKey) || null;
     const resolvedValue = String(link?.component_name || '').trim();
-    const componentType = String(rule.component?.type || parentKey);
+    // Phase 2: componentType === parentKey by the enum.source lock contract.
+    const componentType = parentKey;
     const sourcesEntry = sourcesIndex.get(componentType) || { propertyKeys: [], variancePolicies: {} };
     const propertyKeys = sourcesEntry.propertyKeys || [];
     const subfields = [];
@@ -163,9 +166,9 @@ export function resolveKeyComponentRelation({
   componentRelationIndex,
 } = {}) {
   if (!fieldKey || !componentRelationIndex) return null;
-  if (isParentRule(fieldRule)) {
+  if (isParentRule(fieldRule, fieldKey)) {
     return {
-      type: String(fieldRule.component?.type || fieldKey),
+      type: fieldKey,
       relation: 'parent',
       parentFieldKey: fieldKey,
     };

@@ -40,6 +40,8 @@ async function loadAuthority(harness) {
   globalThis.__moduleSettingsAuthorityHarness = {
     queryClient: harness.queryClient,
     queryData: harness.getQueryData(),
+    apiGetCalls: [],
+    apiPutCalls: [],
     mutatedPayloads: [],
     mutationOptions: null,
     queryOptions: null,
@@ -74,12 +76,18 @@ async function loadAuthority(harness) {
         `,
         '../../../api/client': `
           export const api = {
-            get: async () => ({}),
-            put: async (_url, body) => ({
-              category: 'mouse',
-              module: 'customFinder',
-              settings: body.settings,
-            }),
+            get: async (url) => {
+              globalThis.__moduleSettingsAuthorityHarness.apiGetCalls.push(url);
+              return {};
+            },
+            put: async (url, body) => {
+              globalThis.__moduleSettingsAuthorityHarness.apiPutCalls.push([url, body]);
+              return {
+                category: 'mouse',
+                module: 'customFinder',
+                settings: body.settings,
+              };
+            },
           };
         `,
       },
@@ -88,6 +96,28 @@ async function loadAuthority(harness) {
 
   return mod;
 }
+
+test('module settings authority can address the PIF global pane without a category', async () => {
+  const harness = createQueryClientHarness(undefined);
+  const { useModuleSettingsAuthority } = await loadAuthority(harness);
+
+  useModuleSettingsAuthority({
+    category: '',
+    moduleId: 'productImageFinder',
+    scopeOverride: 'global',
+  });
+
+  const queryOptions = globalThis.__moduleSettingsAuthorityHarness.queryOptions;
+  assert.deepEqual(queryOptions.queryKey, ['module-settings', 'global', 'productImageFinder']);
+  assert.equal(queryOptions.enabled, true);
+
+  await queryOptions.queryFn();
+
+  assert.deepEqual(
+    globalThis.__moduleSettingsAuthorityHarness.apiGetCalls,
+    ['/module-settings/global/productImageFinder'],
+  );
+});
 
 test('module settings authority optimistically merges partial setting saves into existing cache data', async () => {
   const initialResponse = {

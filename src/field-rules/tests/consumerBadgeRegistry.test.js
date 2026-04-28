@@ -220,7 +220,7 @@ describe('Backward compatibility', () => {
       'enum.policy', 'enum.source',
       'enum.match.format_hint',
       'evidence.min_evidence_refs',
-      'constraints', 'component.type',
+      'constraints',
     ];
     for (const path of oldSeedReviewPaths) {
       assert.ok(FIELD_PARENT_MAP[path],

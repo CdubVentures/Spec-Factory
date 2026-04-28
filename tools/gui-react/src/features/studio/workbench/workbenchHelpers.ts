@@ -209,8 +209,13 @@ export function buildWorkbenchRows(
       enumSource,
       knownValuesCount: knownValuesForField.length,
 
-      // Components
-      componentType: strN(r, 'component.type'),
+      // Components — Phase 2: derive componentType from enum.source.
+      // The lock contract is `enum.source === component_db.<self>` (parent),
+      // surfaced as 🔧 in the componentLocked column.
+      componentType: enumSource.startsWith('component_db.')
+        ? enumSource.slice('component_db.'.length)
+        : '',
+      componentLocked: enumSource === `component_db.${key}`,
       belongsToComponent: propOwnership.get(key)?.componentType || '',
       propertyVariance: propOwnership.get(key)?.variancePolicy || '',
 
@@ -241,7 +246,6 @@ export function buildWorkbenchRows(
         shape: contractShape || null,
         enumSource: enumSource || null,
         enumPolicy: enumPolicy || null,
-        componentSource: strN(r, 'component.source') || null,
       }),
       uiOrder: numN(r, 'ui.order', 0),
 

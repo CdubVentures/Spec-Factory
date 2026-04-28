@@ -271,8 +271,9 @@ test('enum section is omitted when the rule has no values', () => {
   assert.ok(!structure.sections.find((s) => s.id === 'enum'), 'enum section absent');
 });
 
-test('component section reflects component.type and renders component-inventory context', () => {
-  const rule = makeRule({ component: { type: 'sensor', source: 'component_db.sensor' } });
+test('component section reflects enum.source linkage and renders component-inventory context', () => {
+  // Phase 2: parent identity derives from `enum.source === component_db.<self>`.
+  const rule = makeRule({ enum: { source: 'component_db.sensor', policy: 'open_prefer_known', values: [] } });
   const record = makeKeyRecord('sensor', rule, { component: { type: 'sensor', relation: 'parent', source: 'component_db.sensor' } });
   const preview = composePerKeyPromptPreview(rule, 'sensor', { category: 'mouse', componentRelation: { type: 'sensor', relation: 'parent' } });
   const structure = buildPerKeyDocStructure(record, {
