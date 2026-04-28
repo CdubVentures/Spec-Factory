@@ -355,6 +355,36 @@ describe('Overview bulk dispatch contracts', () => {
     assert.deepEqual(calls.map((call) => call.fieldKey), ['dpi', 'sensor']);
   });
 
+  it('skips component brand/link keys with an unsatisfied dependency even when summary omits the reason string', async () => {
+    (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
+      if (path.endsWith('/bundling-config')) return { sortAxisOrder: '' } as never;
+      if (path.endsWith('/summary')) {
+        return [
+          { field_key: 'sensor', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component' },
+          { field_key: 'sensor_brand', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component_brand', component_parent_key: 'sensor', component_dependency_satisfied: false },
+          { field_key: 'sensor_link', difficulty: 'medium', required_level: 'non_mandatory', availability: 'sometimes', dedicated_run: true, component_run_kind: 'component_link', component_parent_key: 'sensor', component_dependency_satisfied: false },
+          { field_key: 'dpi', difficulty: 'easy', required_level: 'mandatory', availability: 'always' },
+        ] as never;
+      }
+      throw new Error(`unexpected GET ${path}`);
+    };
+
+    const calls: BulkFireParams[] = [];
+    await dispatchKfAll(
+      'mouse',
+      [product('p1')],
+      new Set(),
+      'run',
+      fireRecorder(calls),
+      {
+        staggerMs: 0,
+        awaitPassengersRegistered: async () => 'registered',
+      },
+    );
+
+    assert.deepEqual(calls.map((call) => call.fieldKey), ['dpi', 'sensor']);
+  });
+
   it('dispatchKfPickedKeys ignores picked component brand/link keys while blocked', async () => {
     (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
       if (path.endsWith('/bundling-config')) return { sortAxisOrder: '' } as never;

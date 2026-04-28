@@ -63,6 +63,47 @@ function makeSpecDb() {
   };
 }
 
+function makeColorSpecDb() {
+  return {
+    getAllEnumFields() {
+      return ['colors'];
+    },
+    getEnumList(fieldKey) {
+      if (fieldKey === 'colors') return { id: 7, field_key: 'colors' };
+      return null;
+    },
+    getListValues(fieldKey) {
+      if (fieldKey !== 'colors') return [];
+      return [
+        {
+          id: 71,
+          list_id: 7,
+          field_key: 'colors',
+          value: 'black',
+          normalized_value: 'black',
+          source: 'reference',
+          needs_review: 0,
+          enum_policy: 'closed',
+          accepted_candidate_id: null,
+          overridden: 0,
+        },
+      ];
+    },
+    getKeyReviewState() {
+      return null;
+    },
+    getProductsByListValueId() {
+      return [];
+    },
+    getCandidatesByListValue() {
+      return [];
+    },
+    getReviewsForContext() {
+      return [];
+    },
+  };
+}
+
 test('buildEnumReviewPayloads excludes enum fields when review consumer disables enum.source', async () => {
   const fieldRules = {
     rules: {
@@ -99,4 +140,16 @@ test('buildEnumReviewPayloads excludes enum fields when review consumer disables
     payload.fields.map((row) => row.field),
     ['connection'],
   );
+});
+
+test('buildEnumReviewPayloads marks color registry enum fields as locked', async () => {
+  const payload = await buildEnumReviewPayloads({
+    config: {},
+    category: 'mouse',
+    specDb: makeColorSpecDb(),
+    fieldRules: null,
+  });
+
+  assert.equal(payload.fields[0]?.field, 'colors');
+  assert.equal(payload.fields[0]?.locked, true);
 });

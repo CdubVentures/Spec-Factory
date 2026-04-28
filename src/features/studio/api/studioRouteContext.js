@@ -1,6 +1,7 @@
 import { saveFieldStudioMap, validateFieldStudioMap } from '../../../ingest/categoryCompile.js';
 import { buildFieldLabelsMap } from '../../review/domain/index.js';
 import { cleanVariant } from '../../catalog/index.js';
+import { generateCategoryAuditReportPack } from '../../category-audit/reportPack.js';
 
 export function createStudioRouteContext(options = {}) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) {
@@ -20,6 +21,6 @@ export function createStudioRouteContext(options = {}) {
     validateFieldStudioMap, invalidateFieldRulesCache, buildFieldLabelsMap,
     getSpecDb, getSpecDbReady, storage, startProcess, broadcastWs,
     reviewLayoutByCategory, cleanVariant,
-    appDb,
+    appDb, generateCategoryAuditReportPack,
   };
 }

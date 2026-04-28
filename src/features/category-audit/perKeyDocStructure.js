@@ -118,6 +118,9 @@ const ARCHETYPE_REQUIRED_CONTENT = {
     'Marketing-evidence facet decomposition — a single PDP sentence may answer the *type* facet but not the identity. Identity from marketing-only ⇒ unk.',
     'Confidence ladder — component-page/teardown ≥90; branded-line marketing ≈70; generic-class marketing ≤40 ⇒ unk; sibling-inferred ⇒ unk.',
     'PCB-marking strip rule — strip parenthesized grade/color/lot tokens before emit.',
+    'Roster completeness scan — read the category key map in this brief and decide structurally for every name-prefixed or conceptually-adjacent key (latency, date, link, generation, sub-feature variants) whether it should join the property roster, become a facet, or stay standalone. Identity audits own the structural decision; no name-adjacent key should be left unconsidered.',
+    'Standard facet shape — if this is a NEW component identity for the category, also propose the standard facet field rules: `<key>_brand` (string scalar with `component_identity_projection.facet=brand`) and `<key>_link` (url scalar with `facet=link`). Optionally `<key>_type`. These facet rules are authored separately — they are not auto-generated when the identity is created.',
+    'Component property invariance test — before promoting a candidate key into the property roster, ask: "does this value change across two different products that use the same component?" If yes → product field, leave standalone. If no → component property. Three universal failure modes: (1) lab/measurement results (`*_latency`, `*_response_time`, `measured_*`, `*_under_load`, `effective_*`, `*_at_<condition>`), (2) firmware/MCU-implemented feature toggles (motion-sync, software smoothing, vendor latency integrations, host-implemented signal processing), (3) product-exposed configuration / capability subsets (polling-rate ladders, exposed lift settings, exposed step lists, profile menus).',
   ],
   component_facet: [
     'Same anti-pattern bank as the parent identity (so the facet doesn\'t accept slugified marketing either).',
@@ -134,21 +137,27 @@ const ARCHETYPE_REQUIRED_CONTENT = {
     'Unit/symbol-strip rule — currency or unit symbols belong in `contract.unit`, never inside the value.',
     'Range/sanity rule — realistic bounds so the LLM rejects wildly out-of-range extractions.',
     'When multiple reportable forms exist (peak vs sustained, max vs nominal), name which form the field stores.',
+    'Enum policy by value-space shape — `closed` and `open_prefer_known` auto-lock `enum.source` to `data_lists.<field_key>`. For a CONTINUOUS measurement (every product produces a unique reading) use `open` so no preferred-vocabulary list is created. Use `open_prefer_known`/`closed` only when the value space has discrete tiers with marketing-meaningful steps that should bias future extractions.',
+    'Sibling-alias discipline — if this field has connection/mode/variant-qualified siblings in the category key map (e.g. `<key>_wired`, `<key>_peak`, `<key>_xmp`), the parent\'s aliases must include only mode-agnostic phrases. Move qualifier-bearing phrases to the relevant sibling.',
   ],
   numeric_list: [
     'Unit/symbol-strip rule applies to every list item.',
     'Item ordering rule (descending numeric is conventional for capability lists).',
     'Range/sanity rule per item.',
+    'Enum policy by value-space shape — see numeric_scalar archetype.',
+    'Sibling-alias discipline — see numeric_scalar archetype.',
   ],
   enum_scalar: [
     'Shape lock — emit a JSON string, never a 1-element list.',
     'Granularity rule — emit the canonical the enum carries; sub-specs the enum doesn\'t carry stay out of the value.',
     'Synonym-to-canonical rule — when source uses a synonym, emit the canonical the data_list defines; aliases handle the mapping.',
+    'Sibling-alias discipline — if this field has mode/variant-qualified siblings, exclude qualifier-bearing phrases from the parent\'s aliases.',
   ],
   enum_list: [
     'List composition rule — product-wide union, per-variant union, or base/default-variant list.',
     'Item ordering rule — descending numeric, alphabetic, or source order.',
     'Pattern-conformant emission for pattern-bounded list enums.',
+    'Sibling-alias discipline — see enum_scalar archetype.',
   ],
   visual_judgment: [
     'Tier classification (A direct, B subtle, C non-visual) and the matching guidance shape.',
@@ -789,6 +798,7 @@ Mapping Studio patch guidance:
 - Component Source Mapping belongs under patch.component_sources. Use it for component type and property variance only. Component entity names, makers, aliases, and source URLs are maintained through Component Review, not Field Studio patches.
 - For every key, decide from scratch whether it is a component identity, component attribute, or standalone. Do not wait for an existing component DB property before proposing a component attribute. If this field should inherit from a resolved component, patch component_sources by adding "${record.fieldKey}" to roles.properties[] for the chosen component type. If no, leave component_sources unchanged and explain why it stays standalone.
 - A component identity patch may also define the component's normal product-backed attributes and strictly component-only attributes in the same component_sources row. Product-backed attributes have component_only omitted or false and publish as product fields. Strictly component-only attributes set "component_only": true and stay scoped to the component DB only.
+- Patch ownership: when component_type equals the audited field_key, the importer treats roles.properties[] as the complete replacement roster for that component and removes omitted stale attributes. When component_type belongs to another parent, the importer only upserts the audited property row so sibling attributes stay intact.
 - Component source parameters: component_type is the parent component key and must match a self-locked parent field_overrides.<component_type>.enum.source = "component_db.<component_type>"; roles.properties is the attribute list. Source-level priority is retired; keep priority under field_overrides.<field_key>.priority.
 - Component identity keys cannot be open enum keys. They must self-lock with enum.source = "component_db.<same_key>" and the matching component_sources[].component_type.
 - Component attribute parameters: field_key is the product field or component-only attribute key; type is string, number, or integer; unit is the display/storage unit for numeric values; variance_policy controls how component values relate to product values; tolerance is an optional numeric margin for upper_bound, lower_bound, or range checks; constraints are cross-property rules; component_only true means the attribute is component-scoped and should not become a product field.
@@ -1001,7 +1011,7 @@ function buildComponentSection(record, componentInventory, componentSources = []
       ]),
     });
     if (relevant.entities.length > 50) {
-      blocks.push({ kind: 'paragraph', text: `(first 50 of ${relevant.entities.length} shown; full list lives in \`component_db/${c.type}.json\`)` });
+      blocks.push({ kind: 'paragraph', text: `(first 50 of ${relevant.entities.length} shown; full list lives in \`component_db/${relevant.type}.json\`)` });
     }
   }
 

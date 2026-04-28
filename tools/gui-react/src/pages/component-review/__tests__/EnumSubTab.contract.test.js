@@ -102,6 +102,32 @@ function makeEnumPayload() {
   };
 }
 
+function makeLockedColorEnumPayload() {
+  return {
+    category: 'mouse',
+    fields: [
+      {
+        field: 'colors',
+        enum_list_id: 90,
+        locked: true,
+        metrics: { total: 1, flags: 0 },
+        values: [
+          {
+            list_value_id: 900,
+            enum_list_id: 90,
+            value: 'black',
+            source: 'reference',
+            confidence: 1,
+            color: 'green',
+            needs_review: false,
+            candidates: [],
+          },
+        ],
+      },
+    ],
+  };
+}
+
 async function loadEnumSubTab() {
   globalThis.__enumSubTabStoreState = {
     selectedEnumField: 'sensor',
@@ -238,4 +264,33 @@ test('EnumSubTab drawer only edits the selected value and warns about propagatio
       },
     },
   ]);
+});
+
+test('EnumSubTab keeps payload-locked color registry fields read-only without studio store hydration', async () => {
+  globalThis.__enumSubTabStoreState = {
+    selectedEnumField: 'colors',
+    enumDrawerOpen: false,
+    selectedEnumValue: '',
+  };
+  const { EnumSubTab } = await loadEnumSubTab();
+  globalThis.__enumSubTabStoreState.selectedEnumField = 'colors';
+  globalThis.__enumSubTabStoreState.enumDrawerOpen = false;
+  globalThis.__enumSubTabStoreState.selectedEnumValue = '';
+
+  const tree = renderElement(EnumSubTab({
+    data: makeLockedColorEnumPayload(),
+    category: 'mouse',
+    queryClient: makeQueryClientDouble(),
+  }));
+
+  assert.match(textContent(tree), /Read-only/);
+
+  const rows = findAll(tree, (node) => node.props?.['data-region'] === 'enum-review-value-row');
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].props.disabled, true);
+
+  rows[0].props.onClick();
+
+  assert.equal(globalThis.__enumSubTabStoreState.enumDrawerOpen, false);
+  assert.deepEqual(globalThis.__enumSubTabApiPosts, []);
 });

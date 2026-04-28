@@ -44,6 +44,15 @@ export function makeCtx(overrides = {}) {
     broadcastWs: () => {},
     reviewLayoutByCategory: new Map(),
     cleanVariant: (value) => String(value || '').trim(),
+    generateCategoryAuditReportPack: async ({ category }) => ({
+      category,
+      consumer: 'key_finder',
+      generatedAt: '2026-04-28T00:00:00.000Z',
+      categoryReport: {},
+      perKeyDocs: {},
+      promptAudit: {},
+      keysOrderAudit: {},
+    }),
   };
   return { ...ctx, ...overrides };
 }

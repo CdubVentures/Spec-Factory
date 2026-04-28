@@ -14,6 +14,9 @@ import {
   resolveEnumPreAffectedProductIds,
   resolveEnumRequiredCandidate,
 } from '../services/enumMutationService.js';
+import { normalizeFieldKey } from '../domain/reviewNormalization.js';
+
+import { isEgLockedField } from '../../studio/index.js';
 
 // Re-export for characterization tests and any external consumers
 export {
@@ -358,6 +361,13 @@ async function handleEnumRenameEndpoint({
     const listValueId = enumCtx?.listValueId ?? null;
     if (!field || !oldValue) {
       return respond(400, { error: 'field and oldValue (or listValueId) required' });
+    }
+    if (isEgLockedField(normalizeFieldKey(field))) {
+      return respond(403, {
+        error: 'enum_field_locked',
+        message: `Enum values for '${field}' are managed by the registry and cannot be renamed here.`,
+        field,
+      });
     }
     if (typeof isReviewFieldPathEnabled === 'function') {
       const enabled = await isReviewFieldPathEnabled({

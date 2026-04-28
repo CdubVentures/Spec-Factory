@@ -19,7 +19,7 @@ import type { KeyEntry, KeyGroup } from '../../types.ts';
 
 function key(
   fieldKey: string,
-  overrides: Partial<Pick<KeyEntry, 'difficulty' | 'required_level' | 'availability' | 'last_status' | 'published' | 'run_blocked_reason'>> = {},
+  overrides: Partial<Pick<KeyEntry, 'difficulty' | 'required_level' | 'availability' | 'last_status' | 'published' | 'run_blocked_reason' | 'component_run_kind' | 'component_parent_key' | 'component_dependency_satisfied' | 'dedicated_run'>> = {},
 ): KeyEntry {
   return {
     field_key: fieldKey,
@@ -47,10 +47,10 @@ function key(
     last_web_search: null,
     candidate_count: 0,
     published: overrides.published ?? false,
-    dedicated_run: false,
-    component_run_kind: '',
-    component_parent_key: '',
-    component_dependency_satisfied: true,
+    dedicated_run: overrides.dedicated_run ?? false,
+    component_run_kind: overrides.component_run_kind ?? '',
+    component_parent_key: overrides.component_parent_key ?? '',
+    component_dependency_satisfied: overrides.component_dependency_satisfied ?? true,
     run_blocked_reason: overrides.run_blocked_reason ?? '',
     concrete_evidence: false,
     top_confidence: null,
@@ -128,6 +128,32 @@ describe('Key Finder bulk dispatch planning', () => {
         key('sensor', { difficulty: 'medium' }),
         key('sensor_brand', { difficulty: 'medium', run_blocked_reason: 'component_parent_unpublished' }),
         key('sensor_link', { difficulty: 'medium', run_blocked_reason: 'component_parent_unpublished' }),
+        key('dpi', { difficulty: 'easy' }),
+      ]),
+    ];
+
+    assert.deepEqual(buildRunGroupDispatchKeys(localGroups, 'sensor'), ['dpi', 'sensor']);
+    assert.deepEqual(buildLoopGroupDispatchKeys(localGroups, 'sensor'), ['dpi', 'sensor']);
+  });
+
+  it('Run and Loop dispatch planning treat unsatisfied component brand/link dependencies as locked even without a reason string', () => {
+    const localGroups = [
+      group('sensor', [
+        key('sensor', { difficulty: 'medium' }),
+        key('sensor_brand', {
+          difficulty: 'medium',
+          dedicated_run: true,
+          component_run_kind: 'component_brand',
+          component_parent_key: 'sensor',
+          component_dependency_satisfied: false,
+        }),
+        key('sensor_link', {
+          difficulty: 'medium',
+          dedicated_run: true,
+          component_run_kind: 'component_link',
+          component_parent_key: 'sensor',
+          component_dependency_satisfied: false,
+        }),
         key('dpi', { difficulty: 'easy' }),
       ]),
     ];

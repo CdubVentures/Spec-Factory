@@ -27,35 +27,10 @@ import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { KeyTypeIconStrip } from '../../../shared/ui/icons/KeyTypeIcons.tsx';
 import { deriveKeyTypeIcons, deriveOwningComponent } from '../../../shared/ui/icons/keyTypeIconHelpers.ts';
+import { buildKeyTypeIconInput } from '../keyTypeIconAdapter.ts';
+import { componentRunBlockTitle, isComponentIdentityChildKey, isKeyRunBlocked } from '../state/componentKeyRunGuards.ts';
 import type { KeyEntry, RidingPrimaries } from '../types.ts';
 import { LIVE_MODES, TOOLTIPS } from '../types.ts';
-
-// WHY: KeyEntry doesn't carry the raw rule object — keyFinder summary only
-// emits the targeted lineage signals (component_run_kind, component_parent_key,
-// belongs_to_component). Synthesize a rule-shaped object so the shared
-// deriveKeyTypeIcons predicate can run unchanged across all 4 surfaces.
-function buildKeyTypeIconInput(entry: KeyEntry) {
-  const rule: Record<string, unknown> = {
-    variant_dependent: entry.variant_dependent,
-    product_image_dependent: entry.product_image_dependent,
-  };
-  if (entry.component_run_kind === 'component') {
-    rule.enum = { source: `component_db.${entry.field_key}` };
-  } else if (
-    entry.component_run_kind === 'component_brand'
-    || entry.component_run_kind === 'component_link'
-  ) {
-    rule.component_identity_projection = {
-      component_type: entry.component_parent_key,
-      facet: entry.component_run_kind === 'component_brand' ? 'brand' : 'link',
-    };
-  }
-  return {
-    rule,
-    fieldKey: entry.field_key,
-    belongsToComponent: entry.belongs_to_component || '',
-  };
-}
 
 interface KeyRowProps {
   readonly entry: KeyEntry;
@@ -356,10 +331,10 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
   // and Loop are independent ops with independent server-side locks.
   const loopRunning = entry.opMode === 'loop' && entry.opStatus === 'running';
   const loopQueued = entry.opMode === 'loop' && entry.opStatus === 'queued';
-  const componentRunBlocked = entry.run_blocked_reason === 'component_parent_unpublished';
-  const componentResolverAction = entry.component_run_kind === 'component_brand';
+  const componentRunBlocked = isKeyRunBlocked(entry);
+  const componentResolverAction = isComponentIdentityChildKey(entry);
   const componentBlockTitle = componentRunBlocked
-    ? `Run ${entry.component_parent_key || 'the parent component'} first. Component brand/link are locked until the parent component has a published value.`
+    ? componentRunBlockTitle(entry.component_parent_key)
     : '';
   const runDisabled = !LIVE_MODES.keyRun || componentRunBlocked;
   const loopDisabled = !LIVE_MODES.keyLoop || loopRunning || loopQueued || componentRunBlocked;

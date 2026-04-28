@@ -206,6 +206,21 @@ function patchImportResponse(preview, extras = {}) {
   };
 }
 
+async function refreshCategoryAuditReportsAfterImport({
+  generateCategoryAuditReportPack,
+  category,
+  config,
+  outputRoot,
+}) {
+  if (typeof generateCategoryAuditReportPack !== 'function') return null;
+  return generateCategoryAuditReportPack({
+    category,
+    consumer: 'key_finder',
+    config,
+    outputRoot,
+  });
+}
+
 export function registerStudioRoutes(ctx) {
   const {
     jsonRes,
@@ -231,6 +246,7 @@ export function registerStudioRoutes(ctx) {
     cleanVariant,
     appDb,
     syncSpecDbForCategory,
+    generateCategoryAuditReportPack,
   } = ctx;
   const hasStudioMapHandlers = (
     typeof saveFieldStudioMap === 'function'
@@ -484,7 +500,7 @@ export function registerStudioRoutes(ctx) {
         );
       }
       try {
-        const incomingSummary = summarizeStudioMapPayload(normalizedFieldStudioMap);
+        let incomingSummary = summarizeStudioMapPayload(normalizedFieldStudioMap);
         if (params.get('allowEmptyOverwrite') !== 'true') {
           // WHY: Read existing map from SQL (SSOT). Reseed handles JSON→SQL on boot.
           const specDbForGuard = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
@@ -499,14 +515,9 @@ export function registerStudioRoutes(ctx) {
               incoming: incomingSummary,
             });
           }
-          // Guard: reject saves that drop component_sources when existing map has them
           if (existingSummary.component_sources > 0 && incomingSummary.component_sources === 0) {
-            return jsonRes(res, 409, {
-              error: 'component_sources_dropped',
-              message: 'Incoming studio map drops component_sources that exist in the current map. Include component_sources or set allowEmptyOverwrite=true to force.',
-              existing: existingSummary,
-              incoming: incomingSummary,
-            });
+            normalizedFieldStudioMap.component_sources = existingMap.component_sources;
+            incomingSummary = summarizeStudioMapPayload(normalizedFieldStudioMap);
           }
         }
         const mapHash = hashJson(normalizedFieldStudioMap);
@@ -602,11 +613,15 @@ export function registerStudioRoutes(ctx) {
         if (specDb) {
           specDb.upsertFieldStudioMap(JSON.stringify(saveReadyFieldStudioMap), mapHash);
         }
-        saveFieldStudioMap({ category, fieldStudioMap: saveReadyFieldStudioMap, config }).catch((err) => {
-          console.warn(`[studio-map] JSON export failed (non-critical): ${err.message}`);
-        });
+        await saveFieldStudioMap({ category, fieldStudioMap: saveReadyFieldStudioMap, config });
         sessionCache.invalidateSessionCache(category);
         reviewLayoutByCategory.delete(category);
+        const refreshedReports = await refreshCategoryAuditReportsAfterImport({
+          generateCategoryAuditReportPack,
+          category,
+          config,
+          outputRoot,
+        });
         emitDataChange({
           broadcastWs,
           event: 'field-studio-map-saved',
@@ -628,6 +643,7 @@ export function registerStudioRoutes(ctx) {
           warnings: Array.isArray(result.validation?.warnings) ? result.validation.warnings : [],
           map_hash: mapHash,
           storageDir,
+          refreshedReports,
         });
       } catch (err) {
         return jsonRes(res, 400, {
@@ -718,9 +734,7 @@ export function registerStudioRoutes(ctx) {
           });
           mapHash = hashJson(saveReadyFieldStudioMap);
           specDb.upsertFieldStudioMap(JSON.stringify(saveReadyFieldStudioMap), mapHash);
-          saveFieldStudioMap({ category, fieldStudioMap: saveReadyFieldStudioMap, config }).catch((err) => {
-            console.warn(`[studio-map] JSON export failed (non-critical): ${err.message}`);
-          });
+          await saveFieldStudioMap({ category, fieldStudioMap: saveReadyFieldStudioMap, config });
         }
         const outputRoot = path.resolve(config?.localInputRoot || '.workspace', 'reports');
         const storageDir = await writeAuditorResponsePatchFiles({
@@ -732,6 +746,12 @@ export function registerStudioRoutes(ctx) {
         });
         sessionCache.invalidateSessionCache(category);
         reviewLayoutByCategory.delete(category);
+        const refreshedReports = await refreshCategoryAuditReportsAfterImport({
+          generateCategoryAuditReportPack,
+          category,
+          config,
+          outputRoot,
+        });
         emitDataChange({
           broadcastWs,
           event: 'field-key-order-saved',
@@ -757,6 +777,7 @@ export function registerStudioRoutes(ctx) {
             : [],
           map_hash: mapHash,
           storageDir,
+          refreshedReports,
         });
       } catch (err) {
         return jsonRes(res, 400, {

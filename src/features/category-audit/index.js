@@ -8,6 +8,7 @@
  */
 
 export { generateCategoryAuditReport } from './reportBuilder.js';
+export { generateCategoryAuditReportPack } from './reportPack.js';
 export { generatePerKeyDocs } from './perKeyDocBuilder.js';
 export { generatePromptAuditReports } from './promptAuditReportBuilder.js';
 export { generateKeysOrderAuditReport } from './keysOrderReportBuilder.js';

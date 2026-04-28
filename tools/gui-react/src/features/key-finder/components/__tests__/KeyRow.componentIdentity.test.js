@@ -45,7 +45,9 @@ const STUBS = {
       if (enumSource === 'component_db.' + input.fieldKey) {
         kinds.push('component_self');
       } else if (rule.component_identity_projection && rule.component_identity_projection.component_type) {
-        kinds.push('component_identity_projection');
+        const facet = String(rule.component_identity_projection.facet || '').trim().toLowerCase();
+        if (facet === 'brand') kinds.push('component_identity_brand');
+        else if (facet === 'link') kinds.push('component_identity_link');
       } else if (input.belongsToComponent) {
         kinds.push('component_attribute');
       }
@@ -207,6 +209,34 @@ test('dedicated component resolver rows render N/A for bundle/passenger cells an
   const loop = buttons.find((button) => button.props.label === 'Loop');
   assert.equal(run.props.disabled, true, 'blocked component brand run is disabled');
   assert.equal(loop.props.disabled, true, 'blocked component brand loop is disabled');
+  assert.equal(run.props.intent, 'componentResolver');
+  assert.equal(loop.props.intent, 'componentResolverLocked');
+});
+
+test('component link rows lock from the dependency flag even when the reason string is absent', async () => {
+  const { KeyRow } = await loadModule();
+  const tree = renderNode(KeyRow({
+    entry: baseEntry({
+      field_key: 'sensor_link',
+      label: 'Sensor Link',
+      component_run_kind: 'component_link',
+      component_dependency_satisfied: false,
+      run_blocked_reason: '',
+    }),
+    productId: 'p1',
+    category: 'mouse',
+    onRun: () => {},
+    onLoop: () => {},
+    onOpenPrompt: () => {},
+    onUnresolve: () => {},
+    onDelete: () => {},
+  }));
+
+  const buttons = collectByType(tree, 'RowActionButton');
+  const run = buttons.find((button) => button.props.label === 'Run');
+  const loop = buttons.find((button) => button.props.label === 'Loop');
+  assert.equal(run.props.disabled, true, 'component link run is locked until the parent component publishes');
+  assert.equal(loop.props.disabled, true, 'component link loop is locked until the parent component publishes');
   assert.equal(run.props.intent, 'componentResolver');
   assert.equal(loop.props.intent, 'componentResolverLocked');
 });

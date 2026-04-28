@@ -103,6 +103,30 @@ function cleanupTmp() {
 }
 
 describe('GET /key-finder/:category/:productId with scope param', () => {
+  it('returns an empty run-history payload when the product has no key-finder doc yet', async (t) => {
+    t.after(cleanupTmp);
+    const pid = 'no-key-finder-doc-prod';
+    fs.mkdirSync(path.join(PRODUCT_ROOT, pid), { recursive: true });
+
+    const specDb = makeSpecDbStub();
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', pid], new URLSearchParams(), 'GET', {}, {});
+
+    assert.equal(responses[0].status, 200);
+    assert.deepEqual(responses[0].body, {
+      product_id: pid,
+      category: 'mouse',
+      scope: 'key',
+      field_key: null,
+      group: null,
+      selected: null,
+      runs: [],
+      candidates: [],
+    });
+  });
+
   it('scope=group&group=sensor_performance filters runs by compiled-rule group', async (t) => {
     t.after(cleanupTmp);
     const pid = 'group-scope-prod';

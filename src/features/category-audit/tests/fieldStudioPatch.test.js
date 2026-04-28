@@ -490,6 +490,109 @@ test('previewFieldStudioPatchDocuments does not treat stale field_studio_hints a
   assert.equal(preview.valid, true);
 });
 
+test('importFieldStudioPatchDocuments lets parent component patches replace the full attribute list', () => {
+  const parentPatch = validPatch({
+    field_key: 'sensor',
+    navigator_ordinal: 40,
+    patch: {
+      field_overrides: {
+        sensor: {
+          contract: { type: 'string', shape: 'scalar' },
+          enum: { policy: 'open_prefer_known', source: 'component_db.sensor' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: {
+            properties: [
+              {
+                field_key: 'sensor_type',
+                type: 'string',
+                variance_policy: 'authoritative',
+              },
+              {
+                field_key: 'dpi',
+                type: 'number',
+                unit: 'dpi',
+                variance_policy: 'upper_bound',
+                tolerance: 5,
+              },
+              {
+                field_key: 'sensor_native_resolution_steps',
+                type: 'integer',
+                variance_policy: 'authoritative',
+                component_only: true,
+              },
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  const result = importFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: {
+      ...baseMap(),
+      selected_keys: ['design', 'weight', 'sensor', 'sensor_type', 'dpi'],
+      field_overrides: {
+        ...baseMap().field_overrides,
+        sensor: {
+          field_key: 'sensor',
+          enum: { policy: 'open_prefer_known', source: 'data_lists.sensor' },
+        },
+        sensor_type: {
+          field_key: 'sensor_type',
+          contract: { type: 'string', shape: 'scalar' },
+        },
+        dpi: {
+          field_key: 'dpi',
+          contract: { type: 'number', shape: 'scalar', unit: 'dpi' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: {
+            properties: [
+              {
+                field_key: 'dpi',
+                type: 'number',
+                unit: 'dpi',
+                variance_policy: 'upper_bound',
+              },
+              {
+                field_key: 'stale_sensor_attribute',
+                type: 'string',
+                variance_policy: 'authoritative',
+                component_only: true,
+              },
+            ],
+          },
+        },
+      ],
+    },
+    patchDocs: [parentPatch],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: map,
+    }),
+  });
+
+  const properties = result.fieldStudioMap.component_sources[0].roles.properties;
+  assert.deepEqual(properties.map((prop) => prop.field_key), [
+    'sensor_type',
+    'dpi',
+    'sensor_native_resolution_steps',
+  ]);
+  assert.equal(properties[1].tolerance, 5);
+  assert.equal(properties[2].component_only, true);
+  assert.equal(result.fieldStudioMap.field_overrides.sensor.enum.source, 'component_db.sensor');
+});
+
 test('validateFieldStudioPatchDocument rejects retired component source workbook fields', () => {
   assert.throws(
     () => validateFieldStudioPatchDocument(validPatch({

@@ -48,7 +48,12 @@ function createHarness() {
     mutatedPayloads: [],
     savedCallbacks: 0,
     setCalls: [],
+    cachedStudioConfig: null,
     queryClient: {
+      getQueryData(queryKey) {
+        if (queryKey[0] === 'studio-config') return harness.cachedStudioConfig;
+        return undefined;
+      },
       setQueryData(queryKey, value) {
         harness.setCalls.push({ queryKey, value });
       },
@@ -72,7 +77,7 @@ test('studio map save patches the exact studio-config cache from the server enti
       map_hash: 'hash-1',
       map: { field_mapping: [{ key: 'dpi' }] },
     };
-    harness.mutationOptions[0].onSuccess(response);
+    harness.mutationOptions[0].onSuccess({ skipped: false, response });
 
     assert.deepEqual(harness.setCalls, [
       {
@@ -81,6 +86,74 @@ test('studio map save patches the exact studio-config cache from the server enti
       },
     ]);
     assert.deepEqual(harness.invalidations, []);
+  } finally {
+    delete globalThis.__studioPersistenceAuthorityHarness;
+  }
+});
+
+test('studio map save skips stale empty mapping payloads before the API boundary', async () => {
+  const harness = createHarness();
+  try {
+    const { useStudioPersistenceAuthority } = await loadStudioPersistenceAuthorityModule();
+    useStudioPersistenceAuthority({ category: 'mouse' });
+    harness.cachedStudioConfig = {
+      file_path: 'specDb:mouse',
+      map_hash: 'hash-existing',
+      map: {
+        component_sources: [{ component_type: 'sensor' }],
+        data_lists: [{ field: 'sensor_brand' }],
+      },
+    };
+
+    const result = await harness.mutationOptions[0].mutationFn({
+      selected_keys: [],
+      field_overrides: {},
+    });
+    harness.mutationOptions[0].onSuccess(result);
+
+    assert.deepEqual(harness.apiCalls, []);
+    assert.deepEqual(harness.setCalls, []);
+    assert.equal(result.skipped, true);
+    assert.deepEqual(result.response, harness.cachedStudioConfig);
+  } finally {
+    delete globalThis.__studioPersistenceAuthorityHarness;
+  }
+});
+
+test('studio map save preserves cached component sources on stale partial mapping payloads', async () => {
+  const harness = createHarness();
+  try {
+    const { useStudioPersistenceAuthority } = await loadStudioPersistenceAuthorityModule();
+    useStudioPersistenceAuthority({ category: 'mouse' });
+    harness.cachedStudioConfig = {
+      file_path: 'specDb:mouse',
+      map_hash: 'hash-existing',
+      map: {
+        component_sources: [
+          { component_type: 'sensor', roles: { properties: [] } },
+          { component_type: 'switch', roles: { properties: [] } },
+        ],
+        data_lists: [{ field: 'sensor_brand' }],
+      },
+    };
+
+    await harness.mutationOptions[0].mutationFn({
+      component_sources: [],
+      data_lists: [{ field: 'connection' }],
+    });
+
+    assert.deepEqual(harness.apiCalls, [
+      {
+        path: '/studio/mouse/field-studio-map',
+        body: {
+          component_sources: [
+            { component_type: 'sensor', roles: { properties: [] } },
+            { component_type: 'switch', roles: { properties: [] } },
+          ],
+          data_lists: [{ field: 'connection' }],
+        },
+      },
+    ]);
   } finally {
     delete globalThis.__studioPersistenceAuthorityHarness;
   }
@@ -102,7 +175,7 @@ test('studio docs save patches studio-config and preserves the save callback', a
       map_hash: 'hash-2',
       map: { field_mapping: [{ key: 'lift' }] },
     };
-    harness.mutationOptions[1].onSuccess(response);
+    harness.mutationOptions[1].onSuccess({ skipped: false, response });
 
     assert.deepEqual(harness.setCalls, [
       {

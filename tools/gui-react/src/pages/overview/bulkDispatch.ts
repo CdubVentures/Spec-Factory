@@ -9,6 +9,7 @@ import {
   type TerminalStatus,
 } from '../../features/operations/hooks/useFinderOperations.ts';
 import { parseAxisOrder, sortKeysByPriority } from '../../features/key-finder/state/keyFinderGroupedRows.ts';
+import { isKeyRunBlocked } from '../../features/key-finder/state/componentKeyRunGuards.ts';
 import type { CatalogRow } from '../../types/product.ts';
 import type { PifVariantProgressGen, ScalarVariantProgressGen } from '../../types/product.generated.ts';
 import { classifyPipelineKfBucket, type PipelineKfBucket } from './pipelinePlan.ts';
@@ -496,6 +497,8 @@ interface KeyFinderSummaryLike {
   readonly last_status?: string | null;
   readonly published?: boolean;
   readonly run_blocked_reason?: string;
+  readonly component_run_kind?: string;
+  readonly component_dependency_satisfied?: boolean;
 }
 
 interface KeyFinderBundlingConfigLike {
@@ -543,7 +546,7 @@ function filterAndSortKfKeys(
     if (!entry.field_key) return false;
     if (reservedKeys.has(entry.field_key)) return false;
     if (entry.variant_dependent === true) return false;
-    if (entry.run_blocked_reason) return false;
+    if (isKeyRunBlocked(entry)) return false;
     if (pipelineBucket && classifyPipelineKfBucket(entry, reservedKeys) !== pipelineBucket) return false;
     if (mode === 'loop' && (entry.last_status === 'resolved' || entry.published)) return false;
     if (pickedFilter && !pickedFilter.has(entry.field_key)) return false;

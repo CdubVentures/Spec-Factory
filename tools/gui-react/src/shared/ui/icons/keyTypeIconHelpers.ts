@@ -11,11 +11,16 @@
 //                                   ← features/studio/state/componentLockClient.ts
 // If those contracts change, update here too.
 
+// WHY: brand and link identity projections get DIFFERENT LLM injection
+// (full component table for brand, only the resolved component row for link)
+// + different publisher behavior (brand resolution gates component_identity
+// + item_component_links creation). Distinct kinds give distinct tooltips.
 export type KeyTypeIconKind =
   | 'variant'
   | 'pif'
   | 'component_self'
-  | 'component_identity_projection'
+  | 'component_identity_brand'
+  | 'component_identity_link'
   | 'component_attribute';
 
 export interface DeriveKeyTypeIconsInput {
@@ -73,14 +78,16 @@ function readIdentityProjectionComponentType(rule: Record<string, unknown>): str
   return trimmed;
 }
 
-function isComponentIdentityProjectionLocked(rule: Record<string, unknown>): boolean {
+function readIdentityProjectionFacet(rule: Record<string, unknown>): 'brand' | 'link' | '' {
   const projection = rule.component_identity_projection;
-  if (!projection || typeof projection !== 'object') return false;
+  if (!projection || typeof projection !== 'object') return '';
   const componentType = (projection as { component_type?: unknown }).component_type;
   const facet = (projection as { facet?: unknown }).facet;
-  if (typeof componentType !== 'string' || !componentType.trim()) return false;
-  if (typeof facet !== 'string') return false;
-  return IDENTITY_PROJECTION_FACETS.has(facet.trim().toLowerCase());
+  if (typeof componentType !== 'string' || !componentType.trim()) return '';
+  if (typeof facet !== 'string') return '';
+  const normalized = facet.trim().toLowerCase();
+  if (normalized === 'brand' || normalized === 'link') return normalized;
+  return '';
 }
 
 export function deriveKeyTypeIcons(input: DeriveKeyTypeIconsInput): readonly KeyTypeIconKind[] {
@@ -103,17 +110,22 @@ export function deriveKeyTypeIcons(input: DeriveKeyTypeIconsInput): readonly Key
   // since the projection icon already implies component lineage.
   if (isComponentSelfLocked(rule, input.fieldKey, input.knownComponentTypes)) {
     kinds.push('component_self');
-  } else if (isComponentIdentityProjectionLocked(rule)) {
-    kinds.push('component_identity_projection');
-  } else if (input.belongsToComponent && input.belongsToComponent.trim()) {
-    kinds.push('component_attribute');
+  } else {
+    const facet = readIdentityProjectionFacet(rule);
+    if (facet === 'brand') {
+      kinds.push('component_identity_brand');
+    } else if (facet === 'link') {
+      kinds.push('component_identity_link');
+    } else if (input.belongsToComponent && input.belongsToComponent.trim()) {
+      kinds.push('component_attribute');
+    }
   }
 
   return kinds;
 }
 
 // WHY: which component does this key belong to? The icon strip uses this
-// to color-tint every related icon (self + identity_projection + attribute)
+// to color-tint every related icon (self + identity_brand/link + attribute)
 // with one shared hue per component.
 export function deriveOwningComponent(input: DeriveKeyTypeIconsInput): string {
   const rule = input.rule && typeof input.rule === 'object' ? input.rule : {};

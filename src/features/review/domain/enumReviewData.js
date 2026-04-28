@@ -14,6 +14,7 @@ import {
   ensureEnumValueCandidateInvariant,
   shouldIncludeEnumValueEntry,
 } from './candidateInfrastructure.js';
+import { isEgLockedField } from '../../studio/index.js';
 
 export async function buildEnumReviewPayloadsSpecDb({ config = {}, category, specDb, enabledEnumFields = null }) {
   const rawFieldKeys = specDb.getAllEnumFields();
@@ -25,6 +26,7 @@ export async function buildEnumReviewPayloadsSpecDb({ config = {}, category, spe
   for (const field of fieldKeys) {
     const enumListRow = specDb.getEnumList(field);
     const listRows = specDb.getListValues(field);
+    const locked = isEgLockedField(normalizeFieldKey(field));
     const valueMap = new Map();
 
     for (const row of listRows) {
@@ -127,6 +129,7 @@ export async function buildEnumReviewPayloadsSpecDb({ config = {}, category, spe
     fields.push({
       field,
       enum_list_id: enumListRow?.id ?? null,
+      locked,
       values,
       metrics: { total: values.length, flags: flagCount },
     });

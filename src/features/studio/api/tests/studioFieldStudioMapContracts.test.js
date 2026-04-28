@@ -115,6 +115,37 @@ test('studio field-studio-map PUT rejects destructive empty overwrite by default
   assert.equal(saveCalled, false);
 });
 
+test('studio field-studio-map PUT preserves existing component sources for stale partial saves', async () => {
+  const sqlWrites = [];
+  const existingMap = {
+    version: 2,
+    component_sources: [{ component_type: 'sensor', roles: { properties: [] } }],
+    data_lists: [{ field: 'sensor', manual_values: ['PAW3395'] }],
+  };
+  const result = await invokeStudioRoute({
+    readJsonBody: async () => ({
+      version: 2,
+      data_lists: [{ field: 'connection', manual_values: ['wired'] }],
+      component_sources: [],
+    }),
+    getSpecDb: () => ({
+      getFieldStudioMap: () => ({
+        map_json: JSON.stringify(existingMap),
+        map_hash: 'test-hash',
+        updated_at: '2026-03-29T00:00:00',
+      }),
+      upsertFieldStudioMap: (json, hash) => { sqlWrites.push({ json, hash }); },
+    }),
+    saveFieldStudioMap: async () => ({ ok: true }),
+  }, ['studio', 'mouse', 'field-studio-map'], 'PUT');
+
+  assert.equal(result.status, 200);
+  assert.equal(sqlWrites.length, 1);
+  const written = JSON.parse(sqlWrites[0].json);
+  assert.deepEqual(written.component_sources, existingMap.component_sources);
+  assert.deepEqual(result.body.map.component_sources, existingMap.component_sources);
+});
+
 test('studio field-studio-map GET reads from SQL when specDb has data', async () => {
   const mapData = {
     version: 2,
@@ -273,6 +304,7 @@ test('studio field-studio-patches apply stores auditor responses, saves SQL map,
   const emitted = [];
   const sqlWrites = [];
   const mapWrites = [];
+  const reportRefreshes = [];
 
   try {
     const result = await invokeStudioRoute({
@@ -301,6 +333,17 @@ test('studio field-studio-patches apply stores auditor responses, saves SQL map,
       broadcastWs: (channel, payload) => {
         emitted.push({ channel, payload });
       },
+      generateCategoryAuditReportPack: async (opts) => {
+        reportRefreshes.push(opts);
+        return {
+          category: opts.category,
+          generatedAt: '2026-04-28T00:00:00.000Z',
+          categoryReport: { mdPath: path.join(tempRoot, 'reports', opts.category, 'summary', 'stub.md') },
+          perKeyDocs: { basePath: path.join(tempRoot, 'reports', opts.category, 'per-key') },
+          promptAudit: { perPromptReports: { basePath: path.join(tempRoot, 'reports', opts.category, 'per-prompt') } },
+          keysOrderAudit: { basePath: path.join(tempRoot, 'reports', opts.category, 'keys-order') },
+        };
+      },
     }, ['studio', 'mouse', 'field-studio-patches', 'apply'], 'POST');
 
     assert.equal(result.status, 200);
@@ -310,6 +353,10 @@ test('studio field-studio-patches apply stores auditor responses, saves SQL map,
     assert.equal(JSON.parse(sqlWrites[0].json).field_overrides.lift.ai_assist.reasoning_note, 'Use published lift-off distance only.');
     assert.equal(emitted.length, 1);
     assert.equal(emitted[0].payload.event, 'field-studio-map-saved');
+    assert.equal(reportRefreshes.length, 1);
+    assert.equal(reportRefreshes[0].category, 'mouse');
+    assert.equal(reportRefreshes[0].outputRoot, path.join(tempRoot, 'reports'));
+    assert.equal(result.body.refreshedReports.category, 'mouse');
 
     const stored = await fs.readFile(
       path.join(tempRoot, 'reports', 'mouse', 'auditors-responses', 'mouse-45-lift.field-studio-patch.v1.json'),
@@ -399,6 +446,7 @@ test('studio key-order-patches apply stores response and updates SQL and JSON or
   const emitted = [];
   const sqlWrites = [];
   const mapWrites = [];
+  const reportRefreshes = [];
 
   try {
     const result = await invokeStudioRoute({
@@ -427,6 +475,17 @@ test('studio key-order-patches apply stores response and updates SQL and JSON or
       broadcastWs: (channel, payload) => {
         emitted.push({ channel, payload });
       },
+      generateCategoryAuditReportPack: async (opts) => {
+        reportRefreshes.push(opts);
+        return {
+          category: opts.category,
+          generatedAt: '2026-04-28T00:00:00.000Z',
+          categoryReport: { mdPath: path.join(tempRoot, 'reports', opts.category, 'summary', 'stub.md') },
+          perKeyDocs: { basePath: path.join(tempRoot, 'reports', opts.category, 'per-key') },
+          promptAudit: { perPromptReports: { basePath: path.join(tempRoot, 'reports', opts.category, 'per-prompt') } },
+          keysOrderAudit: { basePath: path.join(tempRoot, 'reports', opts.category, 'keys-order') },
+        };
+      },
     }, ['studio', 'mouse', 'key-order-patches', 'apply'], 'POST');
 
     assert.equal(result.status, 200);
@@ -443,6 +502,10 @@ test('studio key-order-patches apply stores response and updates SQL and JSON or
     assert.equal(mapWrites[0].field_overrides.lod_sync.ui.group, 'Sensor Performance');
     assert.ok(mapWrites[0].selected_keys.includes('lod_sync'));
     assert.equal(emitted[0].payload.event, 'field-key-order-saved');
+    assert.equal(reportRefreshes.length, 1);
+    assert.equal(reportRefreshes[0].category, 'mouse');
+    assert.equal(reportRefreshes[0].outputRoot, path.join(tempRoot, 'reports'));
+    assert.equal(result.body.refreshedReports.category, 'mouse');
 
     const storedPatch = JSON.parse(await fs.readFile(
       path.join(tempRoot, 'reports', 'mouse', 'auditors-responses', 'mouse-keys-order.key-order-patch.v1.json'),

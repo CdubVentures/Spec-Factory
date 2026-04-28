@@ -43,7 +43,7 @@ const LOCAL_STUDIO_TIPS: Record<string, string> = {
   tooltip_section_tooltip_bank: 'Tooltips source controls the shared tooltip reference file used for field guidance.',
   tooltip_section_component_sources: 'Component Source Mapping stores component identity aliases, links, and attributes used for matching.',
   tooltip_section_enums: 'Enum lists define canonical values for fields and drive enum validation and suggestions.',
-  component_type: 'Type of component this sheet describes (sensor, switch, encoder, material). Used as the component reference key.',
+  component_type: 'Type of component this row declares (sensor, switch, encoder, material). Used as the component reference key.',
   comp_field_key: 'Select a field key to bind this component attribute to. Type, unit, parse template, and evidence rules are inherited from the field key definition.',
   comp_variance_policy: 'How the component DB value relates to the product spec value.\n\n'
     + 'authoritative \u2014 Component value IS the product value (default).\n'

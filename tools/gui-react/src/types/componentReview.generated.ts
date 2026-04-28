@@ -58,6 +58,7 @@ export interface EnumValueReviewItemGen {
 export interface EnumFieldReviewGen {
   field: string;
   enum_list_id?: number | null;
+  locked: boolean;
   values: EnumValueReviewItemGen[];
   metrics: Record<string, unknown>;
 }

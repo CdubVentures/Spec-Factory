@@ -316,7 +316,9 @@ export function EnumSubTab({
     return selectedFieldData.values.find((item) => normalizeToken(item.value) === selectedToken) ?? null;
   }, [enumDrawerOpen, selectedEnumValue, selectedFieldData]);
 
-  const isFieldLocked = Boolean(selectedFieldData && egLockedKeys.includes(selectedFieldData.field));
+  const isFieldLocked = Boolean(
+    selectedFieldData && (selectedFieldData.locked || egLockedKeys.includes(selectedFieldData.field)),
+  );
 
   const handleFieldSelect = useCallback((field: EnumFieldReview) => {
     setSelectedEnumField(field.field);

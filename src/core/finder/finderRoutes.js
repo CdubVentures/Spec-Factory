@@ -51,6 +51,18 @@ function buildFinderEntityResponse({ row, runRows, buildGetResponse, specDb, pro
   };
 }
 
+function buildEmptyFinderRow({ category, productId, productRow }) {
+  return {
+    product_id: productRow?.product_id || productId,
+    category: productRow?.category || category,
+    run_count: 0,
+    latest_ran_at: '',
+    selected: {},
+    candidates: [],
+    candidate_count: 0,
+  };
+}
+
 function readFinderEntityResponse({ getOne, listRuns, buildGetResponse, specDb, productId }) {
   const row = getOne(specDb, productId);
   if (!row) return null;
@@ -316,8 +328,12 @@ export function createFinderRouteHandler(finderConfig) {
       if (method === 'GET' && category && productId && !parts[3]) {
         const specDb = getSpecDb(category);
         if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
-        const row = getOne(specDb, productId);
-        if (!row) return jsonRes(res, 404, { error: 'not found' });
+        let row = getOne(specDb, productId);
+        if (!row) {
+          const productRow = typeof specDb.getProduct === 'function' ? specDb.getProduct(productId) : null;
+          if (!productRow) return jsonRes(res, 404, { error: 'not found' });
+          row = buildEmptyFinderRow({ category, productId, productRow });
+        }
 
         const runRows = listRuns(specDb, productId);
         return jsonRes(res, 200, buildFinderEntityResponse({

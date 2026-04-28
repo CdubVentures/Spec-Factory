@@ -193,6 +193,17 @@ test('POST /category-audit/:category/generate-all-reports writes category and pe
     const humanChangeFile = path.join(reportsRoot, 'mouse', 'auditors-responses', 'mouse-07-design.field-studio-patch.v1.json');
     await fs.mkdir(path.dirname(humanChangeFile), { recursive: true });
     await fs.writeFile(humanChangeFile, '{"schema_version":"field-studio-patch.v1"}', 'utf8');
+    await fs.mkdir(path.join(categoryAuthorityRoot, 'mouse', '_control_plane'), { recursive: true });
+    await fs.writeFile(path.join(categoryAuthorityRoot, 'mouse', '_control_plane', 'field_studio_map.json'), JSON.stringify({
+      field_overrides: {
+        sensor: {
+          ai_assist: { reasoning_note: 'Imported sensor guidance.' },
+        },
+      },
+      data_lists: [
+        { field: 'sensor', normalize: 'lower_trim', manual_values: ['HERO 2'] },
+      ],
+    }));
     const { ctx, captured } = mockCtx({ reportsRoot, categoryAuthorityRoot });
     const handler = registerCategoryAuditRoutes(ctx);
     await handler(['category-audit', 'mouse', 'generate-all-reports'], null, 'POST', { body: { consumer: 'key_finder' } }, {});
@@ -214,6 +225,8 @@ test('POST /category-audit/:category/generate-all-reports writes category and pe
     assert.ok(categoryMd.includes('Product Image Dependent'));
     assert.ok(!categoryMd.includes('Full field contract authoring order'), 'category summary does not duplicate per-key scripts');
     assert.ok(sensorMd.includes('Full field contract authoring order'));
+    assert.ok(sensorMd.includes('Imported sensor guidance.'));
+    assert.ok(sensorMd.includes('HERO 2'));
     assert.ok(promptAuditMd.includes('Prompt Surface Matrix'));
     assert.ok(keysOrderPrompt.includes('key-order-patch.v1'));
     assert.equal(await fs.readFile(humanChangeFile, 'utf8'), '{"schema_version":"field-studio-patch.v1"}');

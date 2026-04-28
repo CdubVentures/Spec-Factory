@@ -69,6 +69,30 @@ describe('mergeFieldOverride — Phase 4 cross-lock bridge fix', () => {
     );
   });
 
+  it('partial nested enum override preserves base policy and source', () => {
+    const baseRule = {
+      key: 'sensor_latency_wired',
+      enum: {
+        policy: 'open_prefer_known',
+        source: 'data_lists.sensor_latency_wired',
+        match: { normalize: 'lower_trim' },
+      },
+    };
+    const override = {
+      key: 'sensor_latency_wired',
+      enum: {
+        new_value_policy: {},
+      },
+    };
+    const result = mergeFieldOverride(baseRule, override);
+    assert.deepEqual(result.enum, {
+      policy: 'open_prefer_known',
+      source: 'data_lists.sensor_latency_wired',
+      match: { normalize: 'lower_trim' },
+      new_value_policy: {},
+    });
+  });
+
   it('baseRule key + override without key still resolves correctly (parent case)', () => {
     const baseRule = { key: 'sensor' };
     const override = { component: { type: 'sensor' } }; // override carries no key

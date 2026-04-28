@@ -172,7 +172,9 @@ function SortableKeyItem({
 
   // WHY: gray label = "you can't freely edit this key's contract here".
   // Two reasons fire the same gray treatment; tooltip distinguishes them.
-  const isIdentityProjection = iconKinds.includes('component_identity_projection');
+  const isIdentityProjection =
+    iconKinds.includes('component_identity_brand')
+    || iconKinds.includes('component_identity_link');
   const isLockedForDisplay = isEgLocked || isIdentityProjection;
   const lockReason = isIdentityProjection
     ? 'Generated component identity \u2014 derived from the parent component link'

@@ -488,6 +488,8 @@ export function ComponentReviewDrawer({
         badges={buildPropertyBadges(state)}
         isPending={false}
         candidates={state.candidates ?? []}
+        candidateSectionTitle="Published Product Values"
+        emptyCandidatesText="No published product values found for this component link yet."
       />
     );
   }
@@ -495,12 +497,14 @@ export function ComponentReviewDrawer({
   if (focusedProperty && item.properties[focusedProperty]) {
     const state = item.properties[focusedProperty];
     const hasValue = hasKnownValue(state.selected.value);
+    const componentOnly = state.component_only === true;
 
     return (
       <CellDrawer
         title={getLabel(focusedProperty)}
         subtitle={`${item.name} | ${item.maker || componentType}`}
         onClose={onClose}
+        currentValueSectionTitle={componentOnly ? 'Component Value' : 'Published Value'}
         currentValue={{
           value: hasValue ? formatCellValue(state.selected.value) : '',
           confidence: state.selected.confidence,
@@ -514,6 +518,11 @@ export function ComponentReviewDrawer({
         badges={buildPropertyBadges(state)}
         isPending={false}
         candidates={state.candidates ?? []}
+        candidateSectionTitle={componentOnly ? 'Component Review Candidates' : 'Published Product Values'}
+        emptyCandidatesText={componentOnly
+          ? 'No component review candidates found for this component attribute yet.'
+          : 'No published product values found for this component attribute yet.'}
+        showEmptyCandidatesSection={componentOnly}
       />
     );
   }

@@ -31,6 +31,7 @@ import {
   parseAxisOrder,
   sortKeysByPriority,
 } from '../../features/key-finder/state/keyFinderGroupedRows.ts';
+import { componentRunBlockTitle, isKeyRunBlocked } from '../../features/key-finder/state/componentKeyRunGuards.ts';
 import type { KeyFinderSummaryRow } from '../../features/key-finder/types.ts';
 import type { CatalogRow } from '../../types/product.ts';
 
@@ -49,7 +50,8 @@ interface PickerRow {
   readonly availability: string;
   readonly required_level: string;
   readonly resolved: boolean;
-  readonly run_blocked_reason: string;
+  readonly run_blocked: boolean;
+  readonly run_block_title: string;
 }
 
 function rowFromSummary(summary: KeyFinderSummaryRow): PickerRow {
@@ -59,7 +61,8 @@ function rowFromSummary(summary: KeyFinderSummaryRow): PickerRow {
     availability: summary.availability || '',
     required_level: summary.required_level || '',
     resolved: summary.published === true || summary.last_status === 'resolved',
-    run_blocked_reason: summary.run_blocked_reason || '',
+    run_blocked: isKeyRunBlocked(summary),
+    run_block_title: componentRunBlockTitle(summary.component_parent_key),
   };
 }
 
@@ -138,7 +141,7 @@ export function CommandConsoleKeysDropdown({
   }, [allReady, summaryQuery.data, reservedSet, bundlingQuery.data, filterText]);
 
   const blockedKeys = useMemo<ReadonlySet<string>>(
-    () => new Set(visibleRows.filter((row) => row.run_blocked_reason).map((row) => row.field_key)),
+    () => new Set(visibleRows.filter((row) => row.run_blocked).map((row) => row.field_key)),
     [visibleRows],
   );
   const runnablePicked = useMemo<ReadonlySet<string>>(
@@ -157,7 +160,7 @@ export function CommandConsoleKeysDropdown({
   }, [blockedKeys]);
 
   const pickAll = useCallback(() => {
-    setPicked(new Set(visibleRows.filter((r) => !r.run_blocked_reason).map((r) => r.field_key)));
+    setPicked(new Set(visibleRows.filter((r) => !r.run_blocked).map((r) => r.field_key)));
   }, [visibleRows]);
 
   const pickNone = useCallback(() => {
@@ -273,12 +276,12 @@ export function CommandConsoleKeysDropdown({
               ) : (
                 visibleRows.map((row) => {
                   const isPicked = picked.has(row.field_key);
-                  const blocked = Boolean(row.run_blocked_reason);
+                  const blocked = row.run_blocked;
                   return (
                     <label
                       key={row.field_key}
                       className={`sf-cc-keys-row ${isPicked ? 'is-picked' : ''} ${blocked ? 'is-disabled' : ''}`}
-                      title={blocked ? 'Run the parent component first. Component brand/link are locked until the parent component publishes.' : undefined}
+                      title={blocked ? row.run_block_title : undefined}
                     >
                       <input
                         type="checkbox"

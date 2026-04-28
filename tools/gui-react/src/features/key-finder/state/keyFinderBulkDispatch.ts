@@ -1,5 +1,6 @@
 import type { KeyGroup } from '../types.ts';
 import { sortKeysByPriority } from './keyFinderGroupedRows.ts';
+import { isKeyRunBlocked, type ComponentKeyRunState } from './componentKeyRunGuards.ts';
 
 export const GLOBAL_LOOP_CHAIN_ID = '__all_groups__';
 
@@ -17,8 +18,8 @@ function allKeys(groups: readonly KeyGroup[], axisOrder?: readonly string[]): re
     .map((key) => key.field_key);
 }
 
-function isDispatchableKey(key: { readonly run_blocked_reason?: string }): boolean {
-  return !key.run_blocked_reason;
+function isDispatchableKey(key: ComponentKeyRunState): boolean {
+  return !isKeyRunBlocked(key);
 }
 
 function loopEligible(group: KeyGroup): KeyGroup {

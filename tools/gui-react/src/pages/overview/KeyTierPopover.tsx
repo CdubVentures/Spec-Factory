@@ -9,7 +9,11 @@ import { useFireAndForget } from '../../features/operations/hooks/useFireAndForg
 import { useRunningFieldKeys } from '../../features/operations/hooks/useFinderOperations.ts';
 import { usePromptPreviewQuery } from '../../features/indexing/api/promptPreviewQueries.ts';
 import { useKeyDifficultyModelMap, type DifficultyTier } from '../../features/key-finder/hooks/useKeyDifficultyModelMap.ts';
+import { componentRunBlockTitle, isComponentIdentityChildKey, isKeyRunBlocked } from '../../features/key-finder/state/componentKeyRunGuards.ts';
 import { Chip } from '../../shared/ui/feedback/Chip.tsx';
+import { KeyTypeIconStrip } from '../../shared/ui/icons/KeyTypeIcons.tsx';
+import { deriveKeyTypeIcons, deriveOwningComponent } from '../../shared/ui/icons/keyTypeIconHelpers.ts';
+import { buildKeyTypeIconInput } from '../../features/key-finder/keyTypeIconAdapter.ts';
 import { tagCls } from '../../registries/fieldRuleTaxonomy.ts';
 import './KeyTierPopover.css';
 
@@ -207,11 +211,14 @@ export function KeyTierPopover({
                   <ul className="sf-ktp-group-rows">
                     {rows.map((r) => {
                       const busy = runningFieldKeys.has(r.field_key);
-                      const blocked = r.run_blocked_reason === 'component_parent_unpublished';
-                      const componentResolverAction = r.component_run_kind === 'component_brand';
+                      const blocked = isKeyRunBlocked(r);
+                      const componentResolverAction = isComponentIdentityChildKey(r);
+                      const iconInput = buildKeyTypeIconInput(r);
+                      const iconKinds = deriveKeyTypeIcons(iconInput);
+                      const owningComponent = deriveOwningComponent(iconInput);
                       const runButtonClass = componentResolverAction ? 'sf-warning-button-solid' : 'sf-ktp-btn-primary';
                       const loopButtonClass = componentResolverAction ? 'sf-warning-button-solid' : 'sf-ktp-btn-secondary';
-                      const blockedTitle = 'Run the parent component first. Component brand/link are locked until the parent component publishes.';
+                      const blockedTitle = componentRunBlockTitle(r.component_parent_key);
                       const stateClass = r.published
                         ? 'sf-ktp-row-done'
                         : r.last_status === 'below_threshold' ? 'sf-ktp-row-part' : '';
@@ -221,6 +228,9 @@ export function KeyTierPopover({
                           className={`sf-ktp-row ${stateClass} ${busy ? 'sf-ktp-row-busy' : ''}`}
                         >
                           <span className="sf-ktp-row-label" title={r.field_key}>
+                            {iconKinds.length > 0 && (
+                              <KeyTypeIconStrip kinds={iconKinds} owningComponent={owningComponent} />
+                            )}
                             <span className="sf-ktp-row-label-text">{r.label || r.field_key}</span>
                             {tier === 'mandatory' && r.difficulty && (
                               <span className="sf-ktp-row-difficulty">
@@ -241,7 +251,7 @@ export function KeyTierPopover({
                                 className={`sf-ktp-btn ${runButtonClass}`}
                                 disabled={blocked}
                                 onClick={() => handleRun(r.field_key)}
-                                title="Run this key once — fire-and-forget; spam-click to queue multiple runs"
+                                title={blocked ? blockedTitle : 'Run this key once — fire-and-forget; spam-click to queue multiple runs'}
                               >
                                 Run
                               </button>

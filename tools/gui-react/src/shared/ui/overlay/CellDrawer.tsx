@@ -163,6 +163,7 @@ export interface CellDrawerProps {
   onClose: () => void;
 
   // Section 1: Current accepted value
+  currentValueSectionTitle?: string;
   currentValue: {
     value: string;
     confidence: number;
@@ -184,6 +185,9 @@ export interface CellDrawerProps {
 
   // Section 3: Candidates
   candidates: ReviewCandidate[];
+  candidateSectionTitle?: string;
+  emptyCandidatesText?: string;
+  showEmptyCandidatesSection?: boolean;
   candidatesLoading?: boolean;
   onAcceptCandidate?: (candidateId: string, candidate: ReviewCandidate) => void;
   onRunAIReview?: () => void;
@@ -207,6 +211,7 @@ export function CellDrawer({
   subtitle,
   onClose,
   currentValue,
+  currentValueSectionTitle = 'Published Value',
   showCurrentConfidence = true,
   badges,
   isCurrentAccepted,
@@ -215,6 +220,9 @@ export function CellDrawer({
   manualOverridePlaceholder,
   isPending,
   candidates,
+  candidateSectionTitle = 'Candidates',
+  emptyCandidatesText = 'No candidates available for this value yet.',
+  showEmptyCandidatesSection = false,
   candidatesLoading,
   onAcceptCandidate,
   onRunAIReview,
@@ -284,8 +292,8 @@ export function CellDrawer({
 
   return (
     <DrawerShell title={title} subtitle={subtitle} onClose={onClose}>
-      {/* Section 1: Published Value */}
-      <DrawerSection title="Published Value">
+      {/* Section 1: Current value */}
+      <DrawerSection title={currentValueSectionTitle}>
         <DrawerValueRow
           color={currentValue.color}
           value={currentValue.value}
@@ -330,8 +338,8 @@ export function CellDrawer({
       )}
 
       {/* Section 3: Candidates */}
-      {(candidates.length > 0 || candidatesLoading || onRunAIReview) && (
-        <DrawerSection title={`Candidates (${candidatesLoading ? '...' : candidates.length})`}>
+      {(candidates.length > 0 || candidatesLoading || onRunAIReview || showEmptyCandidatesSection) && (
+        <DrawerSection title={`${candidateSectionTitle} (${candidatesLoading ? '...' : candidates.length})`}>
           {candidatesLoading ? (
             <div className="flex justify-center py-4">
               <Spinner className="h-5 w-5" />
@@ -340,7 +348,7 @@ export function CellDrawer({
             <div className="space-y-2">
               {candidates.length === 0 && (
                 <div className="sf-text-caption sf-text-subtle px-1 py-2">
-                  No candidates available for this value yet.
+                  {emptyCandidatesText}
                 </div>
               )}
               {candidates.map((candidate, index) => {

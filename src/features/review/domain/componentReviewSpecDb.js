@@ -373,16 +373,19 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
       const dbRow = propMap[key];
       const variance = dbRow?.variance_policy || null;
       const meta = resolvePropertyFieldMeta(key, fieldRules);
+      const componentOnly = meta?.component_only === true;
       const fieldConstraints = meta?.constraints?.length > 0
         ? meta.constraints
         : (dbRow?.constraints ? JSON.parse(dbRow.constraints) : []);
-      const candidates = buildPublishedProductCandidates({
-        specDb,
-        productIds: linkedProductIds,
-        fieldKey: key,
-      });
+      const candidates = componentOnly
+        ? []
+        : buildPublishedProductCandidates({
+          specDb,
+          productIds: linkedProductIds,
+          fieldKey: key,
+        });
 
-      properties[key] = {
+      const propertyState = {
         slot_id: dbRow?.id ?? null,
         selected: {
           value: null,
@@ -403,6 +406,8 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
         enum_values: meta?.enum_values ?? null,
         enum_policy: meta?.enum_policy ?? null,
       };
+      if (componentOnly) propertyState.component_only = true;
+      properties[key] = propertyState;
 
       itemPropCount++;
     }

@@ -620,6 +620,13 @@ function mergeComponentSource(existing, incoming) {
   return merged;
 }
 
+function applyComponentSourcePatch(existing, incoming, { patchFieldKey }) {
+  if (normalizeFieldKey(componentKey(incoming)) === normalizeFieldKey(patchFieldKey)) {
+    return cloneJson(incoming);
+  }
+  return mergeComponentSource(existing, incoming);
+}
+
 export function applyFieldStudioPatchDocument(fieldStudioMap, patchDoc) {
   const doc = validateFieldStudioPatchDocument(stripPatchMetadata(patchDoc), { category: patchDoc?.category });
   const next = cloneJson(fieldStudioMap || {});
@@ -654,7 +661,7 @@ export function applyFieldStudioPatchDocument(fieldStudioMap, patchDoc) {
         rows.push(cloneJson(incoming));
         continue;
       }
-      rows[index] = mergeComponentSource(rows[index], incoming);
+      rows[index] = applyComponentSourcePatch(rows[index], incoming, { patchFieldKey: doc.field_key });
     }
     next.component_sources = rows;
   }

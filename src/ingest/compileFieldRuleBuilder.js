@@ -385,6 +385,20 @@ export function mergeFieldOverride(baseRule, overrideRaw = {}) {
       ...override.vocab
     };
   }
+  if (isObject(override.enum)) {
+    const baseEnum = isObject(baseRule.enum) ? baseRule.enum : {};
+    const overrideEnum = override.enum;
+    override.enum = {
+      ...baseEnum,
+      ...overrideEnum
+    };
+    if (isObject(baseEnum.match) || isObject(overrideEnum.match)) {
+      override.enum.match = {
+        ...(isObject(baseEnum.match) ? baseEnum.match : {}),
+        ...(isObject(overrideEnum.match) ? overrideEnum.match : {})
+      };
+    }
+  }
   if (!normalizeText(override.value_form)) {
     override.value_form = normalizeValueForm(baseRule.value_form, normalizeToken(override.shape || baseRule.shape || 'scalar'));
   } else {

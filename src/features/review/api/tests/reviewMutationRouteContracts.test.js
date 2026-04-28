@@ -237,6 +237,31 @@ test('enum rename returns changed:false when the new value only differs by casin
   assert.equal(calls.responses[0]?.body?.changed, false);
 });
 
+test('enum rename rejects EG-locked color registry fields through the response contract', async () => {
+  const { calls, context } = makeEnumRouteHarness({
+    readJsonBody: async () => ({ newValue: 'blue', listValueId: 11, field: 'colors' }),
+    resolveEnumMutationContext: () => makeEnumMutationContext({
+      field: 'colors',
+      oldValue: 'black',
+      value: 'black',
+      listValueId: 11,
+    }),
+  });
+
+  const handled = await handleReviewEnumMutationRoute({
+    parts: ['review-components', 'mouse', 'enum-rename'],
+    method: 'POST',
+    req: {},
+    res: {},
+    context,
+  });
+
+  assert.notEqual(handled, false);
+  assert.equal(calls.responses[0]?.status, 403);
+  assert.equal(calls.responses[0]?.body?.error, 'enum_field_locked');
+  assert.equal(calls.responses[0]?.body?.field, 'colors');
+});
+
 test('enum override failures surface enum_override_specdb_write_failed', async () => {
   const { calls, context } = makeEnumRouteHarness({
     readJsonBody: async () => ({ action: 'remove', field: 'lighting', value: 'RGB LED', listValueId: 11 }),

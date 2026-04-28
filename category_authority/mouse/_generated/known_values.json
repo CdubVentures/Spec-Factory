@@ -12,13 +12,7 @@
     },
     "coating": {
       "policy": "open_prefer_known",
-      "values": [
-        "glossy",
-        "matte",
-        "rubber grips",
-        "rubberized",
-        "smooth-touch"
-      ]
+      "values": []
     },
     "colors": {
       "policy": "closed",
@@ -138,7 +132,7 @@
       ]
     },
     "connectivity": {
-      "policy": "open_prefer_known",
+      "policy": "closed",
       "values": [
         "2.4GHz RF Dongle",
         "Bluetooth",
@@ -153,6 +147,10 @@
         "multiple",
         "standard"
       ]
+    },
+    "encoder_brand": {
+      "policy": "open_prefer_known",
+      "values": []
     },
     "feet_material": {
       "policy": "open_prefer_known",
@@ -184,15 +182,11 @@
       ]
     },
     "grip": {
-      "policy": "open_prefer_known",
-      "values": [
-        "claw",
-        "fingertip",
-        "palm"
-      ]
+      "policy": "closed",
+      "values": []
     },
     "hand_size": {
-      "policy": "open_prefer_known",
+      "policy": "closed",
       "values": [
         "extra large",
         "large",
@@ -285,14 +279,6 @@
         "Telink 8273"
       ]
     },
-    "mouse_encoder_brands": {
-      "policy": "open",
-      "values": []
-    },
-    "mouse_sensor_brand": {
-      "policy": "open",
-      "values": []
-    },
     "mouse_side_connector": {
       "policy": "open_prefer_known",
       "values": [
@@ -302,8 +288,28 @@
         "USB-C"
       ]
     },
-    "mouse_switch_brand": {
-      "policy": "open",
+    "polling_rate": {
+      "policy": "open_prefer_known",
+      "values": []
+    },
+    "price_range": {
+      "policy": "open_prefer_known",
+      "values": []
+    },
+    "sensor_brand": {
+      "policy": "open_prefer_known",
+      "values": []
+    },
+    "sensor_latency_bluetooth": {
+      "policy": "open_prefer_known",
+      "values": []
+    },
+    "sensor_latency_wired": {
+      "policy": "open_prefer_known",
+      "values": []
+    },
+    "sensor_latency_wireless": {
+      "policy": "open_prefer_known",
       "values": []
     },
     "sensor_type": {
@@ -314,13 +320,16 @@
       ]
     },
     "shape": {
-      "policy": "closed",
+      "policy": "open_prefer_known",
       "values": [
         "asymmetrical",
         "ergonomic",
-        "hybrid",
         "symmetrical"
       ]
+    },
+    "switch_brand": {
+      "policy": "open_prefer_known",
+      "values": []
     },
     "switch_type": {
       "policy": "closed",
@@ -339,6 +348,6 @@
       ]
     }
   },
-  "generated_at": "2026-04-28T08:24:38.470Z",
+  "generated_at": "2026-04-28T22:11:55.245Z",
   "version": 1
 }

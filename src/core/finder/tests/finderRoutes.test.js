@@ -51,7 +51,11 @@ function makeSpecDbStub(overrides = {}) {
   const candidateDeleteCalls = [];
   return {
     db: overrides.db,
-    getProduct: () => overrides.productRow ?? { product_id: 'p1', category: 'cat', brand: 'B', model: 'M', base_model: 'BM', variant: '' },
+    getProduct: () => (
+      Object.hasOwn(overrides, 'productRow')
+        ? overrides.productRow
+        : { product_id: 'p1', category: 'cat', brand: 'B', model: 'M', base_model: 'BM', variant: '' }
+    ),
     getCompiledRules: () => ({ fields: { field_a: { key: 'field_a' } } }),
     deleteFieldCandidatesByProductAndField: (...args) => candidateDeleteCalls.push(args),
     getFinderStore: () => overrides.finderStore ?? null,
@@ -159,13 +163,33 @@ describe('createFinderRouteHandler — generic', () => {
 
   // ── GET single ────────────────────────────────────────────────────
 
-  it('GET single returns 404 when not found', async () => {
-    const { ctx, calls } = makeCtx();
+  it('GET single returns 404 when the product is not found', async () => {
+    const { ctx, calls } = makeCtx({ productRow: null });
     const handler = createFinderRouteHandler(makeFinderConfig({
       getOne: () => null,
     }))(ctx);
     await handler(['test-finder', 'cat', 'p1'], new Map(), 'GET', {}, {});
     assert.equal(calls[0].status, 404);
+  });
+
+  it('GET single returns an empty entity for an existing product with no finder row yet', async () => {
+    const { ctx, calls } = makeCtx();
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      getOne: () => null,
+      listRuns: () => [],
+    }))(ctx);
+
+    await handler(['test-finder', 'cat', 'p1'], new Map(), 'GET', {}, {});
+
+    assert.equal(calls[0].status, 200);
+    assert.deepEqual(calls[0].body, {
+      product_id: 'p1',
+      category: 'cat',
+      run_count: 0,
+      last_ran_at: '',
+      selected: {},
+      runs: [],
+    });
   });
 
   it('GET single returns row with runs and selected', async () => {

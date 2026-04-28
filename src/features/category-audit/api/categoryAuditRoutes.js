@@ -27,6 +27,7 @@ import { generateCategoryAuditReport } from '../reportBuilder.js';
 import { generatePerKeyDocs } from '../perKeyDocBuilder.js';
 import { generatePromptAuditReports } from '../promptAuditReportBuilder.js';
 import { generateKeysOrderAuditReport } from '../keysOrderReportBuilder.js';
+import { generateCategoryAuditReportPack } from '../reportPack.js';
 
 const RESOLVED_GLOBAL_FRAGMENT_KEYS = [
   'identityIntro',
@@ -322,90 +323,20 @@ export function registerCategoryAuditRoutes(ctx) {
       }
       const consumer = body.consumer || 'key_finder';
 
-      let loadedRules;
       try {
-        loadedRules = await loadFieldRules(category, { config });
+        const result = await generateCategoryAuditReportPack({
+          category,
+          consumer,
+          templateOverride: body?.templateOverride || '',
+          outputRoot,
+          config,
+        });
+        return jsonRes(res, 200, result);
       } catch (err) {
         const msg = String(err?.message || err);
         if (msg.startsWith('missing_field_rules') || msg.includes('category')) {
           return jsonRes(res, 400, { error: 'unknown_category', category, details: msg });
         }
-        throw err;
-      }
-
-      const fieldGroupsPath = path.join(helperRoot, category, '_generated', 'field_groups.json');
-      const fieldGroups = (await readJsonIfExists(fieldGroupsPath)) || { group_index: {} };
-      const compileReportPath = path.join(helperRoot, category, '_generated', '_compile_report.json');
-      const compileSummary = await readJsonIfExists(compileReportPath);
-      const fieldKeyOrderPath = path.join(helperRoot, category, '_control_plane', 'field_key_order.json');
-      const fieldKeyOrderDoc = await readJsonIfExists(fieldKeyOrderPath);
-      const fieldKeyOrder = Array.isArray(fieldKeyOrderDoc?.order) ? fieldKeyOrderDoc.order : null;
-      const globalFragments = resolveAllFragments();
-      const tierBundles = parseTierBundles(config?.keyFinderTierSettingsJson);
-      const moduleSettings = await readModuleSettings(helperRoot, category);
-
-      try {
-        const categoryReport = await generateCategoryAuditReport({
-          category,
-          consumer,
-          loadedRules,
-          fieldGroups,
-          globalFragments,
-          tierBundles,
-          compileSummary,
-          outputRoot,
-        });
-        const perKeyDocs = await generatePerKeyDocs({
-          category,
-          loadedRules,
-          fieldGroups,
-          globalFragments,
-          tierBundles,
-          compileSummary,
-          outputRoot,
-          templateOverride: body?.templateOverride || '',
-          fieldKeyOrder,
-        });
-        const promptAudit = await generatePromptAuditReports({
-          category,
-          moduleSettings,
-          globalFragments,
-          outputRoot,
-        });
-        const keysOrderAudit = await generateKeysOrderAuditReport({
-          category,
-          loadedRules,
-          fieldGroups,
-          fieldKeyOrder,
-          globalFragments,
-          tierBundles,
-          compileSummary,
-          outputRoot,
-        });
-        return jsonRes(res, 200, {
-          category,
-          consumer,
-          generatedAt: categoryReport.generatedAt,
-          categoryReport: {
-            htmlPath: categoryReport.htmlPath,
-            mdPath: categoryReport.mdPath,
-            generatedAt: categoryReport.generatedAt,
-            stats: categoryReport.stats,
-          },
-          perKeyDocs: {
-            basePath: perKeyDocs.basePath,
-            counts: perKeyDocs.counts,
-            reservedKeysPath: perKeyDocs.reservedKeysPath,
-            generatedAt: perKeyDocs.generatedAt,
-            sorted: perKeyDocs.sorted
-              ? { basePath: perKeyDocs.sorted.basePath, count: perKeyDocs.sorted.count }
-              : null,
-          },
-          promptAudit: promptAuditResponse(promptAudit),
-          keysOrderAudit: keysOrderAuditResponse(keysOrderAudit),
-        });
-      } catch (err) {
-        const msg = String(err?.message || err);
         if (msg.includes('unknown consumer')) {
           return jsonRes(res, 400, { error: 'unknown_consumer', consumer });
         }

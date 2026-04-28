@@ -18,6 +18,14 @@ import {
   failOperation,
 } from './operationsRegistry.js';
 
+function assertCommandSucceeded(result) {
+  if (!result || result.compiled !== false) return;
+  const errors = Array.isArray(result.errors)
+    ? result.errors.map((entry) => String(entry || '').trim()).filter(Boolean)
+    : [];
+  throw new Error(errors.length > 0 ? errors.join('; ') : 'compile_failed');
+}
+
 /**
  * Execute a registered command in-process.
  *
@@ -54,6 +62,7 @@ export async function executeCommand({ type, category, config, deps, _handlerOve
     // Resolve handler
     const handler = _handlerOverride || await resolveExport(entry.handlerModule, entry.handlerExport);
     const result = await handler({ category, config });
+    assertCommandSucceeded(result);
 
     // Post-completion hook (best-effort — failure does not fail the operation)
     if (entry.stages.length > 1) {

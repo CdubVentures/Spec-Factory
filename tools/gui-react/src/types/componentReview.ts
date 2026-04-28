@@ -19,6 +19,7 @@ export interface LinkedProduct {
 
 export interface ComponentPropertyState {
   slot_id?: number | null;
+  component_only?: boolean;
   selected: {
     value: unknown;
     unit?: string | null;
@@ -101,6 +102,7 @@ export interface EnumValueReviewItem {
 export interface EnumFieldReview {
   field: string;
   enum_list_id?: number | null;
+  locked: boolean;
   values: EnumValueReviewItem[];
   metrics: { total: number; flags: number };
 }

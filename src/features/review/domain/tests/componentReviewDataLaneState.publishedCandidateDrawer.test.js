@@ -154,6 +154,8 @@ test('component attribute drawer candidates come only from published linked prod
   );
   assert.equal(propertyState.candidates.every((candidate) => candidate.status === 'resolved'), true);
   assert.equal(propertyState.candidate_count, 2);
+  assert.equal(propertyState.candidates[0].evidence.url, 'https://example.test/mouse-published-a');
+  assert.equal(propertyState.candidates[0].evidence.quote, 'dpi_max: 35000');
 });
 
 test('component link lane is blank and candidates come only from published linked product link values', async (t) => {
@@ -215,4 +217,64 @@ test('component link lane is blank and candidates come only from published linke
   );
   assert.equal(row.links_state.candidates.every((candidate) => candidate.status === 'resolved'), true);
   assert.equal(row.links_state.candidate_count, 2);
+  assert.equal(row.links_state.candidates[0].evidence.url, 'https://example.test/mouse-link-a');
+  assert.equal(row.links_state.candidates[0].evidence.quote, 'sensor_link: https://pixart.example/paw3950');
+});
+
+test('component_only attributes stay as component review columns without published product candidates', async (t) => {
+  const { config, specDb } = await createComponentRowHarness(t);
+  upsertComponentLane(specDb, {
+    componentType: 'sensor',
+    componentName: 'PAW3950',
+    componentMaker: 'PixArt',
+    propertyKey: 'sensor_family',
+    value: null,
+    confidence: 0,
+  });
+  linkProductToComponent(specDb, {
+    productId: 'mouse-component-only',
+    fieldKey: 'sensor',
+    componentType: 'sensor',
+    componentName: 'PAW3950',
+    componentMaker: 'PixArt',
+  });
+  insertProductFieldCandidate(specDb, {
+    productId: 'mouse-component-only',
+    fieldKey: 'sensor_family',
+    value: 'PAW39xx',
+    status: 'resolved',
+    confidence: 95,
+  });
+
+  const fieldRules = {
+    component_db_sources: {
+      sensor: {
+        roles: {
+          properties: [
+            { field_key: 'dpi_max' },
+            { field_key: 'sensor_family', component_only: true },
+          ],
+        },
+      },
+    },
+  };
+
+  const payload = await buildComponentReviewPayloads({
+    config,
+    category: CATEGORY,
+    componentType: 'sensor',
+    specDb,
+    fieldRules,
+  });
+  const row = payload.items.find((item) => item.name === 'PAW3950' && item.maker === 'PixArt');
+  const propertyState = row?.properties?.sensor_family;
+
+  assert.deepEqual(payload.property_columns, ['dpi_max', 'sensor_family']);
+  assert.ok(row, 'expected PixArt/Paw3950 component row');
+  assert.ok(propertyState, 'expected component_only property state');
+  assert.equal(propertyState.component_only, true);
+  assert.equal(propertyState.selected.value, null);
+  assert.equal(propertyState.selected.confidence, 0);
+  assert.deepEqual(propertyState.candidates, []);
+  assert.equal(propertyState.candidate_count, 0);
 });

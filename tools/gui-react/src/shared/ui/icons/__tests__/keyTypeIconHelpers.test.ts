@@ -66,7 +66,7 @@ describe('deriveKeyTypeIcons — single-flag matrix', () => {
     );
   });
 
-  it('returns ["component_identity_projection"] for force-made <component>_brand', () => {
+  it('returns ["component_identity_brand"] for force-made <component>_brand', () => {
     assert.deepEqual(
       deriveKeyTypeIcons({
         rule: {
@@ -75,11 +75,11 @@ describe('deriveKeyTypeIcons — single-flag matrix', () => {
         fieldKey: 'sensor_brand',
         belongsToComponent: '',
       }),
-      ['component_identity_projection'],
+      ['component_identity_brand'],
     );
   });
 
-  it('returns ["component_identity_projection"] for force-made <component>_link', () => {
+  it('returns ["component_identity_link"] for force-made <component>_link', () => {
     assert.deepEqual(
       deriveKeyTypeIcons({
         rule: {
@@ -88,7 +88,7 @@ describe('deriveKeyTypeIcons — single-flag matrix', () => {
         fieldKey: 'sensor_link',
         belongsToComponent: '',
       }),
-      ['component_identity_projection'],
+      ['component_identity_link'],
     );
   });
 
@@ -127,7 +127,7 @@ describe('deriveKeyTypeIcons — combined flags', () => {
     );
   });
 
-  it('returns identity_projection alone (does NOT also tag attribute even if belongsToComponent is set)', () => {
+  it('returns identity_brand alone (does NOT also tag attribute even if belongsToComponent is set)', () => {
     // WHY: identity-projection IS the more specific component relationship.
     // Don't double-flag; the projection icon already implies component lineage.
     assert.deepEqual(
@@ -138,7 +138,7 @@ describe('deriveKeyTypeIcons — combined flags', () => {
         fieldKey: 'sensor_brand',
         belongsToComponent: 'sensor',
       }),
-      ['component_identity_projection'],
+      ['component_identity_brand'],
     );
   });
 
@@ -202,15 +202,16 @@ describe('deriveKeyTypeIcons — null/empty inputs', () => {
 });
 
 describe('KeyTypeIconKind type', () => {
-  it('exports the five canonical kinds', () => {
+  it('exports the six canonical kinds (brand and link projections are distinct)', () => {
     const all: KeyTypeIconKind[] = [
       'variant',
       'pif',
       'component_self',
-      'component_identity_projection',
+      'component_identity_brand',
+      'component_identity_link',
       'component_attribute',
     ];
-    assert.equal(all.length, 5);
+    assert.equal(all.length, 6);
   });
 });
 

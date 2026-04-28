@@ -69,6 +69,28 @@ describe('commandExecutor — contract', () => {
     lock.release();
   });
 
+  it('compile handler returning compiled:false marks operation as failed', async () => {
+    const handler = mock.fn(async () => ({
+      category: 'mouse',
+      compiled: false,
+      errors: ['field sensor_latency_wired: enum_source is required'],
+    }));
+
+    const result = await executeCommand({
+      type: 'compile',
+      category: 'mouse',
+      config: {},
+      deps: {},
+      _handlerOverride: handler,
+    });
+
+    assert.ok(result.operationId);
+    const ops = listOperations();
+    const op = ops.find(o => o.id === result.operationId);
+    assert.strictEqual(op.status, 'error');
+    assert.ok(op.error.includes('field sensor_latency_wired: enum_source is required'));
+  });
+
   it('unknown type: throws immediately', async () => {
     await assert.rejects(
       () => executeCommand({ type: 'nonexistent', category: 'mouse', config: {}, deps: {} }),

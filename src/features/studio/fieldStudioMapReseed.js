@@ -35,7 +35,16 @@ export async function reseedFieldStudioMapFromJson({ specDb, helperRoot }) {
 
   const currentHash = sha256Hex(raw);
   const storedHash = specDb.getFileSeedHash('field_studio_map');
-  if (currentHash && currentHash === storedHash) return { reseeded: false };
+  if (currentHash && currentHash === storedHash) {
+    let compiledRulesReseeded = false;
+    try {
+      const compiledResult = await reseedCompiledRulesAndBootConfig({ specDb, helperRoot });
+      compiledRulesReseeded = compiledResult?.reseeded === true;
+    } catch {
+      // Non-fatal — compiled rules will be populated on next compile
+    }
+    return { reseeded: false, compiledRulesReseeded };
+  }
 
   let parsed;
   try {
@@ -165,7 +174,7 @@ export async function reseedCompiledRulesAndBootConfig({ specDb, helperRoot, sto
     ui_field_catalog: loaded?.uiFieldCatalog || categoryConfig.uiFieldCatalog || {},
     key_migrations: await readKeyMigrationsJson(helperRoot, category),
     ...(await (async () => {
-      const manifest = await readManifestMeta(helperRoot, category);
+      const manifest = await readCompileMeta(helperRoot, category);
       return {
         compiled_at: compiledAtOverride || manifest?.compiled_at || null,
         // WHY: source_map_hash enables hash-based staleness detection.
@@ -197,6 +206,28 @@ async function readKeyMigrationsJson(helperRoot, category) {
     return JSON.parse(raw);
   } catch {
     return {};
+  }
+}
+
+async function readCompileMeta(helperRoot, category) {
+  const report = await readCompileReportMeta(helperRoot, category);
+  if (report?.source_map_hash) return report;
+  return readManifestMeta(helperRoot, category);
+}
+
+async function readCompileReportMeta(helperRoot, category) {
+  try {
+    const raw = await fs.readFile(
+      path.join(helperRoot, category, '_generated', '_compile_report.json'), 'utf8'
+    );
+    const parsed = JSON.parse(raw);
+    if (parsed?.compiled === false) return null;
+    return {
+      compiled_at: parsed?.compiled_at || parsed?.generated_at || null,
+      source_map_hash: parsed?.field_studio_map_hash || null,
+    };
+  } catch {
+    return null;
   }
 }
 

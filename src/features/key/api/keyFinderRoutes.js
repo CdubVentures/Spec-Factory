@@ -595,7 +595,12 @@ export function registerKeyFinderRoutes(ctx) {
       const fieldKey = params?.get?.('field_key') || '';
       const groupName = params?.get?.('group') || '';
       const doc = readKeyFinderRuntimeDoc({ specDb, productId, productRoot: resolveProductRoot(config), category });
-      if (!doc) return jsonRes(res, 404, { error: 'not found' });
+      const runtimeDoc = doc || {
+        product_id: productId,
+        category,
+        runs: [],
+        selected: null,
+      };
 
       let runs;
       if (scope === 'group') {
@@ -607,11 +612,11 @@ export function registerKeyFinderRoutes(ctx) {
           });
         }
         const groupKeys = groupKeysFromCompiledRules(compiled, groupName);
-        runs = filterRunsByGroupKeys(doc.runs, groupKeys);
+        runs = filterRunsByGroupKeys(runtimeDoc.runs, groupKeys);
       } else if (scope === 'product') {
-        runs = Array.isArray(doc.runs) ? doc.runs : [];
+        runs = Array.isArray(runtimeDoc.runs) ? runtimeDoc.runs : [];
       } else {
-        runs = filterRunsByFieldKey(doc.runs, fieldKey);
+        runs = filterRunsByFieldKey(runtimeDoc.runs, fieldKey);
       }
       runs = runs.map((run) => normalizeUnknownRunForOutput(run));
 
@@ -621,16 +626,16 @@ export function registerKeyFinderRoutes(ctx) {
         for (const row of rows) candidates.push(row);
       }
       return jsonRes(res, 200, {
-        product_id: doc.product_id,
-        category: doc.category,
+        product_id: runtimeDoc.product_id,
+        category: runtimeDoc.category,
         scope,
         field_key: scope === 'key' ? (fieldKey || null) : null,
         group: scope === 'group' ? (groupName || null) : null,
         selected: (scope === 'key' && fieldKey)
-          ? normalizeUnknownSelectedForOutput(selectedForField(doc, fieldKey))
-          : (doc.selected && typeof doc.selected === 'object'
-            ? { ...doc.selected, keys: normalizeUnknownKeyMapForOutput(doc.selected.keys) }
-            : doc.selected),
+          ? normalizeUnknownSelectedForOutput(selectedForField(runtimeDoc, fieldKey))
+          : (runtimeDoc.selected && typeof runtimeDoc.selected === 'object'
+            ? { ...runtimeDoc.selected, keys: normalizeUnknownKeyMapForOutput(runtimeDoc.selected.keys) }
+            : runtimeDoc.selected),
         runs,
         candidates,
       });

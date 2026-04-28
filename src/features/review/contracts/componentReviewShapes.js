@@ -62,6 +62,7 @@ export const ENUM_VALUE_REVIEW_ITEM_KEYS = Object.freeze(ENUM_VALUE_REVIEW_ITEM_
 export const ENUM_FIELD_REVIEW_SHAPE = Object.freeze([
   { key: 'field', coerce: 'string' },
   { key: 'enum_list_id', coerce: 'int', nullable: true, optional: true },
+  { key: 'locked', coerce: 'bool' },
   { key: 'values', coerce: 'array', itemRef: 'EnumValueReviewItemGen' },
   { key: 'metrics', coerce: 'object' },
 ]);

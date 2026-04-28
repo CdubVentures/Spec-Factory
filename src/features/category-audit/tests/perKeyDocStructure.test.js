@@ -247,6 +247,8 @@ test('per-key LLM audit prompt teaches component identity attributes, component-
 
   assert.match(promptText, /normal product-backed attributes/i);
   assert.match(promptText, /strictly component-only attributes/i);
+  assert.match(promptText, /complete replacement roster/i);
+  assert.match(promptText, /removes omitted stale attributes/i);
   assert.match(promptText, /Component only \/ scoped/i);
   assert.match(promptText, /"component_only": true/);
   assert.match(promptText, /Tolerance/i);
@@ -425,6 +427,46 @@ test('component DB property hints are shown as setup evidence, not setup-gated g
   assert.match(promptText, /"field_key": "sensor_date"/);
   assert.match(promptText, /"type": "string"/);
   assert.match(promptText, /"variance_policy": "authoritative"/);
+});
+
+test('component DB property hint detail can reference large inventories without a mapped component relation', () => {
+  const rule = makeRule({
+    contract: { type: 'string', shape: 'scalar' },
+    ui: { label: 'Sensor MCU' },
+  });
+  const record = makeKeyRecord('sensor_mcu', rule, {
+    group: 'sensor_performance',
+    componentDbProperty: {
+      type: 'sensor',
+      types: ['sensor'],
+      relation: 'db_property_hint',
+      source: 'component_db.sensor',
+    },
+  });
+  const preview = composePerKeyPromptPreview(rule, 'sensor_mcu', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, {
+    ...BASE_OPTS,
+    preview,
+    componentInventory: [{
+      type: 'sensor',
+      entityCount: 51,
+      entities: Array.from({ length: 51 }, (_, index) => ({
+        name: `Sensor ${index + 1}`,
+        maker: 'PixArt',
+        aliases: [],
+        properties: { sensor_mcu: 'sample' },
+      })),
+      identityFields: ['sensor'],
+      subfields: ['sensor_mcu'],
+      unmappedFieldProperties: ['sensor_mcu'],
+      dbOnlyProperties: [],
+    }],
+  });
+
+  const componentSection = structure.sections.find((s) => s.id === 'component');
+  const componentText = JSON.stringify(componentSection);
+  assert.match(componentText, /first 50 of 51 shown/i);
+  assert.match(componentText, /component_db\/sensor\.json/);
 });
 
 test('per-key LLM audit prompt uses navigator ordinal when available', () => {

@@ -300,7 +300,7 @@ function readMetaFromFieldRule(rule, fieldRules) {
       enum_values = readEnumValues(fieldRules, listKey);
     }
   }
-  return { variance_policy, constraints, enum_values, enum_policy };
+  return { variance_policy, constraints, enum_values, enum_policy, component_only: false };
 }
 
 function readMetaFromComponentSourceProperty(prop, propertyKey, fieldRules) {
@@ -311,7 +311,13 @@ function readMetaFromComponentSourceProperty(prop, propertyKey, fieldRules) {
   // the property. If absent, return null (open enum / unknown).
   const enum_values = readEnumValues(fieldRules, propertyKey);
   const enum_policy = enum_values && enum_values.length > 0 ? 'closed' : null;
-  return { variance_policy, constraints, enum_values, enum_policy };
+  return {
+    variance_policy,
+    constraints,
+    enum_values,
+    enum_policy,
+    component_only: prop.component_only === true,
+  };
 }
 
 function readEnumValues(fieldRules, listKey) {
