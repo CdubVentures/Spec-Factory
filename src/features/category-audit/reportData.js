@@ -9,6 +9,10 @@
  */
 
 import { analyzeEnum, resolveFilterUi } from './patternDetector.js';
+import {
+  FIELD_RULE_AI_ASSIST_TOGGLE_SPECS,
+  normalizeFieldRuleAiAssistToggleFromConfig,
+} from '../../field-rules/fieldRuleSchema.js';
 
 const CONSTRAINT_OPS = [
   { re: /^(.+?)\s*<=\s*(.+)$/, op: 'lte' },
@@ -18,7 +22,6 @@ const CONSTRAINT_OPS = [
   { re: /^(.+?)\s*==\s*(.+)$/, op: 'eq' },
   { re: /^(.+?)\s*=\s*(.+)$/, op: 'eq' },
 ];
-const LEGACY_VARIANT_INVENTORY_ACTIVE_MODES = new Set(['default', 'append', 'override']);
 
 /** "<field> <= <other_field>" -> { op: 'lte', left, right, raw } */
 export function parseConstraintExpression(raw) {
@@ -134,28 +137,13 @@ function normalizeEvidence(rule) {
   };
 }
 
-function normalizeVariantInventoryUsage(rule) {
-  const raw = rule?.ai_assist?.variant_inventory_usage;
-  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
-  if (typeof raw.enabled === 'boolean') return { enabled: raw.enabled };
-  const legacyMode = String(raw.mode || '').trim();
-  if (legacyMode === 'off') return { enabled: false };
-  if (LEGACY_VARIANT_INVENTORY_ACTIVE_MODES.has(legacyMode)) return { enabled: true };
-  return null;
-}
-
-function normalizeSimpleEnabledToggle(value) {
-  if (typeof value === 'boolean') return { enabled: value };
-  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
-  return typeof value.enabled === 'boolean' ? { enabled: value.enabled } : null;
-}
-
 function normalizeAiAssist(rule) {
   const out = { reasoning_note: String(rule?.ai_assist?.reasoning_note || '') };
-  const variantInventoryUsage = normalizeVariantInventoryUsage(rule);
-  if (variantInventoryUsage) out.variant_inventory_usage = variantInventoryUsage;
-  const pifPriorityImages = normalizeSimpleEnabledToggle(rule?.ai_assist?.pif_priority_images);
-  if (pifPriorityImages) out.pif_priority_images = pifPriorityImages;
+  const aiAssist = rule?.ai_assist;
+  for (const toggleSpec of FIELD_RULE_AI_ASSIST_TOGGLE_SPECS) {
+    const normalizedToggle = normalizeFieldRuleAiAssistToggleFromConfig(aiAssist, toggleSpec.key);
+    if (normalizedToggle) out[toggleSpec.key] = normalizedToggle;
+  }
   return out;
 }
 

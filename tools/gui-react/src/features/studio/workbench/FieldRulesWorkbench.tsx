@@ -64,7 +64,6 @@ export function FieldRulesWorkbench({
   category,
   knownValues,
   enumLists,
-  componentDb,
   componentSources,
   wbMap: _wbMap,
   guardrails,
@@ -265,8 +264,6 @@ export function FieldRulesWorkbench({
           fieldOrder={editedFieldOrder}
           knownValues={knownValues}
           enumLists={enumLists}
-          componentDb={componentDb}
-          componentSources={componentSources}
           onCommitImmediate={saveIfAutoSaveEnabled}
           onClose={() => setDrawerKey(null)}
           onNavigate={(key) => setDrawerKey(key)}

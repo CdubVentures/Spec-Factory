@@ -173,8 +173,6 @@ test('buildStudioPageActivePanelProps normalizes missing data sources to safe em
   });
 
   assert.deepEqual(result.mappingTabProps.knownValues, {});
-  assert.deepEqual(result.keyNavigatorTabProps.componentDb, {});
-  assert.deepEqual(result.keyNavigatorTabProps.componentSources, []);
   assert.deepEqual(result.contractTabProps.knownValues, {});
   assert.deepEqual(result.reportsTabProps.artifacts, []);
   assert.equal(result.contractTabProps.guardrails, undefined);

@@ -118,6 +118,27 @@ describe('moduleSettingsRoutes — /global/:moduleId (scope=global)', () => {
     assert.equal(parsed.queryHistoryEnabled, 'false');
   });
 
+  it('PUT rolls back global SQL when the JSON mirror write fails', async () => {
+    const blockedRoot = path.join(tmpDir, 'blocked-root');
+    fs.writeFileSync(blockedRoot, 'not a directory', 'utf8');
+    const handler = registerModuleSettingsRoutes({
+      jsonRes: (res, status, body) => { res.statusCode = status; res.body = body; return true; },
+      readJsonBody: async () => ({ settings: { urlHistoryEnabled: 'true' } }),
+      getSpecDb: () => null,
+      broadcastWs: () => {},
+      helperRoot: blockedRoot,
+      appDb,
+    });
+
+    const res = makeRes();
+    await assert.rejects(
+      () => handler(['module-settings', 'global', 'colorEditionFinder'], {}, 'PUT', {}, res),
+      /ENOTDIR|not a directory/i,
+    );
+
+    assert.equal(appDb.getFinderGlobalSetting('colorEditionFinder', 'urlHistoryEnabled'), null);
+  });
+
   it('GET /global/productImageFinder returns only PIF global-scoped settings', async () => {
     appDb.upsertFinderGlobalSetting('productImageFinder', 'heroCount', '1');
     appDb.upsertFinderGlobalSetting('productImageFinder', 'evalThumbSize', '1024');
@@ -237,6 +258,30 @@ describe('moduleSettingsRoutes — /:category/:moduleId (scope=category)', () =>
     assert.equal(globalParsed.evalEnabled, 'false');
     assert.equal(globalParsed.viewBudget, undefined);
     assert.equal(appDb.getFinderGlobalSetting('productImageFinder', 'heroCount'), '1');
+  });
+
+  it('PUT /:category/productImageFinder rolls back category SQL when the JSON mirror write fails', async () => {
+    const blockedRoot = path.join(tmpDir, 'blocked-root');
+    fs.writeFileSync(blockedRoot, 'not a directory', 'utf8');
+    const handler = registerModuleSettingsRoutes({
+      jsonRes: (res, status, body) => { res.statusCode = status; res.body = body; return true; },
+      readJsonBody: async () => ({ settings: { satisfactionThreshold: '9' } }),
+      getSpecDb: () => specDb,
+      broadcastWs: () => {},
+      helperRoot: blockedRoot,
+      appDb,
+    });
+
+    const res = makeRes();
+    await assert.rejects(
+      () => handler(['module-settings', 'mouse', 'productImageFinder'], {}, 'PUT', {}, res),
+      /ENOTDIR|not a directory/i,
+    );
+
+    const row = specDb.db
+      .prepare('SELECT value FROM product_image_finder_settings WHERE key = ?')
+      .get('satisfactionThreshold');
+    assert.equal(row, undefined);
   });
 
   it('PUT /:category/productImageFinder carousel settings rebuilds PIF progress before broadcast', async () => {

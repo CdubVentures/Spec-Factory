@@ -75,6 +75,11 @@ function readEffectiveSettings(mod, { appDb, store }) {
   };
 }
 
+function runSqlTransaction(dbOwner, work) {
+  if (typeof dbOwner?.db?.transaction !== 'function') return work();
+  return dbOwner.db.transaction(work)();
+}
+
 export function registerModuleSettingsRoutes(ctx) {
   const { jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot, productRoot, appDb } = ctx;
 
@@ -117,16 +122,19 @@ export function registerModuleSettingsRoutes(ctx) {
         }
         const patch = body.settings || body;
         const globalPatch = filterFinderSettingsForScope(mod, patch, 'global');
-        for (const [key, value] of Object.entries(globalPatch)) {
-          if (typeof key === 'string' && key.length > 0) {
-            appDb.upsertFinderGlobalSetting(moduleId, key, value);
+        let allSettings;
+        runSqlTransaction(appDb, () => {
+          for (const [key, value] of Object.entries(globalPatch)) {
+            if (typeof key === 'string' && key.length > 0) {
+              appDb.upsertFinderGlobalSetting(moduleId, key, value);
+            }
           }
-        }
 
-        const allSettings = readGlobalScopedSettings(mod, appDb);
-        if (helperRoot) {
-          writeSettingsJson(globalSettingsJsonPath(helperRoot, mod), allSettings);
-        }
+          allSettings = readGlobalScopedSettings(mod, appDb);
+          if (helperRoot) {
+            writeSettingsJson(globalSettingsJsonPath(helperRoot, mod), allSettings);
+          }
+        });
 
         emitDataChange({
           broadcastWs,
@@ -175,33 +183,47 @@ export function registerModuleSettingsRoutes(ctx) {
       const categoryPatch = filterFinderSettingsForScope(mod, settings, 'category');
       const globalPatch = filterFinderSettingsForScope(mod, settings, 'global');
       const settingKeys = [...Object.keys(categoryPatch), ...Object.keys(globalPatch)];
-      for (const [key, value] of Object.entries(categoryPatch)) {
-        if (typeof key === 'string' && key.length > 0) {
-          store.setSetting(key, value);
-        }
-      }
-      for (const [key, value] of Object.entries(globalPatch)) {
-        if (typeof key === 'string' && key.length > 0) {
-          appDb.upsertFinderGlobalSetting(moduleId, key, value);
-        }
-      }
+      let pifProgressRebuild = null;
+      let domains = ['module-settings'];
+      let allSettings;
 
-      const categorySettings = readCategoryScopedSettings(mod, store);
-      if (helperRoot) {
-        writeSettingsJson(categorySettingsJsonPath(helperRoot, category, mod), categorySettings);
-        if (Object.keys(globalPatch).length > 0) {
-          writeSettingsJson(globalSettingsJsonPath(helperRoot, mod), readGlobalScopedSettings(mod, appDb));
+      const persistSettings = () => {
+        for (const [key, value] of Object.entries(categoryPatch)) {
+          if (typeof key === 'string' && key.length > 0) {
+            store.setSetting(key, value);
+          }
         }
-      }
+        for (const [key, value] of Object.entries(globalPatch)) {
+          if (typeof key === 'string' && key.length > 0) {
+            appDb.upsertFinderGlobalSetting(moduleId, key, value);
+          }
+        }
 
-      const pifProgressChanged = moduleId === 'productImageFinder'
-        && settingKeys.some((key) => PIF_PROGRESS_SETTING_KEYS.has(key));
-      const pifProgressRebuild = pifProgressChanged
-        ? rebuildPifVariantProgressFromJson({ specDb, productRoot })
-        : null;
-      const domains = pifProgressChanged
-        ? ['module-settings', 'product-image-finder', 'catalog']
-        : ['module-settings'];
+        const categorySettings = readCategoryScopedSettings(mod, store);
+        if (helperRoot) {
+          writeSettingsJson(categorySettingsJsonPath(helperRoot, category, mod), categorySettings);
+          if (Object.keys(globalPatch).length > 0) {
+            writeSettingsJson(globalSettingsJsonPath(helperRoot, mod), readGlobalScopedSettings(mod, appDb));
+          }
+        }
+
+        const pifProgressChanged = moduleId === 'productImageFinder'
+          && settingKeys.some((key) => PIF_PROGRESS_SETTING_KEYS.has(key));
+        pifProgressRebuild = pifProgressChanged
+          ? rebuildPifVariantProgressFromJson({ specDb, productRoot })
+          : null;
+        domains = pifProgressChanged
+          ? ['module-settings', 'product-image-finder', 'catalog']
+          : ['module-settings'];
+        allSettings = readEffectiveSettings(mod, { appDb, store });
+      };
+
+      const persistCategorySettings = () => runSqlTransaction(specDb, persistSettings);
+      if (Object.keys(globalPatch).length > 0) {
+        runSqlTransaction(appDb, persistCategorySettings);
+      } else {
+        persistCategorySettings();
+      }
 
       emitDataChange({
         broadcastWs,
@@ -215,7 +237,6 @@ export function registerModuleSettingsRoutes(ctx) {
         },
       });
 
-      const allSettings = readEffectiveSettings(mod, { appDb, store });
       return jsonRes(res, 200, { ok: true, category, module: moduleId, settings: allSettings });
     }
 

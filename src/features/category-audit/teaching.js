@@ -50,7 +50,7 @@ Returned JSON must be strict and importable:
           "source": "data_lists.<field_key>"
         },
         "ai_assist": {
-          "variant_inventory_usage": {
+          "color_edition_context": {
             "enabled": false
           },
           "pif_priority_images": {
@@ -107,7 +107,7 @@ Mapping Studio guidance:
 
 Key Navigator guidance:
 - Field contract, priority, evidence, enum policy, constraints, aliases, search_hints, and ai_assist belong under \`patch.field_overrides.<field_key>\`.
-- Use \`ai_assist.variant_inventory_usage\` only when variant identity helps reject wrong-variant evidence without ambiguity.
+- Use \`ai_assist.color_edition_context\` only when color/edition identity helps reject wrong-variant evidence without ambiguity.
 - Use \`ai_assist.pif_priority_images\` only when default/base priority-view images add visual evidence value.
 - Put final paste-ready prompt guidance in \`ai_assist.reasoning_note\`.
 

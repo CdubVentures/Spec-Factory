@@ -147,6 +147,42 @@ describe('WsManager idle watchdog', () => {
     mgr.close();
   });
 
+  it('publishes connection status from initial connect through reconnect and manual offline', async () => {
+    const statuses: string[] = [];
+    const mgr = new WsManager({
+      url: 'ws://fake/ws',
+      idleTimeoutMs: 60_000,
+      reconnectMs: 1_000,
+      webSocketClass: FakeWebSocket as unknown as typeof WebSocket,
+      reloadFn: () => {},
+    });
+    const unsubscribe = mgr.onConnectionChange((snapshot) => {
+      statuses.push(snapshot.status);
+    });
+
+    strictEqual(mgr.getConnectionSnapshot().status, 'offline');
+
+    mgr.connect();
+    strictEqual(statuses[statuses.length - 1], 'connecting');
+    const first = FakeWebSocket.instances[0];
+    first.fireOpen();
+    strictEqual(statuses[statuses.length - 1], 'connected');
+
+    mock.timers.tick(60_000);
+    await Promise.resolve();
+    strictEqual(statuses[statuses.length - 1], 'reconnecting');
+    strictEqual(mgr.getConnectionSnapshot().nextReconnectDelayMs, 1_000);
+
+    mock.timers.runAll();
+    const second = FakeWebSocket.instances[1];
+    second.fireOpen();
+    strictEqual(statuses[statuses.length - 1], 'connected');
+
+    mgr.close();
+    strictEqual(statuses[statuses.length - 1], 'offline');
+    unsubscribe();
+  });
+
   it('idle-triggered close leads to reconnect which fires onReconnect (no reload when handler is registered)', async () => {
     let reloads = 0;
     let reconnects = 0;
@@ -307,6 +343,31 @@ describe('WsManager idle watchdog', () => {
 
     strictEqual(hitsA, 1, 'handler A received the broadcast');
     strictEqual(hitsB, 1, 'handler B received the same broadcast');
+    mgr.close();
+  });
+
+  it('isolates throwing onMessage handlers so later handlers still receive the broadcast', () => {
+    const mgr = new WsManager({
+      url: 'ws://fake/ws',
+      idleTimeoutMs: 0,
+      webSocketClass: FakeWebSocket as unknown as typeof WebSocket,
+      reloadFn: () => {},
+    });
+    mgr.connect();
+    const ws = FakeWebSocket.instances[0];
+    ws.fireOpen();
+
+    let hits = 0;
+    mgr.onMessage(() => { throw new Error('bad message handler'); });
+    mgr.onMessage((channel, data) => {
+      strictEqual(channel, 'operations');
+      strictEqual((data as { ok?: boolean }).ok, true);
+      hits += 1;
+    });
+
+    ws.fireMessage({ channel: 'operations', data: { ok: true } });
+
+    strictEqual(hits, 1, 'later handler still received the message');
     mgr.close();
   });
 

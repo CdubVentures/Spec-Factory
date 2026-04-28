@@ -11,6 +11,7 @@ import {
 import { STUDIO_NUMERIC_KNOB_BOUNDS } from '../state/studioNumericKnobBounds.ts';
 import { deriveInputControl } from '../state/deriveInputControl.ts';
 import type { ComponentSource } from '../../../types/studio.ts';
+import { readFieldRuleAiAssistToggleEnabled } from '../../../../../../src/field-rules/fieldRuleSchema.js';
 
 // ── Nested accessor helpers (shared with KeyNavigatorTab) ────────────
 const CONSTRAINT_KEYWORDS = new Set(['requires', 'and', 'or', 'not', 'if', 'then', 'else', 'true', 'false', 'null']);
@@ -200,8 +201,8 @@ export function buildWorkbenchRows(
       difficulty: strN(r, 'priority.difficulty', strN(r, 'difficulty', 'easy')),
 
       // Ai Assist
-      variantInventoryUsage: boolN(r, 'ai_assist.variant_inventory_usage', false),
-      pifPriorityImages: boolN(r, 'ai_assist.pif_priority_images', false),
+      colorEditionContext: readFieldRuleAiAssistToggleEnabled('color_edition_context', r, false),
+      pifPriorityImages: readFieldRuleAiAssistToggleEnabled('pif_priority_images', r, false),
       reasoningNoteFilled: strN(r, 'ai_assist.reasoning_note').trim().length > 0,
 
       // Enum
@@ -209,11 +210,15 @@ export function buildWorkbenchRows(
       enumSource,
       knownValuesCount: knownValuesForField.length,
 
-      // Components — Phase 2: derive componentType from enum.source.
-      // The lock contract is `enum.source === component_db.<self>` (parent),
-      // surfaced as 🔧 in the componentLocked column.
-      componentType: enumSource.startsWith('component_db.')
-        ? enumSource.slice('component_db.'.length)
+      // Components — Phase 4: componentType + componentLocked both require
+      // self-lock (enum.source === component_db.<self>). Cross-locks (a property
+      // rule whose enum.source points at a parent component) are bugs that
+      // INV-2 catches at compile time; the workbench must NOT visually flag them
+      // as locked components. `belongsToComponent` (below) is the legitimate
+      // "this key is a property of <component>" derivation, sourced from
+      // component_sources[].roles.properties[].
+      componentType: enumSource === `component_db.${key}`
+        ? key
         : '',
       componentLocked: enumSource === `component_db.${key}`,
       belongsToComponent: propOwnership.get(key)?.componentType || '',

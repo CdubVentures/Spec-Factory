@@ -1,12 +1,14 @@
 import { lazy, Suspense, type ComponentType } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from './pages/layout/AppShell.tsx';
 import { ErrorBoundary } from './shared/ui/feedback/ErrorBoundary.tsx';
+import { GlobalNotifications } from './shared/ui/feedback/GlobalNotifications.tsx';
 import { Spinner } from './shared/ui/feedback/Spinner.tsx';
 import { ROUTE_ENTRIES } from './registries/pageRegistry.ts';
 import { wsManager } from './api/ws.ts';
 import { api } from './api/client.ts';
+import { queryClient } from './api/queryClient.ts';
 import { useOperationsStore, type OperationUpsert } from './features/operations/state/operationsStore.ts';
 
 function lazyNamedPage(loader: () => Promise<Record<string, unknown>>, exportName: string) {
@@ -27,16 +29,6 @@ const LAZY_ROUTES = ROUTE_ENTRIES.map((entry) => ({
   ...entry,
   Component: lazyNamedPage(entry.loader, entry.exportName),
 }));
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5_000,
-      retry: 1,
-      refetchOnWindowFocus: false,
-    },
-  },
-});
 
 // WHY: Soft reconnect wiring. On WS reconnect (after server restart, idle
 // watchdog fire, or transient network drop) invalidate every active React
@@ -77,6 +69,7 @@ export default function App() {
           </Route>
         </Routes>
       </HashRouter>
+      <GlobalNotifications />
     </QueryClientProvider>
   );
 }

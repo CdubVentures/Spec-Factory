@@ -12,45 +12,32 @@ import {
   DIFFICULTY_OPTIONS,
   DIFFICULTY_RANK,
 } from "../../../registries/fieldRuleTaxonomy.ts";
-import { getN, strN } from "./nestedValueHelpers.ts";
+import {
+  FIELD_RULE_AI_ASSIST_TOGGLE_SPECS,
+  normalizeFieldRuleAiAssistToggleFromConfig,
+  readFieldRuleAiAssistToggleEnabled,
+} from "../../../../../../src/field-rules/fieldRuleSchema.js";
+import { getN } from "./nestedValueHelpers.ts";
 
-type VariantInventoryUsageConfig = { enabled: boolean };
-type NormalizedAiAssistConfig = Omit<AiAssistConfig, "variant_inventory_usage"> & {
+type EnabledToggleConfig = { enabled: boolean };
+type NormalizedAiAssistConfig = AiAssistConfig & {
   reasoning_note: string;
-  variant_inventory_usage?: VariantInventoryUsageConfig;
-  pif_priority_images?: VariantInventoryUsageConfig;
+  [key: string]: EnabledToggleConfig | string | undefined;
 };
-
-const LEGACY_VARIANT_INVENTORY_ACTIVE_MODES = new Set([
-  "default",
-  "append",
-  "override",
-]);
-
-// WHY: variant_inventory_usage retains a legacy {mode} shape on some persisted
-// rules; pif_priority_images is new and only ever uses {enabled}.
-const LEGACY_MODE_FALLBACK_PATHS = new Set(["ai_assist.variant_inventory_usage"]);
-
-function normalizeSimpleEnabledToggle(value: unknown): VariantInventoryUsageConfig | null {
-  if (typeof value === "boolean") return { enabled: value };
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-  const input = value as Record<string, unknown>;
-  return typeof input.enabled === "boolean" ? { enabled: input.enabled } : null;
-}
 
 export function readAiAssistToggleEnabled(
   rule: Record<string, unknown> | null | undefined,
   path: string,
 ): boolean {
+  const toggleSpec = FIELD_RULE_AI_ASSIST_TOGGLE_SPECS.find((spec) => spec.path === path);
+  if (toggleSpec) {
+    return readFieldRuleAiAssistToggleEnabled(toggleSpec.key, rule, toggleSpec.defaultEnabled);
+  }
   const ruleObj = rule || {};
   const subEnabled = getN(ruleObj, `${path}.enabled`);
   if (typeof subEnabled === "boolean") return subEnabled;
   const directValue = getN(ruleObj, path);
   if (typeof directValue === "boolean") return directValue;
-  if (LEGACY_MODE_FALLBACK_PATHS.has(path)) {
-    const mode = strN(ruleObj, `${path}.mode`, "default");
-    return mode !== "off";
-  }
   return false;
 }
 
@@ -222,26 +209,11 @@ export function normalizeAiAssistConfig(
   const normalized: NormalizedAiAssistConfig = {
     reasoning_note: String(input.reasoning_note || ""),
   };
-  const variantUsage =
-    input.variant_inventory_usage &&
-    typeof input.variant_inventory_usage === "object"
-      ? (input.variant_inventory_usage as Record<string, unknown>)
-      : {};
-  const normalizedVariantUsage = normalizeSimpleEnabledToggle(variantUsage);
-  if (normalizedVariantUsage) {
-    normalized.variant_inventory_usage = normalizedVariantUsage;
-  } else {
-    const legacyMode = String(variantUsage.mode || "").trim();
-    if (legacyMode === "off") {
-      normalized.variant_inventory_usage = { enabled: false };
+  for (const toggleSpec of FIELD_RULE_AI_ASSIST_TOGGLE_SPECS) {
+    const normalizedToggle = normalizeFieldRuleAiAssistToggleFromConfig(input, toggleSpec.key);
+    if (normalizedToggle) {
+      normalized[toggleSpec.key] = normalizedToggle;
     }
-    if (LEGACY_VARIANT_INVENTORY_ACTIVE_MODES.has(legacyMode)) {
-      normalized.variant_inventory_usage = { enabled: true };
-    }
-  }
-  const pifPriorityImages = normalizeSimpleEnabledToggle(input.pif_priority_images);
-  if (pifPriorityImages) {
-    normalized.pif_priority_images = pifPriorityImages;
   }
   return normalized;
 }

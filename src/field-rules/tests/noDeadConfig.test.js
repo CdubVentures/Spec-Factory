@@ -1,52 +1,36 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 
 import { FIELD_RULE_SCHEMA } from '../fieldRuleSchema.js';
+import {
+  FIELD_RULE_CAPABILITIES,
+  FIELD_RULE_CAPABILITY_KEYS,
+  capabilityKeyForSchemaPath,
+} from '../fieldRuleCapabilities.js';
 
 // ---------------------------------------------------------------------------
 // Window 9: No Dead Config CI enforcement
 //
 // Prevents authorable knobs from being emitted without a consumer.
-// Uses src/field-rules/capabilities.json as the canonical registry.
+// Uses fieldRuleCapabilities.js as the derived registry. Schema knobs come
+// from FIELD_RULE_SCHEMA; compatibility-only legacy knobs live in one local
+// block in that module.
 //
 // FAIL conditions:
-//   - Knob in capabilities.json has status other than live/ui_only/deferred
+//   - Knob in FIELD_RULE_CAPABILITIES has status other than live/ui_only/deferred/retired
 //   - Knob with status "deferred" lacks a reason
 //   - Knob with status "live" lacks a consumer
 //   - More than 10 deferred knobs (cap to prevent accumulation)
 // ---------------------------------------------------------------------------
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const CAPABILITIES_PATH = path.join(__dirname, '../../..', 'src', 'field-rules', 'capabilities.json');
-
-async function loadCapabilities() {
-  const raw = await fs.readFile(CAPABILITIES_PATH, 'utf8');
-  return JSON.parse(raw);
-}
-
-function capabilityKeyForSchemaPath(pathValue) {
-  const pathText = String(pathValue || '');
-  if (pathText.startsWith('ai_assist.') && pathText.endsWith('.enabled')) {
-    return pathText.replace(/\.enabled$/, '');
-  }
-  if (pathText.startsWith('contract.range.')) {
-    return 'contract.range';
-  }
-  return pathText;
-}
-
-test('capabilities.json exists and is valid JSON', async () => {
-  const cap = await loadCapabilities();
-  assert.ok(cap.knobs, 'capabilities.json must have a "knobs" object');
+test('FIELD_RULE_CAPABILITIES exposes a non-empty knob registry', () => {
+  const cap = FIELD_RULE_CAPABILITIES;
+  assert.ok(cap.knobs, 'FIELD_RULE_CAPABILITIES must have a "knobs" object');
   assert.ok(Object.keys(cap.knobs).length > 0, 'knobs must not be empty');
 });
 
-test('every knob has a valid status (live, ui_only, or deferred)', async () => {
-  const cap = await loadCapabilities();
+test('every knob has a valid status (live, ui_only, deferred, or retired)', () => {
+  const cap = FIELD_RULE_CAPABILITIES;
   const validStatuses = new Set(['live', 'ui_only', 'deferred', 'retired']);
   const invalid = [];
   for (const [knob, config] of Object.entries(cap.knobs)) {
@@ -58,8 +42,8 @@ test('every knob has a valid status (live, ui_only, or deferred)', async () => {
     `Invalid statuses: ${JSON.stringify(invalid)}`);
 });
 
-test('every live knob has a consumer specified', async () => {
-  const cap = await loadCapabilities();
+test('every live knob has a consumer specified', () => {
+  const cap = FIELD_RULE_CAPABILITIES;
   const missing = [];
   for (const [knob, config] of Object.entries(cap.knobs)) {
     if (config.status === 'live' && !config.consumer) {
@@ -70,8 +54,8 @@ test('every live knob has a consumer specified', async () => {
     `Live knobs without consumers: ${missing.join(', ')}`);
 });
 
-test('every deferred knob has a reason', async () => {
-  const cap = await loadCapabilities();
+test('every deferred knob has a reason', () => {
+  const cap = FIELD_RULE_CAPABILITIES;
   const missing = [];
   for (const [knob, config] of Object.entries(cap.knobs)) {
     if (config.status === 'deferred' && !config.reason) {
@@ -82,8 +66,8 @@ test('every deferred knob has a reason', async () => {
     `Deferred knobs without reasons: ${missing.join(', ')}`);
 });
 
-test('deferred knob count does not exceed cap (max 10)', async () => {
-  const cap = await loadCapabilities();
+test('deferred knob count does not exceed cap (max 10)', () => {
+  const cap = FIELD_RULE_CAPABILITIES;
   const deferred = Object.entries(cap.knobs)
     .filter(([, config]) => config.status === 'deferred');
   assert.ok(deferred.length <= 10,
@@ -91,8 +75,8 @@ test('deferred knob count does not exceed cap (max 10)', async () => {
     'Either wire them or remove from the registry.');
 });
 
-test('every knob has a description', async () => {
-  const cap = await loadCapabilities();
+test('every knob has a description', () => {
+  const cap = FIELD_RULE_CAPABILITIES;
   const missing = [];
   for (const [knob, config] of Object.entries(cap.knobs)) {
     if (!config.description || !config.description.trim()) {
@@ -103,8 +87,8 @@ test('every knob has a description', async () => {
     `Knobs without descriptions: ${missing.join(', ')}`);
 });
 
-test('capabilities registry covers every field-rule schema knob', async () => {
-  const cap = await loadCapabilities();
+test('capabilities registry covers every field-rule schema knob', () => {
+  const cap = FIELD_RULE_CAPABILITIES;
   const capabilityKeys = new Set(Object.keys(cap.knobs));
   const expectedKeys = [...new Set(FIELD_RULE_SCHEMA.map((entry) => capabilityKeyForSchemaPath(entry.path)))].sort();
   const missing = expectedKeys.filter((key) => !capabilityKeys.has(key));
@@ -112,8 +96,8 @@ test('capabilities registry covers every field-rule schema knob', async () => {
   assert.deepEqual(missing, []);
 });
 
-test('no duplicate knob names (case-insensitive)', async () => {
-  const cap = await loadCapabilities();
+test('no duplicate knob names (case-insensitive)', () => {
+  const cap = FIELD_RULE_CAPABILITIES;
   const seen = new Map();
   const dupes = [];
   for (const knob of Object.keys(cap.knobs)) {
@@ -127,8 +111,8 @@ test('no duplicate knob names (case-insensitive)', async () => {
     `Duplicate knobs: ${JSON.stringify(dupes)}`);
 });
 
-test('non-indexlab knobs remain authorable in capabilities registry', async () => {
-  const cap = await loadCapabilities();
+test('non-indexlab knobs remain authorable in capabilities registry', () => {
+  const cap = FIELD_RULE_CAPABILITIES;
   const retainedKnobs = [
     'contract.rounding.decimals',
     'contract.rounding.mode',
@@ -136,21 +120,21 @@ test('non-indexlab knobs remain authorable in capabilities registry', async () =
   ];
 
   for (const knob of retainedKnobs) {
-    assert.ok(cap.knobs[knob], `${knob} should remain authorable in capabilities.json`);
+    assert.ok(cap.knobs[knob], `${knob} should remain authorable in FIELD_RULE_CAPABILITIES`);
   }
 });
 
-test('live AI assist knobs remain registered with consumer metadata', async () => {
-  const cap = await loadCapabilities();
+test('live AI assist knobs remain registered with consumer metadata', () => {
+  const cap = FIELD_RULE_CAPABILITIES;
   const expectedLiveAiKnobs = [
     'ai_assist.reasoning_note',
-    'ai_assist.variant_inventory_usage',
+    'ai_assist.color_edition_context',
     'ai_assist.pif_priority_images',
   ];
 
   for (const knob of expectedLiveAiKnobs) {
     const config = cap.knobs[knob];
-    assert.ok(config, `AI knob ${knob} should exist in capabilities.json`);
+    assert.ok(config, `AI knob ${knob} should exist in FIELD_RULE_CAPABILITIES`);
     assert.equal(config.status, 'live', `AI knob ${knob} should remain live`);
     assert.ok(
       typeof config.consumer === 'string' && config.consumer.trim().length > 0,
@@ -159,8 +143,59 @@ test('live AI assist knobs remain registered with consumer metadata', async () =
   }
 });
 
-test('capabilities summary: report live/ui_only/deferred counts', async () => {
-  const cap = await loadCapabilities();
+test('FIELD_RULE_CAPABILITY_KEYS characterizes the published capability surface', () => {
+  assert.deepEqual(FIELD_RULE_CAPABILITY_KEYS, [
+    'ai_assist.color_edition_context',
+    'ai_assist.pif_priority_images',
+    'ai_assist.reasoning_note',
+    'aliases',
+    'constraints',
+    'contract.list_rules.dedupe',
+    'contract.list_rules.item_union',
+    'contract.list_rules.sort',
+    'contract.range',
+    'contract.rounding.decimals',
+    'contract.rounding.mode',
+    'contract.shape',
+    'contract.type',
+    'contract.unit',
+    'core_fields',
+    'enum.match.format_hint',
+    'enum.new_value_policy',
+    'enum.policy',
+    'enum.source',
+    'enum.values',
+    'evidence.min_evidence_refs',
+    'evidence.tier_preference',
+    'group',
+    'parse.delimiters',
+    'parse.template',
+    'parse.token_map',
+    'parse.unit',
+    'priority.availability',
+    'priority.difficulty',
+    'priority.effort',
+    'priority.required_level',
+    'product_image_dependent',
+    'search_hints.content_types',
+    'search_hints.domain_hints',
+    'search_hints.query_terms',
+    'selection_policy',
+    'ui.display_decimals',
+    'ui.group',
+    'ui.input_control',
+    'ui.label',
+    'ui.order',
+    'ui.surfaces',
+    'ui.tooltip_md',
+    'ui.tooltip_source',
+    'variance_policy',
+    'variant_dependent',
+  ]);
+});
+
+test('capabilities summary: report live/ui_only/deferred counts', () => {
+  const cap = FIELD_RULE_CAPABILITIES;
   const counts = { live: 0, ui_only: 0, deferred: 0 };
   for (const config of Object.values(cap.knobs)) {
     counts[config.status] = (counts[config.status] || 0) + 1;

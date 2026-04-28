@@ -5,9 +5,9 @@ import { useUiCategoryStore } from '../../../stores/uiCategoryStore.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { usePersistedJson, usePersistedTab } from '../../../stores/tabStore.ts';
 import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import BulkPasteGrid, { type BulkGridRow } from '../../../shared/ui/forms/BulkPasteGrid.tsx';
 import { invalidateFieldRulesQueries } from '../../studio/index.ts';
+import { ProductManagerSkeleton } from './ProductManagerSkeleton.tsx';
 
 import { btnPrimary, btnSecondary, btnDanger, sectionCls } from '../../../shared/ui/buttonClasses.ts';
 const inputCls = 'px-2 py-1.5 text-sm border sf-border-soft sf-border-soft rounded sf-surface-elevated sf-text-subtle dark:placeholder:sf-text-muted placeholder:italic';
@@ -117,6 +117,9 @@ export function ProductManager() {
   const updateMut = useMutation({
     mutationFn: ({ pid, patch }: { pid: string; patch: Record<string, unknown> }) =>
       api.put<MutationResult>(`/catalog/${category}/products/${pid}`, patch),
+    meta: {
+      errorNotificationTitle: 'Product update reverted',
+    },
     onMutate: async ({ pid, patch }): Promise<ProductCacheMutationContext> => {
       await cancelSharedProductCacheQueries(queryClient, category);
       return {
@@ -136,6 +139,9 @@ export function ProductManager() {
 
   const deleteMut = useMutation({
     mutationFn: (pid: string) => api.del<MutationResult>(`/catalog/${category}/products/${pid}`),
+    meta: {
+      errorNotificationTitle: 'Product deletion reverted',
+    },
     onMutate: async (pid): Promise<ProductCacheMutationContext> => {
       await cancelSharedProductCacheQueries(queryClient, category);
       return {
@@ -455,7 +461,7 @@ export function ProductManager() {
   }, [bulkBrand, bulkRowsToSubmit, bulkMut]);
 
   // ── Render ─────────────────────────────────────────────────────
-  if (isLoading) return <Spinner />;
+  if (isLoading) return <ProductManagerSkeleton category={category} drawerOpen={drawerOpen} />;
 
   return (
     <>

@@ -57,10 +57,10 @@ test('output shape defaults to reasoning_note only', () => {
   assert.deepEqual(Object.keys(result), ['reasoning_note']);
 });
 
-test('variant_inventory_usage preserves explicit enabled boolean only', () => {
+test('color_edition_context preserves explicit enabled boolean only', () => {
   const result = compileAiAssist({
     reasoning_note: 'base note',
-    variant_inventory_usage: {
+    color_edition_context: {
       enabled: false,
       mode: 'append',
       profile: 'visual_design',
@@ -70,56 +70,21 @@ test('variant_inventory_usage preserves explicit enabled boolean only', () => {
 
   assert.deepEqual(result, {
     reasoning_note: 'base note',
-    variant_inventory_usage: {
+    color_edition_context: {
       enabled: false,
     },
   });
 });
 
-test('variant_inventory_usage maps legacy off mode to disabled', () => {
+test('color_edition_context maps legacy variant_inventory_usage active mode to enabled', () => {
   const result = compileAiAssist({
-    variant_inventory_usage: {
-      mode: 'off',
-      profile: 'visual_design',
-      text: 'Legacy text is no longer a separate knob.',
-    },
+    variant_inventory_usage: { mode: 'append' },
   });
 
   assert.deepEqual(result, {
     reasoning_note: '',
-    variant_inventory_usage: {
-      enabled: false,
-    },
+    color_edition_context: { enabled: true },
   });
-});
-
-test('variant_inventory_usage maps legacy active modes to enabled', () => {
-  const result = compileAiAssist({
-    variant_inventory_usage: {
-      mode: 'append',
-      profile: 'visual_design',
-      text: 'Legacy text is no longer a separate knob.',
-    },
-  });
-
-  assert.deepEqual(result, {
-    reasoning_note: '',
-    variant_inventory_usage: {
-      enabled: true,
-    },
-  });
-});
-
-test('variant_inventory_usage drops invalid empty metadata', () => {
-  const result = compileAiAssist({
-    variant_inventory_usage: {
-      mode: 'nonsense',
-      profile: 'wat',
-      text: '   ',
-    },
-  });
-
-  assert.deepEqual(result, DEFAULTS);
 });
 
 test('pif_priority_images preserves explicit enabled boolean only', () => {

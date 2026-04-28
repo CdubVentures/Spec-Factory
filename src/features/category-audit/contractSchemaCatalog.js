@@ -16,8 +16,10 @@
  */
 
 import {
+  FIELD_RULE_AI_ASSIST_TOGGLE_SPECS,
   FIELD_RULE_KINDS,
   FIELD_RULE_SCHEMA as FIELD_RULE_SCHEMA_REGISTRY,
+  normalizeFieldRuleAiAssistToggleFromConfig,
 } from '../../field-rules/fieldRuleSchema.js';
 
 export const KNOWN_KINDS = FIELD_RULE_KINDS;
@@ -74,7 +76,10 @@ function renderListSummary(list, prefix = 'value') {
  */
 export function describeCurrent(entry, rule) {
   if (!entry) return '(unset)';
-  const v = getIn(rule, entry.path);
+  const aiAssistToggle = FIELD_RULE_AI_ASSIST_TOGGLE_SPECS.find((spec) => spec.enabledPath === entry.path);
+  const v = aiAssistToggle
+    ? normalizeFieldRuleAiAssistToggleFromConfig(rule?.ai_assist, aiAssistToggle.key)?.enabled
+    : getIn(rule, entry.path);
   if (isEmptyValue(v)) return '(unset)';
   switch (entry.kind) {
     case 'string-list':

@@ -516,27 +516,7 @@ test('variantInventory: field-rule disabled flag suppresses inventory even when 
     productId: 'p1',
     fieldRule: {
       ...scalarRule('polling_rate'),
-      ai_assist: { variant_inventory_usage: { enabled: false } },
-    },
-  });
-
-  assert.deepEqual(inventory, []);
-});
-
-test('variantInventory: legacy off mode still suppresses inventory', () => {
-  const specDb = {
-    variants: {
-      listActive: () => [{ variant_id: 'v_black', variant_key: 'color:black', variant_type: 'color', variant_label: 'black', color_atoms: ['black'] }],
-    },
-    getFieldCandidatesByProductAndField: () => [],
-  };
-
-  const inventory = resolveVariantInventory({
-    specDb,
-    productId: 'p1',
-    fieldRule: {
-      ...scalarRule('polling_rate'),
-      ai_assist: { variant_inventory_usage: { mode: 'off' } },
+      ai_assist: { color_edition_context: { enabled: false } },
     },
   });
 
@@ -575,36 +555,16 @@ test('fieldIdentityUsage: authored field guidance prevents derived semantic prof
   assert.doesNotMatch(usage, /Never output colors, editions, sku, or release_date/i);
 });
 
-test('fieldIdentityUsage: disabled variant inventory flag omits usage guidance', () => {
+test('fieldIdentityUsage: disabled color_edition_context flag omits usage guidance', () => {
   const usage = buildFieldIdentityUsage({
     fieldKey: 'polling_rate',
     fieldRule: {
       ...scalarRule('polling_rate'),
-      ai_assist: { variant_inventory_usage: { enabled: false } },
+      ai_assist: { color_edition_context: { enabled: false } },
     },
   });
 
   assert.equal(usage, '');
-});
-
-test('fieldIdentityUsage: legacy text/profile metadata is ignored because guidance belongs in reasoning_note', () => {
-  const usage = buildFieldIdentityUsage({
-    fieldKey: 'polling_rate',
-    fieldRule: {
-      ...scalarRule('polling_rate'),
-      ai_assist: {
-        variant_inventory_usage: {
-          mode: 'override',
-          profile: 'visual_design',
-          text: 'Only use explicit polling-rate rows.',
-        },
-      },
-    },
-  });
-
-  assert.match(usage, /Use VARIANT_INVENTORY as a source-identity filter/);
-  assert.doesNotMatch(usage, /Only use explicit polling-rate rows/);
-  assert.doesNotMatch(usage, /shared physical\/industrial design/i);
 });
 
 test('runtimeContext: returns productScopedFacts, variantInventory, and fieldIdentityUsage together', () => {

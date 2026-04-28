@@ -6074,6 +6074,54 @@ html[data-sf-theme-mode='dark'] .sf-callout-neutral {
   background: rgb(var(--sf-color-surface-elevated-rgb) / 0.96);
 }
 
+.sf-ws-connection {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sf-space-1);
+  border: 1px solid;
+  border-radius: var(--sf-radius-chip);
+  padding: var(--sf-space-0-5) var(--sf-space-1-5);
+  font-size: var(--sf-token-font-size-body-xs);
+  font-weight: 600;
+  line-height: var(--sf-token-line-height-tight);
+}
+
+.sf-ws-connection-label {
+  white-space: nowrap;
+}
+
+.sf-ws-connection-dot {
+  width: var(--sf-space-2);
+  height: var(--sf-space-2);
+  flex: none;
+  border-radius: var(--sf-radius-pill);
+  background: currentColor;
+}
+
+.sf-ws-connection-info {
+  color: var(--sf-state-info-fg);
+  background: var(--sf-state-info-bg);
+  border-color: var(--sf-state-info-border);
+}
+
+.sf-ws-connection-success {
+  color: var(--sf-state-success-fg);
+  background: var(--sf-state-success-bg);
+  border-color: var(--sf-state-success-border);
+}
+
+.sf-ws-connection-warning {
+  color: var(--sf-state-warning-fg);
+  background: var(--sf-state-warning-bg);
+  border-color: var(--sf-state-warning-border);
+}
+
+.sf-ws-connection-danger {
+  color: var(--sf-state-danger-fg);
+  background: var(--sf-state-danger-bg);
+  border-color: var(--sf-state-danger-border);
+}
+
 html[data-sf-theme-mode='dark'] .sf-shell-header-control {
   border-color: rgb(var(--sf-color-border-subtle-rgb) / 0.68);
   background: transparent;
@@ -7709,6 +7757,11 @@ html[data-sf-theme-mode='dark'] .sf-chip-purple {
 .sf-skel-bar       { height: 0.5rem; border-radius: var(--sf-radius-sm); }
 .sf-skel-bar-label { height: 0.75rem; width: 40%; border-radius: var(--sf-radius-sm); }
 .sf-skel-row       { height: 2.25rem; border-radius: var(--sf-radius-sm); }
+.sf-skel-title     { height: 1rem; width: 14rem; max-width: 60%; border-radius: var(--sf-radius-sm); }
+.sf-skel-caption   { height: 0.75rem; width: 9rem; max-width: 45%; border-radius: var(--sf-radius-sm); }
+.sf-skel-input     { height: 2.25rem; width: 100%; max-width: 20rem; border-radius: var(--sf-radius-sm); }
+.sf-skel-action    { height: 2.25rem; width: 7rem; border-radius: var(--sf-radius-sm); }
+.sf-skel-icon-action { height: 1.5rem; width: 1.5rem; border-radius: var(--sf-radius-sm); }
 
 /* ── Billing Dashboard: Min-height reservations ───────────── */
 /* WHY: Prevent containers from collapsing during loading,

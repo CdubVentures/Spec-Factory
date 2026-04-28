@@ -348,6 +348,33 @@ function parseJsonArray(value) {
   return Array.isArray(parsed) ? parsed : [];
 }
 
+function readPifMutationEntity({ specDb, category, productId }) {
+  const finderStore = specDb?.getFinderStore?.('productImageFinder');
+  const row = typeof finderStore?.get === 'function' ? finderStore.get(productId) : null;
+  if (!row) return null;
+
+  const evalState = parseJsonValue(row.eval_state, {});
+  const images = parseJsonArray(row.images).map((img) => {
+    const filename = String(img?.filename || '');
+    const evalFields = filename ? evalState?.[filename] : null;
+    return evalFields && typeof evalFields === 'object' ? { ...img, ...evalFields } : img;
+  });
+  const runs = typeof finderStore?.listRuns === 'function' ? finderStore.listRuns(productId) : [];
+
+  return {
+    product_id: row.product_id || productId,
+    category: row.category || category,
+    images,
+    image_count: Number(row.image_count) || images.length,
+    run_count: Number(row.run_count) || runs.length,
+    last_ran_at: row.latest_ran_at || '',
+    selected: { images },
+    runs,
+    carousel_slots: parseJsonValue(row.carousel_slots, {}),
+    evaluations: parseJsonArray(row.evaluations),
+  };
+}
+
 function resolvePifCarouselSettings({ finderStore, category }) {
   const {
     viewBudget,
@@ -1730,7 +1757,13 @@ export function registerProductImageFinderRoutes(ctx) {
         meta: { productId, deletedImages: filenames },
       });
 
-      return jsonRes(res, 200, { ok: true, deleted: filenames });
+      return jsonRes(res, 200, {
+        ok: true,
+        product_id: productId,
+        category,
+        deleted: filenames,
+        entity: readPifMutationEntity({ specDb, category, productId }),
+      });
     }
 
     // DELETE /product-image-finder/:category/:productId/images/:filename
@@ -1835,7 +1868,13 @@ export function registerProductImageFinderRoutes(ctx) {
         meta: { productId, deletedImage: filename },
       });
 
-      return jsonRes(res, 200, { ok: true, deleted: filename });
+      return jsonRes(res, 200, {
+        ok: true,
+        product_id: productId,
+        category,
+        deleted: filename,
+        entity: readPifMutationEntity({ specDb, category, productId }),
+      });
     }
 
     // ── DELETE run — also delete associated image files from disk ──
@@ -1902,7 +1941,14 @@ export function registerProductImageFinderRoutes(ctx) {
         meta: { productId, deletedRun: runNumber, remainingRuns: updated?.run_count || 0 },
       });
 
-      return jsonRes(res, 200, { ok: true, remaining_runs: updated?.run_count || 0 });
+      return jsonRes(res, 200, {
+        ok: true,
+        product_id: productId,
+        category,
+        remaining_runs: updated?.run_count || 0,
+        deleted_run: runNumber,
+        entity: readPifMutationEntity({ specDb, category, productId }),
+      });
     }
 
     // ── DELETE all — also delete entire images directory ───────────

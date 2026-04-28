@@ -3,7 +3,6 @@ import { KeyContractSection } from "./key-sections/KeyContractSection.tsx";
 import { KeyPrioritySection } from "./key-sections/KeyPrioritySection.tsx";
 import { KeyAiAssistSection } from "./key-sections/KeyAiAssistSection.tsx";
 import { KeyEnumSection } from "./key-sections/KeyEnumSection.tsx";
-import { KeyComponentsSection } from "./key-sections/KeyComponentsSection.tsx";
 import { KeyConstraintsSection } from "./key-sections/KeyConstraintsSection.tsx";
 import { KeyEvidenceSection } from "./key-sections/KeyEvidenceSection.tsx";
 import { KeyTooltipSection } from "./key-sections/KeyTooltipSection.tsx";
@@ -64,7 +63,6 @@ export function KeyNavigatorTab({
   saveSuccess,
   knownValues,
   enumLists,
-  componentSources,
   autoSaveEnabled,
   setAutoSaveEnabled,
   autoSaveLocked,
@@ -637,19 +635,6 @@ export function KeyNavigatorTab({
                 disabled={isSelectedEgLocked}
               />
 
-              <KeyComponentsSection
-                selectedKey={selectedKey}
-                currentRule={currentRule}
-                updateField={updateField}
-                category={category}
-                BadgeRenderer={B}
-                saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
-                componentSources={componentSources}
-                knownValues={knownValues}
-                editedRules={editedRules}
-                disabled={isSelectedEgLocked}
-              />
-
               <KeyConstraintsSection
                 selectedKey={selectedKey}
                 currentRule={currentRule}
@@ -705,9 +690,8 @@ export function KeyNavigatorTab({
           })() : (
             <div className="text-sm sf-text-subtle mt-12 text-center">
               Select a key from the list to configure its field rule. Each key
-              has Contract, Priority, Ai Assist, Enum Policy, Components,
-              Cross-Field Constraints, Evidence, Tooltip, and Search Hints
-              settings.
+              has Contract, Priority, Ai Assist, Enum Policy, Cross-Field
+              Constraints, Evidence, Tooltip, and Search Hints settings.
             </div>
           )}
         </div>

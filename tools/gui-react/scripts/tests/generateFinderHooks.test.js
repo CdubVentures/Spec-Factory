@@ -8,7 +8,10 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { buildFinderHooksSource } from '../generateFinderHooks.js';
+import { FINDER_MODULES, deriveFinderPaths } from '../../../../src/core/finder/finderModuleRegistry.js';
 
 const FAKE_RDF_MODULE = {
   id: 'releaseDateFinder',
@@ -86,6 +89,15 @@ describe('generateFinderHooks buildFinderHooksSource', () => {
     assert.equal(helperCount, 2);
   });
 
+  it('delete response type includes canonical changed entity payload fields', () => {
+    const src = buildFinderHooksSource(FAKE_RDF_MODULE);
+    assert.match(src, /readonly product_id\?: string;/);
+    assert.match(src, /readonly category\?: string;/);
+    assert.match(src, /readonly deleted_run\?: number;/);
+    assert.match(src, /readonly deleted_runs\?: readonly number\[\];/);
+    assert.match(src, /readonly entity\?: ReleaseDateFinderResult \| null;/);
+  });
+
   it('imports ResultType from ../types.generated.ts (not ../types.ts)', () => {
     const src = buildFinderHooksSource(FAKE_RDF_MODULE);
     assert.match(src, /import type \{ ReleaseDateFinderResult \} from '\.\.\/types\.generated\.ts'/);
@@ -101,5 +113,27 @@ describe('generateFinderHooks buildFinderHooksSource', () => {
     assert.match(src, /useDeleteSkuFinderAllMutation/);
     assert.match(src, /queryKey: \['sku-finder', category, productId\]/);
     assert.match(src, /import type \{ SkuFinderResult \}/);
+  });
+
+  it('generated finder hook files are byte-identical to generator output', async () => {
+    const modules = FINDER_MODULES.filter((module) => module.getResponseSchemaExport);
+    assert.ok(modules.length > 0, 'at least one finder must opt into hook generation');
+
+    for (const module of modules) {
+      const expected = buildFinderHooksSource(module);
+      const { panelFeaturePath } = deriveFinderPaths(module.id);
+      const filePath = path.resolve(
+        'tools/gui-react/src/features',
+        panelFeaturePath,
+        'api',
+        `${module.id}Queries.generated.ts`,
+      );
+      const actual = await fs.readFile(filePath, 'utf8');
+      assert.equal(
+        actual,
+        expected,
+        `${module.id} generated hooks drifted; run node tools/gui-react/scripts/generateFinderHooks.js ${module.id}`,
+      );
+    }
   });
 });

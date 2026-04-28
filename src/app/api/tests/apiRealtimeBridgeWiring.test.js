@@ -39,6 +39,7 @@ function createRealtimeBridgeHarness(overrides = {}) {
     }),
     watchFactory: watchHarness.watchFactory,
     webSocketServerClass: wsHarness.FakeWebSocketServer,
+    screencastFrameCacheLimit: overrides.screencastFrameCacheLimit,
   });
 
   return {
@@ -140,4 +141,63 @@ test('realtime bridge caches the last screencast frame by run and worker', async
   });
   assert.equal(h.bridge.getLastScreencastFrame('run-cache-1', 'fetch-missing'), null);
   assert.equal(h.bridge.getLastScreencastFrame('run-other', 'fetch-9'), null);
+});
+
+test('realtime bridge evicts the oldest screencast frame when the cache exceeds its limit', async () => {
+  const h = createRealtimeBridgeHarness({
+    screencastFrameCacheLimit: 2,
+  });
+
+  h.bridge.attachWebSocketUpgrade(h.server);
+  h.bridge.broadcastWs('screencast-fetch-1', createScreencastFrame({
+    run_id: 'run-cache-1',
+    worker_id: 'fetch-1',
+    data: 'frame-1',
+  }));
+  h.bridge.broadcastWs('screencast-fetch-2', createScreencastFrame({
+    run_id: 'run-cache-2',
+    worker_id: 'fetch-2',
+    data: 'frame-2',
+  }));
+  h.bridge.broadcastWs('screencast-fetch-3', createScreencastFrame({
+    run_id: 'run-cache-3',
+    worker_id: 'fetch-3',
+    data: 'frame-3',
+  }));
+
+  assert.equal(h.bridge.getLastScreencastFrame('run-cache-1', 'fetch-1'), null);
+  assert.equal(h.bridge.getLastScreencastFrame('run-cache-2', 'fetch-2')?.data, 'frame-2');
+  assert.equal(h.bridge.getLastScreencastFrame('run-cache-3', 'fetch-3')?.data, 'frame-3');
+});
+
+test('realtime bridge treats an updated screencast frame as newest for eviction', async () => {
+  const h = createRealtimeBridgeHarness({
+    screencastFrameCacheLimit: 2,
+  });
+
+  h.bridge.attachWebSocketUpgrade(h.server);
+  h.bridge.broadcastWs('screencast-fetch-1', createScreencastFrame({
+    run_id: 'run-cache-1',
+    worker_id: 'fetch-1',
+    data: 'frame-1-old',
+  }));
+  h.bridge.broadcastWs('screencast-fetch-2', createScreencastFrame({
+    run_id: 'run-cache-2',
+    worker_id: 'fetch-2',
+    data: 'frame-2',
+  }));
+  h.bridge.broadcastWs('screencast-fetch-1', createScreencastFrame({
+    run_id: 'run-cache-1',
+    worker_id: 'fetch-1',
+    data: 'frame-1-new',
+  }));
+  h.bridge.broadcastWs('screencast-fetch-3', createScreencastFrame({
+    run_id: 'run-cache-3',
+    worker_id: 'fetch-3',
+    data: 'frame-3',
+  }));
+
+  assert.equal(h.bridge.getLastScreencastFrame('run-cache-1', 'fetch-1')?.data, 'frame-1-new');
+  assert.equal(h.bridge.getLastScreencastFrame('run-cache-2', 'fetch-2'), null);
+  assert.equal(h.bridge.getLastScreencastFrame('run-cache-3', 'fetch-3')?.data, 'frame-3');
 });

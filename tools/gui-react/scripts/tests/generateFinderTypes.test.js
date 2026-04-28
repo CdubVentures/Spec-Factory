@@ -9,8 +9,10 @@
 
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import { buildFinderTypesSource } from '../generateFinderTypes.js';
-import { FINDER_MODULES } from '../../../../src/core/finder/finderModuleRegistry.js';
+import { FINDER_MODULES, deriveFinderPaths } from '../../../../src/core/finder/finderModuleRegistry.js';
 
 function getRdfModule() {
   const m = FINDER_MODULES.find((x) => x.id === 'releaseDateFinder');
@@ -81,5 +83,26 @@ describe('generateFinderTypes — buildFinderTypesSource', () => {
       () => buildFinderTypesSource(fakeModule),
       /does not declare getResponseSchemaExport/,
     );
+  });
+
+  it('generated finder type files are byte-identical to generator output', async () => {
+    const modules = FINDER_MODULES.filter((module) => module.getResponseSchemaExport);
+    assert.ok(modules.length > 0, 'at least one finder must opt into type generation');
+
+    for (const module of modules) {
+      const expected = await buildFinderTypesSource(module);
+      const { panelFeaturePath } = deriveFinderPaths(module.id);
+      const filePath = path.resolve(
+        'tools/gui-react/src/features',
+        panelFeaturePath,
+        'types.generated.ts',
+      );
+      const actual = await fs.readFile(filePath, 'utf8');
+      assert.equal(
+        actual,
+        expected,
+        `${module.id} generated types drifted; run node tools/gui-react/scripts/generateFinderTypes.js ${module.id}`,
+      );
+    }
   });
 });

@@ -6,7 +6,7 @@
  */
 
 import path from 'node:path';
-import { readProductImages } from './productImageStore.js';
+import { readProductImages, readProductImageFinderRuntimeDoc } from './productImageStore.js';
 import { resolveViewConfig, resolveViewEvalCriteria, resolveHeroEvalCriteria, CANONICAL_VIEW_KEYS } from './productImageLlmAdapter.js';
 import { resolveCarouselViewSettings } from './carouselSlotSettings.js';
 import {
@@ -152,7 +152,12 @@ export async function runEvalView({
   onStageAdvance?.('Evaluating');
 
   // Read existing images, filter to this variant + view
-  const pifDoc = readProductImages({ productId: product.product_id, productRoot: root });
+  const pifDoc = readProductImageFinderRuntimeDoc({
+    finderStore,
+    productId: product.product_id,
+    productRoot: root,
+    mirrorSqlToJson: true,
+  });
   const allImages = pifDoc?.selected?.images || [];
   const viewImages = allImages.filter(img => matchVariant(img, { variantId, variantKey }) && img.view === view);
 
@@ -322,7 +327,12 @@ export async function runEvalCarouselLoop({
   const finderStore = specDb?.getFinderStore?.('productImageFinder');
   const { viewBudget, carouselSlotViews } = resolveCarouselViewSettings({ finderStore, category: product.category });
   const heroEnabled = finderStore?.getSetting?.('heroEnabled') !== 'false';
-  const pifDoc = readProductImages({ productId: product.product_id, productRoot: root });
+  const pifDoc = readProductImageFinderRuntimeDoc({
+    finderStore,
+    productId: product.product_id,
+    productRoot: root,
+    mirrorSqlToJson: true,
+  });
   const allImages = pifDoc?.selected?.images || [];
   const variantImages = allImages.filter((img) => matchVariant(img, { variantId, variantKey }));
   const availableViews = new Set(
@@ -346,7 +356,12 @@ export async function runEvalCarouselLoop({
 
   for (const view of viewCalls) {
     callNumber += 1;
-    const freshDoc = readProductImages({ productId: product.product_id, productRoot: root });
+    const freshDoc = readProductImageFinderRuntimeDoc({
+      finderStore,
+      productId: product.product_id,
+      productRoot: root,
+      mirrorSqlToJson: true,
+    });
     const freshImages = freshDoc?.selected?.images || [];
     const carouselContext = resolveCarouselContextImages({
       product,
@@ -470,7 +485,12 @@ export async function runEvalHero({
   onStageAdvance?.('Heroes');
 
   // Read hero-view candidates for this variant
-  const pifDoc = readProductImages({ productId: product.product_id, productRoot: root });
+  const pifDoc = readProductImageFinderRuntimeDoc({
+    finderStore,
+    productId: product.product_id,
+    productRoot: root,
+    mirrorSqlToJson: true,
+  });
   const allImages = pifDoc?.selected?.images || [];
   const heroCandidates = allImages.filter(img => matchVariant(img, { variantId, variantKey }) && img.view === 'hero');
 

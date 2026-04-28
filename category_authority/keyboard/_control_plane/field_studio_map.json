@@ -1,106 +1,6 @@
 {
   "component_sheets": [],
-  "component_sources": [
-    {
-      "ai_assist": {
-        "reasoning_note": "Switch identity anchors the deepest keyboard contract fields and should remain normalized across products."
-      },
-      "auto_derive_aliases": true,
-      "component_type": "switch",
-      "first_data_row": 2,
-      "header_row": 1,
-      "mode": "scratch",
-      "priority": {
-        "availability": "always",
-        "difficulty": "medium",
-        "required_level": "non_mandatory"
-      },
-      "roles": {
-        "aliases": [],
-        "links": [],
-        "maker": "SWITCH_BRAND",
-        "primary_identifier": "SWITCH_NAME",
-        "properties": [
-          {
-            "column": "",
-            "constraints": [],
-            "field_key": "switch_feel",
-            "key": "switch_feel",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "",
-            "constraints": [],
-            "field_key": "switch_output_type",
-            "key": "switch_output_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "",
-            "constraints": [],
-            "field_key": "actuation_force",
-            "key": "actuation_force",
-            "type": "number",
-            "unit": "gf",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "",
-            "constraints": [],
-            "field_key": "actuation_distance",
-            "key": "actuation_distance",
-            "type": "number",
-            "unit": "mm",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "",
-            "constraints": [],
-            "field_key": "bottom_out_force",
-            "key": "bottom_out_force",
-            "type": "number",
-            "unit": "gf",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "",
-            "constraints": [],
-            "field_key": "total_travel",
-            "key": "total_travel",
-            "type": "number",
-            "unit": "mm",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "",
-            "constraints": [],
-            "field_key": "switch_lifespan",
-            "key": "switch_lifespan",
-            "type": "number",
-            "unit": "million keystrokes",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "",
-            "constraints": [],
-            "field_key": "hot_swappable",
-            "key": "hot_swappable",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          }
-        ]
-      },
-      "sheet": "",
-      "start_row": 2,
-      "stop_after_blank_primary": 10,
-      "type": "switch"
-    }
-  ],
+  "component_sources": [],
   "data_lists": [
     {
       "ai_assist": {
@@ -12332,11 +12232,9 @@
           "mark_needs_curation": true,
           "suggestion_target": "_suggestions/enums.json"
         },
-        "policy": "open_prefer_known",
-        "source": "component_db.sensor"
+        "policy": "open_prefer_known"
       },
       "enum_policy": "open_prefer_known",
-      "enum_source": "component_db.sensor",
       "evidence": {
         "min_evidence_refs": 2,
         "tier_preference": [
@@ -12680,11 +12578,9 @@
           "mark_needs_curation": true,
           "suggestion_target": "_suggestions/enums.json"
         },
-        "policy": "open_prefer_known",
-        "source": "component_db.switch"
+        "policy": "open_prefer_known"
       },
       "enum_policy": "open_prefer_known",
-      "enum_source": "component_db.switch",
       "evidence": {
         "min_evidence_refs": 2,
         "tier_preference": [

@@ -1,5 +1,6 @@
 import { isObject, toArray, normalizeFieldKey, normalizeText } from '../shared/primitives.js';
 import { FIELD_PARENT_MAP } from './consumerBadgeRegistry.js';
+import { FIELD_RULE_CONSUMER_GATE_ALIAS_PATHS } from './fieldRuleSchema.js';
 
 const SYSTEM_ALIASES = new Map([
   ['seed', 'seed'],
@@ -28,32 +29,7 @@ function _buildFieldSystemMap() {
 
 export const FIELD_SYSTEM_MAP = _buildFieldSystemMap();
 
-const FIELD_PATH_ALIAS_DELETE_MAP = {
-  'contract.type': [['contract', 'type'], ['data_type'], ['type']],
-  'contract.shape': [['contract', 'shape'], ['output_shape'], ['shape']],
-  'contract.unit': [['contract', 'unit'], ['unit']],
-  'contract.range': [['contract', 'range']],
-  'contract.list_rules': [['contract', 'list_rules'], ['list_rules']],
-  'priority.required_level': [['priority', 'required_level'], ['required_level']],
-  'priority.availability': [['priority', 'availability'], ['availability']],
-  'priority.difficulty': [['priority', 'difficulty'], ['difficulty']],
-  'ai_assist.reasoning_note': [['ai_assist', 'reasoning_note']],
   // WHY: parse.template retired — type+shape is the contract.
-  'enum.policy': [['enum', 'policy'], ['enum_policy']],
-  'enum.source': [['enum', 'source'], ['enum_source']],
-  'enum.match.format_hint': [['enum', 'match', 'format_hint'], ['enum_match_format_hint']],
-  'evidence.min_evidence_refs': [['evidence', 'min_evidence_refs'], ['min_evidence_refs']],
-  'evidence.tier_preference': [['evidence', 'tier_preference']],
-  'search_hints.domain_hints': [['search_hints', 'domain_hints']],
-  'search_hints.content_types': [['search_hints', 'content_types']],
-  'search_hints.query_terms': [['search_hints', 'query_terms']],
-  group: [['group']],
-  constraints: [['constraints']],
-  aliases: [['aliases']],
-  product_image_dependent: [['product_image_dependent']],
-  'ai_assist.variant_inventory_usage': [['ai_assist', 'variant_inventory_usage']],
-  'ui.tooltip_md': [['ui', 'tooltip_md']]
-};
 
 export function normalizeConsumerSystem(system) {
   const token = normalizeText(system).toLowerCase();
@@ -106,6 +82,13 @@ function toPathSegments(pathText = '') {
     .filter(Boolean);
 }
 
+const FIELD_PATH_ALIAS_DELETE_MAP = Object.freeze(Object.fromEntries(
+  Object.entries(FIELD_RULE_CONSUMER_GATE_ALIAS_PATHS).map(([fieldPath, aliases]) => [
+    fieldPath,
+    aliases.map((alias) => toPathSegments(alias)).filter((segments) => segments.length > 0),
+  ]),
+));
+
 function hasOwn(target, key) {
   return Object.prototype.hasOwnProperty.call(target, key);
 }
@@ -151,11 +134,10 @@ function deletePath(target, pathSegments, depth = 0) {
 }
 
 function getPathAliases(fieldPath) {
-  if (Array.isArray(FIELD_PATH_ALIAS_DELETE_MAP[fieldPath])) {
-    return FIELD_PATH_ALIAS_DELETE_MAP[fieldPath];
-  }
   const fallback = toPathSegments(fieldPath);
-  return fallback.length > 0 ? [fallback] : [];
+  if (fallback.length === 0) return [];
+  const aliases = FIELD_PATH_ALIAS_DELETE_MAP[fieldPath] || [];
+  return [fallback, ...aliases];
 }
 
 function collectDisabledPathsForSystem(rule, system) {

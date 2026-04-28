@@ -450,6 +450,11 @@ describe('productImageFinderRoutes data-change contract', () => {
 
     assert.equal(result.status, 200);
     assert.deepEqual(result.body.deleted, ['top-black.png']);
+    assert.equal(result.body.entity.image_count, 1);
+    assert.deepEqual(
+      result.body.entity.selected.images.map((img) => img.filename),
+      ['left-black.png'],
+    );
 
     const doc = readProductImagesDoc();
     assert.deepEqual(
@@ -497,6 +502,11 @@ describe('productImageFinderRoutes data-change contract', () => {
 
     assert.equal(result.status, 200);
     assert.equal(result.body.deleted, 'top-black.png');
+    assert.equal(result.body.entity.image_count, 1);
+    assert.deepEqual(
+      result.body.entity.selected.images.map((img) => img.filename),
+      ['left-black.png'],
+    );
     assert.equal(ctx._progressUpserts.length, 1);
     assert.equal(ctx._progressUpserts[0].imageCount, 1);
 
@@ -552,6 +562,11 @@ describe('productImageFinderRoutes data-change contract', () => {
     );
 
     assert.equal(result.status, 200);
+    assert.equal(result.body.entity.run_count, 1);
+    assert.deepEqual(
+      result.body.entity.selected.images.map((img) => img.filename),
+      ['top-white.png'],
+    );
     assert.equal(ctx._summaryUpserts.length, 1);
     assert.deepEqual(ctx._summaryUpserts[0].carousel_slots, {
       'color:white': { top: 'top-white.png' },

@@ -24,23 +24,10 @@ import {
   inferAvailability,
 } from './compileFieldInference.js';
 import { normalizeConsumerOverrides } from '../field-rules/consumerGate.js';
-
-const LEGACY_VARIANT_INVENTORY_ACTIVE_MODES = new Set(['default', 'append', 'override']);
-
-function normalizeVariantInventoryUsage(value) {
-  if (!isObject(value)) return null;
-  if (typeof value.enabled === 'boolean') return { enabled: value.enabled };
-  const legacyMode = normalizeToken(value.mode);
-  if (legacyMode === 'off') return { enabled: false };
-  if (LEGACY_VARIANT_INVENTORY_ACTIVE_MODES.has(legacyMode)) return { enabled: true };
-  return null;
-}
-
-function normalizeSimpleEnabledToggle(value) {
-  if (typeof value === 'boolean') return { enabled: value };
-  if (!isObject(value)) return null;
-  return typeof value.enabled === 'boolean' ? { enabled: value.enabled } : null;
-}
+import {
+  FIELD_RULE_AI_ASSIST_TOGGLE_SPECS,
+  normalizeFieldRuleAiAssistToggleFromConfig,
+} from '../field-rules/fieldRuleSchema.js';
 
 export function normalizeValueForm(value, shape = 'scalar') {
   const token = normalizeToken(value);
@@ -329,9 +316,27 @@ export function flattenSampleStyleOverride(overrideRaw = {}, baseRule = {}) {
   }
 
   if (component && !isObject(out.enum_source)) {
-    const componentSource = parseEnumSource(component.source || `component_db.${component.type || ''}`);
-    if (componentSource) {
-      out.enum_source = componentSource;
+    // WHY: Phase 4 — only fold legacy component.{type|source} into enum_source
+    // when the rule's key matches the component type (self-lock). On a property
+    // rule like `dpi` whose authoring carried `component.type = sensor`, the
+    // bridge would previously stamp enum_source = component_db.sensor — a
+    // cross-lock. Properties get their linkage from
+    // field_studio_map.component_sources[].roles.properties[], not enum.source.
+    const effectiveKey = normalizeFieldKey(out.key || baseRule.key || '');
+    const componentTypeKey = normalizeFieldKey(component.type || '');
+    const componentSourceRefKey = normalizeFieldKey(
+      typeof component.source === 'string' && component.source.startsWith('component_db.')
+        ? component.source.slice('component_db.'.length)
+        : (isObject(component.source) && component.source.type === 'component_db'
+          ? component.source.ref || ''
+          : '')
+    );
+    const expectedRef = componentSourceRefKey || componentTypeKey;
+    if (effectiveKey && expectedRef && effectiveKey === expectedRef) {
+      const componentSource = parseEnumSource(component.source || `component_db.${component.type || ''}`);
+      if (componentSource) {
+        out.enum_source = componentSource;
+      }
     }
   }
   // WHY: component_reference was a parse_template. Now component detection is handled by contract.type + parse.component_type.
@@ -568,9 +573,27 @@ export function buildStudioFieldRule({
   // enum.source — that's the new SSOT. Pre-Phase-2 maps may still carry the
   // component block; the nestedComponent emit was retired but the linkage must
   // survive into the compiled rule via enum.source.
+  //
+  // Phase 4 tightening: only fold when the rule's key === component.type (or
+  // matching source ref). On a property rule (e.g. `dpi` carrying
+  // `component.type = sensor`), the bridge previously cross-locked
+  // enum.source = component_db.sensor. Properties now get '' (no source);
+  // the linkage lives in field_studio_map.component_sources[] instead.
   const componentBlockForSource = isObject(rule.component) ? rule.component : {};
-  const componentDerivedEnumSource = componentBlockForSource.source
-    || (componentBlockForSource.type ? `component_db.${componentBlockForSource.type}` : '');
+  const componentTypeKey = normalizeFieldKey(componentBlockForSource.type || '');
+  const componentSourceRefKey = normalizeFieldKey(
+    typeof componentBlockForSource.source === 'string' && componentBlockForSource.source.startsWith('component_db.')
+      ? componentBlockForSource.source.slice('component_db.'.length)
+      : (isObject(componentBlockForSource.source) && componentBlockForSource.source.type === 'component_db'
+        ? componentBlockForSource.source.ref || ''
+        : '')
+  );
+  const expectedSelfLockRef = componentSourceRefKey || componentTypeKey;
+  const ruleKey = normalizeFieldKey(key || '');
+  const componentDerivedEnumSource = (ruleKey && expectedSelfLockRef && ruleKey === expectedSelfLockRef)
+    ? (componentBlockForSource.source
+      || (componentBlockForSource.type ? `component_db.${componentBlockForSource.type}` : ''))
+    : '';
   const source = contractType === 'boolean'
     ? createBooleanEnumSource()
     : parseEnumSource(rule.enum_source || enumBlock.source || componentDerivedEnumSource, key);
@@ -715,13 +738,11 @@ export function buildStudioFieldRule({
   const nestedAiAssist = {
     reasoning_note: normalizeText(aiAssistInput.reasoning_note || '')
   };
-  const variantInventoryUsage = normalizeVariantInventoryUsage(aiAssistInput.variant_inventory_usage);
-  if (variantInventoryUsage) {
-    nestedAiAssist.variant_inventory_usage = variantInventoryUsage;
-  }
-  const pifPriorityImages = normalizeSimpleEnabledToggle(aiAssistInput.pif_priority_images);
-  if (pifPriorityImages) {
-    nestedAiAssist.pif_priority_images = pifPriorityImages;
+  for (const toggleSpec of FIELD_RULE_AI_ASSIST_TOGGLE_SPECS) {
+    const normalizedToggle = normalizeFieldRuleAiAssistToggleFromConfig(aiAssistInput, toggleSpec.key);
+    if (normalizedToggle) {
+      nestedAiAssist[toggleSpec.key] = normalizedToggle;
+    }
   }
 
   const uiOut = {

@@ -48,7 +48,12 @@ import {
 } from './secondaryHintsDefaults.js';
 import { resolveViewPrompt, viewPromptSettingKey } from './viewPromptDefaults.js';
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
-import { buildProductImageFinderSqlSummaryRow, readProductImages, mergeProductImageDiscovery } from './productImageStore.js';
+import {
+  buildProductImageFinderSqlSummaryRow,
+  readProductImageFinderRuntimeDoc,
+  writeProductImages,
+  mergeProductImageDiscoveryData,
+} from './productImageStore.js';
 import { matchVariant } from './variantMatch.js';
 import { resolveProductImageIdentityFacts } from './productImageIdentityDependencies.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
@@ -446,14 +451,19 @@ async function runSingleVariant({
 }) {
   // WHY: Self-heal dedup sets when caller did not provide them.
   // The carousel loop path (executeOneCall) does not pass alreadyDownloadedUrls,
-  // so every call would start empty. Instead of fixing every caller, reconstruct
-  // from disk: read product_images.json, filter to this variant, build both sets.
+  // so every call would start empty. Runtime state is SQL-first; JSON is only
+  // the durable fallback inside readProductImageFinderRuntimeDoc.
   const alreadyDownloadedHashes = new Set();
   const hashToFilename = new Map();
   {
     let variantImages = [];
     try {
-      const existingDoc = readProductImages({ productId: product.product_id, productRoot });
+      const existingDoc = readProductImageFinderRuntimeDoc({
+        finderStore: specDb?.getFinderStore?.('productImageFinder'),
+        productId: product.product_id,
+        productRoot,
+        mirrorSqlToJson: true,
+      });
       const existingImages = existingDoc?.selected?.images || [];
       variantImages = existingImages.filter(img =>
         matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key })
@@ -885,8 +895,13 @@ export async function runProductImageFinder({
     type: v.variant_type,
   }));
 
-  // Read previous PIF runs for discovery log feedback
-  const pifDoc = readProductImages({ productId: product.product_id, productRoot });
+  // SQL is the runtime source; JSON remains the durable mirror used by write helpers.
+  const pifDoc = readProductImageFinderRuntimeDoc({
+    finderStore,
+    productId: product.product_id,
+    productRoot,
+    mirrorSqlToJson: true,
+  });
   const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
 
   // Build LLM caller (mode-aware: view vs hero)
@@ -1085,7 +1100,7 @@ export async function runProductImageFinder({
       label: llmCallLabel,
     });
 
-    const merged = mergeProductImageDiscovery({
+    const merged = mergeProductImageDiscoveryData({
       productId: product.product_id,
       productRoot,
       newDiscovery: { category: product.category, last_ran_at: ranAt },
@@ -1131,6 +1146,7 @@ export async function runProductImageFinder({
         ranAt,
       }));
 
+      writeProductImages({ productId: product.product_id, productRoot, data: merged });
       onVariantPersisted?.({ variantKey: variant.key, variantId: variant.variant_id || null });
     });
 
@@ -1161,7 +1177,12 @@ export async function runProductImageFinder({
   onStageAdvance?.('Complete');
 
   // Compute post-run carousel progress for all processed variants
-  const updatedPifDoc = readProductImages({ productId: product.product_id, productRoot });
+  const updatedPifDoc = readProductImageFinderRuntimeDoc({
+    finderStore,
+    productId: product.product_id,
+    productRoot,
+    mirrorSqlToJson: true,
+  });
   const updatedImages = (updatedPifDoc?.selected?.images || []).map((img) => ({
     view: img.view, variant_key: img.variant_key, quality_pass: img.quality_pass !== false,
   }));
@@ -1364,7 +1385,12 @@ export async function runCarouselLoop({
   }
 
   function readCollectedImages() {
-    const pifDoc = readProductImages({ productId: product.product_id, productRoot });
+    const pifDoc = readProductImageFinderRuntimeDoc({
+      finderStore,
+      productId: product.product_id,
+      productRoot,
+      mirrorSqlToJson: true,
+    });
     return (pifDoc?.selected?.images || []).map((img) => ({
       view: img.view, variant_key: img.variant_key, variant_id: img.variant_id, quality_pass: img.quality_pass !== false,
     }));
@@ -1372,7 +1398,12 @@ export async function runCarouselLoop({
 
   function filterAlreadyPersistedImages({ images, variant }) {
     if (!Array.isArray(images) || images.length === 0) return [];
-    const freshDoc = readProductImages({ productId: product.product_id, productRoot });
+    const freshDoc = readProductImageFinderRuntimeDoc({
+      finderStore,
+      productId: product.product_id,
+      productRoot,
+      mirrorSqlToJson: true,
+    });
     const existingImages = (freshDoc?.selected?.images || []).filter((img) =>
       matchVariant(img, { variantId: variant.variant_id, variantKey: variant.key })
     );
@@ -1410,8 +1441,13 @@ export async function runCarouselLoop({
     const runScopeKey = resolveRunScopeKey({ orchestrator: 'loop', mode: callMode });
     const runScopeLabel = scopeLabelFor(runScopeKey);
 
-    // Re-read fresh state from disk (discovery log accumulates across all calls)
-    const pifDoc = readProductImages({ productId: product.product_id, productRoot });
+    // Re-read fresh runtime state; SQL wins and is mirrored before JSON-backed writes.
+    const pifDoc = readProductImageFinderRuntimeDoc({
+      finderStore,
+      productId: product.product_id,
+      productRoot,
+      mirrorSqlToJson: true,
+    });
     const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
     const previousDiscovery = accumulateDiscoveryLog(previousPifRuns, {
       runMatcher: (r) => {
@@ -1610,7 +1646,7 @@ export async function runCarouselLoop({
       totalLlmCalls++;
       const selected = { images: imagesToPersist };
 
-      const merged = mergeProductImageDiscovery({
+      const merged = mergeProductImageDiscoveryData({
         productId: product.product_id,
         productRoot,
         newDiscovery: { category: product.category, last_ran_at: ranAt },
@@ -1658,6 +1694,7 @@ export async function runCarouselLoop({
           ranAt,
         }));
 
+        writeProductImages({ productId: product.product_id, productRoot, data: merged });
         onVariantPersisted?.({ variantKey: variant.key, variantId: variant.variant_id || null });
       });
 

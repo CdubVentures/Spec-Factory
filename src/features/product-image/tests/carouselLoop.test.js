@@ -302,6 +302,95 @@ describe('runCarouselLoop', () => {
     assert.equal(result.totalLlmCalls, 1);
   });
 
+  it('dedup self-heal reads SQL projection before stale product_images.json', async () => {
+    const pid = 'loop-sql-dedup-self-heal';
+    writeCefData(pid, SIMPLE_CEF);
+    const pifDir = path.join(PRODUCT_ROOT, pid);
+    fs.writeFileSync(path.join(pifDir, 'product_images.json'), JSON.stringify({
+      product_id: pid,
+      category: 'mouse',
+      selected: { images: [] },
+      runs: [],
+      run_count: 0,
+    }));
+
+    const knownUrl = `http://localhost:${serverPort}/sql-known-top.png`;
+    const finderStore = makeFinderStoreStub({
+      satisfactionThreshold: '2',
+      heroEnabled: 'false',
+      viewAttemptBudget: '1',
+      viewBudget: '["top"]',
+    });
+    finderStore.get = (productId) => ({
+      product_id: productId,
+      category: 'mouse',
+      images: JSON.stringify([{
+        view: 'top',
+        filename: 'top-black.png',
+        variant_id: 'v_black',
+        variant_key: 'color:black',
+      }]),
+      image_count: 1,
+      carousel_slots: '{}',
+      eval_state: '{}',
+      evaluations: '[]',
+      latest_ran_at: '2026-04-27T00:00:00.000Z',
+      run_count: 1,
+    });
+    finderStore.listRuns = () => [{
+      category: 'mouse',
+      product_id: pid,
+      run_number: 1,
+      ran_at: '2026-04-27T00:00:00.000Z',
+      selected: {
+        images: [{
+          view: 'top',
+          filename: 'top-black.png',
+          url: knownUrl,
+          source_page: 'https://sql.example/product',
+          width: 100,
+          height: 100,
+          content_hash: 'b'.repeat(64),
+          variant_id: 'v_black',
+          variant_key: 'color:black',
+          quality_pass: true,
+        }],
+      },
+      response: {
+        variant_id: 'v_black',
+        variant_key: 'color:black',
+        run_scope_key: 'loop-view',
+        discovery_log: { urls_checked: [], queries_run: [] },
+      },
+    }];
+    const specDb = makeSpecDbStub(finderStore);
+
+    const originalWriteFileSync = fs.writeFileSync;
+    fs.writeFileSync = function patchedWriteFileSync(filePath, ...args) {
+      if (String(filePath).endsWith(`${path.sep}product_images.json`)) return undefined;
+      return originalWriteFileSync.call(this, filePath, ...args);
+    };
+    try {
+      const result = await runCarouselLoop({
+        product: { ...PRODUCT, product_id: pid },
+        specDb,
+        config: {},
+        productRoot: PRODUCT_ROOT,
+        _callLlmOverride: async () => ({ result: {
+          images: [{ view: 'top', url: knownUrl, source_page: 'https://example.com', alt_text: 'duplicate top' }],
+          discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+        }, usage: null }),
+        _modelDirOverride: path.join(TMP_ROOT, 'no-model'),
+      });
+
+      assert.equal(result.rejected, false);
+      assert.equal(result.images.length, 0);
+      assert.ok(result.download_errors.some((entry) => entry.error.includes('duplicate URL')));
+    } finally {
+      fs.writeFileSync = originalWriteFileSync;
+    }
+  });
+
   it('budget exhaustion moves to next view', async () => {
     const pid = 'loop-exhaust';
     writeCefData(pid, SIMPLE_CEF);

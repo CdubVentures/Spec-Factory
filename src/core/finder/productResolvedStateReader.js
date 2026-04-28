@@ -14,8 +14,8 @@
  */
 
 import { isReservedFieldKey } from './finderExclusions.js';
+import { readFieldRuleAiAssistToggleEnabled } from '../../field-rules/fieldRuleSchema.js';
 
-const LEGACY_VARIANT_USAGE_ACTIVE_MODES = new Set(['default', 'append', 'override']);
 
 // Phase 2: parent identity derives entirely from `enum.source`. A field key
 // IS a component parent iff its `enum.source` is exactly `component_db.<self>`.
@@ -211,16 +211,6 @@ export function readKnownFieldsByProduct({
   return out;
 }
 
-function normalizeVariantUsageConfig(fieldRule = {}) {
-  const raw = fieldRule?.ai_assist?.variant_inventory_usage;
-  const cfg = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-  if (typeof cfg.enabled === 'boolean') return { enabled: cfg.enabled };
-  const legacyMode = String(cfg.mode || '').trim();
-  if (legacyMode === 'off') return { enabled: false };
-  if (LEGACY_VARIANT_USAGE_ACTIVE_MODES.has(legacyMode)) return { enabled: true };
-  return { enabled: true };
-}
-
 function deriveUsageProfile(fieldKey, fieldRule = {}) {
   const key = String(fieldKey || fieldRule?.field_key || '').toLowerCase();
   if (/design|shape|shell|grip|finish|texture|material/.test(key)) return 'visual_design';
@@ -313,7 +303,7 @@ function hasJoinedVariantFact(row = {}) {
  */
 export function resolveVariantInventory({ specDb, productId, fieldRule } = {}) {
   if (!specDb || !productId) return [];
-  if (normalizeVariantUsageConfig(fieldRule).enabled === false) return [];
+  if (!readFieldRuleAiAssistToggleEnabled('color_edition_context', fieldRule, true)) return [];
   const variants = typeof specDb.variants?.listActive === 'function'
     ? specDb.variants.listActive(productId)
     : [];
@@ -407,8 +397,7 @@ function defaultIdentityUsageLines({ fieldKey, fieldRule } = {}) {
 }
 
 export function buildFieldIdentityUsage({ fieldKey, fieldRule } = {}) {
-  const cfg = normalizeVariantUsageConfig(fieldRule);
-  if (cfg.enabled === false) return '';
+  if (!readFieldRuleAiAssistToggleEnabled('color_edition_context', fieldRule, true)) return '';
   return defaultIdentityUsageLines({ fieldKey, fieldRule }).join('\n');
 }
 

@@ -189,12 +189,12 @@ describe('buildExtractor', () => {
   });
 
   it('object type detects non-empty objects', () => {
-    const entry = { path: 'ai_assist.variant_inventory_usage', type: 'object', flatAliases: [] };
+    const entry = { path: 'ai_assist.color_edition_context', type: 'object', flatAliases: [] };
     const extractor = buildExtractor(entry);
-    assert.equal(extractor({ ai_assist: { variant_inventory_usage: { enabled: true } } }), true);
-    assert.equal(extractor({ ai_assist: { variant_inventory_usage: { enabled: false } } }), true);
-    assert.equal(extractor({ ai_assist: { variant_inventory_usage: {} } }), false);
-    assert.equal(extractor({ ai_assist: { variant_inventory_usage: [] } }), false);
+    assert.equal(extractor({ ai_assist: { color_edition_context: { enabled: true } } }), true);
+    assert.equal(extractor({ ai_assist: { color_edition_context: { enabled: false } } }), true);
+    assert.equal(extractor({ ai_assist: { color_edition_context: {} } }), false);
+    assert.equal(extractor({ ai_assist: { color_edition_context: [] } }), false);
     assert.equal(extractor({}), false);
   });
 });

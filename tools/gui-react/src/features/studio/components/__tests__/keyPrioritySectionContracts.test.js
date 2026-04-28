@@ -92,7 +92,7 @@ async function loadKeyPrioritySection() {
             availability: 'availability',
             difficulty: 'difficulty',
             ai_reasoning_note: 'reasoning note',
-            variant_inventory_usage: 'variant inventory',
+            color_edition_context: 'color edition context',
             pif_priority_images: 'pif priority images',
           };
         `,
@@ -165,7 +165,7 @@ async function loadKeyAiAssistSection() {
           export const STUDIO_TIPS = {
             key_section_ai_assist: 'ai assist',
             ai_reasoning_note: 'reasoning note',
-            variant_inventory_usage: 'variant inventory',
+            color_edition_context: 'color edition context',
             pif_priority_images: 'pif priority images',
           };
         `,
@@ -192,7 +192,7 @@ function createProps(overrides = {}) {
         },
         ai_assist: {
           reasoning_note: 'Prefer official design descriptions.',
-          variant_inventory_usage: {
+          color_edition_context: {
             enabled: true,
           },
           pif_priority_images: {
@@ -237,12 +237,12 @@ test('KeyAiAssistSection wires simple AI Assist injection controls to ai_assist 
   assert.equal(sections[0].props.title, 'Ai Assist');
   assert.equal(sections[0].props.persistKey, 'studio:keyNavigator:section:aiAssist:mouse');
   assert.ok(textContent(sections[0]).includes('Extraction Guidance'));
-  assert.ok(textContent(sections[0]).includes('Variant Inventory Context'));
+  assert.ok(textContent(sections[0]).includes('Color & Edition'));
   assert.ok(textContent(sections[0]).includes('PIF Priority Images'));
 
   const enabledToggle = collectNodes(
     tree,
-    (node) => node.props?.['aria-label'] === 'Use variant inventory context',
+    (node) => node.props?.['aria-label'] === 'Use color and edition context',
   )[0];
   assert.equal(enabledToggle.props.checked, true);
   assert.equal(
@@ -269,7 +269,7 @@ test('KeyAiAssistSection wires simple AI Assist injection controls to ai_assist 
   assert.equal(
     collectNodes(
       tree,
-      (node) => node.type === 'Badge' && node.props?.p === 'ai_assist.variant_inventory_usage',
+      (node) => node.type === 'Badge' && node.props?.p === 'ai_assist.color_edition_context',
     ).length,
     1,
   );
@@ -293,7 +293,7 @@ test('KeyAiAssistSection wires simple AI Assist injection controls to ai_assist 
   assert.deepEqual(updates, [
     {
       key: 'design',
-      path: 'ai_assist.variant_inventory_usage',
+      path: 'ai_assist.color_edition_context',
       value: { enabled: false },
     },
     {

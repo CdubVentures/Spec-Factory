@@ -1,13 +1,15 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useSyncExternalStore } from 'react';
 import { Outlet, Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useShallow } from 'zustand/react/shallow';
 import { TabNav } from './TabNav.tsx';
 import { Sidebar } from './Sidebar.tsx';
 import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
+import { wsManager, type WsConnectionSnapshot } from '../../api/ws.ts';
 import { useUiThemeStore, type UiThemeState } from '../../stores/uiThemeStore.ts';
 import { useUiSettingsStore, type UiSettingsState } from '../../stores/uiSettingsStore.ts';
 import { usePersistedToggle } from '../../stores/collapseStore.ts';
+import { resolveWsConnectionStatusView } from './wsConnectionStatus.ts';
 import {
   SF_THEME_RADIUS_PROFILES,
   SF_LIGHT_THEME_PROFILES,
@@ -93,6 +95,40 @@ const DATE_FORMAT_LABELS: Record<SfDateFormatId, string> = {
   'DD-MM-YY': 'DD-MM-YY (17-04-26)',
 };
 
+function subscribeWsConnection(onStoreChange: () => void): () => void {
+  return wsManager.onConnectionChange(() => onStoreChange());
+}
+
+function getWsConnectionSnapshot(): WsConnectionSnapshot {
+  return wsManager.getConnectionSnapshot();
+}
+
+function useWsConnectionSnapshot(): WsConnectionSnapshot {
+  return useSyncExternalStore(
+    subscribeWsConnection,
+    getWsConnectionSnapshot,
+    getWsConnectionSnapshot,
+  );
+}
+
+function WsConnectionStatusBadge() {
+  const snapshot = useWsConnectionSnapshot();
+  const view = resolveWsConnectionStatusView(snapshot);
+
+  return (
+    <span
+      className={`sf-ws-connection sf-ws-connection-${view.tone}`}
+      role="status"
+      aria-live="polite"
+      aria-label={view.ariaLabel}
+      title={view.title}
+    >
+      <span className="sf-ws-connection-dot" aria-hidden="true" />
+      <span className="sf-ws-connection-label">{view.label}</span>
+    </span>
+  );
+}
+
 export function AppShell() {
   // ── Composition hooks ─────────────────────────────────────────────
   const { settingsReady, allowDegradedRender, settingsSnapshot } = useSettingsHydration();
@@ -152,6 +188,7 @@ export function AppShell() {
       <header className="sf-shell-header z-30 flex items-center justify-between px-4 py-2 border-b border-sf-border-default">
         <div className="flex items-center gap-2">
           <h1 className="sf-shell-title text-lg font-bold">Spec Factory</h1>
+          <WsConnectionStatusBadge />
           {isRunning && (
             <span title={indicatorTitle} className="relative flex items-center justify-center w-5 h-5">
               <svg className="w-5 h-5 animate-spin" viewBox="0 0 20 20" fill="none">

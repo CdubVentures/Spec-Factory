@@ -34,6 +34,7 @@ import {
   buildSearchHintsBlock,
   buildCrossFieldConstraintsBlock,
 } from '../../core/llm/prompts/fieldRuleRenderers.js';
+import { readFieldRuleAiAssistToggleEnabled } from '../../field-rules/fieldRuleSchema.js';
 import { buildCategoryContext } from '../../core/llm/prompts/categoryContext.js';
 import { createPhaseCallLlm } from '../indexing/pipeline/shared/createPhaseCallLlm.js';
 import { keyFinderResponseSchema } from './keySchema.js';
@@ -209,10 +210,11 @@ function buildFieldIdentityUsageBlock(fieldIdentityUsage, variantInventory) {
 }
 
 function isPifPriorityImagesEnabled(fieldRule = {}, context = {}) {
-  const raw = fieldRule?.ai_assist?.pif_priority_images;
-  if (raw === true || raw === false) return raw;
-  if (raw && typeof raw === 'object' && !Array.isArray(raw) && typeof raw.enabled === 'boolean') return raw.enabled;
-  return context?.enabled === true;
+  return readFieldRuleAiAssistToggleEnabled(
+    'pif_priority_images',
+    fieldRule,
+    context?.enabled === true,
+  );
 }
 
 function buildPifPriorityImagesBlock(context = {}, fieldRule = {}) {

@@ -218,9 +218,9 @@ function buildAuthoringChecklistSection(record) {
     'unknown status / no submitted value',
     'blank/omitted',
   ].join(' | ');
-  const variantInventoryUsage = record.ai_assist?.variant_inventory_usage;
-  const variantInventoryCurrent = typeof variantInventoryUsage?.enabled === 'boolean'
-    ? (variantInventoryUsage.enabled ? 'enabled' : 'disabled')
+  const colorEditionContext = record.ai_assist?.color_edition_context;
+  const colorEditionContextCurrent = typeof colorEditionContext?.enabled === 'boolean'
+    ? (colorEditionContext.enabled ? 'enabled' : 'disabled')
     : 'No explicit setting';
   const pifPriorityImages = record.ai_assist?.pif_priority_images;
   const pifPriorityImagesCurrent = typeof pifPriorityImages?.enabled === 'boolean'
@@ -247,8 +247,8 @@ function buildAuthoringChecklistSection(record) {
           ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is false/no different from not-applicable and missing evidence? Use boolean only for true two-state facts. Never add `unk` to enum values or data lists; it is an LLM sentinel that should become status/unknown_reason with no submitted value. Use `n/a` only when not-applicable is intentionally stored or public; otherwise prefer blank/omitted as no submitted value. For measured conditional fields like battery_hours, keep the value numeric when hours are proven and leave no submitted value when not applicable or unproven.'],
           ['6', 'Evidence and sources', evidenceCurrent, 'Can the configured source tiers and evidence count actually prove this value without guessing?'],
           ['7', 'Example bank', '5-10 category-local examples', 'Do examples cover happy path, edge, unknown, not-applicable, conflict, and filter-risk cases before the prompt text is trusted?'],
-          ['8', 'Variant inventory context', variantInventoryCurrent, 'Enable only when edition/SKU/release/colorway/PIF identity helps reject wrong-variant evidence without ambiguity. Most invariant model-level keys should not need it. List or variant-varying keys need a union vs exact/base/default rule in reasoning_note.'],
-          ['9', 'PIF Priority Images', pifPriorityImagesCurrent, 'Enable only when default/base priority-view images help a visual key. Missing/unattachable images are not negative evidence. Edition-specific yes/no or list behavior belongs in reasoning_note.'],
+          ['8', 'Color & Edition Context', colorEditionContextCurrent, 'Decision test: does the color × edition × SKU × release_date table help the model decide this field\'s value? If yes, ON. If no, OFF. Two patterns where ON is correct: (A) scalar with variant table as classification context — the field has one value for the whole product, but variant names help the model classify it. Examples: mouse `design` classified by edition names like "Fortnite Edition" → `collaboration`; apparel `collection_type` (Limited / Anniversary / Standard) inferred from variant labels; watch `edition_type`. Contract stays scalar. (B) list of values across variants — the field holds all variant values together, set `contract.shape = list`. Examples: mouse `coating ["matte", "glossy"]` because Black ships matte and White ships glossy; apparel `material ["cotton", "poly_blend"]` (Solid is cotton, Heather is poly); watch `case_material ["steel", "gold"]`; phone `included_charger ["10w", "20w"]` per region. Leave OFF when neither applies: spec invariants where variant data adds nothing — components or measurements that don\'t change with colorway/edition. Examples: mouse `sensor_model` (same PCB across colors), watch `movement_caliber` (same caliber across colorways), phone `processor` (same chip across colors), car `engine_displacement` (same engine across paint), apparel `country_of_origin` (same factory across colorways). Reserved keys (color, edition, SKU, release_date, price, discontinued) are owned by their own finders and never authored here. When ON, paste a one-sentence mechanism note into reasoning_note so the runtime model knows how to use the variant table — as classification context (A) or as per-list-member attribution (B).'],
+          ['9', 'PIF Priority Images', pifPriorityImagesCurrent, 'Decision test: can inspecting the default/base product photo (a) provide the answer directly, (b) corroborate text-source claims, or (c) disprove documentation when the photo contradicts what a source says? If any of those — ON. If none — OFF. Best for externally visible features a buyer could read off the canonical product shot — shapes, layouts, counts, port positions, body styles. Examples: mouse `shape` (ergonomic vs ambidextrous), `button_layout`, `side_button_count`; phone `port_count`, `camera_count`, `notch_style`; watch `case_shape`, `crown_position`, `lug_design`; apparel `collar_style`, `pocket_count`, `closure_type`; car `body_style`, `door_count`, `headlight_design`; TV `stand_type`, `port_layout`. OFF for spec/internal values no camera can reveal — measurements, ratings, components, internal identifiers. Examples: mouse `dpi`, `weight_g`, `polling_rate`, `sensor_model`; phone `processor`, `ram_gb`, `battery_capacity_mah`; watch `water_resistance_rating`, `movement_caliber`; apparel `fabric_weight_gsm`, `country_of_origin`; car `horsepower`, `fuel_economy_mpg`; TV `panel_type`, `refresh_rate_hz`. Two important rules: (1) "Priority" refers to PIF\'s ranked default-view photo set, not field importance — never enable just because a field feels important. (2) Only the default/base set is attached; edition-specific images (Fortnite Edition box art, regional packaging variants) are NOT routed by this toggle — if the field needs edition-specific visual interpretation, write that handling into reasoning_note. Missing or unparseable priority images are not negative evidence — absence does not flip the answer to false/no/empty; it just means the model falls back to text evidence alone.'],
           ['10', 'Guidance last', displayValue(record.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap, or write "(empty - keep)" when no guidance is needed.'],
         ],
       },
@@ -286,7 +286,11 @@ function buildConsumerSurfaceSection(record) {
 function buildContractSchemaSection(record, schemaCatalog) {
   const rule = record.rawRule || {};
   const headers = ['Parameter', 'Current value', 'Possible values', 'Why it matters'];
-  const rows = schemaCatalog.map((entry) => {
+  // WHY: dependency-toggle entries (variant_dependent, product_image_dependent)
+  // are category-summary concerns, not per-key field knobs — exclude them so the
+  // per-key brief stays focused on the field's own contract.
+  const filteredCatalog = schemaCatalog.filter((entry) => entry.studioWidget !== 'dependency_toggle');
+  const rows = filteredCatalog.map((entry) => {
     const applies = appliesTo(entry, rule);
     const current = applies ? describeCurrent(entry, rule) : '(n/a)';
     const possible = describePossibleValues(entry);
@@ -457,7 +461,7 @@ Use this exact envelope:
           "source": "data_lists.${record.fieldKey}"
         },
         "ai_assist": {
-          "variant_inventory_usage": {
+          "color_edition_context": {
             "enabled": false
           },
           "pif_priority_images": {
@@ -506,7 +510,7 @@ Mapping Studio patch guidance:
 
 Key Navigator patch guidance:
 - Field contract, priority, evidence, enum policy, constraints, aliases, search_hints, and ai_assist belong under patch.field_overrides.${record.fieldKey}.
-- Use ai_assist.variant_inventory_usage only when variant identity helps reject wrong-variant evidence without ambiguity.
+- Use ai_assist.color_edition_context only when color/edition identity helps reject wrong-variant evidence without ambiguity.
 - Use ai_assist.pif_priority_images only when default/base priority-view images add visual evidence value.
 - Put final paste-ready prompt guidance in ai_assist.reasoning_note.
 

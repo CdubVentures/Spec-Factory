@@ -1,4 +1,4 @@
-// WHY: Body for Ai Assist panel: variant_inventory_usage toggle, pif_priority_images
+// WHY: Body for Ai Assist panel: color_edition_context toggle, pif_priority_images
 // toggle, and Extraction Guidance (reasoning_note) with auto-derived placeholder.
 // Shared between Key Navigator and Workbench drawer.
 import { FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS } from "../../../../../../../../src/field-rules/fieldRuleSchema.js";

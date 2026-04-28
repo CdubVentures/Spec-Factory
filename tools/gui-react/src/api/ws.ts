@@ -1,5 +1,14 @@
 type Channel = 'events' | 'process' | 'process-status' | 'data-change' | 'test-import-progress' | 'test-run-progress' | 'test-repair-progress' | 'indexlab-event' | 'operations' | 'llm-stream' | 'heartbeat';
 type MessageHandler = (channel: Channel, data: unknown) => void;
+export type WsConnectionStatus = 'connecting' | 'connected' | 'reconnecting' | 'offline';
+export interface WsConnectionSnapshot {
+  readonly status: WsConnectionStatus;
+  readonly reconnectAttempt: number;
+  readonly nextReconnectDelayMs: number | null;
+  readonly lastConnectedAt: string | null;
+  readonly lastDisconnectedAt: string | null;
+}
+type ConnectionHandler = (snapshot: WsConnectionSnapshot) => void;
 
 interface WsManagerOptions {
   url?: string;
@@ -25,6 +34,14 @@ function defaultReload(): void {
   if (typeof window !== 'undefined') window.location.reload();
 }
 
+const INITIAL_CONNECTION_SNAPSHOT: WsConnectionSnapshot = Object.freeze({
+  status: 'offline',
+  reconnectAttempt: 0,
+  nextReconnectDelayMs: null,
+  lastConnectedAt: null,
+  lastDisconnectedAt: null,
+});
+
 export class WsManager {
   private ws: WebSocket | null = null;
   private url: string;
@@ -33,6 +50,8 @@ export class WsManager {
   private currentDelay: number;
   private handlers = new Set<MessageHandler>();
   private reconnectHandlers = new Set<() => void>();
+  private connectionHandlers = new Set<ConnectionHandler>();
+  private connectionSnapshot: WsConnectionSnapshot = INITIAL_CONNECTION_SNAPSHOT;
   private subscriptions: { channels: Channel[]; category?: string; productId?: string } | null = null;
   private closed = false;
   private hadConnection = false;
@@ -50,6 +69,34 @@ export class WsManager {
     this.idleTimeoutMs = opts.idleTimeoutMs ?? 60000;
     this.webSocketClass = opts.webSocketClass ?? (typeof WebSocket !== 'undefined' ? WebSocket : (null as unknown as typeof WebSocket));
     this.reloadFn = opts.reloadFn ?? defaultReload;
+  }
+
+  private setConnectionSnapshot(snapshot: WsConnectionSnapshot): void {
+    const current = this.connectionSnapshot;
+    if (
+      current.status === snapshot.status
+      && current.reconnectAttempt === snapshot.reconnectAttempt
+      && current.nextReconnectDelayMs === snapshot.nextReconnectDelayMs
+      && current.lastConnectedAt === snapshot.lastConnectedAt
+      && current.lastDisconnectedAt === snapshot.lastDisconnectedAt
+    ) {
+      return;
+    }
+    this.connectionSnapshot = snapshot;
+    for (const handler of this.connectionHandlers) {
+      try { handler(snapshot); } catch (err) { console.error('[ws] connection handler failed:', err); }
+    }
+  }
+
+  private updateConnectionStatus(
+    status: WsConnectionStatus,
+    patch: Partial<Omit<WsConnectionSnapshot, 'status'>> = {},
+  ): void {
+    this.setConnectionSnapshot({
+      ...this.connectionSnapshot,
+      ...patch,
+      status,
+    });
   }
 
   private resetIdleTimer() {
@@ -75,9 +122,17 @@ export class WsManager {
   connect() {
     if (this.ws) return;
     this.closed = false;
+    if (!this.hadConnection) {
+      this.updateConnectionStatus('connecting', { nextReconnectDelayMs: null });
+    }
     this.ws = new this.webSocketClass(this.url);
 
     this.ws.onopen = () => {
+      this.updateConnectionStatus('connected', {
+        reconnectAttempt: 0,
+        nextReconnectDelayMs: null,
+        lastConnectedAt: new Date().toISOString(),
+      });
       if (this.hadConnection) {
         // WHY: Soft reconnect. Instead of the heavy-handed window.location.reload(),
         // notify registered handlers so the app can invalidate caches + rehydrate
@@ -108,20 +163,42 @@ export class WsManager {
 
     this.ws.onmessage = (evt) => {
       this.resetIdleTimer();
+      let msg: { channel?: Channel; data?: unknown };
       try {
-        const msg = JSON.parse(evt.data);
-        const channel = msg.channel as Channel;
-        this.handlers.forEach((h) => h(channel, msg.data));
-      } catch { /* ignore bad frames */ }
+        msg = JSON.parse(evt.data);
+      } catch {
+        return;
+      }
+      const channel = msg.channel as Channel;
+      for (const handler of this.handlers) {
+        try {
+          handler(channel, msg.data);
+        } catch (err) {
+          console.error('[ws] message handler failed:', err);
+        }
+      }
     };
 
     this.ws.onclose = () => {
       this.ws = null;
       this.clearIdleTimer();
-      if (!this.closed) {
-        setTimeout(() => this.connect(), this.currentDelay);
-        this.currentDelay = Math.min(this.currentDelay * 1.5, this.maxReconnectMs);
+      if (this.closed) {
+        if (this.connectionSnapshot.status !== 'offline') {
+          this.updateConnectionStatus('offline', {
+            nextReconnectDelayMs: null,
+            lastDisconnectedAt: new Date().toISOString(),
+          });
+        }
+        return;
       }
+      const reconnectDelay = this.currentDelay;
+      this.updateConnectionStatus('reconnecting', {
+        reconnectAttempt: this.connectionSnapshot.reconnectAttempt + 1,
+        nextReconnectDelayMs: reconnectDelay,
+        lastDisconnectedAt: new Date().toISOString(),
+      });
+      setTimeout(() => this.connect(), reconnectDelay);
+      this.currentDelay = Math.min(this.currentDelay * 1.5, this.maxReconnectMs);
     };
 
     this.ws.onerror = () => {
@@ -161,11 +238,24 @@ export class WsManager {
     return () => { this.reconnectHandlers.delete(handler); };
   }
 
+  getConnectionSnapshot(): WsConnectionSnapshot {
+    return this.connectionSnapshot;
+  }
+
+  onConnectionChange(handler: ConnectionHandler) {
+    this.connectionHandlers.add(handler);
+    return () => { this.connectionHandlers.delete(handler); };
+  }
+
   close() {
     this.closed = true;
     this.clearIdleTimer();
     this.ws?.close();
     this.ws = null;
+    this.updateConnectionStatus('offline', {
+      nextReconnectDelayMs: null,
+      lastDisconnectedAt: new Date().toISOString(),
+    });
   }
 }
 

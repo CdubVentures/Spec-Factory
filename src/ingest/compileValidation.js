@@ -11,6 +11,7 @@ import {
 } from './compileUtils.js';
 import {
   declaredComponentTypesFromMap,
+  declaredComponentPropertyKeysFromMap,
   inferComponentTypeForField
 } from './compileComponentHelpers.js';
 import {
@@ -83,6 +84,92 @@ export function buildParseTemplateCatalog() {
       ]
     }
   };
+}
+
+// WHY: Phase 4 — INV-1/2/3 invariants on the component model.
+// INV-1: every component_sources[] row has a matching field rule self-locked
+//   to component_db.<type>.
+// INV-2: every field rule with enum.source = component_db.<X> must have X === key
+//   (self-lock) AND a matching component_sources[X] row.
+// INV-3: every component_sources[X].roles.properties[].field_key must be a real
+//   field rule.
+//
+// Extracted as a standalone helper so the migration script
+// (scripts/audits/component-orphan-check.js) can run the same checks against
+// raw {fields, map} pairs without invoking the full compile validation surface.
+export function runComponentInvariantChecks({ fields, map }) {
+  const errors = [];
+  const warnings = [];
+  const fieldsObj = isObject(fields) ? fields : {};
+  const componentSourcesByType = new Map();
+  const sourceRows = isObject(map) && Array.isArray(map.component_sources) && map.component_sources.length > 0
+    ? toArray(map.component_sources)
+    : (isObject(map) ? toArray(map.component_sheets) : []);
+  for (const row of sourceRows) {
+    if (!isObject(row)) continue;
+    const type = normalizeFieldKey(row.component_type || row.type || '');
+    if (!type) continue;
+    if (!componentSourcesByType.has(type)) componentSourcesByType.set(type, row);
+  }
+
+  // INV-1: every component_sources[] entry has a matching self-locked field rule.
+  for (const [type] of componentSourcesByType) {
+    const rule = fieldsObj[type];
+    if (!isObject(rule)) {
+      errors.push(`component_sources[${type}]: matching field rule "${type}" missing or has wrong enum.source (expected "component_db.${type}")`);
+      continue;
+    }
+    const enumBlock = isObject(rule.enum) ? rule.enum : {};
+    const nestedSource = typeof enumBlock.source === 'string' ? enumBlock.source : '';
+    const flatSource = typeof rule.enum_source === 'string'
+      ? rule.enum_source
+      : (isObject(rule.enum_source) && rule.enum_source.type === 'component_db'
+        ? `component_db.${normalizeFieldKey(rule.enum_source.ref || '')}`
+        : '');
+    const expected = `component_db.${type}`;
+    if (nestedSource !== expected && flatSource !== expected) {
+      errors.push(`component_sources[${type}]: matching field rule "${type}" missing or has wrong enum.source (expected "${expected}")`);
+    }
+  }
+
+  // INV-2 (self-lock + orphan rule): every rule with enum.source = component_db.<X>
+  // must have X === fieldKey AND a matching component_sources entry.
+  for (const [fieldKey, rule] of Object.entries(fieldsObj)) {
+    if (!isObject(rule)) continue;
+    const enumBlock = isObject(rule.enum) ? rule.enum : {};
+    const candidates = [];
+    if (typeof enumBlock.source === 'string' && enumBlock.source.startsWith('component_db.')) {
+      candidates.push(enumBlock.source.slice('component_db.'.length));
+    }
+    if (typeof rule.enum_source === 'string' && rule.enum_source.startsWith('component_db.')) {
+      candidates.push(rule.enum_source.slice('component_db.'.length));
+    } else if (isObject(rule.enum_source) && rule.enum_source.type === 'component_db') {
+      candidates.push(normalizeFieldKey(rule.enum_source.ref || ''));
+    }
+    for (const refRaw of candidates) {
+      const ref = normalizeFieldKey(refRaw);
+      if (!ref) continue;
+      if (ref !== fieldKey) {
+        errors.push(`field ${fieldKey}: enum_source = component_db.${ref} must self-lock (ref must equal field key)`);
+        continue;
+      }
+      if (!componentSourcesByType.has(ref)) {
+        errors.push(`field ${fieldKey}: enum_source = component_db.${ref} but no component_sources entry for "${ref}"`);
+      }
+    }
+  }
+
+  // INV-3: every property field_key declared under component_sources must be a
+  // real field rule. Skips component_only properties (they intentionally do
+  // NOT promote into product fields).
+  const propertyKeys = declaredComponentPropertyKeysFromMap(map);
+  for (const propertyKey of propertyKeys) {
+    if (!fieldsObj[propertyKey]) {
+      errors.push(`component_sources: property field_key "${propertyKey}" has no matching field rule`);
+    }
+  }
+
+  return { errors, warnings };
 }
 
 export function buildCompileValidation({ fields, knownValues, enumLists, componentDb, map = null }) {
@@ -289,6 +376,12 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
       warnings.push(`field ${fieldKey}: enum_policy=open but parse_rules is empty`);
     }
   }
+  // ── Component invariants (INV-1/2/3) ─────────────────────────────────
+  // Bidirectional check between field_rules and field_studio_map.component_sources.
+  const invariantResult = runComponentInvariantChecks({ fields, map });
+  errors.push(...invariantResult.errors);
+  warnings.push(...invariantResult.warnings);
+
   // ── Component DB data quality validation ─────────────────────────────
   for (const [componentType, items] of Object.entries(componentDb || {})) {
     if (!Array.isArray(items) || items.length === 0) continue;

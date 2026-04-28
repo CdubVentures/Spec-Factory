@@ -34,6 +34,10 @@ export interface BulkFireParams {
   readonly variantKey?: string;
   readonly fieldKey?: string;
   readonly onDispatched?: (operationId: string) => void;
+  /** Internal: temp operation id inserted before staggered bulk POSTs begin. */
+  readonly optimisticId?: string;
+  /** Internal: true when the caller already inserted the optimistic operation. */
+  readonly optimisticPreinserted?: boolean;
 }
 
 export interface BulkDispatchOptions {
@@ -56,8 +60,8 @@ export interface BulkDispatchResult {
 
 let _tempSeq = 0;
 
-function makeStub(id: string, p: BulkFireParams, category: string) {
-  const now = new Date().toISOString();
+function makeStub(id: string, p: BulkFireParams, category: string, queuedAt?: string) {
+  const now = queuedAt ?? new Date().toISOString();
   return {
     id,
     type: p.type,
@@ -75,6 +79,7 @@ function makeStub(id: string, p: BulkFireParams, category: string) {
     error: null,
     modelInfo: null,
     llmCalls: [] as readonly never[],
+    ...(queuedAt ? { queuedAt } : {}),
   };
 }
 
@@ -89,8 +94,11 @@ export function useBulkFire(category: string) {
 
   return useCallback(
     async (p: BulkFireParams): Promise<string> => {
-      const tempId = `_pending_${++_tempSeq}`;
-      upsert(makeStub(tempId, p, category));
+      const tempId = p.optimisticId ?? `_pending_${++_tempSeq}`;
+      const alreadyPreinserted = Boolean(p.optimisticId && p.optimisticPreinserted);
+      if (!alreadyPreinserted) {
+        upsert(makeStub(tempId, p, category, new Date().toISOString()));
+      }
       try {
         const data = await api.post<AcceptedResponse>(p.url, p.body);
         remove(tempId);
@@ -112,6 +120,28 @@ export function useBulkFire(category: string) {
 export type BulkFireFn = (params: BulkFireParams) => Promise<string>;
 
 const DEFAULT_STAGGER_MS = 50;
+
+function preinsertOptimisticBulkFireParams(
+  category: string,
+  params: readonly BulkFireParams[],
+): readonly BulkFireParams[] {
+  const upsert = useOperationsStore.getState().upsert;
+  return params.map((param) => {
+    const queuedAt = new Date().toISOString();
+    const optimisticId = `_pending_${++_tempSeq}`;
+    upsert(makeStub(optimisticId, param, category, queuedAt));
+    return {
+      ...param,
+      optimisticId,
+      optimisticPreinserted: true,
+    };
+  });
+}
+
+function removeOptimisticBulkFireParam(param: BulkFireParams): void {
+  if (!param.optimisticId) return;
+  useOperationsStore.getState().remove(param.optimisticId);
+}
 
 function productLabel(row: CatalogRow): string {
   const brand = row.brand || '';
@@ -219,6 +249,26 @@ async function dispatchTasks<T>(
   };
 }
 
+async function dispatchBulkFireParams(
+  category: string,
+  params: readonly BulkFireParams[],
+  fire: BulkFireFn,
+  options: BulkDispatchOptions,
+): Promise<BulkDispatchResult> {
+  const prepared = preinsertOptimisticBulkFireParams(category, params);
+  try {
+    return await dispatchTasks(prepared, options, async (param) => {
+      try {
+        return await fire(param);
+      } finally {
+        removeOptimisticBulkFireParam(param);
+      }
+    });
+  } finally {
+    prepared.forEach(removeOptimisticBulkFireParam);
+  }
+}
+
 // ── CEF — per product ─────────────────────────────────────────────────────
 export function dispatchCefRun(
   category: string,
@@ -228,14 +278,17 @@ export function dispatchCefRun(
 ): Promise<BulkDispatchResult> {
   const options = resolveOptions(optionsInput);
   const runnable = products.filter((row) => !isModuleActive('cef', row.productId));
-  return dispatchTasks(runnable, options, (row) =>
-    fire({
+  return dispatchBulkFireParams(
+    category,
+    runnable.map((row) => ({
       type: 'cef',
       productId: row.productId,
       productLabel: productLabel(row),
       url: `/color-edition-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.productId)}`,
       body: {},
-    }),
+    })),
+    fire,
+    options,
   );
 }
 
@@ -253,8 +306,9 @@ export function dispatchPifLoop(
       if (!isVariantActive('pif', row.productId, 'loop', v.variant_key)) tasks.push({ row, variant: v });
     }
   }
-  return dispatchTasks(tasks, options, ({ row, variant }) =>
-    fire({
+  return dispatchBulkFireParams(
+    category,
+    tasks.map(({ row, variant }) => ({
       type: 'pif',
       productId: row.productId,
       productLabel: productLabel(row),
@@ -262,7 +316,9 @@ export function dispatchPifLoop(
       body: { variant_key: variant.variant_key, variant_id: variant.variant_id },
       subType: 'loop',
       variantKey: variant.variant_key,
-    }),
+    })),
+    fire,
+    options,
   );
 }
 
@@ -282,15 +338,18 @@ export function dispatchPifDependencyRun(
       tasks.push({ row, fieldKey });
     }
   }
-  return dispatchTasks(tasks, options, ({ row, fieldKey }) =>
-    fire({
+  return dispatchBulkFireParams(
+    category,
+    tasks.map(({ row, fieldKey }) => ({
       type: 'kf',
       productId: row.productId,
       productLabel: productLabel(row),
       url: `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.productId)}`,
       body: { field_key: fieldKey, mode: 'run', force_solo: true, reason: 'pif_dependency' },
       fieldKey,
-    }),
+    })),
+    fire,
+    options,
   );
 }
 
@@ -333,9 +392,9 @@ export async function dispatchPifEval(
   const flat: Array<{ row: CatalogRow; variant: PifVariantProgressGen }> = [];
   for (const { row, tasks } of results) for (const variant of tasks) flat.push({ row, variant });
 
-  return dispatchTasks(flat, options, ({ row, variant }) => {
+  return dispatchBulkFireParams(category, flat.map(({ row, variant }) => {
     const base = `/product-image-finder/${encodeURIComponent(category)}/${encodeURIComponent(row.productId)}`;
-    return fire({
+    return {
       type: 'pif',
       productId: row.productId,
       productLabel: productLabel(row),
@@ -343,8 +402,8 @@ export async function dispatchPifEval(
       body: { variant_key: variant.variant_key, variant_id: variant.variant_id },
       subType: 'evaluate',
       variantKey: variant.variant_key,
-    });
-  });
+    };
+  }), fire, options);
 }
 
 // ── RDF / SKU — per variant (run + loop share shape) ──────────────────────
@@ -369,9 +428,9 @@ function dispatchScalar(
       tasks.push({ row, variant: v });
     }
   }
-  return dispatchTasks(tasks, options, ({ row, variant }) => {
+  return dispatchBulkFireParams(category, tasks.map(({ row, variant }) => {
     const base = cfg.baseUrl(category, row.productId);
-    return fire({
+    return {
       type: cfg.type,
       productId: row.productId,
       productLabel: productLabel(row),
@@ -379,8 +438,8 @@ function dispatchScalar(
       body: { variant_key: variant.variant_key, variant_id: variant.variant_id },
       subType: cfg.mode === 'loop' ? 'loop' : undefined,
       variantKey: variant.variant_key,
-    });
-  });
+    };
+  }), fire, options);
 }
 
 const rdfBase = (c: string, p: string) =>
@@ -518,6 +577,18 @@ async function buildKfPickedProductPlan(
   };
 }
 
+function kfBulkFireParams(category: string, plan: KfProductPlan, mode: 'run' | 'loop'): readonly BulkFireParams[] {
+  return plan.keys.map((fieldKey) => ({
+    type: 'kf',
+    productId: plan.row.productId,
+    productLabel: productLabel(plan.row),
+    url: `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(plan.row.productId)}`,
+    body: { field_key: fieldKey, mode },
+    subType: mode === 'loop' ? 'loop' : undefined,
+    fieldKey,
+  }));
+}
+
 async function runKfProductChain({
   category,
   plan,
@@ -535,43 +606,45 @@ async function runKfProductChain({
   let failures = 0;
   let skipped = 0;
   let latestSummary = plan.summary;
+  const prepared = preinsertOptimisticBulkFireParams(category, kfBulkFireParams(category, plan, mode));
 
-  for (const fieldKey of plan.keys) {
-    if (options.signal?.aborted) {
-      skipped += 1;
-      continue;
-    }
-    if (mode === 'loop' && isKfResolved(latestSummary, fieldKey)) {
-      skipped += 1;
-      continue;
-    }
-    try {
-      const operationId = await fire({
-        type: 'kf',
-        productId: plan.row.productId,
-        productLabel: productLabel(plan.row),
-        url: `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(plan.row.productId)}`,
-        body: { field_key: fieldKey, mode },
-        subType: mode === 'loop' ? 'loop' : undefined,
-        fieldKey,
-      });
-      operationIds.push(operationId);
-      options.onOperationId?.(operationId);
-
-      if (mode === 'run') {
-        await options.awaitPassengersRegistered(operationId);
-      } else {
-        const status = await options.awaitOperationTerminal(operationId);
-        if (status === 'cancelled') break;
-        latestSummary = await fetchKfSummary(category, plan.row.productId).catch(() => latestSummary);
+  try {
+    for (const params of prepared) {
+      const fieldKey = params.fieldKey ?? '';
+      if (options.signal?.aborted) {
+        skipped += 1;
+        removeOptimisticBulkFireParam(params);
+        continue;
       }
-    } catch {
-      failures += 1;
+      if (mode === 'loop' && isKfResolved(latestSummary, fieldKey)) {
+        skipped += 1;
+        removeOptimisticBulkFireParam(params);
+        continue;
+      }
+      try {
+        const operationId = await fire(params);
+        removeOptimisticBulkFireParam(params);
+        operationIds.push(operationId);
+        options.onOperationId?.(operationId);
+
+        if (mode === 'run') {
+          await options.awaitPassengersRegistered(operationId);
+        } else {
+          const status = await options.awaitOperationTerminal(operationId);
+          if (status === 'cancelled') break;
+          latestSummary = await fetchKfSummary(category, plan.row.productId).catch(() => latestSummary);
+        }
+      } catch {
+        failures += 1;
+        removeOptimisticBulkFireParam(params);
+      }
     }
+  } finally {
+    prepared.forEach(removeOptimisticBulkFireParam);
   }
 
   return {
-    scheduled: plan.keys.length,
+    scheduled: prepared.length,
     operationIds,
     failures,
     skipped,

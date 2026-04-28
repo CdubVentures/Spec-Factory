@@ -70,7 +70,7 @@ test('studio workbench contracts preserve core field metadata after publish-gate
   // Key Navigator panel parity: every panel block has at least one column id present
   const newColumnIds = [
     'variantDependent', 'pifDependent', 'contractRange', 'listRulesSummary', 'roundingSummary',
-    'variantInventoryUsage', 'pifPriorityImages', 'reasoningNoteFilled',
+    'colorEditionContext', 'pifPriorityImages', 'reasoningNoteFilled',
     'componentLocked', 'belongsToComponent', 'propertyVariance',
     'tooltipMdFilled',
     'egLocked',
@@ -102,7 +102,7 @@ test('buildWorkbenchRows populates the new contract/ai-assist/tooltip/meta field
           list_rules: { dedupe: true, sort: 'asc', item_union: 'set_union' },
         },
         ai_assist: {
-          variant_inventory_usage: true,
+          color_edition_context: true,
           pif_priority_images: false,
           reasoning_note: 'Authoritative spec sheet only.',
         },
@@ -119,7 +119,7 @@ test('buildWorkbenchRows populates the new contract/ai-assist/tooltip/meta field
   assert.equal(row.contractRange, '0\u2013999');
   assert.equal(row.listRulesSummary, 'dedup\u00b7asc\u00b7set_union');
   assert.equal(row.roundingSummary, '1\u00b7nearest');
-  assert.equal(row.variantInventoryUsage, true);
+  assert.equal(row.colorEditionContext, true);
   assert.equal(row.pifPriorityImages, false);
   assert.equal(row.reasoningNoteFilled, true);
   assert.equal(row.tooltipMdFilled, true);

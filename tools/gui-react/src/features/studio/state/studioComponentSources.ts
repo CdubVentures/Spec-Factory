@@ -64,6 +64,11 @@ export function migrateProperty(
 export function createEmptyComponentSource(): ComponentSource {
   return {
     component_type: "",
+    // Phase 3: default to mode=sheet + empty sheet so the inline gate fires
+    // immediately on row creation (matches the back-end's normalizeSourceMode
+    // default and forces the author to fill the sheet name before save).
+    mode: "sheet",
+    sheet: "",
     roles: {
       maker: "yes",
       aliases: [],

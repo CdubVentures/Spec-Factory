@@ -193,7 +193,7 @@ test('per-key LLM audit prompt requires a strict Field Studio JSON patch first',
   assert.match(allText, /Live validation/);
   assert.doesNotMatch(allText, /- variant_dependent:/);
   assert.doesNotMatch(allText, /- Product Image Dependent:/);
-  assert.match(allText, /variant_inventory_usage/);
+  assert.match(allText, /color_edition_context/);
   assert.match(allText, /pif_priority_images/);
   assert.match(allText, /reasoning_note/);
   assert.doesNotMatch(allText, /No change/);
@@ -239,7 +239,7 @@ test('per-key LLM audit prompt gives component link fields authoritative compone
   assert.match(allText, /merely mention/i);
 });
 
-test('contract-schema table has a row for every FIELD_RULE_SCHEMA entry', () => {
+test('contract-schema table has one row per non-dependency-toggle FIELD_RULE_SCHEMA entry', () => {
   const rule = makeRule();
   const record = makeKeyRecord('dpi', rule);
   const preview = composePerKeyPromptPreview(rule, 'dpi', { category: 'mouse' });
@@ -248,7 +248,19 @@ test('contract-schema table has a row for every FIELD_RULE_SCHEMA entry', () => 
   assert.ok(contractSection, 'contract-schema section present');
   const table = contractSection.blocks.find((b) => b.kind === 'table');
   assert.ok(table, 'table block present in contract-schema');
-  assert.equal(table.rows.length, FIELD_RULE_SCHEMA.length, 'one row per schema entry');
+  const expectedRowCount = FIELD_RULE_SCHEMA.filter((entry) => entry.studioWidget !== 'dependency_toggle').length;
+  assert.equal(table.rows.length, expectedRowCount, 'one row per non-dependency-toggle schema entry');
+  // Dependency-toggle entries (variant_dependent, product_image_dependent) are
+  // category-summary concerns, not per-key field knobs. They must not appear.
+  const rowParameters = table.rows.map((r) => String(r[0]));
+  assert.ok(
+    !rowParameters.some((cell) => cell.includes('variant_dependent')),
+    'variant_dependent must not appear in per-key contract-schema table',
+  );
+  assert.ok(
+    !rowParameters.some((cell) => cell.includes('product_image_dependent')),
+    'product_image_dependent must not appear in per-key contract-schema table',
+  );
 });
 
 test('appliesWhen=false rows carry an "(n/a)" marker in the current-value column', () => {

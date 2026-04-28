@@ -45,13 +45,21 @@ function writeTestDoc(images) {
   fs.writeFileSync(path.join(dir, 'product_images.json'), JSON.stringify(doc, null, 2));
 }
 
-function makeSpecDb(settings = {}, overrides = {}) {
+function makeFinderStore(settings = {}, overrides = {}) {
   return {
-    getFinderStore: () => ({
-      getSetting: (key) => settings[key] ?? '',
-      updateSummaryField: () => {},
-    }),
+    getSetting: (key) => settings[key] ?? '',
+    get: () => null,
+    listRuns: () => [],
+    updateSummaryField: () => {},
     ...overrides,
+  };
+}
+
+function makeSpecDb(settings = {}, overrides = {}) {
+  const finderStore = overrides.finderStore || makeFinderStore(settings, overrides.finderStoreOverrides);
+  return {
+    getFinderStore: () => finderStore,
+    ...Object.fromEntries(Object.entries(overrides).filter(([key]) => key !== 'finderStore' && key !== 'finderStoreOverrides')),
   };
 }
 
@@ -198,6 +206,70 @@ describe('runEvalView', () => {
     assert.ok(capturedCriteria, 'evalCriteria should be passed');
     assert.ok(capturedCriteria.includes('MOUSE'), 'should contain mouse-specific criteria');
     assert.ok(capturedCriteria.includes('TOP'), 'should reference top view');
+  });
+
+  it('reads view-eval candidates from SQL projection before product_images.json', async () => {
+    writeTestDoc([
+      makeImage({ filename: 'top-json-stale.png', view: 'top', url: 'https://json-stale.example/top.png' }),
+    ]);
+
+    const finderStore = makeFinderStore(
+      { evalThumbSize: '512' },
+      {
+        get: (productId) => ({
+          product_id: productId,
+          category: 'mouse',
+          images: JSON.stringify([{
+            view: 'top',
+            filename: 'top-sql.png',
+            variant_id: 'v_abc12345',
+            variant_key: 'color:black',
+          }]),
+          image_count: 1,
+          carousel_slots: '{}',
+          eval_state: '{}',
+          evaluations: '[]',
+          latest_ran_at: '2026-04-27T00:00:00.000Z',
+          run_count: 1,
+        }),
+        listRuns: () => [{
+          run_number: 1,
+          selected: {
+            images: [
+              makeImage({ filename: 'top-sql.png', view: 'top', url: 'https://sql.example/top.png' }),
+            ],
+          },
+          response: { variant_id: 'v_abc12345', variant_key: 'color:black' },
+        }],
+      },
+    );
+
+    let imagePathBasenames = [];
+    const result = await runEvalView({
+      product: { product_id: PRODUCT_ID, category: 'mouse', brand: 'Razer', model: 'V3' },
+      specDb: makeSpecDb({}, { finderStore }),
+      config: {},
+      variantKey: 'color:black',
+      variantId: 'v_abc12345',
+      view: 'top',
+      productRoot: TMP,
+      _evalViewFn: async ({ imagePaths }) => {
+        imagePathBasenames = imagePaths.map((imagePath) => path.basename(imagePath));
+        return {
+          rankings: imagePathBasenames.map((filename, i) => ({
+            filename,
+            rank: i + 1,
+            best: i === 0,
+            flags: [],
+            reasoning: 'test',
+          })),
+        };
+      },
+      _mergeFn: () => ({ selected: { images: [] } }),
+    });
+
+    assert.equal(result.skipped, undefined);
+    assert.deepEqual(imagePathBasenames, ['top-sql.png']);
   });
 
   it('uses DB override criteria when finder setting is set', async () => {

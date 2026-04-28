@@ -301,8 +301,13 @@ export interface ProductImageFinderLoopResponse {
 
 export interface ProductImageFinderDeleteResponse {
   ok: boolean;
+  product_id?: string;
+  category?: string;
   remaining_runs?: number;
+  deleted_run?: number;
+  deleted_runs?: readonly number[];
   deleted?: string | string[];
+  entity?: ProductImageFinderResult | null;
 }
 
 export interface VariantInfo {

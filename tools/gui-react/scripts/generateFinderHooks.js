@@ -48,7 +48,12 @@ export interface AcceptedResponse {
 
 export interface ${base}DeleteResponse {
   readonly ok: boolean;
+  readonly product_id?: string;
+  readonly category?: string;
   readonly remaining_runs?: number;
+  readonly deleted_run?: number;
+  readonly deleted_runs?: readonly number[];
+  readonly entity?: ${resultType} | null;
 }
 
 export function use${base}Query(category: string, productId: string) {

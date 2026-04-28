@@ -304,7 +304,7 @@ describe('GET /key-finder/:category/:productId/summary', () => {
           difficulty: 'easy',
           availability: 'always',
           required_level: 'mandatory',
-          ai_assist: { variant_inventory_usage: { enabled: false } },
+          ai_assist: { color_edition_context: { enabled: false } },
           ui: { label: 'Static Key' },
         },
         visual_context: {
@@ -313,7 +313,7 @@ describe('GET /key-finder/:category/:productId/summary', () => {
           availability: 'always',
           required_level: 'mandatory',
           ai_assist: {
-            variant_inventory_usage: { enabled: false },
+            color_edition_context: { enabled: false },
             pif_priority_images: { enabled: true },
           },
           ui: { label: 'Visual Context' },

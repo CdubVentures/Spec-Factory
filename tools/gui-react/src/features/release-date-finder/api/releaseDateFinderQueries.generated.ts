@@ -14,7 +14,12 @@ export interface AcceptedResponse {
 
 export interface ReleaseDateFinderDeleteResponse {
   readonly ok: boolean;
+  readonly product_id?: string;
+  readonly category?: string;
   readonly remaining_runs?: number;
+  readonly deleted_run?: number;
+  readonly deleted_runs?: readonly number[];
+  readonly entity?: ReleaseDateFinderResult | null;
 }
 
 export function useReleaseDateFinderQuery(category: string, productId: string) {

@@ -58,7 +58,7 @@ describe('EVIDENCE_KIND_LABELS', () => {
 });
 
 describe('EVIDENCE_KIND_COLOR_CLASS', () => {
-  it('has a Tailwind color class for every kind', () => {
+  it('has a semantic text color class for every kind', () => {
     for (const kind of ALL_KINDS) {
       const cls = EVIDENCE_KIND_COLOR_CLASS[kind];
       assert.equal(typeof cls, 'string');
@@ -71,13 +71,13 @@ describe('EVIDENCE_KIND_COLOR_CLASS', () => {
   });
 
   it('direct_quote and structured_metadata share the green family', () => {
-    assert.match(EVIDENCE_KIND_COLOR_CLASS.direct_quote, /emerald/);
-    assert.match(EVIDENCE_KIND_COLOR_CLASS.structured_metadata, /emerald/);
+    assert.match(EVIDENCE_KIND_COLOR_CLASS.direct_quote, /success/);
+    assert.match(EVIDENCE_KIND_COLOR_CLASS.structured_metadata, /success/);
   });
 
   it('absence_of_evidence and identity_only share the red family', () => {
-    assert.match(EVIDENCE_KIND_COLOR_CLASS.absence_of_evidence, /red-/);
-    assert.match(EVIDENCE_KIND_COLOR_CLASS.identity_only, /red-/);
+    assert.match(EVIDENCE_KIND_COLOR_CLASS.absence_of_evidence, /danger/);
+    assert.match(EVIDENCE_KIND_COLOR_CLASS.identity_only, /danger/);
   });
 });
 

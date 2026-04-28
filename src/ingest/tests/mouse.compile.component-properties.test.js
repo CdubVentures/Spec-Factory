@@ -16,7 +16,10 @@ test('compileCategoryFieldStudio includes component property keys even when miss
     tempPrefix: 'spec-harvester-category-compile-component-prop-keys-',
   });
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
-  fieldStudioMap.selected_keys = ['sensor'];
+  // WHY: Phase 4 INV-1 — every component_sources entry needs a self-locked
+  // parent field rule. selected_keys must include the component types declared
+  // in component_sources.
+  fieldStudioMap.selected_keys = ['sensor', 'encoder'];
   fieldStudioMap.component_sources = [
     {
       type: 'encoder',
@@ -75,6 +78,12 @@ test('FRC-05-B - buildStudioFieldRule emits constraints for component property f
     tempPrefix: 'spec-harvester-frc05b-',
   });
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
+  // WHY: Phase 4 INV-2 — selected_keys auto-locks via component_sources match.
+  // This fixture only declares sensor; drop switch/encoder from selected_keys
+  // so they don't become orphan locked rules.
+  fieldStudioMap.selected_keys = fieldStudioMap.selected_keys.filter(
+    (k) => !['switch', 'encoder'].includes(k),
+  );
   fieldStudioMap.component_sources = [
     {
       type: 'sensor',
@@ -152,6 +161,10 @@ test('FRC-05-C - buildStudioFieldRule auto-derives property_keys from component_
     tempPrefix: 'spec-harvester-frc05c-',
   });
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
+  // Phase 4 INV-2 — drop unused component-typed selected_keys.
+  fieldStudioMap.selected_keys = fieldStudioMap.selected_keys.filter(
+    (k) => !['switch', 'encoder'].includes(k),
+  );
   fieldStudioMap.component_sources = [
     {
       type: 'sensor',
@@ -414,6 +427,10 @@ test('compileCategoryFieldStudio summarizes component property coverage warnings
     tempPrefix: 'spec-harvester-component-warning-summary-',
   });
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
+  // Phase 4 INV-2 — drop unused component-typed selected_keys.
+  fieldStudioMap.selected_keys = fieldStudioMap.selected_keys.filter(
+    (k) => !['switch', 'encoder'].includes(k),
+  );
   fieldStudioMap.component_sources = [
     {
       type: 'sensor',

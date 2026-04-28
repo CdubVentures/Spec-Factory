@@ -103,6 +103,7 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     studioControlLabel: 'Data Type',
     studioWidget: 'select',
     studioFallback: 'string',
+    consumerGateLegacyPaths: ['data_type', 'type'],
   },
   {
     path: 'contract.shape',
@@ -116,6 +117,7 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     studioControlLabel: 'Shape',
     studioWidget: 'select',
     studioFallback: 'scalar',
+    consumerGateLegacyPaths: ['output_shape', 'shape'],
   },
   {
     path: 'contract.unit',
@@ -127,6 +129,7 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     studioControlId: 'contract_unit',
     studioControlLabel: 'Unit',
     studioWidget: 'unit_select',
+    consumerGateLegacyPaths: ['unit'],
   },
   {
     path: 'contract.rounding.decimals',
@@ -169,6 +172,8 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     studioWidget: 'boolean_select',
     studioFallback: true,
     studioOptions: ['yes', 'no'],
+    consumerGatePath: 'contract.list_rules',
+    consumerGateLegacyPaths: ['list_rules'],
   },
   {
     path: 'contract.list_rules.sort',
@@ -238,6 +243,7 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     studioWidget: 'select',
     studioFallback: 'open',
     studioOptions: ['open', 'closed', 'open_prefer_known'],
+    consumerGateLegacyPaths: ['enum_policy'],
   },
   {
     path: 'enum.values',
@@ -256,6 +262,7 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     studioControlId: 'enum_source',
     studioControlLabel: 'Source',
     studioWidget: 'enum_source_select',
+    consumerGateLegacyPaths: ['enum_source'],
   },
   {
     path: 'enum.match.format_hint',
@@ -265,6 +272,7 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     studioControlId: 'enum_format_hint',
     studioControlLabel: 'Format Pattern',
     studioWidget: 'format_pattern_input',
+    consumerGateLegacyPaths: ['enum_match_format_hint'],
   },
   {
     path: 'aliases',
@@ -299,26 +307,50 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
       + 'Write a custom note to override the auto-generated guidance.',
   },
   {
-    path: 'ai_assist.variant_inventory_usage.enabled',
-    label: 'Variant inventory context',
+    path: 'ai_assist.color_edition_context.enabled',
+    label: 'Color & Edition Context',
     kind: 'boolean',
-    doc: 'Single on/off Key Finder checkbox. Enable only when edition/SKU/release/colorway/PIF identity facts add evidence-filter value for this key without ambiguity. Field-specific union/exact/base/default interpretation belongs in ai_assist.reasoning_note.',
-    studioTipKey: 'variant_inventory_usage',
-    studioTip: 'Enable only when edition, SKU, release, colorway, or PIF identity facts help keyFinder filter evidence for this key without ambiguity. Most model-level keys are invariant across variants. Put union/exact/base/default interpretation rules in AI reasoning note.',
-    studioTogglePath: 'ai_assist.variant_inventory_usage',
-    studioControlLabel: 'Variant Inventory Context',
-    studioAriaLabel: 'Use variant inventory context',
+    doc: 'Single on/off Key Finder checkbox. When ON, the prompt receives this product\'s color × edition × SKU × release_date table (from CEF). Enable when the variant table helps decide this field\'s value — either as classification context for a scalar (e.g. a `design` or `edition_type` enum classified by variant names like "Fortnite Edition" → `collaboration`) or as evidence for a `shape=list` field (multiple values coexist across variants, e.g. mouse coating, apparel material, watch case material). Leave OFF for spec invariants where variant data adds nothing — components or measurements that don\'t change with colorway/edition (mouse sensor, phone processor, watch movement, car engine).',
+    studioTipKey: 'color_edition_context',
+    studioTip: 'Adds the product\'s color × edition × SKU × release_date table to the prompt. Turn ON when the variant table helps decide this field\'s value — as classification context for a scalar (e.g. `design` or `edition_type`) or as evidence for a `shape=list` field (mouse coating, apparel material, watch case material). Turn OFF for spec invariants — components or measurements that don\'t change with colorway (mouse sensor, phone processor, watch movement, car engine).',
+    studioTogglePath: 'ai_assist.color_edition_context',
+    studioControlLabel: 'Color & Edition',
+    studioAriaLabel: 'Use color and edition context',
+    aiAssistToggleKey: 'color_edition_context',
+    aiAssistAcceptDirectBoolean: true,
+    aiAssistDefaultEnabled: true,
+    aiAssistLegacyKeys: ['variant_inventory_usage'],
+    aiAssistLegacyAcceptDirectBoolean: false,
+    aiAssistLegacyEnabledModes: ['default', 'append', 'override'],
+    aiAssistLegacyDisabledModes: ['off'],
+    consumerBadgeType: 'object',
+    consumerBadgeSection: 'Extraction Priority & Guidance',
+    consumerBadgeConsumers: {
+      'llm.kf': { desc: 'Single on/off checkbox. Enable only when edition/SKU/release/colorway/PIF identity facts add evidence-filter value without ambiguity; field-specific interpretation belongs in ai_assist.reasoning_note.' },
+    },
   },
   {
     path: 'ai_assist.pif_priority_images.enabled',
     label: 'PIF Priority Images',
     kind: 'boolean',
-    doc: 'Single on/off Key Finder checkbox. Enable only for visually answerable keys where default/base PIF priority-view images help. Default/base images are supporting context only; edition-specific interpretation belongs in ai_assist.reasoning_note.',
+    doc: 'Single on/off Key Finder checkbox. When ON, the default/base PIF priority-view images are attached to the prompt as visual context. Enable when inspecting the photo can either (a) provide the answer directly, (b) corroborate text/documentation evidence, or (c) disprove documentation when source claims contradict what the photo shows. Best for externally visible features a buyer could read off the canonical product photo — shapes, layouts, counts, port positions, body styles. Examples: mouse `shape` and `button_layout`; phone `camera_count` and `port_count`; watch `case_shape` and `crown_position`; car `body_style` and `door_count`. Leave OFF for spec/internal values no camera can reveal — measurements, ratings, components, internal identifiers. Examples: mouse `dpi` and `sensor_model`; phone `processor` and `ram_gb`; watch `water_resistance_rating` and `movement_caliber`; car `horsepower` and `fuel_economy_mpg`. "Priority" refers to PIF\'s ranked default-view photo set, not field importance. Only the default/base set is attached — edition-specific imagery is not routed by this toggle; put any edition-specific visual interpretation rules in ai_assist.reasoning_note. Missing or unparseable images are not negative evidence.',
     studioTipKey: 'pif_priority_images',
-    studioTip: 'Enable only when default/base PIF priority-view images add visual evidence value for this key. Missing images are not negative evidence. Put edition-specific yes/no or list interpretation rules in AI reasoning note.',
+    studioTip: 'Attach default/base PIF priority-view images to the prompt as visual context. Enable when inspecting the photo can answer, corroborate, or disprove text-source evidence — externally visible features like shape, layout, count, or port positions. Leave OFF for measurements, ratings, components, or internal identifiers a camera cannot reveal. "Priority" refers to PIF\'s ranked default-view set, not field importance. Edition-specific image handling belongs in AI reasoning note. Missing images are not negative evidence.',
     studioTogglePath: 'ai_assist.pif_priority_images',
     studioControlLabel: 'PIF Priority Images',
     studioAriaLabel: 'Use PIF priority images',
+    aiAssistToggleKey: 'pif_priority_images',
+    aiAssistAcceptDirectBoolean: true,
+    aiAssistDefaultEnabled: false,
+    aiAssistLegacyKeys: [],
+    aiAssistLegacyAcceptDirectBoolean: false,
+    aiAssistLegacyEnabledModes: [],
+    aiAssistLegacyDisabledModes: [],
+    consumerBadgeType: 'object',
+    consumerBadgeSection: 'Extraction Priority & Guidance',
+    consumerBadgeConsumers: {
+      'llm.kf': { desc: 'Single on/off checkbox. Enable only when default/base PIF priority-view images add visual evidence value. Missing images are not negative evidence; edition/list interpretation belongs in ai_assist.reasoning_note.' },
+    },
   },
   {
     path: 'search_hints.domain_hints',
@@ -364,16 +396,6 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     studioWidget: 'constraint_editor',
   },
   {
-    path: 'component.type',
-    label: 'Component type',
-    kind: 'component-ref',
-    doc: 'When this field IS the identity of a component database. Blank for standalone fields or for subfields (subfield relation comes from the component database properties list).',
-    studioTipKey: 'component_db',
-    studioTip: 'Links this field to a component database (sensor, switch, encoder, material). Pipeline looks up component data alongside product data.',
-    studioControlLabel: 'Component DB',
-    studioWidget: 'component_type_select',
-  },
-  {
     path: 'evidence.min_evidence_refs',
     label: 'Min evidence refs',
     kind: 'integer',
@@ -409,6 +431,22 @@ export const FIELD_RULE_STUDIO_TIPS = Object.freeze(Object.fromEntries(
   FIELD_RULE_SCHEMA
     .filter((entry) => entry.studioTipKey && entry.studioTip)
     .map((entry) => [entry.studioTipKey, entry.studioTip]),
+));
+
+export const FIELD_RULE_CONSUMER_GATE_ALIAS_PATHS = Object.freeze(Object.fromEntries(
+  FIELD_RULE_SCHEMA
+    .map((entry) => {
+      const aliases = [
+        entry.studioLegacyPath,
+        ...(entry.consumerGateLegacyPaths || []),
+      ].filter(Boolean);
+      if (aliases.length === 0) return null;
+      return [
+        entry.consumerGatePath || entry.path,
+        Object.freeze([...new Set(aliases)]),
+      ];
+    })
+    .filter(Boolean),
 ));
 
 function deriveStudioControls(predicate) {
@@ -466,6 +504,100 @@ export const FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS = Object.freeze(
     })),
 );
 
+export const FIELD_RULE_AI_ASSIST_TOGGLE_SPECS = Object.freeze(
+  FIELD_RULE_SCHEMA
+    .filter((entry) => entry.aiAssistToggleKey)
+    .map((entry) => Object.freeze({
+      key: entry.aiAssistToggleKey,
+      path: entry.studioTogglePath,
+      enabledPath: entry.path,
+      acceptDirectBoolean: entry.aiAssistAcceptDirectBoolean === true,
+      defaultEnabled: entry.aiAssistDefaultEnabled === true,
+      legacyKeys: Object.freeze([...(entry.aiAssistLegacyKeys || [])]),
+      legacyAcceptDirectBoolean: entry.aiAssistLegacyAcceptDirectBoolean === true,
+      legacyEnabledModes: Object.freeze([...(entry.aiAssistLegacyEnabledModes || [])]),
+      legacyDisabledModes: Object.freeze([...(entry.aiAssistLegacyDisabledModes || [])]),
+    })),
+);
+
+export const FIELD_RULE_AI_ASSIST_TOGGLE_KEYS = Object.freeze(
+  FIELD_RULE_AI_ASSIST_TOGGLE_SPECS.map((entry) => entry.key),
+);
+
+export const FIELD_RULE_AI_ASSIST_TOGGLE_BY_KEY = Object.freeze(Object.fromEntries(
+  FIELD_RULE_AI_ASSIST_TOGGLE_SPECS.map((entry) => [entry.key, entry]),
+));
+
+export const FIELD_RULE_AI_ASSIST_TOGGLE_ALIAS_BY_KEY = Object.freeze(Object.fromEntries(
+  FIELD_RULE_AI_ASSIST_TOGGLE_SPECS.flatMap((entry) =>
+    entry.legacyKeys.map((legacyKey) => [legacyKey, entry])),
+));
+
+function normalizeAiAssistToggleToken(value) {
+  return String(value || '').trim().toLowerCase().replace(/[\s-]+/g, '_');
+}
+
+function isPlainObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function lookupAiAssistToggleSpec(toggleKey) {
+  return FIELD_RULE_AI_ASSIST_TOGGLE_BY_KEY[toggleKey]
+    || FIELD_RULE_AI_ASSIST_TOGGLE_ALIAS_BY_KEY[toggleKey]
+    || null;
+}
+
+function normalizeToggleValue(spec, value, { acceptDirectBoolean } = {}) {
+  if (typeof value === 'boolean') {
+    return acceptDirectBoolean ? { enabled: value } : null;
+  }
+  if (!isPlainObject(value)) return null;
+  if (typeof value.enabled === 'boolean') return { enabled: value.enabled };
+
+  const legacyMode = normalizeAiAssistToggleToken(value.mode);
+  if (legacyMode && spec.legacyDisabledModes.includes(legacyMode)) {
+    return { enabled: false };
+  }
+  if (legacyMode && spec.legacyEnabledModes.includes(legacyMode)) {
+    return { enabled: true };
+  }
+  return null;
+}
+
+export function normalizeFieldRuleAiAssistToggle(toggleKey, value) {
+  const spec = lookupAiAssistToggleSpec(toggleKey);
+  if (!spec) return null;
+  const isCanonicalKey = spec.key === toggleKey;
+  return normalizeToggleValue(spec, value, {
+    acceptDirectBoolean: isCanonicalKey
+      ? spec.acceptDirectBoolean
+      : spec.legacyAcceptDirectBoolean,
+  });
+}
+
+export function normalizeFieldRuleAiAssistToggleFromConfig(aiAssist, toggleKey) {
+  const spec = FIELD_RULE_AI_ASSIST_TOGGLE_BY_KEY[toggleKey] || null;
+  if (!spec || !isPlainObject(aiAssist)) return null;
+
+  const canonical = normalizeFieldRuleAiAssistToggle(spec.key, aiAssist[spec.key]);
+  if (canonical) return canonical;
+
+  for (const legacyKey of spec.legacyKeys) {
+    const legacy = normalizeFieldRuleAiAssistToggle(legacyKey, aiAssist[legacyKey]);
+    if (legacy) return legacy;
+  }
+  return null;
+}
+
+export function isFieldRuleAiAssistToggleAuthored(aiAssist, toggleKey) {
+  return normalizeFieldRuleAiAssistToggleFromConfig(aiAssist, toggleKey) !== null;
+}
+
+export function readFieldRuleAiAssistToggleEnabled(toggleKey, fieldRule = {}, fallback = false) {
+  const normalized = normalizeFieldRuleAiAssistToggleFromConfig(fieldRule?.ai_assist, toggleKey);
+  return normalized ? normalized.enabled : fallback;
+}
+
 export const FIELD_RULE_PRIORITY_CONTROLS = Object.freeze(
   FIELD_RULE_SCHEMA
     .filter((entry) => entry.path.startsWith('priority.') && Array.isArray(entry.studioOptions))
@@ -512,15 +644,5 @@ export const FIELD_RULE_CONSTRAINT_CONTROL = Object.freeze(
     .map((entry) => Object.freeze({
       path: entry.path,
       label: entry.studioControlLabel,
-    }))[0],
-);
-
-export const FIELD_RULE_COMPONENT_TYPE_CONTROL = Object.freeze(
-  FIELD_RULE_SCHEMA
-    .filter((entry) => entry.studioWidget === 'component_type_select')
-    .map((entry) => Object.freeze({
-      path: entry.path,
-      label: entry.studioControlLabel,
-      tooltipKey: entry.studioTipKey,
     }))[0],
 );

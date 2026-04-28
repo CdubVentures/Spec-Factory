@@ -553,9 +553,9 @@ function buildAuthoringChecklistBlocks(key) {
     'unknown status / no submitted value',
     'blank/omitted',
   ].join(' | ');
-  const variantInventoryUsage = key.ai_assist?.variant_inventory_usage;
-  const variantInventoryCurrent = typeof variantInventoryUsage?.enabled === 'boolean'
-    ? (variantInventoryUsage.enabled ? 'enabled' : 'disabled')
+  const colorEditionContext = key.ai_assist?.color_edition_context;
+  const colorEditionContextCurrent = typeof colorEditionContext?.enabled === 'boolean'
+    ? (colorEditionContext.enabled ? 'enabled' : 'disabled')
     : 'No explicit setting';
   const pifPriorityImages = key.ai_assist?.pif_priority_images;
   const pifPriorityImagesCurrent = typeof pifPriorityImages?.enabled === 'boolean'
@@ -579,7 +579,7 @@ function buildAuthoringChecklistBlocks(key) {
         ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is false/no different from not-applicable and missing evidence? Use boolean only for true two-state facts. Never add `unk` to enum values or data lists; it is an LLM sentinel that should become status/unknown_reason with no submitted value. Use `n/a` only when not-applicable is intentionally stored or public; otherwise prefer blank/omitted as no submitted value. For measured conditional fields like battery_hours, keep the value numeric when hours are proven and leave no submitted value when not applicable or unproven.'],
         ['6', 'Evidence and sources', evidenceCurrent, 'Can the configured source tiers and evidence count actually prove this value without guessing?'],
         ['7', 'Example bank', '5-10 category-local examples', 'Do examples cover happy path, edge, unknown, not-applicable, conflict, and filter-risk cases before the prompt text is trusted?'],
-        ['8', 'Variant inventory context', variantInventoryCurrent, 'Enable only when edition/SKU/release/colorway/PIF identity helps reject wrong-variant evidence without ambiguity. Most invariant model-level keys should not need it. List or variant-varying keys need a union vs exact/base/default rule in reasoning_note.'],
+        ['8', 'Color & Edition Context', colorEditionContextCurrent, 'Enable only when edition/SKU/release/colorway/PIF identity helps reject wrong-variant evidence without ambiguity. Most invariant model-level keys should not need it. List or variant-varying keys need a union vs exact/base/default rule in reasoning_note.'],
         ['9', 'PIF Priority Images', pifPriorityImagesCurrent, 'Enable only when default/base priority-view images help a visual key. Missing/unattachable images are not negative evidence. Edition-specific yes/no or list behavior belongs in reasoning_note.'],
         ['10', 'Guidance last', formatAuditValue(key.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap, or write "(empty - keep)" when no guidance is needed.'],
       ],

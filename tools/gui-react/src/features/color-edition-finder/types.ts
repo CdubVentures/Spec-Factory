@@ -111,11 +111,19 @@ export interface ColorEditionFinderRunResponse {
 
 export interface ColorEditionFinderDeleteRunResponse {
   readonly ok: boolean;
+  readonly product_id?: string;
+  readonly category?: string;
   readonly remaining_runs: number;
+  readonly deleted_run?: number;
+  readonly deleted_runs?: readonly number[];
+  readonly entity?: ColorEditionFinderResult | null;
 }
 
 export interface ColorEditionFinderDeleteAllResponse {
   readonly ok: boolean;
+  readonly product_id?: string;
+  readonly category?: string;
+  readonly entity?: ColorEditionFinderResult | null;
 }
 
 export interface VariantDeleteResponse {

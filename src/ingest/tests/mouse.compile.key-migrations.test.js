@@ -16,6 +16,7 @@ test('compileCategoryFieldStudio rejects cyclic key migration maps', async () =>
   });
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, cleanup } = workspace;
   fieldStudioMap.selected_keys = ['connection', 'weight'];
+  fieldStudioMap.component_sources = []; // WHY: Phase 4 INV-1 — focus only on key-cycle behavior; no components needed.
   fieldStudioMap.field_overrides = {
     connection: {
       canonical_key: 'weight',
@@ -61,6 +62,7 @@ test('compileCategoryFieldStudio keeps key migrations aligned to generated field
   });
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
   fieldStudioMap.selected_keys = ['lngth'];
+  fieldStudioMap.component_sources = []; // Phase 4 INV-1 — drop unused components for this key-rename test.
   fieldStudioMap.field_overrides = {
     ...(fieldStudioMap.field_overrides || {}),
     lngth: {
@@ -108,6 +110,7 @@ test('compileCategoryFieldStudio keeps switch_link canonical', async () => {
   });
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
   fieldStudioMap.selected_keys = ['switch_link'];
+  fieldStudioMap.component_sources = []; // Phase 4 INV-1 — focus on switch_link rename only.
   fieldStudioMap.field_overrides = {
     switch_link: {
       contract: {

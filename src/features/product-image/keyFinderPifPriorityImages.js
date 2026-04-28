@@ -5,18 +5,14 @@ import { resolveViewConfig } from './productImageLlmAdapter.js';
 import { createThumbnailBase64, resolveCarouselSlots } from './imageEvaluator.js';
 import { matchVariant } from './variantMatch.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
+import { readFieldRuleAiAssistToggleEnabled } from '../../field-rules/fieldRuleSchema.js';
 
 function normalizeToken(value) {
   return String(value || '').trim().toLowerCase().replace(/^color:/, '').replace(/\s+/g, '-');
 }
 
 function isEnabled(fieldRule = {}) {
-  const raw = fieldRule?.ai_assist?.pif_priority_images;
-  if (typeof raw === 'boolean') return raw;
-  if (raw && typeof raw === 'object' && !Array.isArray(raw) && typeof raw.enabled === 'boolean') {
-    return raw.enabled;
-  }
-  return false;
+  return readFieldRuleAiAssistToggleEnabled('pif_priority_images', fieldRule, false);
 }
 
 function encodedImageUrl({ category, productId, filename, bytes }) {

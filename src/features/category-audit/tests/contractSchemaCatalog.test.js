@@ -58,12 +58,11 @@ test('critical paths are present (anchor test — locks the minimum surface)', (
     'enum.values',
     'aliases',
     'ai_assist.reasoning_note',
-    'ai_assist.variant_inventory_usage.enabled',
+    'ai_assist.color_edition_context.enabled',
     'ai_assist.pif_priority_images.enabled',
     'search_hints.domain_hints',
     'search_hints.query_terms',
     'constraints',
-    'component.type',
     'evidence.min_evidence_refs',
   ];
   for (const p of required) {
@@ -109,7 +108,7 @@ test('describeCurrent renders representative values', () => {
     aliases: [],
     ai_assist: {
       reasoning_note: '',
-      variant_inventory_usage: { enabled: false },
+      color_edition_context: { enabled: false },
       pif_priority_images: { enabled: true },
     },
     search_hints: { domain_hints: ['logitech.com'] },
@@ -120,7 +119,7 @@ test('describeCurrent renders representative values', () => {
   assert.equal(describeCurrent(byPath('enum.values'), rule), '2 values: tier1, tier2');
   assert.equal(describeCurrent(byPath('aliases'), rule), '(unset)');
   assert.equal(describeCurrent(byPath('ai_assist.reasoning_note'), rule), '(unset)');
-  assert.equal(describeCurrent(byPath('ai_assist.variant_inventory_usage.enabled'), rule), 'false');
+  assert.equal(describeCurrent(byPath('ai_assist.color_edition_context.enabled'), rule), 'false');
   assert.equal(describeCurrent(byPath('ai_assist.pif_priority_images.enabled'), rule), 'true');
   assert.equal(describeCurrent(byPath('search_hints.domain_hints'), rule), '1 value: logitech.com');
 });
@@ -167,13 +166,12 @@ test('FIELD_RULE_SCHEMA characterizes the full path/kind/options surface', () =>
       { path: 'aliases', kind: 'string-list' },
       { path: 'variance_policy', kind: 'enum', options: ['authoritative', 'upper_bound', 'lower_bound', 'majority_vote'] },
       { path: 'ai_assist.reasoning_note', kind: 'prose' },
-      { path: 'ai_assist.variant_inventory_usage.enabled', kind: 'boolean' },
+      { path: 'ai_assist.color_edition_context.enabled', kind: 'boolean' },
       { path: 'ai_assist.pif_priority_images.enabled', kind: 'boolean' },
       { path: 'search_hints.domain_hints', kind: 'string-list' },
       { path: 'search_hints.content_types', kind: 'string-list' },
       { path: 'search_hints.query_terms', kind: 'string-list' },
       { path: 'constraints', kind: 'constraint-list' },
-      { path: 'component.type', kind: 'component-ref' },
       { path: 'evidence.min_evidence_refs', kind: 'integer' },
       { path: 'evidence.tier_preference', kind: 'ordered-list', options: ['tier1', 'tier2', 'tier3'] },
       { path: 'group', kind: 'group-ref' },

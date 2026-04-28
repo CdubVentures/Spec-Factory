@@ -46,6 +46,7 @@ import { resolveKeyFinderFamilySize } from '../keyFamilySize.js';
 import { runKeyFinder } from '../keyFinder.js';
 import { runKeyFinderLoop } from '../keyFinderLoop.js';
 import { compileKeyFinderPreviewPrompt } from '../keyFinderPreviewPrompt.js';
+import { readFieldRuleAiAssistToggleEnabled } from '../../../field-rules/fieldRuleSchema.js';
 import {
   readKeyFinder,
   readKeyFinderRuntimeDoc,
@@ -65,25 +66,12 @@ function resolveProductRoot(config) {
   return config?.productRoot || defaultProductRoot();
 }
 
-const LEGACY_VARIANT_USAGE_ACTIVE_MODES = new Set(['default', 'append', 'override']);
-
 function ruleUsesVariantInventory(fieldRule = {}) {
-  const raw = fieldRule?.ai_assist?.variant_inventory_usage;
-  const cfg = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {};
-  if (typeof cfg.enabled === 'boolean') return cfg.enabled;
-  const legacyMode = String(cfg.mode || '').trim();
-  if (legacyMode === 'off') return false;
-  if (LEGACY_VARIANT_USAGE_ACTIVE_MODES.has(legacyMode)) return true;
-  return true;
+  return readFieldRuleAiAssistToggleEnabled('color_edition_context', fieldRule, true);
 }
 
 function ruleUsesPifPriorityImages(fieldRule = {}) {
-  const raw = fieldRule?.ai_assist?.pif_priority_images;
-  if (typeof raw === 'boolean') return raw;
-  if (raw && typeof raw === 'object' && !Array.isArray(raw) && typeof raw.enabled === 'boolean') {
-    return raw.enabled;
-  }
-  return false;
+  return readFieldRuleAiAssistToggleEnabled('pif_priority_images', fieldRule, false);
 }
 
 // WHY: extracted so the route → runKeyFinder wiring is unit-testable. The load-

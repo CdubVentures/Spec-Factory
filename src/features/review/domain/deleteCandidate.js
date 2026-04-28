@@ -24,21 +24,23 @@ export function deleteCandidateBySourceId({ specDb, category, productId, fieldKe
     return { deleted: false, republished: false, artifacts_cleaned: false };
   }
 
-  const { productJson, result } = deleteSqlThenMirrorProductJson({
-    productRoot,
-    productId,
-    deleteSql: () => specDb.deleteFieldCandidateBySourceId(productId, fieldKey, sourceId),
-    mutateProductJson: (json) => {
-      if (Array.isArray(json.candidates?.[fieldKey])) {
-        json.candidates[fieldKey] = json.candidates[fieldKey]
-          .filter(e => e.source_id !== sourceId);
-      }
+  const { productJson, result } = runSpecDbTransaction(specDb, () => (
+    deleteSqlThenMirrorProductJson({
+      productRoot,
+      productId,
+      deleteSql: () => specDb.deleteFieldCandidateBySourceId(productId, fieldKey, sourceId),
+      mutateProductJson: (json) => {
+        if (Array.isArray(json.candidates?.[fieldKey])) {
+          json.candidates[fieldKey] = json.candidates[fieldKey]
+            .filter(e => e.source_id !== sourceId);
+        }
 
-      return {
-        republished: rederiveIfNonVariant({ specDb, productId, fieldKey, config, productJson: json }),
-      };
-    },
-  });
+        return {
+          republished: rederiveIfNonVariant({ specDb, productId, fieldKey, config, productJson: json }),
+        };
+      },
+    })
+  ));
   if (!productJson) {
     return { deleted: true, republished: false, artifacts_cleaned: false };
   }
@@ -62,17 +64,19 @@ export function deleteAllCandidatesForField({ specDb, category, productId, field
 
   const deletedCount = rows.length;
 
-  const { productJson, result } = deleteSqlThenMirrorProductJson({
-    productRoot,
-    productId,
-    deleteSql: () => specDb.deleteFieldCandidatesByProductAndField(productId, fieldKey),
-    mutateProductJson: (json) => {
-      delete json.candidates?.[fieldKey];
-      return {
-        republished: rederiveIfNonVariant({ specDb, productId, fieldKey, config, productJson: json }),
-      };
-    },
-  });
+  const { productJson, result } = runSpecDbTransaction(specDb, () => (
+    deleteSqlThenMirrorProductJson({
+      productRoot,
+      productId,
+      deleteSql: () => specDb.deleteFieldCandidatesByProductAndField(productId, fieldKey),
+      mutateProductJson: (json) => {
+        delete json.candidates?.[fieldKey];
+        return {
+          republished: rederiveIfNonVariant({ specDb, productId, fieldKey, config, productJson: json }),
+        };
+      },
+    })
+  ));
   if (!productJson) {
     return { deleted: deletedCount, republished: false, artifacts_cleaned: false };
   }
@@ -81,6 +85,11 @@ export function deleteAllCandidatesForField({ specDb, category, productId, field
 }
 
 // ── Internal helpers ────────────────────────────────────────────────
+
+function runSpecDbTransaction(specDb, work) {
+  if (typeof specDb?.db?.transaction !== 'function') return work();
+  return specDb.db.transaction(work)();
+}
 
 /**
  * Re-derive published for non-variant fields. Variant fields (colors, editions)

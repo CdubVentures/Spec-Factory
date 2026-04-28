@@ -69,7 +69,7 @@ function baseMap() {
         enum: { policy: 'open_prefer_known', source: 'data_lists.design' },
         ai_assist: {
           reasoning_note: 'old field note',
-          variant_inventory_usage: { mode: 'default' },
+          color_edition_context: { enabled: true },
         },
         search_hints: { query_terms: ['design'], domain_hints: [] },
       },
@@ -142,7 +142,7 @@ test('applyFieldStudioPatchDocument deep-merges one key and data list without to
   assert.equal(next.field_overrides.design.enum.policy, 'closed');
   assert.equal(next.field_overrides.design.ai_assist.reasoning_note, 'Classify public edition taxonomy only.');
   assert.deepEqual(next.field_overrides.design.ai_assist.pif_priority_images, { enabled: true });
-  assert.deepEqual(next.field_overrides.design.ai_assist.variant_inventory_usage, { mode: 'default' });
+  assert.deepEqual(next.field_overrides.design.ai_assist.color_edition_context, { enabled: true });
   assert.equal(next.field_overrides.weight.contract.unit, 'g');
 });
 

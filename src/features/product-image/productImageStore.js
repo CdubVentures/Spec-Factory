@@ -14,7 +14,7 @@
 
 import fs from 'node:fs';
 import { createFinderJsonStore } from '../../core/finder/finderJsonStore.js';
-import { extractEvalState } from './imageEvaluator.js';
+import { extractEvalState, PIF_EVAL_FIELDS } from './imageEvaluator.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
 
 const store = createFinderJsonStore({
@@ -43,11 +43,105 @@ const store = createFinderJsonStore({
 
 export const readProductImages = store.read;
 export const writeProductImages = store.write;
+export const mergeProductImageDiscoveryData = store.mergeData;
 export const mergeProductImageDiscovery = store.merge;
 export const deleteProductImageFinderRun = store.deleteRun;
 export const deleteProductImageFinderRuns = store.deleteRuns;
 export const deleteProductImageFinderAll = store.deleteAll;
 export const recalculateProductImagesFromRuns = store.recalculateFromRuns;
+
+function parseJsonValue(value, fallback) {
+  if (value == null || value === '') return fallback;
+  if (typeof value !== 'string') return value;
+  try { return JSON.parse(value); } catch { return fallback; }
+}
+
+function parseJsonArray(value) {
+  const parsed = parseJsonValue(value, []);
+  return Array.isArray(parsed) ? parsed : [];
+}
+
+function hydratePifSqlRun(run) {
+  return {
+    ...run,
+    selected: parseJsonValue(run?.selected, run?.selected_json ? parseJsonValue(run.selected_json, {}) : {}),
+    prompt: parseJsonValue(run?.prompt, run?.prompt_json ? parseJsonValue(run.prompt_json, {}) : {}),
+    response: parseJsonValue(run?.response, run?.response_json ? parseJsonValue(run.response_json, {}) : {}),
+  };
+}
+
+function collectRunImagesByFilename(runs) {
+  const imagesByFilename = new Map();
+  for (const run of runs) {
+    for (const img of (run.response?.images || [])) {
+      if (img?.filename) imagesByFilename.set(img.filename, img);
+    }
+    for (const img of (run.selected?.images || [])) {
+      if (img?.filename) imagesByFilename.set(img.filename, img);
+    }
+  }
+  return imagesByFilename;
+}
+
+function collectSelectedImagesFromRuns(runs) {
+  return runs.flatMap((run) => Array.isArray(run.selected?.images) ? run.selected.images : []);
+}
+
+function overlayEvalState(img, evalState) {
+  const filename = String(img?.filename || '');
+  const overlay = filename ? evalState?.[filename] : null;
+  const baseImage = { ...img };
+  for (const field of PIF_EVAL_FIELDS) delete baseImage[field];
+  return overlay && typeof overlay === 'object' ? { ...baseImage, ...overlay } : baseImage;
+}
+
+export function buildProductImageFinderDocFromSql({ finderStore, productId }) {
+  const row = typeof finderStore?.get === 'function' ? finderStore.get(productId) : null;
+  const runs = typeof finderStore?.listRuns === 'function'
+    ? finderStore.listRuns(productId).map(hydratePifSqlRun)
+    : [];
+  if (!row && runs.length === 0) return null;
+
+  const evalState = parseJsonValue(row?.eval_state, {});
+  const runImagesByFilename = collectRunImagesByFilename(runs);
+  const rowImages = parseJsonArray(row?.images);
+  const selectedSource = rowImages.length > 0 ? rowImages : collectSelectedImagesFromRuns(runs);
+  const images = selectedSource
+    .map((img) => {
+      const filename = String(img?.filename || '');
+      const runImage = filename ? runImagesByFilename.get(filename) : null;
+      return runImage ? { ...img, ...runImage } : img;
+    })
+    .map((img) => overlayEvalState(img, evalState));
+  const maxRunNumber = runs.reduce((max, run) => Math.max(max, Number(run.run_number) || 0), 0);
+  const runCount = Number(row?.run_count) || runs.length;
+
+  return {
+    product_id: row?.product_id || productId,
+    category: row?.category || runs.find((run) => run.category)?.category || '',
+    selected: { images },
+    last_ran_at: row?.latest_ran_at || runs[runs.length - 1]?.ran_at || '',
+    run_count: runCount,
+    next_run_number: Math.max(maxRunNumber + 1, runCount + 1, 1),
+    runs,
+    carousel_slots: parseJsonValue(row?.carousel_slots, {}),
+    evaluations: parseJsonArray(row?.evaluations),
+  };
+}
+
+export function readProductImageFinderRuntimeDoc({
+  finderStore,
+  productId,
+  productRoot,
+  mirrorSqlToJson = false,
+}) {
+  const sqlDoc = buildProductImageFinderDocFromSql({ finderStore, productId });
+  if (sqlDoc) {
+    if (mirrorSqlToJson) writeProductImages({ productId, productRoot, data: sqlDoc });
+    return sqlDoc;
+  }
+  return readProductImages({ productId, productRoot });
+}
 
 export function buildProductImageFinderSqlSummaryRow({ category, productId, data, ranAt }) {
   const images = data?.selected?.images || [];

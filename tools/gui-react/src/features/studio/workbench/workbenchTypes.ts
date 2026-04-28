@@ -24,7 +24,7 @@ export interface WorkbenchRow {
   difficulty: string;
 
   // Ai Assist
-  variantInventoryUsage: boolean;
+  colorEditionContext: boolean;
   pifPriorityImages: boolean;
   reasoningNoteFilled: boolean;
 
@@ -92,7 +92,6 @@ export type DrawerTab =
   | 'priority'
   | 'aiAssist'
   | 'enum'
-  | 'components'
   | 'constraints'
   | 'evidence'
   | 'tooltip'

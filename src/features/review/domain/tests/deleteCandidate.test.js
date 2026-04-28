@@ -401,6 +401,34 @@ describe('deleteCandidateBySourceId', () => {
     assert.deepEqual(snapshots, [[sid]]);
     assert.deepEqual(readProductJson('mouse-001').candidates.weight, []);
   }));
+
+  it('rolls back SQL delete when product.json mirror write fails', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
+    const sid = seed('mouse-001', 'weight', '58', 0.9);
+    ensureProductJson('mouse-001', {
+      candidates: { weight: [{ source_id: sid, source_type: 'cef', value: '58', confidence: 0.9 }] },
+      fields: { weight: { value: 58, confidence: 0.9, source: 'pipeline', sources: [], linked_candidates: [] } },
+    });
+
+    const originalWriteFileSync = fs.writeFileSync;
+    fs.writeFileSync = (...args) => {
+      if (String(args[0]).endsWith(path.join('mouse-001', 'product.json'))) {
+        throw new Error('mirror write failed');
+      }
+      return originalWriteFileSync(...args);
+    };
+
+    try {
+      assert.throws(
+        () => deleteCandidateBySourceId({ ...baseOpts(specDb, root), sourceId: sid }),
+        /mirror write failed/,
+      );
+    } finally {
+      fs.writeFileSync = originalWriteFileSync;
+    }
+
+    assert.ok(specDb.getFieldCandidateBySourceId('mouse-001', 'weight', sid));
+    assert.deepEqual(readProductJson('mouse-001').candidates.weight.map((candidate) => candidate.source_id), [sid]);
+  }));
 });
 
 describe('deleteAllCandidatesForField', () => {
@@ -522,5 +550,39 @@ describe('deleteAllCandidatesForField', () => {
 
     assert.deepEqual(snapshots, [[sid1, sid2]]);
     assert.equal(readProductJson('mouse-001').candidates.weight, undefined);
+  }));
+
+  it('bulk delete rolls back SQL when product.json mirror write fails', withFreshEnv(({ specDb, root, ensureProductJson, readProductJson, seed }) => {
+    const sid1 = seed('mouse-001', 'weight', '58', 0.9);
+    const sid2 = seed('mouse-001', 'weight', '60', 0.85);
+    ensureProductJson('mouse-001', {
+      candidates: {
+        weight: [
+          { source_id: sid1, source_type: 'cef', value: '58', confidence: 0.9 },
+          { source_id: sid2, source_type: 'cef', value: '60', confidence: 0.85 },
+        ],
+      },
+      fields: { weight: { value: 58, confidence: 0.9, source: 'pipeline', sources: [], linked_candidates: [] } },
+    });
+
+    const originalWriteFileSync = fs.writeFileSync;
+    fs.writeFileSync = (...args) => {
+      if (String(args[0]).endsWith(path.join('mouse-001', 'product.json'))) {
+        throw new Error('mirror write failed');
+      }
+      return originalWriteFileSync(...args);
+    };
+
+    try {
+      assert.throws(
+        () => deleteAllCandidatesForField({ ...baseOpts(specDb, root) }),
+        /mirror write failed/,
+      );
+    } finally {
+      fs.writeFileSync = originalWriteFileSync;
+    }
+
+    assert.equal(specDb.getFieldCandidatesByProductAndField('mouse-001', 'weight').length, 2);
+    assert.deepEqual(readProductJson('mouse-001').candidates.weight.map((candidate) => candidate.source_id), [sid1, sid2]);
   }));
 });

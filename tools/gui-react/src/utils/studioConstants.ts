@@ -14,7 +14,6 @@ export const GROUPS = [
   'general', 'connectivity', 'construction', 'controls', 'dimensions',
   'electronics', 'encoder', 'ergonomics', 'sensor_performance', 'switches',
 ];
-export const COMPONENT_TYPES = ['sensor', 'switch', 'encoder', 'material'];
 export const NORMALIZE_MODES = [
   { value: 'lower_trim', label: 'Lowercase + Trim' },
   { value: 'raw', label: 'Raw (as-is)' },
@@ -97,12 +96,13 @@ const LOCAL_STUDIO_TIPS: Record<string, string> = {
 
   // Tab 2: Key Navigator - Component
   key_section_components: 'Component settings control matching and inference from component databases.',
+  component_lock: 'This key is locked as a component. Source is owned by the Field Studio Map.',
   key_section_constraints: 'Cross-field constraints enforce logical relationships and consistency checks between this field and others.',
   comp_allow_new: 'If enabled, the pipeline can suggest new components not in the database when no fuzzy match meets the flag_review_score threshold. Suggestions are flagged for review. If disabled, unmatched values are rejected.',
   comp_require_identity_evidence: 'If enabled, component identity matching requires supporting evidence from at least one source. Prevents phantom component assignments from noisy extraction.',
 
   // Tab 2: Key Navigator - Ai Assist
-  key_section_ai_assist: 'AI Assist controls field-specific prompt guidance and whether keyFinder receives variant inventory context.',
+  key_section_ai_assist: 'AI Assist controls field-specific prompt guidance and whether keyFinder receives color and edition context.',
   // Tab 3: Field Rules Workbench
   field_contract_table: 'Read-only overview of all field contracts. Edit fields in the Key Navigator tab.',
 

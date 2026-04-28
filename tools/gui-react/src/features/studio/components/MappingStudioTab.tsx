@@ -41,7 +41,7 @@ import type {
 } from "../../../types/studio.ts";
 import { EditableDataList } from "./EditableDataList.tsx";
 import { EditableComponentSource } from "./EditableComponentSource.tsx";
-import { useStudioFieldRulesState } from "../state/studioFieldRulesController.ts";
+import { useStudioFieldRulesState, useStudioFieldRulesActions } from "../state/studioFieldRulesController.ts";
 
 interface DataListEntry {
   field: string;
@@ -85,8 +85,20 @@ export function MappingStudioTab({
   autoSaveMapLocked,
 }: MappingStudioTabProps) {
   const { egLockedKeys } = useStudioFieldRulesState();
+  const { updateField } = useStudioFieldRulesActions();
   const [tooltipPath, setTooltipPath] = useState("");
   const [compSources, setCompSources] = useState<ComponentSource[]>([]);
+  // Phase 3: track which expanded component_sources rows are form-invalid
+  // (mode=sheet + empty sheet). The Save button gates on this set.
+  const [invalidComponentRows, setInvalidComponentRows] = useState<Set<number>>(() => new Set());
+  const setRowValidity = useCallback((rowIndex: number, invalid: boolean) => {
+    setInvalidComponentRows((prev) => {
+      const next = new Set(prev);
+      if (invalid) next.add(rowIndex);
+      else next.delete(rowIndex);
+      return next;
+    });
+  }, []);
   const [dataLists, setDataLists] = useState<DataListEntry[]>([]);
   const [seededVersion, setSeededVersion] = useState("");
   const lastMapAutoSaveFingerprintRef = useRef("");
@@ -237,7 +249,11 @@ export function MappingStudioTab({
     };
   }, [wbMap, tooltipPath, compSources, dataLists]);
 
+  // Phase 3: gate save when any expanded component_sources row is form-invalid
+  // (mode=sheet + empty sheet name). Prevents the compile pipeline 400.
+  const hasInvalidComponentRows = invalidComponentRows.size > 0;
   function handleSave() {
+    if (hasInvalidComponentRows) return;
     const nextMap = assembleMap();
     lastMapAutoSaveFingerprintRef.current = autoSaveFingerprint(nextMap);
     onSaveMap(nextMap);
@@ -251,6 +267,8 @@ export function MappingStudioTab({
 
   useEffect(() => {
     if (!autoSaveMapEnabled || !mapHydrated.current) return;
+    // Phase 3: skip auto-save while any component_sources row is form-invalid.
+    if (hasInvalidComponentRows) return;
     const nextMap = assembleMap();
     const nextFingerprint = autoSaveFingerprint(nextMap);
     if (
@@ -270,6 +288,7 @@ export function MappingStudioTab({
     dataLists,
     assembleMap,
     onSaveMap,
+    hasInvalidComponentRows,
   ]);
 
   useEffect(() => {
@@ -390,7 +409,8 @@ export function MappingStudioTab({
         <div className="flex-1" />
         <button
           onClick={handleSave}
-          disabled={saving || autoSaveMapEnabled}
+          disabled={saving || autoSaveMapEnabled || hasInvalidComponentRows}
+          title={hasInvalidComponentRows ? 'Fix component_sources rows before saving (sheet name required when mode=sheet)' : undefined}
           className={`${autoSaveMapEnabled ? btnSecondary : btnPrimary} relative h-11 min-h-11 text-sm rounded inline-flex items-center justify-center overflow-visible whitespace-nowrap ${actionBtnWidth}`}
         >
           <span className="w-full text-center font-medium truncate">
@@ -550,18 +570,33 @@ export function MappingStudioTab({
             </div>
             {compSources.length > 0 ? (
               <div className="space-y-6">
-                {compSources.map((src, idx) => (
-                  <EditableComponentSource
-                    key={idx}
-                    index={idx}
-                    source={src}
-                    onUpdate={(updates) => updateComponentSource(idx, updates)}
-                    onRemove={() => removeComponentSource(idx)}
-                    rules={rules}
-                    fieldOrder={fieldOrder}
-                    knownValues={knownValues}
-                  />
-                ))}
+                {compSources.map((src, idx) => {
+                  const lockedComponentKeys = compSources
+                    .map((entry) => entry.component_type || entry.type || "")
+                    .filter((key, entryIdx) => key && entryIdx !== idx);
+                  return (
+                    <EditableComponentSource
+                      key={idx}
+                      index={idx}
+                      source={src}
+                      onUpdate={(updates) => updateComponentSource(idx, updates)}
+                      onRemove={() => removeComponentSource(idx)}
+                      rules={rules}
+                      fieldOrder={fieldOrder}
+                      knownValues={knownValues}
+                      lockedComponentKeys={lockedComponentKeys}
+                      onComponentTypeChange={(oldType, newType) => {
+                        // Phase 3 auto-link: clear OLD key's enum.source, set NEW
+                        // key's to component_db.<new>. The fieldCascadeRegistry
+                        // enum.source cascade coerces contract.type/shape and
+                        // policy on the new key automatically.
+                        if (oldType) updateField(oldType, "enum.source", "");
+                        if (newType) updateField(newType, "enum.source", `component_db.${newType}`);
+                      }}
+                      onValidityChange={(invalid) => setRowValidity(idx, invalid)}
+                    />
+                  );
+                })}
               </div>
             ) : (
               <div className="text-sm sf-text-subtle text-center py-4">

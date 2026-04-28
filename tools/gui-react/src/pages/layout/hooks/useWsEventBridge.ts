@@ -2,9 +2,8 @@ import { useCallback, useEffect, useRef } from 'react';
 import type { QueryClient } from '@tanstack/react-query';
 import { useRuntimeStore } from '../../../stores/runtimeStore.ts';
 import { useEventsStore } from '../../../stores/eventsStore.ts';
-import { useOperationsStore, type OperationUpsert, type LlmCallRecord, type LlmCallStreamChunk } from '../../../stores/operationsStore.ts';
-import { useIndexLabStore, type IndexLabEvent } from '../../../stores/indexlabStore.ts';
-import type { ProcessStatus, RuntimeEvent } from '../../../types/events.ts';
+import { useOperationsStore, type LlmCallStreamChunk } from '../../../stores/operationsStore.ts';
+import { useIndexLabStore } from '../../../stores/indexlabStore.ts';
 import { useWsSubscription } from '../../../hooks/useWsSubscription.ts';
 import { api } from '../../../api/client.ts';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
@@ -17,11 +16,15 @@ import {
   patchCatalogRowsFromDataChange,
   shouldSkipCatalogListInvalidation,
 } from '../../../features/catalog/api/catalogRowPatch.ts';
-
-function isFullLlmCallRecord(value: unknown): value is LlmCallRecord {
-  if (!value || typeof value !== 'object') return false;
-  return 'prompt' in value;
-}
+import {
+  isDataChangeWsMessage,
+  isIndexLabEventList,
+  isProcessOutputList,
+  isRuntimeEventList,
+  resolveLlmStreamWsMessage,
+  resolveOperationsWsMessage,
+  resolveProcessStatusWsMessage,
+} from './wsEventPayloadValidation.ts';
 
 export function useWsEventBridge({ category, queryClient }: { category: string; queryClient: QueryClient }) {
   const setProcessStatus = useRuntimeStore((s) => s.setProcessStatus);
@@ -101,56 +104,65 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
 
   // ── WS message handler ────────────────────────────────────────────
   const handleWsMessage = useCallback((channel: string, data: unknown) => {
-    if (channel === 'events' && Array.isArray(data)) {
-      appendEvents(data as RuntimeEvent[]);
+    if (channel === 'events') {
+      if (!isRuntimeEventList(data)) return;
+      appendEvents(data);
+      return;
     }
-    if (channel === 'process' && Array.isArray(data)) {
-      appendProcessOutput(data as string[]);
+    if (channel === 'process') {
+      if (!isProcessOutputList(data)) return;
+      appendProcessOutput(data);
+      return;
     }
-    if (channel === 'process-status' && data && typeof data === 'object') {
-      const status = data as ProcessStatus;
-      setProcessStatus(status);
-      queryClient.setQueryData(['processStatus'], status);
+    if (channel === 'process-status') {
+      const msg = resolveProcessStatusWsMessage(data);
+      if (!msg) return;
+      setProcessStatus(msg);
+      queryClient.setQueryData(['processStatus'], msg);
+      return;
     }
-    if (channel === 'indexlab-event' && Array.isArray(data)) {
-      appendIndexLabEvents(data as IndexLabEvent[]);
+    if (channel === 'indexlab-event') {
+      if (!isIndexLabEventList(data)) return;
+      appendIndexLabEvents(data);
+      return;
     }
-    if (channel === 'operations' && data && typeof data === 'object') {
-      const msg = data as { action?: string; operation?: OperationUpsert; id?: string; call?: unknown };
-      if (msg.operation) useOperationsStore.getState().upsert(msg.operation);
-      if (msg.action === 'remove' && msg.id) useOperationsStore.getState().remove(msg.id);
-      if (msg.action === 'llm-call-append' && msg.id && isFullLlmCallRecord(msg.call)) {
-        useOperationsStore.getState().appendLlmCall(msg.id, msg.call);
+    if (channel === 'operations') {
+      const msg = resolveOperationsWsMessage(data);
+      if (!msg) return;
+      const operationsStore = useOperationsStore.getState();
+      if (msg.operation) operationsStore.upsert(msg.operation);
+      if (msg.removeId) operationsStore.remove(msg.removeId);
+      if (msg.appendCall) {
+        operationsStore.appendLlmCall(msg.appendCall.id, msg.appendCall.call);
       }
-      if (msg.action === 'llm-call-update' && msg.id && isFullLlmCallRecord(msg.call)) {
-        const call = msg.call;
-        if (call.callIndex != null) {
-          useOperationsStore.getState().updateLlmCall(msg.id, call.callIndex, call);
-        }
+      if (msg.updateCall) {
+        operationsStore.updateLlmCall(msg.updateCall.id, msg.updateCall.callIndex, msg.updateCall.call);
       }
+      return;
     }
-    if (channel === 'llm-stream' && data && typeof data === 'object') {
-      const msg = data as { operationId?: string; text?: string; callId?: string; lane?: string; label?: string; channel?: string };
-      if (msg.operationId && msg.text) {
-        if (msg.callId) {
-          const buf = callStreamBufRef.current;
-          const chunks = buf.get(msg.operationId) ?? [];
-          chunks.push({
-            callId: msg.callId,
-            text: msg.text,
-            lane: msg.lane,
-            label: msg.label,
-            channel: msg.channel,
-          });
-          buf.set(msg.operationId, chunks);
-        } else {
-          const buf = streamBufRef.current;
-          buf.set(msg.operationId, (buf.get(msg.operationId) ?? '') + msg.text);
-        }
+    if (channel === 'llm-stream') {
+      const msg = resolveLlmStreamWsMessage(data);
+      if (!msg) return;
+      if (msg.callId) {
+        const buf = callStreamBufRef.current;
+        const chunks = buf.get(msg.operationId) ?? [];
+        chunks.push({
+          callId: msg.callId,
+          text: msg.text,
+          lane: msg.lane,
+          label: msg.label,
+          channel: msg.channel,
+        });
+        buf.set(msg.operationId, chunks);
+        return;
       }
+      const buf = streamBufRef.current;
+      buf.set(msg.operationId, (buf.get(msg.operationId) ?? '') + msg.text);
+      return;
     }
-    if (channel === 'data-change' && data && typeof data === 'object') {
-      const msg = data as { type?: string; event?: string; category?: string; categories?: string[] };
+    if (channel === 'data-change') {
+      if (!isDataChangeWsMessage(data)) return;
+      const msg = data;
       const eventName = String(
         msg.event
         || (msg.type && msg.type !== 'data-change' ? msg.type : ''),

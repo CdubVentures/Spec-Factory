@@ -15,14 +15,37 @@ Auditor 2 owns user-facing frontend workflow and UI state:
 
 Do not edit backend persistence, event registry contracts, WS transport, or generated code without coordinating with Auditor 1 or Auditor 3.
 
+## Current Audit Snapshot
+
+Verification refreshed on 2026-04-28:
+
+| Command | Result |
+|---|---|
+| `npm test` | RED: 12,531 tests, 12,511 passed, 20 failed. Frontend-owned failures are listed below. |
+| `npm run gui:check` | PASS. |
+
+H11, H12, and H15 are no longer active findings. H14 remains partial. The current critical frontend work is limited to red test clusters that block the full suite.
+
+## Critical Priority
+
+| ID | Issue | Primary Area | Current Evidence | Work Shape |
+|---|---|---|---|---|
+| C1 | Two GUI page tests fail because the React test stub does not export `createContext` | GUI test harness / page contracts | `billingQueryRefreshContracts.test.js` and `overviewRdfDateFormatting.test.js` fail with missing `createContext` export from a generated stub. | Fix the shared page-test harness/stub contract without weakening the page assertions. |
+| C2 | Evidence kind color-class expectations drifted from token names | Evidence UI registry | `evidenceKindRegistry.test.ts`: tests expect `emerald`/`red-`, implementation now uses semantic classes like `sf-status-text-success`. | Decide whether semantic token classes are the new contract; update test or registry consistently. |
+
 ## High Priority
 
 | ID | Issue | Primary Area | Work Shape | Proof |
 |---|---|---|---|---|
-| H11 | No global error toast/notification contract | Global error UX | Define global error notification contract and route shared API/query/mutation errors through it. | UI smoke proof for failed query and mutation. |
-| H12 | Mutation rollback is invisible to users | Optimistic mutation UX | Pair rollback with toast or inline error; retry only when safe. | Test or GUI proof for one rollback flow. |
-| H14 | Major pages lack consistent skeleton/loading structure | Page loading UX | Add page-appropriate skeletons and stale-refetch indicators. | GUI proof for loading/refetch states. |
-| H15 | Review drawer can keep stale `activeCell` after deletion | Review focus state | Subscribe Review focus state to deletion events and close drawer with visible notice. | Test or GUI proof using cross-flow deletion. |
+| H14 | Major pages lack consistent skeleton/loading structure | Page loading UX | PARTIAL 2026-04-28: Catalog ProductManager uses a full-shape loading skeleton matching header, actions, search, table columns/rows, and open drawer state. Remaining: apply the same pattern to other major pages and stale-refetch indicators. | Test: `ProductManagerSkeleton.test.js`. GUI proof: `.tmp/h14-catalog-full-shape-skeleton.png`. |
+| H15 | Review drawer can keep stale `activeCell` after deletion | Review focus state | DONE 2026-04-28: Review focus is pruned when the active product/field disappears from the products index; stale drawers close with an info notification. | Test: `reviewFocusPruning.test.js`. GUI proof: `.tmp/h15-review-focus-deletion-notice.png`. |
+
+## Closed Since Last Audit
+
+| ID | Closed Finding | Proof |
+|---|---|---|
+| H11-old | No global error toast/notification contract | Shared notification queue, root renderer, React Query error routing, focused tests, and GUI proof screenshots. |
+| H12-old | Mutation rollback is invisible to users | Product Catalog rollback notices with focused test and GUI proof screenshot. |
 
 ## Medium Priority
 

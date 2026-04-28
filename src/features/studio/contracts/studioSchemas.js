@@ -46,24 +46,57 @@ export const PriorityProfileSchema = z.object(priorityProfileShapeFromRegistry()
 
 export const AiAssistConfigSchema = z.object(aiAssistShapeFromRegistry());
 
+const FIELD_RULE_ENTRY_BY_PATH = Object.freeze(Object.fromEntries(
+  FIELD_RULE_SCHEMA.map((entry) => [entry.path, entry]),
+));
+
+function schemaEntry(path) {
+  const entry = FIELD_RULE_ENTRY_BY_PATH[path];
+  if (!entry) throw new Error(`Missing field-rule schema entry for ${path}`);
+  return entry;
+}
+
+function looseFieldRuleValueSchema(entry) {
+  if (entry.kind === 'boolean') return z.boolean();
+  if (entry.kind === 'integer' || entry.kind === 'number-nullable') return z.number();
+  if (entry.kind === 'string-list' || entry.kind === 'ordered-list' || entry.kind === 'constraint-list') {
+    return z.array(z.string());
+  }
+  return z.string();
+}
+
+function fieldRuleContractShapeFromRegistry() {
+  return {
+    type: looseFieldRuleValueSchema(schemaEntry('contract.type')).optional(),
+    unit: looseFieldRuleValueSchema(schemaEntry('contract.unit')).nullable().optional(),
+    shape: looseFieldRuleValueSchema(schemaEntry('contract.shape')).optional(),
+  };
+}
+
+function fieldRuleLegacyRootShapeFromRegistry() {
+  return {
+    required_level: looseFieldRuleValueSchema(schemaEntry('priority.required_level')).optional(),
+    group: looseFieldRuleValueSchema(schemaEntry('group')).optional(),
+    constraints: looseFieldRuleValueSchema(schemaEntry('constraints')).optional(),
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Composed domain schemas (.passthrough for [k: string]: unknown)
 // ---------------------------------------------------------------------------
 
+const FIELD_RULE_LEGACY_ROOT_SHAPE = fieldRuleLegacyRootShapeFromRegistry();
+
 export const FieldRuleSchema = z.object({
   key: z.string().optional(),
   label: z.string().optional(),
-  group: z.string().optional(),
-  required_level: z.string().optional(),
-  contract: z.object({
-    type: z.string().optional(),
-    unit: z.string().nullable().optional(),
-    shape: z.string().optional(),
-  }).passthrough().optional(),
+  group: FIELD_RULE_LEGACY_ROOT_SHAPE.group,
+  required_level: FIELD_RULE_LEGACY_ROOT_SHAPE.required_level,
+  contract: z.object(fieldRuleContractShapeFromRegistry()).passthrough().optional(),
   parse: z.object({
     template: z.string().optional(),
   }).passthrough().optional(),
-  constraints: z.array(z.string()).optional(),
+  constraints: FIELD_RULE_LEGACY_ROOT_SHAPE.constraints,
   ui: z.object({
     group: z.string().optional(),
     label: z.string().optional(),

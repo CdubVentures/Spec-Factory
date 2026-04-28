@@ -19,6 +19,10 @@ function enabledState(value) {
   return value.enabled ? 'on' : 'off';
 }
 
+function colorEditionContext(aiAssist) {
+  return aiAssist?.color_edition_context;
+}
+
 function shortList(values, limit = 3) {
   const list = Array.isArray(values) ? values.filter(Boolean).map(String) : [];
   if (list.length === 0) return '-';
@@ -63,7 +67,7 @@ function formatEvidence(key) {
 function formatDependencies(key) {
   return [
     `Product Image Dependent:${yesNo(key.product_image_dependent)}`,
-    `Variant inventory:${enabledState(key.ai_assist?.variant_inventory_usage)}`,
+    `Variant inventory:${enabledState(colorEditionContext(key.ai_assist))}`,
     `PIF priority images:${enabledState(key.ai_assist?.pif_priority_images)}`,
   ].join(' / ');
 }

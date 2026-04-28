@@ -50,6 +50,8 @@ function makeFinderStoreStub() {
   const upserts = [];
   return {
     getSetting: (key) => settings[key] || '',
+    get: () => null,
+    listRuns: () => [],
     insertRun: (run) => runs.push(run),
     upsert: (data) => upserts.push(data),
     _settings: settings,
@@ -692,6 +694,150 @@ describe('characterization: runProductImageFinder', () => {
     // WHY: cooldown_until removed from PIF JSON — PIF never had a cooldown concept,
     // the field was copied over from CEF and has since been dropped.
     assert.equal(typeof doc.run_count, 'number');
+  });
+
+  it('does not write product_images.json when SQL run insert fails', async () => {
+    const pid = 'sql-fail-no-json-product';
+    writeCefData(pid, { selected: { colors: ['black'], color_names: {}, editions: {} } });
+
+    const store = makeFinderStoreStub();
+    store.insertRun = () => {
+      throw new Error('SQL insert failed');
+    };
+
+    const result = await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb: makeSpecDbStub(store),
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: async () => ({ result: {
+        images: [
+          { view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.png` },
+        ],
+        discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+      }, usage: null }),
+    });
+
+    assert.equal(result.images.length, 0);
+    assert.ok(result.download_errors.some((entry) => entry.error.includes('SQL insert failed')));
+
+    assert.equal(
+      fs.existsSync(path.join(PRODUCT_ROOT, pid, 'product_images.json')),
+      false,
+      'JSON mirror must not be written if SQL run insert fails',
+    );
+  });
+
+  it('real run prompt history and dedup read SQL projection before product_images.json', async () => {
+    const pid = 'sql-runtime-contract-product';
+    writeCefData(pid, { selected: { colors: ['black'], color_names: {}, editions: {} } });
+
+    const pifDir = path.join(PRODUCT_ROOT, pid);
+    fs.mkdirSync(pifDir, { recursive: true });
+    fs.writeFileSync(path.join(pifDir, 'product_images.json'), JSON.stringify({
+      product_id: pid,
+      category: 'mouse',
+      selected: {
+        images: [{
+          view: 'top',
+          filename: 'top-black.png',
+          url: 'https://json-stale.example/top.png',
+          source_page: 'https://json-stale.example/product',
+          variant_id: 'v_black',
+          variant_key: 'color:black',
+          quality_pass: true,
+        }],
+      },
+      runs: [{
+        run_number: 1,
+        selected: { images: [] },
+        response: {
+          variant_id: 'v_black',
+          variant_key: 'color:black',
+          run_scope_key: 'priority-view',
+          discovery_log: { urls_checked: ['https://json-stale.example/history'], queries_run: [] },
+        },
+      }],
+      run_count: 1,
+      next_run_number: 2,
+    }));
+
+    const store = makeFinderStoreStub();
+    store._settings.urlHistoryEnabled = 'true';
+    store._settings.priorityViewRunImageHistoryEnabled = 'true';
+    store.get = (productId) => ({
+      product_id: productId,
+      category: 'mouse',
+      images: JSON.stringify([{
+        view: 'top',
+        filename: 'top-black.png',
+        variant_id: 'v_black',
+        variant_key: 'color:black',
+      }]),
+      image_count: 1,
+      carousel_slots: '{}',
+      eval_state: '{}',
+      evaluations: '[]',
+      latest_ran_at: '2026-04-27T00:00:00.000Z',
+      run_count: 1,
+    });
+    store.listRuns = () => [{
+      run_number: 1,
+      ran_at: '2026-04-27T00:00:00.000Z',
+      selected: {
+        images: [{
+          view: 'top',
+          filename: 'top-black.png',
+          url: `http://127.0.0.1:${serverPort}/good-image.png`,
+          source_page: 'https://sql.example/product',
+          width: 1000,
+          height: 800,
+          content_hash: 'a'.repeat(64),
+          variant_id: 'v_black',
+          variant_key: 'color:black',
+          quality_pass: true,
+        }],
+      },
+      response: {
+        variant_id: 'v_black',
+        variant_key: 'color:black',
+        run_scope_key: 'priority-view',
+        discovery_log: { urls_checked: ['https://sql.example/history'], queries_run: [] },
+      },
+    }];
+
+    let capturedDomainArgs = null;
+    const result = await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb: makeSpecDbStub(store),
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: async (domainArgs) => {
+        capturedDomainArgs = domainArgs;
+        return {
+          result: {
+            images: [{ view: 'top', url: `http://127.0.0.1:${serverPort}/good-image.png` }],
+            discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+          },
+          usage: null,
+        };
+      },
+    });
+
+    assert.ok(capturedDomainArgs.previousDiscovery.urlsChecked.includes('https://sql.example/history'));
+    assert.ok(!capturedDomainArgs.previousDiscovery.urlsChecked.includes('https://json-stale.example/history'));
+    assert.deepEqual(
+      capturedDomainArgs.imageHistory.map((entry) => entry.url),
+      [`http://127.0.0.1:${serverPort}/good-image.png`],
+    );
+    assert.equal(result.images.length, 0, 'SQL-known URL must be rejected as already downloaded');
+    assert.ok(result.download_errors.some((entry) => entry.error.includes('duplicate URL')));
+
+    const mirrored = JSON.parse(fs.readFileSync(path.join(pifDir, 'product_images.json'), 'utf8'));
+    assert.equal(mirrored.runs[0].response.discovery_log.urls_checked[0], 'https://sql.example/history');
+    assert.equal(mirrored.selected.images[0].url, `http://127.0.0.1:${serverPort}/good-image.png`);
   });
 
   it('handles LLM failure gracefully (no crash)', async () => {

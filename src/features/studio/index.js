@@ -36,6 +36,13 @@ export {
   resolveEgLockedKeys,
 } from './contracts/egPresets.js';
 
+// Component-lock contract (self-lock via enum.source = component_db.<self>).
+export {
+  isComponentLockEditablePath,
+  isComponentLocked,
+  sanitizeComponentLockedOverrides,
+} from './contracts/componentLock.js';
+
 // Schema contracts (O(1) SSOT for studio shapes).
 export {
   StudioPayloadSchema,

@@ -17,6 +17,7 @@ test('STUDIO_TIPS characterizes the current field-rule tooltip key surface', asy
     'ai_reasoning_note',
     'aliases',
     'availability',
+    'color_edition_context',
     'comp_allow_new',
     'comp_constraints',
     'comp_field_key',
@@ -26,7 +27,7 @@ test('STUDIO_TIPS characterizes the current field-rule tooltip key surface', asy
     'comp_variance_policy',
     'compile_errors',
     'compile_warnings',
-    'component_db',
+    'component_lock',
     'component_type',
     'content_types',
     'contract_range',
@@ -79,7 +80,6 @@ test('STUDIO_TIPS characterizes the current field-rule tooltip key surface', asy
     'ui_order',
     'ui_prefix',
     'ui_suffix',
-    'variant_inventory_usage',
   ]);
 
   for (const [key, value] of Object.entries(STUDIO_TIPS)) {

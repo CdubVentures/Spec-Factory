@@ -10,6 +10,20 @@ function extractHost(url) {
   try { return new URL(String(url || '')).hostname; } catch { return ''; }
 }
 
+function resolveSourceTier(src) {
+  const explicitTier = Number(src?.source_tier ?? src?.sourceTier ?? src?.tier);
+  return Number.isFinite(explicitTier) && explicitTier > 0 ? explicitTier : 5;
+}
+
+function sourceArtifactFlags(src) {
+  return {
+    has_screenshot: (src.screenshot_count || 0) > 0 || Boolean(src.has_screenshot),
+    has_pdf: Boolean(src.has_pdf),
+    has_ldjson: Boolean(src.has_ldjson),
+    has_dom_snippet: Boolean(src.has_dom_snippet),
+  };
+}
+
 function seedCrawlCheckpoint(specDb, cp) {
   const run = cp.run || {};
   const counters = cp.counters || {};
@@ -71,6 +85,7 @@ function seedCrawlCheckpoint(specDb, cp) {
   const sources = Array.isArray(cp.sources) ? cp.sources : [];
   for (const src of sources) {
     if (!src.content_hash) continue;
+    const artifactFlags = sourceArtifactFlags(src);
     specDb.insertCrawlSource({
       content_hash: src.content_hash,
       category,
@@ -80,8 +95,12 @@ function seedCrawlCheckpoint(specDb, cp) {
       final_url: src.final_url || '',
       host: extractHost(src.url),
       http_status: src.status || 0,
+      doc_kind: src.doc_kind || src.doc_kind_guess || 'other',
+      source_tier: resolveSourceTier(src),
+      content_type: src.content_type || '',
+      size_bytes: src.size_bytes || 0,
       file_path: src.html_file || '',
-      has_screenshot: (src.screenshot_count || 0) > 0,
+      ...artifactFlags,
       crawled_at: createdAt,
     });
     // WHY: Rebuild url_crawl_ledger from checkpoint sources.
@@ -190,6 +209,7 @@ function seedProductCheckpoint(specDb, cp) {
   let sourcesSeeded = 0;
   for (const src of sources) {
     if (!src.content_hash) continue;
+    const artifactFlags = sourceArtifactFlags(src);
     specDb.insertCrawlSource({
       content_hash: src.content_hash,
       category: cp.category || '',
@@ -199,8 +219,12 @@ function seedProductCheckpoint(specDb, cp) {
       final_url: src.final_url || '',
       host: src.host || extractHost(src.url),
       http_status: src.status || 0,
+      doc_kind: src.doc_kind || src.doc_kind_guess || 'other',
+      source_tier: resolveSourceTier(src),
+      content_type: src.content_type || '',
+      size_bytes: src.size_bytes || 0,
       file_path: src.html_file || '',
-      has_screenshot: (src.screenshot_count || 0) > 0,
+      ...artifactFlags,
       crawled_at: cp.updated_at || '',
     });
     sourcesSeeded++;

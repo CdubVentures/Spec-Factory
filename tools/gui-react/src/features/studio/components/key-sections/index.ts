@@ -2,7 +2,6 @@ export { KeyContractSection } from "./KeyContractSection.tsx";
 export { KeyPrioritySection } from "./KeyPrioritySection.tsx";
 export { KeyAiAssistSection } from "./KeyAiAssistSection.tsx";
 export { KeyEnumSection } from "./KeyEnumSection.tsx";
-export { KeyComponentsSection } from "./KeyComponentsSection.tsx";
 export { KeyConstraintsSection } from "./KeyConstraintsSection.tsx";
 export { KeyEvidenceSection } from "./KeyEvidenceSection.tsx";
 export { KeyTooltipSection } from "./KeyTooltipSection.tsx";

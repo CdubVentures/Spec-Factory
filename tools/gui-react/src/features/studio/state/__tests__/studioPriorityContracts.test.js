@@ -131,10 +131,10 @@ test('studio priority derives component-source and list priority from ranked mat
   );
 });
 
-test('normalizeAiAssistConfig keeps reasoning_note plus variant inventory enabled flag', async () => {
+test('normalizeAiAssistConfig keeps reasoning_note plus color edition context enabled flag', async () => {
   const { normalizeAiAssistConfig } = await loadStudioPriority();
 
-  // Retired fields are ignored; legacy variant inventory usage metadata becomes a single checkbox flag.
+  // Retired fields are ignored; canonical {enabled} shape becomes a single checkbox flag.
   assert.deepEqual(
     normalizeAiAssistConfig({
       mode: ' Planner ',
@@ -142,11 +142,7 @@ test('normalizeAiAssistConfig keeps reasoning_note plus variant inventory enable
       max_calls: 50,
       max_tokens: 42,
       reasoning_note: 5,
-      variant_inventory_usage: {
-        mode: 'append',
-        profile: 'visual_design',
-        text: '  Prefer base shell evidence.  ',
-      },
+      color_edition_context: { enabled: true },
       pif_priority_images: {
         enabled: true,
         text: '  ignored  ',
@@ -154,7 +150,7 @@ test('normalizeAiAssistConfig keeps reasoning_note plus variant inventory enable
     }),
     {
       reasoning_note: '5',
-      variant_inventory_usage: {
+      color_edition_context: {
         enabled: true,
       },
       pif_priority_images: {
@@ -180,34 +176,24 @@ test('normalizeAiAssistConfig boundary characterization', async () => {
     { label: 'reasoning_note: number coercion', input: { reasoning_note: 42 }, expected: { reasoning_note: '42' } },
     { label: 'retired fields ignored', input: { mode: 'judge', max_calls: 5, reasoning_note: 'keep' }, expected: { reasoning_note: 'keep' } },
     {
-      label: 'variant_inventory_usage explicit enabled false preserved',
-      input: { variant_inventory_usage: { enabled: false, mode: 'append', text: ' Ignore me. ' } },
-      expected: { reasoning_note: '', variant_inventory_usage: { enabled: false } },
+      label: 'color_edition_context explicit enabled false preserved',
+      input: { color_edition_context: { enabled: false, mode: 'append', text: ' Ignore me. ' } },
+      expected: { reasoning_note: '', color_edition_context: { enabled: false } },
     },
     {
-      label: 'variant_inventory_usage explicit enabled true preserved',
-      input: { variant_inventory_usage: { enabled: true } },
-      expected: { reasoning_note: '', variant_inventory_usage: { enabled: true } },
+      label: 'color_edition_context explicit enabled true preserved',
+      input: { color_edition_context: { enabled: true } },
+      expected: { reasoning_note: '', color_edition_context: { enabled: true } },
     },
     {
-      label: 'variant_inventory_usage legacy off mode maps disabled',
-      input: { variant_inventory_usage: { mode: 'off', profile: 'visual_design', text: ' Ignore me. ' } },
-      expected: { reasoning_note: '', variant_inventory_usage: { enabled: false } },
-    },
-    {
-      label: 'variant_inventory_usage legacy active mode maps enabled',
+      label: 'legacy variant_inventory_usage active mode maps to color_edition_context enabled',
       input: { variant_inventory_usage: { mode: 'override', profile: 'visual_design', text: ' Ignore me. ' } },
-      expected: { reasoning_note: '', variant_inventory_usage: { enabled: true } },
+      expected: { reasoning_note: '', color_edition_context: { enabled: true } },
     },
     {
-      label: 'variant_inventory_usage invalid empty metadata ignored',
-      input: { variant_inventory_usage: { mode: 'bad', profile: 'bad', text: '   ' } },
-      expected: { reasoning_note: '' },
-    },
-    {
-      label: 'variant_inventory_usage text-only metadata ignored',
-      input: { variant_inventory_usage: { text: ' Prefer official table. ' } },
-      expected: { reasoning_note: '' },
+      label: 'legacy variant_inventory_usage off mode maps to color_edition_context disabled',
+      input: { variant_inventory_usage: { mode: 'off' } },
+      expected: { reasoning_note: '', color_edition_context: { enabled: false } },
     },
     {
       label: 'pif_priority_images explicit enabled true preserved',
@@ -236,33 +222,21 @@ test('readAiAssistToggleEnabled characterizes legacy and simple toggle defaults'
 
   const cases = [
     {
-      label: 'variant inventory missing uses legacy default-on behavior',
+      label: 'color_edition_context missing uses default-on behavior',
       rule: {},
-      path: 'ai_assist.variant_inventory_usage',
+      path: 'ai_assist.color_edition_context',
       expected: true,
     },
     {
-      label: 'variant inventory explicit enabled false wins',
-      rule: { ai_assist: { variant_inventory_usage: { enabled: false, mode: 'append' } } },
-      path: 'ai_assist.variant_inventory_usage',
+      label: 'color_edition_context explicit enabled false wins',
+      rule: { ai_assist: { color_edition_context: { enabled: false } } },
+      path: 'ai_assist.color_edition_context',
       expected: false,
     },
     {
-      label: 'variant inventory direct boolean is accepted',
-      rule: { ai_assist: { variant_inventory_usage: true } },
-      path: 'ai_assist.variant_inventory_usage',
-      expected: true,
-    },
-    {
-      label: 'variant inventory legacy off disables',
-      rule: { ai_assist: { variant_inventory_usage: { mode: 'off' } } },
-      path: 'ai_assist.variant_inventory_usage',
-      expected: false,
-    },
-    {
-      label: 'variant inventory legacy active mode enables',
-      rule: { ai_assist: { variant_inventory_usage: { mode: 'append' } } },
-      path: 'ai_assist.variant_inventory_usage',
+      label: 'color_edition_context explicit enabled true wins',
+      rule: { ai_assist: { color_edition_context: { enabled: true } } },
+      path: 'ai_assist.color_edition_context',
       expected: true,
     },
     {

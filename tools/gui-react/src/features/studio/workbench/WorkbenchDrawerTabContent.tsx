@@ -2,7 +2,7 @@
 // Key*Body component. Same body components are used by the Key Navigator —
 // 1:1 SSOT between the two surfaces.
 import type { ComponentType } from 'react';
-import type { EnumEntry, ComponentDbResponse, ComponentSource } from '../../../types/studio.ts';
+import type { EnumEntry } from '../../../types/studio.ts';
 import type { BadgeSlot, DrawerTab } from './workbenchTypes.ts';
 // WHY: Re-exported through WorkbenchDrawerTabPanels.tsx so tests can stub a single
 // module (matches the prior shape of this dispatcher's tab imports).
@@ -11,7 +11,6 @@ import {
   KeyPriorityBody,
   KeyAiAssistBody,
   KeyEnumBody,
-  KeyComponentsBody,
   KeyConstraintsBody,
   KeyEvidenceBody,
   KeyTooltipBody,
@@ -26,8 +25,6 @@ export interface WorkbenchDrawerTabContentProps {
   rule: Record<string, unknown>;
   knownValues: Record<string, string[]>;
   enumLists: EnumEntry[];
-  componentDb: ComponentDbResponse;  // kept for future Preview reinstatement; unused today
-  componentSources: ComponentSource[];
   fieldOrder: string[];
   onUpdate: (path: string, value: unknown) => void;
   onNavigate: (key: string) => void;
@@ -43,7 +40,6 @@ export function WorkbenchDrawerTabContent({
   rule,
   knownValues,
   enumLists,
-  componentSources,
   fieldOrder,
   onUpdate,
   onNavigate,
@@ -78,16 +74,6 @@ export function WorkbenchDrawerTabContent({
   }
   if (activeTab === 'enum') {
     return <KeyEnumBody {...baseProps} knownValues={knownValues} enumLists={enumLists} />;
-  }
-  if (activeTab === 'components') {
-    return (
-      <KeyComponentsBody
-        {...baseProps}
-        componentSources={componentSources}
-        knownValues={knownValues}
-        editedRules={editedRules}
-      />
-    );
   }
   if (activeTab === 'constraints') {
     return (

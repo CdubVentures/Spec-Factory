@@ -22,7 +22,7 @@ function fixtureLoadedRules() {
           constraints: [],
           ai_assist: {
             reasoning_note: 'Chip/model only.',
-            variant_inventory_usage: { enabled: false },
+            color_edition_context: { enabled: false },
             pif_priority_images: { enabled: true },
           },
           evidence: { min_evidence_refs: 1, tier_preference: ['tier1'] },
@@ -138,7 +138,7 @@ test('extractReportData carries simple AI assist toggles as enabled flags', () =
   const sensor = data.keys.find((k) => k.fieldKey === 'sensor');
   assert.deepEqual(sensor.ai_assist, {
     reasoning_note: 'Chip/model only.',
-    variant_inventory_usage: { enabled: false },
+    color_edition_context: { enabled: false },
     pif_priority_images: { enabled: true },
   });
 });

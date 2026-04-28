@@ -78,6 +78,20 @@ test('Overview RDF cells route release dates through the user date formatter', a
     prefix: 'overview-rdf-date-formatting-',
     stubs: {
       react: `
+        const contextValues = new WeakMap();
+        export function createContext(defaultValue) {
+          const context = { defaultValue };
+          context.Provider = function Provider(props) {
+            contextValues.set(context, props.value);
+            return props.children ?? null;
+          };
+          return context;
+        }
+        export const memo = (component) => component;
+        export function useContext(context) {
+          return contextValues.has(context) ? contextValues.get(context) : context.defaultValue;
+        }
+        export function useDeferredValue(value) { return value; }
         export function useMemo(factory) { return factory(); }
         export function useCallback(fn) { return fn; }
         export function useState(initial) { return [typeof initial === 'function' ? initial() : initial, () => {}]; }

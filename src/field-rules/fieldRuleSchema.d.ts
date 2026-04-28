@@ -39,6 +39,20 @@ export interface FieldRuleSchemaEntry {
   studioFalseDescription?: string;
   studioTrueAriaLabel?: string;
   studioFalseAriaLabel?: string;
+  aiAssistToggleKey?: string;
+  aiAssistAcceptDirectBoolean?: boolean;
+  aiAssistDefaultEnabled?: boolean;
+  aiAssistLegacyKeys?: readonly string[];
+  aiAssistLegacyAcceptDirectBoolean?: boolean;
+  aiAssistLegacyEnabledModes?: readonly string[];
+  aiAssistLegacyDisabledModes?: readonly string[];
+  consumerBadgeType?: 'string' | 'array' | 'filteredArray' | 'presence' | 'object';
+  consumerBadgeSection?: string;
+  consumerBadgeKey?: string;
+  consumerBadgeFlatAliases?: readonly string[];
+  consumerBadgeConsumers?: Readonly<Record<string, { desc: string }>>;
+  consumerGatePath?: string;
+  consumerGateLegacyPaths?: readonly string[];
 }
 
 export interface FieldRuleAiAssistToggleControl {
@@ -46,6 +60,18 @@ export interface FieldRuleAiAssistToggleControl {
   label: string;
   ariaLabel: string;
   tooltipKey: string;
+}
+
+export interface FieldRuleAiAssistToggleSpec {
+  key: string;
+  path: string;
+  enabledPath: string;
+  acceptDirectBoolean: boolean;
+  defaultEnabled: boolean;
+  legacyKeys: readonly string[];
+  legacyAcceptDirectBoolean: boolean;
+  legacyEnabledModes: readonly string[];
+  legacyDisabledModes: readonly string[];
 }
 
 export interface FieldRulePriorityControl {
@@ -81,12 +107,6 @@ export interface FieldRuleConstraintControl {
   label: string;
 }
 
-export interface FieldRuleComponentTypeControl {
-  path: string;
-  label: string;
-  tooltipKey: string;
-}
-
 export interface FieldRuleContractDependencyControl {
   controlId: string;
   path: string;
@@ -115,7 +135,38 @@ export const FIELD_RULE_SCHEMA: readonly FieldRuleSchemaEntry[];
 
 export const FIELD_RULE_STUDIO_TIPS: Readonly<Record<string, string>>;
 
+export const FIELD_RULE_CONSUMER_GATE_ALIAS_PATHS: Readonly<Record<string, readonly string[]>>;
+
 export const FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS: readonly FieldRuleAiAssistToggleControl[];
+
+export const FIELD_RULE_AI_ASSIST_TOGGLE_SPECS: readonly FieldRuleAiAssistToggleSpec[];
+
+export const FIELD_RULE_AI_ASSIST_TOGGLE_KEYS: readonly string[];
+
+export const FIELD_RULE_AI_ASSIST_TOGGLE_BY_KEY: Readonly<Record<string, FieldRuleAiAssistToggleSpec>>;
+
+export const FIELD_RULE_AI_ASSIST_TOGGLE_ALIAS_BY_KEY: Readonly<Record<string, FieldRuleAiAssistToggleSpec>>;
+
+export function normalizeFieldRuleAiAssistToggle(
+  toggleKey: string,
+  value: unknown,
+): { enabled: boolean } | null;
+
+export function normalizeFieldRuleAiAssistToggleFromConfig(
+  aiAssist: unknown,
+  toggleKey: string,
+): { enabled: boolean } | null;
+
+export function isFieldRuleAiAssistToggleAuthored(
+  aiAssist: unknown,
+  toggleKey: string,
+): boolean;
+
+export function readFieldRuleAiAssistToggleEnabled(
+  toggleKey: string,
+  fieldRule?: unknown,
+  fallback?: boolean,
+): boolean;
 
 export const FIELD_RULE_PRIORITY_CONTROLS: readonly FieldRulePriorityControl[];
 
@@ -124,8 +175,6 @@ export const FIELD_RULE_EVIDENCE_CONTROLS: readonly FieldRuleEvidenceControl[];
 export const FIELD_RULE_SEARCH_HINT_CONTROLS: readonly FieldRuleSearchHintControl[];
 
 export const FIELD_RULE_CONSTRAINT_CONTROL: Readonly<FieldRuleConstraintControl>;
-
-export const FIELD_RULE_COMPONENT_TYPE_CONTROL: Readonly<FieldRuleComponentTypeControl>;
 
 export const FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS: readonly FieldRuleContractDependencyControl[];
 

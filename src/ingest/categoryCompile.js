@@ -39,7 +39,8 @@ import {
   resolveComponentPropertyMetaFromMap,
   applyKeyLevelConstraintsToEntities,
   buildComponentSourceSummary,
-  declaredComponentPropertyKeysFromMap
+  declaredComponentPropertyKeysFromMap,
+  declaredComponentTypesFromMap
 } from './compileComponentHelpers.js';
 import {
   mergeFieldOverride,
@@ -158,7 +159,18 @@ export async function compileCategoryFieldStudio({
     }
 
     let componentType = '';
-    const componentTypeMatch = Object.keys(componentDb).find((type) => {
+    // WHY: Phase 4 — match the field key against component types declared in
+    // EITHER the generated componentDb OR the field_studio_map.component_sources.
+    // The map declaration alone is enough to mark a field as a component parent
+    // and stamp enum.source = component_db.<type>; previously we required a
+    // seeded componentDb entry, which left newly-declared components without
+    // their self-lock and tripped INV-1 at compile time.
+    const declaredFromMap = declaredComponentTypesFromMap(map);
+    const candidateTypes = new Set([
+      ...Object.keys(componentDb || {}),
+      ...declaredFromMap,
+    ]);
+    const componentTypeMatch = [...candidateTypes].find((type) => {
       const token = normalizeFieldKey(type);
       const singular = token.endsWith('s') ? token.slice(0, -1) : token;
       return field === token || field === singular;

@@ -1,7 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { usePersistedToggle } from "../../../stores/collapseStore.ts";
 import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
-import { ComboSelect } from "../../../shared/ui/forms/ComboSelect.tsx";
 import { TagPicker } from "../../../shared/ui/forms/TagPicker.tsx";
 import { StaticBadges } from "./StaticBadges.tsx";
 import {
@@ -18,7 +17,6 @@ import {
   selectCls,
   inputCls,
   labelCls,
-  COMPONENT_TYPES,
   STUDIO_TIPS,
 } from "./studioConstants.ts";
 import type {
@@ -38,6 +36,18 @@ export interface EditableComponentSourceProps {
   rules: Record<string, FieldRule>;
   fieldOrder: string[];
   knownValues: Record<string, string[]>;
+  // WHY: keys already locked by another component_sources[] row — excluded
+  // from this row's strict Component Type select so two rows can't lock the
+  // same field. Self stays selectable when editing an existing row.
+  lockedComponentKeys?: string[];
+  // WHY: parent (MappingStudioTab) translates this into store updateField
+  // calls that auto-link the matching field rule (`enum.source = component_db.<new>`)
+  // and unlock the OLD key (`enum.source = ''`) so Phase 3's lock contract holds.
+  onComponentTypeChange?: (oldType: string, newType: string) => void;
+  // WHY: parent gates its global Save button when any expanded row is
+  // form-invalid (e.g. mode=sheet + empty sheet name). Prevents 400s from the
+  // compile pipeline.
+  onValidityChange?: (invalid: boolean) => void;
 }
 
 export function EditableComponentSource({
@@ -48,6 +58,9 @@ export function EditableComponentSource({
   rules,
   fieldOrder,
   knownValues,
+  lockedComponentKeys = [],
+  onComponentTypeChange,
+  onValidityChange,
 }: EditableComponentSourceProps) {
   const roles = source.roles || {
     maker: "",
@@ -88,6 +101,25 @@ export function EditableComponentSource({
     `studio:compSource:${csKey}:attrs`,
     false,
   );
+
+  // Phase 3: strict Component Type select. Options come from available
+  // field keys, excluding rows already locked by another component_sources[]
+  // entry. Self stays selectable when editing an existing row.
+  const compType = source.component_type || source.type || "";
+  const availableComponentTypeOptions = useMemo(() => {
+    const lockedSet = new Set(lockedComponentKeys.filter((k) => k && k !== compType));
+    return fieldOrder.filter((key) => !key.startsWith("__grp::") && !lockedSet.has(key));
+  }, [fieldOrder, lockedComponentKeys, compType]);
+
+  // Phase 3: sheet-required gate. Default mode='sheet' + sheet=''; fire
+  // onValidityChange so MappingStudioTab can disable Save while invalid.
+  const sourceMeta = source as Record<string, unknown>;
+  const mode = String(sourceMeta.mode ?? "sheet");
+  const sheet = String(sourceMeta.sheet ?? "");
+  const sheetMissing = mode === "sheet" && sheet.trim().length === 0;
+  useEffect(() => {
+    onValidityChange?.(sheetMissing);
+  }, [sheetMissing, onValidityChange]);
 
   // Group field keys by ui.group for the field key picker
   const fieldKeyGroups = useMemo(() => {
@@ -211,7 +243,6 @@ export function EditableComponentSource({
     updateRoles({ properties: next as unknown as typeof roles.properties });
   }
 
-  const compType = source.component_type || source.type || "";
   const [expanded, , setExpanded] = usePersistedToggle(
     `studio:compSource:${compType || `idx-${index}`}:expanded`,
     false,
@@ -353,13 +384,55 @@ export function EditableComponentSource({
             text={STUDIO_TIPS.component_type}
           />
         </div>
-        <ComboSelect
+        <select
+          className={`${selectCls} w-full`}
           value={compType}
-          onChange={(v) => onUpdate({ component_type: v, type: v })}
-          options={COMPONENT_TYPES}
-          placeholder="e.g. sensor"
-        />
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === compType) return;
+            onUpdate({ component_type: v, type: v });
+            onComponentTypeChange?.(compType, v);
+          }}
+        >
+          <option value="">(select a key)</option>
+          {availableComponentTypeOptions.map((key) => (
+            <option key={key} value={key}>
+              {displayLabel(key, rules[key] as Record<string, unknown> | undefined)} ({key})
+            </option>
+          ))}
+        </select>
       </div>
+
+      {/* Sheet config — required when mode=sheet (default). Inline gate
+          prevents the compile-pipeline 400 (sheet is required when mode=sheet). */}
+      <div className="mb-3 grid grid-cols-3 gap-3">
+        <div>
+          <div className={labelCls}>Mode</div>
+          <select
+            className={`${selectCls} w-full`}
+            value={mode}
+            onChange={(e) => onUpdate({ mode: e.target.value })}
+          >
+            <option value="sheet">sheet</option>
+            <option value="scratch">scratch</option>
+          </select>
+        </div>
+        <div className="col-span-2">
+          <div className={labelCls}>Sheet name</div>
+          <input
+            className={`${inputCls} w-full ${sheetMissing ? "sf-border-danger" : ""}`}
+            value={sheet}
+            onChange={(e) => onUpdate({ sheet: e.target.value })}
+            placeholder="e.g. Sensors"
+            disabled={mode !== "sheet"}
+          />
+        </div>
+      </div>
+      {sheetMissing ? (
+        <div className="mb-3 px-3 py-2 rounded sf-callout sf-callout-danger text-[11px]">
+          Sheet name is required when mode=sheet &mdash; enter a sheet name to enable save.
+        </div>
+      ) : null}
 
       {/* Component-level full review priority */}
       <button

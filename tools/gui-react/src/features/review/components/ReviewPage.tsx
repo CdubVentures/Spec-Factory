@@ -25,6 +25,7 @@ import { computeReviewDashboardMetrics, deriveReviewKpiCards } from '../selector
 import { useDebouncedCallback } from '../../../hooks/useDebounce.ts';
 import { readReviewGridSessionState, writeReviewGridSessionState } from '../state/reviewGridSessionState.ts';
 import { invalidateReviewThresholdCaches } from '../state/reviewThresholdInvalidation.ts';
+import { resolveReviewFocusPrune } from '../state/reviewFocusPruning.ts';
 import type { ReviewLayout, ProductsIndexResponse, CandidateResponse, CandidateDeleteResponse, ReviewCandidate } from '../../../types/review.ts';
 import { parseCatalogProducts } from '../../catalog/api/catalogParsers.ts';
 import {
@@ -48,6 +49,7 @@ import {
 import { FinderDeleteConfirmModal } from '../../../shared/ui/finder/FinderDeleteConfirmModal.tsx';
 import type { DeleteTarget } from '../../../shared/ui/finder/types.ts';
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
+import { enqueueNotification } from '../../../shared/notifications/notificationStore.ts';
 import {
   cancelReviewCandidateCacheQueries,
   cancelReviewFieldValueCacheQueries,
@@ -225,6 +227,26 @@ export function ReviewPage() {
     setBrandFilterSelection,
     setFilter,
   ]);
+
+  useEffect(() => {
+    if (categoryRef.current !== category) return;
+    if (!indexData?.products) return;
+    const prune = resolveReviewFocusPrune({
+      activeCell,
+      products: indexData.products,
+      fieldLabel: selectedField ? getLabel(selectedField) : '',
+    });
+    if (!prune.shouldClose) return;
+
+    closeDrawer();
+    if (!prune.notice) return;
+    enqueueNotification({
+      severity: 'info',
+      source: 'manual',
+      title: prune.notice.title,
+      message: prune.notice.message,
+    });
+  }, [activeCell, category, closeDrawer, getLabel, indexData?.products, selectedField]);
 
   // WHY: Drawer selection belongs to a single category context — a product
   // from category A is meaningless in category B. Resetting on switch prevents

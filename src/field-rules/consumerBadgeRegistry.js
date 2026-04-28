@@ -7,6 +7,7 @@
 // FIELD_SYSTEM_MAP auto-updates, idxRuntimeMetadata auto-adapts.
 
 import { isObject, toArray, normalizeText } from '../shared/primitives.js';
+import { FIELD_RULE_SCHEMA } from './fieldRuleSchema.js';
 
 // ── Extractor helpers ────────────────────────────────────────────────
 // 4 patterns cover all field paths. Each returns true if the rule has a
@@ -72,6 +73,19 @@ export const PARENT_GROUPS = Object.freeze({
   pub:  { label: 'PUB',  title: 'Publisher Pipeline' },
   llm:  { label: 'LLM',  title: 'LLM Finder' },
 });
+
+function deriveFieldRuleSchemaBadgeEntries() {
+  return FIELD_RULE_SCHEMA
+    .filter((entry) => entry.consumerBadgeConsumers)
+    .map((entry) => ({
+      path: entry.studioTogglePath || entry.path,
+      type: entry.consumerBadgeType || 'presence',
+      flatAliases: [...(entry.consumerBadgeFlatAliases || [])],
+      section: entry.consumerBadgeSection || '',
+      key: entry.consumerBadgeKey || entry.label,
+      consumers: entry.consumerBadgeConsumers,
+    }));
+}
 
 // ── Registry (SSOT) ──────────────────────────────────────────────────
 
@@ -293,17 +307,7 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'llm.kf': { desc: 'Sent to the per-key finder LLM as extraction guidance. Describes expected format, units, edge cases. keyLlmAdapter.js:112.' },
     } },
 
-  { path: 'ai_assist.variant_inventory_usage', type: 'object', flatAliases: [],
-    section: 'Extraction Priority & Guidance', key: 'Variant Inventory Usage',
-    consumers: {
-      'llm.kf': { desc: 'Single on/off checkbox. Enable only when edition/SKU/release/colorway/PIF identity facts add evidence-filter value without ambiguity; field-specific interpretation belongs in ai_assist.reasoning_note.' },
-    } },
-
-  { path: 'ai_assist.pif_priority_images', type: 'object', flatAliases: [],
-    section: 'Extraction Priority & Guidance', key: 'PIF Priority Images',
-    consumers: {
-      'llm.kf': { desc: 'Single on/off checkbox. Enable only when default/base PIF priority-view images add visual evidence value. Missing images are not negative evidence; edition/list interpretation belongs in ai_assist.reasoning_note.' },
-    } },
+  ...deriveFieldRuleSchemaBadgeEntries(),
 
   // Search Hints & Aliases
 

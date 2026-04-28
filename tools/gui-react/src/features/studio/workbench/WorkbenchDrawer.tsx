@@ -5,11 +5,7 @@ import { SystemBadges } from './SystemBadges.tsx';
 import { WorkbenchDrawerTabContent } from './WorkbenchDrawerTabContent.tsx';
 import { strN } from './workbenchHelpers.ts';
 import type { DrawerTab } from './workbenchTypes.ts';
-import type {
-  ComponentDbResponse,
-  ComponentSource,
-  EnumEntry,
-} from '../../../types/studio.ts';
+import type { EnumEntry } from '../../../types/studio.ts';
 
 interface Props {
   category: string;
@@ -18,8 +14,6 @@ interface Props {
   fieldOrder: string[];
   knownValues: Record<string, string[]>;
   enumLists: EnumEntry[];
-  componentDb: ComponentDbResponse;
-  componentSources: ComponentSource[];
   onCommitImmediate: () => void;
   onClose: () => void;
   onNavigate: (key: string) => void;
@@ -32,7 +26,6 @@ const DRAWER_TABS: { id: DrawerTab; label: string }[] = [
   { id: 'priority', label: 'Priority' },
   { id: 'aiAssist', label: 'Ai Assist' },
   { id: 'enum', label: 'Enum Policy' },
-  { id: 'components', label: 'Components' },
   { id: 'constraints', label: 'Cross-Field Constraints' },
   { id: 'evidence', label: 'Evidence' },
   { id: 'tooltip', label: 'Tooltip / Guidance' },
@@ -44,7 +37,6 @@ const DRAWER_TAB_IDS = [
   'priority',
   'aiAssist',
   'enum',
-  'components',
   'constraints',
   'evidence',
   'tooltip',
@@ -72,8 +64,6 @@ export function WorkbenchDrawer({
   fieldOrder,
   knownValues,
   enumLists,
-  componentDb,
-  componentSources,
   onCommitImmediate,
   onClose,
   onNavigate,
@@ -184,8 +174,6 @@ export function WorkbenchDrawer({
           rule={rule}
           knownValues={knownValues}
           enumLists={enumLists}
-          componentDb={componentDb}
-          componentSources={componentSources}
           fieldOrder={fieldOrder}
           onUpdate={update}
           onNavigate={onNavigate}

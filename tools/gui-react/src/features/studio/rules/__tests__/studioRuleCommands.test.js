@@ -186,7 +186,10 @@ test('cascade: contract.shape list→scalar clears list_rules', async () => {
   assert.equal(rule.contract.list_rules.item_union, null);
 });
 
-test('cascade: component object set with type cascades to enum via path alias', async () => {
+test('cascade: enum.source set to component_db.X coerces contract + sets policy', async () => {
+  // Phase 2: cascade trigger flipped from `component.type` to `enum.source`.
+  // Writing enum.source = component_db.X locks contract.type=string,
+  // contract.shape=scalar, clears unit, and sets policy=open_prefer_known.
   const { applyStudioRuleCommand, createSetFieldValueCommand } =
     await loadRuleCommands();
   const rule = {};
@@ -194,25 +197,25 @@ test('cascade: component object set with type cascades to enum via path alias', 
   applyStudioRuleCommand({
     rule,
     key: 'sensor',
-    command: createSetFieldValueCommand('component', {
-      type: 'sensor',
-      source: 'component_db.sensor',
-      allow_new_components: true,
-      require_identity_evidence: true,
-    }),
+    command: createSetFieldValueCommand('enum.source', 'component_db.sensor'),
   });
 
-  assert.equal(rule.enum?.source, 'component_db.sensor', 'cascade sets enum.source');
+  assert.equal(rule.enum?.source, 'component_db.sensor', 'enum.source set');
   assert.equal(rule.enum?.policy, 'open_prefer_known', 'cascade sets enum.policy');
+  assert.equal(rule.contract?.type, 'string', 'cascade coerces contract.type');
+  assert.equal(rule.contract?.shape, 'scalar', 'cascade coerces contract.shape');
   assert.equal(rule.enum_source, 'component_db.sensor', 'legacy alias synced');
   assert.equal(rule.enum_policy, 'open_prefer_known', 'legacy alias synced');
 });
 
-test('cascade: component cleared (null) reverts component_db enum', async () => {
+test('cascade: enum.source cleared from component_db reverts auto-applied policy', async () => {
+  // Phase 2: cascade trigger flipped from `component.type` to `enum.source`.
+  // Clearing enum.source (was component_db.X) only clears auto-applied
+  // open_prefer_known policy; the contract.type/shape stay (the caller
+  // chooses the new shape).
   const { applyStudioRuleCommand, createSetFieldValueCommand } =
     await loadRuleCommands();
   const rule = {
-    component: { type: 'sensor', source: 'component_db.sensor' },
     enum: { source: 'component_db.sensor', policy: 'open_prefer_known' },
     enum_source: 'component_db.sensor',
     enum_policy: 'open_prefer_known',
@@ -221,11 +224,11 @@ test('cascade: component cleared (null) reverts component_db enum', async () => 
   applyStudioRuleCommand({
     rule,
     key: 'sensor',
-    command: createSetFieldValueCommand('component', null),
+    command: createSetFieldValueCommand('enum.source', ''),
   });
 
-  assert.equal(rule.enum?.source, null, 'enum.source cleared');
-  assert.equal(rule.enum?.policy, null, 'enum.policy cleared');
+  assert.equal(rule.enum?.source, '', 'enum.source cleared');
+  assert.notEqual(rule.enum?.policy, 'open_prefer_known', 'auto-applied policy reverted');
 });
 
 test('cascade: priority.required_level → identity floors evidence refs', async () => {

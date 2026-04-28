@@ -64,11 +64,8 @@ test('normalizeFieldStudioMap characterizes representative normalized studio map
           min_evidence_refs: 2,
         },
       },
-      variant_enabled: {
-        ai_assist: { variant_inventory_usage: { enabled: false } },
-      },
-      variant_legacy: {
-        ai_assist: { variant_inventory_usage: { mode: 'default' } },
+      color_edition_enabled: {
+        ai_assist: { color_edition_context: { enabled: false } },
       },
       pif_bool: {
         ai_assist: { pif_priority_images: true },
@@ -235,11 +232,8 @@ test('normalizeFieldStudioMap characterizes representative normalized studio map
       empty_ai: {
         evidence: { min_evidence_refs: 2 },
       },
-      variant_enabled: {
-        ai_assist: { variant_inventory_usage: { enabled: false } },
-      },
-      variant_legacy: {
-        ai_assist: { variant_inventory_usage: { mode: 'default' } },
+      color_edition_enabled: {
+        ai_assist: { color_edition_context: { enabled: false } },
       },
       pif_bool: {
         ai_assist: { pif_priority_images: true },

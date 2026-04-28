@@ -158,14 +158,7 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
     };
   }
 
-  /**
-   * Merge new discovery results into existing file. Appends run + sets selected.
-   * Latest-wins: top-level `selected` is always the latest non-rejected run's output.
-   */
-  function merge({ productId, productRoot, newDiscovery, run }) {
-    const existing = read({ productId, productRoot })
-      || emptyTemplate(productId, newDiscovery.category);
-
+  function mergeExisting({ productId, existing, newDiscovery, run }) {
     const existingRuns = Array.isArray(existing.runs) ? existing.runs : [];
     // WHY: next_run_number is the monotonic high-water mark.
     // Fallback chain for backward compat with old JSON files lacking next_run_number.
@@ -216,6 +209,22 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
       ...pickExtraFields(existing),
     };
 
+    return merged;
+  }
+
+  function mergeData({ productId, productRoot, newDiscovery, run }) {
+    const existing = read({ productId, productRoot })
+      || emptyTemplate(productId, newDiscovery.category);
+
+    return mergeExisting({ productId, existing, newDiscovery, run });
+  }
+
+  /**
+   * Merge new discovery results into existing file. Appends run + sets selected.
+   * Latest-wins: top-level `selected` is always the latest non-rejected run's output.
+   */
+  function merge({ productId, productRoot, newDiscovery, run }) {
+    const merged = mergeData({ productId, productRoot, newDiscovery, run });
     write({ productId, productRoot, data: merged });
     return merged;
   }
@@ -273,5 +282,5 @@ export function createFinderJsonStore({ filePrefix, emptySelected, recalculateSe
     return { deleted: true };
   }
 
-  return { read, write, recalculateFromRuns, merge, deleteRun, deleteRuns, deleteAll };
+  return { read, write, recalculateFromRuns, mergeData, merge, deleteRun, deleteRuns, deleteAll };
 }

@@ -25,6 +25,39 @@ function capitalize(s) {
   return s ? s[0].toUpperCase() + s.slice(1) : '';
 }
 
+function runSpecDbTransaction(specDb, work) {
+  if (typeof specDb?.db?.transaction !== 'function') return work();
+  return specDb.db.transaction(work)();
+}
+
+function buildFinderEntityResponse({ row, runRows, buildGetResponse, specDb, productId }) {
+  const latestRun = runRows.length > 0 ? runRows[runRows.length - 1] : null;
+  const latestSelected = latestRun?.selected;
+  const selected = (latestSelected && typeof latestSelected === 'object' && Object.keys(latestSelected).length > 0)
+    ? latestSelected
+    : (row.selected || {});
+
+  if (buildGetResponse) {
+    return buildGetResponse(row, selected, runRows, { specDb, productId });
+  }
+
+  return {
+    product_id: row.product_id,
+    category: row.category,
+    run_count: row.run_count,
+    last_ran_at: row.latest_ran_at,
+    selected,
+    runs: runRows,
+  };
+}
+
+function readFinderEntityResponse({ getOne, listRuns, buildGetResponse, specDb, productId }) {
+  const row = getOne(specDb, productId);
+  if (!row) return null;
+  const runRows = listRuns(specDb, productId);
+  return buildFinderEntityResponse({ row, runRows, buildGetResponse, specDb, productId });
+}
+
 function cleanProductJsonCandidates(productId, fieldKeys) {
   const productPath = path.join(defaultProductRoot(), productId, 'product.json');
   try {
@@ -287,24 +320,13 @@ export function createFinderRouteHandler(finderConfig) {
         if (!row) return jsonRes(res, 404, { error: 'not found' });
 
         const runRows = listRuns(specDb, productId);
-        const latestRun = runRows.length > 0 ? runRows[runRows.length - 1] : null;
-        const latestSelected = latestRun?.selected;
-        const selected = (latestSelected && typeof latestSelected === 'object' && Object.keys(latestSelected).length > 0)
-          ? latestSelected
-          : (row.selected || {});
-
-        if (buildGetResponse) {
-          return jsonRes(res, 200, buildGetResponse(row, selected, runRows, { specDb, productId }));
-        }
-
-        return jsonRes(res, 200, {
-          product_id: row.product_id,
-          category: row.category,
-          run_count: row.run_count,
-          last_ran_at: row.latest_ran_at,
-          selected,
-          runs: runRows,
-        });
+        return jsonRes(res, 200, buildFinderEntityResponse({
+          row,
+          runRows,
+          buildGetResponse,
+          specDb,
+          productId,
+        }));
       }
 
       // ── POST /:prefix/:category/:productId/preview-prompt — compile only ──
@@ -521,10 +543,12 @@ export function createFinderRouteHandler(finderConfig) {
         const specDb = getSpecDb(category);
         if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
 
-        for (const rn of runNumbers) deleteRunSql(specDb, productId, rn);
+        let updated;
+        runSpecDbTransaction(specDb, () => {
+          for (const rn of runNumbers) deleteRunSql(specDb, productId, rn);
 
         const deleteRunsFn = finderConfig.deleteRuns || deleteRun;
-        const updated = finderConfig.deleteRuns
+        updated = finderConfig.deleteRuns
           ? deleteRunsFn({ productId, runNumbers })
           : (() => {
             let last = null;
@@ -561,6 +585,9 @@ export function createFinderRouteHandler(finderConfig) {
           deleteAllRunsSql(specDb, productId);
           deleteOneSql(specDb, productId);
         }
+        });
+
+        const entity = readFinderEntityResponse({ getOne, listRuns, buildGetResponse, specDb, productId });
 
         emitDataChange({
           broadcastWs,
@@ -570,7 +597,14 @@ export function createFinderRouteHandler(finderConfig) {
           meta: { productId, deletedRuns: runNumbers, remainingRuns: updated?.run_count || 0 },
         });
 
-        return jsonRes(res, 200, { ok: true, remaining_runs: updated?.run_count || 0 });
+        return jsonRes(res, 200, {
+          ok: true,
+          product_id: productId,
+          category,
+          remaining_runs: updated?.run_count || 0,
+          deleted_runs: runNumbers,
+          entity,
+        });
       }
 
       // ── DELETE /:prefix/:category/:productId/runs/:runNumber ────
@@ -583,8 +617,10 @@ export function createFinderRouteHandler(finderConfig) {
         const specDb = getSpecDb(category);
         if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
 
-        deleteRunSql(specDb, productId, runNumber);
-        const updated = deleteRun({ productId, runNumber });
+        let updated;
+        runSpecDbTransaction(specDb, () => {
+          deleteRunSql(specDb, productId, runNumber);
+          updated = deleteRun({ productId, runNumber });
 
         // WHY: Candidate cleanup on single-run delete — strip the deleted run's
         // source entries from candidates, delete empty candidates, and update
@@ -620,6 +656,9 @@ export function createFinderRouteHandler(finderConfig) {
           deleteAllRunsSql(specDb, productId);
           deleteOneSql(specDb, productId);
         }
+        });
+
+        const entity = readFinderEntityResponse({ getOne, listRuns, buildGetResponse, specDb, productId });
 
         emitDataChange({
           broadcastWs,
@@ -629,7 +668,14 @@ export function createFinderRouteHandler(finderConfig) {
           meta: { productId, deletedRun: runNumber, remainingRuns: updated?.run_count || 0 },
         });
 
-        return jsonRes(res, 200, { ok: true, remaining_runs: updated?.run_count || 0 });
+        return jsonRes(res, 200, {
+          ok: true,
+          product_id: productId,
+          category,
+          remaining_runs: updated?.run_count || 0,
+          deleted_run: runNumber,
+          entity,
+        });
       }
 
       // ── DELETE /:prefix/:category/:productId — delete all runs ───
@@ -641,8 +687,8 @@ export function createFinderRouteHandler(finderConfig) {
         const specDb = getSpecDb(category);
         if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
 
-        deleteAll({ productId });
-        deleteAllRunsSql(specDb, productId);
+        runSpecDbTransaction(specDb, () => {
+          deleteAllRunsSql(specDb, productId);
 
         // WHY: Source-aware cleanup strips only this module's source entries
         // from candidate rows. Skip republish when onAfterRunDelete handles it.
@@ -683,6 +729,11 @@ export function createFinderRouteHandler(finderConfig) {
           });
         }
 
+        deleteAll({ productId });
+        });
+
+        const entity = readFinderEntityResponse({ getOne, listRuns, buildGetResponse, specDb, productId });
+
         emitDataChange({
           broadcastWs,
           event: `${routePrefix}-deleted`,
@@ -691,7 +742,12 @@ export function createFinderRouteHandler(finderConfig) {
           meta: { productId },
         });
 
-        return jsonRes(res, 200, { ok: true });
+        return jsonRes(res, 200, {
+          ok: true,
+          product_id: productId,
+          category,
+          entity,
+        });
       }
 
       return false;

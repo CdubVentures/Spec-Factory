@@ -8,6 +8,39 @@ import { initOperationsRegistry } from '../../operations/index.js';
 
 const ROUTE_TMP_ROOT = path.join(os.tmpdir(), `finder-routes-test-${Date.now()}`);
 
+function makeRollbackTracker() {
+  const committedDeletes = [];
+  let pendingDeletes = [];
+  let insideTransaction = false;
+
+  return {
+    db: {
+      transaction: (work) => () => {
+        insideTransaction = true;
+        pendingDeletes = [];
+        try {
+          const result = work();
+          committedDeletes.push(...pendingDeletes);
+          return result;
+        } catch (err) {
+          pendingDeletes = [];
+          throw err;
+        } finally {
+          insideTransaction = false;
+        }
+      },
+    },
+    recordDelete: (entry) => {
+      if (insideTransaction) {
+        pendingDeletes.push(entry);
+        return;
+      }
+      committedDeletes.push(entry);
+    },
+    committedDeletes,
+  };
+}
+
 function makeJsonCapture() {
   const calls = [];
   const jsonRes = (res, status, body) => { calls.push({ status, body }); return true; };
@@ -17,6 +50,7 @@ function makeJsonCapture() {
 function makeSpecDbStub(overrides = {}) {
   const candidateDeleteCalls = [];
   return {
+    db: overrides.db,
     getProduct: () => overrides.productRow ?? { product_id: 'p1', category: 'cat', brand: 'B', model: 'M', base_model: 'BM', variant: '' },
     getCompiledRules: () => ({ fields: { field_a: { key: 'field_a' } } }),
     deleteFieldCandidatesByProductAndField: (...args) => candidateDeleteCalls.push(args),
@@ -50,6 +84,7 @@ function makeFinderConfig(overrides = {}) {
     loop: overrides.loop || undefined,
     customStages: overrides.customStages || undefined,
     onAfterDeleteAll: overrides.onAfterDeleteAll || undefined,
+    buildGetResponse: overrides.buildGetResponse || undefined,
   };
 }
 
@@ -192,7 +227,66 @@ describe('createFinderRouteHandler — generic', () => {
     assert.equal(calls[0].status, 400);
   });
 
+  it('DELETE single run rolls back SQL when JSON run mirror delete fails', async () => {
+    const tracker = makeRollbackTracker();
+    const { ctx } = makeCtx({ db: tracker.db });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteRun: () => {
+        throw new Error('JSON delete failed');
+      },
+      deleteRunSql: (_specDb, productId, runNumber) => {
+        tracker.recordDelete({ productId, runNumber });
+      },
+    }))(ctx);
+
+    await assert.rejects(
+      () => handler(['test-finder', 'cat', 'p1', 'runs', '1'], new Map(), 'DELETE', {}, {}),
+      /JSON delete failed/,
+    );
+
+    assert.deepEqual(tracker.committedDeletes, []);
+  });
+
   // ── DELETE all ────────────────────────────────────────────────────
+
+  it('DELETE single run returns the canonical changed finder entity', async () => {
+    let row = {
+      product_id: 'p1',
+      category: 'cat',
+      latest_ran_at: '2026-04-27T00:00:00.000Z',
+      run_count: 2,
+    };
+    const runs = [{ run_number: 1, selected: { value: 'survivor' } }];
+    const { ctx, calls } = makeCtx();
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteRun: () => ({ run_count: 1, selected: { value: 'survivor' }, last_ran_at: '2026-04-27T01:00:00.000Z' }),
+      deleteRunSql: () => {},
+      getOne: () => row,
+      listRuns: () => runs,
+      upsertSummary: (_specDb, nextRow) => {
+        row = { ...row, ...nextRow };
+      },
+      buildGetResponse: (changedRow, selected, runRows) => ({
+        product_id: changedRow.product_id,
+        run_count: changedRow.run_count,
+        last_ran_at: changedRow.latest_ran_at,
+        selected,
+        runs: runRows,
+      }),
+    }))(ctx);
+
+    await handler(['test-finder', 'cat', 'p1', 'runs', '2'], new Map(), 'DELETE', {}, {});
+
+    assert.equal(calls[0].status, 200);
+    assert.equal(calls[0].body.remaining_runs, 1);
+    assert.deepEqual(calls[0].body.entity, {
+      product_id: 'p1',
+      run_count: 1,
+      last_ran_at: '2026-04-27T01:00:00.000Z',
+      selected: { value: 'survivor' },
+      runs,
+    });
+  });
 
   it('DELETE all removes data and cleans up candidates', async () => {
     let allDeleted = false;
@@ -224,6 +318,90 @@ describe('createFinderRouteHandler — generic', () => {
     assert.equal(hookCalls[0].category, 'cat');
     assert.ok(hookCalls[0].specDb, 'hook receives specDb');
     assert.ok('productRoot' in hookCalls[0], 'hook receives productRoot');
+  });
+
+  it('DELETE all rolls back SQL cleanup when reset cascade hook fails', async () => {
+    const tracker = makeRollbackTracker();
+    const { ctx } = makeCtx({ db: tracker.db });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteAllRunsSql: (_specDb, productId) => {
+        tracker.recordDelete({ productId, kind: 'runs' });
+      },
+      deleteOneSql: (_specDb, productId) => {
+        tracker.recordDelete({ productId, kind: 'summary' });
+      },
+      upsertSummary: (_specDb, row) => {
+        tracker.recordDelete({ productId: row.product_id, kind: 'summary-upsert' });
+      },
+      onAfterDeleteAll: () => {
+        throw new Error('reset cascade failed');
+      },
+    }))(ctx);
+
+    await assert.rejects(
+      () => handler(['test-finder', 'cat', 'p1'], new Map(), 'DELETE', {}, {}),
+      /reset cascade failed/,
+    );
+
+    assert.deepEqual(tracker.committedDeletes, []);
+  });
+
+  it('DELETE all does not delete JSON mirror before SQL cleanup succeeds', async () => {
+    const calls = [];
+    const { ctx } = makeCtx();
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteAll: () => {
+        calls.push('json-delete');
+        return { deleted: true };
+      },
+      deleteAllRunsSql: () => {
+        calls.push('sql-runs-delete');
+        throw new Error('SQL cleanup failed');
+      },
+    }))(ctx);
+
+    await assert.rejects(
+      () => handler(['test-finder', 'cat', 'p1'], new Map(), 'DELETE', {}, {}),
+      /SQL cleanup failed/,
+    );
+
+    assert.deepEqual(calls, ['sql-runs-delete']);
+  });
+
+  it('DELETE all returns the canonical reset finder entity', async () => {
+    let row = {
+      product_id: 'p1',
+      category: 'cat',
+      latest_ran_at: '2026-04-27T00:00:00.000Z',
+      run_count: 3,
+    };
+    const { ctx, calls } = makeCtx();
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteAllRunsSql: () => {},
+      getOne: () => row,
+      listRuns: () => [],
+      upsertSummary: (_specDb, nextRow) => {
+        row = { ...row, ...nextRow };
+      },
+      buildGetResponse: (changedRow, selected, runRows) => ({
+        product_id: changedRow.product_id,
+        run_count: changedRow.run_count,
+        last_ran_at: changedRow.latest_ran_at,
+        selected,
+        runs: runRows,
+      }),
+    }))(ctx);
+
+    await handler(['test-finder', 'cat', 'p1'], new Map(), 'DELETE', {}, {});
+
+    assert.equal(calls[0].status, 200);
+    assert.deepEqual(calls[0].body.entity, {
+      product_id: 'p1',
+      run_count: 0,
+      last_ran_at: '',
+      selected: {},
+      runs: [],
+    });
   });
 
   it('DELETE single run does NOT invoke onAfterDeleteAll hook', async () => {
@@ -263,6 +441,27 @@ describe('createFinderRouteHandler — generic', () => {
     assert.equal(calls[0].status, 200);
     assert.equal(calls[0].body.remaining_runs, 1);
     assert.deepEqual(deletedNumbers, [2, 3]);
+  });
+
+  it('DELETE batch rolls back SQL when JSON run mirror delete fails', async () => {
+    const tracker = makeRollbackTracker();
+    const { ctx } = makeCtx({ db: tracker.db });
+    ctx.readJsonBody = async () => ({ runNumbers: [1, 2] });
+    const handler = createFinderRouteHandler(makeFinderConfig({
+      deleteRuns: () => {
+        throw new Error('JSON batch delete failed');
+      },
+      deleteRunSql: (_specDb, productId, runNumber) => {
+        tracker.recordDelete({ productId, runNumber });
+      },
+    }))(ctx);
+
+    await assert.rejects(
+      () => handler(['test-finder', 'cat', 'p1', 'runs', 'batch'], new Map(), 'DELETE', {}, {}),
+      /JSON batch delete failed/,
+    );
+
+    assert.deepEqual(tracker.committedDeletes, []);
   });
 
   it('DELETE batch returns 400 for missing runNumbers', async () => {

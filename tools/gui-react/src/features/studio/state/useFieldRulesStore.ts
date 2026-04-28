@@ -6,6 +6,7 @@ import {
   enforceStudioRuleInvariants,
 } from '../rules/ruleCommands.ts';
 import { EG_PRESET_KEYS } from './egPresetsClient.ts';
+import { isComponentLocked, isComponentLockEditablePath } from './componentLockClient.ts';
 import type { FieldRule } from '../../../types/studio.ts';
 
 type RuleMap = Record<string, FieldRule>;
@@ -182,6 +183,15 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
       if (state.egLockedKeys.includes(key) && !state.egEditablePaths.includes(path)) {
         return state;
       }
+      // WHY: Component-locked fields (enum.source === component_db.<self>) only
+      // allow edits to the editable-path set; the contract identity belongs
+      // to the Field Studio Map.
+      if (
+        isComponentLocked(state.editedRules[key] as Record<string, unknown> | undefined, key)
+        && !isComponentLockEditablePath(path)
+      ) {
+        return state;
+      }
       const next = { ...state.editedRules };
       const rule = { ...(next[key] || {}) };
       applyStudioRuleCommand({
@@ -257,6 +267,11 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
     set((state) => {
       // WHY: EG-locked fields (colors, editions) cannot be deleted.
       if (state.egLockedKeys.includes(key)) return state;
+      // WHY: Component-locked keys cannot be deleted from Key Navigator —
+      // delete the matching component_sources[] row in the Field Studio Map first.
+      if (isComponentLocked(state.editedRules[key] as Record<string, unknown> | undefined, key)) {
+        return state;
+      }
       const nextOrder = state.editedFieldOrder.filter((k) => k !== key);
       const nextRules: RuleMap = {};
       for (const [k, rule] of Object.entries(state.editedRules)) {

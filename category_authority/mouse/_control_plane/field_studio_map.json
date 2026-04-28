@@ -1030,13 +1030,13 @@
   "field_overrides": {
     "acceleration": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the sensor's maximum rated tracking acceleration in G/gravities, usually shown as \"Max Acceleration (G)\", \"up to 50G acceleration\", or a sensor datasheet \"Acceleration\" row. Return only the numeric value. Do not treat \"zero acceleration\", \"no acceleration\", or \"zero smoothing/acceleration/filtering\" as 0; those describe pointer/processing behavior and belong to other fields. Do not read grams/weight values such as \"54g\" as acceleration. If a component datasheet lists multiple operating modes, use the highest gaming/high-performance/corded value under the upper_bound policy, not low-power or office-mode values. Prefer exact product official specs; otherwise use the resolved exact sensor's maker/authorized distributor datasheet or official sensor technology page. Product-level official specs override a generic sensor row. Do not infer acceleration from DPI or IPS alone, and do not copy sibling-model/family values unless the source explicitly applies to the exact product.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Extract the sensor's maximum rated tracking acceleration in G/gravities, usually shown as \"Max Acceleration (G)\", \"up to 50G acceleration\", or a sensor datasheet \"Acceleration\" row. Return only the numeric value. Do not treat \"zero acceleration\", \"no acceleration\", or \"zero smoothing/acceleration/filtering\" as 0; those describe pointer/processing behavior and belong to other fields. Do not read grams/weight values such as \"54g\" as acceleration. If a component datasheet lists multiple operating modes, use the highest gaming/high-performance/corded value under the upper_bound policy, not low-power or office-mode values. Prefer exact product official specs; otherwise use the resolved exact sensor's maker/authorized distributor datasheet or official sensor technology page. Product-level official specs override a generic sensor row. Do not infer acceleration from DPI or IPS alone, and do not copy sibling-model/family values unless the source explicitly applies to the exact product."
       },
       "aliases": [
         "max acceleration",
@@ -1182,13 +1182,13 @@
     },
     "adjustable_scroll_wheel": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Emit true only when the exact mouse has a scroll wheel whose behavior/feel is user-adjustable or mode-switchable, such as ratchet vs free-spin/smooth mode, software-configurable scroll tension/resistance/steps, Smart-Reel/auto free-spin threshold, MagSpeed/manual mode-shift, HyperScroll, or HyperScroll Pro. Do not count tilt/horizontal scrolling by itself; ordinary programmable buttons; DPI/polling changes; OS/app scroll speed; scroll acceleration alone without a configurable wheel/mode; or a fixed 16/24-step wheel. For false, require affirmative evidence of a fixed/standard wheel, a credible spec database stating no editable scroll-wheel resistance, or a complete authoritative spec/review that distinguishes the wheel from adjustable models. If the page merely omits adjustable-wheel language, return unk rather than guessing false.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Emit true only when the exact mouse has a scroll wheel whose behavior/feel is user-adjustable or mode-switchable, such as ratchet vs free-spin/smooth mode, software-configurable scroll tension/resistance/steps, Smart-Reel/auto free-spin threshold, MagSpeed/manual mode-shift, HyperScroll, or HyperScroll Pro. Do not count tilt/horizontal scrolling by itself; ordinary programmable buttons; DPI/polling changes; OS/app scroll speed; scroll acceleration alone without a configurable wheel/mode; or a fixed 16/24-step wheel. For false, require affirmative evidence of a fixed/standard wheel, a credible spec database stating no editable scroll-wheel resistance, or a complete authoritative spec/review that distinguishes the wheel from adjustable models. If the page merely omits adjustable-wheel language, return unk rather than guessing false."
       },
       "aliases": [
         "adjustable scroll wheel",
@@ -1370,13 +1370,13 @@
     },
     "adjustable_weight": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Return true only when the exact mouse has a user-changeable physical weight or balance system: removable/movable/add-on weights, included tuning weights, optional official extra weight, or a branded tunable/center-of-gravity weight system. Do not count adjustable DPI/CPI, lift-off distance, scroll-wheel resistance/free-spin/tilt, DPI-shift button position, lighting/profiles, swappable side buttons/grips/shells, battery swaps, fixed weight, \"lightweight/reduced weight\", or unofficial mods. For false, require exact-product evidence from an official/support/manual/retailer/spec source that gives a fixed weight and no weight system/included weights, or explicitly says no; otherwise return unk. If a family has mixed models, do not carry values between siblings or successors (for example, G502 HERO vs G502 X).",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Return true only when the exact mouse has a user-changeable physical weight or balance system: removable/movable/add-on weights, included tuning weights, optional official extra weight, or a branded tunable/center-of-gravity weight system. Do not count adjustable DPI/CPI, lift-off distance, scroll-wheel resistance/free-spin/tilt, DPI-shift button position, lighting/profiles, swappable side buttons/grips/shells, battery swaps, fixed weight, \"lightweight/reduced weight\", or unofficial mods. For false, require exact-product evidence from an official/support/manual/retailer/spec source that gives a fixed weight and no weight system/included weights, or explicitly says no; otherwise return unk. If a family has mixed models, do not carry values between siblings or successors (for example, G502 HERO vs G502 X)."
       },
       "aliases": [
         "adjustable weight",
@@ -1555,13 +1555,13 @@
     },
     "battery_hours": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the manufacturer- or credible-source advertised maximum battery runtime for the exact mouse as a scalar hours value. Accept \"up to\" battery life/runtime/playtime/use-on-a-charge claims. If the source lists multiple modes or settings (2.4 GHz, Bluetooth, HyperSpeed, lighting on/off, polling rate, AA/AAA battery), emit the highest supported runtime that applies to the exact product because this field uses upper_bound; preserve the condition in evidence. Convert units to hours: days × 24, weeks × 168, months × 730, years × 8760; prefer explicit source hours when present. Do not use charge time, fast-charge minutes, battery capacity (mAh), standby/sleep time, or values from older/newer/sibling editions. For wired-only products or products with no defensible runtime evidence, return unk/no submitted value.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the manufacturer- or credible-source advertised maximum battery runtime for the exact mouse as a scalar hours value. Accept \"up to\" battery life/runtime/playtime/use-on-a-charge claims. If the source lists multiple modes or settings (2.4 GHz, Bluetooth, HyperSpeed, lighting on/off, polling rate, AA/AAA battery), emit the highest supported runtime that applies to the exact product because this field uses upper_bound; preserve the condition in evidence. Convert units to hours: days × 24, weeks × 168, months × 730, years × 8760; prefer explicit source hours when present. Do not use charge time, fast-charge minutes, battery capacity (mAh), standby/sleep time, or values from older/newer/sibling editions. For wired-only products or products with no defensible runtime evidence, return unk/no submitted value."
       },
       "aliases": [
         "battery life",
@@ -1715,13 +1715,13 @@
     },
     "bluetooth": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Return true only when the exact product/variant supports Bluetooth as a connection mode. Accept Bluetooth, Bluetooth Low Energy, Bluetooth LE, BLE, BT, Bluetooth Smart, or Bluetooth 4.x/5.x wording as true; version text is evidence only, not a separate value. Return false only when a credible product/spec/review source explicitly says no Bluetooth or enumerates all supported connection modes as wired/USB receiver/2.4 GHz/proprietary wireless only. Do not infer true from wireless, 2.4 GHz, USB receiver, dongle, LIGHTSPEED, HyperSpeed, or Wireless alone. If sources are generic, omit the exact variant, or conflict with sibling/edition evidence, return unk rather than guessing.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Return true only when the exact product/variant supports Bluetooth as a connection mode. Accept Bluetooth, Bluetooth Low Energy, Bluetooth LE, BLE, BT, Bluetooth Smart, or Bluetooth 4.x/5.x wording as true; version text is evidence only, not a separate value. Return false only when a credible product/spec/review source explicitly says no Bluetooth or enumerates all supported connection modes as wired/USB receiver/2.4 GHz/proprietary wireless only. Do not infer true from wireless, 2.4 GHz, USB receiver, dongle, LIGHTSPEED, HyperSpeed, or Wireless alone. If sources are generic, omit the exact variant, or conflict with sibling/edition evidence, return unk rather than guessing."
       },
       "aliases": [
         "Bluetooth Low Energy",
@@ -1892,13 +1892,13 @@
     },
     "cable_type": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the cable sheath/flex class of the included cable(s), not connector, length, detachable status, wireless mode, or the separate paracord boolean alone. Prefer direct Cable/Cable Type/spec labels. Normalize exact terms: paracord/paracord-like/shoelace/lightweight paracord construction => paracord; rubber/rubber-coated/soft rubber cable => rubber; braided/double-sleeved/braided cable => braided; Cooler Master Ultraweave/Ultra-weave => ultraweave. Proprietary low-drag names such as SpeedFlex, Ascended, Flex Cord, EZcord, PhantomFlex, and HyperFlex need a material statement before mapping; do not create a new value from marketing alone. For products with multiple included/swappable cables, return every proven cable type. If sources only prove USB connectors, cable length, charging ability, or generic flexibility, return unk.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the cable sheath/flex class of the included cable(s), not connector, length, detachable status, wireless mode, or the separate paracord boolean alone. Prefer direct Cable/Cable Type/spec labels. Normalize exact terms: paracord/paracord-like/shoelace/lightweight paracord construction => paracord; rubber/rubber-coated/soft rubber cable => rubber; braided/double-sleeved/braided cable => braided; Cooler Master Ultraweave/Ultra-weave => ultraweave. Proprietary low-drag names such as SpeedFlex, Ascended, Flex Cord, EZcord, PhantomFlex, and HyperFlex need a material statement before mapping; do not create a new value from marketing alone. For products with multiple included/swappable cables, return every proven cable type. If sources only prove USB connectors, cable length, charging ability, or generic flexibility, return unk."
       },
       "aliases": [
         "rubber-coated cable -> rubber",
@@ -2072,13 +2072,13 @@
     },
     "click_force": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the left/right main-button click or actuation force in gf. Prefer an exact product-level value for the requested model/variant (brand spec, lab measurement, or review measurement) over a bare switch spec. If only the switch model is proven, use the switch component's nominal operating force as the product value; when PRODUCT_COMPONENTS did not already prove the switch, cite both the product switch-identity source and the switch-force source. Treat \"operating force\", \"actuation force\", \"tactile force\", \"button force\", \"press force\", \"click weight\", and \"grams of force\" as aliases for this field. Do not confuse this with release/releasing force, switch lifespan/click count, click latency/debounce, actuation distance/pre-travel/post-travel, or L/R force deviation. Normalize tolerance values to the nominal center: 65±10gf -> 65. Convert Newtons to gf using N×101.97 and round to the nearest whole gf: 0.59 N -> 60. If separate left/right values are given, use their average unless the source gives a combined value. If only a binned range is marketed, use the midpoint rounded to the nearest gf. For hot-swap mice or editions/batches with different installed switches, use only the exact/default factory-installed switch for the requested variant; return unk if the installed switch/variant cannot be pinned down. Product-level measurements may override component nominal force because shell/button implementation changes real click force.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the left/right main-button click or actuation force in gf. Prefer an exact product-level value for the requested model/variant (brand spec, lab measurement, or review measurement) over a bare switch spec. If only the switch model is proven, use the switch component's nominal operating force as the product value; when PRODUCT_COMPONENTS did not already prove the switch, cite both the product switch-identity source and the switch-force source. Treat \"operating force\", \"actuation force\", \"tactile force\", \"button force\", \"press force\", \"click weight\", and \"grams of force\" as aliases for this field. Do not confuse this with release/releasing force, switch lifespan/click count, click latency/debounce, actuation distance/pre-travel/post-travel, or L/R force deviation. Normalize tolerance values to the nominal center: 65±10gf -> 65. Convert Newtons to gf using N×101.97 and round to the nearest whole gf: 0.59 N -> 60. If separate left/right values are given, use their average unless the source gives a combined value. If only a binned range is marketed, use the midpoint rounded to the nearest gf. For hot-swap mice or editions/batches with different installed switches, use only the exact/default factory-installed switch for the requested variant; return unk if the installed switch/variant cannot be pinned down. Product-level measurements may override component nominal force because shell/button implementation changes real click force."
       },
       "aliases": [
         "click force",
@@ -2230,13 +2230,13 @@
     },
     "click_latency": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the average left/main-button click-to-computer/report latency in ms for the exact mouse. When a source provides an overall/expected/primary connection value, use that for scalar click_latency. Prefer instrumented lab results over marketing. If only mode-specific values exist, use wired for wired-only mice, 2.4GHz/receiver for wireless gaming mice normally used by dongle, and Bluetooth only for Bluetooth-only or productivity-first mice; do not average modes. Manufacturer values are acceptable only when they state an exact product click latency/average click latency in ms, not merely switch response, wireless-platform latency, polling interval, or vague near-zero wording. Do not use sensor latency, motion latency, shift latency, click force, debounce setting, optical-switch actuation time, or relative/baseline-adjusted values such as negative MouseSpecs comparison rows. If the exact product, connection mode, or measurement basis is ambiguous, return unk.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Extract the average left/main-button click-to-computer/report latency in ms for the exact mouse. When a source provides an overall/expected/primary connection value, use that for scalar click_latency. Prefer instrumented lab results over marketing. If only mode-specific values exist, use wired for wired-only mice, 2.4GHz/receiver for wireless gaming mice normally used by dongle, and Bluetooth only for Bluetooth-only or productivity-first mice; do not average modes. Manufacturer values are acceptable only when they state an exact product click latency/average click latency in ms, not merely switch response, wireless-platform latency, polling interval, or vague near-zero wording. Do not use sensor latency, motion latency, shift latency, click force, debounce setting, optical-switch actuation time, or relative/baseline-adjusted values such as negative MouseSpecs comparison rows. If the exact product, connection mode, or measurement basis is ambiguous, return unk."
       },
       "aliases": [
         "click response time",
@@ -2381,13 +2381,13 @@
     },
     "click_latency_bluetooth": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the average main-button click-to-registration latency measured in Bluetooth mode only, stored as milliseconds. Accept labels such as \"Avg. Latency (Bluetooth)\" or RTINGS \"Wireless Latency Over Bluetooth\" when they apply to the exact product. Do not use overall/expected click latency, wired latency, receiver/2.4 GHz latency, sensor latency, polling rate, debounce time, actuation time, wake-up latency, or manufacturer marketing claims like \"0 ms\"/\"1 ms\" unless the source explicitly gives a numeric Bluetooth click-latency measurement. If the product lacks Bluetooth or the Bluetooth row is N/A/locked/no exact number, return unk with a reason rather than inferring from typical Bluetooth ranges. If multiple labs disagree, prefer the most recent transparent lab result for the exact product/test bench and do not average. For color/edition variants, inherit only when the source or product context says the internal hardware/firmware is unchanged.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the average main-button click-to-registration latency measured in Bluetooth mode only, stored as milliseconds. Accept labels such as \"Avg. Latency (Bluetooth)\" or RTINGS \"Wireless Latency Over Bluetooth\" when they apply to the exact product. Do not use overall/expected click latency, wired latency, receiver/2.4 GHz latency, sensor latency, polling rate, debounce time, actuation time, wake-up latency, or manufacturer marketing claims like \"0 ms\"/\"1 ms\" unless the source explicitly gives a numeric Bluetooth click-latency measurement. If the product lacks Bluetooth or the Bluetooth row is N/A/locked/no exact number, return unk with a reason rather than inferring from typical Bluetooth ranges. If multiple labs disagree, prefer the most recent transparent lab result for the exact product/test bench and do not average. For color/edition variants, inherit only when the source or product context says the internal hardware/firmware is unchanged."
       },
       "aliases": [
         "click latency (bluetooth)",
@@ -2524,13 +2524,13 @@
     },
     "click_latency_wired": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the measured click or button latency for the exact mouse when it is used over a wired USB input connection. Prefer direct lab rows labelled \"Wired,\" \"Avg. Latency (Wired),\" \"Click Latency → Wired,\" or equivalent. Do not use receiver, 2.4 GHz wireless, expected connection, or Bluetooth values for this wired key. If the mouse cannot send input over USB, return unk/no submitted value for this key. Do not derive a value from polling rate/report interval, Razer HyperPolling 0.125 ms marketing, generic response time, sensor/movement latency, debounce setting, shift latency, or click force unless the source explicitly names measured click/button latency in wired mode. Treat MouseSpecs' \"Click Latency Comparison\" list as an adjusted comparison-offset table, including possible negative values; do not emit those offsets. Use MouseSpecs only when a product/compare page gives an absolute \"Click Latency\" value, or as corroboration for TechPowerUp/lab data. If credible lab values conflict, prefer the most current RTINGS or LTT Labs measured wired value for the exact product/test bench, then exact-product TechPowerUp/MouseSpecs absolute values as fallback. Store total click/button registration latency in ms, rounded to 2 decimals.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the measured click or button latency for the exact mouse when it is used over a wired USB input connection. Prefer direct lab rows labelled \"Wired,\" \"Avg. Latency (Wired),\" \"Click Latency → Wired,\" or equivalent. Do not use receiver, 2.4 GHz wireless, expected connection, or Bluetooth values for this wired key. If the mouse cannot send input over USB, return unk/no submitted value for this key. Do not derive a value from polling rate/report interval, Razer HyperPolling 0.125 ms marketing, generic response time, sensor/movement latency, debounce setting, shift latency, or click force unless the source explicitly names measured click/button latency in wired mode. Treat MouseSpecs' \"Click Latency Comparison\" list as an adjusted comparison-offset table, including possible negative values; do not emit those offsets. Use MouseSpecs only when a product/compare page gives an absolute \"Click Latency\" value, or as corroboration for TechPowerUp/lab data. If credible lab values conflict, prefer the most current RTINGS or LTT Labs measured wired value for the exact product/test bench, then exact-product TechPowerUp/MouseSpecs absolute values as fallback. Store total click/button registration latency in ms, rounded to 2 decimals."
       },
       "aliases": [
         "replace with: click latency (wired)",
@@ -2671,13 +2671,13 @@
     },
     "click_latency_wireless": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the click/button latency for the exact product using its non-Bluetooth wireless receiver/dongle mode (2.4GHz, receiver, LIGHTSPEED, HyperSpeed, SpeedNova, Quantum 2.0, etc.). If a source provides separate Wired, Receiver, and Bluetooth values, use Receiver only. Do not use Bluetooth for this key; Bluetooth belongs to click_latency_bluetooth. Do not use Wired for this key. Do not use polling/report rate values such as 1000Hz=1ms or 8000Hz=0.125ms, optical-switch response time, debounce setting, motion/sensor latency, display/system input lag, or side-button latency unless the source explicitly says it is the main/left-click latency. Prefer direct lab measurements (RTINGS/LTT/TechPowerUp-style) over marketing language; manufacturer exact average click-latency claims are acceptable when they name the exact product and wireless mode. Ignore Mouse Specs comparison-table negative/baseline values for this field unless the page provides an absolute click-latency value for the exact product. If the product lacks a proprietary/non-Bluetooth receiver or no exact receiver-mode value is proven, return unk with the searched sources.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Extract the click/button latency for the exact product using its non-Bluetooth wireless receiver/dongle mode (2.4GHz, receiver, LIGHTSPEED, HyperSpeed, SpeedNova, Quantum 2.0, etc.). If a source provides separate Wired, Receiver, and Bluetooth values, use Receiver only. Do not use Bluetooth for this key; Bluetooth belongs to click_latency_bluetooth. Do not use Wired for this key. Do not use polling/report rate values such as 1000Hz=1ms or 8000Hz=0.125ms, optical-switch response time, debounce setting, motion/sensor latency, display/system input lag, or side-button latency unless the source explicitly says it is the main/left-click latency. Prefer direct lab measurements (RTINGS/LTT/TechPowerUp-style) over marketing language; manufacturer exact average click-latency claims are acceptable when they name the exact product and wireless mode. Ignore Mouse Specs comparison-table negative/baseline values for this field unless the page provides an absolute click-latency value for the exact product. If the product lacks a proprietary/non-Bluetooth receiver or no exact receiver-mode value is proven, return unk with the searched sources."
       },
       "aliases": [
         "click latency (wireless)",
@@ -2824,13 +2824,13 @@
     },
     "coating": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Extract the factory exterior shell/hand-contact surface finish or coating, not body material, feet, cable, scroll-wheel rubber, mousepad surface, or aftermarket/in-box optional grip tape. Normalize Standard Matte/matte finish/matte UV coating to matte, glossy/high-shine to glossy, full-shell rubberized/soft-touch/rubbery plastic to rubberized, Smooth-Touch Finish to smooth-touch, and integrated side grip inserts to rubber grips. If a product family has official coating/color variants, return the union for the family page, but return only the exact coating for a known SKU/colorway/edition. In comparison tables, read the row/header context: ZOWIE \"Rubber\" commonly belongs to Cable and must not become coating. PIF images may support visible matte/glossy sheen or built-in rubber side panels, but do not infer UV/rubberized chemistry from images alone.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the factory exterior shell/hand-contact surface finish or coating, not body material, feet, cable, scroll-wheel rubber, mousepad surface, or aftermarket/in-box optional grip tape. Normalize Standard Matte/matte finish/matte UV coating to matte, glossy/high-shine to glossy, full-shell rubberized/soft-touch/rubbery plastic to rubberized, Smooth-Touch Finish to smooth-touch, and integrated side grip inserts to rubber grips. If a product family has official coating/color variants, return the union for the family page, but return only the exact coating for a known SKU/colorway/edition. In comparison tables, read the row/header context: ZOWIE \"Rubber\" commonly belongs to Cable and must not become coating. PIF images may support visible matte/glossy sheen or built-in rubber side panels, but do not infer UV/rubberized chemistry from images alone."
       },
       "aliases": [
         "Standard Matte -> matte",
@@ -3192,13 +3192,13 @@
     },
     "computer_side_connector": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Extract the physical connector(s) that can plug into the computer for the exact mouse/package: cable computer end, wireless receiver/dongle plug, and any included adapter that changes the computer-facing plug. Do not use the mouse-side port (for example a USB-C charging port) unless the source also proves the computer-facing end is USB-C. Generic \"USB receiver,\" \"USB cable,\" or \"USB port\" is not enough for USB-A/USB-C unless the source text or a clear tied image proves the connector shape/type. Return multiple values only when the exact package includes multiple PC-facing plugs/adapters; do not union across separate connector variants/SKUs, and return unk when the requested variant is not pinned. Included adapters count; optional or third-party adapters do not.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the physical connector(s) that can plug into the computer for the exact mouse/package: cable computer end, wireless receiver/dongle plug, and any included adapter that changes the computer-facing plug. Do not use the mouse-side port (for example a USB-C charging port) unless the source also proves the computer-facing end is USB-C. Generic \"USB receiver,\" \"USB cable,\" or \"USB port\" is not enough for USB-A/USB-C unless the source text or a clear tied image proves the connector shape/type. Return multiple values only when the exact package includes multiple PC-facing plugs/adapters; do not union across separate connector variants/SKUs, and return unk when the requested variant is not pinned. Included adapters count; optional or third-party adapters do not."
       },
       "aliases": [
         "USB Type-A",
@@ -3367,13 +3367,13 @@
     },
     "connection": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Classify the exact mouse's computer connection mode, not its charging method, receiver extender, bundled cable, or switch technology. Return `wired` only when the exact product uses a cable for data/control and no wireless computer connection is supported. Return `wireless` when all usable computer connection modes are wireless protocols such as 2.4 GHz/RF dongle, Bluetooth/BLE, Logi Bolt/Unifying, LIGHTSPEED, HyperSpeed, or SLIPSTREAM; a USB port/cable listed only for charging or dongle extension is not wired mode. Return `hybrid` only when evidence explicitly supports both a wired USB data mode and at least one wireless computer connection mode; phrases like \"tri-mode,\" \"wired + wireless,\" \"wireless/wired,\" or a spec list containing both \"Wired\" and wireless protocols qualify. \"Dual-mode wireless\" (2.4 GHz + Bluetooth) is still `wireless`. Ignore \"hybrid\" when it describes switches, buttons, or sensor technology. Prefer detailed tech specs, manuals, or support setup guides over marketing titles and aggregator summaries. Reject sibling models/editions such as Pro, HyperSpeed, LIGHTSPEED, 35K, or wired-only variants unless the source matches the exact requested model/SKU.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Classify the exact mouse's computer connection mode, not its charging method, receiver extender, bundled cable, or switch technology. Return `wired` only when the exact product uses a cable for data/control and no wireless computer connection is supported. Return `wireless` when all usable computer connection modes are wireless protocols such as 2.4 GHz/RF dongle, Bluetooth/BLE, Logi Bolt/Unifying, LIGHTSPEED, HyperSpeed, or SLIPSTREAM; a USB port/cable listed only for charging or dongle extension is not wired mode. Return `hybrid` only when evidence explicitly supports both a wired USB data mode and at least one wireless computer connection mode; phrases like \"tri-mode,\" \"wired + wireless,\" \"wireless/wired,\" or a spec list containing both \"Wired\" and wireless protocols qualify. \"Dual-mode wireless\" (2.4 GHz + Bluetooth) is still `wireless`. Ignore \"hybrid\" when it describes switches, buttons, or sensor technology. Prefer detailed tech specs, manuals, or support setup guides over marketing titles and aggregator summaries. Reject sibling models/editions such as Pro, HyperSpeed, LIGHTSPEED, 35K, or wired-only variants unless the source matches the exact requested model/SKU."
       },
       "aliases": [
         "wired USB",
@@ -3546,13 +3546,13 @@
     },
     "connectivity": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the complete set of host connection modes for the exact product/edition/SKU, not only the default or most marketed mode. Map USB/USB-C/wired/data-cable mode to USB Wired only when the source says the mouse can operate over USB/wired mode; a charging-only cable is not enough. Map 2.4G/2.4 GHz/proprietary receiver or dongle modes, including LIGHTSPEED, HyperSpeed, SLIPSTREAM, Quantum, SpeedNova, Logi Bolt, Unifying, wireless receiver, and dongle language, to 2.4GHz RF Dongle; do not emit Wi-Fi unless the source explicitly describes Wi-Fi network connectivity. Map Bluetooth LE/BLE/BT to Bluetooth. Do not union across sibling wired/wireless/Bluetooth Edition/for Business variants; use the exact requested product evidence.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the complete set of host connection modes for the exact product/edition/SKU, not only the default or most marketed mode. Map USB/USB-C/wired/data-cable mode to USB Wired only when the source says the mouse can operate over USB/wired mode; a charging-only cable is not enough. Map 2.4G/2.4 GHz/proprietary receiver or dongle modes, including LIGHTSPEED, HyperSpeed, SLIPSTREAM, Quantum, SpeedNova, Logi Bolt, Unifying, wireless receiver, and dongle language, to 2.4GHz RF Dongle; do not emit Wi-Fi unless the source explicitly describes Wi-Fi network connectivity. Map Bluetooth LE/BLE/BT to Bluetooth. Do not union across sibling wired/wireless/Bluetooth Edition/for Business variants; use the exact requested product evidence."
       },
       "aliases": [
         "wired",
@@ -3734,13 +3734,13 @@
     },
     "debounce": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the mouse's firmware/software click debounce delay setting, in milliseconds. Use exact-product product guides, support articles, software manuals, firmware notes, or official technology pages first. Treat \"zero debounce\", \"no debounce delay\", and \"doesn't require debouncing\" as 0 ms only when stated for the exact product or for the exact switch technology the product uses; do not use a nearby switch actuation value, such as 0.2 ms actuation, as debounce. Accept labels such as debounce time, debounce delay, debounce rate, click debounce, key response time, button response time, and click response time only when the source gives numeric ms values or explicitly maps the label to debounce. If a source lists discrete options, return every option. If it gives only an adjustable numeric range, return the min and max endpoints and mention the default in evidence, but do not invent intermediate steps. If it gives only a default numeric debounce setting, return that default. Do not emit measured click latency, OS double-click speed, switch actuation distance/time, multiclick filter, slamclick/SPDT/GX mode, or Fast/Normal labels unless a credible source maps them to debounce ms. For bundled pages covering wired/wireless, size, Pro/eS/WE, firmware, or edition variants, use only the exact product's values; do not union sibling variants.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the mouse's firmware/software click debounce delay setting, in milliseconds. Use exact-product product guides, support articles, software manuals, firmware notes, or official technology pages first. Treat \"zero debounce\", \"no debounce delay\", and \"doesn't require debouncing\" as 0 ms only when stated for the exact product or for the exact switch technology the product uses; do not use a nearby switch actuation value, such as 0.2 ms actuation, as debounce. Accept labels such as debounce time, debounce delay, debounce rate, click debounce, key response time, button response time, and click response time only when the source gives numeric ms values or explicitly maps the label to debounce. If a source lists discrete options, return every option. If it gives only an adjustable numeric range, return the min and max endpoints and mention the default in evidence, but do not invent intermediate steps. If it gives only a default numeric debounce setting, return that default. Do not emit measured click latency, OS double-click speed, switch actuation distance/time, multiclick filter, slamclick/SPDT/GX mode, or Fast/Normal labels unless a credible source maps them to debounce ms. For bundled pages covering wired/wireless, size, Pro/eS/WE, firmware, or edition variants, use only the exact product's values; do not union sibling variants."
       },
       "aliases": [
         "debounce time",
@@ -3916,13 +3916,13 @@
     },
     "design": {
       "ai_assist": {
+        "color_edition_context": {
+          "mode": "default"
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Classify the product's public visual/edition design, not ergonomic shape, color list, lighting, or material. Return `standard` for the ordinary/base retail design when no co-branded, limited-release, or multiple distinct artwork/edition designs apply. Return `collaboration` only for a co-branded/licensed/person/team/artist/creator edition or product name/source phrase such as `X x Y`, `Faker Edition`, `Sentinels Edition`, or `Aim Lab Edition` that gives the mouse a distinct design identity; do NOT treat generic phrases like `designed/developed in collaboration with pros`, `pro-tested`, or `feedback from esports athletes` as collaboration. Return `limited edition` when an official or credible source says limited edition/release/run, exclusive drop, serialized quantity, collector item, one-time-only release, or limited-time colorway for the exact variant. Return `multiple` only when the exact product record/series is intentionally sold with multiple distinct design/edition/artwork options; do not use it for ordinary color choices, RGB effects, or sibling models. If an exact variant is identified, classify that variant only; do not union sibling/base/special-edition values. A limited collaboration can return both `limited edition` and `collaboration`; dedupe and keep canonical values only. Use visual/PIF images as supporting evidence for co-branding, artwork, or standard appearance; missing images are not negative evidence.",
-        "variant_inventory_usage": {
-          "mode": "default"
-        }
+        "reasoning_note": "Classify the product's public visual/edition design, not ergonomic shape, color list, lighting, or material. Return `standard` for the ordinary/base retail design when no co-branded, limited-release, or multiple distinct artwork/edition designs apply. Return `collaboration` only for a co-branded/licensed/person/team/artist/creator edition or product name/source phrase such as `X x Y`, `Faker Edition`, `Sentinels Edition`, or `Aim Lab Edition` that gives the mouse a distinct design identity; do NOT treat generic phrases like `designed/developed in collaboration with pros`, `pro-tested`, or `feedback from esports athletes` as collaboration. Return `limited edition` when an official or credible source says limited edition/release/run, exclusive drop, serialized quantity, collector item, one-time-only release, or limited-time colorway for the exact variant. Return `multiple` only when the exact product record/series is intentionally sold with multiple distinct design/edition/artwork options; do not use it for ordinary color choices, RGB effects, or sibling models. If an exact variant is identified, classify that variant only; do not union sibling/base/special-edition values. A limited collaboration can return both `limited edition` and `collaboration`; dedupe and keep canonical values only. Use visual/PIF images as supporting evidence for co-branding, artwork, or standard appearance; missing images are not negative evidence."
       },
       "aliases": [
         "collaboration",
@@ -4225,13 +4225,13 @@
     },
     "dpi": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the maximum effective mouse sensor resolution/sensitivity for the exact product as a numeric DPI/CPI value. Treat CPI and DPI as equivalent. If a source gives a range or fixed list of settings, return the highest value. Prefer current manufacturer product/support/spec pages or exact sensor/component pages; use review, retailer, or spec-database sources only as corroboration or fallback. When official/current sources conflict with stale retailer or aggregator values, use the official/current value and log the conflict. Do not submit default/current DPI stages, eDPI/player settings, in-game sensitivity, polling/report rate, IPS, acceleration, or resolution accuracy. Do not copy values across sibling models, editions, or sensor generations unless the source explicitly applies to the exact product/sensor version.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the maximum effective mouse sensor resolution/sensitivity for the exact product as a numeric DPI/CPI value. Treat CPI and DPI as equivalent. If a source gives a range or fixed list of settings, return the highest value. Prefer current manufacturer product/support/spec pages or exact sensor/component pages; use review, retailer, or spec-database sources only as corroboration or fallback. When official/current sources conflict with stale retailer or aggregator values, use the official/current value and log the conflict. Do not submit default/current DPI stages, eDPI/player settings, in-game sensitivity, polling/report rate, IPS, acceleration, or resolution accuracy. Do not copy values across sibling models, editions, or sensor generations unless the source explicitly applies to the exact product/sensor version."
       },
       "aliases": [
         "cpi",
@@ -4275,11 +4275,9 @@
           "accept_if_evidence": true,
           "mark_needs_curation": true
         },
-        "policy": "open",
-        "source": "component_db.sensor"
+        "policy": "open"
       },
       "enum_policy": "open",
-      "enum_source": "component_db.sensor",
       "evidence": {
         "min_evidence_refs": 2,
         "tier_preference": [
@@ -4442,13 +4440,13 @@
     },
     "encoder": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the scroll-wheel encoder component, not the middle-click switch, main-button switches, sensor, or marketing-only scroll-wheel feature. Prefer exact product spec wording such as \"Wheel Encoder\" or \"Scroll Wheel Encoder\" from manufacturer pages, then component-maker documentation, then reputable mouse component databases. Normalize source wording to the canonical component identity with maker/variant when needed: TTC Gold, TTC Silver, Pulsar Blue Encoder, Razer Optical Scroll Wheel, Zowie Optical (24 steps), Kailh Dustproof, Alps Encoder. Map phrases like \"TTC silver (wide)\", \"TTC Dust-Proof Silver\", or \"TTC Silver Wheel Mouse Encoder\" to TTC Silver unless the component DB has a separate size/width variant. If only type/steps are proven, emit a generic Mechanical Encoder or Optical Encoder only when the source directly proves that; do not guess a maker. Do not infer from scroll feel, wheel reviews, replacement-part compatibility, or sibling/generation values. If only aggregator/community evidence is available, prefer two corroborating sources or return unk.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Extract the scroll-wheel encoder component, not the middle-click switch, main-button switches, sensor, or marketing-only scroll-wheel feature. Prefer exact product spec wording such as \"Wheel Encoder\" or \"Scroll Wheel Encoder\" from manufacturer pages, then component-maker documentation, then reputable mouse component databases. Normalize source wording to the canonical component identity with maker/variant when needed: TTC Gold, TTC Silver, Pulsar Blue Encoder, Razer Optical Scroll Wheel, Zowie Optical (24 steps), Kailh Dustproof, Alps Encoder. Map phrases like \"TTC silver (wide)\", \"TTC Dust-Proof Silver\", or \"TTC Silver Wheel Mouse Encoder\" to TTC Silver unless the component DB has a separate size/width variant. If only type/steps are proven, emit a generic Mechanical Encoder or Optical Encoder only when the source directly proves that; do not guess a maker. Do not infer from scroll feel, wheel reviews, replacement-part compatibility, or sibling/generation values. If only aggregator/community evidence is available, prefer two corroborating sources or return unk."
       },
       "aliases": [
         "scroll wheel encoder",
@@ -4604,13 +4602,13 @@
     },
     "encoder_brand": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract only the encoder maker/brand for the exact mouse, preferably from a named scroll-wheel encoder or wheel spec. If the source says \"TTC Gold,\" \"TTC silver (wide),\" or \"TTC Gold Dustproof,\" emit \"TTC\"; \"Kailh Red/Black/encoder\" -> \"Kailh\"; \"F-Switch E10\" or \"F-Switch 1M Scroll\" -> \"F-Switch\"; \"ALPS Japan,\" \"Japanese ALPS,\" or \"Alps Encoder\" -> \"Alps.\" Treat \"Pulsar Blue Encoder,\" \"Razer Optical Scroll Wheel,\" and brand-owned Zowie optical scroll-wheel wording as branded/proprietary encoder names only when tied to the exact product; do not infer an unnamed OEM partner. Do not emit model/color/grade/height/step count/type/lifespan terms as the brand. \"Mechanical,\" \"optical,\" \"dustproof,\" \"24 steps,\" and encoder heights are not brands. If a source only proves encoder type or compatibility, return unk for encoder_brand. Exact generation matters: do not copy between X2 and X2V2, OP1 8k and OP1 8k v2, Viper V3 and Viper V4, or wired/wireless siblings unless the source explicitly covers both.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract only the encoder maker/brand for the exact mouse, preferably from a named scroll-wheel encoder or wheel spec. If the source says \"TTC Gold,\" \"TTC silver (wide),\" or \"TTC Gold Dustproof,\" emit \"TTC\"; \"Kailh Red/Black/encoder\" -> \"Kailh\"; \"F-Switch E10\" or \"F-Switch 1M Scroll\" -> \"F-Switch\"; \"ALPS Japan,\" \"Japanese ALPS,\" or \"Alps Encoder\" -> \"Alps.\" Treat \"Pulsar Blue Encoder,\" \"Razer Optical Scroll Wheel,\" and brand-owned Zowie optical scroll-wheel wording as branded/proprietary encoder names only when tied to the exact product; do not infer an unnamed OEM partner. Do not emit model/color/grade/height/step count/type/lifespan terms as the brand. \"Mechanical,\" \"optical,\" \"dustproof,\" \"24 steps,\" and encoder heights are not brands. If a source only proves encoder type or compatibility, return unk for encoder_brand. Exact generation matters: do not copy between X2 and X2V2, OP1 8k and OP1 8k v2, Viper V3 and Viper V4, or wired/wireless siblings unless the source explicitly covers both."
       },
       "aliases": [
         "encoder maker",
@@ -4863,13 +4861,13 @@
     },
     "feet_material": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the installed/default glide feet/skates material for the exact mouse/SKU, not aftermarket replacements or optional accessory kits. Normalize Teflon to PTFE. Use PTFE (Virgin-Grade) only when the source says virgin, pure/100%, zero-additive, or equivalent; use PTFE (95%) only for 95%/>95% claims; use PTFE (Black-Dyed) only when feet/skates are explicitly black/dyed PTFE, not from mouse color. Treat glass, ceramic, UHMWPE/UHMW-PE/UPE, and metal/X'Glide armor boots as material classes when tied to feet/skates. If sources say \"PTFE or glass\" or list optional/in-box replacement skates without resolving the exact installed/default variant, return unk rather than unioning values. Strip thickness, shape, colorway, and lifespan/distance claims from the material value. Do not infer material from bottom images, shell material, or mousepad compatibility.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the installed/default glide feet/skates material for the exact mouse/SKU, not aftermarket replacements or optional accessory kits. Normalize Teflon to PTFE. Use PTFE (Virgin-Grade) only when the source says virgin, pure/100%, zero-additive, or equivalent; use PTFE (95%) only for 95%/>95% claims; use PTFE (Black-Dyed) only when feet/skates are explicitly black/dyed PTFE, not from mouse color. Treat glass, ceramic, UHMWPE/UHMW-PE/UPE, and metal/X'Glide armor boots as material classes when tied to feet/skates. If sources say \"PTFE or glass\" or list optional/in-box replacement skates without resolving the exact installed/default variant, return unk rather than unioning values. Strip thickness, shape, colorway, and lifespan/distance claims from the material value. Do not infer material from bottom images, shell material, or mousepad compatibility."
       },
       "aliases": [
         "Teflon -> PTFE",
@@ -5056,13 +5054,13 @@
     },
     "flawless_sensor": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Return true only when a source for the exact product or resolved sensor component states 1:1/raw/flawless tracking, or zero/no smoothing, filtering, acceleration, prediction, angle snapping, or drift correction. Rated max acceleration in G is sensor tolerance, not pointer acceleration. Optional software features such as dynamic sensitivity, angle snapping, Motion Sync, or lift-off calibration do not make the sensor non-flawless when they are disableable or not default inherent tracking. Return false only when credible evidence says the exact sensor/firmware has a non-disableable tracking flaw such as built-in pointer acceleration, smoothing/interpolation, prediction/angle snapping, axis asymmetry, jitter, or speed inconsistency. Do not accept \"tracks flawlessly on glass,\" \"smooth-touch,\" \"smooth glide,\" or generic reviewer feel by itself. Do not infer false from omission, from missing component rows, or from absence on a flawless-list page; return unk and explain searched sources.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Return true only when a source for the exact product or resolved sensor component states 1:1/raw/flawless tracking, or zero/no smoothing, filtering, acceleration, prediction, angle snapping, or drift correction. Rated max acceleration in G is sensor tolerance, not pointer acceleration. Optional software features such as dynamic sensitivity, angle snapping, Motion Sync, or lift-off calibration do not make the sensor non-flawless when they are disableable or not default inherent tracking. Return false only when credible evidence says the exact sensor/firmware has a non-disableable tracking flaw such as built-in pointer acceleration, smoothing/interpolation, prediction/angle snapping, axis asymmetry, jitter, or speed inconsistency. Do not accept \"tracks flawlessly on glass,\" \"smooth-touch,\" \"smooth glide,\" or generic reviewer feel by itself. Do not infer false from omission, from missing component rows, or from absence on a flawless-list page; return unk and explain searched sources."
       },
       "aliases": [
         "true 1-to-1 tracking",
@@ -5368,13 +5366,13 @@
     },
     "front_flare": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Classify only the plan-view front/button-end outline. Return `outward` when the shell or main-button sides widen as they approach the front, `inward` when they narrow or tuck inward at the front, and `flat` when the front sidewalls are essentially straight or parallel. Normalize degree words such as slight/moderate/aggressive to the canonical direction; do not store intensity. Do not confuse front flare with side curvature, rear flare, thumb rest, ring-finger rest, or hump placement. Prefer explicit `Front flare` rows from shape databases; otherwise use official/top-view product images as `visual_inspection`. If the exact product image/wording is ambiguous, return `unk` rather than guessing.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Classify only the plan-view front/button-end outline. Return `outward` when the shell or main-button sides widen as they approach the front, `inward` when they narrow or tuck inward at the front, and `flat` when the front sidewalls are essentially straight or parallel. Normalize degree words such as slight/moderate/aggressive to the canonical direction; do not store intensity. Do not confuse front flare with side curvature, rear flare, thumb rest, ring-finger rest, or hump placement. Prefer explicit `Front flare` rows from shape databases; otherwise use official/top-view product images as `visual_inspection`. If the exact product image/wording is ambiguous, return `unk` rather than guessing."
       },
       "aliases": [
         "front flare",
@@ -5535,13 +5533,13 @@
     },
     "grip": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the supported or recommended hand grip styles for the exact mouse shell, not physical grip texture, rubber sides, coating, or aftermarket grip tape. Prefer explicit wording such as \"Grip Style,\" \"Supported Grip Types,\" \"recommended grip,\" \"best suited for,\" \"designed for,\" or a review conclusion about grip suitability. Normalize to palm, claw, and fingertip; map \"finger grip\" to fingertip and claw variants/hybrids to claw unless a source separately names another canonical style. If a source says all/universal/nearly all grip types with no stated exclusions, emit palm, claw, and fingertip. If a source says a style is merely possible but not ideal, omit it unless the source still clearly recommends or supports it for the exact product. Do not infer from photos, dimensions, or shape alone; use those only to corroborate or resolve conflicts. Do not union across size/shape siblings such as Mini, Pro, HyperSpeed, DEX, or wireless/wired remolds; use exact-product evidence, with color-only variants inheriting.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the supported or recommended hand grip styles for the exact mouse shell, not physical grip texture, rubber sides, coating, or aftermarket grip tape. Prefer explicit wording such as \"Grip Style,\" \"Supported Grip Types,\" \"recommended grip,\" \"best suited for,\" \"designed for,\" or a review conclusion about grip suitability. Normalize to palm, claw, and fingertip; map \"finger grip\" to fingertip and claw variants/hybrids to claw unless a source separately names another canonical style. If a source says all/universal/nearly all grip types with no stated exclusions, emit palm, claw, and fingertip. If a source says a style is merely possible but not ideal, omit it unless the source still clearly recommends or supports it for the exact product. Do not infer from photos, dimensions, or shape alone; use those only to corroborate or resolve conflicts. Do not union across size/shape siblings such as Mini, Pro, HyperSpeed, DEX, or wireless/wired remolds; use exact-product evidence, with color-only variants inheriting."
       },
       "aliases": [
         "palm grip -> palm",
@@ -5695,13 +5693,13 @@
     },
     "hand_size": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract recommended USER hand-size categories for the exact mouse/size edition, not the mouse's physical body size. Normalize \"small to medium\"/\"S-M\" to [small, medium], \"medium to large\"/\"M-L\" to [medium, large], and \"extra large\"/\"x-large\"/\"XL\" to extra large. If a source gives grip-specific hand-size recommendations, union the hand-size categories recommended for any grip; do not store grip styles in this key and do not include categories the source explicitly says are not suitable. Treat \"most/nearly all hand sizes\" as broad compatibility only when the source also defines or enumerates categories; otherwise cite it but prefer unk or lower-confidence categories. Do not infer hand_size from dimensions, model names such as Mini/Large, EloShapes/Mousespecs \"Size Category,\" or left/right hand compatibility alone. Use exact-product evidence; do not copy values from sibling Mini/Max/Large/Dex/Pro/Minus models unless the source explicitly says the same hand-size guidance applies.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract recommended USER hand-size categories for the exact mouse/size edition, not the mouse's physical body size. Normalize \"small to medium\"/\"S-M\" to [small, medium], \"medium to large\"/\"M-L\" to [medium, large], and \"extra large\"/\"x-large\"/\"XL\" to extra large. If a source gives grip-specific hand-size recommendations, union the hand-size categories recommended for any grip; do not store grip styles in this key and do not include categories the source explicitly says are not suitable. Treat \"most/nearly all hand sizes\" as broad compatibility only when the source also defines or enumerates categories; otherwise cite it but prefer unk or lower-confidence categories. Do not infer hand_size from dimensions, model names such as Mini/Large, EloShapes/Mousespecs \"Size Category,\" or left/right hand compatibility alone. Use exact-product evidence; do not copy values from sibling Mini/Max/Large/Dex/Pro/Minus models unless the source explicitly says the same hand-size guidance applies."
       },
       "aliases": [
         "small hands",
@@ -5861,13 +5859,13 @@
     },
     "hardware_acceleration": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Interpret this as product-side non-linear pointer/tracking acceleration caused by the sensor, firmware, MCU, or an onboard acceleration feature. Return true when credible product evidence says the mouse has built-in/native/hardware acceleration, an onboard acceleration control such as SteelSeries ExactAccel/dynamic CPI, or an unavoidable speed-dependent change where faster physical movement produces farther cursor travel. Return false when evidence states no/zero hardware acceleration, no/zero smoothing/acceleration/filtering, no acceleration artifacts, raw/1:1/flawless tracking with no acceleration, or a direct spec row says Hardware Acceleration: No. Do not treat Max Acceleration / Acceleration (G), IPS, tracking speed, 40G/50G/70G/90G ratings, OS pointer acceleration, game settings, or generic driver/software acceleration as this field. Angle snapping, prediction, drift correction, path correction, and smoothing are related processing features but are not hardware acceleration by themselves; use them only as supporting context when acceleration is separately stated. If evidence only lists G/IPS ratings or vague \"precise/flawless\" marketing without no-acceleration wording, return unk rather than inferring.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Interpret this as product-side non-linear pointer/tracking acceleration caused by the sensor, firmware, MCU, or an onboard acceleration feature. Return true when credible product evidence says the mouse has built-in/native/hardware acceleration, an onboard acceleration control such as SteelSeries ExactAccel/dynamic CPI, or an unavoidable speed-dependent change where faster physical movement produces farther cursor travel. Return false when evidence states no/zero hardware acceleration, no/zero smoothing/acceleration/filtering, no acceleration artifacts, raw/1:1/flawless tracking with no acceleration, or a direct spec row says Hardware Acceleration: No. Do not treat Max Acceleration / Acceleration (G), IPS, tracking speed, 40G/50G/70G/90G ratings, OS pointer acceleration, game settings, or generic driver/software acceleration as this field. Angle snapping, prediction, drift correction, path correction, and smoothing are related processing features but are not hardware acceleration by themselves; use them only as supporting context when acceleration is separately stated. If evidence only lists G/IPS ratings or vague \"precise/flawless\" marketing without no-acceleration wording, return unk rather than inferring."
       },
       "aliases": [
         "hardware acceleration",
@@ -6038,13 +6036,13 @@
     },
     "height": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the mouse's maximum physical vertical height/profile height in mm for the exact product/SKU/size. Prefer product/device dimensions on manufacturer pages, manuals, datasheets, and spec tables. Convert cm/in to mm and round to 1 decimal. Do not use package/box dimensions, receiver/dongle dimensions, button height, grip width, base size, or length/depth/width values. When a triplet is labeled H x W x D, take the first value; when labeled L x W x H or W x D x H, take the value mapped to H. If a source gives only an unlabeled triplet, or credible sources conflict on axis labels, corroborate with another labeled source or return unk. For families with multiple size variants, use the exact requested size/SKU; if the product identity does not resolve a single size, return unk instead of choosing a base/default.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the mouse's maximum physical vertical height/profile height in mm for the exact product/SKU/size. Prefer product/device dimensions on manufacturer pages, manuals, datasheets, and spec tables. Convert cm/in to mm and round to 1 decimal. Do not use package/box dimensions, receiver/dongle dimensions, button height, grip width, base size, or length/depth/width values. When a triplet is labeled H x W x D, take the first value; when labeled L x W x H or W x D x H, take the value mapped to H. If a source gives only an unlabeled triplet, or credible sources conflict on axis labels, corroborate with another labeled source or return unk. For families with multiple size variants, use the exact requested size/SKU; if the product identity does not resolve a single size, return unk instead of choosing a base/default."
       },
       "aliases": [
         "height",
@@ -6186,13 +6184,13 @@
     },
     "honeycomb_frame": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Treat honeycomb_frame=true when the exact mouse has a deliberate externally visible perforated, cut-out, holey, hex/honeycomb, mesh, skeletal, cage, or exoskeleton shell/frame on the main outer body; the hole pattern does not need to be hexagonal, and partial-body perforation counts when it is part of the top/side/main shell. Treat false when an explicit source says solid shell, removed all holes, or no honeycomb/cutouts, or when clear official/PIF product images show an unperforated top/side/body. Do not infer true from low weight alone, internal lattice, sensor/screw/vent openings, printed patterns, grip tape texture, or trivial underside-only openings. When family members differ, answer only the exact model/SKU/edition; if text is silent and images do not clearly show the shell, return unk rather than using absence as proof.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Treat honeycomb_frame=true when the exact mouse has a deliberate externally visible perforated, cut-out, holey, hex/honeycomb, mesh, skeletal, cage, or exoskeleton shell/frame on the main outer body; the hole pattern does not need to be hexagonal, and partial-body perforation counts when it is part of the top/side/main shell. Treat false when an explicit source says solid shell, removed all holes, or no honeycomb/cutouts, or when clear official/PIF product images show an unperforated top/side/body. Do not infer true from low weight alone, internal lattice, sensor/screw/vent openings, printed patterns, grip tape texture, or trivial underside-only openings. When family members differ, answer only the exact model/SKU/edition; if text is silent and images do not clearly show the shell, return unk rather than using absence as proof."
       },
       "aliases": [
         "honeycomb shell",
@@ -6373,13 +6371,13 @@
     },
     "hot_swappable": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Return true only when evidence for the exact mouse says its mouse button micro-switches are hot-swappable, swappable, user-replaceable, interchangeable, use push-fit/switch sockets, or can be changed without soldering. Treat ASUS ROG \"Push-Fit Switch Socket\" and \"Push-Fit Switch Socket II\" as true. This key is for mouse click/micro-switch sockets, usually the main left/right buttons; do not mark true for hot-swappable keyboard switches, batteries, shells, side plates, dongles, receiver pairing, mouse feet, or generic spare switches unless the source ties them to mouse click switch replacement. Return false only from direct negative evidence for the exact product, such as an official FAQ/spec table saying it lacks hot-swappable switches, a comparison table showing the switch-socket feature as \"No,\" or a credible teardown/repair source showing fixed/soldered switches that require soldering. Absence of a hot-swap claim on an ordinary product page is unknown, not false. Do not copy sibling-family values unless the exact model is listed in the supported/available model set.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Return true only when evidence for the exact mouse says its mouse button micro-switches are hot-swappable, swappable, user-replaceable, interchangeable, use push-fit/switch sockets, or can be changed without soldering. Treat ASUS ROG \"Push-Fit Switch Socket\" and \"Push-Fit Switch Socket II\" as true. This key is for mouse click/micro-switch sockets, usually the main left/right buttons; do not mark true for hot-swappable keyboard switches, batteries, shells, side plates, dongles, receiver pairing, mouse feet, or generic spare switches unless the source ties them to mouse click switch replacement. Return false only from direct negative evidence for the exact product, such as an official FAQ/spec table saying it lacks hot-swappable switches, a comparison table showing the switch-socket feature as \"No,\" or a credible teardown/repair source showing fixed/soldered switches that require soldering. Absence of a hot-swap claim on an ordinary product page is unknown, not false. Do not copy sibling-family values unless the exact model is listed in the supported/available model set."
       },
       "aliases": [
         "push-fit switch socket",
@@ -6552,13 +6550,13 @@
     },
     "hump": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Classify the longitudinal location of the mouse shell's highest dorsal hump/apex, not overall height, grip suitability, hand size, front flare, or sensor position. Use the exact requested model/size/shell option; do not copy from sibling shapes. Map `front` only when the peak is clearly forward of center near the buttons/scroll-wheel area. Map `center` when the apex is near the midpoint with no meaningful rear bias. Map `back - minimal` for a slight rear bias or rear-centered peak; `back - moderate` for a clear rear-biased palm-support hump; and `back - aggressive` for a far-rear/back-of-palm peak. Treat source phrases such as rearward, rear-set, centered rear, middle, and mid-positioned as aliases that need normalization, not new enum chips. If a source only says high/low hump, low-profile, comfortable, or suited to a grip without proving placement, use images or another source; otherwise return unk.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Classify the longitudinal location of the mouse shell's highest dorsal hump/apex, not overall height, grip suitability, hand size, front flare, or sensor position. Use the exact requested model/size/shell option; do not copy from sibling shapes. Map `front` only when the peak is clearly forward of center near the buttons/scroll-wheel area. Map `center` when the apex is near the midpoint with no meaningful rear bias. Map `back - minimal` for a slight rear bias or rear-centered peak; `back - moderate` for a clear rear-biased palm-support hump; and `back - aggressive` for a far-rear/back-of-palm peak. Treat source phrases such as rearward, rear-set, centered rear, middle, and mid-positioned as aliases that need normalization, not new enum chips. If a source only says high/low hump, low-profile, comfortable, or suited to a grip without proving placement, use images or another source; otherwise return unk."
       },
       "aliases": [
         "forward hump",
@@ -6719,13 +6717,13 @@
     },
     "ips": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the mouse sensor's maximum tracking speed, normalized to a numeric IPS value. Accept source labels such as \"max speed\", \"Max. speed\", \"tracking speed\", \"max tracking speed\", \"IPS\", and \"inches per second\" when they describe sensor motion tracking, not scroll-wheel speed, DPI/CPI, polling rate, or acceleration. Prefer exact-product manufacturer product/support/spec pages; use the resolved sensor component or specialized mouse databases only when the exact product/sensor identity is proven and no product-level spec conflicts. Apply upper_bound only among values that apply to the exact product or exact resolved sensor; never take a higher IPS from a sibling model or comparison-table column. Normalize \">\", \"+\", and \"up to\" wording to the numeric ceiling (e.g., \">888 IPS\" or \"888+ IPS\" -> 888). If the source gives mm/s or m/s, convert to inches per second and round to 0 decimals; if only DPI/CPI or polling rate is found, return unk.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Extract the mouse sensor's maximum tracking speed, normalized to a numeric IPS value. Accept source labels such as \"max speed\", \"Max. speed\", \"tracking speed\", \"max tracking speed\", \"IPS\", and \"inches per second\" when they describe sensor motion tracking, not scroll-wheel speed, DPI/CPI, polling rate, or acceleration. Prefer exact-product manufacturer product/support/spec pages; use the resolved sensor component or specialized mouse databases only when the exact product/sensor identity is proven and no product-level spec conflicts. Apply upper_bound only among values that apply to the exact product or exact resolved sensor; never take a higher IPS from a sibling model or comparison-table column. Normalize \">\", \"+\", and \"up to\" wording to the numeric ceiling (e.g., \">888 IPS\" or \"888+ IPS\" -> 888). If the source gives mm/s or m/s, convert to inches per second and round to 0 decimals; if only DPI/CPI or polling rate is found, return unk."
       },
       "aliases": [
         "ips",
@@ -6873,13 +6871,13 @@
     },
     "lift": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the lowest supported or measured lift-off distance, in mm, for the exact mouse/variant. Accept direct numeric specs, numeric setting lists/ranges, or lab-measured minimum LOD. When a source gives settings/range such as \"0.7 / 1.0 / 2.0 mm\" or \"1-2 mm adjustable\", emit the lowest numeric mm value for lift; do not emit the list here. If a source gives only a default mm and no range/minimum, emit that value. Use lift_settings for adjustability/mode wording when available. Do not infer a number from labels like Low/Medium/High, Smart Tracking, Asymmetric Cut-off, Distance Control Unit, surface calibration, or \"adjustable lift-off distance.\" Do not use sensor-only datasheets unless the product implementation states the LOD. If one page bundles variants with different LOD values/settings, match the exact sensor/polling/SKU variant; if the exact variant is unknown and values differ, return unk instead of taking a union or best-case value.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the lowest supported or measured lift-off distance, in mm, for the exact mouse/variant. Accept direct numeric specs, numeric setting lists/ranges, or lab-measured minimum LOD. When a source gives settings/range such as \"0.7 / 1.0 / 2.0 mm\" or \"1-2 mm adjustable\", emit the lowest numeric mm value for lift; do not emit the list here. If a source gives only a default mm and no range/minimum, emit that value. Use lift_settings for adjustability/mode wording when available. Do not infer a number from labels like Low/Medium/High, Smart Tracking, Asymmetric Cut-off, Distance Control Unit, surface calibration, or \"adjustable lift-off distance.\" Do not use sensor-only datasheets unless the product implementation states the LOD. If one page bundles variants with different LOD values/settings, match the exact sensor/polling/SKU variant; if the exact variant is unknown and values differ, return unk instead of taking a union or best-case value."
       },
       "aliases": [
         "lift",
@@ -7024,13 +7022,13 @@
     },
     "lift_settings": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the product's LOD setting capability/behavior, not the numeric lift-off distance itself. Return `adjustable` when a credible source says LOD/lift-off distance/tracking distance/lift-off range can be changed in software, by button combinations, by onboard/OLED controls, or lists multiple user-selectable LOD heights. Return `surface-tuned` when a credible source says the mouse supports surface calibration/tuning, mouse-mat calibration, Smart Tracking, automatic surface calibration, or mouse-feet-height tracking optimization; this may co-occur with `adjustable`. Return `fixed low` or `fixed high` only when no credible exact-product source supports user-selectable LOD and a credible spec/review/lab source positively proves the fixed behavior: low if the source calls it low/very low or the numeric LOD is <=2.4 mm; high if the source calls it high/too high or the numeric LOD is >=3.6 mm. Do not infer fixed just because the product page omits LOD settings, and do not emit `low`, `medium`, `high`, `1 mm`, `2 mm`, etc. as list items. If only a numeric fixed LOD falls between the low/high thresholds, if adjustability cannot be ruled in or out, or if the evidence is only generic to a sensor/software family without exact-product support, return `unk` for this field and let `lift` carry the numeric value. Treat optional firmware/mode changes that remove LOD adjustment as edition/mode-specific only when the requested product identity ships or is explicitly requested in that mode; otherwise use the stock/default product capability.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the product's LOD setting capability/behavior, not the numeric lift-off distance itself. Return `adjustable` when a credible source says LOD/lift-off distance/tracking distance/lift-off range can be changed in software, by button combinations, by onboard/OLED controls, or lists multiple user-selectable LOD heights. Return `surface-tuned` when a credible source says the mouse supports surface calibration/tuning, mouse-mat calibration, Smart Tracking, automatic surface calibration, or mouse-feet-height tracking optimization; this may co-occur with `adjustable`. Return `fixed low` or `fixed high` only when no credible exact-product source supports user-selectable LOD and a credible spec/review/lab source positively proves the fixed behavior: low if the source calls it low/very low or the numeric LOD is <=2.4 mm; high if the source calls it high/too high or the numeric LOD is >=3.6 mm. Do not infer fixed just because the product page omits LOD settings, and do not emit `low`, `medium`, `high`, `1 mm`, `2 mm`, etc. as list items. If only a numeric fixed LOD falls between the low/high thresholds, if adjustability cannot be ruled in or out, or if the evidence is only generic to a sensor/software family without exact-product support, return `unk` for this field and let `lift` carry the numeric value. Treat optional firmware/mode changes that remove LOD adjustment as edition/mode-specific only when the requested product identity ships or is explicitly requested in that mode; otherwise use the stock/default product capability."
       },
       "aliases": [
         "LOD",
@@ -7206,13 +7204,13 @@
     },
     "lighting": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Extract the mouse's user-visible decorative/configurable lighting, not tiny DPI, battery, charging, or status indicators unless the manufacturer counts them in the lighting-zone total. Use `(rgb)` for Chroma/LIGHTSYNC/PrismSync/iCUE/Aura Sync/16.8M-color/customizable RGB wording; use `(led)` only for fixed or single-color lighting. Normalize manufacturer \"zones\", \"individually programmable LEDs\", and clearly counted RGB LED arrays to `<N> zone (...)`; do not infer a zone count from generic RGB marketing alone. Keep to the exact model, edition, and SKU: family variants can differ, including Plus vs non-Plus, wired vs Pro, and translucent Phantom editions. For unresolved variant sets, use the exact requested/default/base product rather than unioning across editions. Images can support lit areas or no-lighting, but an unlit render is not negative evidence. Return `none` only with explicit no-RGB/no-lighting evidence or strong official visual/spec evidence; otherwise return `unk`.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the mouse's user-visible decorative/configurable lighting, not tiny DPI, battery, charging, or status indicators unless the manufacturer counts them in the lighting-zone total. Use `(rgb)` for Chroma/LIGHTSYNC/PrismSync/iCUE/Aura Sync/16.8M-color/customizable RGB wording; use `(led)` only for fixed or single-color lighting. Normalize manufacturer \"zones\", \"individually programmable LEDs\", and clearly counted RGB LED arrays to `<N> zone (...)`; do not infer a zone count from generic RGB marketing alone. Keep to the exact model, edition, and SKU: family variants can differ, including Plus vs non-Plus, wired vs Pro, and translucent Phantom editions. For unresolved variant sets, use the exact requested/default/base product rather than unioning across editions. Images can support lit areas or no-lighting, but an unlit render is not negative evidence. Return `none` only with explicit no-RGB/no-lighting evidence or strong official visual/spec evidence; otherwise return `unk`."
       },
       "aliases": [
         "Chroma RGB",
@@ -7386,13 +7384,13 @@
     },
     "lngth": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the mouse body's front-to-back length in mm, excluding cable, dongles, packaging, charging dock, or hand-size references. Prefer explicit Length/L values from official specs. For dimension triples such as LxWxH, W x H x L, H/W/D, or Height/Width/Depth, map the value that corresponds to front-to-back body length, not vertical hump height; many mouse pages put the ~100-130 mm body length under Height or Depth. Use sibling width/height values and a second source to confirm unlabeled or swapped-axis tables. Do not copy series/sibling sizes (Mini/2c/HyperSpeed, EC1/EC2/EC3, small/medium/large) unless the source names the exact model; color-only variants usually share the same length. Convert cm/in to mm and round to 1 decimal.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the mouse body's front-to-back length in mm, excluding cable, dongles, packaging, charging dock, or hand-size references. Prefer explicit Length/L values from official specs. For dimension triples such as LxWxH, W x H x L, H/W/D, or Height/Width/Depth, map the value that corresponds to front-to-back body length, not vertical hump height; many mouse pages put the ~100-130 mm body length under Height or Depth. Use sibling width/height values and a second source to confirm unlabeled or swapped-axis tables. Do not copy series/sibling sizes (Mini/2c/HyperSpeed, EC1/EC2/EC3, small/medium/large) unless the source names the exact model; color-only variants usually share the same length. Convert cm/in to mm and round to 1 decimal."
       },
       "aliases": [
         "length",
@@ -7535,13 +7533,13 @@
     },
     "material": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the material(s) of the mouse's primary external body/shell/chassis/enclosure for the exact product, edition, SKU, and colorway being requested. Special editions and sibling models can change material (for example magnesium alloy vs carbon fiber, bio-based nylon vs carbon fiber composite, translucent or recycled-plastic shells), so do not union across a product family. Return a list only for substantial built-in exterior materials on the exact product, such as a plastic shell plus built-in rubber side grip panels. Do not include paint, coating, rubberized finish, optional grip tape, mouse feet/skates, cable, receiver/dongle, PCB/PWA, battery, packaging, or sustainability percentages. Normalize housing/chassis/exoskeleton/enclosure/body/outer shell/source spelling to canonical material values; prefer the most specific proven material over generic plastic or metal. Do not infer plastic from a normal-looking mouse, light weight, or common market practice. If credible sources only prove coating/finish, weight, or appearance and do not state a material, return unk with the searched sources. Product/PIF images may help reject wrong variants, but they are not standalone proof unless on-page text/metadata explicitly identifies the material.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the material(s) of the mouse's primary external body/shell/chassis/enclosure for the exact product, edition, SKU, and colorway being requested. Special editions and sibling models can change material (for example magnesium alloy vs carbon fiber, bio-based nylon vs carbon fiber composite, translucent or recycled-plastic shells), so do not union across a product family. Return a list only for substantial built-in exterior materials on the exact product, such as a plastic shell plus built-in rubber side grip panels. Do not include paint, coating, rubberized finish, optional grip tape, mouse feet/skates, cable, receiver/dongle, PCB/PWA, battery, packaging, or sustainability percentages. Normalize housing/chassis/exoskeleton/enclosure/body/outer shell/source spelling to canonical material values; prefer the most specific proven material over generic plastic or metal. Do not infer plastic from a normal-looking mouse, light weight, or common market practice. If credible sources only prove coating/finish, weight, or appearance and do not state a material, return unk with the searched sources. Product/PIF images may help reject wrong variants, but they are not standalone proof unless on-page text/metadata explicitly identifies the material."
       },
       "aliases": [
         "body material",
@@ -7716,13 +7714,13 @@
     },
     "mcu": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the MCU inside the mouse body that controls the mouse/reporting path, not the receiver, dongle, charging dock, or cable-side USB controller unless the product itself is that accessory. If a wireless product page names separate mouse and dongle MCUs, store only the mouse MCU and mention dongle/USB MCUs only in evidence notes. Prefer an exact part number when stated, such as Nordic nRF52840 or Nuvoton M483. Normalize common shorthand and casing variants, such as \"Nordic 54L15\" to \"Nordic nRF54L15\" and \"Realtek 8762G\" to \"Realtek RTL8762G\", only when the source clearly identifies that chip. Do not upgrade generic phrases such as \"Nordic wireless MCU\", \"STM ARM Cortex-M4\", \"Nuvoton high-speed MCU\", or \"Realtek controller\" to a specific chip without direct evidence. If wired/wireless, 1K/4K/8K, Max/Ultra/Master, v1/v2, or regional SKUs differ, use only evidence for the exact requested variant/SKU; otherwise return unk. Teardowns are acceptable when the chip marking or review text is explicit. Do not infer MCU from sensor, polling rate, firmware features, or same-family sibling products.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the MCU inside the mouse body that controls the mouse/reporting path, not the receiver, dongle, charging dock, or cable-side USB controller unless the product itself is that accessory. If a wireless product page names separate mouse and dongle MCUs, store only the mouse MCU and mention dongle/USB MCUs only in evidence notes. Prefer an exact part number when stated, such as Nordic nRF52840 or Nuvoton M483. Normalize common shorthand and casing variants, such as \"Nordic 54L15\" to \"Nordic nRF54L15\" and \"Realtek 8762G\" to \"Realtek RTL8762G\", only when the source clearly identifies that chip. Do not upgrade generic phrases such as \"Nordic wireless MCU\", \"STM ARM Cortex-M4\", \"Nuvoton high-speed MCU\", or \"Realtek controller\" to a specific chip without direct evidence. If wired/wireless, 1K/4K/8K, Max/Ultra/Master, v1/v2, or regional SKUs differ, use only evidence for the exact requested variant/SKU; otherwise return unk. Teardowns are acceptable when the chip marking or review text is explicit. Do not infer MCU from sensor, polling rate, firmware features, or same-family sibling products."
       },
       "aliases": [
         "microcontroller",
@@ -7898,13 +7896,13 @@
     },
     "mcu_link": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Emit only a component-level URL for the exact MCU/SoC used by the exact requested mouse variant. First establish the exact MCU identity from the resolved mcu field or from product evidence; if the source only says a broad maker/core/family label such as \"STM32 Arm Cortex MCU,\" \"Nordic MCU,\" \"Telink MCU,\" or \"NXP MCU,\" return unk rather than linking a broad vendor page. Prefer the MCU maker's exact product page or datasheet/spec PDF; an authorized component distributor page is acceptable only when it names the exact component. Product pages, reviews, teardown articles, retailer mouse listings, forums, and spec databases may prove the mouse uses the MCU, but they are not valid submitted mcu_link values. For variant families, use the requested wired/wireless/1K/4K/8K/Pro/SKU variant only; never union sibling MCUs or copy a receiver/dongle MCU unless the requested product field is explicitly for the receiver.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Emit only a component-level URL for the exact MCU/SoC used by the exact requested mouse variant. First establish the exact MCU identity from the resolved mcu field or from product evidence; if the source only says a broad maker/core/family label such as \"STM32 Arm Cortex MCU,\" \"Nordic MCU,\" \"Telink MCU,\" or \"NXP MCU,\" return unk rather than linking a broad vendor page. Prefer the MCU maker's exact product page or datasheet/spec PDF; an authorized component distributor page is acceptable only when it names the exact component. Product pages, reviews, teardown articles, retailer mouse listings, forums, and spec databases may prove the mouse uses the MCU, but they are not valid submitted mcu_link values. For variant families, use the requested wired/wireless/1K/4K/8K/Pro/SKU variant only; never union sibling MCUs or copy a receiver/dongle MCU unless the requested product field is explicitly for the receiver."
       },
       "aliases": [
         "MCU",
@@ -8049,13 +8047,13 @@
     },
     "middle_buttons": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Count only extra dedicated physical buttons on the mouse's upper middle/top-center shell near the scroll wheel, such as top DPI, profile/cycle, wheel-mode, or similar center-strip buttons. Exclude left/right primary buttons, scroll-wheel click/middle click, wheel-tilt inputs, side/thumb buttons, ring-finger buttons that are not on the center strip, underside power/DPI/polling/pairing buttons, receiver-storage controls, and software-only actions. Do not derive this value from total or programmable button count alone; use an official layout/manual, clear top-view image, or a normalized source that explicitly reports middle/top buttons. If the visible control's clickability or location is ambiguous, corroborate with another source or return unk.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Count only extra dedicated physical buttons on the mouse's upper middle/top-center shell near the scroll wheel, such as top DPI, profile/cycle, wheel-mode, or similar center-strip buttons. Exclude left/right primary buttons, scroll-wheel click/middle click, wheel-tilt inputs, side/thumb buttons, ring-finger buttons that are not on the center strip, underside power/DPI/polling/pairing buttons, receiver-storage controls, and software-only actions. Do not derive this value from total or programmable button count alone; use an official layout/manual, clear top-view image, or a normalized source that explicitly reports middle/top buttons. If the visible control's clickability or location is ambiguous, corroborate with another source or return unk."
       },
       "aliases": [
         "top-center buttons",
@@ -8192,13 +8190,13 @@
     },
     "motion_sync": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Motion Sync means a mouse sensor/firmware/software option that synchronizes sensor frames or mouse reports with host USB/PC polling intervals. Return true only when evidence for the exact product, exact edition, or exact manufacturer-defined sensor/series explicitly says Motion Sync, Motion-Sync, MotionSync, or an equivalent Motion Sync description. Treat on/off or enable/disable wording as true support. Return false only when a credible source explicitly excludes the exact product, lists Motion Sync = No, or says the option is unavailable for that exact model/variant. Do not infer false from omission on a spec page. Do not count Razer Frame Sync/FrameSync as Motion Sync; Razer distinguishes Frame Sync and Motion Sync in current sensor specs. If only Frame Sync, generic sensor sync, high polling rate, low latency, Smart Tracking, SpeedNova/HyperSpeed, or tracking accuracy is mentioned, return unk unless Motion Sync itself is also proven. If a source says Motion Sync cannot be enabled at a specific polling rate, still return true when the product supports Motion Sync in other modes and note the condition in evidence.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Motion Sync means a mouse sensor/firmware/software option that synchronizes sensor frames or mouse reports with host USB/PC polling intervals. Return true only when evidence for the exact product, exact edition, or exact manufacturer-defined sensor/series explicitly says Motion Sync, Motion-Sync, MotionSync, or an equivalent Motion Sync description. Treat on/off or enable/disable wording as true support. Return false only when a credible source explicitly excludes the exact product, lists Motion Sync = No, or says the option is unavailable for that exact model/variant. Do not infer false from omission on a spec page. Do not count Razer Frame Sync/FrameSync as Motion Sync; Razer distinguishes Frame Sync and Motion Sync in current sensor specs. If only Frame Sync, generic sensor sync, high polling rate, low latency, Smart Tracking, SpeedNova/HyperSpeed, or tracking accuracy is mentioned, return unk unless Motion Sync itself is also proven. If a source says Motion Sync cannot be enabled at a specific polling rate, still return true when the product supports Motion Sync in other modes and note the condition in evidence."
       },
       "aliases": [
         "Motion-Sync",
@@ -8361,13 +8359,13 @@
     },
     "mouse_side_connector": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Extract the connector or port on the mouse body used by a detachable cable for charging, data, or wired mode. Normalize by the mouse-end connector only: source phrases like \"USB Type A to USB Type C cable\" or \"USB-C charging/data cable\" mean USB-C only when the USB-C end plugs into the mouse; \"USB to Micro-USB\" or \"micro USB\" means Micro-B; \"Lightning to USB\" means Lightning. Use n/a only when the exact product has no detachable mouse-side port, such as a fixed/integrated wired cable, a replaceable-battery wireless mouse with no USB port, or a dock/pad-only design with no cable port. Do not use the computer-side plug, receiver/dongle connector, extension adapter, charging dock connector, Powerplay/Qi contacts, or generic cable_type as the value. If sources for the exact SKU/release disagree or mix old/new refreshes or wired/wireless siblings, return unk rather than unioning connector values.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the connector or port on the mouse body used by a detachable cable for charging, data, or wired mode. Normalize by the mouse-end connector only: source phrases like \"USB Type A to USB Type C cable\" or \"USB-C charging/data cable\" mean USB-C only when the USB-C end plugs into the mouse; \"USB to Micro-USB\" or \"micro USB\" means Micro-B; \"Lightning to USB\" means Lightning. Use n/a only when the exact product has no detachable mouse-side port, such as a fixed/integrated wired cable, a replaceable-battery wireless mouse with no USB port, or a dock/pad-only design with no cable port. Do not use the computer-side plug, receiver/dongle connector, extension adapter, charging dock connector, Powerplay/Qi contacts, or generic cable_type as the value. If sources for the exact SKU/release disagree or mix old/new refreshes or wired/wireless siblings, return unk rather than unioning connector values."
       },
       "aliases": [
         "USB Type-C",
@@ -8526,13 +8524,13 @@
     },
     "nvidia_reflex": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Record true only when the exact mouse is explicitly listed or validated as NVIDIA Reflex / Reflex Analyzer / Reflex-compatible by NVIDIA, the brand, an official firmware/support note, or a credible product page for that exact model. This key is hardware/peripheral compatibility for Reflex Analyzer latency measurement, not generic in-game NVIDIA Reflex Low Latency support, G-SYNC monitor support, high polling rate, or \"works in a Reflex game.\" If NVIDIA lists the mouse with Supports Wired=Yes, Supports Wireless=Yes, or Yes* in either mode, that is enough for this scalar true; do not encode mode, firmware, or database-average footnotes in this boolean. Match exact model, generation, edition, and SKU wording; skip sibling models and marketing pages where NVIDIA Reflex refers only to GPUs, laptops, games, or monitors. Return false only when a credible source explicitly says the exact mouse is not Reflex compatible; otherwise return unk rather than inferring false from silence or from absence on a single page.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Record true only when the exact mouse is explicitly listed or validated as NVIDIA Reflex / Reflex Analyzer / Reflex-compatible by NVIDIA, the brand, an official firmware/support note, or a credible product page for that exact model. This key is hardware/peripheral compatibility for Reflex Analyzer latency measurement, not generic in-game NVIDIA Reflex Low Latency support, G-SYNC monitor support, high polling rate, or \"works in a Reflex game.\" If NVIDIA lists the mouse with Supports Wired=Yes, Supports Wireless=Yes, or Yes* in either mode, that is enough for this scalar true; do not encode mode, firmware, or database-average footnotes in this boolean. Match exact model, generation, edition, and SKU wording; skip sibling models and marketing pages where NVIDIA Reflex refers only to GPUs, laptops, games, or monitors. Return false only when a credible source explicitly says the exact mouse is not Reflex compatible; otherwise return unk rather than inferring false from silence or from absence on a single page."
       },
       "aliases": [
         "NVIDIA Reflex Analyzer",
@@ -8701,13 +8699,13 @@
     },
     "onboard_memory": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Emit true when the exact mouse is explicitly described as having onboard/on-board memory, device memory mode, hardware playback, hardware profiles, or onboard/on-mouse profile storage for settings such as DPI, polling rate, button mappings, macros, or lighting. A single saved/last-used profile still counts as true. Store profile count in onboard_memory_value, not here. Do not infer true from programmable buttons, DPI buttons, configuration software support, or a generic software download/help page unless it names the exact device or exact compatible product family. Do not confuse this with onboard receiver/dongle storage. Emit false only when a source explicitly says no onboard memory/no device memory/no settings can be saved to the mouse; otherwise return unk and explain which exact-product sources were checked. For editions/colorways sharing one official spec table, inherit the same boolean; do not copy across wired vs wireless, Pro vs non-Pro, Gen/SE/DEX/Classic siblings unless the source explicitly groups them.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Emit true when the exact mouse is explicitly described as having onboard/on-board memory, device memory mode, hardware playback, hardware profiles, or onboard/on-mouse profile storage for settings such as DPI, polling rate, button mappings, macros, or lighting. A single saved/last-used profile still counts as true. Store profile count in onboard_memory_value, not here. Do not infer true from programmable buttons, DPI buttons, configuration software support, or a generic software download/help page unless it names the exact device or exact compatible product family. Do not confuse this with onboard receiver/dongle storage. Emit false only when a source explicitly says no onboard memory/no device memory/no settings can be saved to the mouse; otherwise return unk and explain which exact-product sources were checked. For editions/colorways sharing one official spec table, inherit the same boolean; do not copy across wired vs wireless, Pro vs non-Pro, Gen/SE/DEX/Classic siblings unless the source explicitly groups them."
       },
       "aliases": [
         "onboard memory",
@@ -8891,13 +8889,13 @@
     },
     "onboard_memory_value": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the number of onboard memory/profile slots the exact mouse can store. Count stored profile slots, not DPI steps/presets, report-rate stages, or the boolean presence of onboard memory. Map \"1 onboard profile\" and official phrases such as \"saves the last active profile\" to 1; map \"three hardware/device profiles\" to 3; map \"up to 5 onboard memory profiles\" to 5 because this field captures capacity. Emit 0 only when a substantive source says the exact product has no onboard memory/profiles; do not infer 0 from silence. If a source only says \"onboard memory: yes\" or \"on-board memory\" with no count, return unk for this field unless another source states a count. Do not copy values across sibling wired/wireless/Pro/HyperSpeed/edition models unless the source explicitly covers the requested product.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Extract the number of onboard memory/profile slots the exact mouse can store. Count stored profile slots, not DPI steps/presets, report-rate stages, or the boolean presence of onboard memory. Map \"1 onboard profile\" and official phrases such as \"saves the last active profile\" to 1; map \"three hardware/device profiles\" to 3; map \"up to 5 onboard memory profiles\" to 5 because this field captures capacity. Emit 0 only when a substantive source says the exact product has no onboard memory/profiles; do not infer 0 from silence. If a source only says \"onboard memory: yes\" or \"on-board memory\" with no count, return unk for this field unless another source states a count. Do not copy values across sibling wired/wireless/Pro/HyperSpeed/edition models unless the source explicitly covers the requested product."
       },
       "aliases": [
         "onboard memory profiles",
@@ -9051,13 +9049,13 @@
     },
     "paracord": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Set true only for the stock/included cable supplied with the exact mouse/variant when a source explicitly identifies it as paracord/paracord-like, says the cable is made from paracord material, or ties the named stock cable to paracord material/design for that product. Count wired mice and wireless mice whose included USB cable is used for charging or wired play, but ignore aftermarket replacement/mod kits unless the source says that cable is factory-installed or included with the product. Do not treat generic \"flexible\", \"braided\", \"cloth\", \"low-drag\", or cable-length wording as true by itself; proprietary names such as Speedflex, Ultraweave, Flex Cord, EZcord, PhantomCord, Ascended, HyperFlex, or Superflex need either a paracord/material statement or a credible review/spec that explicitly calls the cable paracord-like. False requires positive evidence for a standard/rubber/PVC/non-paracord cable or an explicit non-paracord/non-braided claim; do not infer false from silence. Use exact model/edition/SKU and skip sibling wired/wireless pages unless the source states the same cable applies.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Set true only for the stock/included cable supplied with the exact mouse/variant when a source explicitly identifies it as paracord/paracord-like, says the cable is made from paracord material, or ties the named stock cable to paracord material/design for that product. Count wired mice and wireless mice whose included USB cable is used for charging or wired play, but ignore aftermarket replacement/mod kits unless the source says that cable is factory-installed or included with the product. Do not treat generic \"flexible\", \"braided\", \"cloth\", \"low-drag\", or cable-length wording as true by itself; proprietary names such as Speedflex, Ultraweave, Flex Cord, EZcord, PhantomCord, Ascended, HyperFlex, or Superflex need either a paracord/material statement or a credible review/spec that explicitly calls the cable paracord-like. False requires positive evidence for a standard/rubber/PVC/non-paracord cable or an explicit non-paracord/non-braided claim; do not infer false from silence. Use exact model/edition/SKU and skip sibling wired/wireless pages unless the source states the same cable applies."
       },
       "aliases": [
         "paracord cable",
@@ -9240,13 +9238,13 @@
     },
     "polling_rate": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract supported polling/report/USB report rates in Hz for the exact mouse and exact variant/receiver bundle. Treat \"report rate\", \"USB report rate\", \"HyperPolling\", \"8K/4K polling\", and response-time shorthand as this field: 8 ms=125 Hz, 1 ms=1000 Hz, 0.5 ms=2000 Hz, 0.25 ms=4000 Hz, 0.125 ms=8000 Hz. Return every explicitly selectable rate for the exact SKU/mode when a source lists them. If sources only prove \"up to\" or \"maximum\" polling rate, return the proven maximum only; do not invent standard lower steps. Do not union across color/edition/sensor/receiver variants unless the requested product identity is explicitly a family-level listing and the site's variant policy asks for family union. Optional dongles, receivers, firmware upgrades, or wired/wireless/Bluetooth limits count only when the source says the exact product supports them; record the condition in evidence/log notes. Prefer official product specs, support FAQs, manuals, or professional lab pages over retailer/spec-table data when conflicts occur.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract supported polling/report/USB report rates in Hz for the exact mouse and exact variant/receiver bundle. Treat \"report rate\", \"USB report rate\", \"HyperPolling\", \"8K/4K polling\", and response-time shorthand as this field: 8 ms=125 Hz, 1 ms=1000 Hz, 0.5 ms=2000 Hz, 0.25 ms=4000 Hz, 0.125 ms=8000 Hz. Return every explicitly selectable rate for the exact SKU/mode when a source lists them. If sources only prove \"up to\" or \"maximum\" polling rate, return the proven maximum only; do not invent standard lower steps. Do not union across color/edition/sensor/receiver variants unless the requested product identity is explicitly a family-level listing and the site's variant policy asks for family union. Optional dongles, receivers, firmware upgrades, or wired/wireless/Bluetooth limits count only when the source says the exact product supports them; record the condition in evidence/log notes. Prefer official product specs, support FAQs, manuals, or professional lab pages over retailer/spec-table data when conflicts occur."
       },
       "aliases": [
         "Hz",
@@ -9538,13 +9536,13 @@
     },
     "profile_switching": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Return true only when the exact mouse is publicly shown to switch, cycle, or select mouse profiles via a mouse control, button combo, or assignable mouse-button function. Accept wording such as profile button, profile cycle/cycling, profile switch button, next profile, cycle profiles, onboard profile cycle, stored profiles plus a profile button, or Corsair-style hardware playback with a profile switch button. Do not require onboard memory unless the source specifically frames the feature as onboard/offline; this field is separate from onboard_memory. Do not treat DPI/CPI switching, on-the-fly sensitivity, polling/report-rate switching, scroll-mode switching, or software-only automatic game/app profile switching as this field. Do not infer true from onboard memory or multiple stored profiles alone; require evidence of a user-visible switch/cycle/select action. Emit false only when a credible source explicitly says profile switching/profile button/profile-cycle is absent, or a trusted review/spec table lists profile switching as absent. Otherwise return unk rather than absence-based false.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Return true only when the exact mouse is publicly shown to switch, cycle, or select mouse profiles via a mouse control, button combo, or assignable mouse-button function. Accept wording such as profile button, profile cycle/cycling, profile switch button, next profile, cycle profiles, onboard profile cycle, stored profiles plus a profile button, or Corsair-style hardware playback with a profile switch button. Do not require onboard memory unless the source specifically frames the feature as onboard/offline; this field is separate from onboard_memory. Do not treat DPI/CPI switching, on-the-fly sensitivity, polling/report-rate switching, scroll-mode switching, or software-only automatic game/app profile switching as this field. Do not infer true from onboard memory or multiple stored profiles alone; require evidence of a user-visible switch/cycle/select action. Emit false only when a credible source explicitly says profile switching/profile button/profile-cycle is absent, or a trusted review/spec table lists profile switching as absent. Otherwise return unk rather than absence-based false."
       },
       "aliases": [
         "profile cycle",
@@ -9716,13 +9714,13 @@
     },
     "programmable_buttons": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Count the number of remappable mouse inputs for the exact product as stated by a credible source. Prefer explicit labels such as \"programmable buttons,\" \"programmable controls,\" \"programmable inputs,\" \"macro programmable buttons,\" \"fully configurable buttons,\" or \"customizable buttons.\" Normalize arithmetic marketing counts (for example, 10+1 -> 11 and 19+1 -> 20). If a source distinguishes \"buttons\" from broader \"controls,\" use the count attached to the programmable-buttons label; use a programmable-controls/input count only when that is the clearest available label for remappable mouse inputs. For mice with included swappable side plates or layouts, use the highest count available in the retail configuration when the source says \"up to\" and the parts are included. Do not count power, pairing, receiver-storage, wheel-mode toggle, or other controls explicitly marked not programmable. Do not infer a value from visible buttons, side-button count, or total physical button count alone; return unk when sources only show physical button count or generic software customizability without a count.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Count the number of remappable mouse inputs for the exact product as stated by a credible source. Prefer explicit labels such as \"programmable buttons,\" \"programmable controls,\" \"programmable inputs,\" \"macro programmable buttons,\" \"fully configurable buttons,\" or \"customizable buttons.\" Normalize arithmetic marketing counts (for example, 10+1 -> 11 and 19+1 -> 20). If a source distinguishes \"buttons\" from broader \"controls,\" use the count attached to the programmable-buttons label; use a programmable-controls/input count only when that is the clearest available label for remappable mouse inputs. For mice with included swappable side plates or layouts, use the highest count available in the retail configuration when the source says \"up to\" and the parts are included. Do not count power, pairing, receiver-storage, wheel-mode toggle, or other controls explicitly marked not programmable. Do not infer a value from visible buttons, side-button count, or total physical button count alone; return unk when sources only show physical button count or generic software customizability without a count."
       },
       "aliases": [
         "programmable controls",
@@ -9920,14 +9918,14 @@
     },
     "rgb": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true,
+          "mode": "default"
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Return true only when the exact mouse is marketed or documented as having user-visible RGB lighting/backlighting/illumination, including source phrases such as RGB, Chroma RGB, LIGHTSYNC RGB, Prism/PrismSync, Brilliant Prism, per-LED RGB, full-spectrum lighting, customizable lighting, or 16.8M/16.8 million colors. Single-zone RGB still counts when the source calls it RGB or customizable color lighting. Return false when a credible source explicitly says no RGB/no lighting, or when official material clearly distinguishes this exact model from an RGB sibling and the RGB feature applies only to the sibling. Do not count DPI, battery, pairing, profile, or charging/status indicator LEDs as RGB lighting unless the product is also marketed as having RGB/backlighting. Product renders/photos can support true when lit zones are visible or captions/specs identify RGB; unlit photos alone are not negative evidence. Match exact edition/SKU/model suffix before copying an RGB claim, especially Plus/Pro/Ultimate/35K/Wired/Wireless/Gen 2 variants.",
-        "variant_inventory_usage": {
-          "enabled": true,
-          "mode": "default"
-        }
+        "reasoning_note": "Return true only when the exact mouse is marketed or documented as having user-visible RGB lighting/backlighting/illumination, including source phrases such as RGB, Chroma RGB, LIGHTSYNC RGB, Prism/PrismSync, Brilliant Prism, per-LED RGB, full-spectrum lighting, customizable lighting, or 16.8M/16.8 million colors. Single-zone RGB still counts when the source calls it RGB or customizable color lighting. Return false when a credible source explicitly says no RGB/no lighting, or when official material clearly distinguishes this exact model from an RGB sibling and the RGB feature applies only to the sibling. Do not count DPI, battery, pairing, profile, or charging/status indicator LEDs as RGB lighting unless the product is also marketed as having RGB/backlighting. Product renders/photos can support true when lit zones are visible or captions/specs identify RGB; unlit photos alone are not negative evidence. Match exact edition/SKU/model suffix before copying an RGB claim, especially Plus/Pro/Ultimate/35K/Wired/Wireless/Gen 2 variants."
       },
       "aliases": [
         "RGB lighting",
@@ -10108,13 +10106,13 @@
     },
     "sensor": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the exact tracking sensor identity used by the exact mouse model/edition. Return a component/model name, not generic technology such as \"optical\", \"laser\", DPI/IPS specs, or marketing claims. Prefer brand-official sensor names, then normalize maker prefixes and suffixes only through exact component aliases (for example, \"Logitech HERO 2\" -> \"HERO 2\" and \"Razer Focus Pro 35K Optical Sensor Gen-2\" -> \"Focus Pro 35K\"). Use variant identity aggressively: Pro/HyperSpeed/SE/DW/CW/wired changes can change the sensor, while colorways usually do not. For bare official numbers such as \"3370 sensor\" or \"3360 sensor\", corroborate before expanding to a PixArt PAW/PMW canonical name; otherwise keep the bare official model or return unk if it is not a defensible model identity. If sources only say \"optical sensor\", \"precision tracking\", DPI, or tracking technology with no exact model/name, return unk for sensor and leave technology classification to sensor_type.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the exact tracking sensor identity used by the exact mouse model/edition. Return a component/model name, not generic technology such as \"optical\", \"laser\", DPI/IPS specs, or marketing claims. Prefer brand-official sensor names, then normalize maker prefixes and suffixes only through exact component aliases (for example, \"Logitech HERO 2\" -> \"HERO 2\" and \"Razer Focus Pro 35K Optical Sensor Gen-2\" -> \"Focus Pro 35K\"). Use variant identity aggressively: Pro/HyperSpeed/SE/DW/CW/wired changes can change the sensor, while colorways usually do not. For bare official numbers such as \"3370 sensor\" or \"3360 sensor\", corroborate before expanding to a PixArt PAW/PMW canonical name; otherwise keep the bare official model or return unk if it is not a defensible model identity. If sources only say \"optical sensor\", \"precision tracking\", DPI, or tracking technology with no exact model/name, return unk for sensor and leave technology classification to sensor_type."
       },
       "aliases": [
         "Razer Focus Pro 35K Optical Sensor Gen-2",
@@ -10267,13 +10265,13 @@
     },
     "sensor_brand": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the canonical brand attached to the actual tracking sensor, not the mouse brand by default. Return a brand/company/family-owner name only, e.g. PixArt, Logitech, Razer, SteelSeries, Corsair, Microsoft, Avago. If the source gives a raw sensor part number such as PAW/PMW/PAN or ADNS, use the maker proved by the source or resolved sensor component; PAW/PMW are usually PixArt and ADNS is usually historical Avago, but do not rely on prefix alone without supporting evidence. If the source names a proprietary or rebadged family such as Logitech HERO, Razer Focus/Focus Pro/Focus X, SteelSeries TrueMove, Corsair MARKSMAN, or Microsoft BlueTrack, return the family owner as sensor_brand even when PixArt or another partner is mentioned as co-designer/OEM; this field is not the hidden silicon-OEM field. Do not emit the sensor model, DPI number, generation string, \"optical\", \"laser\", \"co-designed with PixArt\", or the mouse brand unless the sensor itself is branded by that company. When sources disagree between marketed family owner and OEM/manufacturer, prefer the marketed sensor-family brand for this field and note the OEM evidence in discovery. Leave unk when the exact product/revision cannot be matched or when sources only state a generic optical/laser sensor with no defensible brand.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Extract the canonical brand attached to the actual tracking sensor, not the mouse brand by default. Return a brand/company/family-owner name only, e.g. PixArt, Logitech, Razer, SteelSeries, Corsair, Microsoft, Avago. If the source gives a raw sensor part number such as PAW/PMW/PAN or ADNS, use the maker proved by the source or resolved sensor component; PAW/PMW are usually PixArt and ADNS is usually historical Avago, but do not rely on prefix alone without supporting evidence. If the source names a proprietary or rebadged family such as Logitech HERO, Razer Focus/Focus Pro/Focus X, SteelSeries TrueMove, Corsair MARKSMAN, or Microsoft BlueTrack, return the family owner as sensor_brand even when PixArt or another partner is mentioned as co-designer/OEM; this field is not the hidden silicon-OEM field. Do not emit the sensor model, DPI number, generation string, \"optical\", \"laser\", \"co-designed with PixArt\", or the mouse brand unless the sensor itself is branded by that company. When sources disagree between marketed family owner and OEM/manufacturer, prefer the marketed sensor-family brand for this field and note the OEM evidence in discovery. Leave unk when the exact product/revision cannot be matched or when sources only state a generic optical/laser sensor with no defensible brand."
       },
       "aliases": [
         "PixArt Imaging",
@@ -10439,13 +10437,13 @@
     },
     "sensor_date": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the announcement, launch, first-public availability, or first-supported date of the resolved sensor component, not the mouse product release date. Prefer exact sensor-level maker pages, datasheets, official technology pages, brand press releases, support/software release notes, or official launch posts. If a dated source says the sensor is \"new\", \"first-ever\", \"debuting\", \"revealed\", \"introduced\", \"all-new\", or \"first to feature\" in that product, the source's publication/release date may be used as sensor_date. Do not use an ordinary product release date, retailer \"Date first available\", review publication date, or mouse launch date unless the text explicitly ties that date to the sensor's introduction or availability. Normalize exact dates as `YYYY-MM-DD`; when only month+year is proven, use `YYYY-MM-01` only if the project accepts month-level dates and note month-level precision in evidence; do not invent a day from year-only evidence. Sensor date usually predates the product release, but can post-date it for firmware-upgraded sensors or later renamed/tuned generations, so do not enforce `sensor_date <= release_date` as a hard rule.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Extract the announcement, launch, first-public availability, or first-supported date of the resolved sensor component, not the mouse product release date. Prefer exact sensor-level maker pages, datasheets, official technology pages, brand press releases, support/software release notes, or official launch posts. If a dated source says the sensor is \"new\", \"first-ever\", \"debuting\", \"revealed\", \"introduced\", \"all-new\", or \"first to feature\" in that product, the source's publication/release date may be used as sensor_date. Do not use an ordinary product release date, retailer \"Date first available\", review publication date, or mouse launch date unless the text explicitly ties that date to the sensor's introduction or availability. Normalize exact dates as `YYYY-MM-DD`; when only month+year is proven, use `YYYY-MM-01` only if the project accepts month-level dates and note month-level precision in evidence; do not invent a day from year-only evidence. Sensor date usually predates the product release, but can post-date it for firmware-upgraded sensors or later renamed/tuned generations, so do not enforce `sensor_date <= release_date` as a hard rule."
       },
       "aliases": [],
       "availability": "sometimes",
@@ -10598,13 +10596,13 @@
     },
     "sensor_latency": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract a numeric movement/sensor latency only when the source reports a measured time for mouse movement delay, such as RTINGS \"Delay At Half Movement\" or a source that explicitly defines movement/shift latency as delay between physical mouse movement and computer/USB detection. Prefer RTINGS Delay At Half Movement for the scalar value under the current RTINGS bench; do not convert RTINGS scores or qualitative phrases like \"outstanding sensor latency\" into ms. MouseSpecs \"Shift Latency\" may be used only as a tier5 fallback when the page definition is movement latency; do not confuse it with DPI-shift button latency. Reject click latency, switch actuation/debounce delay, polling-interval math, receiver/wireless latency, NVIDIA Reflex/end-to-end system latency, and generic \"ultra-low latency\" marketing. Use the exact tested variant and optimized/expected connection: wired for wired-only mice, proprietary 2.4 GHz receiver for wireless gaming mice, and Bluetooth only for bluetooth-specific sibling keys. If a source gives connection-specific measured sensor values, fill the connection-specific sibling and use the expected connection for this generic key. Firmware, polling rate, Motion Sync/performance modes, and special editions can change the result; return unk rather than copying a sibling/edition or inferring from sensor model/polling rate.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract a numeric movement/sensor latency only when the source reports a measured time for mouse movement delay, such as RTINGS \"Delay At Half Movement\" or a source that explicitly defines movement/shift latency as delay between physical mouse movement and computer/USB detection. Prefer RTINGS Delay At Half Movement for the scalar value under the current RTINGS bench; do not convert RTINGS scores or qualitative phrases like \"outstanding sensor latency\" into ms. MouseSpecs \"Shift Latency\" may be used only as a tier5 fallback when the page definition is movement latency; do not confuse it with DPI-shift button latency. Reject click latency, switch actuation/debounce delay, polling-interval math, receiver/wireless latency, NVIDIA Reflex/end-to-end system latency, and generic \"ultra-low latency\" marketing. Use the exact tested variant and optimized/expected connection: wired for wired-only mice, proprietary 2.4 GHz receiver for wireless gaming mice, and Bluetooth only for bluetooth-specific sibling keys. If a source gives connection-specific measured sensor values, fill the connection-specific sibling and use the expected connection for this generic key. Firmware, polling rate, Motion Sync/performance modes, and special editions can change the result; return unk rather than copying a sibling/edition or inferring from sensor model/polling rate."
       },
       "aliases": [
         "sensor delay",
@@ -10741,13 +10739,13 @@
     },
     "sensor_latency_bluetooth": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Only submit a number when a fetched source explicitly gives movement/sensor/motion latency measured in Bluetooth mode for the exact mouse. Accept labels such as \"Bluetooth motion latency,\" \"Bluetooth motion delay,\" \"sensor delay over Bluetooth,\" or a named movement-delay submetric only when the source states the Bluetooth connection was used. Do not use click latency, button latency, average latency, input latency, polling interval, receiver/2.4GHz/wired/HyperSpeed values, or generic Bluetooth latency ranges. Do not copy RTINGS sensor latency unless the product/result page explicitly says the sensor movement test was run over Bluetooth; RTINGS methodology describes sensor latency as movement reported over USB. LTT Labs \"Avg. Latency (Bluetooth)\" belongs to connection/click latency unless the page explicitly defines it as a sensor/movement test. If the product lacks Bluetooth, or sources only prove Bluetooth support plus a non-Bluetooth sensor/motion value, return unk with a reason. Prefer instrumented lab measurements; manufacturer claims are acceptable only when numeric, product-specific, and connection-mode explicit. Normalize microseconds to ms and round per contract.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Only submit a number when a fetched source explicitly gives movement/sensor/motion latency measured in Bluetooth mode for the exact mouse. Accept labels such as \"Bluetooth motion latency,\" \"Bluetooth motion delay,\" \"sensor delay over Bluetooth,\" or a named movement-delay submetric only when the source states the Bluetooth connection was used. Do not use click latency, button latency, average latency, input latency, polling interval, receiver/2.4GHz/wired/HyperSpeed values, or generic Bluetooth latency ranges. Do not copy RTINGS sensor latency unless the product/result page explicitly says the sensor movement test was run over Bluetooth; RTINGS methodology describes sensor latency as movement reported over USB. LTT Labs \"Avg. Latency (Bluetooth)\" belongs to connection/click latency unless the page explicitly defines it as a sensor/movement test. If the product lacks Bluetooth, or sources only prove Bluetooth support plus a non-Bluetooth sensor/motion value, return unk with a reason. Prefer instrumented lab measurements; manufacturer claims are acceptable only when numeric, product-specific, and connection-mode explicit. Normalize microseconds to ms and round per contract."
       },
       "aliases": [
         "sensor latency (bluetooth)",
@@ -10880,13 +10878,13 @@
     },
     "sensor_latency_wired": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Use only instrumented mouse-motion/sensor-delay measurements for the exact product and wired/cabled USB data mode. Prefer RTINGS current Sensor Latency \"Delay At Half Movement\" when a numeric value is exposed; when older RTINGS text shows Start/Half/End measurements, emit only Delay At Half Movement, not the score and not start/end values. Accept TechPowerUp-style \"motion delay\" only when the source names the exact product, the wired mode, and a numeric ms value; do not convert relative-only results unless the source provides an absolute value. Do not use click latency, LTT Labs \"Avg. Latency (Wired)\"/\"Measured Latency,\" polling or report-rate interval claims such as \"1 ms,\" DPI/sensor specs, Motion Sync, NVIDIA Reflex, motion-to-photon, or motion-to-screen latency. For wireless mice, \"wired\" requires a tested USB data connection, not merely charging while used wirelessly. If no credible source states wired-mode sensor/motion latency, return unk with a searched-sources unknown_reason.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Use only instrumented mouse-motion/sensor-delay measurements for the exact product and wired/cabled USB data mode. Prefer RTINGS current Sensor Latency \"Delay At Half Movement\" when a numeric value is exposed; when older RTINGS text shows Start/Half/End measurements, emit only Delay At Half Movement, not the score and not start/end values. Accept TechPowerUp-style \"motion delay\" only when the source names the exact product, the wired mode, and a numeric ms value; do not convert relative-only results unless the source provides an absolute value. Do not use click latency, LTT Labs \"Avg. Latency (Wired)\"/\"Measured Latency,\" polling or report-rate interval claims such as \"1 ms,\" DPI/sensor specs, Motion Sync, NVIDIA Reflex, motion-to-photon, or motion-to-screen latency. For wireless mice, \"wired\" requires a tested USB data connection, not merely charging while used wirelessly. If no credible source states wired-mode sensor/motion latency, return unk with a searched-sources unknown_reason."
       },
       "aliases": [
         "sensor latency (wired)",
@@ -11014,13 +11012,13 @@
     },
     "sensor_latency_wireless": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract only numeric motion/sensor latency for the exact product over its non-Bluetooth wireless receiver or proprietary wireless mode. Accept source phrases such as \"motion latency\", \"sensor latency\", \"movement latency\", \"movement delay\", \"sensor delay\", or \"delay at half movement\" only when the source explicitly ties the number to wireless/receiver operation or to a wireless platform on the exact product. Do not use click/button latency, debounce, LTT-style \"Avg. Latency (Receiver)\" click-registration results, Bluetooth latency, wired/USB-only sensor latency, polling interval math (1000 Hz = 1 ms), or generic \"low latency\" marketing. RTINGS sensor-latency values are movement/USB-update measurements and should not populate this wireless-specific key unless the product page/methodology explicitly says the tested value is wireless/receiver mode. If a source gives an \"as low as\" best-case wireless motion latency for the exact product, store that numeric value and let evidence text carry the condition. Return unk when the only available evidence is click latency, polling rate, generic wireless latency, a non-product-specific explainer, or a sibling product.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract only numeric motion/sensor latency for the exact product over its non-Bluetooth wireless receiver or proprietary wireless mode. Accept source phrases such as \"motion latency\", \"sensor latency\", \"movement latency\", \"movement delay\", \"sensor delay\", or \"delay at half movement\" only when the source explicitly ties the number to wireless/receiver operation or to a wireless platform on the exact product. Do not use click/button latency, debounce, LTT-style \"Avg. Latency (Receiver)\" click-registration results, Bluetooth latency, wired/USB-only sensor latency, polling interval math (1000 Hz = 1 ms), or generic \"low latency\" marketing. RTINGS sensor-latency values are movement/USB-update measurements and should not populate this wireless-specific key unless the product page/methodology explicitly says the tested value is wireless/receiver mode. If a source gives an \"as low as\" best-case wireless motion latency for the exact product, store that numeric value and let evidence text carry the condition. Return unk when the only available evidence is click latency, polling rate, generic wireless latency, a non-product-specific explainer, or a sibling product."
       },
       "aliases": [
         "sensor latency (wireless)",
@@ -11156,13 +11154,13 @@
     },
     "sensor_link": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Return the URL for the exact sensor component used by the exact mouse variant, not the mouse product page, a retailer page, a review, or a general sensor database. Use product evidence only to establish the sensor identity, then resolve that identity to a component-level maker page/datasheet/support/technology page. For branded or proprietary sensors (e.g. HERO, Focus, TrueMove, Owl-Eye), use the brand's official sensor technology/support page when it names the exact public sensor identity; do not force-map to an underlying PixArt part unless a credible source explicitly states the exact part. Prefer PixArt product-detail or official datasheet URLs for PixArt part numbers; use authorized component distributors only when maker pages are missing. If the exact sensor or component-level URL is not proven, return unknown rather than a product/source-database URL.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Return the URL for the exact sensor component used by the exact mouse variant, not the mouse product page, a retailer page, a review, or a general sensor database. Use product evidence only to establish the sensor identity, then resolve that identity to a component-level maker page/datasheet/support/technology page. For branded or proprietary sensors (e.g. HERO, Focus, TrueMove, Owl-Eye), use the brand's official sensor technology/support page when it names the exact public sensor identity; do not force-map to an underlying PixArt part unless a credible source explicitly states the exact part. Prefer PixArt product-detail or official datasheet URLs for PixArt part numbers; use authorized component distributors only when maker pages are missing. If the exact sensor or component-level URL is not proven, return unknown rather than a product/source-database URL."
       },
       "aliases": [],
       "availability": "sometimes",
@@ -11284,13 +11282,13 @@
     },
     "sensor_type": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Normalize only the mouse motion-sensor technology into `optical` or `laser`. Treat phrases such as \"optical sensor,\" \"optical tracking,\" \"blue optical tracking,\" \"IR/infrared LED,\" and sensor-maker pages that place the chip under optical navigation as `optical`. Treat \"laser sensor,\" \"laser tracking,\" and \"Darkfield laser sensor\" as `laser`. Do not classify from marketing phrases like \"laser-grade,\" \"laser-accurate,\" \"advanced gaming sensor,\" DPI/IPS/G specs, or optical switch/encoder wording. Use the exact product/SKU evidence or the resolved sensor component; do not copy sibling-family values.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Normalize only the mouse motion-sensor technology into `optical` or `laser`. Treat phrases such as \"optical sensor,\" \"optical tracking,\" \"blue optical tracking,\" \"IR/infrared LED,\" and sensor-maker pages that place the chip under optical navigation as `optical`. Treat \"laser sensor,\" \"laser tracking,\" and \"Darkfield laser sensor\" as `laser`. Do not classify from marketing phrases like \"laser-grade,\" \"laser-accurate,\" \"advanced gaming sensor,\" DPI/IPS/G specs, or optical switch/encoder wording. Use the exact product/SKU evidence or the resolved sensor component; do not copy sibling-family values."
       },
       "aliases": [
         "optical sensor -> optical",
@@ -11436,13 +11434,13 @@
     },
     "shape": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Extract the structural shell shape, not hand compatibility, button handedness, or generic comfort marketing. Use `symmetrical` for mirrored/ambi-style shells even when the mouse is optimized for right-handed users or has side buttons only on the left. Use `ergonomic` for clearly non-mirrored/sculpted right- or left-handed shells; map source phrases such as `asymmetrical`, `asymmetric`, `ergo`, `right-handed ergonomic`, and `left-handed ergonomic` to this value. Use `hybrid` only when a credible shape source explicitly labels the product hybrid or describes an ambi/symmetrical top/front combined with ergonomic/asymmetric side/back shaping. Do not emit `ergonomic` merely because a source says the mouse is comfortable or has an ergonomic design in generic copy, especially when the same source or a stronger source calls the shell symmetrical/ambidextrous. For configurable-shell mice that support multiple structural shapes and have no single marketed/default shell, return unknown rather than forcing this scalar.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Extract the structural shell shape, not hand compatibility, button handedness, or generic comfort marketing. Use `symmetrical` for mirrored/ambi-style shells even when the mouse is optimized for right-handed users or has side buttons only on the left. Use `ergonomic` for clearly non-mirrored/sculpted right- or left-handed shells; map source phrases such as `asymmetrical`, `asymmetric`, `ergo`, `right-handed ergonomic`, and `left-handed ergonomic` to this value. Use `hybrid` only when a credible shape source explicitly labels the product hybrid or describes an ambi/symmetrical top/front combined with ergonomic/asymmetric side/back shaping. Do not emit `ergonomic` merely because a source says the mouse is comfortable or has an ergonomic design in generic copy, especially when the same source or a stronger source calls the shell symmetrical/ambidextrous. For configurable-shell mice that support multiple structural shapes and have no single marketed/default shell, return unknown rather than forcing this scalar."
       },
       "aliases": [
         "asymmetrical",
@@ -11603,13 +11601,13 @@
     },
     "shift_latency": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Treat shift_latency as movement/shift latency: the delay in ms between physical mouse movement and the computer/USB-reported movement, when a source explicitly labels it Shift Latency, Movement Latency, Movement (Shift) Latency, or a comparable movement/sensor-latency test. Do NOT treat this as latency of a DPI-shift/sniper/on-the-fly DPI button, and do not infer a value from the presence of a DPI-shift button. Do not copy click latency, debounce, polling interval/report-rate math, DPI values/steps, DPI indicator, or button response claims. If MouseSpecs gives an exact product \"Shift Latency\" value, use it; if it shows \"-\" or omits the row, return unk. If RTINGS or another lab reports movement/sensor latency, use only when the cited definition matches movement-input-to-USB/computer detection and note the specific subtest/connection; otherwise leave this sibling to sensor_latency. For wireless/wired products, use the source's explicit primary/default/expected-connection value; do not average connection modes or copy connection-specific latency into this scalar unless the source itself presents it as the product-level value.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Treat shift_latency as movement/shift latency: the delay in ms between physical mouse movement and the computer/USB-reported movement, when a source explicitly labels it Shift Latency, Movement Latency, Movement (Shift) Latency, or a comparable movement/sensor-latency test. Do NOT treat this as latency of a DPI-shift/sniper/on-the-fly DPI button, and do not infer a value from the presence of a DPI-shift button. Do not copy click latency, debounce, polling interval/report-rate math, DPI values/steps, DPI indicator, or button response claims. If MouseSpecs gives an exact product \"Shift Latency\" value, use it; if it shows \"-\" or omits the row, return unk. If RTINGS or another lab reports movement/sensor latency, use only when the cited definition matches movement-input-to-USB/computer detection and note the specific subtest/connection; otherwise leave this sibling to sensor_latency. For wireless/wired products, use the source's explicit primary/default/expected-connection value; do not average connection modes or copy connection-specific latency into this scalar unless the source itself presents it as the product-level value."
       },
       "aliases": [
         "movement latency",
@@ -11744,13 +11742,13 @@
     },
     "side_buttons": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Count physical side-mounted button actuators on the exact mouse. Include thumb/back-forward buttons, side-located DPI-shift/sniper/multi-function/gesture buttons, and buttons on both left and right sides if installed and usable. Exclude primary left/right clicks, scroll-wheel click/tilt, top DPI/profile buttons, bottom power/profile buttons, side scroll wheels, lighting zones, and total programmable-button counts. For modular/swappable side plates that ship with the exact product, submit the highest side-button count from any included side plate; mention lower included configurations in evidence notes. Do not count optional accessories or sibling-model side plates. Prefer manufacturer specs/manuals; otherwise use professional review/spec tables or clear side-view/360/PIF images. Treat 0 as proven only when a source states no relevant buttons/only one physical button or images clearly show both sides with no side buttons.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Count physical side-mounted button actuators on the exact mouse. Include thumb/back-forward buttons, side-located DPI-shift/sniper/multi-function/gesture buttons, and buttons on both left and right sides if installed and usable. Exclude primary left/right clicks, scroll-wheel click/tilt, top DPI/profile buttons, bottom power/profile buttons, side scroll wheels, lighting zones, and total programmable-button counts. For modular/swappable side plates that ship with the exact product, submit the highest side-button count from any included side plate; mention lower included configurations in evidence notes. Do not count optional accessories or sibling-model side plates. Prefer manufacturer specs/manuals; otherwise use professional review/spec tables or clear side-view/360/PIF images. Treat 0 as proven only when a source states no relevant buttons/only one physical button or images clearly show both sides with no side buttons."
       },
       "aliases": [
         "side buttons",
@@ -11888,13 +11886,13 @@
     },
     "silent_clicks": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Treat this as an intentionally quiet/silent click feature, not a measured click-latency or switch-feel field. Return true only when exact-product evidence says the mouse has silent/quiet/whisper-quiet/noiseless/mute clicks or buttons, SilentTouch/Silent Touch, Quiet Click, silent mechanical switches, or explicit click-noise reduction. Return false only when exact-product evidence explicitly says click-noise reduction/quiet-click support is absent, or a credible comparison/spec table marks the feature as No. Do not infer false from a missing marketing claim. Do not count low-latency optical/mechanical switches, debounce, light click force, crisp/tactile click feel, or quiet/silent scroll wheel alone. If evidence is only for a sibling, bundle member, or scroll wheel, return unk.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Treat this as an intentionally quiet/silent click feature, not a measured click-latency or switch-feel field. Return true only when exact-product evidence says the mouse has silent/quiet/whisper-quiet/noiseless/mute clicks or buttons, SilentTouch/Silent Touch, Quiet Click, silent mechanical switches, or explicit click-noise reduction. Return false only when exact-product evidence explicitly says click-noise reduction/quiet-click support is absent, or a credible comparison/spec table marks the feature as No. Do not infer false from a missing marketing claim. Do not count low-latency optical/mechanical switches, debounce, light click force, crisp/tactile click feel, or quiet/silent scroll wheel alone. If evidence is only for a sibling, bundle member, or scroll wheel, return unk."
       },
       "aliases": [
         "silent clicks",
@@ -12132,13 +12130,13 @@
     },
     "smoothing": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Use this field for cursor-output smoothing/filtering caused by sensor/MCU averaging, interpolation, ripple/noise filtering, or forced/automatic firmware filtering. Accept direct phrases such as \"Smoothing / Filtering: Yes/No,\" \"zero/no smoothing, filtering, or acceleration,\" and \"no smoothing.\" Return true only when the exact product or exact sensor/firmware evidence says smoothing/filtering/ripple control is applied, forced, automatic, or cannot be disabled. Return false only from explicit zero/no smoothing/filtering evidence or a reputable spec page that lists Smoothing / Filtering = No. Do not infer false from silence. Do not treat \"flawless sensor\" alone as proof unless the same source defines flawless as no noticeable smoothing/filtering and maps the exact product/sensor. Do not conflate angle snapping/prediction/angle correction, Motion Sync, LOD, polling rate, or marketing adjectives like \"smooth glide\" with smoothing unless the source explicitly says they average/filter cursor output. For optional toggles or DPI-conditional settings, use true only if smoothing is applied by default/automatically/forced under normal supported use; otherwise return unk.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Use this field for cursor-output smoothing/filtering caused by sensor/MCU averaging, interpolation, ripple/noise filtering, or forced/automatic firmware filtering. Accept direct phrases such as \"Smoothing / Filtering: Yes/No,\" \"zero/no smoothing, filtering, or acceleration,\" and \"no smoothing.\" Return true only when the exact product or exact sensor/firmware evidence says smoothing/filtering/ripple control is applied, forced, automatic, or cannot be disabled. Return false only from explicit zero/no smoothing/filtering evidence or a reputable spec page that lists Smoothing / Filtering = No. Do not infer false from silence. Do not treat \"flawless sensor\" alone as proof unless the same source defines flawless as no noticeable smoothing/filtering and maps the exact product/sensor. Do not conflate angle snapping/prediction/angle correction, Motion Sync, LOD, polling rate, or marketing adjectives like \"smooth glide\" with smoothing unless the source explicitly says they average/filter cursor output. For optional toggles or DPI-conditional settings, use true only if smoothing is applied by default/automatically/forced under normal supported use; otherwise return unk."
       },
       "aliases": [
         "smoothing / filtering",
@@ -12305,13 +12303,13 @@
     },
     "switch": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the stock primary left/right click switch identity, not the scroll-wheel encoder, side-button switches, hot-swap capability, switch_type, or click lifespan. Prefer exact manufacturer/model or branded technology names (for example, Razer Optical Mouse Switches Gen-3, LIGHTFORCE Hybrid, Kailh GX SPDT, Huano Transparent Blue Shell Pink Dot, ROG Micro Switch II). Treat brand-only names such as Huano, Omron, Kailh, TTC, or generic phrases such as optical/mechanical switches as insufficient for this field unless the product source presents that wording as the switch's marketed component name; those broad facts belong to switch_brand or switch_type. For hot-swappable mice, record the factory-installed main switches; spare/included switch packs are corroboration only, not a union. When sources disagree by edition, revision, colorway, or sibling model, use only evidence tied to the exact product and otherwise return unk.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the stock primary left/right click switch identity, not the scroll-wheel encoder, side-button switches, hot-swap capability, switch_type, or click lifespan. Prefer exact manufacturer/model or branded technology names (for example, Razer Optical Mouse Switches Gen-3, LIGHTFORCE Hybrid, Kailh GX SPDT, Huano Transparent Blue Shell Pink Dot, ROG Micro Switch II). Treat brand-only names such as Huano, Omron, Kailh, TTC, or generic phrases such as optical/mechanical switches as insufficient for this field unless the product source presents that wording as the switch's marketed component name; those broad facts belong to switch_brand or switch_type. For hot-swappable mice, record the factory-installed main switches; spare/included switch packs are corroboration only, not a union. When sources disagree by edition, revision, colorway, or sibling model, use only evidence tied to the exact product and otherwise return unk."
       },
       "aliases": [
         "main button switch",
@@ -12461,13 +12459,13 @@
     },
     "switch_brand": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the brand credited for the primary left/right click switches as shipped on the exact product/SKU. Prefer sources that name the switch maker or exact switch model. Map unambiguous model/name prefixes to the maker: Omron D2FC/D2LS -> Omron; Kailh GM/GX -> Kailh; Huano Blue Shell/Pink Dot -> Huano; TTC Gold/Dustproof/Nihil -> TTC; Zippy DF3 -> Zippy. For proprietary names such as Razer Optical Mouse Switches, Logitech LIGHTFORCE, ROG Micro Switches, SteelSeries Prestige OM, or Glorious Switches, return the proprietary brand only when no underlying maker is disclosed for the exact product. Do not infer a value from the mouse brand when the source only says mechanical/optical switches, click rating, quiet clicks, or durability. Use main L/R button switches only; ignore side buttons, wheel encoder, scroll switch, and optional replacement/compatible switch packs unless the product ships with that switch by default. For hot-swappable or switch-pack products, record the factory/default switch brand for the exact SKU; if multiple factory switch choices apply and the exact variant is unknown, return unk. Treat aggregator-only values as lower confidence and prefer unk when they conflict with official or professional review evidence.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the brand credited for the primary left/right click switches as shipped on the exact product/SKU. Prefer sources that name the switch maker or exact switch model. Map unambiguous model/name prefixes to the maker: Omron D2FC/D2LS -> Omron; Kailh GM/GX -> Kailh; Huano Blue Shell/Pink Dot -> Huano; TTC Gold/Dustproof/Nihil -> TTC; Zippy DF3 -> Zippy. For proprietary names such as Razer Optical Mouse Switches, Logitech LIGHTFORCE, ROG Micro Switches, SteelSeries Prestige OM, or Glorious Switches, return the proprietary brand only when no underlying maker is disclosed for the exact product. Do not infer a value from the mouse brand when the source only says mechanical/optical switches, click rating, quiet clicks, or durability. Use main L/R button switches only; ignore side buttons, wheel encoder, scroll switch, and optional replacement/compatible switch packs unless the product ships with that switch by default. For hot-swappable or switch-pack products, record the factory/default switch brand for the exact SKU; if multiple factory switch choices apply and the exact variant is unknown, return unk. Treat aggregator-only values as lower confidence and prefer unk when they conflict with official or professional review evidence."
       },
       "aliases": [
         "switch brand",
@@ -12643,13 +12641,13 @@
     },
     "switch_link": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Return the URL for the resolved switch component, not a page about the mouse. Use the exact `switch` value and variant/SKU context first. Accept maker component pages, maker datasheets/spec PDFs, support PDFs, official maker technology pages for exact proprietary branded switch generations, or authorized component distributor/supplier pages naming the exact part when no maker source exists. Product pages, reviews, EloShapes/TechPowerUp/spec databases, Amazon/eBay/AliExpress/resale listings, and pages that only mention the switch can help discover identity but are not valid switch_link targets. If sources only prove a generic label such as \"optical switches\", \"Omron\", \"Huano\", or \"mechanical switches\", or if the component page only covers a broader family that cannot be matched to the exact model/generation, return unk. For hot-swappable or multi-switch bundles, use the default factory-installed main-click switch for the exact SKU/edition; do not union multiple links.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Return the URL for the resolved switch component, not a page about the mouse. Use the exact `switch` value and variant/SKU context first. Accept maker component pages, maker datasheets/spec PDFs, support PDFs, official maker technology pages for exact proprietary branded switch generations, or authorized component distributor/supplier pages naming the exact part when no maker source exists. Product pages, reviews, EloShapes/TechPowerUp/spec databases, Amazon/eBay/AliExpress/resale listings, and pages that only mention the switch can help discover identity but are not valid switch_link targets. If sources only prove a generic label such as \"optical switches\", \"Omron\", \"Huano\", or \"mechanical switches\", or if the component page only covers a broader family that cannot be matched to the exact model/generation, return unk. For hot-swappable or multi-switch bundles, use the default factory-installed main-click switch for the exact SKU/edition; do not union multiple links."
       },
       "aliases": [
         "Switch Link",
@@ -12788,13 +12786,13 @@
     },
     "switch_type": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the factory/default left/right main click switch technology only. Do not use optical sensor type, scroll-wheel encoder/wheel technology, debounce settings, quiet-click marketing, hot-swap/socket compatibility, or optional switch packs. Map ordinary microswitch/mechanical micro switch/SPDT/galvanic wording, or a resolved Omron/Huano/Kailh/TTC/ROG Micro mechanical component, to `mechanical` only when the source or component row supports it. Map optical/IR/light-based/Titan Switch Optical/Razer Optical/Glorious optical/Prestige OM or other infrared-actuated main click switches to `optical`. Map Logitech LIGHTFORCE or explicit hybrid optical-mechanical primary switches to `optical / mechanical`. Map Logitech HITS/SUPERSTRIKE or explicit Haptic Inductive Trigger System main-click actuation to `inductive`. For hot-swappable mice, use the installed factory switch type; if sources only state compatible switch types and not the installed type, return `unk`.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Extract the factory/default left/right main click switch technology only. Do not use optical sensor type, scroll-wheel encoder/wheel technology, debounce settings, quiet-click marketing, hot-swap/socket compatibility, or optional switch packs. Map ordinary microswitch/mechanical micro switch/SPDT/galvanic wording, or a resolved Omron/Huano/Kailh/TTC/ROG Micro mechanical component, to `mechanical` only when the source or component row supports it. Map optical/IR/light-based/Titan Switch Optical/Razer Optical/Glorious optical/Prestige OM or other infrared-actuated main click switches to `optical`. Map Logitech LIGHTFORCE or explicit hybrid optical-mechanical primary switches to `optical / mechanical`. Map Logitech HITS/SUPERSTRIKE or explicit Haptic Inductive Trigger System main-click actuation to `inductive`. For hot-swappable mice, use the installed factory switch type; if sources only state compatible switch types and not the installed type, return `unk`."
       },
       "aliases": [
         "HITS",
@@ -12959,13 +12957,13 @@
     },
     "thumb_rest": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": true
         },
-        "reasoning_note": "Count true only when the mouse has a dedicated molded thumb support area: a shelf, scoop, ledge, wing, platform, or extended side rest where the thumb can sit. Accept source phrases such as \"thumb rest\", \"thumb scoop\", \"thumb shelf\", \"thumb ledge\", \"thumb support\", or \"extended thumb rest\" when tied to the exact mouse. Count false when product images or a credible shape/spec source show a normal side wall only, even if the mouse is ergonomic/asymmetrical. Do not treat thumb buttons, a thumb wheel, thumb-operated trackball, side grip texture, side curvature/groove, or generic \"thumb control\" as proof of a thumb rest by themselves. For negative values, prefer official/PIF images or a shape database with an explicit Thumb rest = No over mere absence of wording.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Count true only when the mouse has a dedicated molded thumb support area: a shelf, scoop, ledge, wing, platform, or extended side rest where the thumb can sit. Accept source phrases such as \"thumb rest\", \"thumb scoop\", \"thumb shelf\", \"thumb ledge\", \"thumb support\", or \"extended thumb rest\" when tied to the exact mouse. Count false when product images or a credible shape/spec source show a normal side wall only, even if the mouse is ergonomic/asymmetrical. Do not treat thumb buttons, a thumb wheel, thumb-operated trackball, side grip texture, side curvature/groove, or generic \"thumb control\" as proof of a thumb rest by themselves. For negative values, prefer official/PIF images or a shape database with an explicit Thumb rest = No over mere absence of wording."
       },
       "aliases": [
         "thumb rest",
@@ -13129,13 +13127,13 @@
     },
     "tilt_scroll_wheel": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": false
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Return true only when the main/top/middle scroll wheel itself has left/right tilt-click inputs or 4-way wheel scrolling. Count source phrases such as \"tilt wheel\", \"tilt-click scroll wheel\", \"L/R tilt inputs\", \"left/right tilt\", \"left-right tilt\", \"wheel tilt left/right\", \"scroll wheel tilt\", \"tilt-shift button\", and \"4-way scrolling\" as true when they refer to the scroll wheel. Do not count a separate thumb wheel, side scroll wheel, horizontal scroll wheel, ergonomic body tilt angle, adjustable/free-spin/infinite/smart-shift wheel mode, mouse tilt gestures, or software-only horizontal scrolling unless the source explicitly says the scroll wheel tilts left/right. For false, prefer an explicit source statement such as \"does not feature a tilt-click scroll wheel\" or \"lacks L/R tilt inputs\"; otherwise return unk rather than inferring false from silence. Exact model identity matters because close siblings can differ, e.g. Basilisk V3 vs Basilisk V3 X/Pro, DeathAdder variants, and G502/G502 X variants.",
-        "variant_inventory_usage": {
-          "enabled": false
-        }
+        "reasoning_note": "Return true only when the main/top/middle scroll wheel itself has left/right tilt-click inputs or 4-way wheel scrolling. Count source phrases such as \"tilt wheel\", \"tilt-click scroll wheel\", \"L/R tilt inputs\", \"left/right tilt\", \"left-right tilt\", \"wheel tilt left/right\", \"scroll wheel tilt\", \"tilt-shift button\", and \"4-way scrolling\" as true when they refer to the scroll wheel. Do not count a separate thumb wheel, side scroll wheel, horizontal scroll wheel, ergonomic body tilt angle, adjustable/free-spin/infinite/smart-shift wheel mode, mouse tilt gestures, or software-only horizontal scrolling unless the source explicitly says the scroll wheel tilts left/right. For false, prefer an explicit source statement such as \"does not feature a tilt-click scroll wheel\" or \"lacks L/R tilt inputs\"; otherwise return unk rather than inferring false from silence. Exact model identity matters because close siblings can differ, e.g. Basilisk V3 vs Basilisk V3 X/Pro, DeathAdder variants, and G502/G502 X variants."
       },
       "aliases": [
         "tilt wheel",
@@ -13311,13 +13309,13 @@
     },
     "weight": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the mouse device/body weight in grams for the exact requested model/variant. Prefer manufacturer/support specs; use lab-measured default/actual weight when official specs are absent or clearly not a device weight. Treat \"weight without cable\"/\"excluding cable\" as the preferred convention; for wired mice, accept official \"mouse weight\" but do not subtract cable weight yourself. Exclude shipping/package weight, carbon-footprint kg CO2e, chargers/docks, receivers, grip tape/spare feet, and optional add-on weights. For adjustable-weight mice, store the stock/default body weight without optional add-on weights and let adjustable_weight capture the feature. If a source qualifies battery inclusion/exclusion, use the stated spec as-is and do not add/remove battery mass unless a total installed-battery value is directly given. When a family lists size/color/SKU-specific weights, return only the exact variant; do not average or emit a range. Convert oz/lb/kg to g, round per contract, and return unk if only sibling/family/package weight is proven.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the mouse device/body weight in grams for the exact requested model/variant. Prefer manufacturer/support specs; use lab-measured default/actual weight when official specs are absent or clearly not a device weight. Treat \"weight without cable\"/\"excluding cable\" as the preferred convention; for wired mice, accept official \"mouse weight\" but do not subtract cable weight yourself. Exclude shipping/package weight, carbon-footprint kg CO2e, chargers/docks, receivers, grip tape/spare feet, and optional add-on weights. For adjustable-weight mice, store the stock/default body weight without optional add-on weights and let adjustable_weight capture the feature. If a source qualifies battery inclusion/exclusion, use the stated spec as-is and do not add/remove battery mass unless a total installed-battery value is directly given. When a family lists size/color/SKU-specific weights, return only the exact variant; do not average or emit a range. Convert oz/lb/kg to g, round per contract, and return unk if only sibling/family/package weight is proven."
       },
       "aliases": [
         "grams",
@@ -13464,13 +13462,13 @@
     },
     "width": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Extract the mouse body's overall/maximum left-to-right width in millimeters for the exact model/SKU. Prefer official product/support/spec tables. If dimensions appear as L×W×H, take W; if a source labels Height/Width/Depth, use the value labeled Width even when the order is unusual. When a source gives multiple physical widths such as front/back, submit the widest body width unless an explicit \"overall width\" is listed. Do not use grip width, hand-contact width, package/shipping width, receiver/dongle width, cable length, or retailer axis labels that clearly swap length/depth/width. Convert cm/in to mm and round to 1 decimal. If sources conflict, prefer the latest brand-official page for the exact variant; use shape databases, review labs, and retailers only to corroborate or fill gaps. If the catalog row bundles multiple size variants without an exact size, return unk rather than averaging or listing widths.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Extract the mouse body's overall/maximum left-to-right width in millimeters for the exact model/SKU. Prefer official product/support/spec tables. If dimensions appear as L×W×H, take W; if a source labels Height/Width/Depth, use the value labeled Width even when the order is unusual. When a source gives multiple physical widths such as front/back, submit the widest body width unless an explicit \"overall width\" is listed. Do not use grip width, hand-contact width, package/shipping width, receiver/dongle width, cable length, or retailer axis labels that clearly swap length/depth/width. Convert cm/in to mm and round to 1 decimal. If sources conflict, prefer the latest brand-official page for the exact variant; use shape databases, review labs, and retailers only to corroborate or fill gaps. If the catalog row bundles multiple size variants without an exact size, return unk rather than averaging or listing widths."
       },
       "aliases": [
         "overall width",
@@ -13613,13 +13611,13 @@
     },
     "wireless_charging": {
       "ai_assist": {
+        "color_edition_context": {
+          "enabled": true
+        },
         "pif_priority_images": {
           "enabled": false
         },
-        "reasoning_note": "Return true when the exact mouse can charge or power itself wirelessly through inductive/Qi, magnetic-field, proprietary charging-mat, dock-plus-puck/module, or named systems such as Logitech POWERPLAY/POWERPLAY 2/PowerCore, CORSAIR Qi/MM1000, Razer HyperFlux/HyperFlux V2, or Razer Mouse Dock Pro + Wireless Charging Puck. Accessory sold separately still counts true when official compatibility applies to the exact mouse; aftermarket adapters or generic magnetic USB cables do not make the base product true. Do not count ordinary USB charging, replaceable batteries, charging cables, or a contact/pogo-pin cradle as wireless charging unless the source explicitly says inductive/Qi/wireless charging. Phrases like \"wireless mouse charging dock\" may mean a dock for a wireless mouse, so verify whether charging uses contacts/pins versus a puck/coil. For false, prefer an explicit no/unsupported statement or close official power/charging documentation plus no compatible-wireless-charger listing; otherwise return unk. Match the exact submodel/edition and do not transfer values between siblings.",
-        "variant_inventory_usage": {
-          "enabled": true
-        }
+        "reasoning_note": "Return true when the exact mouse can charge or power itself wirelessly through inductive/Qi, magnetic-field, proprietary charging-mat, dock-plus-puck/module, or named systems such as Logitech POWERPLAY/POWERPLAY 2/PowerCore, CORSAIR Qi/MM1000, Razer HyperFlux/HyperFlux V2, or Razer Mouse Dock Pro + Wireless Charging Puck. Accessory sold separately still counts true when official compatibility applies to the exact mouse; aftermarket adapters or generic magnetic USB cables do not make the base product true. Do not count ordinary USB charging, replaceable batteries, charging cables, or a contact/pogo-pin cradle as wireless charging unless the source explicitly says inductive/Qi/wireless charging. Phrases like \"wireless mouse charging dock\" may mean a dock for a wireless mouse, so verify whether charging uses contacts/pins versus a puck/coil. For false, prefer an explicit no/unsupported statement or close official power/charging documentation plus no compatible-wireless-charger listing; otherwise return unk. Match the exact submodel/edition and do not transfer values between siblings."
       },
       "aliases": [
         "wireless charging",

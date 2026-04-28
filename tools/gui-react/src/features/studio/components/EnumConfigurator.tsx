@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { FIELD_RULE_ENUM_CONTROLS } from '../../../../../../src/field-rules/fieldRuleSchema.js';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import { SubSection } from './Section.tsx';
@@ -30,6 +31,22 @@ const ENUM_POLICY_CONTROL = enumControl('enum_policy');
 const ENUM_SOURCE_CONTROL = enumControl('enum_source');
 const ENUM_FORMAT_HINT_CONTROL = enumControl('enum_format_hint');
 
+type RegexCheck =
+  | { state: 'empty' }
+  | { state: 'invalid_pattern'; reason: string }
+  | { state: 'match' }
+  | { state: 'no_match' };
+
+function evaluatePattern(pattern: string, value: string): RegexCheck {
+  if (!pattern || !value) return { state: 'empty' };
+  try {
+    const re = new RegExp(pattern);
+    return re.test(value) ? { state: 'match' } : { state: 'no_match' };
+  } catch (err) {
+    return { state: 'invalid_pattern', reason: (err as Error).message };
+  }
+}
+
 // ── Component ────────────────────────────────────────────────────────
 export function EnumConfigurator({
   fieldKey,
@@ -46,6 +63,13 @@ export function EnumConfigurator({
   const isBoolean = contractType === 'boolean';
   const effectivePolicy = isBoolean ? 'closed' : currentPolicy;
 
+  // Phase 4: lock display requires SELF-lock (enum.source = component_db.<self>).
+  // Cross-locks (e.g. property rule with enum.source pointing at parent
+  // component) are bugs INV-2 catches at compile time — the GUI must not
+  // display them as locked, otherwise authors can't clear the bad value.
+  const isComponentLocked = currentSource === `component_db.${fieldKey}`;
+  const componentTypeLabel = isComponentLocked ? fieldKey : '';
+
   const fieldKnownValues = knownValues[fieldKey] || [];
 
   const selectedEnumList = currentSource.startsWith('data_lists.')
@@ -56,6 +80,11 @@ export function EnumConfigurator({
   function handleEnumListSelect(listName: string) {
     onUpdate(ENUM_SOURCE_CONTROL.path, listName ? `data_lists.${listName}` : '');
   }
+
+  // Live preview validation for enum.match.format_hint regex.
+  const formatHintValue = strN(rule, ENUM_FORMAT_HINT_CONTROL.path);
+  const [previewValue, setPreviewValue] = useState('');
+  const previewCheck = evaluatePattern(formatHintValue, previewValue);
 
   // WHY: EG-locked fields show known_values as a read-only list.
   if (isEgLocked && fieldKnownValues.length > 0) {
@@ -92,6 +121,16 @@ export function EnumConfigurator({
         </div>
       ) : null}
 
+      {isComponentLocked ? (
+        <div
+          className="flex items-center gap-2 px-3 py-2 rounded sf-surface-alt sf-border-soft border text-[11px] sf-text-subtle"
+          title={STUDIO_TIPS.component_lock}
+        >
+          <span aria-label="component-lock" role="img">🔧</span>
+          <span>Component Property Key &mdash; <strong>{componentTypeLabel}</strong>. Source is owned by the Field Studio Map.</span>
+        </div>
+      ) : null}
+
       {!isBoolean && currentPolicy === 'closed' && fieldKnownValues.length === 0 ? (
         <div className="flex items-center gap-2 px-3 py-2 rounded sf-surface-warning-soft border sf-border-warning text-xs">
           Closed enum with zero known values — all extraction values will be rejected.
@@ -123,18 +162,25 @@ export function EnumConfigurator({
                 <span>{ENUM_SOURCE_CONTROL.label}<Tip text={STUDIO_TIPS[ENUM_SOURCE_CONTROL.tooltipKey || '']} /></span>
                 {renderLabelSuffix?.(ENUM_SOURCE_CONTROL.path)}
               </div>
-              <select
-                className={`${selectCls} w-full`}
-                value={selectedEnumList}
-                onChange={(e) => handleEnumListSelect(e.target.value)}
-              >
-                <option value="">(none)</option>
-                {enumLists.map((el) => (
-                  <option key={el.field} value={el.field}>
-                    {el.field} ({(el.values || []).length})
-                  </option>
-                ))}
-              </select>
+              {isComponentLocked ? (
+                <div className="sf-input w-full rounded border px-2 py-1.5 sf-text-label sf-bg-surface-soft-strong sf-text-muted font-mono flex items-center gap-2">
+                  <span>{currentSource}</span>
+                  <span className="text-[10px] px-1 rounded sf-chip-info-soft">🔧 locked</span>
+                </div>
+              ) : (
+                <select
+                  className={`${selectCls} w-full`}
+                  value={selectedEnumList}
+                  onChange={(e) => handleEnumListSelect(e.target.value)}
+                >
+                  <option value="">(none)</option>
+                  {enumLists.map((el) => (
+                    <option key={el.field} value={el.field}>
+                      {el.field} ({(el.values || []).length})
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
           ) : null}
         </div>
@@ -167,13 +213,44 @@ export function EnumConfigurator({
         <SubSection label="Format Pattern">
           <FormatPatternInput
             fieldPath={ENUM_FORMAT_HINT_CONTROL.path}
-            value={strN(rule, ENUM_FORMAT_HINT_CONTROL.path)}
+            value={formatHintValue}
             onChange={(nextValue) => onUpdate(ENUM_FORMAT_HINT_CONTROL.path, nextValue)}
             fieldKey={fieldKey}
             disabled={currentPolicy === 'closed'}
             disabledReason="N/A — closed enum"
             renderLabelSuffix={renderLabelSuffix}
           />
+          {/* Live preview validation against the rendered pattern. */}
+          {currentPolicy !== 'closed' && formatHintValue ? (
+            <div className="mt-2">
+              <label className={`${labelCls} flex items-center`}>
+                <span>Preview value (test pattern)</span>
+              </label>
+              <div className="flex items-center gap-2">
+                <input
+                  className="sf-input flex-1 rounded border px-2 py-1.5 sf-text-label"
+                  value={previewValue}
+                  onChange={(e) => setPreviewValue(e.target.value)}
+                  placeholder="Type a sample value"
+                  aria-label="format-pattern-preview"
+                />
+                {previewCheck.state === 'match' ? (
+                  <span className="text-[11px] px-2 py-1 rounded sf-chip-success-strong" title="Matches pattern">✓ matches</span>
+                ) : null}
+                {previewCheck.state === 'no_match' ? (
+                  <span className="text-[11px] px-2 py-1 rounded sf-chip-warning-soft" title="Does not match pattern">✗ no match</span>
+                ) : null}
+                {previewCheck.state === 'invalid_pattern' ? (
+                  <span
+                    className="text-[11px] px-2 py-1 rounded sf-chip-warning-soft"
+                    title={previewCheck.reason}
+                  >
+                    ✗ invalid pattern
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
         </SubSection>
       ) : null}
     </div>

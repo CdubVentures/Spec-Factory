@@ -22,9 +22,9 @@ export interface ProcessStatus {
   variant?: string | null;
   storage_destination?: 'local';
   storageDestination?: 'local';
-  pid?: number;
-  command?: string;
-  startedAt?: string;
+  pid?: number | null;
+  command?: string | null;
+  startedAt?: string | null;
   endedAt?: string | null;
   exitCode?: number | null;
 }

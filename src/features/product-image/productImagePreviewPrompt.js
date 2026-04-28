@@ -23,7 +23,6 @@ import {
 import {
   buildViewEvalPrompt,
   buildHeroSelectionPrompt,
-  PIF_EVAL_FIELDS,
 } from './imageEvaluator.js';
 import { resolveViewQualityConfig } from './viewQualityDefaults.js';
 import {
@@ -32,7 +31,7 @@ import {
   resolveIndividualViewRunSecondaryHints,
 } from './secondaryHintsDefaults.js';
 import { resolveViewPrompt, viewPromptSettingKey } from './viewPromptDefaults.js';
-import { readProductImages } from './productImageStore.js';
+import { readProductImageFinderRuntimeDoc } from './productImageStore.js';
 import { matchVariant } from './variantMatch.js';
 import { resolveProductImageIdentityFacts } from './productImageIdentityDependencies.js';
 import { accumulateDiscoveryLog } from '../../core/finder/discoveryLog.js';
@@ -48,52 +47,6 @@ import {
   collectPifLinkValidationHistory,
   resolvePifPromptHistorySettings,
 } from './productImagePromptHistory.js';
-
-function parseJsonValue(value, fallback) {
-  if (value == null || value === '') return fallback;
-  if (typeof value !== 'string') return value;
-  try { return JSON.parse(value); } catch { return fallback; }
-}
-
-function parseJsonArray(value) {
-  const parsed = parseJsonValue(value, []);
-  return Array.isArray(parsed) ? parsed : [];
-}
-
-function hydratePifPreviewRun(run) {
-  return {
-    ...run,
-    selected: parseJsonValue(run?.selected, run?.selected_json ? parseJsonValue(run.selected_json, {}) : {}),
-    prompt: parseJsonValue(run?.prompt, run?.prompt_json ? parseJsonValue(run.prompt_json, {}) : {}),
-    response: parseJsonValue(run?.response, run?.response_json ? parseJsonValue(run.response_json, {}) : {}),
-  };
-}
-
-function buildPifPreviewDocFromSql({ finderStore, productId }) {
-  const row = typeof finderStore?.get === 'function' ? finderStore.get(productId) : null;
-  const runs = typeof finderStore?.listRuns === 'function'
-    ? finderStore.listRuns(productId).map(hydratePifPreviewRun)
-    : [];
-  if (!row && runs.length === 0) return null;
-
-  const evalState = parseJsonValue(row?.eval_state, {});
-  const images = parseJsonArray(row?.images).map((img) => {
-    const filename = String(img?.filename || '');
-    const overlay = filename ? evalState?.[filename] : null;
-    const baseImage = { ...img };
-    for (const field of PIF_EVAL_FIELDS) delete baseImage[field];
-    return overlay && typeof overlay === 'object' ? { ...baseImage, ...overlay } : baseImage;
-  });
-
-  return {
-    product_id: row?.product_id || productId,
-    category: row?.category || '',
-    selected: { images },
-    runs,
-    carousel_slots: parseJsonValue(row?.carousel_slots, {}),
-    evaluations: parseJsonArray(row?.evaluations),
-  };
-}
 
 /* ── Pure arg-bag resolvers (shared with orchestrator) ─────────────────────── */
 
@@ -346,8 +299,11 @@ export async function resolvePifPromptContext({
   const urlHistoryEnabled = finderStore.getSetting('urlHistoryEnabled') === 'true';
   const queryHistoryEnabled = finderStore.getSetting('queryHistoryEnabled') === 'true';
 
-  const pifDoc = buildPifPreviewDocFromSql({ finderStore, productId: product.product_id })
-    || readProductImages({ productId: product.product_id, productRoot });
+  const pifDoc = readProductImageFinderRuntimeDoc({
+    finderStore,
+    productId: product.product_id,
+    productRoot,
+  });
   const previousPifRuns = Array.isArray(pifDoc?.runs) ? pifDoc.runs : [];
   const imageHistory = collectPifImageHistory({ pifDoc, variant: variantShape });
   const linkValidationHistory = collectPifLinkValidationHistory({ pifDoc, variant: variantShape });

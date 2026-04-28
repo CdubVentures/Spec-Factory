@@ -28,6 +28,8 @@ test('compileCategoryFieldStudio accepts component_reference when component type
     { component_type: 'encoder', mode: 'scratch', sheet: '', roles: { properties: [] } },
     { component_type: 'material', mode: 'scratch', sheet: '', roles: { properties: [] } },
   ];
+  // WHY: Phase 4 INV-1 — every component_sources entry needs a self-locked parent rule.
+  fieldStudioMap.selected_keys = Array.from(new Set([...fieldStudioMap.selected_keys, 'material']));
 
   try {
     await saveFieldStudioMap({
@@ -333,6 +335,10 @@ test('compileCategoryFieldStudio ignores sheet column bindings on scratch compon
   };
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
   fieldStudioMap.component_sources = [workbookModeSensorSource];
+  // WHY: Phase 4 INV-2 — drop unused component-typed selected_keys.
+  fieldStudioMap.selected_keys = fieldStudioMap.selected_keys.filter(
+    (k) => !['switch', 'encoder'].includes(k),
+  );
 
   try {
     await saveFieldStudioMap({

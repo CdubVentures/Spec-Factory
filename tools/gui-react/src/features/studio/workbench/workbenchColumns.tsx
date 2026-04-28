@@ -323,11 +323,11 @@ export function buildColumns(
 
     // ── Ai Assist block ──────────────────────────────────────
     {
-      accessorKey: 'variantInventoryUsage',
-      header: 'Variant Inv',
+      accessorKey: 'colorEditionContext',
+      header: 'Color/Ed',
       size: 80,
       cell: ({ row }) => (
-        <BoolIconCell value={row.original.variantInventoryUsage} title="Use Variant Inventory Context" />
+        <BoolIconCell value={row.original.colorEditionContext} title="Use Color & Edition Context" />
       ),
     },
     {
@@ -543,7 +543,7 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   ],
   aiAssist: [
     ...ALWAYS_VISIBLE,
-    'variantInventoryUsage', 'pifPriorityImages', 'reasoningNoteFilled',
+    'colorEditionContext', 'pifPriorityImages', 'reasoningNoteFilled',
   ],
   enums: [
     ...ALWAYS_VISIBLE,
@@ -605,7 +605,7 @@ export const ALL_COLUMN_IDS_WITH_LABELS: { id: string; label: string }[] = [
   { id: 'availability', label: 'Availability' },
   { id: 'difficulty', label: 'Difficulty' },
   // Ai Assist
-  { id: 'variantInventoryUsage', label: 'Variant Inv' },
+  { id: 'colorEditionContext', label: 'Color/Ed' },
   { id: 'pifPriorityImages', label: 'PIF Pri Img' },
   { id: 'reasoningNoteFilled', label: 'Note' },
   // Enum

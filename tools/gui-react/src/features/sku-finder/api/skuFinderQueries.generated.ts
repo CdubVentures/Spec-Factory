@@ -14,7 +14,12 @@ export interface AcceptedResponse {
 
 export interface SkuFinderDeleteResponse {
   readonly ok: boolean;
+  readonly product_id?: string;
+  readonly category?: string;
   readonly remaining_runs?: number;
+  readonly deleted_run?: number;
+  readonly deleted_runs?: readonly number[];
+  readonly entity?: SkuFinderResult | null;
 }
 
 export function useSkuFinderQuery(category: string, productId: string) {

@@ -3,10 +3,13 @@ import assert from 'node:assert/strict';
 
 import {
   FIELD_RULE_KINDS,
+  FIELD_RULE_AI_ASSIST_TOGGLE_BY_KEY,
   FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS,
-  FIELD_RULE_COMPONENT_TYPE_CONTROL,
+  FIELD_RULE_AI_ASSIST_TOGGLE_KEYS,
+  FIELD_RULE_AI_ASSIST_TOGGLE_SPECS,
   FIELD_RULE_CONTRACT_CONTROLS,
   FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS,
+  FIELD_RULE_CONSUMER_GATE_ALIAS_PATHS,
   FIELD_RULE_CONSTRAINT_CONTROL,
   FIELD_RULE_EVIDENCE_CONTROLS,
   FIELD_RULE_ENUM_CONTROLS,
@@ -14,6 +17,9 @@ import {
   FIELD_RULE_SEARCH_HINT_CONTROLS,
   FIELD_RULE_SCHEMA,
   FIELD_RULE_STUDIO_TIPS,
+  normalizeFieldRuleAiAssistToggle,
+  normalizeFieldRuleAiAssistToggleFromConfig,
+  readFieldRuleAiAssistToggleEnabled,
 } from '../fieldRuleSchema.js';
 
 test('FIELD_RULE_SCHEMA is a frozen non-empty registry', () => {
@@ -45,7 +51,7 @@ test('FIELD_RULE_SCHEMA preserves critical AI assist paths for downstream migrat
   const paths = new Set(FIELD_RULE_SCHEMA.map((entry) => entry.path));
 
   assert.ok(paths.has('ai_assist.reasoning_note'));
-  assert.ok(paths.has('ai_assist.variant_inventory_usage.enabled'));
+  assert.ok(paths.has('ai_assist.color_edition_context.enabled'));
   assert.ok(paths.has('ai_assist.pif_priority_images.enabled'));
 });
 
@@ -53,7 +59,7 @@ test('FIELD_RULE_STUDIO_TIPS derives from unique schema tooltip metadata', () =>
   const entries = FIELD_RULE_SCHEMA.filter((entry) => entry.studioTipKey || entry.studioTip);
   const keys = entries.map((entry) => entry.studioTipKey);
 
-  assert.equal(entries.length, 24);
+  assert.equal(entries.length, 23);
   assert.equal(new Set(keys).size, keys.length);
 
   for (const entry of entries) {
@@ -65,13 +71,29 @@ test('FIELD_RULE_STUDIO_TIPS derives from unique schema tooltip metadata', () =>
   }
 });
 
+test('FIELD_RULE_CONSUMER_GATE_ALIAS_PATHS derives legacy delete aliases from schema entries', () => {
+  assert.deepEqual(FIELD_RULE_CONSUMER_GATE_ALIAS_PATHS, {
+    'priority.required_level': ['required_level'],
+    'priority.availability': ['availability'],
+    'priority.difficulty': ['difficulty'],
+    'contract.type': ['data_type', 'type'],
+    'contract.shape': ['output_shape', 'shape'],
+    'contract.unit': ['unit'],
+    'contract.list_rules': ['list_rules'],
+    'enum.policy': ['enum_policy'],
+    'enum.source': ['enum_source'],
+    'enum.match.format_hint': ['enum_match_format_hint'],
+    'evidence.min_evidence_refs': ['min_evidence_refs'],
+  });
+});
+
 test('FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS derives toggle UI metadata from schema entries', () => {
   assert.deepEqual(FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS, [
     {
-      path: 'ai_assist.variant_inventory_usage',
-      label: 'Variant Inventory Context',
-      ariaLabel: 'Use variant inventory context',
-      tooltipKey: 'variant_inventory_usage',
+      path: 'ai_assist.color_edition_context',
+      label: 'Color & Edition',
+      ariaLabel: 'Use color and edition context',
+      tooltipKey: 'color_edition_context',
     },
     {
       path: 'ai_assist.pif_priority_images',
@@ -80,6 +102,73 @@ test('FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS derives toggle UI metadata from schem
       tooltipKey: 'pif_priority_images',
     },
   ]);
+});
+
+test('FIELD_RULE_AI_ASSIST_TOGGLE_SPECS derives normalization metadata from schema entries', () => {
+  assert.deepEqual(FIELD_RULE_AI_ASSIST_TOGGLE_KEYS, [
+    'color_edition_context',
+    'pif_priority_images',
+  ]);
+  assert.equal(FIELD_RULE_AI_ASSIST_TOGGLE_BY_KEY.color_edition_context.defaultEnabled, true);
+  assert.deepEqual(FIELD_RULE_AI_ASSIST_TOGGLE_BY_KEY.color_edition_context.legacyKeys, [
+    'variant_inventory_usage',
+  ]);
+  assert.equal(FIELD_RULE_AI_ASSIST_TOGGLE_BY_KEY.pif_priority_images.defaultEnabled, false);
+  assert.deepEqual(
+    FIELD_RULE_AI_ASSIST_TOGGLE_SPECS.map((spec) => spec.enabledPath),
+    [
+      'ai_assist.color_edition_context.enabled',
+      'ai_assist.pif_priority_images.enabled',
+    ],
+  );
+});
+
+test('normalizeFieldRuleAiAssistToggle preserves canonical and legacy toggle shapes', () => {
+  assert.deepEqual(
+    normalizeFieldRuleAiAssistToggle('color_edition_context', { enabled: true }),
+    { enabled: true },
+  );
+  assert.deepEqual(
+    normalizeFieldRuleAiAssistToggle('color_edition_context', { enabled: false }),
+    { enabled: false },
+  );
+  assert.deepEqual(
+    normalizeFieldRuleAiAssistToggle('color_edition_context', true),
+    { enabled: true },
+  );
+  assert.deepEqual(
+    normalizeFieldRuleAiAssistToggle('variant_inventory_usage', { mode: 'off' }),
+    { enabled: false },
+  );
+  assert.deepEqual(
+    normalizeFieldRuleAiAssistToggle('variant_inventory_usage', { mode: 'append' }),
+    { enabled: true },
+  );
+  assert.equal(normalizeFieldRuleAiAssistToggle('variant_inventory_usage', true), null);
+  assert.deepEqual(
+    normalizeFieldRuleAiAssistToggle('pif_priority_images', { enabled: false }),
+    { enabled: false },
+  );
+});
+
+test('normalizeFieldRuleAiAssistToggleFromConfig reads canonical before legacy aliases', () => {
+  assert.deepEqual(
+    normalizeFieldRuleAiAssistToggleFromConfig({
+      color_edition_context: { enabled: false },
+      variant_inventory_usage: { mode: 'append' },
+    }, 'color_edition_context'),
+    { enabled: false },
+  );
+  assert.deepEqual(
+    normalizeFieldRuleAiAssistToggleFromConfig({
+      variant_inventory_usage: { mode: 'append' },
+    }, 'color_edition_context'),
+    { enabled: true },
+  );
+  assert.equal(
+    readFieldRuleAiAssistToggleEnabled('color_edition_context', { ai_assist: {} }, true),
+    true,
+  );
 });
 
 test('FIELD_RULE_PRIORITY_CONTROLS derives priority UI metadata from schema entries', () => {
@@ -173,14 +262,6 @@ test('FIELD_RULE_CONSTRAINT_CONTROL derives constraint editor metadata from sche
   assert.deepEqual(FIELD_RULE_CONSTRAINT_CONTROL, {
     path: 'constraints',
     label: 'Cross-field constraints',
-  });
-});
-
-test('FIELD_RULE_COMPONENT_TYPE_CONTROL derives component select metadata from schema entries', () => {
-  assert.deepEqual(FIELD_RULE_COMPONENT_TYPE_CONTROL, {
-    path: 'component.type',
-    label: 'Component DB',
-    tooltipKey: 'component_db',
   });
 });
 

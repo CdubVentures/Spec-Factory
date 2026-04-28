@@ -851,7 +851,7 @@ test('step 6.7: variant inventory joins SKU/RDF by variant_id and adds field ide
           field_key: 'design',
           display_name: 'Design',
           contract: { type: 'string', shape: 'scalar' },
-          ai_assist: { reasoning_note: '', variant_inventory_usage: { enabled: true } },
+          ai_assist: { reasoning_note: '', color_edition_context: { enabled: true } },
         },
       },
       known_values: {},

@@ -16,11 +16,14 @@ import {
   isNumericContractType
 } from './compileUtils.js';
 import { EG_LOCKED_KEYS as EG_LOCKED_KEYS_LIST } from '../features/studio/contracts/egPresets.js';
+import {
+  FIELD_RULE_AI_ASSIST_TOGGLE_SPECS,
+  isFieldRuleAiAssistToggleAuthored,
+} from '../field-rules/fieldRuleSchema.js';
 
 // WHY: Variant-generator keys must always promote to product fields even if
 // authors mistakenly mark them component_only.
 const EG_LOCKED_KEYS = new Set(EG_LOCKED_KEYS_LIST);
-const LEGACY_VARIANT_INVENTORY_ACTIVE_MODES = new Set(['default', 'append', 'override']);
 
 // WHY: Walk normalized component_sources, return Set of keys flagged
 // component_only — except EG-locked keys which override the flag.
@@ -115,18 +118,9 @@ function normalizeSheetRoleRow(row = {}) {
 // so control-plane maps don't perpetuate stale keys through save cycles.
 // Also strip empty ai_assist blocks that leak from compiled defaults via the
 // frontend auto-save round-trip (compiled rules → GET → auto-save → PUT → JSON).
-function hasAuthoredVariantInventoryUsage(aiAssist) {
-  const raw = aiAssist?.variant_inventory_usage;
-  if (!isObject(raw)) return false;
-  if (typeof raw.enabled === 'boolean') return true;
-  const legacyMode = normalizeToken(raw.mode);
-  return legacyMode === 'off' || LEGACY_VARIANT_INVENTORY_ACTIVE_MODES.has(legacyMode);
-}
-
-function hasAuthoredPifPriorityImages(aiAssist) {
-  const raw = aiAssist?.pif_priority_images;
-  if (typeof raw === 'boolean') return true;
-  return isObject(raw) && typeof raw.enabled === 'boolean';
+function hasAuthoredAiAssistToggle(aiAssist) {
+  return FIELD_RULE_AI_ASSIST_TOGGLE_SPECS.some((toggleSpec) =>
+    isFieldRuleAiAssistToggleAuthored(aiAssist, toggleSpec.key));
 }
 
 function stripRetiredEvidenceKnobs(overrides) {
@@ -145,8 +139,7 @@ function stripRetiredEvidenceKnobs(overrides) {
     if (
       isObject(rest.ai_assist)
       && !normalizeText(rest.ai_assist.reasoning_note)
-      && !hasAuthoredVariantInventoryUsage(rest.ai_assist)
-      && !hasAuthoredPifPriorityImages(rest.ai_assist)
+      && !hasAuthoredAiAssistToggle(rest.ai_assist)
     ) {
       delete rest.ai_assist;
     }

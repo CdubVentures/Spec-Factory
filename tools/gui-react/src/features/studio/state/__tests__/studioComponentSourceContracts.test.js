@@ -85,6 +85,10 @@ test('studio component sources create empty component rows with stable default p
 
   assert.deepEqual(createEmptyComponentSource(), {
     component_type: '',
+    // Phase 3: default mode='sheet' + empty sheet so the inline gate fires
+    // immediately and prevents the compile pipeline 400.
+    mode: 'sheet',
+    sheet: '',
     roles: {
       maker: 'yes',
       aliases: [],

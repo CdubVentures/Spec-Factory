@@ -130,6 +130,43 @@ describe('seedFromCheckpoint: crawl', () => {
     assert.equal(sources.length, 2);
   });
 
+  test('seeds run_sources with checkpoint source metadata for deleted-DB rebuild', () => {
+    const db = createHarness();
+    seedFromCheckpoint({
+      specDb: db,
+      checkpoint: makeCrawlCheckpoint({
+        sources: [
+          {
+            url: 'https://razer.com/manual.pdf',
+            final_url: 'https://razer.com/manual.pdf',
+            status: 200,
+            content_hash: 'c'.repeat(64),
+            html_file: 'cccccccccccc.html.gz',
+            screenshot_count: 1,
+            source_tier: 1,
+            doc_kind: 'manual',
+            content_type: 'application/pdf',
+            size_bytes: 4096,
+            has_pdf: true,
+            has_ldjson: true,
+            has_dom_snippet: true,
+          },
+        ],
+      }),
+    });
+
+    const rows = db.getRunSourcesByRunId('run-seed-001');
+    assert.equal(rows.length, 1);
+    assert.equal(rows[0].source_url, 'https://razer.com/manual.pdf');
+    assert.equal(rows[0].source_tier, 1);
+    assert.equal(rows[0].doc_kind, 'manual');
+    assert.equal(rows[0].content_type, 'application/pdf');
+    assert.equal(rows[0].size_bytes, 4096);
+    assert.equal(rows[0].has_pdf, 1);
+    assert.equal(rows[0].has_ldjson, 1);
+    assert.equal(rows[0].has_dom_snippet, 1);
+  });
+
   test('returns correct summary counts', () => {
     const db = createHarness();
     const result = seedFromCheckpoint({ specDb: db, checkpoint: makeCrawlCheckpoint() });

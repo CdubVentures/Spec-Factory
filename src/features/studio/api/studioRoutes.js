@@ -35,6 +35,7 @@ import {
   sanitizeEgLockedOverrides,
   resolveEgLockedKeys,
 } from '../contracts/egPresets.js';
+import { sanitizeComponentLockedOverrides } from '../contracts/componentLock.js';
 
 function readCurrentFieldStudioMap({ category, getSpecDb }) {
   const specDb = typeof getSpecDb === 'function' ? getSpecDb(category) : null;
@@ -473,6 +474,13 @@ export function registerStudioRoutes(ctx) {
           normalizedFieldStudioMap.field_overrides,
           normalizedFieldStudioMap.eg_toggles,
           saveCtx,
+        );
+        // WHY: Phase 4 — strip contract-identity paths (contract.*, enum.source,
+        // enum.values, enum.allow_*) from any override that self-locks via
+        // enum.source = component_db.<self>. Mirrors the GUI store guard so
+        // scripted PUTs cannot bypass it.
+        normalizedFieldStudioMap.field_overrides = sanitizeComponentLockedOverrides(
+          normalizedFieldStudioMap.field_overrides,
         );
       }
       try {

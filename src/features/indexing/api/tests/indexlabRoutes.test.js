@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -11,6 +12,7 @@ import {
 } from '../builders/indexlabDataBuilders.js';
 import { registerIndexlabRoutes } from '../indexlabRoutes.js';
 import { SpecDb } from '../../../../db/specDb.js';
+import { scanAndSeedCheckpoints } from '../../../../pipeline/checkpoint/scanAndSeedCheckpoints.js';
 
 function createMockRes() {
   const res = {
@@ -67,6 +69,10 @@ function storageStub() {
     resolveInputKey: (...parts) => parts.map((part) => String(part || '').trim()).filter(Boolean).join('/'),
     readJsonOrNull: async () => null,
   };
+}
+
+function urlHash8(url) {
+  return createHash('sha256').update(String(url || '')).digest('hex').slice(0, 8);
 }
 
 function createRunMeta(overrides = {}) {
@@ -238,6 +244,97 @@ test('indexlabRoutes: inactive run with stale running meta resolves to failed te
     assert.equal(body.status, 'failed');
     assert.equal(body.terminal_reason, 'max_run_seconds_reached');
   } finally {
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('indexlabRoutes: storage run detail uses run_sources rebuilt from durable checkpoints', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'storage-run-detail-rebuild-'));
+  const indexLabRoot = path.join(tempRoot, 'indexlab');
+  const runId = 'run-storage-detail-rebuild';
+  const productId = 'mouse-storage-detail-rebuild';
+  const runDir = path.join(indexLabRoot, runId);
+  const url = 'https://razer.com/manual.pdf';
+  const contentHash = 'd'.repeat(64);
+  const screenshotName = `screenshot-fetch-1-${urlHash8(url)}-00-page.jpg`;
+
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  try {
+    await fs.mkdir(path.join(runDir, 'screenshots'), { recursive: true });
+    await fs.mkdir(path.join(runDir, 'video'), { recursive: true });
+    await fs.writeFile(path.join(runDir, 'screenshots', screenshotName), Buffer.from([0xff, 0xd8, 0xff, 0xe0]));
+    await fs.writeFile(path.join(runDir, 'video', 'fetch-1.webm'), Buffer.from([0, 1, 2, 3, 4, 5]));
+    await fs.writeFile(path.join(runDir, 'run.json'), `${JSON.stringify({
+      schema_version: 3,
+      checkpoint_type: 'crawl',
+      created_at: '2026-04-01T04:30:00.000Z',
+      run: {
+        run_id: runId,
+        category: 'mouse',
+        product_id: productId,
+        status: 'completed',
+        s3_key: '',
+        duration_ms: 5000,
+      },
+      counters: { urls_crawled: 1, urls_successful: 1 },
+      artifacts: { html_dir: 'html', screenshot_dir: 'screenshots', video_dir: 'video' },
+      sources: [
+        {
+          url,
+          final_url: url,
+          status: 200,
+          success: true,
+          worker_id: 'fetch-1',
+          content_hash: contentHash,
+          html_file: 'dddddddddddd.html.gz',
+          screenshot_count: 1,
+          video_file: 'fetch-1.webm',
+          source_tier: 1,
+          doc_kind: 'manual',
+          content_type: 'application/pdf',
+          size_bytes: 4096,
+          has_pdf: true,
+          has_ldjson: true,
+          has_dom_snippet: true,
+        },
+      ],
+      needset: null,
+      search_profile: null,
+      run_summary: null,
+    }, null, 2)}\n`, 'utf8');
+
+    const seedStats = await scanAndSeedCheckpoints({ specDb, indexLabRoot });
+    assert.equal(seedStats.runs_seeded, 1);
+    assert.equal(seedStats.sources_seeded, 1);
+    assert.equal(seedStats.screenshots_seeded, 1);
+    assert.equal(seedStats.videos_seeded, 1);
+    assert.equal(specDb.getRunSourcesByRunId(runId).length, 1);
+
+    const handler = createIndexlabRouteHandler({
+      INDEXLAB_ROOT: indexLabRoot,
+      readJsonBody: async () => ({}),
+      getSpecDb: (category) => (category === 'mouse' ? specDb : null),
+      readIndexLabRunMeta: async (id) => specDb.getRunByRunId(id),
+      listIndexLabRuns: async () => [specDb.getRunByRunId(runId)].filter(Boolean),
+    });
+
+    const res = createMockRes();
+    await handler(['storage', 'runs', runId], new URLSearchParams(), 'GET', null, res);
+    const body = parseResBody(res);
+    assert.equal(res.statusCode, 200);
+    assert.equal(body.run_id, runId);
+    assert.equal(body.sources.length, 1);
+    assert.equal(body.sources[0].url, url);
+    assert.equal(body.sources[0].content_hash, contentHash);
+    assert.equal(body.sources[0].source_tier, 1);
+    assert.equal(body.sources[0].doc_kind, 'manual');
+    assert.equal(body.sources[0].content_type, 'application/pdf');
+    assert.equal(body.sources[0].html_size, 4096);
+    assert.equal(body.sources[0].screenshot_count, 1);
+    assert.equal(body.sources[0].video_file, 'fetch-1.webm');
+    assert.equal(body.sources[0].total_size, 4106);
+  } finally {
+    specDb.close();
     await fs.rm(tempRoot, { recursive: true, force: true });
   }
 });

@@ -1,5 +1,7 @@
 import { WebSocketServer } from 'ws';
 
+const DEFAULT_SCREENCAST_FRAME_CACHE_LIMIT = 50;
+
 function assertFunction(name, value) {
   if (typeof value !== 'function') {
     throw new TypeError(`${name} must be a function`);
@@ -92,6 +94,7 @@ export function createRealtimeBridge({
   // Default 0 (off) keeps existing unit tests timer-free; production wiring
   // in serverBootstrap passes a real value.
   heartbeatMs = 0,
+  screencastFrameCacheLimit = DEFAULT_SCREENCAST_FRAME_CACHE_LIMIT,
 } = {}) {
   assertObject('path', path);
   assertFunction('path.join', path.join?.bind(path));
@@ -112,12 +115,32 @@ export function createRealtimeBridge({
   let wsServer = null;
   // WHY: Chokidar watchers removed — NDJSON event files no longer written (SQL migration Steps 3+5)
   const lastScreencastFrames = new Map();
+  const maxScreencastFrameCacheEntries = Number.isFinite(Number(screencastFrameCacheLimit))
+    && Number(screencastFrameCacheLimit) > 0
+    ? Math.trunc(Number(screencastFrameCacheLimit))
+    : DEFAULT_SCREENCAST_FRAME_CACHE_LIMIT;
 
   function screencastCacheKey(runId, workerId) {
     const normalizedRunId = String(runId || '').trim();
     const normalizedWorkerId = String(workerId || '').trim();
     if (!normalizedRunId || !normalizedWorkerId) return '';
     return `${normalizedRunId}::${normalizedWorkerId}`;
+  }
+
+  function pruneScreencastFrameCache() {
+    while (lastScreencastFrames.size > maxScreencastFrameCacheEntries) {
+      const oldestKey = lastScreencastFrames.keys().next().value;
+      if (!oldestKey) return;
+      lastScreencastFrames.delete(oldestKey);
+    }
+  }
+
+  function cacheScreencastFrame(cacheKey, frame) {
+    if (lastScreencastFrames.has(cacheKey)) {
+      lastScreencastFrames.delete(cacheKey);
+    }
+    lastScreencastFrames.set(cacheKey, frame);
+    pruneScreencastFrameCache();
   }
 
   function broadcastWs(channel, data) {
@@ -134,7 +157,7 @@ export function createRealtimeBridge({
       const runId = String(data.run_id || status?.run_id || status?.runId || '').trim();
       const cacheKey = screencastCacheKey(runId, workerId);
       if (cacheKey && frameData) {
-        lastScreencastFrames.set(cacheKey, {
+        cacheScreencastFrame(cacheKey, {
           run_id: runId,
           worker_id: workerId,
           data: frameData,

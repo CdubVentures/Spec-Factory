@@ -35,7 +35,7 @@ export interface PriorityProfile {
 
 export interface AiAssistConfig {
   reasoning_note?: string;
-  variant_inventory_usage?: {
+  color_edition_context?: {
     enabled?: boolean;
   };
   pif_priority_images?: {

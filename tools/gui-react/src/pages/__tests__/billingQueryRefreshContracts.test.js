@@ -33,11 +33,31 @@ function buildCommonStubs() {
 
   return {
     react: `
+      const contextValues = new WeakMap();
+      export function createContext(defaultValue) {
+        const context = { defaultValue };
+        context.Provider = function Provider(props) {
+          contextValues.set(context, props.value);
+          return props.children ?? null;
+        };
+        return context;
+      }
+      export const memo = (component) => component;
+      export function useContext(context) {
+        return contextValues.has(context) ? contextValues.get(context) : context.defaultValue;
+      }
+      export function useDeferredValue(value) {
+        return value;
+      }
+      export function useEffect() {}
       export function useMemo(factory) {
         return factory();
       }
       export function useCallback(fn) {
         return fn;
+      }
+      export function useRef(value = null) {
+        return { current: value };
       }
       export function useState(init) {
         return [typeof init === 'function' ? init() : init, (next) => globalThis.__queryHarness.stateSetters.push(next)];

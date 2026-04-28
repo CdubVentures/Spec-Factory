@@ -28,10 +28,10 @@ const schemaCases = [
     schema: AiAssistConfigSchema,
     valid: {
       reasoning_note: 'Use explicit source identity only.',
-      variant_inventory_usage: { enabled: true },
+      color_edition_context: { enabled: true },
       pif_priority_images: { enabled: false },
     },
-    invalid: { variant_inventory_usage: true },
+    invalid: { color_edition_context: true },
   },
   {
     label: 'FieldRuleSchema',
@@ -123,16 +123,50 @@ for (const { label, schema, valid, invalid } of schemaCases) {
   });
 }
 
-test('AiAssistConfigSchema strips unsupported nested toggle metadata but rejects direct booleans', () => {
-  const legacyObjectResult = AiAssistConfigSchema.safeParse({
-    variant_inventory_usage: { mode: 'default' },
-  });
-  assert.equal(legacyObjectResult.success, true);
-  assert.deepEqual(legacyObjectResult.data, { variant_inventory_usage: {} });
+function unwrapZod(schema) {
+  const name = schema?.constructor?.name;
+  if (name === 'ZodOptional' || name === 'ZodNullable') {
+    return unwrapZod(schema._def.innerType);
+  }
+  return schema;
+}
 
+test('FieldRuleSchema preserves the characterized explicit key surface', () => {
+  assert.deepEqual(Object.keys(FieldRuleSchema.shape).sort(), [
+    'constraints',
+    'contract',
+    'group',
+    'key',
+    'label',
+    'parse',
+    'required_level',
+    'ui',
+  ]);
+
+  assert.deepEqual(Object.keys(unwrapZod(FieldRuleSchema.shape.contract).shape).sort(), [
+    'shape',
+    'type',
+    'unit',
+  ]);
+
+  assert.deepEqual(Object.keys(unwrapZod(FieldRuleSchema.shape.ui).shape).sort(), [
+    'aliases',
+    'group',
+    'label',
+    'order',
+  ]);
+});
+
+test('AiAssistConfigSchema rejects direct booleans on toggle keys', () => {
   assert.equal(
     AiAssistConfigSchema.safeParse({
       pif_priority_images: false,
+    }).success,
+    false,
+  );
+  assert.equal(
+    AiAssistConfigSchema.safeParse({
+      color_edition_context: true,
     }).success,
     false,
   );

@@ -106,7 +106,7 @@ test('renderMarkdown places auditor-task section before summary and includes ret
   assert.match(md, /"ai_assist"/);
   assert.doesNotMatch(md, /- variant_dependent:/);
   assert.doesNotMatch(md, /- Product Image Dependent:/);
-  assert.match(md, /variant_inventory_usage/);
+  assert.match(md, /color_edition_context/);
   assert.match(md, /pif_priority_images/);
   assert.match(md, /reasoning_note/);
   assert.match(md, /search_hints/);

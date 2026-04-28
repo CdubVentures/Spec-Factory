@@ -132,6 +132,32 @@ describe('Overview bulk dispatch contracts', () => {
     assert.deepEqual(loopResult.operationIds, ['rdf:p1:loop:blue']);
   });
 
+  it('preinserts every RDF Run optimistic stub before the first fire starts', async () => {
+    const row = product('p1', [scalarVariant('red'), scalarVariant('blue')]);
+    const calls: BulkFireParams[] = [];
+    let firstFireSnapshot: readonly Operation[] = [];
+
+    const fire: BulkFireFn = async (params) => {
+      calls.push(params);
+      if (firstFireSnapshot.length === 0) {
+        firstFireSnapshot = [...useOperationsStore.getState().operations.values()];
+      }
+      return `real:${params.variantKey}`;
+    };
+
+    const result = await dispatchRdfRun('mouse', [row], fire, { staggerMs: 10 });
+
+    assert.deepEqual(
+      firstFireSnapshot.map((operation) => `${operation.type}:${operation.productId}:${operation.variantKey}:${operation.status}`).sort(),
+      ['rdf:p1:blue:running', 'rdf:p1:red:running'],
+    );
+    assert.ok(firstFireSnapshot.every((operation) => operation.id.startsWith('_pending_')));
+    assert.ok(firstFireSnapshot.every((operation) => typeof operation.queuedAt === 'string' && operation.queuedAt.length > 0));
+    assert.deepEqual(calls.map((call) => call.variantKey), ['red', 'blue']);
+    assert.deepEqual(result.operationIds, ['real:red', 'real:blue']);
+    assert.equal(useOperationsStore.getState().operations.size, 0);
+  });
+
   it('dispatchPifEval fires one carousel eval operation per variant with collected images', async () => {
     (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
       if (path === '/product-image-finder/mouse/p1') {

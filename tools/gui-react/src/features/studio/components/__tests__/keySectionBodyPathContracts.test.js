@@ -3,7 +3,6 @@ import assert from 'node:assert/strict';
 
 import {
   FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS,
-  FIELD_RULE_COMPONENT_TYPE_CONTROL,
   FIELD_RULE_CONTRACT_CONTROLS,
   FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS,
   FIELD_RULE_CONSTRAINT_CONTROL,
@@ -128,7 +127,6 @@ const STUDIO_CONSTANTS_STUB = `
   export const inputCls = 'input';
   export const labelCls = 'label';
   export const selectCls = 'select';
-  export const COMPONENT_TYPES = ['sensor', 'switch'];
   export const DOMAIN_HINT_SUGGESTIONS = ['manufacturer'];
   export const CONTENT_TYPE_SUGGESTIONS = ['spec_sheet'];
   export const STUDIO_TIPS = {
@@ -149,7 +147,7 @@ const STUDIO_CONSTANTS_STUB = `
     query_terms: 'query terms',
     tooltip_guidance: 'tooltip',
     ai_reasoning_note: 'ai reasoning',
-    variant_inventory_usage: 'variant inventory',
+    color_edition_context: 'color edition context',
     pif_priority_images: 'pif priority images',
     component_db: 'component db',
   };
@@ -653,90 +651,3 @@ test('KeyConstraintsBody adapts constraint updates to the constraints path', asy
   ]);
 });
 
-test('KeyComponentsBody characterizes component and match setting paths', async () => {
-  const { KeyComponentsBody } = await loadBundledModule(
-    'tools/gui-react/src/features/studio/components/key-sections/bodies/KeyComponentsBody.tsx',
-    {
-      prefix: 'key-components-body-contracts-',
-      stubs: {
-        'react/jsx-runtime': JSX_STUB,
-        '../../../../../shared/ui/feedback/Tip.tsx': TIP_STUB,
-        '../../../state/nestedValueHelpers.ts': NESTED_HELPERS_STUB,
-        '../../../state/deriveInputControl.ts': `
-          export function deriveInputControl() {
-            return 'combo';
-          }
-        `,
-        '../../../state/numericInputHelpers.ts': `
-          export function parseBoundedFloatInput(value, min, max, fallback) {
-            const parsed = Number.parseFloat(value);
-            if (!Number.isFinite(parsed)) return fallback;
-            return Math.max(min, Math.min(max, parsed));
-          }
-        `,
-        '../../../state/studioNumericKnobBounds.ts': NUMERIC_BOUNDS_STUB,
-        '../../studioConstants.ts': STUDIO_CONSTANTS_STUB,
-      },
-    },
-  );
-
-  const { props, updates } = createBaseProps({
-    currentRule: {
-      component: {
-        type: 'sensor',
-        match: {
-          fuzzy_threshold: 0.8,
-          name_weight: 0.2,
-          auto_accept_score: 0.9,
-          flag_review_score: 0.4,
-          property_weight: 0.7,
-        },
-      },
-      contract: { type: 'string', shape: 'scalar' },
-      enum: { source: 'component_db.sensor', policy: 'closed' },
-    },
-    componentSources: [
-      {
-        component_type: 'sensor',
-        roles: {
-          properties: [
-            { field_key: 'dpi', variance_policy: 'range' },
-            { field_key: 'sensor_type', variance_policy: 'authoritative' },
-          ],
-        },
-      },
-    ],
-    knownValues: { sensor_type: ['optical'] },
-    editedRules: {
-      dpi: { contract: { type: 'number' } },
-      sensor_type: {
-        contract: { type: 'string' },
-        enum: { source: 'data_lists.sensor_type' },
-      },
-    },
-  });
-  const tree = renderNode(KeyComponentsBody(props));
-
-  assert.deepEqual(badgePaths(tree), [
-    FIELD_RULE_COMPONENT_TYPE_CONTROL.path,
-  ]);
-
-  const componentSelect = collectNodes(tree, (node) => node.type === 'select' && node.props?.value === 'sensor')[0];
-  componentSelect.props.onChange({ target: { value: '' } });
-  componentSelect.props.onChange({ target: { value: 'switch' } });
-
-  assert.deepEqual(updates, [
-    { key: 'design', path: FIELD_RULE_COMPONENT_TYPE_CONTROL.path.split('.')[0], value: null },
-    { key: 'design', path: FIELD_RULE_COMPONENT_TYPE_CONTROL.path, value: '' },
-    {
-      key: 'design',
-      path: FIELD_RULE_COMPONENT_TYPE_CONTROL.path.split('.')[0],
-      value: {
-        type: 'switch',
-        source: 'component_db.switch',
-        allow_new_components: true,
-        require_identity_evidence: true,
-      },
-    },
-  ]);
-});
