@@ -48,6 +48,9 @@ function makeFakeSpecDb({
     { key: 'front', priority: false }, { key: 'rear', priority: false }, { key: 'sangle', priority: false },
   ]),
   viewBudget = '["top","left","angle","bottom"]',
+  carouselScoredViews = '',
+  carouselOptionalViews = '',
+  carouselExtraTarget = '',
   heroEnabled = 'true',
   heroCount = '1',
   satisfactionThreshold = '1',
@@ -65,6 +68,9 @@ function makeFakeSpecDb({
         getSetting(key) {
           if (key === 'viewConfig') return viewConfig;
           if (key === 'viewBudget') return viewBudget;
+          if (key === 'carouselScoredViews') return carouselScoredViews;
+          if (key === 'carouselOptionalViews') return carouselOptionalViews;
+          if (key === 'carouselExtraTarget') return carouselExtraTarget;
           if (key === 'heroEnabled') return heroEnabled;
           if (key === 'heroCount') return heroCount;
           if (key === 'satisfactionThreshold') return satisfactionThreshold;
@@ -115,7 +121,7 @@ describe('rebuildPifVariantProgressFromJson', () => {
     assert.strictEqual(stats.variants_seeded, 0);
   });
 
-  it('splits priority vs loop-extras vs hero — only slot-filling images count', () => {
+  it('tracks scored carousel view slots, extra-image count, and hero slots', () => {
     const root = makeTmpRoot();
     const specDb = makeFakeSpecDb({
       category: 'mouse',
@@ -125,8 +131,8 @@ describe('rebuildPifVariantProgressFromJson', () => {
           { variant_id: 'v_white', variant_key: 'color:white' },
         ],
       },
-      // viewConfig priority: top/left/angle (3). viewBudget: top/left/angle/bottom.
-      // Loop extras = budget - priority = [bottom] (1).
+      // carouselScoredViews unset => viewBudget is the scored denominator.
+      // carouselExtraTarget unset => default extra-image target is 3.
       viewConfig: JSON.stringify([
         { key: 'top', priority: true }, { key: 'left', priority: true }, { key: 'angle', priority: true },
         { key: 'bottom', priority: false },
@@ -141,7 +147,7 @@ describe('rebuildPifVariantProgressFromJson', () => {
         category: 'mouse',
         selected: {
           images: [
-            // Black: 2 eval-winner view slots (top + left) + 1 loop slot (bottom)
+            // Black: 3 eval-winner view slots (top + left + bottom)
             // + 1 ranked hero. "angle" has a raw image but NO eval_best → no slot.
             makeImage('top', 'color:black', 'top-black.png', { eval_best: true }),
             makeImage('left', 'color:black', 'left-black.png', { eval_best: true }),
@@ -165,13 +171,13 @@ describe('rebuildPifVariantProgressFromJson', () => {
     const black = specDb._upserted.find(r => r.variantKey === 'color:black');
     const white = specDb._upserted.find(r => r.variantKey === 'color:white');
 
-    // Black: 2 priority slots filled (top, left — eval winners), 1 loop
-    // (bottom — eval winner), 1 hero (ranked). "angle" has an image but no
+    // Black: 3 scored slots filled (top, left, bottom), 0 additional images,
+    // and 1 hero (ranked). "angle" has an image but no
     // eval_best so its slot is empty. imageCount counts every image.
-    assert.strictEqual(black.priorityFilled, 2);
-    assert.strictEqual(black.priorityTotal, 3);
-    assert.strictEqual(black.loopFilled, 1);
-    assert.strictEqual(black.loopTotal, 1);
+    assert.strictEqual(black.priorityFilled, 3);
+    assert.strictEqual(black.priorityTotal, 4);
+    assert.strictEqual(black.loopFilled, 0);
+    assert.strictEqual(black.loopTotal, 3);
     assert.strictEqual(black.heroFilled, 1);
     assert.strictEqual(black.heroTarget, 1);
     assert.strictEqual(black.imageCount, 5);
@@ -179,12 +185,59 @@ describe('rebuildPifVariantProgressFromJson', () => {
     // White: only "top" has eval_best → 1 priority slot. The raw hero image
     // isn't ranked → 0 hero slot. Both images still count toward imageCount.
     assert.strictEqual(white.priorityFilled, 1);
-    assert.strictEqual(white.priorityTotal, 3);
+    assert.strictEqual(white.priorityTotal, 4);
     assert.strictEqual(white.loopFilled, 0);
-    assert.strictEqual(white.loopTotal, 1);
+    assert.strictEqual(white.loopTotal, 3);
     assert.strictEqual(white.heroFilled, 0);
     assert.strictEqual(white.heroTarget, 1);
     assert.strictEqual(white.imageCount, 2);
+  });
+
+  it('lets optional carousel placeholders overfill the scored view denominator', () => {
+    const root = makeTmpRoot();
+    const specDb = makeFakeSpecDb({
+      category: 'mouse',
+      variantsByProduct: {
+        'mouse-optional': [{ variant_id: 'v_black', variant_key: 'color:black' }],
+      },
+      viewBudget: '["top","left","angle","sangle","bottom"]',
+      carouselScoredViews: '["top","left","angle","sangle","bottom"]',
+      carouselOptionalViews: '["right","front","rear"]',
+      carouselExtraTarget: '3',
+      heroEnabled: 'false',
+    });
+
+    writeProductImages({
+      productId: 'mouse-optional', productRoot: root, data: {
+        product_id: 'mouse-optional',
+        category: 'mouse',
+        selected: {
+          images: [
+            makeImage('top', 'color:black', 'top.png', { eval_best: true, eval_actual_view: 'top', eval_usable_as_required_view: true }),
+            makeImage('left', 'color:black', 'left.png', { eval_best: true, eval_actual_view: 'left', eval_usable_as_required_view: true }),
+            makeImage('angle', 'color:black', 'angle.png', { eval_best: true, eval_actual_view: 'angle', eval_usable_as_required_view: true }),
+            makeImage('sangle', 'color:black', 'sangle.png', { eval_best: true, eval_actual_view: 'sangle', eval_usable_as_required_view: true }),
+            makeImage('bottom', 'color:black', 'bottom.png', { eval_best: true, eval_actual_view: 'bottom', eval_usable_as_required_view: true }),
+            makeImage('right', 'color:black', 'right.png', {
+              eval_best: true,
+              eval_actual_view: 'right',
+              eval_usable_as_required_view: true,
+              eval_usable_as_carousel_extra: false,
+            }),
+          ],
+        },
+        runs: [],
+      }
+    });
+
+    rebuildPifVariantProgressFromJson({ specDb, productRoot: root });
+    const row = specDb._upserted[0];
+    assert.strictEqual(row.priorityFilled, 6);
+    assert.strictEqual(row.priorityTotal, 5);
+    assert.strictEqual(row.loopFilled, 1);
+    assert.strictEqual(row.loopTotal, 3);
+    assert.strictEqual(row.heroFilled, 0);
+    assert.strictEqual(row.heroTarget, 0);
   });
 
   it('respects user-override slots in carousel_slots (independent of eval_best)', () => {

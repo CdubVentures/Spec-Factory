@@ -7,7 +7,8 @@
 
 import path from 'node:path';
 import { readProductImages } from './productImageStore.js';
-import { resolveViewConfig, resolveViewBudget, resolveViewEvalCriteria, resolveHeroEvalCriteria, CANONICAL_VIEW_KEYS } from './productImageLlmAdapter.js';
+import { resolveViewConfig, resolveViewEvalCriteria, resolveHeroEvalCriteria, CANONICAL_VIEW_KEYS } from './productImageLlmAdapter.js';
+import { resolveCarouselViewSettings } from './carouselSlotSettings.js';
 import {
   evaluateViewCandidates,
   mergeEvaluation,
@@ -82,7 +83,7 @@ function resolveSmartEvalViewPlan({ viewBudget, category, availableViews }) {
   return { viewCalls, skipped };
 }
 
-function resolveCarouselContextImages({ product, root, variantKey, variantId, viewBudget, currentView, allImages, carouselSlots }) {
+function resolveCarouselContextImages({ product, root, variantKey, variantId, viewBudget, carouselSlotViews, currentView, allImages, carouselSlots }) {
   const imagesDir = path.join(root, product.product_id, 'images');
   const imageByFilename = new Map(
     (allImages || [])
@@ -91,6 +92,7 @@ function resolveCarouselContextImages({ product, root, variantKey, variantId, vi
   );
   return resolveCarouselSlots({
     viewBudget,
+    carouselSlotViews,
     heroCount: 0,
     variantKey,
     variantId,
@@ -318,7 +320,7 @@ export async function runEvalCarouselLoop({
 }) {
   const root = productRoot || defaultProductRoot();
   const finderStore = specDb?.getFinderStore?.('productImageFinder');
-  const viewBudget = resolveViewBudget(finderStore?.getSetting?.('viewBudget') || '', product.category);
+  const { viewBudget, carouselSlotViews } = resolveCarouselViewSettings({ finderStore, category: product.category });
   const heroEnabled = finderStore?.getSetting?.('heroEnabled') !== 'false';
   const pifDoc = readProductImages({ productId: product.product_id, productRoot: root });
   const allImages = pifDoc?.selected?.images || [];
@@ -352,6 +354,7 @@ export async function runEvalCarouselLoop({
       variantKey,
       variantId,
       viewBudget,
+      carouselSlotViews,
       currentView: view,
       allImages: freshImages,
       carouselSlots: freshDoc?.carousel_slots || {},

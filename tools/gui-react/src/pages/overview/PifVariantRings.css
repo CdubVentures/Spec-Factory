@@ -51,11 +51,11 @@
 
 /* Ring-by-ring tones when complete:
    outer=priority  → success (green)
-   middle=hero     → warning/amber (matches hero orange)
-   inner=loop      → accent (blue) */
+   middle=loop     → accent (blue)
+   inner=hero      → warning/amber (matches hero orange) */
 .sf-pif-rings-outer.done  .sf-pif-rings-fill { stroke: var(--sf-token-state-success-fg); }
-.sf-pif-rings-middle.done .sf-pif-rings-fill { stroke: var(--sf-token-state-warning-fg); }
-.sf-pif-rings-inner.done  .sf-pif-rings-fill { stroke: var(--sf-token-accent); }
+.sf-pif-rings-middle.done .sf-pif-rings-fill { stroke: var(--sf-token-accent); }
+.sf-pif-rings-inner.done  .sf-pif-rings-fill { stroke: var(--sf-token-state-warning-fg); }
 
 /* Amber while any ring is partial — matches the "Improvable" tone elsewhere. */
 .sf-pif-rings-outer.part  .sf-pif-rings-fill,

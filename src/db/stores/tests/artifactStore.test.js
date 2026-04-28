@@ -39,8 +39,23 @@ function makeStore(db) {
       )
     `),
     _getCrawlSourcesByProduct: db.prepare(`SELECT * FROM crawl_sources WHERE product_id = ? ORDER BY crawled_at DESC`),
+    _getCrawlSourcesByRunId: db.prepare(`SELECT * FROM crawl_sources WHERE run_id = ? ORDER BY crawled_at DESC`),
     _getScreenshotsByProduct: db.prepare(`SELECT * FROM source_screenshots WHERE product_id = ? ORDER BY captured_at DESC`),
+    _getScreenshotsByRunId: db.prepare(`SELECT * FROM source_screenshots WHERE run_id = ? ORDER BY captured_at DESC`),
     _getCrawlSourceByHash: db.prepare(`SELECT * FROM crawl_sources WHERE content_hash = ? AND product_id = ?`),
+    _insertVideo: db.prepare(`
+      INSERT OR REPLACE INTO source_videos (
+        video_id, content_hash, category, product_id, run_id, source_url,
+        host, worker_id, format, width, height, size_bytes,
+        duration_ms, file_path, captured_at
+      ) VALUES (
+        @video_id, @content_hash, @category, @product_id, @run_id, @source_url,
+        @host, @worker_id, @format, @width, @height, @size_bytes,
+        @duration_ms, @file_path, @captured_at
+      )
+    `),
+    _getVideosByProduct: db.prepare(`SELECT * FROM source_videos WHERE product_id = ? ORDER BY captured_at DESC`),
+    _getVideosByRunId: db.prepare(`SELECT * FROM source_videos WHERE run_id = ? ORDER BY captured_at DESC`),
   };
   return createArtifactStore({ db, category: 'mouse', stmts });
 }
@@ -68,6 +83,22 @@ test('insertCrawlSource inserts and getCrawlSourcesByProduct retrieves', () => {
   assert.equal(rows[0].content_hash, 'abc123');
   assert.equal(rows[0].source_url, 'https://example.com/product');
   assert.equal(rows[0].file_path, 'artifacts/mouse/mouse-test/sources/abc123/page.html.gz');
+  db.close();
+});
+
+test('run-scoped artifact readers return only rows for the requested run', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+  store.insertCrawlSource({ content_hash: 'run-a-source', product_id: 'p1', run_id: 'run-a', source_url: 'https://a.example.com', crawled_at: '2026-03-27T00:00:00Z' });
+  store.insertCrawlSource({ content_hash: 'run-b-source', product_id: 'p1', run_id: 'run-b', source_url: 'https://b.example.com', crawled_at: '2026-03-28T00:00:00Z' });
+  store.insertScreenshot({ screenshot_id: 'run-a-shot', content_hash: 'run-a-source', product_id: 'p1', run_id: 'run-a', source_url: 'https://a.example.com', size_bytes: 100 });
+  store.insertScreenshot({ screenshot_id: 'run-b-shot', content_hash: 'run-b-source', product_id: 'p1', run_id: 'run-b', source_url: 'https://b.example.com', size_bytes: 200 });
+  store.insertVideo({ video_id: 'run-a-video', content_hash: 'run-a-source', product_id: 'p1', run_id: 'run-a', source_url: 'https://a.example.com', size_bytes: 300 });
+  store.insertVideo({ video_id: 'run-b-video', content_hash: 'run-b-source', product_id: 'p1', run_id: 'run-b', source_url: 'https://b.example.com', size_bytes: 400 });
+
+  assert.deepEqual(store.getCrawlSourcesByRunId('run-a').map((row) => row.content_hash), ['run-a-source']);
+  assert.deepEqual(store.getScreenshotsByRunId('run-a').map((row) => row.screenshot_id), ['run-a-shot']);
+  assert.deepEqual(store.getVideosByRunId('run-a').map((row) => row.video_id), ['run-a-video']);
   db.close();
 });
 

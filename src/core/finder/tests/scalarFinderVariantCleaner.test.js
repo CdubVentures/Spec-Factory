@@ -45,7 +45,7 @@ function seedReleaseDateFinder({ productRoot, productId, candidates, runs = [] }
   return doc;
 }
 
-function makeSpecDbStub({ hasFinderStore = true } = {}) {
+function makeSpecDbStub({ hasFinderStore = true, onRemoveRun = null } = {}) {
   const upsertCalls = [];
   const summaries = new Map();
   const removeRunCalls = [];
@@ -53,7 +53,10 @@ function makeSpecDbStub({ hasFinderStore = true } = {}) {
     get: (pid) => summaries.get(pid) || null,
     upsert: (row) => { upsertCalls.push(row); summaries.set(row.product_id, row); },
     insertRun: () => {},
-    removeRun: (pid, runNumber) => { removeRunCalls.push({ pid, runNumber }); },
+    removeRun: (pid, runNumber) => {
+      onRemoveRun?.({ pid, runNumber });
+      removeRunCalls.push({ pid, runNumber });
+    },
   };
   return {
     category: 'mouse',
@@ -373,5 +376,37 @@ describe('deleteScalarFinderVariantRuns', () => {
     assert.equal(doc.runs.length, 0, 'the v_black run with its discovery_log is gone');
     // This is what makes the Hist (Nqu)(Nurl) counter go to zero — the
     // run-level discovery_log was the attribution source.
+  });
+
+  it('removes SQL run rows before mutating the JSON mirror', (t) => {
+    const productRoot = makeTempRoot();
+    t.after(() => fs.rmSync(productRoot, { recursive: true, force: true }));
+    const productId = 'mouse-001';
+    const jsonRunsAtSqlDelete = [];
+
+    releaseDateFinderStore.merge({
+      productId, productRoot,
+      newDiscovery: { category: 'mouse', last_ran_at: '2025-10-01T00:00:00Z' },
+      run: makeRun({ runNumber: 1, variantId: 'v_black', variantKey: 'black', value: '2025-11-11' }),
+    });
+    releaseDateFinderStore.merge({
+      productId, productRoot,
+      newDiscovery: { category: 'mouse', last_ran_at: '2025-10-02T00:00:00Z' },
+      run: makeRun({ runNumber: 2, variantId: 'v_white', variantKey: 'white', value: '2025-12-01' }),
+    });
+
+    const specDb = makeSpecDbStub({
+      onRemoveRun: () => {
+        const doc = releaseDateFinderStore.read({ productId, productRoot });
+        jsonRunsAtSqlDelete.push((doc.runs || []).map((run) => run.run_number));
+      },
+    });
+
+    deleteScalarFinderVariantRuns({
+      specDb, productId, productRoot,
+      fieldKey: 'release_date', variantId: 'v_black',
+    });
+
+    assert.deepEqual(jsonRunsAtSqlDelete, [[1, 2]], 'JSON mirror still contains deleted run while SQL removes it');
   });
 });

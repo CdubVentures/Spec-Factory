@@ -19,6 +19,9 @@ function createQueryClientHarness(initialData) {
         calls.push(['setQueryData', queryKey, nextData]);
         queryData = nextData;
       },
+      invalidateQueries(args) {
+        calls.push(['invalidateQueries', args]);
+      },
       removeQueries(args) {
         calls.push(['removeQueries', args]);
         queryData = undefined;
@@ -155,4 +158,48 @@ test('module settings authority creates optimistic cache data when a setting is 
       heroEnabled: 'false',
     },
   });
+});
+
+test('module settings authority invalidates module consumers after persisted save', async () => {
+  const initialResponse = {
+    category: 'mouse',
+    scope: 'category',
+    module: 'productImageFinder',
+    settings: {
+      carouselExtraTarget: '3',
+    },
+  };
+  const harness = createQueryClientHarness(initialResponse);
+  const { useModuleSettingsAuthority } = await loadAuthority(harness);
+
+  useModuleSettingsAuthority({
+    category: 'mouse',
+    moduleId: 'productImageFinder',
+  });
+
+  const payload = { carouselExtraTarget: '5' };
+  const context = await globalThis.__moduleSettingsAuthorityHarness.mutationOptions.onMutate(payload);
+  globalThis.__moduleSettingsAuthorityHarness.mutationOptions.onSuccess(
+    { ok: true, category: 'mouse', module: 'productImageFinder', settings: payload },
+    payload,
+    context,
+    {},
+  );
+
+  const invalidated = harness.getCalls()
+    .filter(([name]) => name === 'invalidateQueries')
+    .map(([, args]) => args.queryKey);
+
+  assert.ok(
+    invalidated.some((queryKey) => JSON.stringify(queryKey) === JSON.stringify(['module-settings'])),
+    'module-settings query family must be invalidated',
+  );
+  assert.ok(
+    invalidated.some((queryKey) => JSON.stringify(queryKey) === JSON.stringify(['product-image-finder', 'mouse'])),
+    'PIF panel query family must be invalidated',
+  );
+  assert.ok(
+    invalidated.some((queryKey) => JSON.stringify(queryKey) === JSON.stringify(['catalog', 'mouse'])),
+    'overview catalog rows must be invalidated',
+  );
 });

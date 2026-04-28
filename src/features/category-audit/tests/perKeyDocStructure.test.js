@@ -5,6 +5,10 @@ import { buildPerKeyDocStructure } from '../perKeyDocStructure.js';
 import { composePerKeyPromptPreview } from '../perKeyPromptPreview.js';
 import { FIELD_RULE_SCHEMA } from '../contractSchemaCatalog.js';
 
+function sectionPromptText(section) {
+  return section.blocks.map((block) => block.text || '').join('\n');
+}
+
 function makeRule(overrides = {}) {
   return {
     priority: { required_level: 'non_mandatory', availability: 'always', difficulty: 'medium' },
@@ -170,7 +174,7 @@ test('example-bank recipe is category agnostic and asks for 5-10 examples', () =
   assert.match(allText, /Use benchmark data only to understand the target answer shape/i);
 });
 
-test('per-key LLM audit prompt requires a Field Studio text file first', () => {
+test('per-key LLM audit prompt requires a strict Field Studio JSON patch first', () => {
   const rule = makeRule({
     enum: { policy: 'open_prefer_known', values: ['standard', 'limited edition'] },
   });
@@ -179,16 +183,20 @@ test('per-key LLM audit prompt requires a Field Studio text file first', () => {
   const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview });
   const section = structure.sections.find((s) => s.id === 'llm-audit-prompt');
   assert.ok(section, 'llm-audit-prompt section present');
-  const allText = JSON.stringify(section);
-  assert.match(allText, /downloadable text file first/i);
-  assert.match(allText, /mouse-design-field-studio-change\.txt/);
-  assert.match(allText, /## <sort_order>-<field_key>/);
-  assert.match(allText, /Mapping Studio/);
-  assert.match(allText, /Key Navigator/);
+  const allText = sectionPromptText(section);
+  assert.match(allText, /strict JSON patch first/i);
+  assert.match(allText, /mouse-design\.field-studio-patch\.v1\.json/);
+  assert.match(allText, /"schema_version": "field-studio-patch\.v1"/);
+  assert.match(allText, /"field_key": "design"/);
+  assert.match(allText, /"field_overrides"/);
+  assert.match(allText, /"data_lists"/);
   assert.match(allText, /Live validation/);
-  assert.match(allText, /Variant inventory context/);
-  assert.match(allText, /PIF Priority Images/);
-  assert.match(allText, /AI reasoning note/);
+  assert.doesNotMatch(allText, /- variant_dependent:/);
+  assert.doesNotMatch(allText, /- Product Image Dependent:/);
+  assert.match(allText, /variant_inventory_usage/);
+  assert.match(allText, /pif_priority_images/);
+  assert.match(allText, /reasoning_note/);
+  assert.doesNotMatch(allText, /No change/);
   assert.doesNotMatch(allText, /Tooltip \/ Guidance/);
   assert.doesNotMatch(allText, /tooltip/i);
   assert.doesNotMatch(allText, /current runtime behavior, not the target recommendation/i);
@@ -204,9 +212,9 @@ test('per-key LLM audit prompt uses navigator ordinal when available', () => {
   const preview = composePerKeyPromptPreview(rule, 'design', { category: 'mouse' });
   const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview, navigatorOrdinal: '07' });
   const section = structure.sections.find((s) => s.id === 'llm-audit-prompt');
-  const allText = JSON.stringify(section);
-  assert.match(allText, /mouse-07-design-field-studio-change\.txt/);
-  assert.match(allText, /## 07-design/);
+  const allText = sectionPromptText(section);
+  assert.match(allText, /mouse-07-design\.field-studio-patch\.v1\.json/);
+  assert.match(allText, /"navigator_ordinal": 7/);
 });
 
 test('per-key LLM audit prompt gives component link fields authoritative component-source guidance', () => {
@@ -222,7 +230,7 @@ test('per-key LLM audit prompt gives component link fields authoritative compone
   const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview });
   const section = structure.sections.find((s) => s.id === 'llm-audit-prompt');
   assert.ok(section, 'llm-audit-prompt section present');
-  const allText = JSON.stringify(section);
+  const allText = sectionPromptText(section);
   assert.match(allText, /component _link fields/i);
   assert.match(allText, /manufacturer component page/i);
   assert.match(allText, /datasheet\/spec-sheet PDF/i);

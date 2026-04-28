@@ -23,6 +23,8 @@ function readDoc(productId, filePrefix) {
 function makeSqlStore() {
   const calls = [];
   return {
+    get: () => null,
+    listRuns: () => [],
     updateRunJson(productId, runNumber, payload) {
       calls.push({ productId, runNumber, payload });
     },
@@ -456,6 +458,109 @@ describe('scrubFinderDiscoveryHistory', () => {
     assert.deepEqual(afterDoc.runs[0].response.discovery_log.queries_run, []);
     assert.deepEqual(afterDoc.runs[1].response.discovery_log.urls_checked, ['https://passenger.example']);
     assert.deepEqual(afterDoc.runs[1].response.discovery_log.queries_run, ['weight primary query']);
+  });
+
+  it('scrubs SQL run history before stale JSON and mirrors SQL result afterward', () => {
+    const productId = 'sql-first-scrub';
+    const module = {
+      id: 'releaseDateFinder',
+      filePrefix: 'release_date',
+      moduleClass: 'variantFieldProducer',
+    };
+    const staleJsonRun = run({
+      runNumber: 1,
+      urls: ['https://json-stale.example'],
+      queries: ['json stale query'],
+      response: { variant_id: 'v_black', variant_key: 'color:black' },
+    });
+    writeDoc({
+      productId,
+      filePrefix: module.filePrefix,
+      doc: {
+        product_id: productId,
+        category: 'mouse',
+        selected: { candidates: [] },
+        run_count: 1,
+        next_run_number: 2,
+        runs: [staleJsonRun],
+      },
+    });
+
+    const sqlRun = run({
+      runNumber: 7,
+      urls: ['https://sql-current.example'],
+      queries: ['sql current query'],
+      response: { variant_id: 'v_black', variant_key: 'color:black' },
+    });
+    const sqlStore = makeSqlStore();
+    sqlStore.get = () => ({ category: 'mouse', product_id: productId, run_count: 1, latest_ran_at: sqlRun.ran_at });
+    sqlStore.listRuns = () => [sqlRun];
+
+    const result = scrubFinderDiscoveryHistory({
+      productId,
+      productRoot: TMP_ROOT,
+      module,
+      specDb: makeSpecDb(sqlStore),
+      request: { kind: 'all', scope: 'variant', variantId: 'v_black' },
+    });
+
+    assert.deepEqual(result.affectedRunNumbers, [7]);
+    assert.equal(result.urlsRemoved, 1);
+    assert.equal(result.queriesRemoved, 1);
+    assert.deepEqual(sqlStore.calls.map((c) => c.runNumber), [7]);
+    assert.deepEqual(sqlStore.calls[0].payload.response.discovery_log.urls_checked, []);
+    assert.deepEqual(sqlStore.calls[0].payload.response.discovery_log.queries_run, []);
+
+    const afterDoc = readDoc(productId, module.filePrefix);
+    assert.deepEqual(afterDoc.runs.map((r) => r.run_number), [7]);
+    assert.deepEqual(afterDoc.runs[0].response.discovery_log.urls_checked, []);
+    assert.deepEqual(afterDoc.runs[0].response.discovery_log.queries_run, []);
+    assert.ok(!JSON.stringify(afterDoc).includes('json-stale'), 'stale JSON run must be replaced by SQL mirror');
+  });
+
+  it('does not mutate the JSON mirror when SQL scrub update fails', () => {
+    const productId = 'sql-failure-keeps-json';
+    const module = {
+      id: 'keyFinder',
+      filePrefix: 'key_finder',
+      moduleClass: 'productFieldProducer',
+    };
+    const originalDoc = {
+      product_id: productId,
+      category: 'mouse',
+      selected: { keys: { grip_width: { value: '60mm' } } },
+      run_count: 1,
+      next_run_number: 2,
+      runs: [
+        run({
+          runNumber: 1,
+          urls: ['https://mirror.example'],
+          queries: ['mirror query'],
+          response: { primary_field_key: 'grip_width', results: { grip_width: { value: '60mm' } } },
+        }),
+      ],
+    };
+    writeDoc({ productId, filePrefix: module.filePrefix, doc: originalDoc });
+
+    const sqlStore = makeSqlStore();
+    sqlStore.get = () => ({ category: 'mouse', product_id: productId, run_count: 1, latest_ran_at: originalDoc.runs[0].ran_at });
+    sqlStore.listRuns = () => originalDoc.runs.map((r) => ({ ...r, response: { ...r.response, discovery_log: { ...r.response.discovery_log } } }));
+    sqlStore.updateRunJson = () => {
+      throw new Error('sql update failed');
+    };
+
+    assert.throws(
+      () => scrubFinderDiscoveryHistory({
+        productId,
+        productRoot: TMP_ROOT,
+        module,
+        specDb: makeSpecDb(sqlStore),
+        request: { kind: 'all', scope: 'field_key', fieldKey: 'grip_width' },
+      }),
+      /sql update failed/,
+    );
+
+    assert.deepEqual(readDoc(productId, module.filePrefix), originalDoc);
   });
 
   it('rejects a scope that does not match the finder module history contract', () => {

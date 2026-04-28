@@ -1,6 +1,6 @@
 ## Purpose
 
-Per-product color & edition discovery with full run history. Stores LLM finder results in per-product JSON files (durable SSOT) and a queryable SQL summary table in specDb (derived, rebuildable). Each run captures full prompt + response for auditability.
+Per-product color & edition discovery with full run history. Runtime reads use SQL finder summary/run rows first, while per-product JSON remains the durable rebuild/audit mirror. Each run captures full prompt + response for auditability.
 
 ## Public API (The Contract)
 
@@ -16,7 +16,7 @@ Exported from `index.js`:
 - `colorEditionFinderResponseSchema` — Zod schema: `{ colors: [{ name, confidence (0-100), evidence_refs }], color_names: Record, editions: Record<slug, { display_name, confidence (0-100), colors, evidence_refs }>, default_color: string, siblings_excluded: string[], discovery_log: { confirmed_from_known, added_new, rejected_from_known, urls_checked, queries_run } }`. Per-item `confidence` is the LLM's overall value-level rating (distinct from per-source `evidence_refs.confidence`).
 - `buildColorEditionFinderPrompt({ colorNames, colors, product, previousRuns? })` — Dynamic system prompt with historical context
 - `createColorEditionFinderCallLlm(deps)` — Factory: creates bound LLM caller
-- `runColorEditionFinder({ product, appDb, specDb, config, ... })` — Full orchestrator: LLM call → capture prompt/response → merge → persist
+- `runColorEditionFinder({ product, appDb, specDb, config, ... })` — Full orchestrator: LLM call → capture prompt/response → SQL-first persist → JSON mirror
 - `generateVariantId(productId, variantKey)` — Deterministic hash: `v_` + 8 hex chars from SHA-256. Product-scoped, never changes once assigned.
 - `buildVariantRegistry({ productId, colors, colorNames, editions })` — Builds full variant registry array from CEF selected data. Each entry has stable `variant_id`, current `variant_key`/`variant_label`/`color_atoms`.
 - `backfillVariantRegistry({ specDb, productRoot? })` — One-time backfill: scans all products, generates registry for those missing one, writes the JSON SSOT (`color_edition.json`). Idempotent.
@@ -68,14 +68,14 @@ Variants table (standalone entity, wired as `specDb.variants`):
 
 ## Domain Invariants
 
-- **Dual-state CQRS**: JSON is durable memory (write-first, audit/recovery SSOT). SQL is frontend projection (UI reads only from DB). Both tables (`color_edition_finder`, `color_edition_finder_runs`) rebuildable from JSON
+- **Dual-state CQRS**: SQL finder summary/run rows are the runtime/frontend projection and are written before `color_edition.json` on live runs. JSON is the durable rebuild/audit mirror. Both tables (`color_edition_finder`, `color_edition_finder_runs`) rebuildable from JSON
 - **Latest-wins**: top-level `selected` always reflects the latest run's output
 - **colors[0] IS the default**: first color in array = default variant. `default_color` must equal `colors[0]`
 - **Edition-color pairing**: editions are keyed by slug, each has its own `colors` subset
 - **Modifier-first naming**: `light-blue` not `blue-light`, matches CSS `--color-{name}`
 - **Multi-color**: `+` separator, dominant-first order (`black+red` = mostly black)
 - **Closed enum at prompt level**: LLM must map all discovered colors to registered atoms
-- **Run history as source log**: each LLM call stored in `runs` array with full prompt + response
+- **Run history as source log**: each LLM call is stored in SQL `color_edition_finder_runs` and mirrored to the JSON `runs` array with full prompt + response
 - **Cooldown derived from latest run**: deleting the latest run recalculates cooldown from the new latest
 - **Candidate gate (all-or-nothing)**: Before CEF writes anything, `submitCandidate()` validates `colors` against Field Studio rules. If validation fails, the entire run is rejected — no CEF writes, no candidates, no cooldown. Failure stored in `color_edition_finder_runs` with `response.status = 'rejected'`. On success, repaired values (not raw LLM output) flow to CEF tables and `field_candidates`. Gate skipped gracefully if compiled rules not available (test environments).
 - **Variants table is the SSOT**: The `variants` SQL table is the runtime authority for variant data. Published colors/editions are derived from variants via `derivePublishedFromVariants()`, not from candidate set_union. JSON `variant_registry` in `color_edition.json` is the durable backup (rebuild/seed only — never read at runtime). Wrong-product variants are hard-deleted (no soft-delete/retired flag).

@@ -249,7 +249,7 @@ const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confi
         {op.fieldKey && (
           <span
             title={`field_key: ${op.fieldKey}`}
-            className="shrink-0 inline-flex items-center px-1 text-[9px] font-mono rounded-[2px] border leading-[1.5] text-[rgb(var(--sf-color-accent-strong-rgb))] border-[rgb(var(--sf-color-accent-strong-rgb)/0.4)] bg-[rgb(var(--sf-color-accent-strong-rgb)/0.08)] max-w-[140px] truncate"
+            className="inline-flex items-center px-1 text-[9px] font-mono rounded-[2px] border leading-[1.5] text-[rgb(var(--sf-color-accent-strong-rgb))] border-[rgb(var(--sf-color-accent-strong-rgb)/0.4)] bg-[rgb(var(--sf-color-accent-strong-rgb)/0.08)] max-w-[140px] min-w-0 truncate"
           >
             {op.fieldKey}
           </span>

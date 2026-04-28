@@ -36,6 +36,10 @@ import {
   resolveScalarPreviousDiscovery,
   defaultBuildScalarUserMessage,
 } from './resolveScalarFinderPromptInputs.js';
+import {
+  persistScalarFinderRunSqlFirst,
+  readScalarFinderRunsSqlFirst,
+} from './scalarFinderSqlHistory.js';
 
 /**
  * @param {object} cfg
@@ -48,8 +52,10 @@ import {
  * @param {Function} cfg.createCallLlm   — (llmDeps) => callLlm  (feature's LLM caller factory)
  * @param {Function} cfg.buildPrompt     — (domainArgs) => systemPrompt string (for onLlmCallComplete emission)
  * @param {Function} cfg.extractCandidate — (llmResult) => { value, confidence, unknownReason, evidenceRefs, discoveryLog, isUnknown }
- * @param {Function} cfg.mergeDiscovery   — (opts) => merged doc  (feature's JSON store merge)
+ * @param {Function} cfg.mergeDiscovery   — (opts) => merged doc  (legacy JSON fallback merge)
  * @param {Function} cfg.readRuns         — (opts) => doc  (feature's JSON store read)
+ * @param {Function} [cfg.writeRuns]      — (opts) => void  (feature's JSON mirror write)
+ * @param {Function} [cfg.recalculateFromRuns] — (runs, productId, category, existingDoc) => doc
  * @param {Function} cfg.satisfactionPredicate — (produceResult) => boolean  (loop stop)
  * @param {Function} [cfg.buildPublisherMetadata] — (variant, candidate, ctx, extracted) => metadata
  * @param {Function} [cfg.buildUserMessage]        — (product, variant) => string
@@ -60,7 +66,7 @@ export function createVariantScalarFieldProducer(cfg) {
   const {
     finderName, fieldKey, sourceType, phase, responseValueKey, logPrefix,
     createCallLlm, buildPrompt, extractCandidate,
-    mergeDiscovery, readRuns, satisfactionPredicate,
+    mergeDiscovery, readRuns, writeRuns, recalculateFromRuns, satisfactionPredicate,
     buildPublisherMetadata,
     buildUserMessage = defaultBuildScalarUserMessage,
     defaultStaggerMs = 1000,
@@ -167,6 +173,7 @@ export function createVariantScalarFieldProducer(cfg) {
         promptOverride,
         evidenceCache,
         allVariants,
+        finderStore,
       },
       _mt,
       finderStore,
@@ -183,6 +190,7 @@ export function createVariantScalarFieldProducer(cfg) {
       onLlmCallComplete, _callLlmOverride, promptOverride,
       evidenceCache,
       allVariants,
+      finderStore,
     } = ctx;
 
     return async function produceForVariant(variant, _i, callCtx = {}) {
@@ -320,32 +328,7 @@ export function createVariantScalarFieldProducer(cfg) {
       }
 
       const selected = { candidates: [candidateEntry] };
-      const merged = mergeDiscovery({
-        productId: product.product_id,
-        productRoot,
-        newDiscovery: { category: product.category, last_ran_at: ranAt },
-        run: {
-          started_at: callStartedAt,
-          duration_ms: durationMs,
-          model: _mt.actualModel,
-          fallback_used: _mt.actualFallbackUsed,
-          effort_level: _mt.actualEffortLevel,
-          access_mode: _mt.actualAccessMode,
-          thinking: _mt.actualThinking,
-          web_search: _mt.actualWebSearch,
-          selected,
-          prompt: { system: systemPrompt, user: userMsg },
-          response: responsePayload,
-        },
-      });
-
-      const store = specDb.getFinderStore(finderName);
-      const latestRun = merged.runs[merged.runs.length - 1];
-      store.insertRun({
-        category: product.category,
-        product_id: product.product_id,
-        run_number: latestRun.run_number,
-        ran_at: ranAt,
+      const runPayload = {
         model: _mt.actualModel,
         fallback_used: _mt.actualFallbackUsed,
         effort_level: _mt.actualEffortLevel,
@@ -353,17 +336,22 @@ export function createVariantScalarFieldProducer(cfg) {
         thinking: _mt.actualThinking,
         web_search: _mt.actualWebSearch,
         selected,
-        prompt: latestRun.prompt,
-        response: latestRun.response,
-      });
-
-      store.upsert({
+        prompt: { system: systemPrompt, user: userMsg },
+        response: responsePayload,
+        started_at: callStartedAt,
+        duration_ms: durationMs,
+      };
+      persistScalarFinderRunSqlFirst({
+        finderStore,
+        productId: product.product_id,
+        productRoot,
         category: product.category,
-        product_id: product.product_id,
-        candidates: merged.selected.candidates,
-        candidate_count: merged.selected.candidates.length,
-        latest_ran_at: ranAt,
-        run_count: merged.run_count,
+        run: runPayload,
+        ranAt,
+        readRuns,
+        writeRuns,
+        recalculateFromRuns,
+        mergeDiscovery,
       });
 
       // WHY: publishResult is submitCandidate's return ({status:'accepted', ...,
@@ -411,8 +399,12 @@ export function createVariantScalarFieldProducer(cfg) {
     if (setup.earlyReject) return setup.earlyReject;
     const { ctx, _mt } = setup;
 
-    const previousDoc = readRuns({ productId: ctx.product.product_id, productRoot: ctx.productRoot });
-    const staticPreviousRuns = Array.isArray(previousDoc?.runs) ? previousDoc.runs : [];
+    const staticPreviousRuns = readScalarFinderRunsSqlFirst({
+      finderStore: setup.finderStore,
+      readRuns,
+      productId: ctx.product.product_id,
+      productRoot: ctx.productRoot,
+    });
     const produceForVariant = buildProduceForVariant(ctx, () => staticPreviousRuns);
 
     const { rejected, rejections, perVariantResults, variants } = await runPerVariant({
@@ -468,8 +460,12 @@ export function createVariantScalarFieldProducer(cfg) {
     };
 
     const previousRunsProvider = () => {
-      const doc = readRuns({ productId: ctx.product.product_id, productRoot: ctx.productRoot });
-      return Array.isArray(doc?.runs) ? doc.runs : [];
+      return readScalarFinderRunsSqlFirst({
+        finderStore,
+        readRuns,
+        productId: ctx.product.product_id,
+        productRoot: ctx.productRoot,
+      });
     };
     const produceForVariant = buildProduceForVariant(ctx, previousRunsProvider);
 

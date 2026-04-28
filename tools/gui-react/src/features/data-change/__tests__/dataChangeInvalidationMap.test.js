@@ -337,6 +337,7 @@ test('module settings event invalidates finder panels that consume module settin
   });
 
   assert.equal(hasQueryKey(keys, ['module-settings']), true);
+  assert.equal(hasQueryKey(keys, ['catalog', 'mouse']), true);
   assert.equal(hasQueryKey(keys, ['key-finder', 'mouse']), true);
   assert.equal(hasQueryKey(keys, ['product-image-finder', 'mouse']), true);
   assert.equal(hasQueryKey(keys, ['release-date-finder', 'mouse']), true);

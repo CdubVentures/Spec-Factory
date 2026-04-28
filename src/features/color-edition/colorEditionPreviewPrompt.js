@@ -14,7 +14,7 @@ import { resolveAmbiguityContext } from '../../core/finder/finderOrchestrationHe
 import { resolvePhaseModel } from '../../core/llm/client/routing.js';
 import { accumulateDiscoveryLog } from '../../core/finder/discoveryLog.js';
 import { defaultProductRoot } from '../../core/config/runtimeArtifactRoots.js';
-import { readColorEdition } from './colorEditionStore.js';
+import { readColorEditionSqlFirst } from './colorEditionRuntimeState.js';
 import { buildColorEditionFinderPrompt } from './colorEditionLlmAdapter.js';
 import { zodToLlmSchema } from '../../core/llm/zodToLlmSchema.js';
 import { colorEditionFinderResponseSchema } from './colorEditionSchema.js';
@@ -64,7 +64,12 @@ export async function resolveColorEditionDiscoveryInputs({
 
   const existing = preloadedExisting !== undefined
     ? preloadedExisting
-    : readColorEdition({ productId: product.product_id, productRoot: root });
+    : readColorEditionSqlFirst({
+      finderStore,
+      variantStore: specDb.variants,
+      productId: product.product_id,
+      productRoot: root,
+    });
   const previousRuns = Array.isArray(existing?.runs) ? existing.runs : [];
 
   // CEF nests discovery_log under response.discovery.discovery_log — lift it

@@ -81,8 +81,8 @@ export function PifVariantPopover({
   const [promptPreview, setPromptPreview] = useState<PifPromptPreviewState | null>(null);
   const hexParts = variant.color_atoms.map((atom) => hexMap.get(atom) || '').filter(Boolean);
   const label = variant.variant_label || variant.variant_key || variant.variant_id;
-  const totalFilled = variant.priority_filled + variant.loop_filled + variant.hero_filled;
-  const totalTarget = variant.priority_total + variant.hero_target + variant.loop_total;
+  const viewFilled = variant.priority_filled;
+  const viewTarget = variant.priority_total;
 
   const fire = useFireAndForget({ type: 'pif', category, productId });
   const fireKeyFinder = useFireAndForget({ type: 'kf', category, productId });
@@ -197,15 +197,15 @@ export function PifVariantPopover({
   // Carousel slides — bit-for-bit parity with Indexing Lab's CarouselSlotRow:
   //   buildGalleryImages → filter to variant → sortByPriorityAndSize
   //   → resolveSlots → keep only filled (non-'__cleared__') slots
-  // Output is bounded to viewBudget.length + heroCount slides — exactly the
+  // Output is bounded to configured carousel view slots + heroCount slides — exactly the
   // images currently *occupying* a carousel slot (user-override OR eval
   // winner / ranked hero). No raw run-output images, no candidates that
   // didn't make the cut.
   const slides = useMemo<readonly CarouselSlide[]>(() => {
     if (!pifData) return [];
     const settings = pifData.carouselSettings;
-    const viewBudget: string[] = [...(settings?.viewBudget ?? DEFAULT_VIEW_BUDGET)];
-    const heroCount = settings?.heroEnabled ? 3 : 0;
+    const viewBudget: string[] = [...(settings?.carouselSlotViews ?? settings?.viewBudget ?? DEFAULT_VIEW_BUDGET)];
+    const heroCount = settings?.heroEnabled ? (settings.heroCount ?? 3) : 0;
     const carouselSlots = pifData.carousel_slots ?? {};
     const galleryImages = buildGalleryImages(pifData.runs ?? []);
     const variantImages = sortByPriorityAndSize(
@@ -327,7 +327,7 @@ export function PifVariantPopover({
         <FinderRunPopoverShell
           title={`Product Image Finder — ${label}`}
           meta={
-            <>P {variant.priority_filled}/{variant.priority_total} &middot; H {variant.hero_filled}/{variant.hero_target} &middot; L {variant.loop_filled}/{variant.loop_total}</>
+            <>C {variant.priority_filled}/{variant.priority_total} &middot; Extra {variant.loop_filled}/{variant.loop_total} &middot; H {variant.hero_filled}/{variant.hero_target}</>
           }
           modelSlot={
             <>
@@ -467,7 +467,7 @@ export function PifVariantPopover({
         title={`Open Product Image Finder for ${label}`}
         className="sf-pif-rings-label"
       >
-        {totalFilled}/{totalTarget}
+        {viewFilled}/{viewTarget}
       </IndexLabLink>
       <IndexLabLink
         category={category}

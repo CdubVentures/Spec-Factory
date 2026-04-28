@@ -12,6 +12,7 @@ import os from 'node:os';
 import { registerModuleSettingsRoutes } from '../api/moduleSettingsRoutes.js';
 import { AppDb } from '../../../db/appDb.js';
 import { SpecDb } from '../../../db/specDb.js';
+import { writeProductImages } from '../../product-image/productImageStore.js';
 
 function makeRes() {
   return { statusCode: 0, body: null };
@@ -39,6 +40,23 @@ function createHarness({ appDb, specDbByCategory = new Map(), helperRoot }) {
     appDb,
   });
   return handler;
+}
+
+function makePifImage(view, filename, overrides = {}) {
+  return {
+    view,
+    filename,
+    url: `https://example.com/${filename}`,
+    variant_id: 'v_black',
+    variant_key: 'color:black',
+    variant_label: 'Black',
+    variant_type: 'color',
+    quality_pass: true,
+    eval_best: true,
+    eval_actual_view: view,
+    eval_usable_as_required_view: true,
+    ...overrides,
+  };
 }
 
 describe('moduleSettingsRoutes — /global/:moduleId (scope=global)', () => {
@@ -195,5 +213,91 @@ describe('moduleSettingsRoutes — /:category/:moduleId (scope=category)', () =>
     assert.ok(fs.existsSync(jsonPath));
     const parsed = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
     assert.equal(parsed.satisfactionThreshold, '9');
+  });
+
+  it('PUT /:category/productImageFinder carousel settings rebuilds PIF progress before broadcast', async () => {
+    const productRoot = path.join(tmpDir, 'products');
+    const settings = {
+      viewBudget: '["top","left"]',
+      carouselScoredViews: '["top","left"]',
+      carouselOptionalViews: '',
+      carouselExtraTarget: '3',
+      heroEnabled: 'false',
+      heroCount: '1',
+    };
+    const upserted = [];
+    const fakeSpecDb = {
+      category: 'mouse',
+      variants: {
+        listActive(productId) {
+          return productId === 'mouse-001'
+            ? [{ variant_id: 'v_black', variant_key: 'color:black' }]
+            : [];
+        },
+      },
+      getFinderStore(moduleId) {
+        if (moduleId !== 'productImageFinder') return null;
+        return {
+          setSetting(key, value) {
+            settings[key] = String(value);
+          },
+          getSetting(key) {
+            return settings[key] ?? null;
+          },
+          getAllSettings() {
+            return { ...settings };
+          },
+        };
+      },
+      upsertPifVariantProgress(row) {
+        upserted.push(row);
+      },
+    };
+
+    writeProductImages({
+      productId: 'mouse-001',
+      productRoot,
+      data: {
+        product_id: 'mouse-001',
+        category: 'mouse',
+        selected: {
+          images: [
+            makePifImage('top', 'top.png'),
+            makePifImage('right', 'right.png', { eval_usable_as_carousel_extra: false }),
+          ],
+        },
+        runs: [],
+      },
+    });
+
+    let captured = null;
+    const handler = registerModuleSettingsRoutes({
+      jsonRes: (res, status, body) => { res.statusCode = status; res.body = body; return true; },
+      readJsonBody: async () => ({
+        settings: {
+          carouselScoredViews: '["top"]',
+          carouselOptionalViews: '["right"]',
+          carouselExtraTarget: '5',
+        },
+      }),
+      getSpecDb: () => fakeSpecDb,
+      broadcastWs: (_channel, payload) => { captured = payload; },
+      helperRoot: tmpDir,
+      productRoot,
+      appDb,
+    });
+
+    const res = makeRes();
+    await handler(['module-settings', 'mouse', 'productImageFinder'], {}, 'PUT', {}, res);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(upserted.length, 1);
+    assert.equal(upserted[0].priorityFilled, 2);
+    assert.equal(upserted[0].priorityTotal, 1);
+    assert.equal(upserted[0].loopFilled, 1);
+    assert.equal(upserted[0].loopTotal, 5);
+    assert.ok(captured.domains.includes('module-settings'));
+    assert.ok(captured.domains.includes('product-image-finder'));
+    assert.ok(captured.domains.includes('catalog'));
   });
 });

@@ -95,7 +95,7 @@ export function createFinderSqlStore({ db, category, module: mod, globalDb }) {
       ),
     } : {}),
     _insertRun: db.prepare(
-      `INSERT OR REPLACE INTO ${runsTableName} (category, product_id, run_number, ran_at, started_at, duration_ms, model, fallback_used, effort_level, access_mode, thinking, web_search, selected_json, prompt_json, response_json)
+      `INSERT INTO ${runsTableName} (category, product_id, run_number, ran_at, started_at, duration_ms, model, fallback_used, effort_level, access_mode, thinking, web_search, selected_json, prompt_json, response_json)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     ),
     _listRuns: db.prepare(

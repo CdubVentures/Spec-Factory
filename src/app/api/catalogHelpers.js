@@ -2,6 +2,7 @@ import { isReservedFieldKey } from '../../core/finder/finderExclusions.js';
 import { isConcreteEvidence } from '../../features/key/index.js';
 import { normalizeConfidence } from '../../features/publisher/index.js';
 import { resolveProductImageDependencyStatus } from '../../features/product-image/productImageIdentityDependencies.js';
+import { resolveCarouselViewSettings } from '../../features/product-image/carouselSlotSettings.js';
 
 function assertFunction(name, value) {
   if (typeof value !== 'function') {
@@ -101,34 +102,11 @@ function readPifTargets(specDb, category) {
   const heroEnabledRaw = finderStore.getSetting('heroEnabled');
   const heroEnabled = String(heroEnabledRaw ?? 'true') !== 'false';
   const heroCount = parseInt(finderStore.getSetting('heroCount') || '3', 10) || 3;
-
-  // Defaults are resolved in the runner via resolveViewConfig / resolveViewBudget.
-  // Here we parse the JSON blobs directly — catalog builder only needs counts,
-  // not the full descriptors, so we avoid importing from src/features/ into
-  // src/app/ and keep module boundaries clean.
-  const viewConfigRaw = finderStore.getSetting('viewConfig') || '';
-  const viewBudgetRaw = finderStore.getSetting('viewBudget') || '';
-
-  let priorityKeys = [];
-  try {
-    const parsed = JSON.parse(viewConfigRaw);
-    if (Array.isArray(parsed)) {
-      priorityKeys = parsed.filter((v) => v && v.priority === true).map((v) => v.key).filter(Boolean);
-    }
-  } catch { /* fall through */ }
-
-  let loopKeys = [];
-  try {
-    const parsed = JSON.parse(viewBudgetRaw);
-    if (Array.isArray(parsed)) loopKeys = parsed.filter(Boolean);
-  } catch { /* fall through */ }
-
-  const prioritySet = new Set(priorityKeys);
-  const loopExtras = loopKeys.filter((k) => !prioritySet.has(k));
+  const { carouselScoredViews, carouselExtraTarget } = resolveCarouselViewSettings({ finderStore, category });
 
   return {
-    priorityTotal: priorityKeys.length,
-    loopTotal: loopExtras.length,
+    priorityTotal: carouselScoredViews.length,
+    loopTotal: carouselExtraTarget,
     heroTarget: heroEnabled ? heroCount : 0,
   };
 }

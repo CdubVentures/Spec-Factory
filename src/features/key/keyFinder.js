@@ -30,7 +30,7 @@ import { resolveKeyFinderPifPriorityImageContext } from '../product-image/index.
 import { keyFinderResponseSchema } from './keySchema.js';
 import {
   listKeyFinderRuntimeRuns,
-  nextKeyFinderRunNumber,
+  reserveKeyFinderRunNumber,
   persistKeyFinderRunSqlFirst,
 } from './keyStore.js';
 import { readFloatKnob } from './keyBudgetCalc.js';
@@ -245,10 +245,11 @@ export async function runKeyFinder(opts) {
     productId: product.product_id,
     productRoot: resolvedProductRoot,
   });
-  const plannedRunNumber = nextKeyFinderRunNumber({
+  const plannedRunNumber = reserveKeyFinderRunNumber({
     specDb,
     productId: product.product_id,
     productRoot: resolvedProductRoot,
+    category: product.category,
     previousRuns,
   });
   const { urlsChecked, queriesRun } = accumulateDiscoveryLog(previousRuns, {

@@ -67,7 +67,7 @@ function buildSummaryContextSection() {
       },
       {
         kind: 'paragraph',
-        text: 'Use the matrix to find category coverage risk quickly, then open `.workspace/reports/per-prompt/<category>/<owner>/<prompt>.md` for the full variable map, default/effective template, compiled sample, and response schema.',
+        text: 'Use the matrix to find category coverage risk quickly, then open `.workspace/reports/<category>/per-prompt/<owner>/<prompt>.md` for the full variable map, default/effective template, compiled sample, and response schema.',
       },
     ],
   };

@@ -268,17 +268,26 @@
     "mcu": {
       "policy": "open_prefer_known",
       "values": [
+        "CompX CX52850",
         "Holtek HT32F52352",
         "Nordic nRF52832",
         "Nordic nRF52833",
         "Nordic nRF52840",
+        "Nordic nRF54H20",
+        "Nordic nRF54L15",
+        "Nuvoton M483",
         "Nuvoton M484SIDAE",
         "NXP LPC11U68",
         "NXP LPC54605J512",
+        "Realtek RTL8762G",
         "STM32F072CBU6",
         "STM32L412C8U6",
-        "TI CC2462R"
+        "Telink 8273"
       ]
+    },
+    "mouse_encoder_brands": {
+      "policy": "open",
+      "values": []
     },
     "mouse_sensor_brand": {
       "policy": "open",
@@ -330,6 +339,6 @@
       ]
     }
   },
-  "generated_at": "2026-04-27T06:35:43.515Z",
+  "generated_at": "2026-04-27T23:47:18.448Z",
   "version": 1
 }

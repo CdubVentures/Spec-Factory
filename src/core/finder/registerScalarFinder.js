@@ -102,6 +102,8 @@ export function registerScalarFinder(cfg = {}) {
     extractCandidate: extractCandidate || _defaultExtractCandidate(valueKey),
     mergeDiscovery: store.merge,
     readRuns: store.read,
+    writeRuns: store.write,
+    recalculateFromRuns: store.recalculateFromRuns,
     satisfactionPredicate: satisfactionPredicate || _defaultSatisfactionPredicate,
     buildPublisherMetadata,
     buildUserMessage,

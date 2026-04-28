@@ -53,7 +53,7 @@ import {
   useClearAllCarouselWinnersMutation,
   useDeleteEvalRecordMutation,
 } from '../api/productImageFinderQueries.ts';
-import type { ProductImageDependencyStatus, ProductImageEntry, GalleryImage } from '../types.ts';
+import type { ProductImageDependencyStatus, GalleryImage } from '../types.ts';
 import { pifHowItWorksSections } from '../pifHowItWorksContent.ts';
 import { ImageLightbox } from './ImageLightbox.tsx';
 import { imageServeUrl } from '../helpers/pifImageUrls.ts';
@@ -66,7 +66,7 @@ import {
   buildVariantList,
   buildGalleryImages,
   groupImagesByVariant,
-  resolveSlots,
+  derivePifCarouselAggregate,
   groupRunsByLoop,
   groupEvalsByVariant,
   buildExpandAllRunHistoryMaps,
@@ -426,25 +426,22 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
 
   // Aggregate carousel progress across all variants
   const carouselProgressMap = effectiveResult?.carouselProgress ?? {};
-  // Configured target slots stay as the fallback; resolved slots may grow with extras.
-  const configuredSlotsPerVariant = (pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle']).length
-    + (pifData?.carouselSettings?.heroEnabled ? 3 : 0);
+  const scoredViewSlots = pifData?.carouselSettings?.carouselScoredViews
+    ?? pifData?.carouselSettings?.viewBudget
+    ?? ['top', 'left', 'angle'];
+  const configuredViewSlots = pifData?.carouselSettings?.carouselSlotViews
+    ?? scoredViewSlots;
+  const configuredHeroCount = pifData?.carouselSettings?.heroEnabled
+    ? (pifData.carouselSettings.heroCount ?? 3)
+    : 0;
 
-  const carouselAgg = useMemo(() => {
-    if (variants.length === 0 || configuredSlotsPerVariant === 0) return { filled: 0, total: 0, allComplete: false };
-    // Count filled slots across all variant groups
-    const vb = pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle'];
-    const hc = pifData?.carouselSettings?.heroEnabled ? 3 : 0;
-    const cSlots = pifData?.carousel_slots ?? {};
-    let filled = 0;
-    let total = 0;
-    for (const group of imageGroups) {
-      const slots = resolveSlots(vb, hc, group.key, cSlots, group.images as ProductImageEntry[]);
-      filled += slots.filter(s => s.filename && s.filename !== '__cleared__').length;
-      total += Math.max(slots.length, configuredSlotsPerVariant);
-    }
-    return { filled, total, allComplete: filled >= total };
-  }, [imageGroups, variants, configuredSlotsPerVariant, pifData]);
+  const carouselAgg = useMemo(() => derivePifCarouselAggregate({
+    imageGroups,
+    variants,
+    carouselSlots: pifData?.carousel_slots ?? {},
+    scoredViewSlots,
+    carouselSlotViews: configuredViewSlots,
+  }), [imageGroups, variants, pifData?.carousel_slots, scoredViewSlots, configuredViewSlots]);
 
   const kpiCards: KpiCard[] = [
     { label: 'Images', value: String(imageCount), tone: 'accent' },
@@ -671,8 +668,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                     group={group}
                     editions={editions}
                     hexMap={hexMap}
-                    viewBudget={pifData?.carouselSettings?.viewBudget ?? ['top', 'left', 'angle']}
-                    heroCount={pifData?.carouselSettings?.heroEnabled ? 3 : 0}
+                    viewBudget={configuredViewSlots}
+                    heroCount={configuredHeroCount}
                     carouselSlots={pifData?.carousel_slots ?? {}}
                     carouselProgressMap={carouselProgressMap}
                     isOpen={!!pifImageGroupExpand[group.key]}

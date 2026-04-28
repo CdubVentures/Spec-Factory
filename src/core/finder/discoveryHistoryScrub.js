@@ -83,6 +83,114 @@ function writeFinderJson({ productRoot, productId, filePrefix, data }) {
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2), 'utf8');
 }
 
+function cloneJson(value) {
+  if (value === null || value === undefined) return value;
+  return JSON.parse(JSON.stringify(value));
+}
+
+function canReadSqlRuns(sqlStore) {
+  return typeof sqlStore?.listRuns === 'function';
+}
+
+function canUpdateSqlRunJson(sqlStore) {
+  return typeof sqlStore?.updateRunJson === 'function';
+}
+
+function readSqlHistory({ sqlStore, productId }) {
+  if (!canReadSqlRuns(sqlStore)) {
+    return { hasSqlHistory: false, runs: [], summary: null };
+  }
+  const runs = sqlStore.listRuns(productId);
+  const summary = typeof sqlStore?.get === 'function'
+    ? sqlStore.get(productId)
+    : null;
+  const normalizedRuns = Array.isArray(runs) ? runs : [];
+  return {
+    hasSqlHistory: normalizedRuns.length > 0 || Boolean(summary),
+    runs: normalizedRuns,
+    summary,
+  };
+}
+
+function normalizeRunForMirror(run) {
+  const cloned = cloneJson(run) || {};
+  delete cloned.category;
+  delete cloned.product_id;
+  delete cloned.selected_json;
+  delete cloned.prompt_json;
+  delete cloned.response_json;
+  return cloned;
+}
+
+function sortRuns(runs) {
+  return [...runs].sort((a, b) => (Number(a?.run_number) || 0) - (Number(b?.run_number) || 0));
+}
+
+function buildMirrorDoc({ existingDoc, productId, summary, runs }) {
+  const sortedRuns = sortRuns(runs);
+  const latestRun = sortedRuns[sortedRuns.length - 1] || null;
+  const maxRunNumber = sortedRuns.reduce(
+    (max, run) => Math.max(max, Number(run?.run_number) || 0),
+    0,
+  );
+  const existingNextRunNumber = Number(existingDoc?.next_run_number) || 0;
+  const base = existingDoc
+    ? { ...existingDoc }
+    : {
+      product_id: summary?.product_id || productId || '',
+      category: summary?.category || '',
+      selected: {},
+    };
+
+  return {
+    ...base,
+    product_id: base.product_id || summary?.product_id || productId || '',
+    category: base.category || summary?.category || '',
+    last_ran_at: latestRun?.ran_at || summary?.latest_ran_at || base.last_ran_at || '',
+    run_count: sortedRuns.length,
+    next_run_number: Math.max(existingNextRunNumber, maxRunNumber + 1, 1),
+    runs: sortedRuns,
+  };
+}
+
+function scrubRuns({ runs, scope, request, kind }) {
+  const affectedRunNumbers = [];
+  const touchedRuns = [];
+  let urlsRemoved = 0;
+  let queriesRemoved = 0;
+
+  const scrubbedRuns = runs.map((sourceRun) => {
+    const run = normalizeRunForMirror(sourceRun);
+    if (!runMatchesScope(run, scope, request)) return run;
+    const runResult = scrubRun(run, kind);
+    if (!runResult.changed) return run;
+    urlsRemoved += runResult.urlsRemoved;
+    queriesRemoved += runResult.queriesRemoved;
+    affectedRunNumbers.push(run.run_number);
+    touchedRuns.push(run);
+    return run;
+  });
+
+  return {
+    changed: affectedRunNumbers.length > 0,
+    affectedRunNumbers,
+    touchedRuns,
+    scrubbedRuns,
+    urlsRemoved,
+    queriesRemoved,
+  };
+}
+
+function writeSqlRunUpdates({ sqlStore, productId, touchedRuns }) {
+  if (!canUpdateSqlRunJson(sqlStore)) return;
+  for (const run of touchedRuns) {
+    sqlStore.updateRunJson(productId, run.run_number, {
+      selected: run.selected || {},
+      response: run.response || {},
+    });
+  }
+}
+
 function variantMatches(response, request) {
   if (!response) return false;
   if (request.variantId && response.variant_id === request.variantId) return true;
@@ -176,44 +284,36 @@ export function scrubFinderDiscoveryHistory({
     queriesRemoved: 0,
     affectedRunNumbers: [],
   };
-  if (!doc) return emptyResult;
 
   const sqlStore = specDb?.getFinderStore?.(module.id);
-  const affectedRunNumbers = [];
-  const touchedRuns = [];
-  let urlsRemoved = 0;
-  let queriesRemoved = 0;
-  let changed = false;
-  const runs = Array.isArray(doc.runs) ? doc.runs : [];
+  const sqlHistory = readSqlHistory({ sqlStore, productId });
+  if (!doc && !sqlHistory.hasSqlHistory) return emptyResult;
 
-  for (const run of runs) {
-    if (!runMatchesScope(run, scope, request)) continue;
-    const runResult = scrubRun(run, kind);
-    if (!runResult.changed) continue;
-    changed = true;
-    urlsRemoved += runResult.urlsRemoved;
-    queriesRemoved += runResult.queriesRemoved;
-    affectedRunNumbers.push(run.run_number);
-    touchedRuns.push(run);
+  const sourceRuns = sqlHistory.hasSqlHistory
+    ? sqlHistory.runs
+    : (Array.isArray(doc?.runs) ? doc.runs : []);
+  const scrubbed = scrubRuns({ runs: sourceRuns, scope, request, kind });
+
+  if (scrubbed.changed && sqlHistory.hasSqlHistory && !canUpdateSqlRunJson(sqlStore)) {
+    throw new Error(`discovery history scrub requires SQL updateRunJson for ${module.id || 'finder'}`);
   }
 
-  if (changed) {
-    writeFinderJson({ productRoot: root, productId, filePrefix: module.filePrefix, data: doc });
-    if (typeof sqlStore?.updateRunJson === 'function') {
-      for (const run of touchedRuns) {
-        sqlStore.updateRunJson(productId, run.run_number, {
-          selected: run.selected || {},
-          response: run.response || {},
-        });
-      }
-    }
+  if (scrubbed.changed) {
+    writeSqlRunUpdates({ sqlStore, productId, touchedRuns: scrubbed.touchedRuns });
+    const mirrorDoc = buildMirrorDoc({
+      existingDoc: doc,
+      productId,
+      summary: sqlHistory.summary,
+      runs: scrubbed.scrubbedRuns,
+    });
+    writeFinderJson({ productRoot: root, productId, filePrefix: module.filePrefix, data: mirrorDoc });
   }
 
   return {
     ...emptyResult,
-    runsTouched: affectedRunNumbers.length,
-    urlsRemoved,
-    queriesRemoved,
-    affectedRunNumbers,
+    runsTouched: scrubbed.affectedRunNumbers.length,
+    urlsRemoved: scrubbed.urlsRemoved,
+    queriesRemoved: scrubbed.queriesRemoved,
+    affectedRunNumbers: scrubbed.affectedRunNumbers,
   };
 }

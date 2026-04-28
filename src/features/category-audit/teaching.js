@@ -1,5 +1,5 @@
 /**
- * Part 1 — the teaching. Static prose explaining the keyFinder pipeline end
+ * Part 1 â€” the teaching. Static prose explaining the keyFinder pipeline end
  * to end, so an auditor reading the report understands the full context before
  * they evaluate per-key data blocks.
  *
@@ -16,111 +16,109 @@
 import { KEY_FINDER_VARIABLES } from '../key/keyFinderPromptContract.js';
 
 const AUDITOR_TASK_BODY = `
-You are auditing every field in this category's keyFinder pipeline. Your deliverable is a Change Report that a human owner can apply directly into Field Studio. Be specific: exact strings to paste are infinitely more useful than "add better guidance here".
+You are auditing every field in this category's keyFinder pipeline. Your deliverable is a set of strict Field Studio JSON patch files that a human owner can import directly. Be specific: exact JSON settings are infinitely more useful than "add better guidance here".
 
-**Read order:** Part 1 (the system) → Part 1a (Audit standard, the bar) → Part 4 (enum inventory — biggest lever) → Part 5 (component DB) → Part 6 (groups) → Part 7 (per-key detail).
+**Read order:** Part 1 (the system) -> Part 1a (Audit standard, the bar) -> Part 4 (enum inventory, biggest lever) -> Part 5 (component source mapping context) -> Part 6 (groups) -> Part 7 (per-key detail).
 
-**Your response leads with a downloadable text file**, then the top 5–10 must-fix items (the "Highest-risk corrections" block below). Then field-by-field patches. Then category-level asks. Then flags/open questions.
+**Your response leads with downloadable JSON patch files**, then the top 5-10 must-fix items (the "Highest-risk corrections" block below). Then field-by-field rationale. Then category-level asks. Then flags/open questions.
 
-**Downloadable text file comes first.** At the very top of your response, provide a downloadable \`.txt\` file named \`<category>-keyfinder-field-studio-changes.txt\` if your interface supports file attachments. If it does not, provide the exact file contents in a fenced \`text\` block before the normal report. Keep this file short, direct, and ordered exactly like Field Studio so the human can apply changes panel by panel.
+**Downloadable JSON patch files come first.** At the very top of your response, provide one downloadable \`.json\` file per changed key, named \`<category>-<sort_order>-<field_key>.field-studio-patch.v1.json\`. The human will place these files in \`.workspace/reports/<category>/auditors-responses/\` and import the folder. If your interface cannot attach files, provide one fenced \`json\` block per file, preceded by its filename. Do not return a \`.txt\` change file.
+
+Returned JSON must be strict and importable:
+
+\`\`\`json
+{
+  "schema_version": "field-studio-patch.v1",
+  "category": "<category>",
+  "field_key": "<field_key>",
+  "navigator_ordinal": 10,
+  "verdict": "minor_revise",
+  "patch": {
+    "field_overrides": {
+      "<field_key>": {
+        "priority": {
+          "required_level": "mandatory",
+          "availability": "always",
+          "difficulty": "medium"
+        },
+        "contract": {
+          "type": "string",
+          "shape": "scalar"
+        },
+        "enum": {
+          "policy": "open_prefer_known",
+          "source": "data_lists.<field_key>"
+        },
+        "ai_assist": {
+          "variant_inventory_usage": {
+            "enabled": false
+          },
+          "pif_priority_images": {
+            "enabled": false
+          },
+          "reasoning_note": "Paste-ready extraction guidance."
+        }
+      }
+    },
+    "data_lists": [
+      {
+        "field": "<field_key>",
+        "mode": "manual",
+        "normalize": "lower_trim",
+        "manual_values": []
+      }
+    ],
+    "component_sources": [
+      {
+        "component_type": "sensor",
+        "roles": {
+          "properties": [
+            {
+              "field_key": "<field_key>",
+              "variance_policy": "authoritative"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "audit": {
+    "sources_checked": [],
+    "products_checked": [],
+    "conclusion": "",
+    "open_questions": []
+  }
+}
+\`\`\`
+
+JSON rules:
+- Use \`schema_version: "field-studio-patch.v1"\` exactly.
+- Use one file per changed key. Skip fields whose settings stay as-is; list those keep verdicts only in the prose report.
+- \`patch\` may contain only \`field_overrides\`, \`data_lists\`, and \`component_sources\`.
+- \`field_overrides\` may patch only its own \`field_key\`.
+- \`data_lists\` rows must use the same \`field\` as \`field_key\`.
+- \`component_sources\` rows must either define the component type itself or include the field in \`roles.properties\`.
+- Omit unchanged setting paths entirely. \`null\` clears a setting. Arrays replace arrays. Objects deep-merge.
+- Do not include comments, markdown, trailing commas, prose sentinels, or implementation notes inside JSON.
+
+Mapping Studio guidance:
+- Component Source Mapping belongs under \`patch.component_sources\`. Use it for component source/type, primary identifier role, maker role, aliases/name variants, reference URLs/links, component _link fields, and property variance. A component _link field should point to a manufacturer component page, datasheet/spec-sheet PDF, or authorized component distributor page; not eBay, forums, or pages that merely mention the component.
+- Enum Data Lists belong under \`patch.data_lists\`. Return the final ordered canonical values when replacing a list; keep aliases/source phrases out of public chips.
+
+Key Navigator guidance:
+- Field contract, priority, evidence, enum policy, constraints, aliases, search_hints, and ai_assist belong under \`patch.field_overrides.<field_key>\`.
+- Use \`ai_assist.variant_inventory_usage\` only when variant identity helps reject wrong-variant evidence without ambiguity.
+- Use \`ai_assist.pif_priority_images\` only when default/base priority-view images add visual evidence value.
+- Put final paste-ready prompt guidance in \`ai_assist.reasoning_note\`.
+
+After the JSON files, include the markdown report shape below.
 
 ---
 
-**Return format (markdown — mirror this shape exactly):**
+**Return format (markdown, mirror this shape exactly after the JSON files):**
 
 \`\`\`markdown
-# Downloadable text file
-
-Filename: \`<category>-keyfinder-field-studio-changes.txt\`
-
-\`\`\`text
-# <CATEGORY> KEYFINDER FIELD STUDIO CHANGE FILE
-# Use "No change" when the current value is already correct. Leave blanks only when the target value should be blank.
-# Apply in this order: Mapping Studio first, then Key Navigator.
-# Enum list values are edited in Mapping Studio. Key Navigator Enum Policy only links policy, source, and format.
-# Start each field section with the Key Navigator sort number, e.g. 10-connection.
-
-## <sort_order>-<field_key> — <Keep | Minor revise | Major revise | Schema decision>
-
-Mapping Studio:
-
-Component Source Mapping:
-- component source/type: <component type|other|blank|No change>
-- primary identifier role: <source field / attribute / No change>
-- maker role: <source field / blank / No change>
-- aliases/name variants: <ordered list, blank, or No change>
-- reference URLs/links: <ordered list, blank, or No change>
-- component _link fields: for fields such as sensor_link, encoder_link, switch_link, or mcu_link, reference URLs/links must target the exact component's own manufacturer component page, datasheet/spec-sheet PDF, support PDF, or maker documentation. If no maker source exists, an authorized component distributor/supplier page for the exact component is acceptable as a fallback. Do not use product pages, reviews, or consumer marketplaces; not eBay-style marketplaces, random resale listings, forum posts, or articles that merely mention the component. If no component-level source exists, say so in References spot-checked/open questions.
-- attributes/properties:
-  - field_key: <field key | No change>
-  - variance_policy: <authoritative|upper_bound|lower_bound|range|override_allowed|majority_vote|blank|No change>
-  - component_only: <true|false|No change>
-  - allow product override: <true|false|No change>
-  - tolerance: <number | blank | No change>
-  - property constraints: <ordered list, blank, or No change>
-
-Enum Data Lists:
-- data list field/name: <data list name | blank | No change>
-- normalize: <normalize mode | blank | No change>
-- values operation: <replace list|add values|remove values|rename values|No change>
-- final ordered values: <ordered canonical list, blank, or No change>
-- remove values: <ordered list, or none>
-- rename values: <old -> new list, or none>
-- source phrases/aliases to keep out of chips: <list, or none>
-- AI review priority: <required_level / availability / difficulty, or No change>
-- enum guidance: <short note, or No change>
-
-Key Navigator:
-
-Contract:
-- variant_dependent: <true|false|No change>
-- type: <string|number|integer|boolean|date|No change>
-- shape: <scalar|list|No change>
-- unit: <target value | blank | No change>
-- variance_policy: <authoritative|upper_bound|lower_bound|majority_vote|blank|No change>
-- range.min: <number | blank | No change>
-- range.max: <number | blank | No change>
-- list_rules.dedupe: <true|false|blank|No change>
-- list_rules.sort: <asc|desc|source|blank|No change>
-- list_rules.item_union: <true|false|blank|No change>
-- rounding.decimals: <number | blank | No change>
-- rounding.mode: <nearest|floor|ceil|half_even|blank|No change>
-
-Extraction Priority & Guidance:
-- required_level: <mandatory|non_mandatory|No change>
-- availability: <always|sometimes|rare|No change>
-- difficulty: <easy|medium|hard|very_hard|No change>
-- search/routing reason: <one short reason tied to benchmark-depth extraction and model/search strength>
-- Variant inventory context: <enabled|disabled|No change> (enable only when variant identity adds evidence-filter value without ambiguity)
-- PIF Priority Images: <enabled|disabled|No change> (enable only when default/base priority-view images add visual evidence value)
-- AI reasoning note: <paste-ready ai_assist.reasoning_note, "(empty - keep)", or No change>
-
-Enum Policy:
-- policy: <closed|open_prefer_known|open|blank|No change>
-- source: <data_lists.name|component_db.type|blank|No change>
-- format pattern: <pattern | blank | No change>
-- note: <actual enum list values live in Mapping Studio Enum Data Lists; use No change if already understood>
-
-Components:
-- component.type: <component type | blank | No change>
-- component source cascade: <enum.source/component_db linkage | blank | No change>
-- component mapping note: <property and variance edits belong in Mapping Studio Component Source Mapping, or No change>
-
-Cross-Field Constraints:
-- constraints: <ordered list, blank, or No change>
-
-Evidence:
-- min_evidence_refs: <number | No change>
-- tier_preference: <ordered list | blank | No change>
-
-Search Hints & Aliases:
-- Aliases: <ordered alias list, blank, or No change>
-- Domain Hints: <ordered list, blank, or No change>
-- Content Types: <ordered list, blank, or No change>
-- Query Terms: <ordered list, blank, or No change>
-\`\`\`
-
-# <Category> Key Finder Audit — Change Report
+# <Category> Key Finder Audit â€” Change Report
 
 ## Verdict
 
@@ -129,13 +127,13 @@ Search Hints & Aliases:
 ## Coverage
 
 - Fields audited: <N>
-- Verdict distribution: Keep <n> · Minor revise <n> · Major revise <n> · Schema decision <n>
+- Verdict distribution: Keep <n> Â· Minor revise <n> Â· Major revise <n> Â· Schema decision <n>
 - Enums reviewed: <N> (of which <n> patternless / <n> suspicious)
 - Component DBs reviewed: <N>
 
 ## Audit standard
 
-<restate, in your own words, the standard you applied from Part 1a — so the reader can judge your judgment>
+<restate, in your own words, the standard you applied from Part 1a â€” so the reader can judge your judgment>
 
 ## References spot-checked
 
@@ -143,15 +141,15 @@ Search Hints & Aliases:
 
 ## Highest-risk corrections
 
-<5–10 bullets, most impactful first. Each: one field or category-level item, one sentence on what's wrong + what to do. These are the items the human owner would apply tonight if they only had 15 minutes.>
+<5â€“10 bullets, most impactful first. Each: one field or category-level item, one sentence on what's wrong + what to do. These are the items the human owner would apply tonight if they only had 15 minutes.>
 
 ## Field-by-field patches
 
 ### <Group display name> (N keys)
 
-#### \`<sort_order>-<field_key>\` — <Keep | Minor revise | Major revise | Schema decision>
+#### \`<sort_order>-<field_key>\` â€” <Keep | Minor revise | Major revise | Schema decision>
 
-- **Type / shape:** <type> · <scalar|list>
+- **Type / shape:** <type> Â· <scalar|list>
 - **Priority / scheduling:** <required_level / availability / difficulty changes, or "none">
 - **Search / routing:** <required_level / availability / difficulty verdict; whether the resolved model/search strength is enough to reproduce benchmark-depth values from public evidence>
 - **Full contract:** <changes to required_level/availability/difficulty/type/shape/unit/rounding/list_rules/range/variance_policy/evidence, or "none">
@@ -162,8 +160,8 @@ Search Hints & Aliases:
 - **- Current guidance**
   > <verbatim current \`reasoning_note\`, or "(empty)">
 - **+ Proposed guidance**
-  > <new text — paste-ready. Use "(empty — keep)" if existing is fine and no guidance is needed.>
-- **Enum:** <proposed delta — add / remove / rename — with rationale, or "keep">
+  > <new text â€” paste-ready. Use "(empty â€” keep)" if existing is fine and no guidance is needed.>
+- **Enum:** <proposed delta â€” add / remove / rename â€” with rationale, or "keep">
   - **Pattern:** <proposed regex-like shape (e.g. \`<N> zone (rgb|led)\`), or "no pattern recommended">
 - **Contract:** <changes to type/shape/unit/rounding/list_rules/range/variance_policy, or "none">
 - **Aliases:** <additions, or "none">
@@ -199,12 +197,12 @@ Search Hints & Aliases:
 
 **What's explicitly in scope:**
 
-1. **Enum discipline is the single biggest lever.** Every non-numeric enum value becomes a filter chip on the consumer site — so value count and pattern consistency directly drive usability. Lead with this in your Highest-risk block.
-2. **Pattern before policy.** An enum with a dominant structural signature (≥70% of values conform, per Part 4) is usable even at 20+ values. Freeform enums fail at much lower counts.
-3. **Target value counts (Part 1.6):** ≤10 healthy, 11–15 fine, 16–20 tolerable, 21–30 filter fatigue, 30+ broken. Call out where each enum sits now vs where it should sit.
+1. **Enum discipline is the single biggest lever.** Every non-numeric enum value becomes a filter chip on the consumer site â€” so value count and pattern consistency directly drive usability. Lead with this in your Highest-risk block.
+2. **Pattern before policy.** An enum with a dominant structural signature (â‰¥70% of values conform, per Part 4) is usable even at 20+ values. Freeform enums fail at much lower counts.
+3. **Target value counts (Part 1.6):** â‰¤10 healthy, 11â€“15 fine, 16â€“20 tolerable, 21â€“30 filter fatigue, 30+ broken. Call out where each enum sits now vs where it should sit.
 4. **Guidance is last.** Confirm \`priority.required_level\`, \`priority.availability\`, \`priority.difficulty\`, \`contract.type\`, \`contract.shape\`, enum/filter behavior, evidence requirements, and example coverage before writing \`reasoning_note\`. The prompt can only execute perfectly after the field contract is correct.
-5. **Contract changes with consequences stated.** When you propose changing \`required_level\`/\`availability\`/\`difficulty\`/\`type\`/\`shape\`/\`unit\`/\`rounding\`/\`list_rules\`/\`range\`/\`variance_policy\`/\`evidence\`, explain the extraction + filter-UI + routing consequence (Part 1.4–1.5 language).
-6. **Extraction guidance (\`reasoning_note\`) is the final editable slot per key.** Keep it to Part 1.15's "FOR" scope — visual cues, semantic disambiguation, field-specific gotchas, rebrand rules, "don't confuse with X" anchors. Do NOT duplicate anything already rendered by the template slots in Part 2. If existing guidance duplicates slot content, propose shortening.
+5. **Contract changes with consequences stated.** When you propose changing \`required_level\`/\`availability\`/\`difficulty\`/\`type\`/\`shape\`/\`unit\`/\`rounding\`/\`list_rules\`/\`range\`/\`variance_policy\`/\`evidence\`, explain the extraction + filter-UI + routing consequence (Part 1.4â€“1.5 language).
+6. **Extraction guidance (\`reasoning_note\`) is the final editable slot per key.** Keep it to Part 1.15's "FOR" scope â€” visual cues, semantic disambiguation, field-specific gotchas, rebrand rules, "don't confuse with X" anchors. Do NOT duplicate anything already rendered by the template slots in Part 2. If existing guidance duplicates slot content, propose shortening.
 7. **Cross-field constraints are live prompt inputs.** Constraints authored as \`constraints\` DSL or structured \`cross_field_constraints\` render into the keyFinder prompt. Audit whether each relationship is correct, whether the target field is the right authority, and whether group membership should change because of the dependency.
 8. **No contract change is a real verdict.** Do not invent schema edits just to leave a mark. If the current contract is correct, say "no contract change" and focus on the actual improvement: guidance, examples, aliases, enum cleanup, search hints, or a clean keep decision.
 9. **Unknown and not-applicable are different.** Boolean is not automatically enough. Use yes/no or true/false only for factual two-state values. Never add \`unk\` to enum values: it is an internal LLM sentinel that should become status/unknown_reason with no submitted value. Use \`n/a\` as data only when not-applicable is deliberately stored or public; otherwise prefer blank/omitted.
@@ -212,7 +210,7 @@ Search Hints & Aliases:
 11. **Variant inventory context is a single on/off checkbox, not a prose field.** Enable it only when active variant identity facts such as colorway, edition, SKU, release date, or PIF image status add evidence-filter value for this key without making the answer more ambiguous. Most model-level keys are invariant across variants and should not need the table. List-valued or variant-varying keys need an explicit decision: product-wide union, exact-variant answer, base/default variant answer, or no submitted value with unknown_reason when sources do not separate variants.
 12. **PIF Priority Images is also a single on/off checkbox.** Enable it only for visually answerable keys where the category's default/base priority-view images help the LLM see the trait. The images are supporting context, not exhaustive proof. If images are missing or not attachable, the prompt must say so explicitly. Default/base images cannot rule out edition-specific traits; put any product-scoped edition/list interpretation in \`reasoning_note\`.
 
-**Out of scope — surface, don't decide:**
+**Out of scope â€” surface, don't decide:**
 
 - Deleting fields outright (human product call).
 - Changing which finder owns a reserved key (CEF / RDF / SKF ownership is architectural).
@@ -220,10 +218,10 @@ Search Hints & Aliases:
 
 **Quality bar for guidance rewrites:**
 
-- **Paste-ready.** The \`+ Proposed guidance\` blockquote should be the exact string the human will copy into Field Studio. No "consider adding…" meta-text.
+- **Paste-ready.** The \`+ Proposed guidance\` blockquote should be the exact string the human will copy into Field Studio. No "consider addingâ€¦" meta-text.
 - **Specific.** "Extract the official manufacturer MPN for the exact variant; prefer brand SKU over retailer ASIN" beats "be more specific about SKU source".
-- **Visual cues name the view — and for subtle calls, teach the judgment.** The Audit standard's "Visual-answerable fields" section grades fields as Tier A (direct), Tier B (subtle), or Tier C (non-visual). For Tier A, one sentence naming the view + feature is enough. For Tier B, write 2-4 sentences that define the visible feature precisely, give threshold or relative-measurement rules, and say when to return \`unk\`. This is where \`reasoning_note\` earns its keep. For Tier C, don't mention views at all; those are spec-sheet, datasheet, support-doc, component, or lab-measurement extractions.
-- **Web search is expected.** You have live internet access. Use it to: calibrate enum values against 3–5 real products before proposing a canonical list; verify that a current industry term still means what you think (technologies get rebranded); and spot-check any technical claim in proposed guidance. Cite the sources you checked under "References spot-checked".
+- **Visual cues name the view â€” and for subtle calls, teach the judgment.** The Audit standard's "Visual-answerable fields" section grades fields as Tier A (direct), Tier B (subtle), or Tier C (non-visual). For Tier A, one sentence naming the view + feature is enough. For Tier B, write 2-4 sentences that define the visible feature precisely, give threshold or relative-measurement rules, and say when to return \`unk\`. This is where \`reasoning_note\` earns its keep. For Tier C, don't mention views at all; those are spec-sheet, datasheet, support-doc, component, or lab-measurement extractions.
+- **Web search is expected.** You have live internet access. Use it to: calibrate enum values against 3â€“5 real products before proposing a canonical list; verify that a current industry term still means what you think (technologies get rebranded); and spot-check any technical claim in proposed guidance. Cite the sources you checked under "References spot-checked".
 - **Evidence-grounded.** When a claim depends on an external fact (chip lineage, certification tier, firmware format), spot-check a live source and list it under "References spot-checked". Prefer manufacturer docs + standards bodies + instrumented review labs.
 - **UNK-safe.** Proposed guidance must never weaken the honest-unk policy. "Default to No" is a smell; "return unk when evidence is absent" is correct.
 `.trim();
@@ -245,40 +243,40 @@ This is the bar you apply when judging every cell in Part 7. Read it, then read 
 
 **Unknown / not-applicable discipline:** Boolean is not automatically enough. Use yes/no or true/false only when the field has two factual states and not-applicable is not a stored outcome. Never add \`unk\` to enum values, data lists, or published field values. \`unk\` is an LLM boundary sentinel: Key Finder should store status/unknown_reason for diagnostics and produce no submitted value. Use \`n/a\` only when not-applicable is intentionally stored or shown as a first-class value; otherwise prefer blank/omitted as no submitted value. Applicability is not the same as value: \`battery_hours\` should be numeric when hours are proven, and blank/omitted when the product has no battery/wired-only or credible sources do not prove the hours, unless the category explicitly wants a public \`n/a\` state. Do not remodel that as a boolean just because the first decision is "has a battery?"
 
-**Visual-answerable fields — a spectrum, not a binary. Guidance pays off most in the middle.**
+**Visual-answerable fields â€” a spectrum, not a binary. Guidance pays off most in the middle.**
 
 Fields decided from product photography fall on a spectrum. Treat each tier differently when authoring \`+ Proposed guidance\`:
 
-**Tier A — direct visual.** Decidable from a single photo in seconds; the answer is a literal visible feature. Guidance is short: name the view + the feature.
-- visible opening/perforation/port/vent present — priority view: visible yes/no.
-- visible control/count field — count the clearly visible controls, ports, zones, or panels named by the key.
-- basic symmetry/orientation field — compare the relevant visible left/right or front/back product sides.
-- visible branding/edition marker — record only when the official image or source identity proves the field's class.
+**Tier A â€” direct visual.** Decidable from a single photo in seconds; the answer is a literal visible feature. Guidance is short: name the view + the feature.
+- visible opening/perforation/port/vent present â€” priority view: visible yes/no.
+- visible control/count field â€” count the clearly visible controls, ports, zones, or panels named by the key.
+- basic symmetry/orientation field â€” compare the relevant visible left/right or front/back product sides.
+- visible branding/edition marker â€” record only when the official image or source identity proves the field's class.
 
-**Tier B — subtle visual. Judgment call that NEEDS real guidance.** This is where \`reasoning_note\` earns its keep. The reviewer's job is to write guidance that teaches how to make the subtle call — not just "look at the profile view." Describe the feature precisely, give thresholds or relative measurements, name reference products as calibration anchors when stable, and say when to \`unk\` rather than guess.
+**Tier B â€” subtle visual. Judgment call that NEEDS real guidance.** This is where \`reasoning_note\` earns its keep. The reviewer's job is to write guidance that teaches how to make the subtle call â€” not just "look at the profile view." Describe the feature precisely, give thresholds or relative measurements, name reference products as calibration anchors when stable, and say when to \`unk\` rather than guess.
 
-- proportional shape/location field — define the reference axis, the measurement point, and the threshold between buckets.
-- contour/taper/flare field — say whether to judge the front, rear, side, or full visible face, and how to handle compound curves.
-- intended-use/fit field — combine visual evidence with official positioning and return unk when the source does not prove the intended class.
-- symmetry/orientation field with controls — require both visible geometry and functional/control evidence when the key's meaning depends on both.
+- proportional shape/location field â€” define the reference axis, the measurement point, and the threshold between buckets.
+- contour/taper/flare field â€” say whether to judge the front, rear, side, or full visible face, and how to handle compound curves.
+- intended-use/fit field â€” combine visual evidence with official positioning and return unk when the source does not prove the intended class.
+- symmetry/orientation field with controls â€” require both visible geometry and functional/control evidence when the key's meaning depends on both.
 
-**Tier C — not visual.** Text / spec-sheet / datasheet extraction. Visual guidance adds no value and can mislead — don't include a view instruction. Examples: component model, component maker, supported rates, maximum rating, internal controller, release date, connection method, battery life, firmware/support feature names.
+**Tier C â€” not visual.** Text / spec-sheet / datasheet extraction. Visual guidance adds no value and can mislead â€” don't include a view instruction. Examples: component model, component maker, supported rates, maximum rating, internal controller, release date, connection method, battery life, firmware/support feature names.
 
 **When writing a \`+ Proposed guidance\` blockquote:**
 
-- Tier A fields → one sentence naming the view + feature. Short.
-- Tier B fields → 2–4 sentences: name the view, define the visible feature precisely, give relative/threshold rules so the call is repeatable, name when to return \`unk\`. Optionally reference a stable, non-rebranding anchor product as a calibration example (avoid model-year-specific examples that age out).
-- Tier C fields → no view mention. Guidance focuses on source tiering, semantic disambiguation, or rebrand/alias rules.
+- Tier A fields â†’ one sentence naming the view + feature. Short.
+- Tier B fields â†’ 2â€“4 sentences: name the view, define the visible feature precisely, give relative/threshold rules so the call is repeatable, name when to return \`unk\`. Optionally reference a stable, non-rebranding anchor product as a calibration example (avoid model-year-specific examples that age out).
+- Tier C fields â†’ no view mention. Guidance focuses on source tiering, semantic disambiguation, or rebrand/alias rules.
 
-**Web search is expected.** Reviewers have live internet access. When uncertain about a spec's meaning, an enum value's taxonomy, whether a feature is visually decidable, or what a current industry term refers to (e.g. "flawless sensor", "rapid trigger", "FRL"), search. When proposing enum values or patterns, validate against 3–5 real products so the proposal reflects market vocabulary, not an isolated example. Cite authoritative sources in the "References spot-checked" block for any technical claim in the guidance.
+**Web search is expected.** Reviewers have live internet access. When uncertain about a spec's meaning, an enum value's taxonomy, whether a feature is visually decidable, or what a current industry term refers to (e.g. "flawless sensor", "rapid trigger", "FRL"), search. When proposing enum values or patterns, validate against 3â€“5 real products so the proposal reflects market vocabulary, not an isolated example. Cite authoritative sources in the "References spot-checked" block for any technical claim in the guidance.
 
 **Enum discipline (the biggest lever):**
 
-- **Value count is a UX metric.** ≤10 healthy, 11–15 fine, 16–20 tolerable, 21–30 filter fatigue, 30+ broken. Any enum in the 21+ range is a high-priority cleanup target.
-- **Pattern > free-form.** An open enum with ≥70% values matching a common structural signature (\`<N> zone (rgb|led)\`, \`<maker> <model>\`) scales gracefully; a free-form open enum doesn't.
+- **Value count is a UX metric.** â‰¤10 healthy, 11â€“15 fine, 16â€“20 tolerable, 21â€“30 filter fatigue, 30+ broken. Any enum in the 21+ range is a high-priority cleanup target.
+- **Pattern > free-form.** An open enum with â‰¥70% values matching a common structural signature (\`<N> zone (rgb|led)\`, \`<maker> <model>\`) scales gracefully; a free-form open enum doesn't.
 - **Closed policy when finite.** If the set is small, stable, and every new value should be a human decision, \`policy: closed\` is right.
 - **Canonical values are not aliases.** Enum values are the stored/user-facing options. Source phrases, retailer wording, SKU suffixes, and marketing names belong in aliases or guidance unless the user should actually see them as filter chips.
-- **No garbage values.** Single-character entries, numeric-only strings in categorical enums, typos — flag them every time.
+- **No garbage values.** Single-character entries, numeric-only strings in categorical enums, typos â€” flag them every time.
 
 **Guidance (\`ai_assist.reasoning_note\`) discipline:**
 
@@ -291,30 +289,30 @@ Fields decided from product photography fall on a spectrum. Treat each tier diff
 **Contract discipline:**
 
 - \`type\` and \`shape\` match the consumer surface rendering (Part 1.5). A string in a numeric context will render the wrong filter control.
-- \`unit\` is storage contract, not label — numeric values stored unit-less, unit applied at render.
+- \`unit\` is storage contract, not label â€” numeric values stored unit-less, unit applied at render.
 - \`rounding\` set whenever precision matters for equality comparison (index-level consistency).
 - Numeric lists with meaningful order declare \`list_rules.sort\` (for example, highest-supported rates first).
 - \`range\` set on numerics the LLM would otherwise fantasize about.
 
 **Evidence discipline:**
 
-- Identity-anchoring fields should usually have \`evidence.min_evidence_refs >= 2\` — two independent sources before accepting a value.
-- \`tier_preference\` ordered from most authoritative to least (manufacturer → instrumented lab → review → retailer).
+- Identity-anchoring fields should usually have \`evidence.min_evidence_refs >= 2\` â€” two independent sources before accepting a value.
+- \`tier_preference\` ordered from most authoritative to least (manufacturer â†’ instrumented lab â†’ review â†’ retailer).
 
 **Component discipline:**
 
 - A field that IS a component identity must have \`component.type\` set.
 - A field that is a PROPERTY of a component must appear in the relevant component database entity's \`properties\`.
-- Missing component DB entries for known real-world entities are a high-priority cleanup.
+- Missing component DB entries for known real-world entities are component-data cleanup, not Field Studio setup. Report them outside the change file instead of asking the user to apply them as Mapping Studio/Key Navigator settings.
 `.trim();
 
 const PURPOSE_BODY = `
-keyFinder is a universal, per-key field extractor. One LLM call per \`(product, field_key)\` pair. The call is tier-routed by each rule's \`difficulty\` knob, submits one candidate per key through the publisher gate, and is **product-scoped** — never per-variant.
+keyFinder is a universal, per-key field extractor. One LLM call per \`(product, field_key)\` pair. The call is tier-routed by each rule's \`difficulty\` knob, submits one candidate per key through the publisher gate, and is **product-scoped** â€” never per-variant.
 
 Everything the LLM sees is composed from exactly three input sources:
-- **The compiled field rule** — contract, enum, aliases, search hints, cross-field constraints, component relation, extraction guidance.
-- **Global prompt fragments** — category-overridable text shared across finders: identity warning, evidence contract, source-tier strategy, confidence rubric, unk policy.
-- **Runtime context** — product identity (brand/model/variant), already-resolved components + fields, prior-run discovery history.
+- **The compiled field rule** â€” contract, enum, aliases, search hints, cross-field constraints, component relation, extraction guidance.
+- **Global prompt fragments** â€” category-overridable text shared across finders: identity warning, evidence contract, source-tier strategy, confidence rubric, unk policy.
+- **Runtime context** â€” product identity (brand/model/variant), already-resolved components + fields, prior-run discovery history.
 
 This report shows the first two sources verbatim. Runtime slots are labeled as placeholders in Part 2. Each per-key block in Part 7 shows exactly what THAT key's contract, guidance, hints, and constraints would inject into the template.
 `.trim();
@@ -322,49 +320,49 @@ This report shows the first two sources verbatim. Runtime slots are labeled as p
 const FIELD_ANATOMY_BODY = `
 A compiled field rule is the single source of truth for everything the LLM is told about a field. Every per-key block in Part 7 is derived from it. Learn the shape:
 
-- **Priority triple** — \`required_level\` (mandatory / non_mandatory), \`availability\` (always / sometimes / rare), \`difficulty\` (easy / medium / hard / very_hard). Required level drives scheduling. Availability drives bundling sort. Difficulty drives tier routing.
-- **Contract** — \`type\`, \`shape\` (scalar / list), \`unit\`, \`rounding\`, \`list_rules\`, \`range\`. Defines the exact JSON primitive the LLM must emit.
-- **Enum** — \`policy\` (closed / open_prefer_known / open), \`values\`, \`source\`. Defines the value vocabulary.
-- **Aliases** — source-text synonyms the LLM is told to recognize and normalize before emitting.
-- **Variance policy** — how to resolve variant-level disagreements (authoritative / upper_bound / lower_bound / majority_vote).
-- **ai_assist.reasoning_note** — extraction guidance (free-form prose). The single editable slot per key that is NOT already covered by the generic template. See Part 1.13 for what this cell is FOR and NOT FOR.
-- **search_hints** — \`domain_hints\` (preferred source domains) + \`query_terms\` (search queries). Injected into the prompt so the LLM's web search prioritizes those angles.
-- **Cross-field constraints** — operators relating this field to another on the same product (\`lte\`, \`lt\`, \`gte\`, \`gt\`, \`eq\`, \`requires_when_value\`, \`requires_one_of\`).
-- **Component relation** — \`component.type\` when this field IS the identity of a component OR is a property of one. Drives the \`PRODUCT_COMPONENTS\` block.
-- **Evidence** — \`min_evidence_refs\`, \`tier_preference\`. Controls the evidence contract injected into the prompt.
+- **Priority triple** â€” \`required_level\` (mandatory / non_mandatory), \`availability\` (always / sometimes / rare), \`difficulty\` (easy / medium / hard / very_hard). Required level drives scheduling. Availability drives bundling sort. Difficulty drives tier routing.
+- **Contract** â€” \`type\`, \`shape\` (scalar / list), \`unit\`, \`rounding\`, \`list_rules\`, \`range\`. Defines the exact JSON primitive the LLM must emit.
+- **Enum** â€” \`policy\` (closed / open_prefer_known / open), \`values\`, \`source\`. Defines the value vocabulary.
+- **Aliases** â€” source-text synonyms the LLM is told to recognize and normalize before emitting.
+- **Variance policy** â€” how to resolve variant-level disagreements (authoritative / upper_bound / lower_bound / majority_vote).
+- **ai_assist.reasoning_note** â€” extraction guidance (free-form prose). The single editable slot per key that is NOT already covered by the generic template. See Part 1.13 for what this cell is FOR and NOT FOR.
+- **search_hints** â€” \`domain_hints\` (preferred source domains) + \`query_terms\` (search queries). Injected into the prompt so the LLM's web search prioritizes those angles.
+- **Cross-field constraints** â€” operators relating this field to another on the same product (\`lte\`, \`lt\`, \`gte\`, \`gt\`, \`eq\`, \`requires_when_value\`, \`requires_one_of\`).
+- **Component relation** â€” \`component.type\` when this field IS the identity of a component OR is a property of one. Drives the \`PRODUCT_COMPONENTS\` block.
+- **Evidence** â€” \`min_evidence_refs\`, \`tier_preference\`. Controls the evidence contract injected into the prompt.
 `.trim();
 
 const CONTRACT_VALUE_BODY = `
 The contract is the LLM's behavioral spec. Each field below steers the output in a specific way; when it's blank, the LLM falls back to defaults that are almost always worse than the explicit choice:
 
-- **\`type\`** — emits the right JSON primitive (string / number / boolean / date). Without it, the LLM tends to emit numbers as strings and dates as freeform text.
-- **\`shape\`** (scalar / list) — unlocks list-level behavior (dedupe + sort) and informs the array vs singular JSON shape.
-- **\`unit\`** — forces unit normalization. "55g" vs "55 oz" vs "0.12 lb" all collapse to the canonical stored unit. Numeric values on the consumer surface are stored WITHOUT the unit; the unit is applied at render time. Contract unit = storage contract, not label.
-- **\`rounding\`** — controls decimal precision. Without it, \`128.0000001\` and \`128\` both survive and break equality comparisons in the index.
-- **\`list_rules.{dedupe, sort}\`** — how the multi-value filter facets render on the site. Unsorted or duplicated lists show up as UI noise. For numeric lists where higher values are conventionally listed first, use descending sort.
-- **\`range\`** — numeric bounds. The LLM stops guessing impossible out-of-range values.
-- **\`enum.policy\`** — \`closed\` means "reject anything not listed", \`open_prefer_known\` means "accept new values but prefer these", \`open\` means "trust your evidence". Mismatched policy is the most common source of enum pollution.
-- **\`enum.values\`** — the vocabulary. Each non-numeric value becomes a user-facing filter toggle on the website. Every extra value is a filter-UI cost. See Part 1.5 and 1.6.
-- **\`aliases\`** — source-text synonyms. Without them, the LLM may emit the raw retailer wording instead of the canonical form.
-- **\`variance_policy\`** — tells the LLM how to handle disagreements between sources for a product with multiple variants.
+- **\`type\`** â€” emits the right JSON primitive (string / number / boolean / date). Without it, the LLM tends to emit numbers as strings and dates as freeform text.
+- **\`shape\`** (scalar / list) â€” unlocks list-level behavior (dedupe + sort) and informs the array vs singular JSON shape.
+- **\`unit\`** â€” forces unit normalization. "55g" vs "55 oz" vs "0.12 lb" all collapse to the canonical stored unit. Numeric values on the consumer surface are stored WITHOUT the unit; the unit is applied at render time. Contract unit = storage contract, not label.
+- **\`rounding\`** â€” controls decimal precision. Without it, \`128.0000001\` and \`128\` both survive and break equality comparisons in the index.
+- **\`list_rules.{dedupe, sort}\`** â€” how the multi-value filter facets render on the site. Unsorted or duplicated lists show up as UI noise. For numeric lists where higher values are conventionally listed first, use descending sort.
+- **\`range\`** â€” numeric bounds. The LLM stops guessing impossible out-of-range values.
+- **\`enum.policy\`** â€” \`closed\` means "reject anything not listed", \`open_prefer_known\` means "accept new values but prefer these", \`open\` means "trust your evidence". Mismatched policy is the most common source of enum pollution.
+- **\`enum.values\`** â€” the vocabulary. Each non-numeric value becomes a user-facing filter toggle on the website. Every extra value is a filter-UI cost. See Part 1.5 and 1.6.
+- **\`aliases\`** â€” source-text synonyms. Without them, the LLM may emit the raw retailer wording instead of the canonical form.
+- **\`variance_policy\`** â€” tells the LLM how to handle disagreements between sources for a product with multiple variants.
 
 **Value format discipline (contract consequences):**
 
-- **Pattern preservation** — values that encode structure (e.g. \`"3 zone (rgb)"\`) are rendered verbatim on the consumer surface. Don't post-process into components — the LLM must emit the pattern whole.
-- **Delimiter convention for multi-token values** — combos inside a single value use \`+\` (e.g. \`"white+black"\`). Inter-value separators are the list shape; never embed a raw comma inside a single enum value (commas collide with URL multi-select serialization).
-- **Units elided from numeric values** — a \`weight\` of 55 grams is stored as \`55\`, not \`"55g"\`. The contract \`unit\` field carries the label.
-- **Descending numeric lists where order is meaningful** — highest-supported value first, declared on the rule via \`list_rules.sort\`.
+- **Pattern preservation** â€” values that encode structure (e.g. \`"3 zone (rgb)"\`) are rendered verbatim on the consumer surface. Don't post-process into components â€” the LLM must emit the pattern whole.
+- **Delimiter convention for multi-token values** â€” combos inside a single value use \`+\` (e.g. \`"white+black"\`). Inter-value separators are the list shape; never embed a raw comma inside a single enum value (commas collide with URL multi-select serialization).
+- **Units elided from numeric values** â€” a \`weight\` of 55 grams is stored as \`55\`, not \`"55g"\`. The contract \`unit\` field carries the label.
+- **Descending numeric lists where order is meaningful** â€” highest-supported value first, declared on the rule via \`list_rules.sort\`.
 `.trim();
 
 const FILTER_UI_BODY = `
-The contract's \`type\` + \`shape\` directly determines how the field renders as a consumer-facing filter. This is the universal rule — the same contract drives extraction AND the filter UI:
+The contract's \`type\` + \`shape\` directly determines how the field renders as a consumer-facing filter. This is the universal rule â€” the same contract drives extraction AND the filter UI:
 
-- **string + scalar** — single-select toggle group (one chip per enum value).
-- **string + list** — multi-select toggle group (multiple chips selectable; product passes filter if any list item matches any selected chip).
-- **number / integer (scalar or list)** — two-handle range slider with min/max computed at load time from the data. Numeric values NEVER become individual toggles, no matter how few unique values exist.
-- **date** — two-handle range slider (MM/YYYY – MM/YYYY format).
-- **boolean** — yes/no checkbox only when the key has two factual states and not-applicable is not a stored outcome. Never include \`unk\` in an enum or data list; it is only the LLM no-proof sentinel and should resolve to no submitted value plus status/unknown_reason. If \`n/a\` is truly first-class, use \`yes\` / \`no\` / \`n/a\` or another contract that preserves not-applicability, but prefer blank/omitted when absence is clearer for reviewers and the site. For measured conditional fields such as \`battery_hours\`, keep the value contract numeric/date/string as appropriate and leave no submitted value when the measurement cannot apply or cannot be proven.
-- **Pattern-valued strings** — rendered verbatim as chip text (e.g. \`"3 zone (rgb)"\` is shown exactly as that string in the filter). No tokenization, no parsing at render time.
+- **string + scalar** â€” single-select toggle group (one chip per enum value).
+- **string + list** â€” multi-select toggle group (multiple chips selectable; product passes filter if any list item matches any selected chip).
+- **number / integer (scalar or list)** â€” two-handle range slider with min/max computed at load time from the data. Numeric values NEVER become individual toggles, no matter how few unique values exist.
+- **date** â€” two-handle range slider (MM/YYYY â€“ MM/YYYY format).
+- **boolean** â€” yes/no checkbox only when the key has two factual states and not-applicable is not a stored outcome. Never include \`unk\` in an enum or data list; it is only the LLM no-proof sentinel and should resolve to no submitted value plus status/unknown_reason. If \`n/a\` is truly first-class, use \`yes\` / \`no\` / \`n/a\` or another contract that preserves not-applicability, but prefer blank/omitted when absence is clearer for reviewers and the site. For measured conditional fields such as \`battery_hours\`, keep the value contract numeric/date/string as appropriate and leave no submitted value when the measurement cannot apply or cannot be proven.
+- **Pattern-valued strings** â€” rendered verbatim as chip text (e.g. \`"3 zone (rgb)"\` is shown exactly as that string in the filter). No tokenization, no parsing at render time.
 
 **The show-more threshold + filter fatigue numbers (empirical):**
 
@@ -374,7 +372,7 @@ The contract's \`type\` + \`shape\` directly determines how the field renders as
 - **Serious pain at 30+**. Users give up on that filter entirely.
 - These numbers turn \`enum.values.length\` into a product-usability metric the contract is directly responsible for.
 
-**Why this matters to the auditor:** the \`lighting\` enum disciplined around \`N zone (rgb)\` / \`N zone (led)\` / \`none\` holds because every concrete value is a filter chip and the pattern keeps the set compact. An enum like \`colors\` with 75 free-form values is filter pollution — every color another chip, scroll past the fold several times.
+**Why this matters to the auditor:** the \`lighting\` enum disciplined around \`N zone (rgb)\` / \`N zone (led)\` / \`none\` holds because every concrete value is a filter chip and the pattern keeps the set compact. An enum like \`colors\` with 75 free-form values is filter pollution â€” every color another chip, scroll past the fold several times.
 
 **When an open enum has values that show similarity, locking in the pattern is the leverage move:**
 
@@ -386,19 +384,19 @@ The contract's \`type\` + \`shape\` directly determines how the field renders as
 const ENUM_POLICY_BODY = `
 Three policies govern how the LLM treats the enum values list:
 
-- **\`closed\`** — only listed values are valid. The LLM should return a listed value only when evidence proves it; otherwise it should use the \`unk\` sentinel with \`unknown_reason\`, which produces no submitted value. Use when the set is small, finite, and well-understood.
-- **\`open_prefer_known\`** — prefer listed values; accept new values if evidence supports them. The compiler marks new values as \`mark_needs_curation=true\` so a human decides whether to promote. Use when the set is stable but evolving.
-- **\`open\`** — no canonical list; the LLM reports whatever the evidence says. Use when the space is too large to enumerate (e.g. chip model names) or when enumeration would prematurely constrain extraction.
+- **\`closed\`** â€” only listed values are valid. The LLM should return a listed value only when evidence proves it; otherwise it should use the \`unk\` sentinel with \`unknown_reason\`, which produces no submitted value. Use when the set is small, finite, and well-understood.
+- **\`open_prefer_known\`** â€” prefer listed values; accept new values if evidence supports them. The compiler marks new values as \`mark_needs_curation=true\` so a human decides whether to promote. Use when the set is stable but evolving.
+- **\`open\`** â€” no canonical list; the LLM reports whatever the evidence says. Use when the space is too large to enumerate (e.g. chip model names) or when enumeration would prematurely constrain extraction.
 
-**Pattern detection is the sweet spot.** Open enums with a dominant structural signature give you extensibility without filter chaos. When >=70% of known values share a signature (Part 4's pattern detector computes this), the enum is "patterned" — new values that conform get added cleanly, outliers get flagged as candidates for normalization or removal.
+**Pattern detection is the sweet spot.** Open enums with a dominant structural signature give you extensibility without filter chaos. When >=70% of known values share a signature (Part 4's pattern detector computes this), the enum is "patterned" â€” new values that conform get added cleanly, outliers get flagged as candidates for normalization or removal.
 
 **Value-count discipline (refer to Part 1.5 for fatigue numbers):**
 
-- **≤ 10 values:** healthy. Everything visible by default.
-- **11–15 values:** fine, first 10 visible + "Show more" fold.
-- **16–20 values:** acceptable if values are meaningful; auditor should trim noise.
-- **21–30 values:** filter fatigue. Either tighten the known list, induce a pattern so the LLM converges, or split into sub-enums.
-- **30+ values:** the enum is out of control. Users will not scroll past the fold. This is the audit's single biggest improvement lever — consolidation here is high-value work.
+- **â‰¤ 10 values:** healthy. Everything visible by default.
+- **11â€“15 values:** fine, first 10 visible + "Show more" fold.
+- **16â€“20 values:** acceptable if values are meaningful; auditor should trim noise.
+- **21â€“30 values:** filter fatigue. Either tighten the known list, induce a pattern so the LLM converges, or split into sub-enums.
+- **30+ values:** the enum is out of control. Users will not scroll past the fold. This is the audit's single biggest improvement lever â€” consolidation here is high-value work.
 
 **Pattern > value count.** An enum with 50 pattern-conformant values (all \`<N> <unit>\`) is easier to reason about than an enum with 20 free-form values.
 `.trim();
@@ -406,8 +404,8 @@ Three policies govern how the LLM treats the enum values list:
 const TIER_ROUTING_BODY = `
 Every key's \`difficulty\` maps to one of five LLM bundles:
 
-- **easy / medium / hard / very_hard** — per-category tier bundles in \`keyFinderTierSettingsJson\`.
-- **fallback** — used when a tier is partially configured (empty model → inherit whole fallback bundle).
+- **easy / medium / hard / very_hard** â€” per-category tier bundles in \`keyFinderTierSettingsJson\`.
+- **fallback** â€” used when a tier is partially configured (empty model â†’ inherit whole fallback bundle).
 
 Each bundle carries: \`model\`, \`useReasoning\`, \`reasoningModel\`, \`thinking\`, \`thinkingEffort\`, \`webSearch\`. A key marked \`difficulty: very_hard\` routes to a stronger model with reasoning + thinking + web search; \`easy\` routes to a smaller cheaper model. Part 3 lists the resolved bundles for the current category so auditors know which model each key actually hits.
 
@@ -420,14 +418,14 @@ For benchmarked categories, difficulty must be calibrated against benchmark-dept
 `.trim();
 
 const GROUPS_BODY = `
-Field groups cluster semantically-related keys into named buckets. Authored in \`field_groups.json\`; mirrored on each rule as \`rule.group\` and \`rule.ui.group\`. Groups are a first-class organizational primitive — they drive behavior today and will drive more downstream.
+Field groups cluster semantically-related keys into named buckets. Authored in \`field_groups.json\`; mirrored on each rule as \`rule.group\` and \`rule.ui.group\`. Groups are a first-class organizational primitive â€” they drive behavior today and will drive more downstream.
 
 **What groups do today:**
 
-- **Bundling policy** — \`groupBundlingOnly=true\` restricts passengers to peers in the primary's group. A component-heavy primary should carry only fields that share the same evidence context. Groups with misplaced members waste bundling budget.
-- **Co-discovery** — fields that share a spec-sheet section tend to share sources. When the LLM fetches a strong source for one field, the evidence often contains sibling field values from the same section. A well-grouped rule set lets a single search session resolve many members. Bad grouping means the same URL gets fetched multiple times across unrelated calls.
-- **Reviewer orientation** — Field Studio groups keys in the sidebar so a human audit walks coherent sections instead of an alphabetic wall. The cognitive load of reviewing 80 keys depends heavily on whether they're grouped well.
-- **Identity context** — identity-anchoring fields often cluster into one group so the reviewer can confirm the product's identity-critical spine in a single pass.
+- **Bundling policy** â€” \`groupBundlingOnly=true\` restricts passengers to peers in the primary's group. A component-heavy primary should carry only fields that share the same evidence context. Groups with misplaced members waste bundling budget.
+- **Co-discovery** â€” fields that share a spec-sheet section tend to share sources. When the LLM fetches a strong source for one field, the evidence often contains sibling field values from the same section. A well-grouped rule set lets a single search session resolve many members. Bad grouping means the same URL gets fetched multiple times across unrelated calls.
+- **Reviewer orientation** â€” Field Studio groups keys in the sidebar so a human audit walks coherent sections instead of an alphabetic wall. The cognitive load of reviewing 80 keys depends heavily on whether they're grouped well.
+- **Identity context** â€” identity-anchoring fields often cluster into one group so the reviewer can confirm the product's identity-critical spine in a single pass.
 
 **What groups will do downstream (planned):**
 
@@ -441,16 +439,16 @@ Field groups cluster semantically-related keys into named buckets. Authored in \
 - Fields that extract from the same evidence sources (same spec-sheet section, same review table).
 - Fields that a filter user would check together (performance cluster, connectivity cluster).
 - Fields a reviewer would evaluate back-to-back.
-- A member count between ~3 and ~15 — small enough to hold in mind, large enough to justify the bucket.
+- A member count between ~3 and ~15 â€” small enough to hold in mind, large enough to justify the bucket.
 
 **What makes a BAD group:**
 
 - A "general" dumping ground with 10+ unrelated fields. Split it.
-- Groups that drift into each other (Construction vs Dimensions — if reviewers always look at them together, consider merging).
+- Groups that drift into each other (Construction vs Dimensions â€” if reviewers always look at them together, consider merging).
 - A single-field group. Usually the field belongs to an existing neighbor.
-- A group named vaguely ("misc", "other", "extras") — if the name doesn't teach, the grouping isn't doing its job.
+- A group named vaguely ("misc", "other", "extras") â€” if the name doesn't teach, the grouping isn't doing its job.
 
-**Cross-group relationships** are expressed via \`cross_field_constraints\`: when one group's field depends on another group's field, the constraint surfaces both as a correctness rule and as a signal that the two groups are coupled — sometimes a sign one should move.
+**Cross-group relationships** are expressed via \`cross_field_constraints\`: when one group's field depends on another group's field, the constraint surfaces both as a correctness rule and as a signal that the two groups are coupled â€” sometimes a sign one should move.
 `.trim();
 
 const BUNDLING_BODY = `
@@ -467,11 +465,11 @@ Bundling improves call efficiency but it's additive to the work this report exis
 const CROSS_FIELD_BODY = `
 Cross-field constraints relate one field's value to another on the same product. Supported operators and how they render in the prompt:
 
-- \`lte\` / \`lt\` — "must be ≤ \`target\`" / "must be < \`target\`"
-- \`gte\` / \`gt\` — "must be ≥ \`target\`" / "must be > \`target\`"
-- \`eq\` — "must equal \`target\`"
-- \`requires_when_value\` — "required when \`target\` = \"value\""
-- \`requires_one_of\` — "requires one of: [targets…]"
+- \`lte\` / \`lt\` â€” "must be â‰¤ \`target\`" / "must be < \`target\`"
+- \`gte\` / \`gt\` â€” "must be â‰¥ \`target\`" / "must be > \`target\`"
+- \`eq\` â€” "must equal \`target\`"
+- \`requires_when_value\` â€” "required when \`target\` = \"value\""
+- \`requires_one_of\` â€” "requires one of: [targetsâ€¦]"
 
 Compiled rules may store constraints as \`constraints\` string-DSL entries or as structured \`cross_field_constraints\` objects. The keyFinder renderer normalizes both forms into the same live prompt block. The auditor's job is to verify the relationship is correct and useful, not to re-report renderer plumbing.
 `.trim();
@@ -479,20 +477,20 @@ Compiled rules may store constraints as \`constraints\` string-DSL entries or as
 const COMPONENT_RELATIONS_BODY = `
 Two kinds of fields interact with components:
 
-- **Component identity (parent)** — e.g. \`sensor\`, \`switch\`, \`encoder\`. The field's value IS the canonical component name. Its compiled rule has \`component.type\` set; the prompt gets a "This key IS the \`type\` component identity." pointer.
-- **Component subfield** — a product field can belong to a component entity. The rule has \`component: null\` but appears as a property in the component database. When the parent identity is resolved on a product, the subfield values flow into the prompt as \`PRODUCT_COMPONENTS\` so the LLM doesn't re-extract them.
+- **Component identity (parent)** â€” e.g. \`sensor\`, \`switch\`, \`encoder\`. The field's value IS the canonical component name. Its compiled rule has \`component.type\` set; the prompt gets a "This key IS the \`type\` component identity." pointer.
+- **Component subfield** â€” a product field can belong to a component entity. The rule has \`component: null\` but appears as a property in the component database. When the parent identity is resolved on a product, the subfield values flow into the prompt as \`PRODUCT_COMPONENTS\` so the LLM doesn't re-extract them.
 
-The component inventory in Part 5 lists, per type, the known entities + their properties + which fields are identities vs subfields. Auditing a component-typed field without looking at its component_db row is leaving signal on the table.
+The component inventory in Part 5 is context for whether the Field Studio mapping is configured correctly. Do not ask for concrete component entity row edits in the Field Studio change file; report missing/stale component data separately.
 `.trim();
 
 const EVIDENCE_BODY = `
 Four category-level global fragments teach the LLM the same discipline every finder uses. The report renders each one in full in Part 2 so the auditor can review current wording verbatim:
 
-- **Evidence contract** — required \`supporting_evidence\` + \`evidence_kind\` structure, min_refs, per-rule override.
-- **Evidence verification** — the LLM must FETCH each URL live and confirm it renders the claimed content before emitting.
-- **Source tier strategy** — universal PRIMARY / INDEPENDENT / RETAILER / COMMUNITY tiering with per-tier trust rules.
-- **Value confidence rubric** — 0–100 epistemic confidence scale, tier-independent (when to emit 95 vs 70 vs 40 vs unk).
-- **Unk policy** — "honest unk beats low-confidence guess." When to return \`unk\` with a non-empty \`unknown_reason\` instead of paraphrasing.
+- **Evidence contract** â€” required \`supporting_evidence\` + \`evidence_kind\` structure, min_refs, per-rule override.
+- **Evidence verification** â€” the LLM must FETCH each URL live and confirm it renders the claimed content before emitting.
+- **Source tier strategy** â€” universal PRIMARY / INDEPENDENT / RETAILER / COMMUNITY tiering with per-tier trust rules.
+- **Value confidence rubric** â€” 0â€“100 epistemic confidence scale, tier-independent (when to emit 95 vs 70 vs 40 vs unk).
+- **Unk policy** â€” "honest unk beats low-confidence guess." When to return \`unk\` with a non-empty \`unknown_reason\` instead of paraphrasing.
 
 These are per-category overridable via the Global Prompts editor. An auditor who spots a phrasing problem in, say, the evidence contract can fix it once for the whole category.
 `.trim();
@@ -500,10 +498,10 @@ These are per-category overridable via the Global Prompts editor. An auditor who
 const RESERVED_KEYS_BODY = `
 Not every field is routed through keyFinder. Some are owned by purpose-built finders and will be rejected before an LLM call if the auditor wires them up anyway:
 
-- **\`colors\` / \`editions\`** — CEF (color/edition finder) owns these; variants + overrides handled separately.
-- **\`release_date\`** — RDF (release-date finder) owns this.
-- **\`sku\`** — SKF (SKU finder) owns this per-variant.
-- **eg_defaults** keys — category-level defaults resolved at compile time; manual/LLM extraction is silenced.
+- **\`colors\` / \`editions\`** â€” CEF (color/edition finder) owns these; variants + overrides handled separately.
+- **\`release_date\`** â€” RDF (release-date finder) owns this.
+- **\`sku\`** â€” SKF (SKU finder) owns this per-variant.
+- **eg_defaults** keys â€” category-level defaults resolved at compile time; manual/LLM extraction is silenced.
 
 The per-key block in Part 7 flags reserved keys clearly so an auditor does not spend time on a rule whose \`reasoning_note\` will never reach the live keyFinder.
 `.trim();
@@ -518,7 +516,7 @@ Variant Inventory Context is a single on/off checkbox in Key Navigator. There ar
 - The key is list-valued or variant-varying and the reviewer can define whether the correct output is a product-wide union, exact-variant answer, base/default variant answer, or no submitted value with unknown_reason.
 - Visual/design interpretation needs variant identity to avoid mistaking colorways or edition artwork for physical design changes.
 
-**Leave disabled or No change when:**
+**Leave disabled when:**
 - The field is model-level and normally identical across every variant in the family, such as many scalar technical specs.
 - Showing variant rows would encourage the LLM to split one invariant product answer into multiple variant answers.
 - The key has no clear rule for union vs exact-variant vs base/default variant behavior.
@@ -536,7 +534,7 @@ PIF Priority Images is a separate single on/off checkbox in Key Navigator. There
 - Subtle visual keys where the priority views support a repeatable judgment, but the real judgment still needs \`reasoning_note\`.
 - Visual list fields where default/base images help but the reviewer also defines how edition-specific variants should be represented.
 
-**Leave disabled or No change when:**
+**Leave disabled when:**
 - The key is a non-visual spec/source field such as component identity, supported rates, maximum ratings, internal controller, battery life, firmware, or compatibility.
 - Default/base images would invite a false negative. Absence of a trait in default/base images is not proof the product family lacks it.
 - The field needs edition-specific interpretation and the reviewer has not written that interpretation in \`reasoning_note\`.
@@ -550,27 +548,27 @@ The generic template auto-renders ~13 slots for every key call. \`ai_assist.reas
 **Use \`reasoning_note\` for:**
 - Visual / photographic cues the LLM must apply when the field is decided from a product image.
 - Semantic disambiguation between adjacent enum values.
-- Field-specific gotchas that repeat across products (scroll-click ≠ middle button; sensor_brand follows the extracted sensor name, not the upstream fab).
-- Rebrand / alias rules tied to extraction behavior (Razer Optical switch → switch_brand=razer, not the upstream OEM).
+- Field-specific gotchas that repeat across products (scroll-click â‰  middle button; sensor_brand follows the extracted sensor name, not the upstream fab).
+- Rebrand / alias rules tied to extraction behavior (Razer Optical switch â†’ switch_brand=razer, not the upstream OEM).
 - "Don't confuse with" anchors when two fields share surface vocabulary.
 - Interpretation rules for ambiguous fields where a schema fix is out of scope.
 - Field-specific instructions for interpreting variant evidence, such as design keys treating colorways/edition artwork as non-design changes unless physical shell/layout differs.
 
 **Do NOT use \`reasoning_note\` for anything already rendered by another slot:**
-- Enum values / aliases / type / shape / unit / rounding / list rules — rendered by \`PRIMARY_FIELD_CONTRACT\`.
-- Preferred source domains / search terms — rendered by \`PRIMARY_SEARCH_HINTS\`.
-- Source tier preference — rendered by \`SOURCE_TIER_STRATEGY\`.
-- Evidence structure, min_refs, URL verification — rendered by \`EVIDENCE_CONTRACT\` + \`EVIDENCE_VERIFICATION\`.
-- "Return unk when uncertain" policy — rendered by \`UNK_POLICY\`.
-- 0–100 confidence rubric — rendered by \`VALUE_CONFIDENCE_GUIDANCE\`.
-- Cross-field constraints — rendered by \`PRIMARY_CROSS_FIELD_CONSTRAINTS\`.
-- Already-resolved component values — rendered by \`PRODUCT_COMPONENTS\`.
-- Identity sibling-confusion warnings — rendered by \`IDENTITY_WARNING\`.
-- Whether to inject the variant table — controlled by the separate Variant inventory context checkbox.
-- Whether to attach default/base PIF priority images — controlled by the separate PIF Priority Images checkbox.
-- Output JSON envelope — rendered by \`RETURN_JSON_SHAPE\`.
+- Enum values / aliases / type / shape / unit / rounding / list rules â€” rendered by \`PRIMARY_FIELD_CONTRACT\`.
+- Preferred source domains / search terms â€” rendered by \`PRIMARY_SEARCH_HINTS\`.
+- Source tier preference â€” rendered by \`SOURCE_TIER_STRATEGY\`.
+- Evidence structure, min_refs, URL verification â€” rendered by \`EVIDENCE_CONTRACT\` + \`EVIDENCE_VERIFICATION\`.
+- "Return unk when uncertain" policy â€” rendered by \`UNK_POLICY\`.
+- 0â€“100 confidence rubric â€” rendered by \`VALUE_CONFIDENCE_GUIDANCE\`.
+- Cross-field constraints â€” rendered by \`PRIMARY_CROSS_FIELD_CONSTRAINTS\`.
+- Already-resolved component values â€” rendered by \`PRODUCT_COMPONENTS\`.
+- Identity sibling-confusion warnings â€” rendered by \`IDENTITY_WARNING\`.
+- Whether to inject the variant table â€” controlled by the separate Variant inventory context checkbox.
+- Whether to attach default/base PIF priority images â€” controlled by the separate PIF Priority Images checkbox.
+- Output JSON envelope â€” rendered by \`RETURN_JSON_SHAPE\`.
 
-**Quick test before adding a sentence to a guidance cell:** if the concept is covered by a template slot in Part 2, delete the sentence. The generic template is authoritative — duplicating into guidance creates conflicting instructions that drift over time.
+**Quick test before adding a sentence to a guidance cell:** if the concept is covered by a template slot in Part 2, delete the sentence. The generic template is authoritative â€” duplicating into guidance creates conflicting instructions that drift over time.
 `.trim();
 
 export function buildTemplateSkeletonTable() {
@@ -605,8 +603,8 @@ export function composeTeachingSections() {
     { id: 'teach-contract-value', title: '4. The value of each contract field', body: CONTRACT_VALUE_BODY },
     { id: 'teach-filter-ui', title: '5. Filter UI contract (toggles / range / date / checkbox)', body: FILTER_UI_BODY },
     { id: 'teach-enum-policy', title: '6. Enum policies (closed / open_prefer_known / open)', body: ENUM_POLICY_BODY },
-    { id: 'teach-tier', title: '7. Tier routing (difficulty → model)', body: TIER_ROUTING_BODY },
-    { id: 'teach-groups', title: '8. Field groups — why membership matters', body: GROUPS_BODY },
+    { id: 'teach-tier', title: '7. Tier routing (difficulty â†’ model)', body: TIER_ROUTING_BODY },
+    { id: 'teach-groups', title: '8. Field groups â€” why membership matters', body: GROUPS_BODY },
     { id: 'teach-bundling', title: '9. Bundling mechanics', body: BUNDLING_BODY },
     { id: 'teach-cross-field', title: '10. Cross-field constraints', body: CROSS_FIELD_BODY },
     { id: 'teach-component', title: '11. Component relations', body: COMPONENT_RELATIONS_BODY },

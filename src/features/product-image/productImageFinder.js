@@ -31,7 +31,6 @@ import {
   createProductImageFinderCallLlm,
   createHeroImageFinderCallLlm,
   resolveViewConfig,
-  resolveViewBudget,
   CANONICAL_VIEW_KEYS,
 } from './productImageLlmAdapter.js';
 import { resolveViewPromptInputs, resolveHeroPromptInputs } from './productImagePreviewPrompt.js';
@@ -41,6 +40,7 @@ import { runPerVariant } from '../../core/finder/runPerVariant.js';
 import { evaluateCarousel } from './carouselStrategy.js';
 import { resolveViewQualityConfig } from './viewQualityDefaults.js';
 import { resolveViewAttemptBudgets } from './viewAttemptDefaults.js';
+import { resolveCarouselViewSettings } from './carouselSlotSettings.js';
 import {
   resolveSingleRunSecondaryHints,
   resolveLoopRunSecondaryHints,
@@ -803,7 +803,8 @@ export async function runProductImageFinder({
   );
 
   // Carousel strategy settings
-  const viewBudget = resolveViewBudget(finderStore.getSetting('viewBudget'), product.category);
+  const carouselViewSettings = resolveCarouselViewSettings({ finderStore, category: product.category });
+  const { viewBudget } = carouselViewSettings;
   const satisfactionThreshold = parseInt(finderStore.getSetting('satisfactionThreshold'), 10) || 3;
   const heroEnabled = finderStore.getSetting('heroEnabled') !== 'false';
   const heroCount = parseInt(finderStore.getSetting('heroCount'), 10) || 3;
@@ -1173,7 +1174,7 @@ export async function runProductImageFinder({
     fallbackUsed: _mt.actualFallbackUsed,
     rejected: false,
     carouselProgress,
-    carouselSettings: { viewAttemptBudget, viewAttemptBudgets, heroAttemptBudget, heroEnabled },
+    carouselSettings: { viewAttemptBudget, viewAttemptBudgets, heroAttemptBudget, heroEnabled, heroCount, ...carouselViewSettings },
   };
 }
 
@@ -1242,7 +1243,8 @@ export async function runCarouselLoop({
     finderStore.getSetting('viewQualityConfig'), product.category, minWidth, minHeight, minFileSize,
   );
 
-  const viewBudget = resolveViewBudget(finderStore.getSetting('viewBudget'), product.category);
+  const carouselViewSettings = resolveCarouselViewSettings({ finderStore, category: product.category });
+  const { viewBudget } = carouselViewSettings;
   const satisfactionThreshold = parseInt(finderStore.getSetting('satisfactionThreshold'), 10) || 3;
   const heroEnabled = finderStore.getSetting('heroEnabled') !== 'false';
   const heroCount = parseInt(finderStore.getSetting('heroCount'), 10) || 3;
@@ -1793,6 +1795,6 @@ export async function runCarouselLoop({
     fallbackUsed: _mtLoop.actualFallbackUsed,
     rejected: false,
     carouselProgress,
-    carouselSettings: { viewAttemptBudget, viewAttemptBudgets, heroAttemptBudget, heroEnabled },
+    carouselSettings: { viewAttemptBudget, viewAttemptBudgets, heroAttemptBudget, heroEnabled, heroCount, ...carouselViewSettings },
   };
 }

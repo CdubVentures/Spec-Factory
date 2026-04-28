@@ -914,11 +914,11 @@ function nextExtraSlotKey({ actualView, slotCounts }) {
   return count === 1 ? actualView : `${actualView}${count}`;
 }
 
-export function resolveCarouselSlots({ viewBudget, heroCount, variantKey, variantId, carouselSlots, images }) {
+export function resolveCarouselSlots({ viewBudget, carouselSlotViews, heroCount, variantKey, variantId, carouselSlots, images }) {
   const variantSlots = carouselSlots?.[variantKey] || {};
   const variantImages = (images || []).filter(img => matchVariant(img, { variantId, variantKey }));
 
-  const viewOrder = viewBudget || [];
+  const viewOrder = carouselSlotViews || viewBudget || [];
   const viewOrderIndex = new Map(viewOrder.map((view, index) => [view, index]));
   const result = [];
   const usedFilenames = new Set();

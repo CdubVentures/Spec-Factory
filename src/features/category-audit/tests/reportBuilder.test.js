@@ -37,7 +37,7 @@ async function mkTmpDir() {
   return fs.mkdtemp(path.join(os.tmpdir(), 'category-audit-test-'));
 }
 
-test('generateCategoryAuditReport writes compact HTML + MD summary inside the category reports folder', async () => {
+test('generateCategoryAuditReport writes compact HTML + MD summary inside the category summary folder', async () => {
   const outputRoot = await mkTmpDir();
   try {
     const result = await generateCategoryAuditReport({
@@ -50,8 +50,8 @@ test('generateCategoryAuditReport writes compact HTML + MD summary inside the ca
       outputRoot,
       now: new Date('2026-04-22T12:00:00Z'),
     });
-    assert.equal(result.htmlPath, path.join(outputRoot, 'mouse', 'mouse-key-finder-summary.html'));
-    assert.equal(result.mdPath, path.join(outputRoot, 'mouse', 'mouse-key-finder-summary.md'));
+    assert.equal(result.htmlPath, path.join(outputRoot, 'mouse', 'summary', 'mouse-key-finder-summary.html'));
+    assert.equal(result.mdPath, path.join(outputRoot, 'mouse', 'summary', 'mouse-key-finder-summary.md'));
     assert.equal(result.generatedAt, '2026-04-22T12:00:00.000Z');
     const html = await fs.readFile(result.htmlPath, 'utf8');
     const md = await fs.readFile(result.mdPath, 'utf8');
@@ -60,6 +60,10 @@ test('generateCategoryAuditReport writes compact HTML + MD summary inside the ca
     assert.ok(md.includes('## Audit Context'));
     assert.ok(md.includes('## Matrix Legend'));
     assert.ok(md.includes('## Final Signoff Checklist'));
+    assert.ok(md.includes('## Auditor Return Format'));
+    assert.ok(md.includes('Disagreements with per-key returned audits'));
+    assert.ok(md.includes('Category-level corrections'));
+    assert.ok(md.includes('Keys requiring re-audit'));
     assert.ok(md.includes('Priority = `M/N / availability / difficulty`'));
     assert.ok(md.includes('Unknown / false / n/a'));
     assert.ok(md.includes('component `_link` fields'));
@@ -67,18 +71,19 @@ test('generateCategoryAuditReport writes compact HTML + MD summary inside the ca
     assert.ok(md.includes('Product Image Dependent'));
     assert.ok(md.includes('`sensor`'));
     assert.ok(!md.includes('Full field contract authoring order'), 'category summary does not duplicate per-key scripts');
+    await fs.access(path.join(outputRoot, 'mouse', 'auditors-responses'));
   } finally {
     await fs.rm(outputRoot, { recursive: true, force: true });
   }
 });
 
-test('generateCategoryAuditReport overwrites only its own summary files without wiping category report text files', async () => {
+test('generateCategoryAuditReport overwrites only its own summary files without wiping auditor response patches', async () => {
   const outputRoot = await mkTmpDir();
   try {
-    const categoryReportFolder = path.join(outputRoot, 'mouse');
+    const categoryReportFolder = path.join(outputRoot, 'mouse', 'auditors-responses');
     await fs.mkdir(categoryReportFolder, { recursive: true });
-    const humanChangeFile = path.join(categoryReportFolder, 'mouse-07-design-field-studio-change.txt');
-    await fs.writeFile(humanChangeFile, 'keep human audit text', 'utf8');
+    const humanChangeFile = path.join(categoryReportFolder, 'mouse-07-design.field-studio-patch.v1.json');
+    await fs.writeFile(humanChangeFile, '{"schema_version":"field-studio-patch.v1"}', 'utf8');
 
     const first = await generateCategoryAuditReport({
       category: 'mouse',
@@ -99,7 +104,7 @@ test('generateCategoryAuditReport overwrites only its own summary files without 
       now: new Date('2026-04-22T13:00:00Z'),
     });
     assert.equal(first.htmlPath, second.htmlPath, 'same filename across runs');
-    assert.equal(await fs.readFile(humanChangeFile, 'utf8'), 'keep human audit text');
+    assert.equal(await fs.readFile(humanChangeFile, 'utf8'), '{"schema_version":"field-studio-patch.v1"}');
     const md = await fs.readFile(second.mdPath, 'utf8');
     assert.ok(md.includes('2026-04-22T13:00:00.000Z'), 'later run overwrites timestamp');
     assert.ok(!md.includes('2026-04-22T12:00:00.000Z'), 'earlier timestamp gone');

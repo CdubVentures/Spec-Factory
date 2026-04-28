@@ -55,7 +55,7 @@ function writeProductJson(productId) {
   }));
 }
 
-function makeStubFinderStore(settings = {}) {
+function makeStubFinderStore(settings = {}, overrides = {}) {
   const upserts = [];
   const runs = [];
   return {
@@ -63,6 +63,7 @@ function makeStubFinderStore(settings = {}) {
       getSetting: (k) => (k in settings ? String(settings[k]) : ''),
       upsert: (row) => { upserts.push(row); },
       insertRun: (row) => { runs.push(row); },
+      ...overrides,
     },
     upserts, runs,
   };
@@ -177,6 +178,59 @@ describe('SKU prompt preview — parity with real-run snapshot', () => {
 
     const doc = readSkus({ productId: pid, productRoot: PRODUCT_ROOT });
     assert.equal(doc?.runs?.length ?? 0, 0);
+  });
+
+  it('preview reads previous discovery from SQL before stale sku.json history', async () => {
+    const pid = 'sku-preview-sql-history';
+    writeProductJson(pid);
+    fs.writeFileSync(path.join(PRODUCT_ROOT, pid, 'sku.json'), JSON.stringify({
+      product_id: pid,
+      category: 'mouse',
+      selected: { candidates: [] },
+      run_count: 1,
+      next_run_number: 2,
+      runs: [{
+        run_number: 1,
+        response: {
+          variant_id: 'v_black',
+          variant_key: 'color:black',
+          discovery_log: {
+            urls_checked: ['https://json-stale.example/sku'],
+            queries_run: ['json stale sku query'],
+          },
+        },
+      }],
+    }, null, 2));
+
+    const fs_ = makeStubFinderStore(
+      { urlHistoryEnabled: 'true', queryHistoryEnabled: 'true' },
+      {
+        get: () => ({ category: 'mouse', product_id: pid, run_count: 1, latest_ran_at: '2026-04-01T00:00:00Z' }),
+        listRuns: () => [{
+          run_number: 7,
+          response: {
+            variant_id: 'v_black',
+            variant_key: 'color:black',
+            discovery_log: {
+              urls_checked: ['https://sql-current.example/sku'],
+              queries_run: ['sql current sku query'],
+            },
+          },
+        }],
+      },
+    );
+    const specDb = makeStubSpecDb({ finderStore: fs_.store });
+
+    const preview = await compileSkuFinderPreviewPrompt({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: null, specDb, config: {}, productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black' },
+    });
+
+    assert.equal(preview.inputs_resolved.previous_urls_count, 1);
+    assert.equal(preview.inputs_resolved.previous_queries_count, 1);
+    assert.match(preview.prompts[0].system, /sql-current\.example\/sku/);
+    assert.doesNotMatch(preview.prompts[0].system, /json-stale\.example\/sku/);
   });
 
   it('loop mode labels iter-1 and includes the iteration disclaimer note', async () => {

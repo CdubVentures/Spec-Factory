@@ -161,6 +161,7 @@ export const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   ]),
   'module-settings': Object.freeze([
     ['module-settings'],
+    ['catalog', CATEGORY_TOKEN],
     ...finderModuleQueryTemplates,
     ['prompt-preview'],
   ]),

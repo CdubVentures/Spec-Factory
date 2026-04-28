@@ -222,15 +222,17 @@ export function resolveSlots(
   variantKey: string,
   carouselSlots: Record<string, Record<string, string | null>>,
   images: ProductImageEntry[],
+  carouselSlotViews?: string[],
 ): ResolvedSlot[] {
   const varSlots = carouselSlots[variantKey] ?? {};
   const result: ResolvedSlot[] = [];
-  const viewOrderIndex = new Map(viewBudget.map((view, index) => [view, index]));
+  const viewOrder = carouselSlotViews ?? viewBudget;
+  const viewOrderIndex = new Map(viewOrder.map((view, index) => [view, index]));
   const usedFilenames = new Set<string>();
   const usedHashes = new Set<string>();
   const slotCounts = new Map<string, number>();
 
-  for (const view of viewBudget) {
+  for (const view of viewOrder) {
     if (CANONICAL_EXTRA_VIEWS.has(view)) slotCounts.set(view, 1);
   }
 
@@ -241,7 +243,7 @@ export function resolveSlots(
     if (img?.content_hash) usedHashes.add(img.content_hash);
   };
 
-  for (const view of viewBudget) {
+  for (const view of viewOrder) {
     const userOverride = varSlots[view];
     if (userOverride) {
       result.push({ slot: view, filename: userOverride, source: 'user' });
@@ -420,6 +422,45 @@ export function isAllRunHistoryExpanded(
     }
   }
   return true;
+}
+
+export interface PifCarouselAggregate {
+  readonly filled: number;
+  readonly total: number;
+  readonly allComplete: boolean;
+}
+
+export interface PifCarouselAggregateInput {
+  readonly imageGroups: readonly ImageGroup[];
+  readonly variants: readonly VariantInfo[];
+  readonly carouselSlots: Record<string, Record<string, string | null>>;
+  readonly scoredViewSlots: readonly string[];
+  readonly carouselSlotViews: readonly string[];
+}
+
+export function derivePifCarouselAggregate(input: PifCarouselAggregateInput): PifCarouselAggregate {
+  const total = input.scoredViewSlots.length * input.variants.length;
+  if (total === 0) return { filled: 0, total: 0, allComplete: false };
+
+  const groupsByKey = new Map(input.imageGroups.map(group => [group.key, group]));
+  const scoredViewSlots = [...input.scoredViewSlots];
+  const carouselSlotViews = input.carouselSlotViews.length > 0
+    ? [...input.carouselSlotViews]
+    : scoredViewSlots;
+  const filled = input.variants.reduce((sum, variant) => {
+    const images = groupsByKey.get(variant.key)?.images ?? [];
+    const slots = resolveSlots(
+      scoredViewSlots,
+      0,
+      variant.key,
+      input.carouselSlots,
+      images,
+      carouselSlotViews,
+    );
+    return sum + slots.filter(slot => slot.filename && slot.filename !== '__cleared__').length;
+  }, 0);
+
+  return { filled, total, allComplete: filled >= total };
 }
 
 /** Group eval records by variant_key, preserving chronological order. */

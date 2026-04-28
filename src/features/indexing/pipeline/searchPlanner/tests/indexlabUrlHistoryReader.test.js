@@ -18,6 +18,28 @@ function makeTempProductRoot(productId, productJson) {
 }
 
 describe('readIndexlabUrlHistory', () => {
+  it('prefers SQL crawl history and does not read product.json when rows exist', () => {
+    const result = readIndexlabUrlHistory('mouse-sql', {
+      specDb: {
+        getUrlCrawlEntriesByProduct: (productId) => {
+          strictEqual(productId, 'mouse-sql');
+          return [
+            { canonical_url: 'https://sql.example.com/a', original_url: 'https://raw.example.com/a' },
+            { canonical_url: 'https://sql.example.com/b' },
+            { canonical_url: 'https://sql.example.com/a' },
+          ];
+        },
+      },
+      fsReadFile: () => {
+        throw new Error('product.json should not be read when SQL URL history exists');
+      },
+    });
+
+    deepStrictEqual(result, {
+      urls: ['https://sql.example.com/a', 'https://sql.example.com/b'],
+    });
+  });
+
   it('reads sources[].url from product.json and returns deduped list', () => {
     const root = makeTempProductRoot('mouse-abc', {
       sources: [

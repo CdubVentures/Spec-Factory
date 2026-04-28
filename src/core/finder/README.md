@@ -29,6 +29,10 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
 - `registerScalarFinder({ finderName, fieldKey, valueKey, sourceType, phase, logPrefix, createCallLlm, buildPrompt, store, extractCandidate?, satisfactionPredicate?, buildPublisherMetadata?, buildUserMessage?, defaultStaggerMs? })` — consumes declarative registry fields + bespoke prompt/caller pair, wires `createVariantScalarFieldProducer` with sensible defaults. Returns `{ runOnce, runLoop }`. **No default `logPrefix`** — avoids collision risk (`pricing` → `'pri'`, etc.); every registry entry declares it explicitly. Default `extractCandidate` trims value, clamps confidence to finite number, treats empty string or case-insensitive `'unk'` as unknown. Default `satisfactionPredicate` stops on definitive unknown (unknown_reason present AND empty value) OR publisher `status === 'published'`.
 - Also exports `_defaultExtractCandidate(valueKey)` + `_defaultSatisfactionPredicate` as unit-test seams locking the default behavior.
 
+### `scalarFinderSqlHistory.js` - SQL-first scalar finder history
+- `readScalarFinderRunsSqlFirst({ finderStore, readRuns, productId, productRoot })` - returns SQL run rows when SQL history exists; falls back to JSON only for unseeded/rebuild compatibility.
+- `persistScalarFinderRunSqlFirst({ finderStore, productId, productRoot, category, run, ranAt, readRuns, writeRuns, recalculateFromRuns, mergeDiscovery })` - inserts the SQL run and summary first, then mirrors JSON. Falls back to legacy JSON-first merge only when the SQL store lacks run-history methods.
+
 ### `finderSettingsSchema.js` — typed per-category settings contract
 - `finderSettingsEntrySchema` — zod discriminated union over setting types (`bool`, `int`, `float`, `string`, `enum`)
 - `finderSettingsSchema` — zod array schema for a module's full settings list
@@ -59,6 +63,7 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
 ### `variantCleanup.js` — variant-delete cascade for `variantFieldProducer` modules
 - `stripVariantFromFieldProducerHistory({ specDb, productId, variantId, variantKey, module, productRoot? })` — strips one module's per-variant history. Called by `color-edition/variantLifecycle.deleteVariant` for every `moduleClass === 'variantFieldProducer'` entry in `FINDER_MODULES`. Returns `{ changed, runsTouched, runsDeleted }`.
   - **Convention**: JSON `selected.candidates[]` aggregate + `runs[].selected.candidates[]` + `runs[].response.candidates[]`, each candidate keyed by `variant_id` / `variant_key`. SQL summary mirrors via `candidates` + `candidate_count` columns.
+  - **Runtime source**: when SQL summary/runs exist, cleanup derives from SQL, updates SQL rows/summary first, then mirrors `release_date.json` / `sku.json`. JSON is fallback only when SQL history is absent.
   - **Run identity match**: runs targeting the deleted variant via `run.variant_id` / `run.response.variant_id` / `run.selected.variant_id` (or `*_key`) are removed entirely — even when `candidates[]` is empty (failed/no-result LLM call).
   - **Candidate match**: runs with surviving variants are filtered (SQL blob rewritten via `updateRunJson`); runs whose only candidates were the deleted variant are removed entirely.
   - **Aggregate**: recomputed as latest-wins-per-variant across surviving runs.
@@ -111,7 +116,7 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
 
 - **Registry is SSOT**: All finder module wiring derives from `FINDER_MODULES`. Adding a module = one entry.
 - **Latest-wins semantics**: `selected` always reflects the latest non-rejected run. Rejected runs are counted but don't overwrite selected/cooldown.
-- **Dual-State Architecture**: JSON is durable memory (write-first). SQL is frontend projection (rebuildable from JSON). Both summary and runs tables follow this contract.
+- **Dual-State Architecture**: SQL is the runtime/frontend projection and should be mutated before JSON when SQL tables exist. JSON remains durable memory and the deleted-DB rebuild mirror.
 - **Field Studio gate**: Modules declare `requiredFields`. If any required field is disabled in the category's `eg_toggles`, POST returns 403.
 - **Per-module tables**: Each finder gets its own summary + runs tables with custom columns. Not a shared generic table — SQL queryability matters for the publisher.
 - **Loop standardization for `variantFieldProducer`**: Simple field finders (one value per variant) get the budget loop for free by (1) declaring `perVariantAttemptBudget` in their `settingsSchema`, (2) exporting a `runXxxFinderLoop` that wraps `runVariantFieldLoop` with a satisfaction predicate, and (3) passing `{ parseVariantKey: true, loop: { orchestrator: runXxxFinderLoop } }` to `createFinderRouteHandler`. `runPerVariant` is domain-blind; `runVariantFieldLoop` is the only place that owns attempt counting, `loop_id` propagation, and loop-progress emission. PIF's carousel loop is intentionally separate (multi-view + satisfaction-per-view is carousel-specific) — do not retrofit PIF onto this primitive.

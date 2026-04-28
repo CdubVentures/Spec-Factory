@@ -52,8 +52,16 @@ export function createArtifactStore({ db, category, stmts }) {
     return stmts._getCrawlSourcesByProduct.all(String(productId || ''));
   }
 
+  function getCrawlSourcesByRunId(runId) {
+    return stmts._getCrawlSourcesByRunId.all(String(runId || ''));
+  }
+
   function getScreenshotsByProduct(productId) {
     return stmts._getScreenshotsByProduct.all(String(productId || ''));
+  }
+
+  function getScreenshotsByRunId(runId) {
+    return stmts._getScreenshotsByRunId.all(String(runId || ''));
   }
 
   function insertVideo(row) {
@@ -80,6 +88,10 @@ export function createArtifactStore({ db, category, stmts }) {
     return stmts._getVideosByProduct.all(String(productId || ''));
   }
 
+  function getVideosByRunId(runId) {
+    return stmts._getVideosByRunId.all(String(runId || ''));
+  }
+
   function getCrawlSourceByHash(contentHash, productId) {
     return stmts._getCrawlSourceByHash.get(
       String(contentHash || ''),
@@ -92,8 +104,11 @@ export function createArtifactStore({ db, category, stmts }) {
     insertScreenshot,
     insertVideo,
     getCrawlSourcesByProduct,
+    getCrawlSourcesByRunId,
     getScreenshotsByProduct,
+    getScreenshotsByRunId,
     getVideosByProduct,
+    getVideosByRunId,
     getCrawlSourceByHash,
   };
 }

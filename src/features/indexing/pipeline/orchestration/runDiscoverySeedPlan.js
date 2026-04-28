@@ -53,6 +53,7 @@ function buildInitialContext(params) {
   const readUrlHistoryFn = params.readIndexlabUrlHistoryFn || readIndexlabUrlHistory;
   const urlExecutionHistory = readUrlHistoryFn(job?.productId, {
     productRoot: config.productRoot,
+    frontierDb,
   });
 
   return {

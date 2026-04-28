@@ -8,20 +8,21 @@ import {
   buildPromptAuditPromptStructure,
   buildPromptAuditSummaryStructure,
 } from './promptAuditStructure.js';
+import { archiveExistingReportTree, ensureAuditorResponsesDir } from './reportArchive.js';
 
 function resolveCategoryOutputRoot(outputRoot, category) {
   const root = path.resolve(outputRoot);
-  const categoryRoot = path.resolve(root, category);
-  if (categoryRoot !== root && categoryRoot.startsWith(`${root}${path.sep}`)) {
-    return categoryRoot;
+  const summaryRoot = path.resolve(root, category, 'summary');
+  if (summaryRoot !== root && summaryRoot.startsWith(`${root}${path.sep}`)) {
+    return summaryRoot;
   }
   throw new Error(`generatePromptAuditReports: unsafe category output path for ${category}`);
 }
 
 function resolvePerPromptCategoryPath(outputRoot, category) {
-  const perPromptRoot = path.resolve(outputRoot, 'per-prompt');
-  const basePath = path.resolve(perPromptRoot, category);
-  if (basePath !== perPromptRoot && basePath.startsWith(`${perPromptRoot}${path.sep}`)) {
+  const root = path.resolve(outputRoot);
+  const basePath = path.resolve(root, category, 'per-prompt');
+  if (basePath !== root && basePath.startsWith(`${root}${path.sep}`)) {
     return basePath;
   }
   throw new Error(`generatePromptAuditReports: unsafe per-prompt output path for ${category}`);
@@ -62,6 +63,7 @@ export async function generatePromptAuditReports({
 
   const categoryRoot = resolveCategoryOutputRoot(outputRoot, category);
   await fs.mkdir(categoryRoot, { recursive: true });
+  await ensureAuditorResponsesDir({ outputRoot, category });
   const summaryBaseName = `${category}-prompt-audit-summary`;
   const summaryHtmlPath = path.join(categoryRoot, `${summaryBaseName}.html`);
   const summaryMdPath = path.join(categoryRoot, `${summaryBaseName}.md`);
@@ -76,7 +78,7 @@ export async function generatePromptAuditReports({
   });
 
   const basePath = resolvePerPromptCategoryPath(outputRoot, category);
-  await fs.rm(basePath, { recursive: true, force: true });
+  await archiveExistingReportTree({ outputRoot, category, treeName: 'per-prompt', now });
   await fs.mkdir(basePath, { recursive: true });
 
   const reports = [];

@@ -8,6 +8,7 @@ export interface FinderSettingWidgetProps {
   category: string;
   isSaving: boolean;
   onSave: (key: string, value: string) => void;
+  onSaveSettings: (settings: Record<string, string>) => void;
 }
 
 export type FinderSettingWidget = ComponentType<FinderSettingWidgetProps>;

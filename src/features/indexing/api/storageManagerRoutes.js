@@ -13,6 +13,7 @@ export function createStorageManagerHandler(opts) {
     storage,
     isRunStillActive,
     readRunMeta,
+    readRunDetailState,
     deleteArchivedRun,
     fsRoots,
   } = opts;
@@ -89,6 +90,19 @@ export function createStorageManagerHandler(opts) {
           ? await readRunMeta(runId)
           : null;
         if (!meta) return jsonRes(res, 404, { error: 'run_not_found', run_id: runId });
+
+        const sqlDetail = typeof readRunDetailState === 'function'
+          ? await readRunDetailState({ runId, meta })
+          : null;
+        if (sqlDetail) {
+          return jsonRes(res, 200, {
+            run_id: runId,
+            ...meta,
+            sources: Array.isArray(sqlDetail.sources) ? sqlDetail.sources : [],
+            identity: sqlDetail.identity && typeof sqlDetail.identity === 'object' ? sqlDetail.identity : {},
+          });
+        }
+
         // WHY: Enrich with sources + identity from run.json for URL-level expansion.
         let sources = [];
         let identity = {};

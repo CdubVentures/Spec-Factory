@@ -13,6 +13,7 @@ import {
   groupRunsByLoop,
   groupEvalsByVariant,
   derivePifKpiCards,
+  derivePifCarouselAggregate,
   removeImageFromResult,
   removeImagesFromResult,
   buildExpandAllRunHistoryMaps,
@@ -483,6 +484,27 @@ describe('resolveSlots', () => {
     ]);
   });
 
+  it('fills configured optional placeholders even when the image is not a numbered extra', () => {
+    const images = [
+      makeImage({
+        view: 'right',
+        filename: 'right-black.png',
+        eval_best: true,
+        eval_actual_view: 'right',
+        eval_usable_as_required_view: true,
+        eval_usable_as_carousel_extra: false,
+        eval_duplicate: false,
+        eval_flags: [],
+      }),
+    ];
+    const slots = resolveSlots(['top', 'left'], 0, 'color:black', {}, images, ['top', 'left', 'right']);
+    assert.deepEqual(slots.map(s => [s.slot, s.filename, s.source]), [
+      ['top', null, 'empty'],
+      ['left', null, 'empty'],
+      ['right', 'right-black.png', 'eval'],
+    ]);
+  });
+
   it('does not use dependency mismatches or duplicates as numbered extra slots', () => {
     const images = [
       makeImage({
@@ -821,6 +843,70 @@ describe('derivePifKpiCards', () => {
 });
 
 /* ── removeImageFromResult ─────────────────────────────────────────── */
+
+describe('derivePifCarouselAggregate', () => {
+  it('uses scored target views times active variants as the denominator', () => {
+    const imageGroups = [
+      {
+        key: 'color:black',
+        label: 'Black',
+        type: 'color' as const,
+        images: [
+          makeGalleryImage({
+            view: 'top',
+            filename: 'top.png',
+            eval_best: true,
+            eval_actual_view: 'top',
+            eval_usable_as_required_view: true,
+          }),
+          makeGalleryImage({
+            view: 'right',
+            filename: 'right.png',
+            eval_best: true,
+            eval_actual_view: 'right',
+            eval_usable_as_carousel_extra: true,
+          }),
+        ],
+      },
+      {
+        key: 'color:white',
+        label: 'White',
+        type: 'color' as const,
+        images: [],
+      },
+      {
+        key: 'color:orphan',
+        label: 'Orphan',
+        type: 'color' as const,
+        orphaned: true,
+        images: [
+          makeGalleryImage({
+            view: 'top',
+            filename: 'orphan.png',
+            variant_key: 'color:orphan',
+            eval_best: true,
+            eval_actual_view: 'top',
+            eval_usable_as_required_view: true,
+          }),
+        ],
+      },
+    ];
+    const variants = [
+      { key: 'color:black', label: 'Black', type: 'color' as const },
+      { key: 'color:white', label: 'White', type: 'color' as const },
+    ];
+
+    const aggregate = derivePifCarouselAggregate({
+      imageGroups,
+      variants,
+      carouselSlots: {},
+      scoredViewSlots: ['top'],
+      carouselSlotViews: ['top', 'right'],
+    });
+
+    assert.deepEqual(aggregate, { filled: 2, total: 2, allComplete: true });
+  });
+});
 
 function makeResult(overrides: Partial<ProductImageFinderResult> = {}): ProductImageFinderResult {
   return {

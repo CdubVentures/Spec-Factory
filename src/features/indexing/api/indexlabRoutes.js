@@ -113,6 +113,87 @@ export function registerIndexlabRoutes(ctx) {
     return createDeletionStore({ db: specDb.db, category: specDb.category });
   }
 
+  const basename = (value) => String(value || '').split(/[\\/]/).filter(Boolean).pop() || '';
+  const sumBytes = (rows) => rows.reduce((total, row) => total + (Number(row?.size_bytes) || 0), 0);
+
+  function groupArtifactRows(rows = []) {
+    const byContentHash = new Map();
+    const byUrl = new Map();
+    for (const row of rows) {
+      const contentHash = String(row?.content_hash || '').trim();
+      const url = String(row?.source_url || '').trim();
+      if (contentHash) byContentHash.set(contentHash, [...(byContentHash.get(contentHash) || []), row]);
+      if (url) byUrl.set(url, [...(byUrl.get(url) || []), row]);
+    }
+    return { byContentHash, byUrl };
+  }
+
+  function artifactRowsForSource(groups, source) {
+    const contentHash = String(source?.content_hash || '').trim();
+    const url = String(source?.source_url || '').trim();
+    return contentHash
+      ? (groups.byContentHash.get(contentHash) || [])
+      : (groups.byUrl.get(url) || []);
+  }
+
+  async function readStorageRunDetailState({ runId, meta }) {
+    const category = String(meta?.category || '').trim();
+    if (!category || typeof getSpecDb !== 'function') return null;
+    const specDb = getSpecDb(category);
+    if (!specDb || typeof specDb.getCrawlSourcesByRunId !== 'function') return null;
+
+    const sources = specDb.getCrawlSourcesByRunId(runId) || [];
+    const screenshots = typeof specDb.getScreenshotsByRunId === 'function'
+      ? specDb.getScreenshotsByRunId(runId) || []
+      : [];
+    const videos = typeof specDb.getVideosByRunId === 'function'
+      ? specDb.getVideosByRunId(runId) || []
+      : [];
+    if (sources.length === 0 && screenshots.length === 0 && videos.length === 0) return null;
+
+    const screenshotGroups = groupArtifactRows(screenshots);
+    const videoGroups = groupArtifactRows(videos);
+    const detailSources = sources.map((source) => {
+      const sourceScreenshots = artifactRowsForSource(screenshotGroups, source);
+      const sourceVideos = artifactRowsForSource(videoGroups, source);
+      const video = sourceVideos[0] || null;
+      const htmlSize = Number(source.size_bytes) || 0;
+      const screenshotSize = sumBytes(sourceScreenshots);
+      const videoSize = sumBytes(sourceVideos);
+      return {
+        url: source.source_url || '',
+        final_url: source.final_url || '',
+        host: source.host || '',
+        content_hash: source.content_hash || '',
+        status: Number(source.http_status) || 0,
+        doc_kind: source.doc_kind || 'other',
+        source_tier: Number(source.source_tier) || 5,
+        content_type: source.content_type || '',
+        html_file: basename(source.file_path),
+        html_path: source.file_path || '',
+        html_size: htmlSize,
+        screenshot_count: sourceScreenshots.length,
+        screenshot_size: screenshotSize,
+        video_file: basename(video?.file_path),
+        video_size: videoSize,
+        worker_id: video?.worker_id || '',
+        total_size: htmlSize + screenshotSize + videoSize,
+        crawled_at: source.crawled_at || '',
+      };
+    });
+
+    return {
+      identity: {
+        product_id: meta.product_id || '',
+        category,
+        identity_fingerprint: meta.identity_fingerprint || '',
+        identity_lock_status: meta.identity_lock_status || '',
+        dedupe_mode: meta.dedupe_mode || '',
+      },
+      sources: detailSources,
+    };
+  }
+
   const handleStorageManagerRoutes = storageGuardOk
     ? createStorageManagerHandler({
       jsonRes,
@@ -126,6 +207,7 @@ export function registerIndexlabRoutes(ctx) {
       storage: ctx.storage || null,
       isRunStillActive,
       readRunMeta: readIndexLabRunMeta,
+      readRunDetailState: readStorageRunDetailState,
       deleteArchivedRun: async (runId) => {
         const fs = await import('node:fs/promises');
         const runDir = safeJoin(currentIndexLabRoot(), runId);

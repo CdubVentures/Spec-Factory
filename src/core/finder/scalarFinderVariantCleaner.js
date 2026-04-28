@@ -117,30 +117,26 @@ export function deleteScalarFinderVariantRuns({ specDb, productId, productRoot, 
     return { cleaned: false, finderId: entry.finderId, deletedRuns: [] };
   }
 
-  // Delete from JSON one at a time. finderJsonStore.deleteRun calls
-  // recalculateFromRuns internally so selected.candidates drops the matching
-  // variant automatically — no extra filtering needed.
-  const deletedRuns = [];
-  for (const run of matchingRuns) {
-    entry.store.deleteRun({ productId, productRoot, runNumber: run.run_number });
-    deletedRuns.push(run.run_number);
+  // Delete SQL run rows before the JSON mirror so runtime readers cannot see
+  // resurrectable run state during the dual-write pair.
+  const deletedRuns = matchingRuns.map((run) => run.run_number);
+
+  const sqlStore = specDb?.getFinderStore?.(entry.finderId);
+  if (sqlStore && typeof sqlStore.removeRun === 'function') {
+    for (const rn of deletedRuns) {
+      sqlStore.removeRun(productId, rn);
+    }
   }
 
-  // SQL cascade: delete the matching runs rows + re-upsert the summary with
-  // the post-delete doc's candidates / run_count / latest_ran_at so the
-  // panel's GET reflects the wipe immediately. finderSqlStore exposes
-  // `removeRun(pid, runNumber)` — specDb's getFinderStore returns the store
-  // directly, so we call removeRun on it (there is no generic
-  // specDb.deleteFinderRun wrapper).
+  for (const runNumber of deletedRuns) {
+    entry.store.deleteRun({ productId, productRoot, runNumber });
+  }
+
+  // Re-upsert the summary with the post-delete doc's candidates / run_count /
+  // latest_ran_at so the panel's GET reflects the wipe immediately.
   const updated = entry.store.read({ productId, productRoot });
   const candidates = updated?.selected?.candidates || [];
-  const sqlStore = specDb?.getFinderStore?.(entry.finderId);
   if (sqlStore) {
-    if (typeof sqlStore.removeRun === 'function') {
-      for (const rn of deletedRuns) {
-        sqlStore.removeRun(productId, rn);
-      }
-    }
     const summary = sqlStore.get?.(productId) || {};
     sqlStore.upsert({
       category: specDb.category,

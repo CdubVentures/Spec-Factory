@@ -1,40 +1,21 @@
 import { buildRingDasharray } from './pifRingMath.ts';
+import { buildPifVariantRingSpecs, type PifVariantRingProgress } from './pifVariantRingRoles.ts';
 import './PifVariantRings.css';
 
-export interface PifVariantRingsProps {
-  readonly priorityFilled: number;
-  readonly priorityTotal: number;
-  readonly loopFilled: number;
-  readonly loopTotal: number;
-  readonly heroFilled: number;
-  readonly heroTarget: number;
-}
-
-interface RingSpec {
-  readonly cls: 'outer' | 'middle' | 'inner';
-  readonly radius: number;
-  readonly filled: number;
-  readonly target: number;
-}
+export type PifVariantRingsProps = PifVariantRingProgress;
 
 /**
  * 3 concentric segmented rings per variant:
- *   Outer  (r=21) — Priority Views (Single Run) — `viewConfig` entries with priority:true
- *   Middle (r=14) — Hero slots — `heroCount` when `heroEnabled`
- *   Inner  (r=7)  — Loop Run extras — `viewBudget` views NOT in priority
+ *   Outer  (r=21) - carousel views filled over scored carousel view target
+ *   Middle (r=14) - additional non-scored carousel images over extra target
+ *   Inner  (r=7)  - hero slots over heroCount when heroEnabled
  *
  * Each ring is divided into N arcs where N = target; first `filled` arcs
- * are drawn in the ring's colour (amber while partial, theme colour when
+ * are drawn in the ring's color (amber while partial, theme color when
  * complete). Empty rings still render segmented tracks when target > 0.
  */
-export function PifVariantRings({
-  priorityFilled, priorityTotal, loopFilled, loopTotal, heroFilled, heroTarget,
-}: PifVariantRingsProps) {
-  const rings: RingSpec[] = [
-    { cls: 'outer',  radius: 21, filled: priorityFilled, target: priorityTotal },
-    { cls: 'middle', radius: 14, filled: heroFilled,     target: heroTarget    },
-    { cls: 'inner',  radius: 7,  filled: loopFilled,     target: loopTotal     },
-  ];
+export function PifVariantRings(props: PifVariantRingsProps) {
+  const rings = buildPifVariantRingSpecs(props);
 
   return (
     <span className="sf-pif-rings-stack">

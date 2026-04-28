@@ -44,9 +44,9 @@ test('generatePromptAuditReports writes category summary and per-prompt reports 
       now: new Date('2026-04-26T12:00:00Z'),
     });
 
-    assert.equal(result.summary.htmlPath, path.join(outputRoot, 'mouse', 'mouse-prompt-audit-summary.html'));
-    assert.equal(result.summary.mdPath, path.join(outputRoot, 'mouse', 'mouse-prompt-audit-summary.md'));
-    assert.ok(result.perPromptReports.basePath.endsWith(path.join('per-prompt', 'mouse')));
+    assert.equal(result.summary.htmlPath, path.join(outputRoot, 'mouse', 'summary', 'mouse-prompt-audit-summary.html'));
+    assert.equal(result.summary.mdPath, path.join(outputRoot, 'mouse', 'summary', 'mouse-prompt-audit-summary.md'));
+    assert.ok(result.perPromptReports.basePath.endsWith(path.join('mouse', 'per-prompt')));
     assert.ok(result.perPromptReports.count >= 8, 'CEF/PIF/eval/RDF/SKU reports are generated');
 
     const summary = await fs.readFile(result.summary.mdPath, 'utf8');
@@ -88,6 +88,7 @@ test('generatePromptAuditReports writes category summary and per-prompt reports 
     assert.match(rdfDoc, /RDF Discovery Prompt/);
     assert.match(rdfDoc, /`\{\{VARIANT_DISAMBIGUATION\}\}`/);
     assert.match(rdfDoc, /`variantScalarDisambiguation`/);
+    await fs.access(path.join(outputRoot, 'mouse', 'auditors-responses'));
   } finally {
     await fs.rm(outputRoot, { recursive: true, force: true });
   }
@@ -118,7 +119,50 @@ test('generatePromptAuditReports flags generic fallback prompt surfaces for cate
   }
 });
 
-test('generatePromptAuditReports overwrites prompt tree without deleting category-level human text files', async () => {
+test('generatePromptAuditReports archives previous per-prompt tree on regeneration', async () => {
+  const outputRoot = await mkTmpDir();
+  try {
+    await generatePromptAuditReports({
+      category: 'mouse',
+      outputRoot,
+      moduleSettings: {
+        productImageFinder: pifSettingsFixture(),
+        colorEditionFinder: {},
+        releaseDateFinder: {},
+        skuFinder: {},
+      },
+      now: new Date('2026-04-01T00:00:00Z'),
+    });
+
+    await generatePromptAuditReports({
+      category: 'mouse',
+      outputRoot,
+      moduleSettings: {
+        productImageFinder: pifSettingsFixture(),
+        colorEditionFinder: {},
+        releaseDateFinder: {},
+        skuFinder: {},
+      },
+      now: new Date('2026-04-02T00:00:00Z'),
+    });
+
+    const archivedPrompt = path.join(
+      outputRoot,
+      'mouse',
+      'archive',
+      '2026-04-02T00-00-00-000Z',
+      'per-prompt',
+      'pif',
+      'view-search.md',
+    );
+    const archived = await fs.readFile(archivedPrompt, 'utf8');
+    assert.match(archived, /2026-04-01T00:00:00.000Z/);
+  } finally {
+    await fs.rm(outputRoot, { recursive: true, force: true });
+  }
+});
+
+test('generatePromptAuditReports overwrites prompt tree without deleting auditor response patches', async () => {
   const outputRoot = await mkTmpDir();
   try {
     const categoryRoot = path.join(outputRoot, 'mouse');

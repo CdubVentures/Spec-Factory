@@ -106,14 +106,16 @@
     <div class="card-header"><span class="tag tag-accent">Definition</span> Key Finder Audit</div>
     <div class="card-body">
       <p>The Key Finder Audit is a generated self-contained review package for a product category. It tells a reviewer everything Key Finder will use for every field: current contract shape, enum policy, known values, component relations, cross-field constraints, evidence rules, aliases, search hints, priority routing, group membership, and the actual prompt preview.</p>
-      <p>The generated per-key reports are not the final deliverable. The human or LLM returns per-key Field Studio change files. The category-level summary is the compact final signoff matrix that overwrites only itself inside <code>.workspace/reports/&lt;category&gt;/</code> and does not delete returned text files.</p>
+      <p>The generated per-key reports are not the final deliverable. The human or LLM returns per-key Field Studio change files. The category-level summary is the compact final signoff matrix that overwrites only itself inside <code>.workspace/reports/&lt;category&gt;/</code> and does not delete returned JSON patch files.</p>
       <dl class="detail-grid">
         <dt>Generator feature</dt>
         <dd><code>src/features/category-audit/</code></dd>
         <dt>Category outputs</dt>
-        <dd><code>.workspace/reports/&lt;category&gt;/&lt;category&gt;-key-finder-summary.{html,md}</code></dd>
+        <dd><code>.workspace/reports/&lt;category&gt;/summary/&lt;category&gt;-key-finder-summary.{html,md}</code></dd>
         <dt>Per-key outputs</dt>
-        <dd><code>.workspace/reports/per-key/&lt;category&gt;/&lt;group&gt;/&lt;field_key&gt;.{html,md}</code> (generated subtree is wiped and rebuilt)</dd>
+        <dd><code>.workspace/reports/&lt;category&gt;/per-key/&lt;group&gt;/&lt;field_key&gt;.{html,md}</code> (generated subtree is wiped and rebuilt)</dd>
+        <dt>Archive</dt>
+        <dd><code>.workspace/reports/&lt;category&gt;/archive/&lt;timestamp&gt;/</code> keeps prior per-key/per-prompt trees for 90 days.</dd>
         <dt>Human-applied edits</dt>
         <dd>Field Studio: Mapping Studio first, Key Navigator second</dd>
       </dl>
@@ -127,7 +129,7 @@
     <div class="flow-arrow">-&gt;</div>
     <div class="flow-box flow-teal">Reviewer or LLM audit</div>
     <div class="flow-arrow">-&gt;</div>
-    <div class="flow-box flow-repair">Apply change file</div>
+    <div class="flow-box flow-repair">Import JSON patches</div>
     <div class="flow-arrow">-&gt;</div>
     <div class="flow-box flow-pass">Compile and benchmark</div>
   </div>
@@ -135,12 +137,13 @@
   <div class="card">
     <div class="card-header"><span class="tag tag-orange">Operator Note</span> What "Update DB" Means In This Loop</div>
     <div class="card-body">
-      <p>When the human points at Key Finder or a per-key Field Studio change file and says <strong>update DB</strong>, apply the requested authoring change to the existing category control-plane map: <code>category_authority/&lt;category&gt;/_control_plane/field_studio_map.json</code>. Do not edit generated artifacts or SQLite projection files for this task.</p>
+      <p>When the human points at Key Finder or a per-key Field Studio change file and says <strong>update DB</strong>, apply the requested authoring change to the existing category control-plane map only: <code>category_authority/&lt;category&gt;/_control_plane/field_studio_map.json</code>. Do not edit generated artifacts, SQLite projection files, component generated output, compiler/runtime/schema/API/UI source, or prompt code for this task.</p>
+      <p>The human owns the compile/rebuild step after the map edit. Stop after the map is updated and validated by inspection unless the human explicitly asks you to compile.</p>
       <table>
         <thead><tr><th>Change-file section</th><th>Control-plane target</th><th>Rule</th></tr></thead>
         <tbody>
           <tr><td>Mapping Studio - Enum Data Lists</td><td><code>data_lists[]</code></td><td>Edit canonical values, normalization, and enum guidance on the row whose <code>field</code> matches the key.</td></tr>
-          <tr><td>Mapping Studio - Component Source Mapping</td><td><code>component_sources[]</code></td><td>Edit component source/type, identity roles, aliases, links, properties, variance policy, and component-only behavior.</td></tr>
+          <tr><td>Mapping Studio - Component Source Mapping</td><td><code>component_sources[]</code></td><td>Edit setup controls only: source/type, tracked roles, property mappings, variance policy, product override, tolerance, constraints, and component-only behavior. Do not request concrete component entity rows, aliases, properties, or URLs here.</td></tr>
           <tr><td>Key Navigator panels</td><td><code>field_overrides.&lt;field_key&gt;</code></td><td>Edit contract, priority, enum policy, component relation, constraints, evidence, tooltip, search hints, aliases, and <code>ai_assist</code>.</td></tr>
           <tr><td>Key order / groups</td><td><code>field_key_order.json</code> and <code>field_overrides.*.ui.group</code></td><td>Only touch order/group data when the change file asks for navigation or grouping changes.</td></tr>
         </tbody>
@@ -231,7 +234,7 @@
           <tr>
             <td>6</td>
             <td><strong>Key Navigator - Components</strong></td>
-            <td>Per-key component relation such as <code>component.type</code> or component DB cascade. Property/variance edits still belong in Mapping Studio.</td>
+            <td>Per-key component relation such as <code>component.type</code> or component source cascade. Property/variance setup belongs in Mapping Studio; concrete component entity rows are out of scope.</td>
           </tr>
           <tr>
             <td>7</td>
@@ -273,7 +276,7 @@
           <tr><td>Enum list</td><td>Are canonical values clean, stable, user-facing, and not aliases/source phrases? Are there too many chips?</td></tr>
           <tr><td>Priority route</td><td>Should it be mandatory? Is availability always/sometimes/rare? Is difficulty calibrated to benchmark-depth extraction?</td></tr>
           <tr><td>Evidence</td><td>How many evidence refs are needed? Are manufacturer, datasheet, lab, review, retailer tiers ordered correctly?</td></tr>
-          <tr><td>Components</td><td>Is the value owned by the product, a component DB entity, or both with override rules?</td></tr>
+          <tr><td>Components</td><td>Is the Field Studio setup treating the value as product-authored, component-derived, or product-overridable?</td></tr>
           <tr><td>Constraints</td><td>Does it depend on another field? Are the relationship and target field correct?</td></tr>
           <tr><td>Variant inventory context</td><td>Should Key Finder receive the active CEF variant table as an evidence filter for this key? Enable only when variant identity facts such as edition, SKU, release date, colorway, or PIF image status add value without ambiguity.</td></tr>
           <tr><td>PIF priority images</td><td>Should Key Finder receive default/base PIF priority-view images for this key? Enable only for visual keys where those views add value; missing/unattachable images are not negative evidence.</td></tr>
@@ -360,7 +363,7 @@ Reason: common materials can be known, but real products may introduce legitimat
   <div class="card">
     <div class="card-header"><span class="tag tag-teal">Components</span> Product Value vs Component Property</div>
     <div class="card-body">
-      <p>Some values are not really product-authored values. They are properties of a component or sub-entity. The audit must decide whether a key belongs on the product, the component DB, or both.</p>
+      <p>Some values are not really product-authored values. They are properties of a component or sub-entity. The audit must decide how the Field Studio component source mapping should be configured for the key. Concrete component entity row edits are out of scope for the Field Studio change file.</p>
       <table>
         <thead><tr><th>Component mapping field</th><th>Meaning</th></tr></thead>
         <tbody>
@@ -485,10 +488,11 @@ Reason: common materials can be known, but real products may introduce legitimat
         <li>Confirm it generated both the category-level report and per-key docs.</li>
         <li>Use the Markdown output for LLM review and the HTML output for human browsing.</li>
       </ol>
-      <pre>.workspace/reports/&lt;category&gt;/&lt;category&gt;-key-finder-summary.html
-.workspace/reports/&lt;category&gt;/&lt;category&gt;-key-finder-summary.md
-.workspace/reports/per-key/&lt;category&gt;/&lt;group&gt;/&lt;field_key&gt;.html
-.workspace/reports/per-key/&lt;category&gt;/&lt;group&gt;/&lt;field_key&gt;.md</pre>
+      <pre>.workspace/reports/&lt;category&gt;/summary/&lt;category&gt;-key-finder-summary.html
+.workspace/reports/&lt;category&gt;/summary/&lt;category&gt;-key-finder-summary.md
+.workspace/reports/&lt;category&gt;/per-key/&lt;group&gt;/&lt;field_key&gt;.html
+.workspace/reports/&lt;category&gt;/per-key/&lt;group&gt;/&lt;field_key&gt;.md
+.workspace/reports/&lt;category&gt;/archive/&lt;timestamp&gt;/per-key/</pre>
     </div>
   </div>
 
@@ -506,99 +510,69 @@ Body: { "consumer": "key_finder" }</pre>
   <div class="card">
     <div class="card-header"><span class="tag tag-purple">Handoff</span> What To Tell The Reviewer</div>
     <div class="card-body">
-      <p>When handing a generated report to an LLM, require two outputs:</p>
+      <p>When handing a generated report to an LLM, require strict JSON patch files first, then the normal prose audit. The returned files go in <code>.workspace/reports/&lt;category&gt;/auditors-responses/</code> and can be imported as a batch.</p>
       <ol>
-        <li>A downloadable text file first, or a fenced <code>text</code> block if file attachments are not supported.</li>
-        <li>A normal audit report with verdict, coverage, highest-risk corrections, per-field patches, enum cleanup, component DB additions, group audit, and open questions.</li>
+        <li>One downloadable <code>.json</code> file per changed key, named <code>&lt;category&gt;-&lt;sort_order&gt;-&lt;field_key&gt;.field-studio-patch.v1.json</code>.</li>
+        <li>A normal audit report with verdict, coverage, highest-risk corrections, per-field rationale, enum cleanup, component source-mapping setup, group audit, and open questions.</li>
       </ol>
-      <p>The downloadable text file should be short and in Field Studio order so the human can apply it panel by panel.</p>
-      <pre># &lt;CATEGORY&gt; KEYFINDER FIELD STUDIO CHANGE FILE
-# Apply in this order: Mapping Studio first, then Key Navigator.
-# Use "No change" when the current value is already correct.
-# Enum list values are edited in Mapping Studio. Key Navigator Enum Policy only links policy, source, and format.
-# Start each field section with the Key Navigator sort number, e.g. 10-connection.
-
-## &lt;sort_order&gt;-&lt;field_key&gt; - &lt;Keep | Minor revise | Major revise | Schema decision&gt;
-
-Mapping Studio:
-
-Component Source Mapping:
-- component source/type: &lt;sensor|switch|encoder|material|other|blank|No change&gt;
-- primary identifier role: &lt;source field / attribute / No change&gt;
-- maker role: &lt;source field / blank / No change&gt;
-- aliases/name variants: &lt;ordered list, blank, or No change&gt;
-- reference URLs/links: &lt;ordered list, blank, or No change&gt;
-- component _link fields: for fields such as sensor_link, encoder_link, switch_link, or mcu_link, reference URLs/links must target the exact component's own manufacturer component page, datasheet/spec-sheet PDF, support PDF, or maker documentation. If no maker source exists, an authorized component distributor/supplier page for the exact component is acceptable as a fallback. Do not use product pages, reviews, or consumer marketplaces; not eBay-style marketplaces, random resale listings, forum posts, or articles that merely mention the component. If no component-level source exists, say so in References spot-checked/open questions.
-- attributes/properties:
-  - field_key: &lt;field key | No change&gt;
-  - variance_policy: &lt;authoritative|upper_bound|lower_bound|range|override_allowed|majority_vote|blank|No change&gt;
-  - component_only: &lt;true|false|No change&gt;
-  - allow product override: &lt;true|false|No change&gt;
-  - tolerance: &lt;number | blank | No change&gt;
-  - property constraints: &lt;ordered list, blank, or No change&gt;
-
-Enum Data Lists:
-- data list field/name: &lt;data list name | blank | No change&gt;
-- normalize: &lt;normalize mode | blank | No change&gt;
-- values operation: &lt;replace list|add values|remove values|rename values|No change&gt;
-- final ordered values: &lt;ordered canonical list, blank, or No change&gt;
-- remove values: &lt;ordered list, or none&gt;
-- rename values: &lt;old -&gt; new list, or none&gt;
-- source phrases/aliases to keep out of chips: &lt;list, or none&gt;
-- AI review priority: &lt;required_level / availability / difficulty, or No change&gt;
-- enum guidance: &lt;short note, or No change&gt;
-
-Key Navigator:
-
-Contract:
-- variant_dependent: &lt;true|false|No change&gt;
-- type: &lt;string|number|integer|boolean|date|No change&gt;
-- shape: &lt;scalar|list|No change&gt;
-- unit: &lt;target value | blank | No change&gt;
-- variance_policy: &lt;authoritative|upper_bound|lower_bound|majority_vote|blank|No change&gt;
-- range.min: &lt;number | blank | No change&gt;
-- range.max: &lt;number | blank | No change&gt;
-- list_rules.dedupe: &lt;true|false|blank|No change&gt;
-- list_rules.sort: &lt;asc|desc|source|blank|No change&gt;
-- list_rules.item_union: &lt;true|false|blank|No change&gt;
-- rounding.decimals: &lt;number | blank | No change&gt;
-- rounding.mode: &lt;nearest|floor|ceil|half_even|blank|No change&gt;
-
-Extraction Priority &amp; Guidance:
-- required_level: &lt;mandatory|non_mandatory|No change&gt;
-- availability: &lt;always|sometimes|rare|No change&gt;
-- difficulty: &lt;easy|medium|hard|very_hard|No change&gt;
-- search/routing reason: &lt;one short reason tied to benchmark-depth extraction and model/search strength&gt;
-- AI reasoning note: &lt;paste-ready ai_assist.reasoning_note, "(empty - keep)", or No change&gt;
-- Variant inventory context: &lt;enabled|disabled|No change&gt; (enable only when variant identity adds evidence-filter value without ambiguity)
-- PIF Priority Images: &lt;enabled|disabled|No change&gt; (enable only when default/base priority-view images add visual evidence value; preview shows images at bottom when attachable)
-
-Enum Policy:
-- policy: &lt;closed|open_prefer_known|open|blank|No change&gt;
-- source: &lt;data_lists.name|component_db.type|blank|No change&gt;
-- format pattern: &lt;pattern | blank | No change&gt;
-- note: &lt;actual enum list values live in Mapping Studio Enum Data Lists; use No change if already understood&gt;
-
-Components:
-- component.type: &lt;component type | blank | No change&gt;
-- component source cascade: &lt;enum.source/component_db linkage | blank | No change&gt;
-- component mapping note: &lt;property and variance edits belong in Mapping Studio Component Source Mapping, or No change&gt;
-
-Cross-Field Constraints:
-- constraints: &lt;ordered list, blank, or No change&gt;
-
-Evidence:
-- min_evidence_refs: &lt;number | No change&gt;
-- tier_preference: &lt;ordered list | blank | No change&gt;
-
-Search Hints &amp; Aliases:
-- Aliases: &lt;ordered alias list, blank, or No change&gt;
-- Domain Hints: &lt;ordered list, blank, or No change&gt;
-- Content Types: &lt;ordered list, blank, or No change&gt;
-- Query Terms: &lt;ordered list, blank, or No change&gt;</pre>
+      <p>Do not ask for a text file. JSON files must omit unchanged paths entirely; prose sentinels are rejected by the importer.</p>
+      <pre>{
+  "schema_version": "field-studio-patch.v1",
+  "category": "mouse",
+  "field_key": "design",
+  "navigator_ordinal": 7,
+  "verdict": "minor_revise",
+  "patch": {
+    "field_overrides": {
+      "design": {
+        "priority": {
+          "required_level": "mandatory",
+          "availability": "always",
+          "difficulty": "medium"
+        },
+        "contract": {
+          "type": "string",
+          "shape": "scalar"
+        },
+        "enum": {
+          "policy": "open_prefer_known",
+          "source": "data_lists.design"
+        },
+        "ai_assist": {
+          "variant_inventory_usage": { "enabled": false },
+          "pif_priority_images": { "enabled": false },
+          "reasoning_note": "Paste-ready extraction guidance."
+        }
+      }
+    },
+    "data_lists": [
+      {
+        "field": "design",
+        "mode": "manual",
+        "normalize": "lower_trim",
+        "manual_values": []
+      }
+    ],
+    "component_sources": [
+      {
+        "component_type": "sensor",
+        "roles": {
+          "properties": [
+            { "field_key": "design", "variance_policy": "authoritative" }
+          ]
+        }
+      }
+    ]
+  },
+  "audit": {
+    "sources_checked": [],
+    "products_checked": [],
+    "conclusion": "",
+    "open_questions": []
+  }
+}</pre>
     </div>
   </div>
-
   <div class="section-title"><span class="num">13</span> Grouping Guidance</div>
 
   <div class="card">
@@ -611,7 +585,7 @@ Search Hints &amp; Aliases:
           <tr><td>Product identity / lifecycle / availability</td><td><code>sku</code>, <code>colors</code>, <code>editions</code>, <code>release_date</code>, <code>discontinued</code>, <code>price_range</code></td><td>These are purchase/listing/variant lifecycle fields. They should be reviewed together.</td></tr>
           <tr><td>Design status / edition type</td><td><code>design</code></td><td>Edition status should not be mixed with visual styling or lighting.</td></tr>
           <tr><td>Lighting / electronics</td><td><code>lighting</code>, <code>rgb</code>, zone counts</td><td>Lighting behavior is not the same as product design/edition status.</td></tr>
-          <tr><td>Component identity/property</td><td>Component model, maker, release date, maximum rating, supported rates</td><td>Many values depend on component DB identity and constraints.</td></tr>
+          <tr><td>Component identity/property</td><td>Component type, maker role, tracked attributes, variance policy</td><td>Audit the Field Studio mapping controls only; concrete component entity data belongs to a separate cleanup pass.</td></tr>
           <tr><td>Subtle visual traits</td><td>Proportional location, contour/taper, intended-use class, orientation</td><td>These are often visual Tier B calls and need repeatable guidance.</td></tr>
         </tbody>
       </table>
@@ -695,9 +669,9 @@ Design means the way the product looks.</pre>
         <li>Open <code>docs/implementation/archive/key-finder-audits/HANDOFF.md</code> if you need implementation details for the generator.</li>
         <li>Generate all Key Finder Audit reports for the category from Studio.</li>
         <li>Use the category Markdown report as the LLM handoff. Use the per-key Markdown/HTML docs when reviewing a specific key.</li>
-        <li>Require a downloadable text file first, ordered as Mapping Studio then Key Navigator.</li>
+        <li>Require strict downloadable JSON patch files first, one per changed key, then the prose audit.</li>
         <li>Review enum and component changes before guidance. Actual enum value changes go in Mapping Studio Enum Data Lists.</li>
-        <li>If the human says <strong>update DB</strong> for a Field Studio change file, edit <code>category_authority/&lt;category&gt;/_control_plane/field_studio_map.json</code> only. Do not edit <code>_generated/*</code>, SQLite files, compiler, runtime, schema, API, or UI source code unless explicitly asked.</li>
+        <li>If the human says <strong>import patches</strong>, apply the approved files from <code>.workspace/reports/&lt;category&gt;/auditors-responses/</code> to <code>category_authority/&lt;category&gt;/_control_plane/field_studio_map.json</code> only. Do not edit <code>_generated/*</code>, SQLite files, component generated output, compiler, runtime, schema, API, UI source code, or prompt code unless explicitly asked.</li>
         <li>Apply approved edits in Field Studio or the control-plane map.</li>
         <li>Let the human compile the category rules unless they explicitly ask you to run compile.</li>
         <li>Regenerate the audit report and diff it against the previous run.</li>

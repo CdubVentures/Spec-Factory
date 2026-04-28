@@ -24,6 +24,26 @@ import { createVariantScalarFieldProducer } from '../variantScalarFieldProducer.
 function makeFakeFeatureInjection(overrides = {}) {
   const memoryStore = { runs: [] };
   const publisherMetadataCalls = [];
+  const recalculateFromRuns = (runs, productId = 'fake-p1', category = 'mouse') => {
+    const sorted = [...runs].sort((a, b) => a.run_number - b.run_number);
+    const latestByVariant = new Map();
+    for (const run of sorted) {
+      if (run.status === 'rejected') continue;
+      for (const candidate of run.selected?.candidates || []) {
+        const key = candidate.variant_id || candidate.variant_key || '';
+        if (key) latestByVariant.set(key, candidate);
+      }
+    }
+    return {
+      product_id: productId,
+      category,
+      selected: { candidates: [...latestByVariant.values()] },
+      last_ran_at: sorted[sorted.length - 1]?.ran_at || '',
+      run_count: sorted.length,
+      next_run_number: (sorted[sorted.length - 1]?.run_number || 0) + 1,
+      runs: sorted,
+    };
+  };
 
   return {
     finderName: 'fakeFinder',
@@ -70,6 +90,12 @@ function makeFakeFeatureInjection(overrides = {}) {
 
     readRuns: () => ({ runs: memoryStore.runs }),
 
+    writeRuns: ({ data }) => {
+      memoryStore.runs = Array.isArray(data?.runs) ? data.runs : [];
+    },
+
+    recalculateFromRuns,
+
     satisfactionPredicate: (result) => result?.published === true,
 
     _memoryStore: memoryStore,
@@ -97,7 +123,13 @@ const COMPILED_FIELD_RULES = {
   known_values: {},
 };
 
-function makeSpecDbStub({ variants = DEFAULT_VARIANTS, storeSettings = {}, throwOnReplaceEvidence = false, resolvedVariantIds = [] } = {}) {
+function makeSpecDbStub({
+  variants = DEFAULT_VARIANTS,
+  storeSettings = {},
+  throwOnReplaceEvidence = false,
+  resolvedVariantIds = [],
+  finderStoreOverrides = {},
+} = {}) {
   const submittedCandidates = [];
   const evidenceByCandidateId = new Map();
   const finderStoreCalls = [];
@@ -108,6 +140,7 @@ function makeSpecDbStub({ variants = DEFAULT_VARIANTS, storeSettings = {}, throw
     getSetting: (k) => (k in storeSettings ? String(storeSettings[k]) : ''),
     upsert: (row) => { upserts.push(row); },
     insertRun: (row) => { insertRuns.push(row); },
+    ...finderStoreOverrides,
   };
 
   const resolvedRows = resolvedVariantIds.map((vid) => ({
@@ -335,6 +368,102 @@ describe('variantScalarFieldProducer — runOnce happy path', () => {
     assert.equal(run.selected.candidates[0].value, null);
     assert.equal(run.response.some_date, null);
     assert.equal(run.response.unknown_reason, 'not disclosed');
+  });
+});
+
+describe('variantScalarFieldProducer — SQL-first history and persistence', () => {
+  it('runOnce reads previous discovery from SQL runs before stale JSON history', async () => {
+    const seen = [];
+    const injection = makeFakeFeatureInjection({
+      readRuns: () => ({
+        runs: [{
+          run_number: 1,
+          response: {
+            variant_id: 'v1',
+            variant_key: 'v:1',
+            discovery_log: {
+              urls_checked: ['https://json-stale.example'],
+              queries_run: ['json stale query'],
+            },
+          },
+        }],
+      }),
+      createCallLlm: () => async (args) => {
+        seen.push(args.previousDiscovery);
+        return {
+          result: {
+            some_date: '2024-03-15',
+            confidence: 85,
+            unknown_reason: '',
+            evidence_refs: [{ url: 'https://fake.example.com', tier: 'tier1', confidence: 90 }],
+            discovery_log: { urls_checked: [], queries_run: [], notes: [] },
+          },
+          usage: null,
+        };
+      },
+    });
+    const sqlRuns = [{
+      run_number: 7,
+      response: {
+        variant_id: 'v1',
+        variant_key: 'v:1',
+        discovery_log: {
+          urls_checked: ['https://sql-current.example'],
+          queries_run: ['sql current query'],
+        },
+      },
+    }];
+    const specDb = makeSpecDbStub({
+      variants: [DEFAULT_VARIANTS[0]],
+      storeSettings: { urlHistoryEnabled: 'true', queryHistoryEnabled: 'true' },
+      finderStoreOverrides: {
+        get: () => ({
+          category: 'mouse',
+          product_id: PRODUCT.product_id,
+          run_count: 1,
+          latest_ran_at: '2026-04-01T00:00:00Z',
+        }),
+        listRuns: () => sqlRuns,
+      },
+    });
+    const { runOnce } = createVariantScalarFieldProducer(injection);
+
+    await runOnce({
+      product: PRODUCT, appDb: null, specDb, config: {}, productRoot: '/tmp',
+    });
+
+    assert.deepEqual(seen[0], {
+      urlsChecked: ['https://sql-current.example'],
+      queriesRun: ['sql current query'],
+    });
+  });
+
+  it('does not mutate the JSON mirror when SQL run insert fails', async () => {
+    const injection = makeFakeFeatureInjection();
+    const specDb = makeSpecDbStub({
+      variants: [DEFAULT_VARIANTS[0]],
+      finderStoreOverrides: {
+        get: () => ({
+          category: 'mouse',
+          product_id: PRODUCT.product_id,
+          run_count: 0,
+          latest_ran_at: '',
+        }),
+        listRuns: () => [],
+        insertRun: () => {
+          throw new Error('sql insert failed');
+        },
+      },
+    });
+    const { runOnce } = createVariantScalarFieldProducer(injection);
+
+    const result = await runOnce({
+      product: PRODUCT, appDb: null, specDb, config: {}, productRoot: '/tmp',
+    });
+
+    assert.equal(result.errors.length, 1);
+    assert.match(result.errors[0].error, /sql insert failed/);
+    assert.equal(injection._memoryStore.runs.length, 0);
   });
 });
 

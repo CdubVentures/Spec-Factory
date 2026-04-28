@@ -314,8 +314,16 @@ export function prepareStatements(db) {
       SELECT * FROM crawl_sources WHERE product_id = ? ORDER BY crawled_at DESC
     `),
 
+    _getCrawlSourcesByRunId: db.prepare(`
+      SELECT * FROM crawl_sources WHERE run_id = ? ORDER BY crawled_at DESC
+    `),
+
     _getScreenshotsByProduct: db.prepare(`
       SELECT * FROM source_screenshots WHERE product_id = ? ORDER BY captured_at DESC
+    `),
+
+    _getScreenshotsByRunId: db.prepare(`
+      SELECT * FROM source_screenshots WHERE run_id = ? ORDER BY captured_at DESC
     `),
 
     _insertVideo: db.prepare(`
@@ -332,6 +340,10 @@ export function prepareStatements(db) {
 
     _getVideosByProduct: db.prepare(`
       SELECT * FROM source_videos WHERE product_id = ? ORDER BY captured_at DESC
+    `),
+
+    _getVideosByRunId: db.prepare(`
+      SELECT * FROM source_videos WHERE run_id = ? ORDER BY captured_at DESC
     `),
 
     _getCrawlSourceByHash: db.prepare(`

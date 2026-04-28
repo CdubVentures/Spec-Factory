@@ -7,6 +7,10 @@ import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js
 
 const PRODUCT_ID = `pif-route-data-change-${process.pid}-${Date.now()}`;
 const CATEGORY = 'mouse';
+const ONE_PIXEL_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+  'base64',
+);
 
 function writeProductImagesDoc() {
   const productDir = path.join(defaultProductRoot(), PRODUCT_ID);
@@ -96,6 +100,92 @@ function writeProductImagesDocWithCarouselState() {
   }, null, 2));
 }
 
+function writeProductImagesDocWithProcessableHero() {
+  const productDir = path.join(defaultProductRoot(), PRODUCT_ID);
+  const imagesDir = path.join(productDir, 'images');
+  fs.mkdirSync(imagesDir, { recursive: true });
+  fs.writeFileSync(path.join(imagesDir, 'hero-black.jpg'), ONE_PIXEL_PNG);
+  const heroImage = {
+    view: 'hero',
+    filename: 'hero-black.jpg',
+    variant_key: 'color:black',
+    variant_id: 'variant-black',
+    eval_best: true,
+    eval_reasoning: 'best hero before processing',
+    hero: true,
+    hero_rank: 1,
+  };
+  fs.writeFileSync(path.join(productDir, 'product_images.json'), JSON.stringify({
+    product_id: PRODUCT_ID,
+    category: CATEGORY,
+    selected: { images: [heroImage] },
+    image_count: 1,
+    run_count: 1,
+    runs: [{
+      run_number: 1,
+      ran_at: '2026-04-26T20:00:00.000Z',
+      model: 'test-model',
+      selected: { images: [{ ...heroImage }] },
+      response: { images: [{ ...heroImage }] },
+    }],
+    carousel_slots: {
+      'color:black': { hero_1: 'hero-black.jpg' },
+    },
+  }, null, 2));
+}
+
+function writeProductImagesDocWithTwoRunsAndCarouselState() {
+  const productDir = path.join(defaultProductRoot(), PRODUCT_ID);
+  const imagesDir = path.join(productDir, 'images');
+  fs.mkdirSync(imagesDir, { recursive: true });
+  for (const filename of ['top-black.png', 'top-white.png']) {
+    fs.writeFileSync(path.join(imagesDir, filename), ONE_PIXEL_PNG);
+  }
+  const blackTop = {
+    view: 'top',
+    filename: 'top-black.png',
+    variant_key: 'color:black',
+    variant_id: 'variant-black',
+    eval_best: true,
+    eval_reasoning: 'deleted run winner',
+  };
+  const whiteTop = {
+    view: 'top',
+    filename: 'top-white.png',
+    variant_key: 'color:white',
+    variant_id: 'variant-white',
+    eval_best: true,
+    eval_reasoning: 'surviving run winner',
+  };
+  fs.writeFileSync(path.join(productDir, 'product_images.json'), JSON.stringify({
+    product_id: PRODUCT_ID,
+    category: CATEGORY,
+    selected: { images: [blackTop, whiteTop] },
+    image_count: 2,
+    run_count: 2,
+    runs: [
+      {
+        run_number: 1,
+        ran_at: '2026-04-26T20:00:00.000Z',
+        model: 'test-model',
+        selected: { images: [{ ...blackTop }] },
+        response: { images: [{ ...blackTop }] },
+      },
+      {
+        run_number: 2,
+        ran_at: '2026-04-26T20:01:00.000Z',
+        model: 'test-model',
+        selected: { images: [{ ...whiteTop }] },
+        response: { images: [{ ...whiteTop }] },
+      },
+    ],
+    carousel_slots: {
+      'color:black': { top: 'top-black.png' },
+      'color:white': { top: 'top-white.png' },
+    },
+  }, null, 2));
+}
+
 function readProductImagesDoc() {
   return JSON.parse(fs.readFileSync(
     path.join(defaultProductRoot(), PRODUCT_ID, 'product_images.json'),
@@ -110,26 +200,67 @@ function createCtx(requestBody, options = {}) {
   const runInserts = [];
   const runJsonUpdates = [];
   const progressUpserts = [];
+  const projectionEvents = [];
+  let transactionDepth = 0;
   const variants = options.variants ?? [
     {
       variant_id: 'variant-black',
       variant_key: 'color:black',
     },
   ];
+  const settings = options.settings ?? {};
   const specDb = {
+    db: {
+      transaction: (work) => (...args) => {
+        projectionEvents.push({ type: 'transaction:begin', txDepth: transactionDepth });
+        transactionDepth += 1;
+        try {
+          return work(...args);
+        } finally {
+          transactionDepth -= 1;
+          projectionEvents.push({ type: 'transaction:commit', txDepth: transactionDepth });
+        }
+      },
+    },
     variants: {
       listActive: () => variants,
     },
-    upsertPifVariantProgress: (row) => progressUpserts.push(row),
-    deletePifVariantProgressByProduct: () => {},
+    upsertPifVariantProgress: (row) => {
+      projectionEvents.push({ type: 'progress', txDepth: transactionDepth });
+      progressUpserts.push(row);
+    },
+    deletePifVariantProgressByProduct: () => {
+      projectionEvents.push({ type: 'progress:delete', txDepth: transactionDepth });
+    },
     getFinderStore: (moduleId) => {
       assert.equal(moduleId, 'productImageFinder');
       return {
-        updateSummaryField: (...args) => summaryUpdates.push(args),
-        upsert: (row) => summaryUpserts.push(row),
-        insertRun: (row) => runInserts.push(row),
-        updateRunJson: (...args) => runJsonUpdates.push(args),
-        getSetting: () => '',
+        updateSummaryField: (...args) => {
+          projectionEvents.push({ type: 'summaryField', txDepth: transactionDepth });
+          summaryUpdates.push(args);
+        },
+        upsert: (row) => {
+          projectionEvents.push({ type: 'summaryUpsert', txDepth: transactionDepth });
+          summaryUpserts.push(row);
+        },
+        insertRun: (row) => {
+          projectionEvents.push({ type: 'runInsert', txDepth: transactionDepth });
+          runInserts.push(row);
+        },
+        updateRunJson: (...args) => {
+          projectionEvents.push({ type: 'runJsonUpdate', txDepth: transactionDepth });
+          runJsonUpdates.push(args);
+        },
+        removeRun: () => {
+          projectionEvents.push({ type: 'runRemove', txDepth: transactionDepth });
+        },
+        removeAllRuns: () => {
+          projectionEvents.push({ type: 'runRemoveAll', txDepth: transactionDepth });
+        },
+        remove: () => {
+          projectionEvents.push({ type: 'summaryRemove', txDepth: transactionDepth });
+        },
+        getSetting: (key) => settings[key] ?? '',
       };
     },
   };
@@ -148,6 +279,7 @@ function createCtx(requestBody, options = {}) {
     _runInserts: runInserts,
     _runJsonUpdates: runJsonUpdates,
     _progressUpserts: progressUpserts,
+    _projectionEvents: projectionEvents,
   };
 }
 
@@ -191,6 +323,69 @@ describe('productImageFinderRoutes data-change contract', () => {
     assert.deepEqual(emitted?.payload?.entities?.productIds, [PRODUCT_ID]);
     assert.equal(emitted?.payload?.meta?.variantKey, 'color:black');
     assert.equal(emitted?.payload?.meta?.slot, 'top');
+  });
+
+  it('updates carousel slot summary and progress inside one SQL transaction', async () => {
+    writeProductImagesDoc();
+    const ctx = createCtx({
+      variant_key: 'color:black',
+      slot: 'top',
+      filename: 'top-black.png',
+    });
+    const handler = registerProductImageFinderRoutes(ctx);
+
+    const result = await handler(
+      ['product-image-finder', CATEGORY, PRODUCT_ID, 'carousel-slot'],
+      new URLSearchParams(),
+      'PATCH',
+      {},
+      {},
+    );
+
+    assert.equal(result.status, 200);
+    const writeEvents = ctx._projectionEvents.filter((event) => (
+      event.type === 'summaryField' || event.type === 'progress'
+    ));
+    assert.deepEqual(writeEvents.map((event) => event.txDepth), [1, 1]);
+    assert.deepEqual(ctx._projectionEvents.map((event) => event.type), [
+      'transaction:begin',
+      'summaryField',
+      'progress',
+      'transaction:commit',
+    ]);
+  });
+
+  it('projects optional carousel placeholders as overfill and extra-image progress', async () => {
+    writeProductImagesDoc();
+    const ctx = createCtx({
+      variant_key: 'color:black',
+      slot: 'right',
+      filename: 'right-black.png',
+    }, {
+      settings: {
+        viewBudget: '["top","left"]',
+        carouselScoredViews: '["top","left"]',
+        carouselOptionalViews: '["right"]',
+        carouselExtraTarget: '3',
+        heroEnabled: 'false',
+      },
+    });
+    const handler = registerProductImageFinderRoutes(ctx);
+
+    const result = await handler(
+      ['product-image-finder', CATEGORY, PRODUCT_ID, 'carousel-slot'],
+      new URLSearchParams(),
+      'PATCH',
+      {},
+      {},
+    );
+
+    assert.equal(result.status, 200);
+    assert.equal(ctx._progressUpserts.length, 1);
+    assert.equal(ctx._progressUpserts[0].priorityFilled, 1);
+    assert.equal(ctx._progressUpserts[0].priorityTotal, 2);
+    assert.equal(ctx._progressUpserts[0].loopFilled, 1);
+    assert.equal(ctx._progressUpserts[0].loopTotal, 3);
   });
 
   it('bulk image delete rewrites PIF state once and recomputes Overview progress', async () => {
@@ -261,6 +456,65 @@ describe('productImageFinderRoutes data-change contract', () => {
     const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
     assert.equal(emitted?.payload?.event, 'product-image-finder-image-deleted');
     assert.deepEqual(emitted?.payload?.meta?.deletedImage, 'top-black.png');
+  });
+
+  it('image processing remaps SQL carousel slots and eval state after filename changes', async () => {
+    writeProductImagesDocWithProcessableHero();
+    const ctx = createCtx({});
+    const handler = registerProductImageFinderRoutes(ctx);
+
+    const result = await handler(
+      ['product-image-finder', CATEGORY, PRODUCT_ID, 'images', 'hero-black.jpg', 'process'],
+      new URLSearchParams(),
+      'POST',
+      {},
+      {},
+    );
+
+    assert.equal(result.status, 200);
+    assert.equal(result.body.filename, 'hero-black.png');
+
+    const doc = readProductImagesDoc();
+    assert.equal(doc.carousel_slots['color:black'].hero_1, 'hero-black.png');
+    assert.equal(doc.selected.images[0].eval_reasoning, 'best hero before processing');
+
+    assert.equal(ctx._summaryUpserts.length, 1);
+    assert.deepEqual(ctx._summaryUpserts[0].carousel_slots, {
+      'color:black': { hero_1: 'hero-black.png' },
+    });
+    assert.deepEqual(Object.keys(ctx._summaryUpserts[0].eval_state), ['hero-black.png']);
+    assert.equal(ctx._summaryUpserts[0].eval_state['hero-black.png'].eval_reasoning, 'best hero before processing');
+  });
+
+  it('run delete recomputes PIF SQL carousel and eval state for surviving images', async () => {
+    writeProductImagesDocWithTwoRunsAndCarouselState();
+    const ctx = createCtx({}, {
+      variants: [
+        { variant_id: 'variant-black', variant_key: 'color:black' },
+        { variant_id: 'variant-white', variant_key: 'color:white' },
+      ],
+    });
+    const handler = registerProductImageFinderRoutes(ctx);
+
+    const result = await handler(
+      ['product-image-finder', CATEGORY, PRODUCT_ID, 'runs', '1'],
+      new URLSearchParams(),
+      'DELETE',
+      {},
+      {},
+    );
+
+    assert.equal(result.status, 200);
+    assert.equal(ctx._summaryUpserts.length, 1);
+    assert.deepEqual(ctx._summaryUpserts[0].carousel_slots, {
+      'color:white': { top: 'top-white.png' },
+    });
+    assert.deepEqual(Object.keys(ctx._summaryUpserts[0].eval_state), ['top-white.png']);
+    assert.equal(ctx._summaryUpserts[0].eval_state['top-white.png'].eval_reasoning, 'surviving run winner');
+    assert.equal(ctx._progressUpserts.length, 2);
+    const progressByVariant = new Map(ctx._progressUpserts.map((row) => [row.variantId, row]));
+    assert.equal(progressByVariant.get('variant-black').imageCount, 0);
+    assert.equal(progressByVariant.get('variant-white').imageCount, 1);
   });
 
   it('clear-all carousel winners updates projections and emits the carousel-updated event', async () => {

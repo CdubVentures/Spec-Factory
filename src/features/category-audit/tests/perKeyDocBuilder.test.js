@@ -150,12 +150,13 @@ test('generatePerKeyDocs writes one pair per non-reserved key', async () => {
     const reservedSummary = await fs.readFile(result.reservedKeysPath, 'utf8');
     assert.match(reservedSummary, /colors/);
     assert.match(reservedSummary, /CEF|colorEditionFinder/i);
+    await fs.access(path.join(outputRoot, 'mouse', 'auditors-responses'));
   } finally {
     await cleanupDir(outputRoot);
   }
 });
 
-test('output path is <outputRoot>/per-key/<category>/<group>/<fieldKey>.{html,md}', async () => {
+test('output path is <outputRoot>/<category>/per-key/<group>/<fieldKey>.{html,md}', async () => {
   const outputRoot = await mkTmpDir();
   try {
     const result = await generatePerKeyDocs({
@@ -169,7 +170,7 @@ test('output path is <outputRoot>/per-key/<category>/<group>/<fieldKey>.{html,md
     });
     const dpiEntry = result.written.find((e) => e.fieldKey === 'dpi');
     assert.ok(dpiEntry, 'dpi entry present');
-    const expected = path.join(outputRoot, 'per-key', 'mouse', 'sensor_performance', 'dpi.html');
+    const expected = path.join(outputRoot, 'mouse', 'per-key', 'sensor_performance', 'dpi.html');
     assert.equal(dpiEntry.htmlPath, expected);
   } finally {
     await cleanupDir(outputRoot);
@@ -206,6 +207,51 @@ test('rolling overwrite — running twice replaces the prior contents', async ()
   }
 });
 
+test('regeneration archives previous per-key tree and prunes archives older than 90 days', async () => {
+  const outputRoot = await mkTmpDir();
+  try {
+    await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesFixture(),
+      fieldGroups: fieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot,
+      now: new Date('2026-01-01T00:00:00Z'),
+    });
+
+    const staleArchive = path.join(outputRoot, 'mouse', 'archive', 'stale-old-run');
+    await fs.mkdir(path.join(staleArchive, 'per-key'), { recursive: true });
+    await fs.writeFile(path.join(staleArchive, 'per-key', 'old.md'), 'old', 'utf8');
+    await fs.utimes(staleArchive, new Date('2025-01-01T00:00:00Z'), new Date('2025-01-01T00:00:00Z'));
+
+    await generatePerKeyDocs({
+      category: 'mouse',
+      loadedRules: loadedRulesFixture(),
+      fieldGroups: fieldGroupsFixture(),
+      globalFragments: {},
+      tierBundles: {},
+      outputRoot,
+      now: new Date('2026-04-15T00:00:00Z'),
+    });
+
+    const archivedDpi = path.join(
+      outputRoot,
+      'mouse',
+      'archive',
+      '2026-04-15T00-00-00-000Z',
+      'per-key',
+      'sensor_performance',
+      'dpi.md',
+    );
+    const archived = await fs.readFile(archivedDpi, 'utf8');
+    assert.match(archived, /2026-01-01T00:00:00.000Z/);
+    await assert.rejects(() => fs.access(staleArchive), /ENOENT/);
+  } finally {
+    await cleanupDir(outputRoot);
+  }
+});
+
 test('regeneration removes stale files from old group folders', async () => {
   const outputRoot = await mkTmpDir();
   try {
@@ -219,7 +265,7 @@ test('regeneration removes stale files from old group folders', async () => {
       now: new Date('2026-04-23T00:00:00Z'),
     });
 
-    const oldDpiPath = path.join(outputRoot, 'per-key', 'mouse', 'sensor_performance', 'dpi.md');
+    const oldDpiPath = path.join(outputRoot, 'mouse', 'per-key', 'sensor_performance', 'dpi.md');
     await fs.access(oldDpiPath);
 
     const movedRules = loadedRulesFixture();
@@ -246,7 +292,7 @@ test('regeneration removes stale files from old group folders', async () => {
     });
 
     const newDpiPath = secondResult.written.find((e) => e.fieldKey === 'dpi').mdPath;
-    assert.equal(newDpiPath, path.join(outputRoot, 'per-key', 'mouse', 'sensor_identity', 'dpi.md'));
+    assert.equal(newDpiPath, path.join(outputRoot, 'mouse', 'per-key', 'sensor_identity', 'dpi.md'));
     await fs.access(newDpiPath);
     await assert.rejects(
       () => fs.access(oldDpiPath),
@@ -347,7 +393,7 @@ test('fieldKeyOrder writes a sorted/ folder of numbered .md files in navigator o
     });
 
     assert.ok(result.sorted, 'sorted summary returned');
-    assert.equal(result.sorted.basePath, path.join(outputRoot, 'per-key', 'mouse', 'sorted'));
+    assert.equal(result.sorted.basePath, path.join(outputRoot, 'mouse', 'per-key', 'sorted'));
     assert.equal(result.sorted.count, 5, 'five entries: 2 reserved + 3 fields');
 
     const sortedDir = result.sorted.basePath;
@@ -368,13 +414,12 @@ test('fieldKeyOrder writes a sorted/ folder of numbered .md files in navigator o
 
     // Non-reserved sorted file is byte-identical to the canonical group-folder .md
     const dpiCanonical = await fs.readFile(
-      path.join(outputRoot, 'per-key', 'mouse', 'sensor_performance', 'dpi.md'),
+      path.join(outputRoot, 'mouse', 'per-key', 'sensor_performance', 'dpi.md'),
       'utf8',
     );
     const dpiSorted = await fs.readFile(path.join(sortedDir, '02-dpi.md'), 'utf8');
     assert.equal(dpiSorted, dpiCanonical);
-    assert.match(dpiSorted, /mouse-02-dpi-field-studio-change\.txt/);
-    assert.match(dpiSorted, /## 02-dpi/);
+    assert.match(dpiSorted, /mouse-02-dpi\.field-studio-patch\.v1\.json/);
   } finally {
     await cleanupDir(outputRoot);
   }
@@ -423,7 +468,7 @@ test('omitting fieldKeyOrder leaves no sorted/ folder', async () => {
       now: new Date('2026-04-23T00:00:00Z'),
     });
     assert.equal(result.sorted, null, 'sorted is null when fieldKeyOrder absent');
-    const sortedDir = path.join(outputRoot, 'per-key', 'mouse', 'sorted');
+    const sortedDir = path.join(outputRoot, 'mouse', 'per-key', 'sorted');
     await assert.rejects(() => fs.access(sortedDir), /ENOENT/);
   } finally {
     await cleanupDir(outputRoot);

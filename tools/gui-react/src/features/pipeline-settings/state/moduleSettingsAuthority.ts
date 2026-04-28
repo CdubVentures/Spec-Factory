@@ -12,6 +12,7 @@
 import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
 import { createSettingsOptimisticMutationContract } from '../../../stores/settingsMutationContract.ts';
+import { invalidateDataChangeQueries } from '../../data-change/index.js';
 import {
   MODULE_SETTINGS_SCOPE_BY_ID,
   type ModuleSettingsModuleId,
@@ -129,6 +130,22 @@ export function useModuleSettingsAuthority({
         }),
       toAppliedData: (response) => response,
       toPersistedResult: (response) => response,
+      onPersisted: (_response, savedSettings) => {
+        invalidateDataChangeQueries({
+          queryClient,
+          message: {
+            type: 'data-change',
+            event: 'module-settings-updated',
+            category,
+            meta: {
+              scope,
+              moduleId,
+              keys: Object.keys(savedSettings),
+            },
+          },
+          fallbackCategory: category,
+        });
+      },
     }),
   );
 

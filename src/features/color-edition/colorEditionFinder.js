@@ -18,7 +18,8 @@ import {
   createColorEditionFinderCallLlm,
 } from './colorEditionLlmAdapter.js';
 import { resolveColorEditionDiscoveryInputs } from './colorEditionPreviewPrompt.js';
-import { readColorEdition, writeColorEdition, mergeColorEditionDiscovery } from './colorEditionStore.js';
+import { readColorEditionSqlFirst } from './colorEditionRuntimeState.js';
+import { writeColorEdition, recalculateCumulativeFromRuns } from './colorEditionStore.js';
 import { buildVariantRegistry, applyIdentityMappings, validateColorsAgainstPalette, validateIdentityMappings, validateOrphanRemaps } from './variantRegistry.js';
 import { createVariantIdentityCheckCallLlm, buildVariantIdentityCheckPrompt } from './colorEditionLlmAdapter.js';
 import { submitCandidate, validateField } from '../publisher/index.js';
@@ -144,21 +145,75 @@ function reconcileEditionSlugsFromRegistry(editions, existingRegistry, identityC
   return changed ? reconciled : editions;
 }
 
+function nextRunNumberFrom(existing) {
+  const runs = Array.isArray(existing?.runs) ? existing.runs : [];
+  const maxRunNumber = runs.length
+    ? Math.max(...runs.map((run) => Number(run?.run_number) || 0))
+    : 0;
+  return Math.max(Number(existing?.next_run_number) || 0, maxRunNumber + 1, 1);
+}
+
+function buildColorEditionRunMerge({ product, existing, ranAt, run }) {
+  const existingRuns = Array.isArray(existing?.runs) ? existing.runs : [];
+  const runNumber = nextRunNumberFrom(existing);
+  const runEntry = {
+    run_number: runNumber,
+    ran_at: ranAt || new Date().toISOString(),
+    model: run.model || 'unknown',
+    fallback_used: Boolean(run.fallback_used),
+    ...(run.status ? { status: run.status } : {}),
+    ...(run.mode ? { mode: run.mode } : {}),
+    ...(run.loop_id ? { loop_id: run.loop_id } : {}),
+    ...(run.started_at ? { started_at: run.started_at } : {}),
+    ...(run.duration_ms != null ? { duration_ms: run.duration_ms } : {}),
+    ...(run.access_mode ? { access_mode: run.access_mode } : {}),
+    ...(run.effort_level ? { effort_level: run.effort_level } : {}),
+    ...(run.thinking != null ? { thinking: Boolean(run.thinking) } : {}),
+    ...(run.web_search != null ? { web_search: Boolean(run.web_search) } : {}),
+    selected: run.selected || {},
+    prompt: run.prompt || { system: '', user: '' },
+    response: run.response || {},
+  };
+
+  const merged = recalculateCumulativeFromRuns(
+    [...existingRuns, runEntry],
+    product.product_id,
+    product.category,
+    existing,
+  );
+  return { merged, latestRun: runEntry };
+}
+
+function insertColorEditionSqlRun({ finderStore, product, latestRun }) {
+  finderStore.insertRun({
+    category: product.category,
+    product_id: product.product_id,
+    run_number: latestRun.run_number,
+    ran_at: latestRun.ran_at,
+    started_at: latestRun.started_at || undefined,
+    duration_ms: Number.isFinite(latestRun.duration_ms) ? latestRun.duration_ms : undefined,
+    model: latestRun.model || 'unknown',
+    fallback_used: latestRun.fallback_used,
+    effort_level: latestRun.effort_level || '',
+    access_mode: latestRun.access_mode || '',
+    thinking: Boolean(latestRun.thinking),
+    web_search: Boolean(latestRun.web_search),
+    selected: latestRun.selected || {},
+    prompt: latestRun.prompt || {},
+    response: latestRun.response || {},
+  });
+}
+
 function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed, thinking, webSearch, rejections, raw, productRoot, prompt = {}, startedAt = null, durationMs = null }) {
   const now = new Date();
   const ranAt = now.toISOString();
   const runPrompt = prompt || {};
   const runResponse = { status: 'rejected', raw, rejections };
 
-  // WHY: Rejected runs MUST persist to JSON (durable SSOT) to prevent
-  // run_number collisions and SQL/JSON desync.
-  const merged = mergeColorEditionDiscovery({
-    productId: product.product_id,
-    productRoot,
-    newDiscovery: {
-      category: product.category,
-      last_ran_at: ranAt,
-    },
+  const { merged, latestRun } = buildColorEditionRunMerge({
+    product,
+    existing,
+    ranAt,
     run: {
       ...(startedAt ? { started_at: startedAt } : {}),
       ...(Number.isFinite(durationMs) ? { duration_ms: durationMs } : {}),
@@ -173,25 +228,11 @@ function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed,
     },
   });
 
-  const latestRun = merged.runs[merged.runs.length - 1];
-  specDb.getFinderStore('colorEditionFinder').insertRun({
-    category: product.category,
-    product_id: product.product_id,
-    run_number: latestRun.run_number,
-    ran_at: ranAt,
-    started_at: startedAt || undefined,
-    duration_ms: Number.isFinite(durationMs) ? durationMs : undefined,
-    model,
-    fallback_used: fallbackUsed,
-    thinking: Boolean(thinking),
-    web_search: Boolean(webSearch),
-    selected: {},
-    prompt: runPrompt,
-    response: runResponse,
-  });
+  const finderStore = specDb.getFinderStore('colorEditionFinder');
+  insertColorEditionSqlRun({ finderStore, product, latestRun });
 
   // Update SQL summary with correct run_count (includes rejected)
-  specDb.getFinderStore('colorEditionFinder').upsert({
+  finderStore.upsert({
     category: product.category,
     product_id: product.product_id,
     colors: merged.selected?.colors || [],
@@ -200,6 +241,7 @@ function storeFailureAndReturn({ specDb, product, existing, model, fallbackUsed,
     latest_ran_at: ranAt,
     run_count: merged.run_count,
   });
+  writeColorEdition({ productId: product.product_id, productRoot, data: merged });
 
   return { colors: [], editions: {}, default_color: '', fallbackUsed: Boolean(fallbackUsed), rejected: true, rejections };
 }
@@ -239,7 +281,12 @@ export async function runColorEditionFinder({
   const modelTracking = resolveModelTracking({ config, phaseKey: 'colorFinder', onModelResolved });
   const { wrappedOnModelResolved } = modelTracking;
 
-  const existing = readColorEdition({ productId: product.product_id, productRoot });
+  const existing = readColorEditionSqlFirst({
+    finderStore,
+    variantStore: specDb.variants,
+    productId: product.product_id,
+    productRoot,
+  });
   const { promptInputs, userMessage } = await resolveColorEditionDiscoveryInputs({
     product, appDb, specDb, config, productRoot, logger, existing,
   });
@@ -390,7 +437,7 @@ export async function runColorEditionFinder({
   const repairMap = {};
 
   if (fieldRules && fieldRules.colors) {
-    const nextRunNumber = existing?.next_run_number || (previousRuns.length + 1);
+    const nextRunNumber = nextRunNumberFrom(existing);
     // WHY: Deterministic source_id — stable across rebuilds (product_id + run_number).
     cefSourceId = `cef-${product.product_id}-${nextRunNumber}`;
     cefSourceMeta = { source: 'cef', source_id: cefSourceId, model: modelTracking.actualModel, run_number: nextRunNumber };
@@ -652,13 +699,10 @@ export async function runColorEditionFinder({
   // once the final registry (with minted variant_ids) exists.
 
   // Merge into JSON (durable memory — both gates passed)
-  const merged = mergeColorEditionDiscovery({
-    productId: product.product_id,
-    productRoot,
-    newDiscovery: {
-      category: product.category,
-      last_ran_at: ranAt,
-    },
+  const { merged, latestRun } = buildColorEditionRunMerge({
+    product,
+    existing,
+    ranAt,
     run: {
       started_at: cefStartedAt,
       duration_ms: Date.now() - cefStartMs,
@@ -698,8 +742,6 @@ export async function runColorEditionFinder({
         specDb,
       });
     }
-
-    writeColorEdition({ productId: product.product_id, productRoot, data: merged });
 
     // WHY: Both gates passed — propagate validated variant key changes to PIF
     // so images, carousel slots, and eval records stay linked.
@@ -777,10 +819,23 @@ export async function runColorEditionFinder({
       colorNames: colorNamesMap,
       editions: gateEditions,
     });
-    writeColorEdition({ productId: product.product_id, productRoot, data: merged });
   }
 
-  // ── Per-variant candidate submission ──────────────────────────
+  // Project run into SQL before writing the JSON mirror. This keeps the
+  // frontend projection ahead of the durable rebuild copy on live mutations.
+  insertColorEditionSqlRun({ finderStore, product, latestRun });
+
+  // WHY: This creates/updates run bookkeeping only. Published colors,
+  // editions, and default_color are derived after variant sync below.
+  finderStore.upsert({
+    category: product.category,
+    product_id: product.product_id,
+    latest_ran_at: ranAt,
+    run_count: merged.run_count,
+  });
+
+  writeColorEdition({ productId: product.product_id, productRoot, data: merged });
+
   // WHY: Each color atom and each edition becomes its OWN field_candidates row,
   // scoped by variant_id, with that variant's evidence_refs. This mirrors how RDF
   // persists per-variant candidates and lets the review grid render per-row
@@ -938,37 +993,6 @@ export async function runColorEditionFinder({
       }
     }
   }
-
-  // Project run into SQL (frontend reads from DB, not JSON)
-  const latestRun = merged.runs[merged.runs.length - 1];
-  specDb.getFinderStore('colorEditionFinder').insertRun({
-    category: product.category,
-    product_id: product.product_id,
-    run_number: latestRun.run_number,
-    ran_at: ranAt,
-    started_at: cefStartedAt,
-    duration_ms: Date.now() - cefStartMs,
-    model: modelTracking.actualModel,
-    fallback_used: modelTracking.actualFallbackUsed,
-    effort_level: modelTracking.actualEffortLevel,
-    access_mode: modelTracking.actualAccessMode,
-    thinking: modelTracking.actualThinking,
-    web_search: modelTracking.actualWebSearch,
-    selected,
-    prompt: runPrompt,
-    response: runResponse,
-  });
-
-  // WHY: Bookkeeping-only upsert — creates the summary row on first run (INSERT)
-  // or updates run metadata on subsequent runs. Published state (colors, editions,
-  // default_color) is NOT written here — derivePublishedFromVariants owns those
-  // columns and fires automatically via the onAfterSync callback below.
-  specDb.getFinderStore('colorEditionFinder').upsert({
-    category: product.category,
-    product_id: product.product_id,
-    latest_ran_at: ranAt,
-    run_count: merged.run_count,
-  });
 
   // WHY: Dual-write — project variant registry into standalone variants table.
   // onAfterSync triggers derivePublishedFromVariants, which writes the authoritative

@@ -2,42 +2,41 @@
 
 ## Purpose
 
-Produces per-category audit reports as paired HTML + Markdown artifacts. A reviewer uses the report to judge every input a prompt consumer (keyFinder today, indexing pipeline tomorrow) sees for every field in a category — contract shape, enum, aliases, search hints, cross-field constraints, component relations, extraction guidance — and iteratively tighten the contract + guidance each cycle.
+Produces per-category audit reports as paired HTML and Markdown artifacts. A reviewer uses the reports to judge every prompt-consumer input for a category: contract shape, enum, aliases, search hints, cross-field constraints, component relations, extraction guidance, and prompt templates.
 
-Cross-cutting by design: the report describes the category's field-rules + the generic prompt surface shared across prompt consumers. Per-consumer prompt previews are rendered via pluggable adapters (`adapters/*`).
+Cross-cutting by design: category-audit reads field rules, category prompt settings, global fragments, and finder prompt templates, then renders review surfaces without calling an LLM.
 
 ## Public API (The Contract)
 
 Exports from `src/features/category-audit/index.js`:
 
-- `generateCategoryAuditReport({ category, consumer, loadedRules, fieldGroups, globalFragments, tierBundles, compileSummary, outputRoot, now }) → Promise<{ htmlPath, mdPath, generatedAt, stats }>` — compact category signoff summary orchestrator. Synchronous file I/O + rendering, no LLM / no network. Rolling filenames under `<outputRoot>/<category>/` (`<category>-<consumer>-summary.html` / `.md`) overwritten per run. The category folder is never wiped by this generator so human-returned change files in `.workspace/reports/<category>/` survive regeneration.
-- `generatePerKeyDocs({ category, loadedRules, fieldGroups, globalFragments, tierBundles, compileSummary, outputRoot, now, templateOverride, fieldKeyOrder }) → Promise<{ basePath, written, skipped, reservedKeysPath, counts, generatedAt, sorted }>` — emits a paired HTML + Markdown brief per non-reserved field under `<outputRoot>/per-key/<category>/<group>/<field_key>.{html,md}`, plus a single `_reserved-keys.md` summary at the category root for fields owned by other finder modules. Each brief shows purpose, the full contract schema (every possible parameter + current value), current enum + pattern, component relation, siblings in the group, and the full compiled keyFinder preview prompt with placeholder product identity. When `fieldKeyOrder` (the Key Navigator order array from `category_authority/<category>/_control_plane/field_key_order.json`) is provided, also writes `<outputRoot>/per-key/<category>/sorted/NN-<field_key>.md` — one entry per non-separator field in navigator order, zero-padded to ≥2 digits. Reserved keys get a small `NN-<field_key>.reserved.md` stub linking back to `_reserved-keys.md`; navigator entries not present in the compiled rules are silently skipped.
-- `generatePromptAuditReports({ category, moduleSettings, globalFragments, outputRoot, now }) -> Promise<{ summary, perPromptReports, generatedAt, stats }>` - emits `<outputRoot>/<category>/<category>-prompt-audit-summary.{html,md}` plus paired per-prompt briefs under `<outputRoot>/per-prompt/<category>/<owner>/<prompt>.{html,md}`. Covers CEF discovery/identity, PIF view/hero search, image eval view/hero eval, RDF discovery, and SKU discovery with variable/global-fragment matrices, default/effective templates, compiled samples, and response schemas. The category folder is not wiped; only the `per-prompt/<category>/` subtree is rebuilt.
-- `extractReportData({ category, loadedRules, fieldGroups, globalFragments, tierBundles, compileSummary, now }) → ReportData` — pure extractor, safe for tests and alternate renderers.
-- `extractPromptAuditData({ category, moduleSettings, globalFragments, now }) -> PromptAuditData` - pure extractor behind the prompt audit reports.
-- `registerCategoryAuditRoutes(ctx) → routeHandler` — HTTP surface. Serves `POST /category-audit/:category/generate-report` (body: `{ consumer: 'key_finder' }`), `POST /category-audit/:category/generate-per-key-docs` (body: `{ templateOverride: string }`), `POST /category-audit/:category/generate-prompt-audit`, and `POST /category-audit/:category/generate-all-reports` (body: `{ consumer: 'key_finder', templateOverride: string }`). The all-reports route returns `{ categoryReport, perKeyDocs, promptAudit }`; `{ error }` on 400.
+- `generateCategoryAuditReport({ category, consumer, loadedRules, fieldGroups, globalFragments, tierBundles, compileSummary, outputRoot, now }) -> Promise<{ htmlPath, mdPath, generatedAt, stats }>` - writes rolling summary files under `<outputRoot>/<category>/summary/`.
+- `generatePerKeyDocs({ category, loadedRules, fieldGroups, globalFragments, tierBundles, compileSummary, outputRoot, now, templateOverride, fieldKeyOrder }) -> Promise<{ basePath, written, skipped, reservedKeysPath, counts, generatedAt, sorted }>` - writes per-field briefs under `<outputRoot>/<category>/per-key/`; `sorted/NN-<field_key>.md` is emitted when Key Navigator order is provided.
+- `generatePromptAuditReports({ category, moduleSettings, globalFragments, outputRoot, now }) -> Promise<{ summary, perPromptReports, generatedAt, stats }>` - writes prompt summaries under `<outputRoot>/<category>/summary/` and prompt briefs under `<outputRoot>/<category>/per-prompt/`.
+- `extractReportData({ category, loadedRules, fieldGroups, globalFragments, tierBundles, compileSummary, now }) -> ReportData` - pure extractor for category/key-finder report data.
+- `extractPromptAuditData({ category, moduleSettings, globalFragments, now }) -> PromptAuditData` - pure extractor behind prompt audit reports.
+- `expectedFieldStudioPatchFileName({ category, fieldKey, navigatorOrdinal }) -> string` - canonical per-key auditor return filename, e.g. `mouse-07-design.field-studio-patch.v1.json`.
+- `validateFieldStudioPatchDocument(doc, { category, fileName })`, `loadFieldStudioPatchDocuments({ category, inputDir })`, and `importFieldStudioPatchDirectory({ category, inputDir, fieldStudioMap, validateFieldStudioMap })` validate and apply strict `field-studio-patch.v1` JSON files from `<outputRoot>/<category>/auditors-responses/`.
+- `registerCategoryAuditRoutes(ctx) -> routeHandler` - serves `POST /category-audit/:category/generate-report`, `generate-per-key-docs`, `generate-prompt-audit`, and `generate-all-reports`.
 
 Adapters register per-consumer prompt rendering:
 
-- `adapters/keyFinderAdapter.js` — `renderKeyFinderPreview(fieldRule, fieldKey, { tierBundles, searchHintsEnabled, componentInjectionEnabled })` uses the shared field-rule renderers to emit the exact per-key slot text the live keyFinder would emit.
-
-Adapter notes:
-- `adapters/keyFinderAdapter.js` accepts `knownValues` and resolves sourced enum contracts the same way live keyFinder prompt rendering does.
+- `adapters/keyFinderAdapter.js` - `renderKeyFinderPreview(fieldRule, fieldKey, { tierBundles, searchHintsEnabled, componentInjectionEnabled })` emits the exact per-key slot text the live keyFinder would emit.
 
 ## Dependencies
 
-- **Allowed**: `src/field-rules/loader.js`, `src/core/llm/prompts/fieldRuleRenderers.js`, `src/core/llm/prompts/globalPromptRegistry.js`, live finder prompt builders for read-only preview compilation, `src/features/key/keyFinderPromptContract.js` (read-only import of `KEY_FINDER_VARIABLES`), `src/features/key/keyLlmAdapter.js` (read-only import of `KEY_FINDER_DEFAULT_TEMPLATE`), `node:fs`, `node:path`.
-- **Forbidden**: writing to field-rules authoring surfaces, calling the LLM, persisting state into `specDb` / `appDb`. Category-audit is READ-ONLY on the rule surface; it never mutates rules or triggers compilation.
+- **Allowed**: `src/field-rules/loader.js`, `src/core/llm/prompts/fieldRuleRenderers.js`, `src/core/llm/prompts/globalPromptRegistry.js`, live finder prompt builders for read-only preview compilation, `src/features/key/keyFinderPromptContract.js`, `src/features/key/keyLlmAdapter.js`, `node:fs`, `node:path`.
+- **Forbidden**: writing to field-rules authoring surfaces, calling the LLM, or persisting state into `specDb` / `appDb`.
 
 ## Domain Invariants
 
-- **Rolling output, not timestamped.** Successive runs overwrite the prior pair. Historical diffs live in git, not in the filename. Category summaries overwrite only `<outputRoot>/<category>/<category>-key-finder-summary.{html,md}` and do not wipe the category folder. Per-key docs still rewrite the entire `per-key/<category>/` subtree on each run.
-- **Prompt audit output is rolling too.** Prompt summaries overwrite only `<outputRoot>/<category>/<category>-prompt-audit-summary.{html,md}`. Per-prompt docs rewrite only `per-prompt/<category>/`.
-- **Pure read-only.** The generator never writes to `category_authority/` or any rule surface.
-- **Same content, two skins.** HTML and Markdown outputs describe the SAME sections in the SAME order. When adding a new section, update `reportSummaryStructure.js` (compact category summary) or `perKeyDocStructure.js` (per-key brief) — both renderers (`reportHtml.js` + `reportMarkdown.js`, via `renderHtmlFromStructure` / `renderMarkdownFromStructure`) pick it up automatically.
-- **No suggestions or verdicts.** The report surfaces current state + gap counters. Prompt audit flags are mechanical findings only (generic fallback, unresolved placeholders, or metadata gaps); judgment is the auditor's job.
-- **Consumer adapter isolation.** Each consumer's per-key preview lives in `adapters/<consumer>Adapter.js` and depends only on `src/core/llm/prompts/` primitives. Adding a new consumer (e.g. `indexing`) means adding one adapter file + one entry in `SUPPORTED_CONSUMERS` in `reportBuilder.js` — no changes to extraction, rendering, or the route.
-- **Render-time faithfulness.** The per-key prompt preview (both in the category report and the per-key docs) calls the SAME renderers the live keyFinder calls, so the preview is byte-authentic to production. If production prompt rendering changes, regenerated reports must reflect the new rendered slots instead of preserving stale audit warnings.
-- **Per-key docs skip reserved keys.** Fields owned by other finder modules (CEF/RDF/SKF, plus compile-locked EG preset keys) get listed in `per-key/<category>/_reserved-keys.md` instead of a per-key brief — keyFinder does not build a prompt for them.
-- **`sorted/` is opt-in and a duplicate.** It only exists when the route hands in `fieldKeyOrder`. Each entry is a byte-for-byte copy of the canonical group-folder `.md` (or a reserved-stub for non-keyFinder keys). The folder is fully wiped and rebuilt on every run alongside the rest of the per-key subtree.
-- **Contract schema catalog is the SSOT for "every possible parameter".** `contractSchemaCatalog.js` is hand-authored so each parameter carries its teaching string. When a new rule parameter is added to the compiler, add a row here too.
+- **Rolling output, not timestamped.** Regeneration overwrites the live summary/per-key/per-prompt tree and never wipes `<outputRoot>/<category>/auditors-responses/`.
+- **Category-scoped layout.** Generated reports live under `<outputRoot>/<category>/summary/`, `<outputRoot>/<category>/per-key/`, and `<outputRoot>/<category>/per-prompt/`. Auditor returns live under `<outputRoot>/<category>/auditors-responses/`.
+- **Archive retention.** Before `per-key/` or `per-prompt/` is rebuilt, the previous tree moves under `<outputRoot>/<category>/archive/<timestamp>/`; archive folders older than 90 days are pruned.
+- **Strict JSON patch contract.** Auditor return files are strict `field-studio-patch.v1` JSON. Omit unchanged paths; do not encode prose sentinels in JSON.
+- **Pure report generation.** Report generation never writes to `category_authority/` or any rule surface. Patch import is a separate explicit operation.
+- **Same content, two skins.** HTML and Markdown outputs describe the same sections in the same order; update the structure builders, not renderer-specific copies.
+- **Render-time faithfulness.** Per-key prompt previews call the same renderers the live keyFinder calls, so regenerated reports must reflect prompt-rendering changes.
+- **Per-key docs skip reserved keys.** Fields owned by other finder modules get listed in `<outputRoot>/<category>/per-key/_reserved-keys.md` instead of a per-key brief.
+- **`sorted/` is opt-in and duplicate.** Sorted per-key docs are byte-for-byte copies or reserved stubs, rebuilt with the rest of `per-key/`.
+- **Contract schema catalog is the SSOT for "every possible parameter".** When a rule parameter is added to the compiler, add a row to `contractSchemaCatalog.js`.

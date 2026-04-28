@@ -16,8 +16,9 @@ import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js
 import { removeLocalAssetVariants, serveLocalAsset } from '../../../core/media/imageVariantAssets.js';
 import { readImageDimensions, buildVariantList, imageStem, runProductImageFinder, runCarouselLoop } from '../productImageFinder.js';
 import { evaluateCarousel } from '../carouselStrategy.js';
-import { resolveViewBudget, resolveViewConfig, CANONICAL_VIEW_KEYS } from '../productImageLlmAdapter.js';
+import { resolveViewBudget, CANONICAL_VIEW_KEYS } from '../productImageLlmAdapter.js';
 import { resolveViewAttemptBudgets } from '../viewAttemptDefaults.js';
+import { resolveCarouselViewSettings } from '../carouselSlotSettings.js';
 import {
   readProductImages,
   writeProductImages,
@@ -39,21 +40,20 @@ import { resolveProductImageDependencyStatus } from '../productImageIdentityDepe
  * on every catalog refresh across ~359 products.
  *
  * Three buckets tracked per variant:
- *   priority = Views (Single Run) — viewConfig entries where priority:true
- *   loop     = Loop Run extras    — viewBudget views NOT in priority
+ *   priority = carousel view count over scored carousel target
+ *   loop     = additional carousel image count over extra-image target
  *   hero     = Hero Slots         — heroCount when heroEnabled
  */
 function computePifProgressBuckets({ specDb, category }) {
   const finderStore = specDb.getFinderStore?.('productImageFinder');
-  const viewConfig = resolveViewConfig(finderStore?.getSetting?.('viewConfig') || '', category);
-  const viewBudget = resolveViewBudget(finderStore?.getSetting?.('viewBudget') || '', category);
-  const priorityKeys = viewConfig.filter((v) => v.priority).map((v) => v.key);
-  const prioritySet = new Set(priorityKeys);
-  const loopExtrasKeys = viewBudget.filter((k) => !prioritySet.has(k));
+  const {
+    carouselScoredViews,
+    carouselSlotViews,
+    carouselExtraTarget,
+  } = resolveCarouselViewSettings({ finderStore, category });
   const heroEnabled = String(finderStore?.getSetting?.('heroEnabled') ?? 'true') !== 'false';
   const heroCount = parseInt(finderStore?.getSetting?.('heroCount') || '3', 10) || 3;
-  const satisfactionThreshold = parseInt(finderStore?.getSetting?.('satisfactionThreshold') || '3', 10) || 3;
-  return { priorityKeys, loopExtrasKeys, heroEnabled, heroCount, satisfactionThreshold };
+  return { carouselScoredViews, carouselSlotViews, carouselExtraTarget, heroEnabled, heroCount };
 }
 
 function buildOperationIndexLabLinkIdentity(productId, productRow = {}) {
@@ -69,18 +69,14 @@ function buildOperationIndexLabLinkIdentity(productId, productRow = {}) {
  * ranked hero). This is the slot-occupancy count the Overview rings and the
  * Indexing Lab dots read — "image is in the carousel", NOT "image exists".
  *
- * Returns { priorityFilled, loopFilled, heroFilled } — each the count of slots
- * currently occupying the carousel for this variant, plus `imageCount` of
- * images owned by this variant across all runs.
+ * Returns { priorityFilled, loopFilled, heroFilled }. `priorityFilled` counts
+ * all occupied non-hero carousel view slots over the scored-view denominator;
+ * `loopFilled` counts occupied non-scored carousel image slots.
  */
 function countSlotFillsAndImages({ fullImages, carouselSlots, variantKey, variantId, buckets }) {
-  const { priorityKeys, loopExtrasKeys, heroEnabled, heroCount } = buckets;
-  const priorityResolved = resolveCarouselSlots({
-    viewBudget: priorityKeys, heroCount: 0, variantKey, variantId,
-    carouselSlots, images: fullImages,
-  });
-  const loopResolved = resolveCarouselSlots({
-    viewBudget: loopExtrasKeys, heroCount: 0, variantKey, variantId,
+  const { carouselScoredViews, carouselSlotViews, heroEnabled, heroCount } = buckets;
+  const viewResolved = resolveCarouselSlots({
+    viewBudget: carouselScoredViews, carouselSlotViews, heroCount: 0, variantKey, variantId,
     carouselSlots, images: fullImages,
   });
   const heroResolved = resolveCarouselSlots({
@@ -91,9 +87,11 @@ function countSlotFillsAndImages({ fullImages, carouselSlots, variantKey, varian
   const imageCount = (fullImages || []).filter(
     (img) => (img?.variant_key || '') === (variantKey || '') || (variantId && img?.variant_id === variantId),
   ).length;
+  const scoredSet = new Set(carouselScoredViews);
+  const filledViews = viewResolved.filter((s) => s.filename && s.filename !== '__cleared__');
   return {
-    priorityFilled: filled(priorityResolved),
-    loopFilled: filled(loopResolved),
+    priorityFilled: filledViews.length,
+    loopFilled: filledViews.filter((s) => !scoredSet.has(s.slot)).length,
     heroFilled: filled(heroResolved),
     imageCount,
   };
@@ -123,14 +121,19 @@ function writePifVariantProgress({ specDb, category, productId, carouselProgress
       variantId: v.variant_id,
       variantKey: v.variant_key,
       priorityFilled,
-      priorityTotal: buckets.priorityKeys.length,
+      priorityTotal: buckets.carouselScoredViews.length,
       loopFilled,
-      loopTotal: buckets.loopExtrasKeys.length,
+      loopTotal: buckets.carouselExtraTarget,
       heroFilled,
       heroTarget: buckets.heroEnabled ? buckets.heroCount : 0,
       imageCount,
     });
   }
+}
+
+function runSpecDbTransaction(specDb, work) {
+  if (typeof specDb?.db?.transaction !== 'function') return work();
+  return specDb.db.transaction(work)();
 }
 
 function isValidImageFilename(filename) {
@@ -194,18 +197,73 @@ function removeImageFiles({ filenames, doc, imagesDir }) {
   return deleteStems;
 }
 
+function remapCarouselSlotFilenames(carouselSlots, filenameMap) {
+  const remapped = {};
+  for (const [variantKey, slots] of Object.entries(carouselSlots || {})) {
+    if (!slots || typeof slots !== 'object' || Array.isArray(slots)) {
+      remapped[variantKey] = slots;
+      continue;
+    }
+    remapped[variantKey] = Object.fromEntries(
+      Object.entries(slots).map(([slot, filename]) => [
+        slot,
+        filenameMap.get(filename) || filename,
+      ]),
+    );
+  }
+  return remapped;
+}
+
+function overlayRemappedEvalState({ recalculated, previousDoc, filenameMap }) {
+  const previousEvalState = extractEvalState(previousDoc);
+  const oldFilenameByNewFilename = new Map(
+    [...filenameMap.entries()].map(([oldFilename, newFilename]) => [newFilename, oldFilename]),
+  );
+  for (const img of (recalculated.selected?.images || [])) {
+    const oldFilename = oldFilenameByNewFilename.get(img.filename);
+    const evalFields = previousEvalState[oldFilename] || previousEvalState[img.filename] || null;
+    if (evalFields) Object.assign(img, evalFields);
+  }
+}
+
+function applyFilenameRemapsToPifRuntimeState({ recalculated, previousDoc, filenameMap }) {
+  if (!filenameMap || filenameMap.size === 0) return recalculated;
+  const next = {
+    ...recalculated,
+    carousel_slots: remapCarouselSlotFilenames(recalculated.carousel_slots, filenameMap),
+  };
+  overlayRemappedEvalState({ recalculated: next, previousDoc, filenameMap });
+  return next;
+}
+
+function pruneCarouselSlotsToSelectedImages(doc) {
+  const selectedFilenames = new Set(
+    (doc?.selected?.images || [])
+      .map((img) => String(img?.filename || '').trim())
+      .filter(Boolean),
+  );
+  const carouselSlots = {};
+  for (const [variantKey, slots] of Object.entries(doc?.carousel_slots || {})) {
+    if (!slots || typeof slots !== 'object' || Array.isArray(slots)) continue;
+    const nextSlots = Object.fromEntries(
+      Object.entries(slots)
+        .filter(([, filename]) => selectedFilenames.has(String(filename || '').trim())),
+    );
+    if (Object.keys(nextSlots).length > 0) carouselSlots[variantKey] = nextSlots;
+  }
+  return { ...doc, carousel_slots: carouselSlots };
+}
+
 function upsertProductImageFinderSql({ specDb, category, productId, recalculated }) {
   const finderStore = specDb.getFinderStore('productImageFinder');
   finderStore.upsert({
     category,
     product_id: productId,
-    images: recalculated.selected?.images?.map((img) => ({
-      view: img.view,
-      filename: img.filename,
-      variant_key: img.variant_key,
-      ...(img.variant_id ? { variant_id: img.variant_id } : {}),
-    })) || [],
+    images: recalculated.selected?.images || [],
     image_count: recalculated.selected?.images?.length || 0,
+    carousel_slots: recalculated.carousel_slots || {},
+    eval_state: extractEvalState(recalculated),
+    evaluations: Array.isArray(recalculated.evaluations) ? recalculated.evaluations : [],
     latest_ran_at: recalculated.last_ran_at || '',
     run_count: recalculated.run_count || 0,
   });
@@ -274,7 +332,13 @@ function parseJsonArray(value) {
 }
 
 function resolvePifCarouselSettings({ finderStore, category }) {
-  const viewBudget = resolveViewBudget(finderStore?.getSetting?.('viewBudget') || '', category);
+  const {
+    viewBudget,
+    carouselScoredViews,
+    carouselOptionalViews,
+    carouselSlotViews,
+    carouselExtraTarget,
+  } = resolveCarouselViewSettings({ finderStore, category });
   const viewAttemptBudget = parseInt(finderStore?.getSetting?.('viewAttemptBudget') || '5', 10) || 5;
   const viewAttemptBudgets = resolveViewAttemptBudgets(
     finderStore?.getSetting?.('viewAttemptBudgets') || '',
@@ -286,8 +350,13 @@ function resolvePifCarouselSettings({ finderStore, category }) {
     viewAttemptBudget,
     viewAttemptBudgets,
     heroAttemptBudget: parseInt(finderStore?.getSetting?.('heroAttemptBudget') || '3', 10) || 3,
+    heroCount: parseInt(finderStore?.getSetting?.('heroCount') || '3', 10) || 3,
     heroEnabled: (finderStore?.getSetting?.('heroEnabled') || 'true') !== 'false',
     viewBudget,
+    carouselScoredViews,
+    carouselOptionalViews,
+    carouselSlotViews,
+    carouselExtraTarget,
   };
 }
 
@@ -442,16 +511,18 @@ export function registerProductImageFinderRoutes(ctx) {
     const finderStore = store(specDb);
     const carouselSlots = result.carousel_slots || {};
     const evalState = extractEvalState(result);
-    finderStore.updateSummaryField(productId, 'carousel_slots', JSON.stringify(carouselSlots));
-    finderStore.updateSummaryField(productId, 'eval_state', JSON.stringify(evalState));
-    for (const run of (result.runs || [])) {
-      if (run.run_number == null) continue;
-      finderStore.updateRunJson(productId, run.run_number, {
-        selected: run.selected || {},
-        response: run.response || {},
-      });
-    }
-    writePifVariantProgress({ specDb, category, productId });
+    runSpecDbTransaction(specDb, () => {
+      finderStore.updateSummaryField(productId, 'carousel_slots', JSON.stringify(carouselSlots));
+      finderStore.updateSummaryField(productId, 'eval_state', JSON.stringify(evalState));
+      for (const run of (result.runs || [])) {
+        if (run.run_number == null) continue;
+        finderStore.updateRunJson(productId, run.run_number, {
+          selected: run.selected || {},
+          response: run.response || {},
+        });
+      }
+      writePifVariantProgress({ specDb, category, productId });
+    });
     return { carouselSlots, evalState };
   };
 
@@ -531,15 +602,12 @@ export function registerProductImageFinderRoutes(ctx) {
       );
       // Compute per-variant carousel progress from selected images
       const finderStore = store(ctx.getSpecDb(row.category));
-      const viewBudget = resolveViewBudget(finderStore?.getSetting?.('viewBudget') || '', row.category);
+      const carouselSettings = resolvePifCarouselSettings({ finderStore, category: row.category });
+      const viewBudget = carouselSettings.viewBudget;
       const satisfactionThreshold = parseInt(finderStore?.getSetting?.('satisfactionThreshold') || '3', 10) || 3;
-      const heroEnabled = (finderStore?.getSetting?.('heroEnabled') || 'true') !== 'false';
-      const heroCount = parseInt(finderStore?.getSetting?.('heroCount') || '3', 10) || 3;
-      const viewAttemptBudget = parseInt(finderStore?.getSetting?.('viewAttemptBudget') || '5', 10) || 5;
-      const viewAttemptBudgets = resolveViewAttemptBudgets(
-        finderStore?.getSetting?.('viewAttemptBudgets') || '', row.category, viewBudget, viewAttemptBudget,
-      );
-      const heroAttemptBudget = parseInt(finderStore?.getSetting?.('heroAttemptBudget') || '3', 10) || 3;
+      const heroEnabled = carouselSettings.heroEnabled;
+      const heroCount = carouselSettings.heroCount;
+      const viewAttemptBudgets = carouselSettings.viewAttemptBudgets;
 
       // WHY: Use row.images (accumulated SQL summary) not enrichedSelected
       // (which is latest run only). Carousel progress must reflect ALL images.
@@ -569,7 +637,7 @@ export function registerProductImageFinderRoutes(ctx) {
         selected: enrichedSelected,
         runs: enrichedRuns,
         carouselProgress,
-        carouselSettings: { viewAttemptBudget, viewAttemptBudgets, heroAttemptBudget, heroEnabled, viewBudget },
+        carouselSettings,
         carousel_slots: typeof row.carousel_slots === 'string' ? JSON.parse(row.carousel_slots || '{}') : (row.carousel_slots || {}),
         evaluations,
         dependencyStatus: resolvePifDependencyStatus({
@@ -744,9 +812,11 @@ export function registerProductImageFinderRoutes(ctx) {
       // Update JSON entries — match by stem so extension changes don't miss entries
       const originalFormat = path.extname(originalFilename).toLowerCase().replace('.', '');
       if (doc?.runs) {
+        const filenameMap = new Map();
         for (const run of doc.runs) {
           for (const img of (run.selected?.images || [])) {
             if (imageStem(img.filename) === targetStem || imageStem(img.original_filename) === targetStem) {
+              if (img.filename && img.filename !== masterFilename) filenameMap.set(img.filename, masterFilename);
               img.filename = masterFilename;
               img.original_filename = originalFilename;
               img.bg_removed = result.bg_removed;
@@ -765,7 +835,8 @@ export function registerProductImageFinderRoutes(ctx) {
             }
           }
         }
-        const recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category, doc);
+        let recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category, doc);
+        recalculated = applyFilenameRemapsToPifRuntimeState({ recalculated, previousDoc: doc, filenameMap });
 
         // WHY: recalculation may pick a different entry for the same view/variant
         // (dedup numbering). Ensure the processed entry's RMBG fields propagate.
@@ -785,33 +856,7 @@ export function registerProductImageFinderRoutes(ctx) {
         // Update SQL
         const specDb = getSpecDb(category);
         if (specDb) {
-          const finderStore = specDb.getFinderStore('productImageFinder');
-          finderStore.upsert({
-            category,
-            product_id: productId,
-            images: recalculated.selected?.images?.map(i => ({ view: i.view, filename: i.filename, variant_key: i.variant_key })) || [],
-            image_count: recalculated.selected?.images?.length || 0,
-            latest_ran_at: recalculated.last_ran_at || '',
-            run_count: recalculated.run_count || 0,
-          });
-          // Re-insert runs so SQL runs table reflects updated RMBG fields
-          for (const run of recalculated.runs || []) {
-            finderStore.insertRun({
-              category,
-              product_id: productId,
-              run_number: run.run_number,
-              ran_at: run.ran_at || '',
-              model: run.model || '',
-              fallback_used: run.fallback_used,
-              effort_level: run.effort_level || '',
-              access_mode: run.access_mode || '',
-              thinking: Boolean(run.thinking),
-              web_search: Boolean(run.web_search),
-              selected: run.selected || {},
-              prompt: run.prompt || {},
-              response: run.response || {},
-            });
-          }
+          upsertProductImageFinderSql({ specDb, category, productId, recalculated });
         }
       }
 
@@ -903,6 +948,7 @@ export function registerProductImageFinderRoutes(ctx) {
         },
         asyncWork: async () => {
           let processed = 0;
+          const filenameMap = new Map();
 
           for (const img of unprocessed) {
             // Resolve source: originals/ first, then master on disk
@@ -932,7 +978,9 @@ export function registerProductImageFinderRoutes(ctx) {
 
             if (result.ok) {
               const originalFormat = path.extname(img.original_filename || img.filename).toLowerCase().replace('.', '');
+              const previousFilename = img.filename;
               img.filename = masterFilename;
+              if (previousFilename && previousFilename !== masterFilename) filenameMap.set(previousFilename, masterFilename);
               img.bg_removed = result.bg_removed;
               img.original_format = originalFormat;
               img.bytes = result.bytes;
@@ -958,28 +1006,11 @@ export function registerProductImageFinderRoutes(ctx) {
               }
             }
 
-            const recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category, doc);
+            let recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category, doc);
+            recalculated = applyFilenameRemapsToPifRuntimeState({ recalculated, previousDoc: doc, filenameMap });
             writeProductImages({ productId, productRoot, data: recalculated });
 
-            const finderStore = specDb.getFinderStore('productImageFinder');
-            finderStore.upsert({
-              category,
-              product_id: productId,
-              images: recalculated.selected?.images?.map(i => ({ view: i.view, filename: i.filename, variant_key: i.variant_key })) || [],
-              image_count: recalculated.selected?.images?.length || 0,
-              latest_ran_at: recalculated.last_ran_at || '',
-              run_count: recalculated.run_count || 0,
-            });
-            for (const run of recalculated.runs || []) {
-              finderStore.insertRun({
-                category, product_id: productId,
-                run_number: run.run_number, ran_at: run.ran_at || '',
-                model: run.model || '', fallback_used: run.fallback_used,
-                effort_level: run.effort_level || '', access_mode: run.access_mode || '',
-                thinking: Boolean(run.thinking), web_search: Boolean(run.web_search),
-                selected: run.selected || {}, prompt: run.prompt || {}, response: run.response || {},
-              });
-            }
+            upsertProductImageFinderSql({ specDb, category, productId, recalculated });
           }
 
           updateStage({ id: op.id, stageName: 'Complete' });
@@ -1406,10 +1437,11 @@ export function registerProductImageFinderRoutes(ctx) {
         // Dual-write: JSON first (durable), then SQL projection
         const updatedSlots = writeCarouselSlot({ productId, productRoot, variantKey, slot, filename });
 
-        // Project to SQL
-        const finderStore = store(specDb);
-        finderStore.updateSummaryField(productId, 'carousel_slots', JSON.stringify(updatedSlots));
-        writePifVariantProgress({ specDb, category, productId });
+        runSpecDbTransaction(specDb, () => {
+          const finderStore = store(specDb);
+          finderStore.updateSummaryField(productId, 'carousel_slots', JSON.stringify(updatedSlots));
+          writePifVariantProgress({ specDb, category, productId });
+        });
 
         emitDataChange({
           broadcastWs,
@@ -1649,11 +1681,17 @@ export function registerProductImageFinderRoutes(ctx) {
       if (updatedDoc) {
         const recalculated = recalculateProductImagesFromRuns(updatedDoc.runs, productId, category, updatedDoc);
         writeProductImages({ productId, productRoot, data: recalculated });
-        upsertProductImageFinderSql({ specDb, category, productId, recalculated });
+        runSpecDbTransaction(specDb, () => {
+          upsertProductImageFinderSql({ specDb, category, productId, recalculated });
+          try { specDb.deletePifVariantProgressByProduct?.(productId); } catch { /* best-effort */ }
+          writePifVariantProgress({ specDb, category, productId });
+        });
+      } else {
+        runSpecDbTransaction(specDb, () => {
+          try { specDb.deletePifVariantProgressByProduct?.(productId); } catch { /* best-effort */ }
+          writePifVariantProgress({ specDb, category, productId });
+        });
       }
-
-      try { specDb.deletePifVariantProgressByProduct?.(productId); } catch { /* best-effort */ }
-      writePifVariantProgress({ specDb, category, productId });
 
       emitDataChange({
         broadcastWs,
@@ -1721,39 +1759,44 @@ export function registerProductImageFinderRoutes(ctx) {
         const recalculated = recalculateProductImagesFromRuns(doc.runs, productId, category, doc);
         writeProductImages({ productId, productRoot, data: recalculated });
 
-        // Update SQL summary + runs
-        const finderStore = specDb.getFinderStore('productImageFinder');
-        finderStore.upsert({
-          category,
-          product_id: productId,
-          images: recalculated.selected?.images?.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })) || [],
-          image_count: recalculated.selected?.images?.length || 0,
-          latest_ran_at: recalculated.last_ran_at || '',
-          run_count: recalculated.run_count || 0,
-        });
-        // Re-insert each modified run so SQL runs table reflects stripped images
-        for (const run of recalculated.runs || []) {
-          finderStore.insertRun({
+        runSpecDbTransaction(specDb, () => {
+          // Update SQL summary + runs
+          const finderStore = specDb.getFinderStore('productImageFinder');
+          finderStore.upsert({
             category,
             product_id: productId,
-            run_number: run.run_number,
-            ran_at: run.ran_at || '',
-            model: run.model || '',
-            fallback_used: run.fallback_used,
-            effort_level: run.effort_level || '',
-            access_mode: run.access_mode || '',
-            thinking: Boolean(run.thinking),
-            web_search: Boolean(run.web_search),
-            selected: run.selected || {},
-            prompt: run.prompt || {},
-            response: run.response || {},
+            images: recalculated.selected?.images?.map(img => ({ view: img.view, filename: img.filename, variant_key: img.variant_key })) || [],
+            image_count: recalculated.selected?.images?.length || 0,
+            latest_ran_at: recalculated.last_ran_at || '',
+            run_count: recalculated.run_count || 0,
           });
-        }
+          // Re-insert each modified run so SQL runs table reflects stripped images
+          for (const run of recalculated.runs || []) {
+            finderStore.insertRun({
+              category,
+              product_id: productId,
+              run_number: run.run_number,
+              ran_at: run.ran_at || '',
+              model: run.model || '',
+              fallback_used: run.fallback_used,
+              effort_level: run.effort_level || '',
+              access_mode: run.access_mode || '',
+              thinking: Boolean(run.thinking),
+              web_search: Boolean(run.web_search),
+              selected: run.selected || {},
+              prompt: run.prompt || {},
+              response: run.response || {},
+            });
+          }
+          try { specDb.deletePifVariantProgressByProduct?.(productId); } catch { /* best-effort */ }
+          writePifVariantProgress({ specDb, category, productId });
+        });
+      } else {
+        runSpecDbTransaction(specDb, () => {
+          try { specDb.deletePifVariantProgressByProduct?.(productId); } catch { /* best-effort */ }
+          writePifVariantProgress({ specDb, category, productId });
+        });
       }
-
-      // Refresh materialized per-variant progress before the Overview refetches.
-      try { specDb.deletePifVariantProgressByProduct?.(productId); } catch { /* best-effort */ }
-      writePifVariantProgress({ specDb, category, productId });
 
       emitDataChange({
         broadcastWs,
@@ -1805,10 +1848,32 @@ export function registerProductImageFinderRoutes(ctx) {
       }
 
       // Invalidate materialized per-variant progress — next PIF run recomputes.
-      try { getSpecDb(category)?.deletePifVariantProgressByProduct?.(productId); } catch { /* best-effort */ }
+      const specDb = getSpecDb(category);
+      if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
 
-      // Delegate to generic handler (deletes data from JSON + SQL, sends response)
-      return genericHandler(parts, params, method, req, res);
+      store(specDb).removeRun(productId, runNumber);
+      const updated = deleteProductImageFinderRun({ productId, runNumber });
+      if (!updated) {
+        store(specDb).removeAllRuns(productId);
+        store(specDb).remove(productId);
+      } else {
+        const normalized = pruneCarouselSlotsToSelectedImages(updated);
+        writeProductImages({ productId, productRoot, data: normalized });
+        runSpecDbTransaction(specDb, () => {
+          upsertProductImageFinderSql({ specDb, category, productId, recalculated: normalized });
+          writePifVariantProgress({ specDb, category, productId });
+        });
+      }
+
+      emitDataChange({
+        broadcastWs,
+        event: 'product-image-finder-run-deleted',
+        category,
+        entities: { productIds: [productId] },
+        meta: { productId, deletedRun: runNumber, remainingRuns: updated?.run_count || 0 },
+      });
+
+      return jsonRes(res, 200, { ok: true, remaining_runs: updated?.run_count || 0 });
     }
 
     // ── DELETE all — also delete entire images directory ───────────

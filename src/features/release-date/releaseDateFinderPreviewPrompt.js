@@ -14,6 +14,7 @@ import {
   resolveScalarFinderPromptInputs,
   resolveScalarPreviousDiscovery,
 } from '../../core/finder/resolveScalarFinderPromptInputs.js';
+import { readScalarFinderRunsSqlFirst } from '../../core/finder/scalarFinderSqlHistory.js';
 import { resolveIdentityAmbiguitySnapshot } from '../indexing/orchestration/shared/identityHelpers.js';
 import { resolveAmbiguityContext } from '../../core/finder/finderOrchestrationHelpers.js';
 import { resolvePhaseModel } from '../../core/llm/client/routing.js';
@@ -71,8 +72,12 @@ export async function compileReleaseDateFinderPreviewPrompt(ctx) {
   const urlHistoryEnabled = finderStore?.getSetting?.('urlHistoryEnabled') === 'true';
   const queryHistoryEnabled = finderStore?.getSetting?.('queryHistoryEnabled') === 'true';
 
-  const doc = readReleaseDates({ productId: product.product_id, productRoot });
-  const previousRuns = Array.isArray(doc?.runs) ? doc.runs : [];
+  const previousRuns = readScalarFinderRunsSqlFirst({
+    finderStore,
+    readRuns: readReleaseDates,
+    productId: product.product_id,
+    productRoot,
+  });
 
   const previousDiscovery = resolveScalarPreviousDiscovery({
     previousRuns, variant, urlHistoryEnabled, queryHistoryEnabled,

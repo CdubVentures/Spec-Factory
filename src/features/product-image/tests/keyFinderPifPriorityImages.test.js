@@ -134,6 +134,74 @@ test('resolveKeyFinderPifPriorityImageContext selects default-color eval winners
   }
 });
 
+test('resolveKeyFinderPifPriorityImageContext reads SQL projection before product_images.json', async () => {
+  const root = makeRoot();
+  const productId = 'kf-pif-sql-first';
+  try {
+    for (const filename of ['top-black.png', 'left-black.png']) {
+      writeImageFile(root, productId, filename);
+    }
+
+    const finderStore = {
+      getSetting: (key) => (key === 'viewConfig'
+        ? JSON.stringify([
+          { key: 'top', priority: true, description: 'Top' },
+          { key: 'left', priority: true, description: 'Left' },
+        ])
+        : ''),
+      get: (pid) => {
+        assert.equal(pid, productId);
+        return {
+          product_id: productId,
+          category: CATEGORY,
+          images: [
+            { filename: 'top-black.png', view: 'top', variant_key: 'color:black', bytes: 321 },
+            { filename: 'left-black.png', view: 'left', variant_key: 'color:black' },
+          ],
+          carousel_slots: {},
+          eval_state: {
+            'top-black.png': {
+              eval_best: true,
+              eval_reasoning: 'SQL top winner.',
+              eval_source: 'https://cdn.example/sql-top.png',
+            },
+            'left-black.png': {
+              eval_best: true,
+              eval_reasoning: 'SQL left winner.',
+            },
+          },
+        };
+      },
+    };
+
+    const ctx = await resolveKeyFinderPifPriorityImageContext({
+      specDb: {
+        getFinderStore: (id) => (id === 'productImageFinder' ? finderStore : null),
+        getColorEditionFinder: () => ({ default_color: 'black' }),
+        variants: {
+          listActive: () => [
+            { variant_id: 'v_black', variant_key: 'color:black', variant_type: 'color', variant_label: 'Black', color_atoms: ['black'] },
+          ],
+        },
+      },
+      product: { product_id: productId, category: CATEGORY },
+      productRoot: root,
+      fieldRule: { ai_assist: { pif_priority_images: { enabled: true } } },
+    });
+
+    assert.equal(ctx.status, 'available');
+    assert.deepEqual(ctx.images.map((img) => [img.view, img.filename, img.source]), [
+      ['top', 'top-black.png', 'eval'],
+      ['left', 'left-black.png', 'eval'],
+    ]);
+    assert.equal(ctx.images[0].preview_url, '/api/v1/product-image-finder/mouse/kf-pif-sql-first/images/top-black.png?v=321');
+    assert.equal(ctx.images[0].original_url, 'https://cdn.example/sql-top.png');
+    assert.equal(ctx.images[0].eval_reasoning, 'SQL top winner.');
+  } finally {
+    cleanup(root);
+  }
+});
+
 test('resolveKeyFinderPifPriorityImageContext returns unavailable context when enabled but no images exist', async () => {
   const root = makeRoot();
   try {

@@ -125,6 +125,38 @@ describe('storageManagerRoutes', () => {
       strictEqual(result.body.run_id, 'run-001');
     });
 
+    it('returns SQL-projected sources without reading run.json', async () => {
+      const ctx = buildMockCtx({
+        resolveIndexLabRunDirectory: async () => {
+          throw new Error('run.json should not be read when SQL detail exists');
+        },
+        readRunDetailState: async ({ runId, meta }) => ({
+          identity: {
+            product_id: meta.product_id,
+            category: meta.category,
+            identity_fingerprint: 'fp-sql',
+          },
+          sources: [
+            {
+              url: 'https://example.com/sql-source',
+              content_hash: 'hash-sql',
+              html_size: 100,
+              screenshot_size: 25,
+              video_size: 50,
+              total_size: 175,
+            },
+          ],
+        }),
+      });
+      const handler = createStorageManagerHandler(ctx);
+      const result = await handler(['storage', 'runs', 'run-001'], new URLSearchParams(), 'GET', {}, {});
+
+      strictEqual(result.status, 200);
+      strictEqual(result.body.identity.identity_fingerprint, 'fp-sql');
+      deepStrictEqual(result.body.sources.map((source) => source.url), ['https://example.com/sql-source']);
+      strictEqual(result.body.sources[0].total_size, 175);
+    });
+
     it('returns 404 for unknown run', async () => {
       const ctx = buildMockCtx();
       const handler = createStorageManagerHandler(ctx);

@@ -47,6 +47,15 @@ function maxRunNumber(runs) {
   return sortRuns(runs).reduce((max, run) => Math.max(max, Number(run?.run_number) || 0), 0);
 }
 
+// WHY: Run Group/All can overlap multiple keys for the same product. Reserve
+// numbers before the LLM call so publisher source ids and history rows cannot
+// collide while calls are still in flight.
+const reservedRunNumberByProduct = new Map();
+
+function reservationKey({ category, productId, specDb }) {
+  return `${category || specDb?.category || ''}\u0000${productId}`;
+}
+
 function latestRun(runs) {
   const sorted = sortRuns(runs);
   return sorted.length > 0 ? sorted[sorted.length - 1] : null;
@@ -181,6 +190,21 @@ export function nextKeyFinderRunNumber({ specDb, productId, productRoot, previou
   if (Number.isInteger(doc?.next_run_number) && doc.next_run_number > 0) return doc.next_run_number;
   const runs = Array.isArray(previousRuns) ? previousRuns : (doc?.runs || []);
   return maxRunNumber(runs) + 1;
+}
+
+export function reserveKeyFinderRunNumber({
+  specDb,
+  productId,
+  productRoot,
+  category,
+  previousRuns = null,
+}) {
+  const observedNext = nextKeyFinderRunNumber({ specDb, productId, productRoot, previousRuns });
+  const key = reservationKey({ category, productId, specDb });
+  const reservedMax = reservedRunNumberByProduct.get(key) || 0;
+  const reserved = Math.max(observedNext, reservedMax + 1);
+  reservedRunNumberByProduct.set(key, reserved);
+  return reserved;
 }
 
 export function writeKeyFinderJsonMirrorFromSql({ specDb, productId, productRoot, category }) {

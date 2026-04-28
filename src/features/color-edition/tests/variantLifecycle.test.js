@@ -217,6 +217,44 @@ describe('derivePublishedFromVariants', () => {
       'without candidate data, confidence is 0, NOT a silently-stamped 1.0');
   }));
 
+  it('updates CEF SQL summary before mirroring published fields to product.json', withEnv(({ root, ensureProductJson, readProductJson }) => {
+    ensureProductJson(PID);
+    const updates = [];
+    const specDb = {
+      variants: {
+        listActive: () => [
+          {
+            variant_id: 'v_black',
+            variant_key: 'color:black',
+            variant_type: 'color',
+            variant_label: 'Black',
+            color_atoms: ['black'],
+          },
+        ],
+      },
+      getFieldCandidatesByProductAndField: () => [],
+      getFinderStore: () => ({
+        updateSummaryField: (productId, fieldKey, value) => {
+          updates.push({
+            productId,
+            fieldKey,
+            value,
+            productJsonFields: readProductJson(PID).fields,
+          });
+        },
+      }),
+    };
+
+    derivePublishedFromVariants({ specDb, productId: PID, productRoot: root });
+
+    assert.deepEqual(
+      updates.map((entry) => entry.fieldKey),
+      ['colors', 'editions', 'default_color'],
+    );
+    assert.equal(updates[0].productJsonFields.colors, undefined);
+    assert.deepEqual(readProductJson(PID).fields.colors.value, ['black']);
+  }));
+
   it('CEF summary columns updated', withEnv(({ specDb, root, ensureProductJson }) => {
     seedVariants(specDb);
     seedCefSummary(specDb);
@@ -1251,12 +1289,39 @@ describe('deleteVariant', () => {
       candidate_count: 2,
       cooldown_until: '', latest_ran_at: '2026-04-14T03:00:00Z', run_count: 3,
     });
-    for (const rn of [1, 2, 3]) {
+    const sqlRunFixtures = [
+      {
+        runNumber: 1,
+        selected: { candidates: [{ variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-15', confidence: 90 }] },
+        response: { candidates: [{ variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-15' }] },
+      },
+      {
+        runNumber: 2,
+        selected: { candidates: [{ variant_id: 'v_keep', variant_key: 'color:white', value: '2026-07-01', confidence: 88 }] },
+        response: { candidates: [{ variant_id: 'v_keep', variant_key: 'color:white', value: '2026-07-01' }] },
+      },
+      {
+        runNumber: 3,
+        selected: {
+          candidates: [
+            { variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-16', confidence: 95 },
+            { variant_id: 'v_keep', variant_key: 'color:white', value: '2026-07-02', confidence: 92 },
+          ],
+        },
+        response: {
+          candidates: [
+            { variant_id: 'v_target', variant_key: 'color:black', value: '2026-06-16' },
+            { variant_id: 'v_keep', variant_key: 'color:white', value: '2026-07-02' },
+          ],
+        },
+      },
+    ];
+    for (const { runNumber, selected, response } of sqlRunFixtures) {
       rdfStore.insertRun({
-        category: 'mouse', product_id: PID, run_number: rn,
-        ran_at: `2026-04-14T0${rn}:00:00Z`, model: 'test', fallback_used: false,
+        category: 'mouse', product_id: PID, run_number: runNumber,
+        ran_at: `2026-04-14T0${runNumber}:00:00Z`, model: 'test', fallback_used: false,
         effort_level: '', access_mode: '', thinking: false, web_search: false,
-        selected: { candidates: [] }, prompt: {}, response: { candidates: [] },
+        selected, prompt: {}, response,
       });
     }
 

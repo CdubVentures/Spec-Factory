@@ -13,14 +13,15 @@ import path from 'node:path';
 
 import { extractReportData } from './reportData.js';
 import { renderSummaryHtml, renderSummaryMarkdown } from './reportSummary.js';
+import { ensureAuditorResponsesDir } from './reportArchive.js';
 
 const SUPPORTED_CONSUMERS = new Set(['key_finder']);
 
 function resolveCategoryOutputRoot(outputRoot, category) {
   const root = path.resolve(outputRoot);
-  const categoryRoot = path.resolve(root, category);
-  if (categoryRoot !== root && categoryRoot.startsWith(`${root}${path.sep}`)) {
-    return categoryRoot;
+  const summaryRoot = path.resolve(root, category, 'summary');
+  if (summaryRoot !== root && summaryRoot.startsWith(`${root}${path.sep}`)) {
+    return summaryRoot;
   }
   throw new Error(`generateCategoryAuditReport: unsafe category output path for ${category}`);
 }
@@ -74,6 +75,7 @@ export async function generateCategoryAuditReport({
 
   const categoryOutputRoot = resolveCategoryOutputRoot(outputRoot, category);
   await fs.mkdir(categoryOutputRoot, { recursive: true });
+  await ensureAuditorResponsesDir({ outputRoot, category });
   const baseName = `${category}-${consumer.replace(/_/g, '-')}-summary`;
   const htmlPath = path.join(categoryOutputRoot, `${baseName}.html`);
   const mdPath = path.join(categoryOutputRoot, `${baseName}.md`);

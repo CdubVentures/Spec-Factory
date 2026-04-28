@@ -58,7 +58,7 @@ function writeProductJson(productId) {
   }));
 }
 
-function makeStubFinderStore(settings = {}) {
+function makeStubFinderStore(settings = {}, overrides = {}) {
   const upserts = [];
   const runs = [];
   return {
@@ -66,6 +66,7 @@ function makeStubFinderStore(settings = {}) {
       getSetting: (k) => (k in settings ? String(settings[k]) : ''),
       upsert: (row) => { upserts.push(row); },
       insertRun: (row) => { runs.push(row); },
+      ...overrides,
     },
     upserts, runs,
   };
@@ -181,6 +182,59 @@ describe('RDF prompt preview — parity with real-run snapshot', () => {
 
     const doc = readReleaseDates({ productId: pid, productRoot: PRODUCT_ROOT });
     assert.equal(doc?.runs?.length ?? 0, 0, 'no runs persisted');
+  });
+
+  it('preview reads previous discovery from SQL before stale release_date.json history', async () => {
+    const pid = 'rdf-preview-sql-history';
+    writeProductJson(pid);
+    fs.writeFileSync(path.join(PRODUCT_ROOT, pid, 'release_date.json'), JSON.stringify({
+      product_id: pid,
+      category: 'mouse',
+      selected: { candidates: [] },
+      run_count: 1,
+      next_run_number: 2,
+      runs: [{
+        run_number: 1,
+        response: {
+          variant_id: 'v_black',
+          variant_key: 'color:black',
+          discovery_log: {
+            urls_checked: ['https://json-stale.example/rdf'],
+            queries_run: ['json stale rdf query'],
+          },
+        },
+      }],
+    }, null, 2));
+
+    const fs_ = makeStubFinderStore(
+      { urlHistoryEnabled: 'true', queryHistoryEnabled: 'true' },
+      {
+        get: () => ({ category: 'mouse', product_id: pid, run_count: 1, latest_ran_at: '2026-04-01T00:00:00Z' }),
+        listRuns: () => [{
+          run_number: 7,
+          response: {
+            variant_id: 'v_black',
+            variant_key: 'color:black',
+            discovery_log: {
+              urls_checked: ['https://sql-current.example/rdf'],
+              queries_run: ['sql current rdf query'],
+            },
+          },
+        }],
+      },
+    );
+    const specDb = makeStubSpecDb({ finderStore: fs_.store });
+
+    const preview = await compileReleaseDateFinderPreviewPrompt({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: null, specDb, config: {}, productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black' },
+    });
+
+    assert.equal(preview.inputs_resolved.previous_urls_count, 1);
+    assert.equal(preview.inputs_resolved.previous_queries_count, 1);
+    assert.match(preview.prompts[0].system, /sql-current\.example\/rdf/);
+    assert.doesNotMatch(preview.prompts[0].system, /json-stale\.example\/rdf/);
   });
 
   it('loop mode labels iter-1 and includes the iteration disclaimer note', async () => {

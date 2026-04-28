@@ -582,8 +582,11 @@ export class SpecDb {
   insertScreenshot(row) { return this._artifactStore.insertScreenshot(row); }
   insertVideo(row) { return this._artifactStore.insertVideo(row); }
   getCrawlSourcesByProduct(pid) { return this._artifactStore.getCrawlSourcesByProduct(pid); }
+  getCrawlSourcesByRunId(runId) { return this._artifactStore.getCrawlSourcesByRunId(runId); }
   getScreenshotsByProduct(pid) { return this._artifactStore.getScreenshotsByProduct(pid); }
+  getScreenshotsByRunId(runId) { return this._artifactStore.getScreenshotsByRunId(runId); }
   getVideosByProduct(pid) { return this._artifactStore.getVideosByProduct(pid); }
+  getVideosByRunId(runId) { return this._artifactStore.getVideosByRunId(runId); }
   getCrawlSourceByHash(hash, pid) { return this._artifactStore.getCrawlSourceByHash(hash, pid); }
 
   // --- Field Studio Map (per-category control-plane config) ---

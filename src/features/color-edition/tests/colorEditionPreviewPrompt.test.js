@@ -159,6 +159,88 @@ describe('CEF prompt preview — parity with real-run snapshot', () => {
     }
   });
 
+  it('preview reads previous discovery from SQL before stale color_edition.json history', async () => {
+    const historyDb = new SpecDb({ dbPath: path.join(DB_DIR, 'history.sqlite'), category: 'mouse' });
+    const historyRoot = path.join(TMP_ROOT, 'history-products');
+    try {
+      seedRules(historyDb);
+      seedFamily(historyDb);
+      const productDir = path.join(historyRoot, 'mouse-target');
+      fs.mkdirSync(productDir, { recursive: true });
+      fs.writeFileSync(path.join(productDir, 'color_edition.json'), JSON.stringify({
+        product_id: 'mouse-target',
+        category: 'mouse',
+        selected: { colors: ['stale-json'], editions: {}, default_color: 'stale-json' },
+        runs: [{
+          run_number: 1,
+          ran_at: '2026-01-01T00:00:00Z',
+          model: 'test',
+          selected: { colors: ['stale-json'], editions: {}, default_color: 'stale-json' },
+          prompt: {},
+          response: {
+            discovery: {
+              discovery_log: {
+                urls_checked: ['https://stale-json.example/cef'],
+                queries_run: ['stale json cef query'],
+              },
+            },
+          },
+        }],
+        run_count: 1,
+        next_run_number: 2,
+        last_ran_at: '2026-01-01T00:00:00Z',
+      }, null, 2));
+
+      const finderStore = historyDb.getFinderStore('colorEditionFinder');
+      finderStore.setSetting('urlHistoryEnabled', 'true');
+      finderStore.setSetting('queryHistoryEnabled', 'true');
+      finderStore.upsert({
+        category: 'mouse',
+        product_id: 'mouse-target',
+        colors: ['black'],
+        editions: [],
+        default_color: 'black',
+        latest_ran_at: '2026-02-01T00:00:00Z',
+        run_count: 1,
+      });
+      finderStore.insertRun({
+        category: 'mouse',
+        product_id: 'mouse-target',
+        run_number: 7,
+        ran_at: '2026-02-01T00:00:00Z',
+        model: 'test',
+        selected: { colors: ['black'], editions: {}, default_color: 'black' },
+        prompt: {},
+        response: {
+          discovery: {
+            discovery_log: {
+              urls_checked: ['https://sql-history.example/cef'],
+              queries_run: ['sql cef query'],
+            },
+          },
+        },
+      });
+
+      const preview = await compileColorEditionPreviewPrompt({
+        product: PRODUCT,
+        appDb,
+        specDb: historyDb,
+        config: TEST_CONFIG,
+        productRoot: historyRoot,
+      });
+
+      assert.equal(preview.inputs_resolved.previous_run_count, 1);
+      assert.equal(preview.inputs_resolved.discovery_urls_injected, 1);
+      assert.equal(preview.inputs_resolved.discovery_queries_injected, 1);
+      assert.ok(preview.prompts[0].system.includes('https://sql-history.example/cef'));
+      assert.ok(preview.prompts[0].system.includes('sql cef query'));
+      assert.ok(!preview.prompts[0].system.includes('https://stale-json.example/cef'));
+      assert.ok(!preview.prompts[0].system.includes('stale json cef query'));
+    } finally {
+      historyDb.close();
+    }
+  });
+
   it('model.json_strict reflects config._resolvedColorFinderJsonStrict', async () => {
     // Fresh SpecDb so the previous test's runs don't leak in as previousRuns
     const isoDb = new SpecDb({ dbPath: path.join(DB_DIR, 'iso.sqlite'), category: 'mouse' });

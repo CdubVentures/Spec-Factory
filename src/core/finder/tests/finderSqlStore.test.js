@@ -97,6 +97,28 @@ describe('createFinderSqlStore — generic SQL store', () => {
     assert.deepEqual(runs[0].selected, { items: ['a'] });
   });
 
+  it('insertRun rejects duplicate run_number instead of replacing history', () => {
+    store.insertRun({
+      category: 'cat', product_id: 'p-dup', run_number: 1,
+      ran_at: '2026-04-01', model: 'first', fallback_used: false,
+      selected: { items: ['first'] }, prompt: { system: 'first' }, response: { items: ['first'] },
+    });
+
+    assert.throws(
+      () => store.insertRun({
+        category: 'cat', product_id: 'p-dup', run_number: 1,
+        ran_at: '2026-04-02', model: 'second', fallback_used: true,
+        selected: { items: ['second'] }, prompt: { system: 'second' }, response: { items: ['second'] },
+      }),
+      /UNIQUE constraint failed/,
+    );
+
+    const runs = store.listRuns('p-dup');
+    assert.equal(runs.length, 1);
+    assert.equal(runs[0].model, 'first');
+    assert.deepEqual(runs[0].selected, { items: ['first'] });
+  });
+
   // WHY: Global guardrail — every finder's insertRun routes through this
   // single function. If a caller omits ran_at (or passes empty string from
   // legacy JSON), the store must fall back to a real ISO timestamp instead

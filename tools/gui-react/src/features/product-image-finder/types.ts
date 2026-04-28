@@ -125,8 +125,13 @@ export interface CarouselSettings {
   viewAttemptBudget: number;
   viewAttemptBudgets?: Record<string, number>;
   heroAttemptBudget: number;
+  heroCount?: number;
   heroEnabled: boolean;
   viewBudget?: string[];
+  carouselScoredViews?: string[];
+  carouselOptionalViews?: string[];
+  carouselSlotViews?: string[];
+  carouselExtraTarget?: number;
 }
 
 export interface ProductImageDependencyStatus {

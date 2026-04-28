@@ -330,9 +330,9 @@ test('SQL catalog builder: pifVariants emits empty-rings row per variant when no
     variant_label: 'Black',
     color_atoms: ['black'],
     priority_filled: 0,
-    priority_total: 4,   // 4 priority views
+    priority_total: 8,   // scored views fallback to viewBudget when knob is unset
     loop_filled: 0,
-    loop_total: 4,       // 4 loop extras (budget 8 - priority 4)
+    loop_total: 3,       // additional-image target default
     hero_filled: 0,
     hero_target: 3,      // heroCount
     image_count: 0,      // no images collected yet

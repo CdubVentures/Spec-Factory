@@ -83,48 +83,44 @@ test('renderMarkdown places auditor-task section before summary and includes ret
   const summaryIdx = md.indexOf('## Summary');
   assert.ok(auditorIdx >= 0 && summaryIdx > auditorIdx, 'auditor-task appears before summary');
   assert.ok(md.includes('Return format (markdown'), 'return-format spec included');
-  assert.match(md, /Downloadable text file/i);
-  assert.match(md, /<category>-keyfinder-field-studio-changes\.txt/);
-  assert.match(md, /FIELD STUDIO CHANGE FILE/i);
+  assert.match(md, /Downloadable JSON patch files/i);
+  assert.match(md, /<category>-<sort_order>-<field_key>\.field-studio-patch\.v1\.json/);
+  assert.match(md, /"schema_version": "field-studio-patch\.v1"/);
+  assert.match(md, /"field_overrides"/);
+  assert.match(md, /"data_lists"/);
+  assert.match(md, /"component_sources"/);
   assert.match(md, /<sort_order>-<field_key>/);
-  assert.match(md, /Mapping Studio:/);
-  assert.match(md, /Component Source Mapping:/);
+  assert.match(md, /Mapping Studio guidance:/);
+  assert.match(md, /Component Source Mapping belongs/);
   assert.match(md, /component _link fields/i);
   assert.match(md, /manufacturer component page/i);
   assert.match(md, /datasheet\/spec-sheet PDF/i);
   assert.match(md, /authorized component distributor/i);
   assert.match(md, /not eBay/i);
   assert.match(md, /merely mention/i);
-  assert.match(md, /Enum Data Lists:/);
-  assert.match(md, /Key Navigator:/);
-  assert.match(md, /Contract:/);
-  assert.match(md, /variant_dependent:/);
-  assert.match(md, /range\.min:/);
-  assert.match(md, /range\.max:/);
-  assert.match(md, /Enum Policy:/);
-  assert.match(md, /actual enum list values live in Mapping Studio/i);
-  assert.match(md, /Components:/);
-  assert.match(md, /Cross-Field Constraints:/);
-  assert.match(md, /Evidence:/);
-  assert.match(md, /Extraction Priority & Guidance:/);
-  assert.match(md, /Variant inventory context:/);
-  assert.match(md, /PIF Priority Images:/);
-  assert.match(md, /AI reasoning note:/);
-  assert.match(md, /Search Hints & Aliases:/);
-  assert.match(md, /Aliases:/);
-  assert.match(md, /No change/);
+  assert.match(md, /Enum Data Lists/i);
+  assert.match(md, /Key Navigator guidance:/);
+  assert.match(md, /"priority"/);
+  assert.match(md, /"contract"/);
+  assert.match(md, /"enum"/);
+  assert.match(md, /"ai_assist"/);
+  assert.doesNotMatch(md, /- variant_dependent:/);
+  assert.doesNotMatch(md, /- Product Image Dependent:/);
+  assert.match(md, /variant_inventory_usage/);
+  assert.match(md, /pif_priority_images/);
+  assert.match(md, /reasoning_note/);
+  assert.match(md, /search_hints/);
+  assert.match(md, /roles\.properties/);
+  assert.doesNotMatch(md, /keyfinder-field-studio-changes\.txt/);
   assert.ok(
-    md.indexOf('Component Source Mapping:') < md.indexOf('Enum Data Lists:'),
+    md.indexOf('Component Source Mapping belongs') < md.indexOf('Enum Data Lists belong'),
     'component source mapping comes before enum data lists',
   );
   assert.ok(
-    md.indexOf('Mapping Studio:') < md.indexOf('Key Navigator:'),
+    md.indexOf('Mapping Studio guidance:') < md.indexOf('Key Navigator guidance:'),
     'Mapping Studio comes before Key Navigator',
   );
-  assert.ok(
-    md.indexOf('Enum Data Lists:') < md.indexOf('Enum Policy:'),
-    'enum list edits come before Key Navigator enum policy edits',
-  );
+  assert.ok(md.indexOf('Enum Data Lists belong') < md.indexOf('Key Navigator guidance:'), 'enum list guidance comes before Key Navigator guidance');
   assert.ok(md.includes('Field-by-field patches'), 'per-field patch section included');
   assert.ok(md.includes('Highest-risk corrections'), 'highest-risk lead-in included');
   assert.ok(md.includes('## Audit standard'), 'audit standard section emitted');

@@ -243,6 +243,90 @@ test('missing field rule throws with identifying message; no LLM call', async (t
   assert.equal(fsStub.runs.length, 0);
 });
 
+test('concurrent product key runs reserve distinct run numbers before LLM completion', async (t) => {
+  t.after(cleanupTmp);
+  const productId = 'kf-concurrent-run-numbers';
+  const { fsStub, specDb } = setupForProduct(productId);
+  const entered = [];
+  const releaseLlm = [];
+  const sourceRunNumbers = [];
+
+  const waitForBothLlmCalls = async () => {
+    const startedAt = Date.now();
+    while (entered.length < 2) {
+      if (Date.now() - startedAt > 1000) throw new Error('timed out waiting for both LLM calls');
+      await new Promise((resolve) => setTimeout(resolve, 5));
+    }
+  };
+  const responseFor = (fieldKey) => ({
+    result: {
+      primary_field_key: fieldKey,
+      results: {
+        [fieldKey]: {
+          value: fieldKey === 'polling_rate' ? 8000 : 'Focus Pro 30K',
+          confidence: 91,
+          unknown_reason: '',
+          evidence_refs: [
+            {
+              url: `https://example.com/${fieldKey}`,
+              tier: 'tier1',
+              confidence: 91,
+              supporting_evidence: `${fieldKey} evidence`,
+              evidence_kind: 'direct_quote',
+            },
+          ],
+        },
+      },
+      discovery_log: {
+        urls_checked: [`https://example.com/${fieldKey}`],
+        queries_run: [`${fieldKey} query`],
+        notes: [],
+      },
+    },
+    usage: null,
+  });
+  const run = (fieldKey) => runKeyFinder({
+    product: { ...PRODUCT, product_id: productId },
+    fieldKey,
+    category: 'mouse',
+    specDb,
+    appDb: null,
+    config: {},
+    broadcastWs: null,
+    productRoot: PRODUCT_ROOT,
+    policy: POLICY,
+    _callLlmOverride: async () => {
+      entered.push(fieldKey);
+      await new Promise((resolve) => releaseLlm.push(resolve));
+      return responseFor(fieldKey);
+    },
+    _submitCandidateOverride: async ({ sourceMeta }) => {
+      sourceRunNumbers.push(sourceMeta.run_number);
+      return { status: 'accepted', publishResult: { status: 'published' } };
+    },
+  });
+
+  const polling = run('polling_rate');
+  const sensor = run('sensor_model');
+  await waitForBothLlmCalls();
+  releaseLlm.forEach((resolve) => resolve());
+  const results = await Promise.all([polling, sensor]);
+
+  assert.deepEqual(
+    results.map((result) => result.run_number).sort((a, b) => a - b),
+    [1, 2],
+  );
+  assert.deepEqual(
+    fsStub.runs.map((row) => row.run_number).sort((a, b) => a - b),
+    [1, 2],
+  );
+  assert.deepEqual(
+    sourceRunNumbers.sort((a, b) => a - b),
+    [1, 2],
+    'publisher source ids must match the reserved run numbers',
+  );
+});
+
 test('tier dispatch — medium difficulty resolves medium tier bundle; modelOverride emitted', async (t) => {
   t.after(cleanupTmp);
   const { fsStub, specDb } = setupForProduct('kf-tier-medium');

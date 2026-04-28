@@ -615,6 +615,34 @@ describe('resolveCarouselSlots', () => {
     ]);
   });
 
+  it('fills configured optional carousel placeholders even when the image is not a numbered extra', () => {
+    const result = resolveCarouselSlots({
+      viewBudget: ['top', 'left'],
+      carouselSlotViews: ['top', 'left', 'right'],
+      heroCount: 0,
+      variantKey: 'color:black',
+      carouselSlots: {},
+      images: [
+        makeImage({
+          view: 'right',
+          filename: 'right-black.png',
+          eval_best: true,
+          eval_actual_view: 'right',
+          eval_usable_as_required_view: true,
+          eval_usable_as_carousel_extra: false,
+          eval_duplicate: false,
+          eval_flags: [],
+        }),
+      ],
+    });
+
+    assert.deepEqual(result.map(s => [s.slot, s.filename, s.source]), [
+      ['top', null, 'empty'],
+      ['left', null, 'empty'],
+      ['right', 'right-black.png', 'eval'],
+    ]);
+  });
+
   it('does not use dependency mismatches or duplicates as numbered extra slots', () => {
     const result = resolveCarouselSlots({
       viewBudget: ['top'],

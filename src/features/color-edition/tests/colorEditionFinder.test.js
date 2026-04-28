@@ -324,6 +324,217 @@ describe('runColorEditionFinder', () => {
     assert.deepEqual(runResp.discovery_log.added_new, ['black']);
   });
 
+  it('live run reads previous discovery from SQL before stale color_edition.json history', async () => {
+    const localRoot = path.join(TMP_ROOT, 'live-sql-history');
+    const localDb = new SpecDb({ dbPath: path.join(DB_DIR, 'live-sql-history.sqlite'), category: 'mouse' });
+    try {
+      const productId = 'mouse-live-sql-history';
+      const productDir = path.join(localRoot, productId);
+      fs.mkdirSync(productDir, { recursive: true });
+      fs.writeFileSync(path.join(productDir, 'color_edition.json'), JSON.stringify({
+        product_id: productId,
+        category: 'mouse',
+        selected: { colors: ['stale-json'], editions: {}, default_color: 'stale-json' },
+        runs: [{
+          run_number: 1,
+          ran_at: '2026-01-01T00:00:00Z',
+          model: 'test',
+          selected: { colors: ['stale-json'], editions: {}, default_color: 'stale-json' },
+          prompt: {},
+          response: {
+            discovery: {
+              discovery_log: {
+                urls_checked: ['https://stale-json.example/live-cef'],
+                queries_run: ['stale live cef query'],
+              },
+            },
+          },
+        }],
+        run_count: 1,
+        next_run_number: 2,
+        last_ran_at: '2026-01-01T00:00:00Z',
+      }, null, 2));
+
+      const finderStore = localDb.getFinderStore('colorEditionFinder');
+      finderStore.setSetting('urlHistoryEnabled', 'true');
+      finderStore.setSetting('queryHistoryEnabled', 'true');
+      finderStore.upsert({
+        category: 'mouse',
+        product_id: productId,
+        colors: ['black'],
+        editions: [],
+        default_color: 'black',
+        latest_ran_at: '2026-02-01T00:00:00Z',
+        run_count: 1,
+      });
+      finderStore.insertRun({
+        category: 'mouse',
+        product_id: productId,
+        run_number: 7,
+        ran_at: '2026-02-01T00:00:00Z',
+        model: 'test',
+        selected: { colors: ['black'], editions: {}, default_color: 'black' },
+        prompt: {},
+        response: {
+          discovery: {
+            discovery_log: {
+              urls_checked: ['https://sql-history.example/live-cef'],
+              queries_run: ['sql live cef query'],
+            },
+          },
+        },
+      });
+
+      const capturedCalls = [];
+      await runColorEditionFinder({
+        product: { ...PRODUCT, product_id: productId },
+        appDb: makeAppDbStub([{ name: 'black', hex: '#000000', css_var: '--color-black' }]),
+        specDb: localDb,
+        config: {},
+        logger: null,
+        productRoot: localRoot,
+        onLlmCallComplete: (call) => capturedCalls.push(call),
+        _callLlmOverride: makeLlmStub({
+          colors: ['black'],
+          editions: {},
+          default_color: 'black',
+        }),
+      });
+
+      const discoveryCall = capturedCalls.find((call) => call.label === 'Discovery');
+      assert.ok(discoveryCall.prompt.system.includes('https://sql-history.example/live-cef'));
+      assert.ok(discoveryCall.prompt.system.includes('sql live cef query'));
+      assert.ok(!discoveryCall.prompt.system.includes('https://stale-json.example/live-cef'));
+      assert.ok(!discoveryCall.prompt.system.includes('stale live cef query'));
+    } finally {
+      localDb.close();
+    }
+  });
+
+  it('does not write color_edition.json when SQL run insert fails', async () => {
+    const localRoot = path.join(TMP_ROOT, 'sql-fail-no-json');
+    const localDb = new SpecDb({ dbPath: path.join(DB_DIR, 'sql-fail-no-json.sqlite'), category: 'mouse' });
+    try {
+      const productId = 'mouse-sql-fail-no-json';
+      const finderStore = localDb.getFinderStore('colorEditionFinder');
+      finderStore.insertRun = () => {
+        throw new Error('SQL insert failed');
+      };
+
+      await assert.rejects(
+        () => runColorEditionFinder({
+          product: { ...PRODUCT, product_id: productId },
+          appDb: makeAppDbStub([{ name: 'black', hex: '#000000', css_var: '--color-black' }]),
+          specDb: localDb,
+          config: {},
+          logger: null,
+          productRoot: localRoot,
+          _callLlmOverride: makeLlmStub({
+            colors: ['black'],
+            editions: {},
+            default_color: 'black',
+          }),
+        }),
+        /SQL insert failed/,
+      );
+
+      assert.equal(
+        fs.existsSync(path.join(localRoot, productId, 'color_edition.json')),
+        false,
+        'JSON mirror must not be written if SQL run insert fails',
+      );
+    } finally {
+      localDb.close();
+    }
+  });
+
+  it('live run reads existing variant registry from SQL before stale color_edition.json registry', async () => {
+    const localRoot = path.join(TMP_ROOT, 'live-sql-variant-registry');
+    const localDb = new SpecDb({ dbPath: path.join(DB_DIR, 'live-sql-variant-registry.sqlite'), category: 'mouse' });
+    try {
+      const productId = 'mouse-live-sql-variant-registry';
+      const productDir = path.join(localRoot, productId);
+      fs.mkdirSync(productDir, { recursive: true });
+      fs.writeFileSync(path.join(productDir, 'color_edition.json'), JSON.stringify({
+        product_id: productId,
+        category: 'mouse',
+        selected: { colors: ['white'], editions: {}, default_color: 'white' },
+        runs: [],
+        run_count: 0,
+        next_run_number: 1,
+        variant_registry: [{
+          variant_id: 'v_json_stale',
+          variant_key: 'color:white',
+          variant_type: 'color',
+          variant_label: 'White',
+          color_atoms: ['white'],
+          created_at: '2026-01-01T00:00:00Z',
+        }],
+      }, null, 2));
+
+      const finderStore = localDb.getFinderStore('colorEditionFinder');
+      finderStore.upsert({
+        category: 'mouse',
+        product_id: productId,
+        colors: ['black'],
+        editions: [],
+        default_color: 'black',
+        latest_ran_at: '2026-02-01T00:00:00Z',
+        run_count: 1,
+      });
+      finderStore.insertRun({
+        category: 'mouse',
+        product_id: productId,
+        run_number: 1,
+        ran_at: '2026-02-01T00:00:00Z',
+        model: 'test',
+        selected: { colors: ['black'], editions: {}, default_color: 'black' },
+        prompt: {},
+        response: { colors: ['black'], editions: {}, default_color: 'black' },
+      });
+      localDb.variants.upsert({
+        productId,
+        variantId: 'v_sql_black',
+        variantKey: 'color:black',
+        variantType: 'color',
+        variantLabel: 'Black',
+        colorAtoms: ['black'],
+        editionSlug: null,
+        editionDisplayName: null,
+        createdAt: '2026-02-01T00:00:00Z',
+      });
+
+      const capturedCalls = [];
+      await runColorEditionFinder({
+        product: { ...PRODUCT, product_id: productId },
+        appDb: makeAppDbStub([{ name: 'black', hex: '#000000', css_var: '--color-black' }]),
+        specDb: localDb,
+        config: {},
+        logger: null,
+        productRoot: localRoot,
+        onLlmCallComplete: (call) => capturedCalls.push(call),
+        _callLlmOverride: makeLlmStub({
+          colors: ['black'],
+          editions: {},
+          default_color: 'black',
+        }),
+        _callIdentityCheckOverride: makeLlmStub({
+          mappings: [
+            { new_key: 'color:black', match: 'v_sql_black', action: 'match', reason: 'same SQL variant' },
+          ],
+          remove: [],
+        }),
+      });
+
+      const identityCall = capturedCalls.find((call) => call.label === 'Identity Check');
+      assert.ok(identityCall.prompt.system.includes('v_sql_black | color | color:black'));
+      assert.ok(!identityCall.prompt.system.includes('v_json_stale'));
+      assert.ok(!identityCall.prompt.system.includes('v_json_stale | color | color:white'));
+    } finally {
+      localDb.close();
+    }
+  });
+
   it('selected does NOT contain siblings_excluded or discovery_log', async () => {
     const appDb = makeAppDbStub([
       { name: 'black', hex: '#000000', css_var: '--color-black' },

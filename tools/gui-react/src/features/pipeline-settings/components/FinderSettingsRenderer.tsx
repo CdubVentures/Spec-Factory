@@ -18,7 +18,7 @@ interface FinderSettingsRendererProps {
 }
 
 export function FinderSettingsRenderer({ finderId, category }: FinderSettingsRendererProps) {
-  const { settings, isSaving, saveSetting } = useModuleSettingsAuthority({ category, moduleId: finderId });
+  const { settings, isSaving, saveSetting, saveSettings } = useModuleSettingsAuthority({ category, moduleId: finderId });
 
   const schema = isFinderIdWithSettings(finderId) ? FINDER_SETTINGS_REGISTRY[finderId] : null;
 
@@ -57,6 +57,7 @@ export function FinderSettingsRenderer({ finderId, category }: FinderSettingsRen
                 category={category}
                 isSaving={isSaving}
                 onSave={saveSetting}
+                onSaveSettings={saveSettings}
               />
             ))}
           </div>
@@ -71,6 +72,7 @@ export function FinderSettingsRenderer({ finderId, category }: FinderSettingsRen
                 category={category}
                 isSaving={isSaving}
                 onSave={saveSetting}
+                onSaveSettings={saveSettings}
               />
             ))}
           </SettingsGroup>
@@ -166,9 +168,10 @@ interface EntryRowProps {
   category: string;
   isSaving: boolean;
   onSave: (key: string, value: string) => void;
+  onSaveSettings: (settings: Record<string, string>) => void;
 }
 
-function SettingsEntryRow({ entry, settings, category, isSaving, onSave }: EntryRowProps) {
+function SettingsEntryRow({ entry, settings, category, isSaving, onSave, onSaveSettings }: EntryRowProps) {
   const rawValue = settings[entry.key] ?? stringifyDefault(entry);
   const disabled = isSaving || Boolean(entry.disabledBy && settings[entry.disabledBy] === 'false');
 
@@ -183,6 +186,7 @@ function SettingsEntryRow({ entry, settings, category, isSaving, onSave }: Entry
           category={category}
           isSaving={isSaving}
           onSave={onSave}
+          onSaveSettings={onSaveSettings}
         />
       );
     }

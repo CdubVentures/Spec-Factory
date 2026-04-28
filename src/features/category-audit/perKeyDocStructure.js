@@ -11,6 +11,7 @@
  */
 
 import { FIELD_RULE_SCHEMA, appliesTo, describeCurrent, describePossibleValues } from './contractSchemaCatalog.js';
+import { expectedFieldStudioPatchFileName } from './fieldStudioPatch.js';
 
 const SLOT_DESCRIPTIONS = Object.freeze([
   { slot: 'PRIMARY_FIELD_KEY', previewKey: 'header', note: 'Field key + display name header.' },
@@ -363,7 +364,7 @@ function buildExampleBankSection(record, category) {
     blocks: [
       {
         kind: 'paragraph',
-        text: `For \`${record.fieldKey}\`, build a 5-10 product example bank before finalizing the rule. Use this category's benchmark data when available, then published candidates/product JSON, seed products, known component rows, and source research. For brand-new categories, use representative products from the market to create the first calibration set. Do not paste benchmark answers into the live prompt; use them to author the contract and guidance.`,
+        text: `For \`${record.fieldKey}\`, build a 5-10 product example bank before finalizing the rule. Use this category's benchmark data when available, then published candidates/product JSON, seed products, current component-source context, and source research. For brand-new categories, use representative products from the market to create the first calibration set. Do not paste benchmark answers into the live prompt; use them to author the contract and guidance.`,
       },
       {
         kind: 'note',
@@ -387,10 +388,15 @@ function buildExampleBankSection(record, category) {
 }
 
 function buildPerKeyLlmAuditPromptSection(record, category, navigatorOrdinal = '') {
-  const fieldToken = navigatorOrdinal ? `${navigatorOrdinal}-${record.fieldKey}` : '<sort_order>-<field_key>';
-  const fileName = navigatorOrdinal
-    ? `${category}-${fieldToken}-field-studio-change.txt`
-    : `${category}-${record.fieldKey}-field-studio-change.txt`;
+  const ordinalNumber = navigatorOrdinal ? Number(navigatorOrdinal) : null;
+  const fieldToken = navigatorOrdinal ? `${navigatorOrdinal}-${record.fieldKey}` : record.fieldKey;
+  const fileName = expectedFieldStudioPatchFileName({
+    category,
+    fieldKey: record.fieldKey,
+    navigatorOrdinal: ordinalNumber,
+  });
+  const ordinalJson = ordinalNumber == null ? 'null' : String(ordinalNumber);
+
   return {
     id: 'llm-audit-prompt',
     title: 'Copy/paste LLM audit prompt',
@@ -398,117 +404,127 @@ function buildPerKeyLlmAuditPromptSection(record, category, navigatorOrdinal = '
     blocks: [
       {
         kind: 'paragraph',
-        text: 'Paste this per-key doc into an LLM, then paste the prompt below. The first deliverable must be a Field Studio change file, not only a prose audit.',
+        text: `Paste this per-key doc into an LLM, then paste the prompt below. The first deliverable must be a strict JSON patch first, named ${fileName}, so the returned file can be imported directly into Field Studio settings.`,
       },
       {
         kind: 'codeBlock',
         lang: 'text',
         text: `You are auditing one Spec Factory field key: ${category}.${record.fieldKey}.
 
-Use the per-key doc above as the source of truth. Your job is not to extract a product value. Your job is to improve this key's Field Studio contract, enum/list setup, component mapping, search routing, evidence requirements, and guidance so future keyFinder runs extract this key correctly.
+Use the per-key doc above as the source of truth. Your job is not to extract a product value. Your job is to improve this key's Field Studio setup: Mapping Studio settings and Key Navigator settings only. Audit the category key as if the human is configuring the key in Field Studio. Do not ask for concrete component database/entity row edits.
 
-Return a downloadable text file first named ${fileName}. If your interface supports file artifacts, create that file, verify it exists, and link it before any prose. If your interface cannot attach files, put the exact file contents in a fenced text block before any commentary. Do not point back to the source brief and do not return only a prose audit.
+Return a downloadable JSON file first named ${fileName}. If your interface supports file artifacts, create that file, verify it exists, and link it before any prose. If your interface cannot attach files, put the exact file contents in a fenced json block before any commentary. Do not return markdown, bullets, comments, trailing commas, or prose inside the JSON.
 
-The text file must be concise and ordered exactly like Field Studio:
+The JSON must be strict and importable:
+- schema_version must be "field-studio-patch.v1".
+- category must be "${category}".
+- field_key must be "${record.fieldKey}".
+- navigator_ordinal must be ${ordinalJson}.
+- verdict must be one of keep, minor_revise, major_revise, schema_decision.
+- patch may contain only data_lists, field_overrides, and component_sources.
+- Omit every setting path that should stay as-is. Do not use prose sentinels.
+- null means clear this setting. Arrays replace arrays. Objects deep-merge.
+- field_overrides may patch only "${record.fieldKey}".
+- data_lists rows must use field "${record.fieldKey}".
+- component_sources rows must either be the component type itself or include "${record.fieldKey}" in roles.properties.
 
-# ${category.toUpperCase()} ${fieldToken} FIELD STUDIO CHANGE FILE
-# Keep the ${navigatorOrdinal ? `${navigatorOrdinal}-` : '<sort_order>-'} prefix so the returned file tracks Key Navigator order.
+Expected file: ${fileName}
+Sort/key token: ${fieldToken}
 
-## ${fieldToken} — <Keep | Minor revise | Major revise | Schema decision>
+Use this exact envelope:
 
-Mapping Studio:
+\`\`\`json
+{
+  "schema_version": "field-studio-patch.v1",
+  "category": "${category}",
+  "field_key": "${record.fieldKey}",
+  "navigator_ordinal": ${ordinalJson},
+  "verdict": "minor_revise",
+  "patch": {
+    "field_overrides": {
+      "${record.fieldKey}": {
+        "priority": {
+          "required_level": "mandatory",
+          "availability": "always",
+          "difficulty": "medium"
+        },
+        "contract": {
+          "type": "string",
+          "shape": "scalar"
+        },
+        "enum": {
+          "policy": "open_prefer_known",
+          "source": "data_lists.${record.fieldKey}"
+        },
+        "ai_assist": {
+          "variant_inventory_usage": {
+            "enabled": false
+          },
+          "pif_priority_images": {
+            "enabled": false
+          },
+          "reasoning_note": "Paste-ready extraction guidance for ${record.fieldKey}."
+        }
+      }
+    },
+    "data_lists": [
+      {
+        "field": "${record.fieldKey}",
+        "mode": "manual",
+        "normalize": "lower_trim",
+        "manual_values": []
+      }
+    ],
+    "component_sources": [
+      {
+        "component_type": "sensor",
+        "roles": {
+          "properties": [
+            {
+              "field_key": "${record.fieldKey}",
+              "variance_policy": "authoritative"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "audit": {
+    "sources_checked": [],
+    "products_checked": [],
+    "conclusion": "",
+    "open_questions": []
+  }
+}
+\`\`\`
 
-Component Source Mapping:
-- component source/type: <target or No change>
-- primary identifier role: <target or No change>
-- maker role: <target, blank, or No change>
-- aliases/name variants: <ordered list, blank, or No change>
-- reference URLs/links: <ordered list, blank, or No change>
-- component _link fields: for fields such as sensor_link, encoder_link, switch_link, or mcu_link, reference URLs/links must target the exact component's own manufacturer component page, datasheet/spec-sheet PDF, support PDF, or maker documentation. If no maker source exists, an authorized component distributor/supplier page for the exact component is acceptable as a fallback. Do not use product pages, reviews, or consumer marketplaces; not eBay-style marketplaces, random resale listings, forum posts, or articles that merely mention the component. If no component-level source exists, say so in Live validation/open questions.
-- attributes/properties:
-  - field_key: <field key or No change>
-  - variance_policy: <authoritative|upper_bound|lower_bound|range|override_allowed|majority_vote|blank|No change>
-  - component_only: <true|false|No change>
-  - allow product override: <true|false|No change>
-  - tolerance: <number, blank, or No change>
-  - property constraints: <ordered list, blank, or No change>
+For a keep verdict, return the same envelope with "patch": {}.
 
-Enum Data Lists:
-- data list field/name: <data list name, blank, or No change>
-- normalize: <normalize mode, blank, or No change>
-- values operation: <replace list|add values|remove values|rename values|No change>
-- final ordered values: <ordered canonical list, blank, or No change>
-- remove values: <ordered list, or none>
-- rename values: <old -> new list, or none>
-- source phrases/aliases to keep out of chips: <list, or none>
-- AI review priority: <required_level / availability / difficulty, or No change>
-- enum guidance: <short note, or No change>
+Mapping Studio patch guidance:
+- Component Source Mapping belongs under patch.component_sources. Use it for source/type, primary identifier role, maker role, aliases/name variants, reference URLs/links, component _link fields, and property variance. A component _link field should point to a manufacturer component page, datasheet/spec-sheet PDF, or authorized component distributor page; not eBay, forums, or pages that merely mention the component.
+- Enum Data Lists belong under patch.data_lists. Return the final ordered canonical values when replacing a list; keep aliases/source phrases out of public chips.
 
-Key Navigator:
-
-Contract:
-- variant_dependent: <true|false|No change>
-- type: <string|number|integer|boolean|date|url|No change>
-- shape: <scalar|list|No change>
-- unit: <target value, blank, or No change>
-- variance_policy: <authoritative|upper_bound|lower_bound|majority_vote|blank|No change>
-- range.min: <number, blank, or No change>
-- range.max: <number, blank, or No change>
-- list_rules.dedupe: <true|false|blank|No change>
-- list_rules.sort: <none|asc|desc|insert|blank|No change>
-- list_rules.item_union: <true|false|blank|No change>
-- rounding.decimals: <number, blank, or No change>
-- rounding.mode: <nearest|floor|ceil|half_even|blank|No change>
-
-Extraction Priority & Guidance:
-- required_level: <mandatory|non_mandatory|No change>
-- availability: <always|sometimes|rare|No change>
-- difficulty: <easy|medium|hard|very_hard|No change>
-- search/routing reason: <one short reason tied to this key>
-- Variant inventory context: <enabled|disabled|No change> (enable only when variant identity adds evidence-filter value without ambiguity)
-- PIF Priority Images: <enabled|disabled|No change> (enable only when default/base priority-view images add visual evidence value)
-- AI reasoning note: <paste-ready ai_assist.reasoning_note, "(empty - keep)", or No change>
-
-Enum Policy:
-- policy: <closed|open_prefer_known|open|blank|No change>
-- source: <data_lists.name|component_db.type|blank|No change>
-- format pattern: <pattern, blank, or No change>
-- note: <actual enum list values live in Mapping Studio Enum Data Lists>
-
-Components:
-- component.type: <component type, blank, or No change>
-- component source cascade: <enum.source/component_db linkage, blank, or No change>
-- component mapping note: <property and variance edits belong in Mapping Studio Component Source Mapping, or No change>
-
-Cross-Field Constraints:
-- constraints: <ordered list, blank, or No change>
-
-Evidence:
-- min_evidence_refs: <number or No change>
-- tier_preference: <ordered list, blank, or No change>
-
-Search Hints & Aliases:
-- Aliases: <ordered alias list, blank, or No change>
-- Domain Hints: <ordered list, blank, or No change>
-- Content Types: <ordered list, blank, or No change>
-- Query Terms: <ordered list, blank, or No change>
+Key Navigator patch guidance:
+- Field contract, priority, evidence, enum policy, constraints, aliases, search_hints, and ai_assist belong under patch.field_overrides.${record.fieldKey}.
+- Use ai_assist.variant_inventory_usage only when variant identity helps reject wrong-variant evidence without ambiguity.
+- Use ai_assist.pif_priority_images only when default/base priority-view images add visual evidence value.
+- Put final paste-ready prompt guidance in ai_assist.reasoning_note.
 
 Live validation:
-- sources checked: <3-7 URLs or source names>
-- products checked: <5-10 products/classes>
-- conclusion: <how live evidence changed or confirmed this key's contract/guidance>
+- Use model knowledge to form hypotheses, then validate this key with live public sources before finalizing enum values, examples, technical claims, component-source settings, search hints, evidence expectations, or difficulty.
+- Check 3-7 manufacturer, official documentation, standards, datasheet, credible lab, or authorized distributor sources.
+- Check 5-10 representative products/classes when the key has meaningful variants or filter-risk values.
+- Use benchmark data only to understand target shape and quality. Do not copy benchmark answers into the live prompt or treat benchmarks as public evidence.
 
-After the file, include a short prose audit with: verdict, key risks, references spot-checked, example bank, and any open questions.
+After the JSON file, include a short prose audit with: verdict, key risks, References spot-checked, example bank, and open questions.
 
 Rules:
-- Use model knowledge to form hypotheses, but validate this key with live public sources before finalizing enum values, examples, technical claims, component claims, search hints, evidence expectations, or difficulty.
-- Use benchmark data only to understand target shape and quality. Do not copy benchmark answers into the live prompt or treat benchmarks as public evidence.
-- Keep the answer compact enough to review in one text window.`,
+- This audit is for Field Studio setup only. If live research exposes missing/stale component entities, rows, aliases, properties, or source URLs, mention them after the JSON as a separate component-data gap. Do not put those row edits into the Field Studio patch.
+- Keep the JSON compact enough to review in one editor pane.`,
       },
     ],
   };
 }
-
 function formatPropertyPreview(properties) {
   const entries = Object.entries(properties || {});
   if (entries.length === 0) return '-';
@@ -551,7 +567,7 @@ function buildComponentSection(record, componentInventory) {
   } else if (c.relation === 'subfield_of') {
     blocks.push({
       kind: 'paragraph',
-      text: `**Subfield of the ${c.type} component.** When the \`${c.type}\` identity is resolved on a product, this value flows into the prompt as part of \`PRODUCT_COMPONENTS\`. Edits to this field should usually go into the component_db row rather than per-product.`,
+      text: `**Subfield of the ${c.type} component.** When the \`${c.type}\` identity is resolved on a product, this value flows into the prompt as part of \`PRODUCT_COMPONENTS\`. For this audit, recommend only Field Studio source-mapping settings; concrete component row edits are separate component-data cleanup.`,
     });
   }
 

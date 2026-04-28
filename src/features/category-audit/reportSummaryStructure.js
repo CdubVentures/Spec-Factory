@@ -94,7 +94,7 @@ function buildHeaderBlocks(reportData) {
     {
       kind: 'note',
       tone: 'warn',
-      text: 'Detailed per-key scripts and prompt previews live under `.workspace/reports/per-key/<category>/`. This summary intentionally does not duplicate those scripts.',
+      text: 'Detailed per-key scripts and prompt previews live under `.workspace/reports/<category>/per-key/`. This summary intentionally does not duplicate those scripts.',
     },
   ];
 }
@@ -140,7 +140,7 @@ function buildAuditContextSection() {
       },
       {
         kind: 'paragraph',
-        text: 'The per-key briefs are still the source for detailed prompt previews and paste-ready change-file instructions. Returned human/pro audit text files should stay in `.workspace/reports/<category>/`; this high-level summary uses the compiled rule state to show what still needs category-level approval.',
+        text: 'The per-key briefs are still the source for detailed prompt previews and paste-ready JSON patch instructions. Returned auditor patch files should stay in `.workspace/reports/<category>/auditors-responses/`; this high-level summary uses the compiled rule state to show what still needs category-level approval.',
       },
       {
         kind: 'table',
@@ -205,6 +205,33 @@ function buildFinalSignoffSection() {
           ['Evidence', 'Minimum refs and tier preferences match the risk of the field and the sources that realistically prove it.'],
           ['Per-key returns', 'Human/pro returned change files have been reviewed for every key that needed contract, enum, evidence, dependency, or guidance changes.'],
           ['Final category approval', 'Remaining red flags are intentional, documented, or queued as follow-up; otherwise the category is not ready for signoff.'],
+        ],
+      },
+    ],
+  };
+}
+
+function buildAuditorReturnFormatSection() {
+  return {
+    id: 'auditor-return-format',
+    title: 'Auditor Return Format',
+    blocks: [
+      {
+        kind: 'paragraph',
+        text: 'The high-level auditor must return a category decision, not only prose. Use this section after reviewing the matrix and the returned per-key audit files. Corrections here are category-level instructions for the human owner to apply or send back for targeted re-audit.',
+      },
+      {
+        kind: 'table',
+        headers: ['Field', 'What to return'],
+        rows: [
+          ['Decision', '`Approve` or `Needs changes`. Use `Needs changes` when any category-level correction, disagreement, or unresolved dependency remains.'],
+          ['Disagreements with per-key returned audits', 'List any per-key human/pro result you disagree with, including the key, the returned claim, and the corrected category-level judgment.'],
+          ['Category-level corrections', 'List changes that affect more than one key: grouping, scheduling, requiredness, difficulty, enum/filter policy, evidence policy, component ownership, or dependency strategy.'],
+          ['PIF dependency changes', 'List keys to add/remove as Product Image Dependent, variant inventory, or PIF priority image users, with a one-line reason for each.'],
+          ['Enum/filter changes', 'List closed/open policy problems, noisy chips, missing canonical values, suspicious values, or filters that should not be public.'],
+          ['Component/evidence changes', 'List component parent/subfield mistakes, component `_link` source issues, evidence ref problems, and tier-preference disagreements.'],
+          ['Keys requiring re-audit', 'List keys that need another individual audit pass because the returned text is incomplete, contradictory, or depends on a category-level decision.'],
+          ['Final signoff notes', 'Short notes the human owner should see before approving the category. Use `None` only when the category is ready.'],
         ],
       },
     ],
@@ -354,6 +381,7 @@ export function buildSummaryReportStructure(reportData) {
       buildAuditContextSection(),
       buildMatrixLegendSection(),
       buildFinalSignoffSection(),
+      buildAuditorReturnFormatSection(),
       buildKeyMatrixSection(reportData),
       buildPifDependencySection(reportData),
       buildRiskRollupSection(reportData),

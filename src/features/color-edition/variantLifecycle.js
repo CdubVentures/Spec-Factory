@@ -174,8 +174,14 @@ export function derivePublishedFromVariants({ specDb, productId, productRoot }) 
   const editionsConfidence = aggregateCefFieldConfidence(specDb, productId, 'editions', variants);
 
   const now = new Date().toISOString();
+  const finderStore = specDb.getFinderStore?.('colorEditionFinder');
+  if (finderStore) {
+    finderStore.updateSummaryField(productId, 'colors', JSON.stringify(colors));
+    finderStore.updateSummaryField(productId, 'editions', JSON.stringify(editions));
+    finderStore.updateSummaryField(productId, 'default_color', defaultColor);
+  }
 
-  // Update product.json fields[colors] and fields[editions]
+  // Mirror product.json fields[colors] and fields[editions]
   const productJson = readProductJson(productRoot, productId);
   if (productJson) {
     if (!productJson.fields) productJson.fields = {};
@@ -206,14 +212,6 @@ export function derivePublishedFromVariants({ specDb, productId, productRoot }) 
 
     productJson.updated_at = now;
     writeProductJson(productRoot, productId, productJson);
-  }
-
-  // Update CEF summary columns (targeted — preserves other columns)
-  const finderStore = specDb.getFinderStore?.('colorEditionFinder');
-  if (finderStore) {
-    finderStore.updateSummaryField(productId, 'colors', JSON.stringify(colors));
-    finderStore.updateSummaryField(productId, 'editions', JSON.stringify(editions));
-    finderStore.updateSummaryField(productId, 'default_color', defaultColor);
   }
 
   return { colors, editions, defaultColor };

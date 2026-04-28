@@ -25,6 +25,40 @@ function encodedImageUrl({ category, productId, filename, bytes }) {
   return bytes ? `${base}?v=${bytes}` : base;
 }
 
+function parseJsonValue(value, fallback) {
+  if (value && typeof value === 'object') return value;
+  if (typeof value !== 'string' || value.trim() === '') return fallback;
+  try { return JSON.parse(value); } catch { return fallback; }
+}
+
+function readSqlProductImages({ finderStore, productId }) {
+  const row = typeof finderStore?.get === 'function' ? finderStore.get(productId) : null;
+  if (!row) return null;
+
+  const images = parseJsonValue(row.images, []);
+  const evalState = parseJsonValue(row.eval_state, {});
+  const carouselSlots = parseJsonValue(row.carousel_slots, {});
+  const selectedImages = (Array.isArray(images) ? images : [])
+    .map((img) => {
+      const filename = String(img?.filename || '');
+      return filename ? { ...img, ...(evalState?.[filename] || {}) } : null;
+    })
+    .filter(Boolean);
+
+  return {
+    product_id: row.product_id || productId,
+    category: row.category || '',
+    selected: { images: selectedImages },
+    carousel_slots: carouselSlots && typeof carouselSlots === 'object' ? carouselSlots : {},
+  };
+}
+
+function readPifPrioritySource({ finderStore, productId, productRoot }) {
+  const sqlDoc = readSqlProductImages({ finderStore, productId });
+  if (sqlDoc) return sqlDoc;
+  return readProductImages({ productId, productRoot });
+}
+
 function getDefaultColor(specDb, productId) {
   const row = typeof specDb?.getColorEditionFinder === 'function'
     ? specDb.getColorEditionFinder(productId)
@@ -134,7 +168,7 @@ export async function resolveKeyFinderPifPriorityImageContext({
   };
 
   const root = productRoot || defaultProductRoot();
-  const pifDoc = readProductImages({ productId, productRoot: root });
+  const pifDoc = readPifPrioritySource({ finderStore, productId, productRoot: root });
   const allImages = pifDoc?.selected?.images || [];
   const slots = resolveCarouselSlots({
     viewBudget: priorityViews,

@@ -171,6 +171,16 @@ export const FINDER_MODULES = Object.freeze([
       { key: 'reRunBudget', type: 'int', default: 1, min: 0, max: 5,
         uiLabel: 'Re-run Budget', uiGroup: 'Carousel Strategy (Loop Run)',
         uiTip: 'Extra LLM calls per view when you click Loop again on an already-satisfied variant. 0 = skip satisfied views entirely (no LLM call); Loop moves straight to unsatisfied views or hero. 1+ = allow N more targeted calls per satisfied view to fill gaps. Ignored on the first Loop.' },
+      { key: 'carouselScoredViews', type: 'string', default: '', allowEmpty: true,
+        widget: 'carouselScoring', uiLabel: 'Carousel Views', uiGroup: 'Carousel Scoring',
+        uiTip: 'Check target views for the scored carousel denominator; placeholders can fill extra view slots.',
+        widgetProps: { childKeys: ['carouselOptionalViews', 'carouselExtraTarget'] } },
+      { key: 'carouselOptionalViews', type: 'string', default: '', allowEmpty: true,
+        uiLabel: 'Carousel Placeholder Views', uiGroup: 'Carousel Scoring',
+        uiTip: 'Canonical view placeholders that can fill/overfill the carousel count without increasing the scored-view denominator.' },
+      { key: 'carouselExtraTarget', type: 'int', default: 3, min: 0, max: 20,
+        uiLabel: 'Additional Image Target', uiGroup: 'Carousel Scoring',
+        uiTip: 'Inner-ring target for additional non-scored carousel images. Filled extras can exceed this target.' },
 
       // Hero slots
       { key: 'heroEnabled', type: 'bool', default: true,

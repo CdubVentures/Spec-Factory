@@ -20,6 +20,16 @@ import path from 'node:path';
 import { FINDER_MODULE_MAP } from '../../../core/finder/finderModuleRegistry.js';
 import { deriveFinderSettingsDefaults } from '../../../core/finder/finderSettingsSchema.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
+import { rebuildPifVariantProgressFromJson } from '../../product-image/pifVariantProgressRebuild.js';
+
+const PIF_PROGRESS_SETTING_KEYS = new Set([
+  'viewBudget',
+  'carouselScoredViews',
+  'carouselOptionalViews',
+  'carouselExtraTarget',
+  'heroEnabled',
+  'heroCount',
+]);
 
 function writeSettingsJson(filePath, settings) {
   fs.mkdirSync(path.dirname(filePath), { recursive: true });
@@ -37,7 +47,7 @@ function categorySettingsJsonPath(helperRoot, category, mod) {
 }
 
 export function registerModuleSettingsRoutes(ctx) {
-  const { jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot, appDb } = ctx;
+  const { jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot, productRoot, appDb } = ctx;
 
   return async function handleModuleSettingsRoutes(parts, params, method, req, res) {
     if (parts[0] !== 'module-settings') return false;
@@ -131,6 +141,7 @@ export function registerModuleSettingsRoutes(ctx) {
       }
 
       const settings = body.settings || body;
+      const settingKeys = Object.keys(settings);
       for (const [key, value] of Object.entries(settings)) {
         if (typeof key === 'string' && key.length > 0) {
           store.setSetting(key, value);
@@ -142,12 +153,25 @@ export function registerModuleSettingsRoutes(ctx) {
         writeSettingsJson(categorySettingsJsonPath(helperRoot, category, mod), allSettings);
       }
 
+      const pifProgressChanged = moduleId === 'productImageFinder'
+        && settingKeys.some((key) => PIF_PROGRESS_SETTING_KEYS.has(key));
+      const pifProgressRebuild = pifProgressChanged
+        ? rebuildPifVariantProgressFromJson({ specDb, productRoot })
+        : null;
+      const domains = pifProgressChanged
+        ? ['module-settings', 'product-image-finder', 'catalog']
+        : ['module-settings'];
+
       emitDataChange({
         broadcastWs,
         event: 'module-settings-updated',
         category,
-        domains: ['module-settings'],
-        meta: { moduleId, keys: Object.keys(settings) },
+        domains,
+        meta: {
+          moduleId,
+          keys: settingKeys,
+          ...(pifProgressRebuild ? { pifProgressRebuild } : {}),
+        },
       });
 
       return jsonRes(res, 200, { ok: true, category, module: moduleId, settings: allSettings });

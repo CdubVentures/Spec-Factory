@@ -2,8 +2,8 @@
  * Per-key doc generator. Emits a folder tree of paired HTML + Markdown briefs,
  * one pair per non-reserved field in a category, organized by field group.
  *
- *   <outputRoot>/per-key/<category>/<group>/<field_key>.{html,md}
- *   <outputRoot>/per-key/<category>/_reserved-keys.md
+ *   <outputRoot>/<category>/per-key/<group>/<field_key>.{html,md}
+ *   <outputRoot>/<category>/per-key/_reserved-keys.md
  *
  * Each per-key doc shows:
  *   - Purpose
@@ -33,6 +33,7 @@ import { buildPerKeyDocStructure } from './perKeyDocStructure.js';
 import { FIELD_RULE_SCHEMA } from './contractSchemaCatalog.js';
 import { renderHtmlFromStructure } from './reportHtml.js';
 import { renderMarkdownFromStructure } from './reportMarkdown.js';
+import { archiveExistingReportTree, ensureAuditorResponsesDir } from './reportArchive.js';
 import { escapeHtml } from './reportHtml.js';
 
 function groupRecordsByGroup(records) {
@@ -138,10 +139,10 @@ function buildNavigatorOrdinalMap(fieldKeyOrder) {
 }
 
 function resolvePerKeyCategoryPath(outputRoot, category) {
-  const perKeyRoot = path.resolve(outputRoot, 'per-key');
-  const basePath = path.resolve(perKeyRoot, category);
-  const isInsidePerKeyRoot = basePath.startsWith(`${perKeyRoot}${path.sep}`);
-  if (!isInsidePerKeyRoot) {
+  const root = path.resolve(outputRoot);
+  const basePath = path.resolve(root, category, 'per-key');
+  const isInsideRoot = basePath.startsWith(`${root}${path.sep}`);
+  if (!isInsideRoot) {
     throw new Error(`generatePerKeyDocs: unsafe category output path for ${category}`);
   }
   return basePath;
@@ -191,7 +192,8 @@ export async function generatePerKeyDocs({
 
   const generatedAt = reportData.generatedAt;
   const basePath = resolvePerKeyCategoryPath(outputRoot, category);
-  await fs.rm(basePath, { recursive: true, force: true });
+  await archiveExistingReportTree({ outputRoot, category, treeName: 'per-key', now });
+  await ensureAuditorResponsesDir({ outputRoot, category });
   await fs.mkdir(basePath, { recursive: true });
 
   const byGroup = groupRecordsByGroup(reportData.keys);

@@ -47,7 +47,13 @@ function readFinderJson(productRoot, productId, filePrefix) {
 
 function writeFinderJson(productRoot, productId, filePrefix, data) {
   const filePath = path.join(productRoot, productId, `${filePrefix}.json`);
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
   fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function cloneJson(value) {
+  if (value === null || value === undefined) return value;
+  return JSON.parse(JSON.stringify(value));
 }
 
 function variantMatches(candidate, variantId, variantKey) {
@@ -61,6 +67,10 @@ function filterCandidates(arr, variantId, variantKey) {
   if (!Array.isArray(arr)) return { result: arr, changed: false };
   const result = arr.filter(c => !variantMatches(c, variantId, variantKey));
   return { result, changed: result.length !== arr.length };
+}
+
+function candidatesContainVariant(candidates, variantId, variantKey) {
+  return Array.isArray(candidates) && candidates.some(c => variantMatches(c, variantId, variantKey));
 }
 
 // WHY: variantFieldProducer runs identify their target variant on the run
@@ -97,6 +107,171 @@ function latestWinsPerVariant(runs) {
   return [...latestByKey.values()];
 }
 
+function dataContainsVariant(data, variantId, variantKey) {
+  if (!data) return false;
+  if (candidatesContainVariant(data.selected?.candidates, variantId, variantKey)) return true;
+  const runs = Array.isArray(data.runs) ? data.runs : [];
+  for (const run of runs) {
+    if (runTargetsVariant(run, variantId, variantKey)) return true;
+    if (candidatesContainVariant(run?.selected?.candidates, variantId, variantKey)) return true;
+    if (candidatesContainVariant(run?.response?.candidates, variantId, variantKey)) return true;
+  }
+  return false;
+}
+
+function normalizeSqlRun(row) {
+  const {
+    category,
+    product_id,
+    selected_json,
+    prompt_json,
+    response_json,
+    ...run
+  } = row || {};
+  void category;
+  void product_id;
+  void selected_json;
+  void prompt_json;
+  void response_json;
+  return {
+    ...run,
+    fallback_used: Boolean(run.fallback_used),
+    thinking: Boolean(run.thinking),
+    web_search: Boolean(run.web_search),
+    selected: cloneJson(row?.selected || {}),
+    prompt: cloneJson(row?.prompt || {}),
+    response: cloneJson(row?.response || {}),
+  };
+}
+
+function parseSummaryCandidates(summary) {
+  const candidates = summary?.candidates;
+  if (Array.isArray(candidates)) return cloneJson(candidates);
+  if (typeof candidates !== 'string') return [];
+  try {
+    const parsed = JSON.parse(candidates);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function readSqlCleanupSource(finderStore, productId) {
+  if (!finderStore) return { available: false, runs: [], summary: null };
+  const summary = typeof finderStore.get === 'function' ? finderStore.get(productId) : null;
+  const runs = typeof finderStore.listRuns === 'function' ? finderStore.listRuns(productId) : [];
+  const normalizedRuns = Array.isArray(runs) ? runs.map(normalizeSqlRun) : [];
+  return {
+    available: normalizedRuns.length > 0 || Boolean(summary),
+    runs: normalizedRuns,
+    summary,
+  };
+}
+
+function createCleanupData({ jsonData, sqlSource, productId }) {
+  if (!sqlSource.available) return jsonData;
+
+  const data = cloneJson(jsonData) || {
+    product_id: productId,
+    category: sqlSource.summary?.category || '',
+    selected: { candidates: [] },
+    runs: [],
+    run_count: 0,
+    next_run_number: 1,
+    last_ran_at: '',
+  };
+
+  const sqlRuns = sqlSource.runs;
+  const maxRunNumber = sqlRuns.length
+    ? Math.max(...sqlRuns.map(r => r.run_number || 0))
+    : 0;
+  const summaryCandidates = parseSummaryCandidates(sqlSource.summary);
+
+  data.product_id = data.product_id || productId;
+  data.category = data.category || sqlSource.summary?.category || '';
+  data.runs = sqlRuns;
+  data.run_count = sqlRuns.length;
+  data.selected = data.selected || {};
+  data.selected.candidates = summaryCandidates.length > 0
+    ? summaryCandidates
+    : latestWinsPerVariant(sqlRuns);
+  data.last_ran_at = sqlRuns.length
+    ? (sqlRuns[sqlRuns.length - 1].ran_at || data.last_ran_at || '')
+    : (sqlSource.summary?.latest_ran_at || data.last_ran_at || '');
+  data.next_run_number = Math.max(data.next_run_number || 0, maxRunNumber + 1, 1);
+
+  return data;
+}
+
+function applySqlCleanup({
+  finderStore,
+  productId,
+  category,
+  moduleId,
+  data,
+  touchedRuns,
+  deletedRunNumbers,
+  requireSqlWrites,
+}) {
+  if (!finderStore) return;
+
+  if (deletedRunNumbers.length > 0 && typeof finderStore.removeRun !== 'function') {
+    if (requireSqlWrites) {
+      throw new Error(`variant cleanup requires SQL removeRun for ${moduleId || 'finder'}`);
+    }
+  } else {
+    for (const runNumber of deletedRunNumbers) {
+      finderStore.removeRun(productId, runNumber);
+    }
+  }
+
+  if (touchedRuns.length > 0 && typeof finderStore.updateRunJson !== 'function') {
+    if (requireSqlWrites) {
+      throw new Error(`variant cleanup requires SQL updateRunJson for ${moduleId || 'finder'}`);
+    }
+  } else {
+    for (const run of touchedRuns) {
+      finderStore.updateRunJson(productId, run.run_number, {
+        selected: run.selected || {},
+        response: run.response || {},
+      });
+    }
+  }
+
+  const aggregate = data.selected?.candidates || [];
+  const canUpdateSummaryFields = typeof finderStore.updateSummaryField === 'function';
+  const canUpsertSummary = typeof finderStore.upsert === 'function';
+  if (!canUpdateSummaryFields && !canUpsertSummary) {
+    if (requireSqlWrites) {
+      throw new Error(`variant cleanup requires SQL summary update for ${moduleId || 'finder'}`);
+    }
+    return;
+  }
+
+  if (canUpdateSummaryFields) {
+    finderStore.updateSummaryField(productId, 'candidates', JSON.stringify(aggregate));
+    finderStore.updateSummaryField(productId, 'candidate_count', aggregate.length);
+  } else {
+    const existing = typeof finderStore.get === 'function' ? (finderStore.get(productId) || {}) : {};
+    finderStore.upsert({
+      ...existing,
+      category: existing.category || category || data.category || '',
+      product_id: productId,
+      candidates: aggregate,
+      candidate_count: aggregate.length,
+      latest_ran_at: data.last_ran_at || '',
+      run_count: data.run_count || 0,
+    });
+  }
+
+  if (typeof finderStore.updateBookkeeping === 'function') {
+    finderStore.updateBookkeeping(productId, {
+      latest_ran_at: data.last_ran_at || '',
+      run_count: data.run_count || 0,
+    });
+  }
+}
+
 /**
  * Strip a variant's entries from one variantFieldProducer module's history.
  *
@@ -118,7 +293,10 @@ export function stripVariantFromFieldProducerHistory({
   if (!variantId && !variantKey) return { changed: false, runsTouched: 0, runsDeleted: 0 };
 
   productRoot = productRoot || defaultProductRoot();
-  const data = readFinderJson(productRoot, productId, module.filePrefix);
+  const finderStore = specDb?.getFinderStore?.(module.id);
+  const jsonData = readFinderJson(productRoot, productId, module.filePrefix);
+  const sqlSource = readSqlCleanupSource(finderStore, productId);
+  const data = createCleanupData({ jsonData, sqlSource, productId });
   if (!data) return { changed: false, runsTouched: 0, runsDeleted: 0 };
 
   const runs = Array.isArray(data.runs) ? data.runs : [];
@@ -172,7 +350,11 @@ export function stripVariantFromFieldProducerHistory({
     if (changed) { data.selected.candidates = result; aggregateChanged = true; }
   }
 
-  if (!hadRunChanges && !aggregateChanged) {
+  const mirrorOnlyChange = sqlSource.available
+    && dataContainsVariant(jsonData, variantId, variantKey)
+    && !dataContainsVariant(data, variantId, variantKey);
+
+  if (!hadRunChanges && !aggregateChanged && !mirrorOnlyChange) {
     return { changed: false, runsTouched: 0, runsDeleted: 0 };
   }
 
@@ -195,39 +377,17 @@ export function stripVariantFromFieldProducerHistory({
   data.next_run_number = Math.max(data.next_run_number || 0, maxRemaining + 1, 1);
 
   data.updated_at = new Date().toISOString();
+  applySqlCleanup({
+    finderStore,
+    productId,
+    category: specDb?.category,
+    moduleId: module.id,
+    data,
+    touchedRuns,
+    deletedRunNumbers,
+    requireSqlWrites: sqlSource.available,
+  });
   writeFinderJson(productRoot, productId, module.filePrefix, data);
-
-  const finderStore = specDb.getFinderStore?.(module.id);
-  if (finderStore) {
-    const aggregate = data.selected?.candidates || [];
-    finderStore.updateSummaryField(productId, 'candidates', JSON.stringify(aggregate));
-    finderStore.updateSummaryField(productId, 'candidate_count', aggregate.length);
-
-    // Bookkeeping on the SQL summary row.
-    if (typeof finderStore.updateBookkeeping === 'function') {
-      finderStore.updateBookkeeping(productId, {
-        latest_ran_at: data.last_ran_at || '',
-        run_count: data.run_count || 0,
-      });
-    }
-
-    // Remove SQL rows for fully-deleted runs.
-    if (typeof finderStore.removeRun === 'function') {
-      for (const runNumber of deletedRunNumbers) {
-        finderStore.removeRun(productId, runNumber);
-      }
-    }
-
-    // Rewrite SQL blobs for survived-but-filtered runs.
-    if (typeof finderStore.updateRunJson === 'function') {
-      for (const run of touchedRuns) {
-        finderStore.updateRunJson(productId, run.run_number, {
-          selected: run.selected || {},
-          response: run.response || {},
-        });
-      }
-    }
-  }
 
   return { changed: true, runsTouched: touchedRuns.length, runsDeleted: deletedRunNumbers.length };
 }

@@ -1,6 +1,6 @@
 {
   "category": "mouse",
-  "generated_at": "2026-04-27T06:26:59.005Z",
+  "generated_at": "2026-04-27T23:47:18.448Z",
   "template_library": {
     "boolean_yes_no_unk": {
       "description": "Parse yes/no/true/false/1/0 tokens. Output boolean or 'unk'.",
@@ -179,6 +179,30 @@
       "type": "number"
     },
     "adjustable_scroll_wheel": {
+      "context_keywords": [
+        "adaptive scroll wheel",
+        "adjustable scroll wheel",
+        "configurable scroll feel",
+        "dual-mode scroll wheel",
+        "editable scroll-wheel resistance",
+        "free-spin scroll wheel",
+        "free-spinning mode",
+        "hyper-fast scroll wheel",
+        "HyperScroll",
+        "HyperScroll Pro",
+        "MagSpeed",
+        "mode shift button",
+        "mode-shift button",
+        "ratchet mode",
+        "scroll force",
+        "scroll resistance",
+        "scroll steps",
+        "scroll tension",
+        "scroll wheel resistance",
+        "Smart-Reel",
+        "smooth scrolling mode",
+        "tactile cycling mode"
+      ],
       "patterns": [],
       "type": "boolean"
     },
@@ -236,7 +260,7 @@
         "Bluetooth Smart",
         "Bluetooth-enabled",
         "BT",
-        "Swift Pair"
+        "Swift Pair (supporting signal only when the same source identifies the mouse)"
       ],
       "patterns": [],
       "type": "boolean"
@@ -246,13 +270,17 @@
         "Ascended Cable -> paracord only when source says paracord material",
         "braided cable -> braided",
         "braided sheathing -> braided",
+        "EZcord",
+        "Flex Cord",
+        "HyperFlex -> marketing phrase unless material is also stated",
         "lightweight paracord construction -> paracord",
         "paracord cable -> paracord",
         "paracord-like -> paracord when explicitly stated",
+        "PhantomFlex",
         "rubber-coated cable -> rubber",
         "shoelace cable -> paracord",
         "soft rubber cable -> rubber",
-        "SpeedFlex, Flex Cord, EZcord, PhantomFlex, HyperFlex -> marketing phrase unless material is also stated",
+        "SpeedFlex",
         "Ultraweave/Ultra-weave -> ultraweave"
       ],
       "patterns": [],
@@ -311,9 +339,9 @@
         "average latency wired",
         "avg latency wired",
         "button latency wired",
-        "click latency (wired)",
         "click latency wired",
         "click response time wired",
+        "replace with: click latency (wired)",
         "USB click latency",
         "wired button response time",
         "wired click latency"
@@ -521,10 +549,49 @@
       "type": "string"
     },
     "encoder": {
+      "context_keywords": [
+        "16-step scroll wheel",
+        "24-step scroll wheel",
+        "Kailh Dustproof",
+        "mechanical scroll wheel",
+        "middle mouse button switch (negative cue)",
+        "mouse wheel encoder",
+        "optical scroll wheel",
+        "Razer Optical Scroll Wheel",
+        "rotary encoder",
+        "scroll sensor",
+        "scroll switch (negative cue)",
+        "scroll wheel encoder",
+        "TTC Dust-Proof Silver",
+        "TTC Golden Wheel Mouse Encoder",
+        "TTC silver (wide)",
+        "TTC Silver Wheel Mouse Encoder",
+        "wheel encoder",
+        "wheel encoder model"
+      ],
       "patterns": [],
       "type": "string"
     },
     "encoder_brand": {
+      "context_keywords": [
+        "ALPS Japan",
+        "encoder maker",
+        "encoder manufacturer",
+        "F-Switch E10",
+        "Japanese ALPS",
+        "Kailh encoder",
+        "Kailh Red",
+        "mouse wheel encoder brand",
+        "Pulsar Blue Encoder",
+        "RAESHA Optical Encoder",
+        "Razer Optical Scroll Wheel",
+        "rotary encoder",
+        "scroll wheel encoder brand",
+        "TTC Gold",
+        "TTC Silver",
+        "wheel encoder",
+        "Zowie Optical Scroll Wheel"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -658,6 +725,20 @@
       "type": "string"
     },
     "hardware_acceleration": {
+      "context_keywords": [
+        "acceleration artifacts",
+        "built-in acceleration",
+        "dynamic CPI",
+        "ExactAccel",
+        "hardware acceleration",
+        "native acceleration",
+        "no acceleration artifacts",
+        "no prediction no acceleration",
+        "no smoothing acceleration filtering",
+        "pointer acceleration",
+        "tracking speed inconsistency",
+        "zero smoothing acceleration filtering"
+      ],
       "patterns": [],
       "type": "boolean"
     },
@@ -754,15 +835,40 @@
     },
     "lift": {
       "context_keywords": [
+        "distance control unit",
         "lift",
         "lift off distance",
+        "lift off distance range",
         "lift-off distance",
-        "lod"
+        "lift-off distance range",
+        "lod",
+        "minimum lift off distance",
+        "minimum lift-off distance",
+        "tracking cut-off",
+        "tracking cutoff"
       ],
       "patterns": [],
       "type": "number"
     },
     "lift_settings": {
+      "context_keywords": [
+        "adjustable LOD",
+        "asymmetric cut-off",
+        "lift off distance",
+        "lift-off distance",
+        "lift-off range",
+        "LOD",
+        "LOD adjustment",
+        "low/medium/high LOD",
+        "mouse feet height optimization",
+        "mouse mat calibration",
+        "OLED LOD",
+        "onboard LOD",
+        "Smart Tracking",
+        "surface calibration",
+        "surface tuning",
+        "tracking distance"
+      ],
       "patterns": [],
       "type": "string"
     },
@@ -835,10 +941,48 @@
       "type": "string"
     },
     "mcu": {
+      "context_keywords": [
+        "CompX CX52850",
+        "controller chip",
+        "M483",
+        "M484SIDAE",
+        "MCU",
+        "microcontroller",
+        "Nordic chip",
+        "nRF52840",
+        "nRF54H20",
+        "nRF54L15",
+        "Nuvoton M483",
+        "processor chip",
+        "Realtek 8762G",
+        "RTL8762G",
+        "SoC",
+        "system-on-chip",
+        "Telink 8273",
+        "TLSR8273",
+        "USB MCU",
+        "wireless MCU"
+      ],
       "patterns": [],
       "type": "string"
     },
     "mcu_link": {
+      "context_keywords": [
+        "2.4GHz SoC",
+        "Arm Cortex MCU",
+        "Bluetooth SoC",
+        "controller chip",
+        "controller IC",
+        "Cortex-M MCU",
+        "main chip",
+        "main controller",
+        "MCU",
+        "microcontroller",
+        "SoC",
+        "uC",
+        "wireless SoC",
+        "µC"
+      ],
       "patterns": [],
       "type": "url"
     },
@@ -858,6 +1002,16 @@
       "type": "number"
     },
     "motion_sync": {
+      "context_keywords": [
+        "motion sync technology",
+        "Motion-Sync",
+        "MotionSync",
+        "PixArt Motion Sync Technology",
+        "synchronizes mouse reports with PC polling intervals",
+        "synchronizes sensor data with USB polling events",
+        "synchronizes USB polling events with sensor data",
+        "syncs the mouse signals to your PC intervals"
+      ],
       "patterns": [],
       "type": "boolean"
     },
@@ -890,14 +1044,62 @@
       "type": "string"
     },
     "nvidia_reflex": {
+      "context_keywords": [
+        "click-to-display system latency",
+        "Gaming Mice with Reflex",
+        "NVIDIA Reflex Analyzer",
+        "NVIDIA Reflex compatible mouse",
+        "NVIDIA Reflex Validated",
+        "NVIDIA RLA",
+        "Officially verified for NVIDIA Reflex Latency Analyzer",
+        "Reflex Analyzer-compatible",
+        "Reflex validated",
+        "Reflex-compatible mouse",
+        "RLA"
+      ],
       "patterns": [],
       "type": "boolean"
     },
     "onboard_memory": {
+      "context_keywords": [
+        "built-in memory",
+        "device memory mode",
+        "hardware playback",
+        "hardware profile",
+        "hardware profiles",
+        "on board memory",
+        "on-board memory",
+        "on-board profile storage",
+        "on-mouse memory",
+        "onboard memory",
+        "onboard profile",
+        "onboard profile storage",
+        "onboard profiles",
+        "profile storage",
+        "save settings to mouse",
+        "save to device"
+      ],
       "patterns": [],
       "type": "boolean"
     },
     "onboard_memory_value": {
+      "context_keywords": [
+        "device memory mode",
+        "hardware profiles",
+        "last active profile",
+        "memory profile",
+        "memory profiles",
+        "memory slots",
+        "on-board memory profiles",
+        "on-board profiles",
+        "onboard memory profiles",
+        "onboard profile storage",
+        "onboard profiles",
+        "profile slots",
+        "save profile to device",
+        "save profile to mouse",
+        "stored profiles"
+      ],
       "patterns": [],
       "type": "integer"
     },
@@ -952,6 +1154,22 @@
       "type": "string"
     },
     "profile_switching": {
+      "context_keywords": [
+        "cycle profiles",
+        "hardware playback profile switch",
+        "hardware profile switch",
+        "next profile",
+        "on-board profile cycle",
+        "onboard profile cycle",
+        "profile button",
+        "profile cycle",
+        "profile cycling",
+        "profile switch",
+        "profile switch button",
+        "profile switching",
+        "profile switching button",
+        "stored profile cycling"
+      ],
       "patterns": [],
       "type": "boolean"
     },
@@ -1048,11 +1266,33 @@
       "type": "date"
     },
     "sensor_latency": {
+      "context_keywords": [
+        "delay at half movement",
+        "delay to end of movement",
+        "delay to start of movement",
+        "motion delay",
+        "motion latency",
+        "mouse sensor delay",
+        "movement delay",
+        "movement latency",
+        "sensor delay",
+        "sensor lag",
+        "sensor response time",
+        "shift latency (movement only)"
+      ],
       "patterns": [],
       "type": "number"
     },
     "sensor_latency_bluetooth": {
       "context_keywords": [
+        "Bluetooth delay at half movement",
+        "Bluetooth motion delay",
+        "Bluetooth motion latency",
+        "Bluetooth sensor latency",
+        "motion delay over Bluetooth",
+        "motion latency over Bluetooth",
+        "movement latency Bluetooth",
+        "sensor delay over Bluetooth",
         "sensor latency (bluetooth)",
         "sensor latency bluetooth"
       ],
@@ -1061,16 +1301,34 @@
     },
     "sensor_latency_wired": {
       "context_keywords": [
+        "50% movement delay",
+        "delay at half movement",
+        "motion delay (wired)",
+        "motion delay wired",
+        "motion latency wired",
+        "mouse movement delay",
+        "sensor delay",
         "sensor latency (wired)",
-        "sensor latency wired"
+        "sensor latency wired",
+        "wired motion latency",
+        "wired sensor latency"
       ],
       "patterns": [],
       "type": "number"
     },
     "sensor_latency_wireless": {
       "context_keywords": [
+        "2.4 GHz motion latency",
+        "delay at half movement wireless",
+        "motion latency wireless",
+        "movement latency wireless",
+        "receiver motion latency",
+        "sensor delay wireless",
         "sensor latency (wireless)",
-        "sensor latency wireless"
+        "sensor latency wireless",
+        "wireless motion latency",
+        "wireless movement delay",
+        "wireless sensor latency"
       ],
       "patterns": [],
       "type": "number"
@@ -1084,11 +1342,9 @@
         "blue optical tracking -> optical",
         "Darkfield laser sensor -> laser",
         "high precision optical tracking -> optical",
-        "infrared LED -> optical when tied to the motion sensor",
-        "IR LED -> optical when tied to the motion sensor",
+        "IR LED/infrared LED/LED illumination -> optical when tied to the motion sensor",
         "laser sensor -> laser",
         "laser tracking -> laser",
-        "LED illumination -> optical when tied to the motion sensor",
         "optical sensor -> optical",
         "optical tracking -> optical"
       ],
@@ -1116,6 +1372,13 @@
       "type": "string"
     },
     "shift_latency": {
+      "context_keywords": [
+        "motion latency",
+        "movement (shift) latency",
+        "movement delay",
+        "movement latency",
+        "shift latency"
+      ],
       "patterns": [],
       "type": "number"
     },
@@ -1169,6 +1432,21 @@
       "type": "string"
     },
     "smoothing": {
+      "context_keywords": [
+        "filtering",
+        "interpolation",
+        "no filtering",
+        "no smoothing",
+        "ripple control",
+        "ripple/noise filtering",
+        "sensor interpolation",
+        "sensor smoothing",
+        "signal smoothing",
+        "smoothing / filtering",
+        "smoothing/filtering",
+        "zero smoothing",
+        "zero smoothing filtering acceleration"
+      ],
       "patterns": [],
       "type": "boolean"
     },
