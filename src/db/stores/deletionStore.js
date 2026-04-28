@@ -59,7 +59,8 @@ export function createDeletionStore({ db, category: defaultCategory }) {
 
     // Step 1: Check if run exists
     const runExists = db.prepare('SELECT 1 FROM runs WHERE run_id = ?').get(rid)
-      || db.prepare('SELECT 1 FROM crawl_sources WHERE run_id = ?').get(rid);
+      || db.prepare('SELECT 1 FROM crawl_sources WHERE run_id = ?').get(rid)
+      || db.prepare('SELECT 1 FROM run_sources WHERE run_id = ?').get(rid);
     if (!runExists) return { ok: false, run_id: rid, reason: 'run_not_found' };
 
     let totalDeleted = 0;
@@ -73,8 +74,12 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       totalDeleted += db.prepare('DELETE FROM url_index WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM prompt_index WHERE run_id = ?').run(rid).changes;
       // Phase 4 — Artifact tables
-      const contentHashes = db.prepare('SELECT content_hash FROM crawl_sources WHERE run_id = ?').all(rid).map((r) => r.content_hash).filter(Boolean);
+      const contentHashes = [
+        ...db.prepare('SELECT content_hash FROM crawl_sources WHERE run_id = ?').all(rid),
+        ...db.prepare('SELECT content_hash FROM run_sources WHERE run_id = ?').all(rid),
+      ].map((r) => r.content_hash).filter(Boolean);
       totalDeleted += db.prepare('DELETE FROM crawl_sources WHERE run_id = ?').run(rid).changes;
+      totalDeleted += db.prepare('DELETE FROM run_sources WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM source_screenshots WHERE run_id = ?').run(rid).changes;
       totalDeleted += db.prepare('DELETE FROM source_videos WHERE run_id = ?').run(rid).changes;
 
@@ -145,7 +150,10 @@ export function createDeletionStore({ db, category: defaultCategory }) {
     if (!pid) throw new Error('deleteUrl requires productId');
 
     // Step 1: Resolve scope — find all content_hashes and run_ids for this URL
-    const crawlRows = db.prepare('SELECT content_hash, run_id FROM crawl_sources WHERE source_url = ? AND product_id = ?').all(u, pid);
+    const crawlRows = [
+      ...db.prepare('SELECT content_hash, run_id FROM crawl_sources WHERE source_url = ? AND product_id = ?').all(u, pid),
+      ...db.prepare('SELECT content_hash, run_id FROM run_sources WHERE source_url = ? AND product_id = ?').all(u, pid),
+    ];
     if (!crawlRows.length) {
       return { ok: false, url: u, product_id: pid, reason: 'url_not_found' };
     }
@@ -161,6 +169,7 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       totalDeleted += db.prepare('DELETE FROM source_screenshots WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
       totalDeleted += db.prepare('DELETE FROM source_videos WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
       totalDeleted += db.prepare('DELETE FROM crawl_sources WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
+      totalDeleted += db.prepare('DELETE FROM run_sources WHERE source_url = ? AND product_id = ?').run(u, pid).changes;
 
       // Accumulated tables
       totalDeleted += db.prepare('DELETE FROM url_crawl_ledger WHERE canonical_url = ? AND product_id = ?').run(u, pid).changes;
@@ -281,8 +290,12 @@ export function createDeletionStore({ db, category: defaultCategory }) {
       totalDeleted += db.prepare('DELETE FROM item_component_links WHERE product_id = ? AND category = ?').run(pid, cat).changes;
 
       // Phase 5 — Artifact tables
-      const contentHashes = db.prepare('SELECT DISTINCT content_hash FROM crawl_sources WHERE product_id = ?').all(pid).map((r) => r.content_hash).filter(Boolean);
+      const contentHashes = [
+        ...db.prepare('SELECT DISTINCT content_hash FROM crawl_sources WHERE product_id = ?').all(pid),
+        ...db.prepare('SELECT DISTINCT content_hash FROM run_sources WHERE product_id = ?').all(pid),
+      ].map((r) => r.content_hash).filter(Boolean);
       totalDeleted += db.prepare('DELETE FROM crawl_sources WHERE product_id = ?').run(pid).changes;
+      totalDeleted += db.prepare('DELETE FROM run_sources WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM source_screenshots WHERE product_id = ?').run(pid).changes;
       totalDeleted += db.prepare('DELETE FROM source_videos WHERE product_id = ?').run(pid).changes;
 

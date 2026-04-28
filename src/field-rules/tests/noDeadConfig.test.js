@@ -4,6 +4,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { FIELD_RULE_SCHEMA } from '../fieldRuleSchema.js';
+
 // ---------------------------------------------------------------------------
 // Window 9: No Dead Config CI enforcement
 //
@@ -24,6 +26,17 @@ const CAPABILITIES_PATH = path.join(__dirname, '../../..', 'src', 'field-rules',
 async function loadCapabilities() {
   const raw = await fs.readFile(CAPABILITIES_PATH, 'utf8');
   return JSON.parse(raw);
+}
+
+function capabilityKeyForSchemaPath(pathValue) {
+  const pathText = String(pathValue || '');
+  if (pathText.startsWith('ai_assist.') && pathText.endsWith('.enabled')) {
+    return pathText.replace(/\.enabled$/, '');
+  }
+  if (pathText.startsWith('contract.range.')) {
+    return 'contract.range';
+  }
+  return pathText;
 }
 
 test('capabilities.json exists and is valid JSON', async () => {
@@ -88,6 +101,15 @@ test('every knob has a description', async () => {
   }
   assert.equal(missing.length, 0,
     `Knobs without descriptions: ${missing.join(', ')}`);
+});
+
+test('capabilities registry covers every field-rule schema knob', async () => {
+  const cap = await loadCapabilities();
+  const capabilityKeys = new Set(Object.keys(cap.knobs));
+  const expectedKeys = [...new Set(FIELD_RULE_SCHEMA.map((entry) => capabilityKeyForSchemaPath(entry.path)))].sort();
+  const missing = expectedKeys.filter((key) => !capabilityKeys.has(key));
+
+  assert.deepEqual(missing, []);
 });
 
 test('no duplicate knob names (case-insensitive)', async () => {

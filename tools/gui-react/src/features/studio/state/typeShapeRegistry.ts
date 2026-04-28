@@ -1,11 +1,21 @@
-// WHY: Frontend mirror of src/field-rules/typeCoercionRegistry.js.
-// O(1): Adding a type = one entry in VALID_TYPES + one optional entry in constraint/coupling maps.
-// Do NOT add types here without also adding them to the backend SSOT.
+// WHY: Frontend type/shape options derive from the field-rule schema SSOT.
+// Type-specific constraints remain local because they encode GUI side effects,
+// not authorable option lists.
 
-export const VALID_TYPES = ['string', 'number', 'integer', 'boolean', 'date', 'url', 'range', 'mixed_number_range'] as const;
+import { FIELD_RULE_CONTRACT_CONTROLS } from '../../../../../../src/field-rules/fieldRuleSchema.js';
+
+function optionsFor(path: string): readonly string[] {
+  const control = FIELD_RULE_CONTRACT_CONTROLS.find((entry) => entry.path === path);
+  if (!control?.options) {
+    throw new Error(`Missing field-rule contract options for ${path}`);
+  }
+  return control.options;
+}
+
+export const VALID_TYPES = optionsFor('contract.type');
 export type FieldType = (typeof VALID_TYPES)[number];
 
-export const VALID_SHAPES = ['scalar', 'list'] as const;
+export const VALID_SHAPES = optionsFor('contract.shape');
 export type FieldShape = (typeof VALID_SHAPES)[number];
 
 // WHY: Some types only make sense with specific shapes.

@@ -15,10 +15,11 @@ function uniqueUrls(values) {
 
 function readSqlUrlHistory(productId, opts = {}) {
   const source = opts.specDb || opts.crawlLedger || opts.frontierDb || null;
-  if (typeof source?.getUrlCrawlEntriesByProduct !== 'function') return null;
-  const rows = source.getUrlCrawlEntriesByProduct(productId) || [];
+  const rows = typeof source?.getIndexedUrlHistoryByProduct === 'function'
+    ? source.getIndexedUrlHistoryByProduct(productId) || []
+    : source?.getUrlCrawlEntriesByProduct?.(productId) || [];
   const urls = uniqueUrls(rows.map((row) =>
-    row?.canonical_url || row?.original_url || row?.final_url || row?.source_url || ''));
+    row?.url || row?.canonical_url || row?.original_url || row?.final_url || row?.source_url || ''));
   return urls.length > 0 ? { urls } : null;
 }
 

@@ -26,6 +26,8 @@
  *                               the universal per-key finder.
  */
 
+const pifGlobal = (entry) => ({ ...entry, scope: 'global' });
+
 export const FINDER_MODULES = Object.freeze([
   {
     // Identity
@@ -183,12 +185,12 @@ export const FINDER_MODULES = Object.freeze([
         uiTip: 'Inner-ring target for additional non-scored carousel images. Filled extras can exceed this target.' },
 
       // Hero slots
-      { key: 'heroEnabled', type: 'bool', default: true,
-        uiLabel: 'Hero Slots Enabled', uiGroup: 'Hero Slots' },
-      { key: 'heroCount', type: 'int', default: 3, min: 1, max: 20, disabledBy: 'heroEnabled',
-        uiLabel: 'Hero Count', uiGroup: 'Hero Slots' },
-      { key: 'heroAttemptBudget', type: 'int', default: 3, min: 1, max: 20, disabledBy: 'heroEnabled',
-        uiLabel: 'Hero Attempt Budget', uiGroup: 'Hero Slots' },
+      pifGlobal({ key: 'heroEnabled', type: 'bool', default: true,
+        uiLabel: 'Hero Slots Enabled', uiGroup: 'Hero Slots' }),
+      pifGlobal({ key: 'heroCount', type: 'int', default: 3, min: 1, max: 20, disabledBy: 'heroEnabled',
+        uiLabel: 'Hero Count', uiGroup: 'Hero Slots' }),
+      pifGlobal({ key: 'heroAttemptBudget', type: 'int', default: 3, min: 1, max: 20, disabledBy: 'heroEnabled',
+        uiLabel: 'Hero Attempt Budget', uiGroup: 'Hero Slots' }),
 
       // Views — widget-managed priority list (JSON blob)
       { key: 'viewConfig', type: 'string', default: '', allowEmpty: true,
@@ -211,24 +213,24 @@ export const FINDER_MODULES = Object.freeze([
 
       // Image quality — flat primitives + optional per-view widget
       // PIF prompt memory - accepted image context and validation outcome history.
-      { key: 'priorityViewRunImageHistoryEnabled', type: 'bool', default: false,
+      pifGlobal({ key: 'priorityViewRunImageHistoryEnabled', type: 'bool', default: false,
         uiLabel: 'Priority View Run Image History', uiGroup: 'Image History',
-        uiTip: 'Inject accepted image history for the variant into Priority View Run prompts. Exact duplicates are discouraged, but better versions, alternate crops, and different useful angles remain welcome.' },
-      { key: 'individualViewRunImageHistoryEnabled', type: 'bool', default: false,
+        uiTip: 'Inject accepted image history for the variant into Priority View Run prompts. Exact duplicates are discouraged, but better versions, alternate crops, and different useful angles remain welcome.' }),
+      pifGlobal({ key: 'individualViewRunImageHistoryEnabled', type: 'bool', default: false,
         uiLabel: 'Individual View Run Image History', uiGroup: 'Image History',
-        uiTip: 'Inject accepted image history for the variant into per-view button prompts. Exact duplicates are discouraged without blocking better versions or alternate angles.' },
-      { key: 'loopRunImageHistoryEnabled', type: 'bool', default: false,
+        uiTip: 'Inject accepted image history for the variant into per-view button prompts. Exact duplicates are discouraged without blocking better versions or alternate angles.' }),
+      pifGlobal({ key: 'loopRunImageHistoryEnabled', type: 'bool', default: false,
         uiLabel: 'Loop Run Image History', uiGroup: 'Image History',
-        uiTip: 'Inject accepted image history for the variant into Loop prompts across view and hero iterations.' },
-      { key: 'priorityViewRunLinkValidationEnabled', type: 'bool', default: false,
+        uiTip: 'Inject accepted image history for the variant into Loop prompts across view and hero iterations.' }),
+      pifGlobal({ key: 'priorityViewRunLinkValidationEnabled', type: 'bool', default: false,
         uiLabel: 'Priority View Run Link Validation', uiGroup: 'Link Validation',
-        uiTip: 'Inject the link-validation checklist and known candidate outcomes into Priority View Run prompts.' },
-      { key: 'individualViewRunLinkValidationEnabled', type: 'bool', default: false,
+        uiTip: 'Inject the link-validation checklist and known candidate outcomes into Priority View Run prompts.' }),
+      pifGlobal({ key: 'individualViewRunLinkValidationEnabled', type: 'bool', default: false,
         uiLabel: 'Individual View Run Link Validation', uiGroup: 'Link Validation',
-        uiTip: 'Inject the link-validation checklist and known candidate outcomes into per-view button prompts.' },
-      { key: 'loopRunLinkValidationEnabled', type: 'bool', default: false,
+        uiTip: 'Inject the link-validation checklist and known candidate outcomes into per-view button prompts.' }),
+      pifGlobal({ key: 'loopRunLinkValidationEnabled', type: 'bool', default: false,
         uiLabel: 'Loop Run Link Validation', uiGroup: 'Link Validation',
-        uiTip: 'Inject the link-validation checklist and known candidate outcomes into Loop prompts across view and hero iterations.' },
+        uiTip: 'Inject the link-validation checklist and known candidate outcomes into Loop prompts across view and hero iterations.' }),
 
       { key: 'minWidth', type: 'int', default: 800, min: 100, max: 8000,
         uiLabel: 'Min Width', uiGroup: 'Image Quality' },
@@ -241,19 +243,19 @@ export const FINDER_MODULES = Object.freeze([
         uiTip: 'Per-view overrides of the quality thresholds. Empty = category defaults.' },
 
       // Vision evaluator
-      { key: 'evalEnabled', type: 'bool', default: true,
-        uiLabel: 'Vision Evaluator Enabled', uiGroup: 'Vision Evaluation' },
-      { key: 'evalThumbSize', type: 'int', default: 768, min: 256, max: 2048, disabledBy: 'evalEnabled',
+      pifGlobal({ key: 'evalEnabled', type: 'bool', default: true,
+        uiLabel: 'Vision Evaluator Enabled', uiGroup: 'Vision Evaluation' }),
+      pifGlobal({ key: 'evalThumbSize', type: 'int', default: 768, min: 256, max: 2048, disabledBy: 'evalEnabled',
         widget: 'evalThumbSize',
         uiLabel: 'Eval Thumbnail Size', uiGroup: 'Vision Evaluation',
-        uiTip: '512px tile boundary — 768 uses 4 tiles like 1024. Larger = more detail but more tokens.' },
-      { key: 'evalHeroCount', type: 'int', default: 3, min: 1, max: 20, disabledBy: 'evalEnabled',
-        uiLabel: 'Eval Hero Count', uiGroup: 'Vision Evaluation' },
+        uiTip: '512px tile boundary — 768 uses 4 tiles like 1024. Larger = more detail but more tokens.' }),
+      pifGlobal({ key: 'evalHeroCount', type: 'int', default: 3, min: 1, max: 20, disabledBy: 'evalEnabled',
+        uiLabel: 'Eval Hero Count', uiGroup: 'Vision Evaluation' }),
 
       // RMBG — niche performance knob, kept at the bottom
-      { key: 'rmbgConcurrency', type: 'int', default: 0, min: 0, max: 32,
+      pifGlobal({ key: 'rmbgConcurrency', type: 'int', default: 0, min: 0, max: 32,
         uiLabel: 'RMBG Concurrency', uiGroup: 'RMBG',
-        uiTip: '0 = auto-detect from system RAM; >0 = fixed ONNX slot count' },
+        uiTip: '0 = auto-detect from system RAM; >0 = fixed ONNX slot count' }),
 
       // Search prompts — edited in LLM Config, persisted here for the runtime
       { key: 'viewPromptOverride', type: 'string', default: '', allowEmpty: true, hidden: true },
@@ -299,12 +301,12 @@ export const FINDER_MODULES = Object.freeze([
       { key: 'additionalViewPrompt_angle', type: 'string', default: '', allowEmpty: true, hidden: true },
 
       // Universal discovery history (shared with CEF/RDF). Scope: variant + mode.
-      { key: 'urlHistoryEnabled', type: 'bool', default: false,
+      pifGlobal({ key: 'urlHistoryEnabled', type: 'bool', default: false,
         uiLabel: 'URL history', uiGroup: 'Discovery History',
-        uiTip: 'When on, prior run URLs are injected into the prompt so the LLM can avoid re-crawling them. Scoped per variant per mode (view/hero). Off by default.' },
-      { key: 'queryHistoryEnabled', type: 'bool', default: false,
+        uiTip: 'When on, prior run URLs are injected into the prompt so the LLM can avoid re-crawling them. Scoped per variant per mode (view/hero). Off by default.' }),
+      pifGlobal({ key: 'queryHistoryEnabled', type: 'bool', default: false,
         uiLabel: 'Query history', uiGroup: 'Discovery History',
-        uiTip: 'When on, prior run search queries are injected into the prompt. Scoped per variant per mode. Off by default — queries rot faster than URLs.' },
+        uiTip: 'When on, prior run search queries are injected into the prompt. Scoped per variant per mode. Off by default — queries rot faster than URLs.' }),
     ],
 
 

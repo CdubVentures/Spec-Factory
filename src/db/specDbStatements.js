@@ -318,6 +318,30 @@ export function prepareStatements(db) {
       SELECT * FROM crawl_sources WHERE run_id = ? ORDER BY crawled_at DESC
     `),
 
+    _insertRunSource: db.prepare(`
+      INSERT OR REPLACE INTO run_sources (
+        run_id, content_hash, category, product_id, source_url, final_url,
+        host, http_status, doc_kind, source_tier, content_type, size_bytes,
+        file_path, has_screenshot, has_pdf, has_ldjson, has_dom_snippet, crawled_at
+      ) VALUES (
+        @run_id, @content_hash, @category, @product_id, @source_url, @final_url,
+        @host, @http_status, @doc_kind, @source_tier, @content_type, @size_bytes,
+        @file_path, @has_screenshot, @has_pdf, @has_ldjson, @has_dom_snippet, @crawled_at
+      )
+    `),
+
+    _getRunSourcesByRunId: db.prepare(`
+      SELECT * FROM run_sources WHERE run_id = ? ORDER BY crawled_at DESC
+    `),
+
+    _getRunSourcesByProduct: db.prepare(`
+      SELECT * FROM run_sources WHERE product_id = ? ORDER BY crawled_at DESC
+    `),
+
+    _getIndexedUrlHistoryByProduct: db.prepare(`
+      SELECT * FROM indexed_url_history WHERE product_id = ? ORDER BY last_crawled_at DESC
+    `),
+
     _getScreenshotsByProduct: db.prepare(`
       SELECT * FROM source_screenshots WHERE product_id = ? ORDER BY captured_at DESC
     `),

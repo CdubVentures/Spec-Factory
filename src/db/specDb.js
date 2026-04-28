@@ -115,7 +115,12 @@ export class SpecDb {
       db: this.db, category: this.category,
       stmts: {
         _insertCrawlSource: this._insertCrawlSource, _insertScreenshot: this._insertScreenshot, _insertVideo: this._insertVideo,
-        _getCrawlSourcesByProduct: this._getCrawlSourcesByProduct, _getScreenshotsByProduct: this._getScreenshotsByProduct, _getVideosByProduct: this._getVideosByProduct,
+        _insertRunSource: this._insertRunSource,
+        _getCrawlSourcesByProduct: this._getCrawlSourcesByProduct, _getCrawlSourcesByRunId: this._getCrawlSourcesByRunId,
+        _getRunSourcesByProduct: this._getRunSourcesByProduct, _getRunSourcesByRunId: this._getRunSourcesByRunId,
+        _getIndexedUrlHistoryByProduct: this._getIndexedUrlHistoryByProduct,
+        _getScreenshotsByProduct: this._getScreenshotsByProduct, _getScreenshotsByRunId: this._getScreenshotsByRunId,
+        _getVideosByProduct: this._getVideosByProduct, _getVideosByRunId: this._getVideosByRunId,
         _getCrawlSourceByHash: this._getCrawlSourceByHash,
       }
     });
@@ -579,10 +584,14 @@ export class SpecDb {
   // --- Artifact Store (crawl_sources, source_screenshots, source_videos) ---
 
   insertCrawlSource(row) { return this._artifactStore.insertCrawlSource(row); }
+  insertRunSource(row) { return this._artifactStore.insertRunSource(row); }
   insertScreenshot(row) { return this._artifactStore.insertScreenshot(row); }
   insertVideo(row) { return this._artifactStore.insertVideo(row); }
   getCrawlSourcesByProduct(pid) { return this._artifactStore.getCrawlSourcesByProduct(pid); }
   getCrawlSourcesByRunId(runId) { return this._artifactStore.getCrawlSourcesByRunId(runId); }
+  getRunSourcesByProduct(pid) { return this._artifactStore.getRunSourcesByProduct(pid); }
+  getRunSourcesByRunId(runId) { return this._artifactStore.getRunSourcesByRunId(runId); }
+  getIndexedUrlHistoryByProduct(pid) { return this._artifactStore.getIndexedUrlHistoryByProduct(pid); }
   getScreenshotsByProduct(pid) { return this._artifactStore.getScreenshotsByProduct(pid); }
   getScreenshotsByRunId(runId) { return this._artifactStore.getScreenshotsByRunId(runId); }
   getVideosByProduct(pid) { return this._artifactStore.getVideosByProduct(pid); }

@@ -11,6 +11,7 @@ const commonFields = {
   disabledBy: z.string().optional(),
   allowEmpty: z.boolean().optional(),
   hidden: z.boolean().optional(),
+  scope: z.enum(['global', 'category']).optional(),
   widget: z.string().min(1).optional(),
   widgetProps: z.record(z.string(), z.unknown()).optional(),
 };
@@ -141,4 +142,45 @@ export function deriveFinderSettingsDefaults(schema) {
     }
   }
   return result;
+}
+
+export function resolveFinderSettingScope(mod, key) {
+  const moduleScope = mod?.settingsScope === 'global' ? 'global' : 'category';
+  const schema = Array.isArray(mod?.settingsSchema) ? mod.settingsSchema : [];
+  const entry = schema.find((item) => item?.key === key);
+  return entry?.scope === 'global' || entry?.scope === 'category'
+    ? entry.scope
+    : moduleScope;
+}
+
+export function hasFinderSettingsScope(mod, scope) {
+  if (scope !== 'global' && scope !== 'category') return false;
+  const schema = Array.isArray(mod?.settingsSchema) ? mod.settingsSchema : [];
+  if (schema.length === 0) return false;
+  return schema.some((entry) => resolveFinderSettingScope(mod, entry.key) === scope);
+}
+
+export function filterFinderSettingsForScope(mod, settings, scope) {
+  if (!settings || typeof settings !== 'object') return {};
+  const out = {};
+  for (const [key, value] of Object.entries(settings)) {
+    if (resolveFinderSettingScope(mod, key) === scope) {
+      out[key] = value;
+    }
+  }
+  return out;
+}
+
+export function deriveFinderSettingsDefaultsForScope(mod, scope) {
+  const schema = Array.isArray(mod?.settingsSchema) ? mod.settingsSchema : [];
+  return deriveFinderSettingsDefaults(
+    schema.filter((entry) => resolveFinderSettingScope(mod, entry.key) === scope),
+  );
+}
+
+export function mergeFinderScopedSettings({ mod, scope, stored }) {
+  return {
+    ...deriveFinderSettingsDefaultsForScope(mod, scope),
+    ...filterFinderSettingsForScope(mod, stored || {}, scope),
+  };
 }

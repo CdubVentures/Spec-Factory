@@ -52,6 +52,14 @@ function cleanProductJsonPublishedFields(productId, fieldKeys) {
   } catch { /* product.json may not exist */ }
 }
 
+function deleteFieldCandidatesThenMirrorProductJson(specDb, productId, fieldKeys) {
+  for (const key of fieldKeys) {
+    specDb.deleteFieldCandidatesByProductAndField(productId, key);
+  }
+  cleanProductJsonCandidates(productId, fieldKeys);
+  cleanProductJsonPublishedFields(productId, fieldKeys);
+}
+
 /**
  * Run-scoped candidate cleanup — deletes source-centric rows for specific run(s).
  *
@@ -642,11 +650,7 @@ export function createFinderRouteHandler(finderConfig) {
           const skipRepublish = Boolean(finderConfig.onAfterRunDelete);
           stripSourceFromCandidates(specDb, productId, fieldKeys, finderConfig.candidateSourceType, config, skipRepublish);
         } else {
-          for (const key of fieldKeys) {
-            specDb.deleteFieldCandidatesByProductAndField(productId, key);
-          }
-          cleanProductJsonCandidates(productId, fieldKeys);
-          cleanProductJsonPublishedFields(productId, fieldKeys);
+          deleteFieldCandidatesThenMirrorProductJson(specDb, productId, fieldKeys);
         }
 
         // WHY: Post-delete hook re-derives published state from SSOT (e.g.

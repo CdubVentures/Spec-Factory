@@ -122,6 +122,19 @@ function buildComponentContextForKey(componentEntry, { componentInjectionEnabled
     : `This key belongs to the ${type} component on this product.`;
 }
 
+// Per-subfield variance suffix. Sourced from
+// field_studio_map.component_sources[X].roles.properties[].variance_policy.
+// `range`/`upper_bound`/`lower_bound` are numeric-only — non-numeric subfield
+// contracts get collapsed to `authoritative` upstream in
+// productResolvedStateReader.resolveProductComponentInventory.
+const VARIANCE_LABEL = {
+  authoritative: '(authoritative)',
+  upper_bound: '(upper_bound \u2014 products can be lower)',
+  lower_bound: '(lower_bound \u2014 products can be higher)',
+  range: '(range \u2014 products must fall within)',
+  override_allowed: '(override allowed)',
+};
+
 function buildProductComponentsBlock(inventory) {
   const list = Array.isArray(inventory) ? inventory : [];
   if (list.length === 0) return '';
@@ -135,7 +148,9 @@ function buildProductComponentsBlock(inventory) {
     for (const sf of subs) {
       if (!sf || !sf.field_key) continue;
       const value = Array.isArray(sf.value) ? `[${sf.value.join(', ')}]` : String(sf.value);
-      lines.push(`    ${sf.field_key}: ${value}`);
+      const policy = String(sf.variancePolicy || 'authoritative');
+      const suffix = VARIANCE_LABEL[policy] || VARIANCE_LABEL.authoritative;
+      lines.push(`    ${sf.field_key}: ${value}   ${suffix}`);
     }
   }
   return lines.join('\n');

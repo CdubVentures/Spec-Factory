@@ -4,8 +4,8 @@
 
 export function createArtifactStore({ db, category, stmts }) {
 
-  function insertCrawlSource(row) {
-    stmts._insertCrawlSource.run({
+  function toSourceRow(row) {
+    return {
       content_hash: row.content_hash || '',
       category: row.category || category,
       product_id: row.product_id || '',
@@ -24,7 +24,20 @@ export function createArtifactStore({ db, category, stmts }) {
       has_ldjson: row.has_ldjson ? 1 : 0,
       has_dom_snippet: row.has_dom_snippet ? 1 : 0,
       crawled_at: row.crawled_at || new Date().toISOString(),
-    });
+    };
+  }
+
+  function insertRunSource(row) {
+    if (typeof stmts._insertRunSource?.run !== 'function') return;
+    const normalized = toSourceRow(row);
+    if (!normalized.run_id || !normalized.content_hash) return;
+    stmts._insertRunSource.run(normalized);
+  }
+
+  function insertCrawlSource(row) {
+    const normalized = toSourceRow(row);
+    stmts._insertCrawlSource.run(normalized);
+    insertRunSource(normalized);
   }
 
   function insertScreenshot(row) {
@@ -54,6 +67,31 @@ export function createArtifactStore({ db, category, stmts }) {
 
   function getCrawlSourcesByRunId(runId) {
     return stmts._getCrawlSourcesByRunId.all(String(runId || ''));
+  }
+
+  function getRunSourcesByRunId(runId) {
+    if (typeof stmts._getRunSourcesByRunId?.all !== 'function') return getCrawlSourcesByRunId(runId);
+    return stmts._getRunSourcesByRunId.all(String(runId || ''));
+  }
+
+  function getRunSourcesByProduct(productId) {
+    if (typeof stmts._getRunSourcesByProduct?.all !== 'function') return getCrawlSourcesByProduct(productId);
+    return stmts._getRunSourcesByProduct.all(String(productId || ''));
+  }
+
+  function getIndexedUrlHistoryByProduct(productId) {
+    if (typeof stmts._getIndexedUrlHistoryByProduct?.all !== 'function') {
+      return getRunSourcesByProduct(productId).map((row) => ({
+        run_id: row.run_id,
+        product_id: row.product_id,
+        category: row.category,
+        url: row.source_url,
+        final_url: row.final_url,
+        content_hash: row.content_hash,
+        last_crawled_at: row.crawled_at,
+      }));
+    }
+    return stmts._getIndexedUrlHistoryByProduct.all(String(productId || ''));
   }
 
   function getScreenshotsByProduct(productId) {
@@ -101,10 +139,14 @@ export function createArtifactStore({ db, category, stmts }) {
 
   return {
     insertCrawlSource,
+    insertRunSource,
     insertScreenshot,
     insertVideo,
     getCrawlSourcesByProduct,
     getCrawlSourcesByRunId,
+    getRunSourcesByRunId,
+    getRunSourcesByProduct,
+    getIndexedUrlHistoryByProduct,
     getScreenshotsByProduct,
     getScreenshotsByRunId,
     getVideosByProduct,

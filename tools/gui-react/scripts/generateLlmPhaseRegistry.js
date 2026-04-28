@@ -591,6 +591,7 @@ function serializeSettingEntry(entry) {
   if (entry.disabledBy !== undefined) parts.push(`disabledBy: ${quote(entry.disabledBy)}`);
   if (entry.allowEmpty !== undefined) parts.push(`allowEmpty: ${entry.allowEmpty}`);
   if (entry.hidden !== undefined) parts.push(`hidden: ${entry.hidden}`);
+  if (entry.scope !== undefined) parts.push(`scope: ${quote(entry.scope)}`);
   if (entry.widget !== undefined) parts.push(`widget: ${quote(entry.widget)}`);
   if (entry.widgetProps !== undefined) {
     parts.push(`widgetProps: ${JSON.stringify(entry.widgetProps)}`);
@@ -625,6 +626,7 @@ function generateFinderSettingsRegistry() {
   lines.push('  disabledBy?: string;');
   lines.push('  allowEmpty?: boolean;');
   lines.push('  hidden?: boolean;');
+  lines.push("  scope?: 'global' | 'category';");
   lines.push('  widget?: string;');
   lines.push('  widgetProps?: Record<string, unknown>;');
   lines.push('}\n');

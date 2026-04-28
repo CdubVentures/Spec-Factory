@@ -164,7 +164,7 @@ export function buildReseedSurfaces(deps) {
       scope: 'reseed',
       tables: [
         'products', 'runs',
-        'run_artifacts', 'crawl_sources', 'url_crawl_ledger',
+        'run_artifacts', 'crawl_sources', 'run_sources', 'url_crawl_ledger',
         'query_cooldowns', 'screenshots', 'videos',
       ],
       shouldRun: (ctx) => Boolean(ctx.indexLabRoot),

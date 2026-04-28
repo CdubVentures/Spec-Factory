@@ -237,7 +237,7 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
       },
     },
     {
-      label: 'component reference clamps match knobs and derives property keys',
+      label: 'component reference no longer emits component.match block (Phase 1 retirement)',
       input: {
         key: 'sensor',
         rule: {
@@ -245,13 +245,6 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
           component: {
             type: 'sensor',
             source: 'component_db.sensor',
-            match: {
-              fuzzy_threshold: 2,
-              name_weight: -1,
-              auto_accept_score: 0.8,
-              flag_review_score: 0.2,
-              property_weight: 0.7,
-            },
             ai: {
               mode: 'judge',
               model_strategy: 'force_deep',
@@ -306,14 +299,6 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
             reasoning_note: 'match sensor',
           },
           allow_new_components: true,
-          match: {
-            auto_accept_score: 0.8,
-            flag_review_score: 0.2,
-            fuzzy_threshold: 1,
-            name_weight: 0,
-            property_keys: ['dpi', 'ips'],
-            property_weight: 0.7,
-          },
           priority: { difficulty: 'very_hard' },
           require_identity_evidence: true,
           source: 'component_db.sensor',

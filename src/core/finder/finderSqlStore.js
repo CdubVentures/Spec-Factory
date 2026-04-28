@@ -10,7 +10,11 @@
  * on read. Serializes them on write.
  */
 
-import { deriveFinderSettingsDefaults } from './finderSettingsSchema.js';
+import {
+  deriveFinderSettingsDefaults,
+  hasFinderSettingsScope,
+  resolveFinderSettingScope,
+} from './finderSettingsSchema.js';
 
 function safeJsonParse(str, fallback) {
   if (!str || typeof str !== 'string') return fallback;
@@ -42,13 +46,14 @@ function hydrateRunRow(row) {
  * @returns {object} store with upsert, get, listByCategory, remove, insertRun, listRuns, getLatestRun, removeRun, removeAllRuns
  */
 export function createFinderSqlStore({ db, category, module: mod, globalDb }) {
-  const { tableName, runsTableName, summaryColumns = [], settingsSchema, settingsScope = 'category', id: moduleId } = mod;
-  const isGlobalSettings = settingsScope === 'global';
+  const { tableName, runsTableName, summaryColumns = [], settingsSchema, id: moduleId } = mod;
   // WHY: Derive the legacy { key: stringDefault } map from the schema once.
   // All downstream read-through logic keeps operating on this shape.
   const settingsDefaults = Array.isArray(settingsSchema) && settingsSchema.length > 0
     ? deriveFinderSettingsDefaults(settingsSchema)
     : null;
+  const hasGlobalSettings = Boolean(settingsDefaults && hasFinderSettingsScope(mod, 'global'));
+  const hasCategorySettings = Boolean(settingsDefaults && hasFinderSettingsScope(mod, 'category'));
   const settingsTableName = `${tableName}_settings`;
   const customColNames = summaryColumns.map(c => c.name);
   // WHY: Map column name → default value for use when upsert receives undefined.
@@ -121,35 +126,32 @@ export function createFinderSqlStore({ db, category, module: mod, globalDb }) {
     // key; global uses the shared `finder_global_settings` in globalDb keyed
     // by (module_id, key). Consumers call `getSetting/setSetting/getAllSettings`
     // the same way; the store internally routes.
-    ...(settingsDefaults ? (
-      isGlobalSettings
-        ? {
-          _getSetting: (globalDb || db).prepare(
-            'SELECT value FROM finder_global_settings WHERE module_id = ? AND key = ?'
-          ),
-          _upsertSetting: (globalDb || db).prepare(
-            `INSERT INTO finder_global_settings (module_id, key, value, updated_at)
-             VALUES (?, ?, ?, datetime('now'))
-             ON CONFLICT(module_id, key) DO UPDATE SET
-               value = excluded.value, updated_at = excluded.updated_at`
-          ),
-          _allSettings: (globalDb || db).prepare(
-            'SELECT key, value FROM finder_global_settings WHERE module_id = ?'
-          ),
-          _deleteSetting: (globalDb || db).prepare(
-            'DELETE FROM finder_global_settings WHERE module_id = ? AND key = ?'
-          ),
-        }
-        : {
-          _getSetting: db.prepare(`SELECT value FROM ${settingsTableName} WHERE key = ?`),
-          _upsertSetting: db.prepare(
-            `INSERT INTO ${settingsTableName} (key, value, updated_at) VALUES (?, ?, datetime('now'))
-             ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
-          ),
-          _allSettings: db.prepare(`SELECT key, value FROM ${settingsTableName}`),
-          _deleteSetting: db.prepare(`DELETE FROM ${settingsTableName} WHERE key = ?`),
-        }
-    ) : {}),
+    ...(hasGlobalSettings ? {
+      _getGlobalSetting: (globalDb || db).prepare(
+        'SELECT value FROM finder_global_settings WHERE module_id = ? AND key = ?'
+      ),
+      _upsertGlobalSetting: (globalDb || db).prepare(
+        `INSERT INTO finder_global_settings (module_id, key, value, updated_at)
+         VALUES (?, ?, ?, datetime('now'))
+         ON CONFLICT(module_id, key) DO UPDATE SET
+           value = excluded.value, updated_at = excluded.updated_at`
+      ),
+      _allGlobalSettings: (globalDb || db).prepare(
+        'SELECT key, value FROM finder_global_settings WHERE module_id = ?'
+      ),
+      _deleteGlobalSetting: (globalDb || db).prepare(
+        'DELETE FROM finder_global_settings WHERE module_id = ? AND key = ?'
+      ),
+    } : {}),
+    ...(hasCategorySettings ? {
+      _getCategorySetting: db.prepare(`SELECT value FROM ${settingsTableName} WHERE key = ?`),
+      _upsertCategorySetting: db.prepare(
+        `INSERT INTO ${settingsTableName} (key, value, updated_at) VALUES (?, ?, datetime('now'))
+         ON CONFLICT(key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at`
+      ),
+      _allCategorySettings: db.prepare(`SELECT key, value FROM ${settingsTableName}`),
+      _deleteCategorySetting: db.prepare(`DELETE FROM ${settingsTableName} WHERE key = ?`),
+    } : {}),
   };
 
   // ── Summary methods ─────────────────────────────────────────────
@@ -273,35 +275,46 @@ export function createFinderSqlStore({ db, category, module: mod, globalDb }) {
   // defaults. For scope='global', statements take moduleId as a prefix arg.
 
   function getSetting(key) {
-    if (!stmts._getSetting) return settingsDefaults?.[key] ?? '';
-    const row = isGlobalSettings
-      ? stmts._getSetting.get(moduleId, key)
-      : stmts._getSetting.get(key);
+    if (!settingsDefaults) return '';
+    const scope = resolveFinderSettingScope(mod, key);
+    const row = scope === 'global'
+      ? stmts._getGlobalSetting?.get(moduleId, key)
+      : stmts._getCategorySetting?.get(key);
     return row ? row.value : (settingsDefaults?.[key] ?? '');
   }
 
   function setSetting(key, value) {
-    if (!stmts._upsertSetting) return;
-    if (isGlobalSettings) stmts._upsertSetting.run(moduleId, key, String(value));
-    else stmts._upsertSetting.run(key, String(value));
+    if (!settingsDefaults) return;
+    const scope = resolveFinderSettingScope(mod, key);
+    if (scope === 'global') {
+      stmts._upsertGlobalSetting?.run(moduleId, key, String(value));
+      return;
+    }
+    stmts._upsertCategorySetting?.run(key, String(value));
   }
 
   function getAllSettings() {
     const defaults = { ...(settingsDefaults || {}) };
-    if (!stmts._allSettings) return defaults;
-    const rows = isGlobalSettings
-      ? stmts._allSettings.all(moduleId)
-      : stmts._allSettings.all();
-    for (const row of rows) {
-      defaults[row.key] = row.value;
+    if (!settingsDefaults) return defaults;
+    const globalRows = stmts._allGlobalSettings?.all(moduleId) || [];
+    for (const row of globalRows) {
+      if (resolveFinderSettingScope(mod, row.key) === 'global') defaults[row.key] = row.value;
+    }
+    const categoryRows = stmts._allCategorySettings?.all() || [];
+    for (const row of categoryRows) {
+      if (resolveFinderSettingScope(mod, row.key) === 'category') defaults[row.key] = row.value;
     }
     return defaults;
   }
 
   function deleteSetting(key) {
-    if (!stmts._deleteSetting) return;
-    if (isGlobalSettings) stmts._deleteSetting.run(moduleId, key);
-    else stmts._deleteSetting.run(key);
+    if (!settingsDefaults) return;
+    const scope = resolveFinderSettingScope(mod, key);
+    if (scope === 'global') {
+      stmts._deleteGlobalSetting?.run(moduleId, key);
+      return;
+    }
+    stmts._deleteCategorySetting?.run(key);
   }
 
   // WHY: Targeted single-column update for lightweight writes (e.g. carousel_slots).

@@ -33,7 +33,7 @@ test('resolveComponentRef exact match returns canonical name', () => {
   const attempts = [];
   const context = { identityObservations: [] };
   const result = resolveComponentRef('pixart 3395', {
-    rule: { component_db_ref: 'sensor' },
+    rule: { component: { type: 'sensor' } },
     fieldKey: 'sensor',
     rawCandidate: 'pixart 3395',
     lookupComponent: (db, q) => q === 'pixart 3395' ? { canonical_name: 'PAW3395' } : null,
@@ -69,11 +69,11 @@ test('resolveComponentRef returns component_db_missing when no db configured', (
 
 // ── resolveComponentRef: auto-accept (high score) ─────────────────────────────
 
-test('resolveComponentRef auto-accepts when combined score >= auto_accept_score', () => {
+test('resolveComponentRef auto-accepts when name score >= AUTO_ACCEPT (0.95)', () => {
   const attempts = [];
   const context = { identityObservations: [] };
   const result = resolveComponentRef('PAW 3395', {
-    rule: { component_db_ref: 'sensor' },
+    rule: { component: { type: 'sensor' } },
     fieldKey: 'sensor',
     rawCandidate: 'PAW 3395',
     lookupComponent: () => null,
@@ -94,11 +94,11 @@ test('resolveComponentRef auto-accepts when combined score >= auto_accept_score'
 
 // ── resolveComponentRef: flagged review (medium score) ────────────────────────
 
-test('resolveComponentRef flags for review when score >= flag_review_score but < auto_accept', () => {
+test('resolveComponentRef flags for review when score >= FLAG_REVIEW (0.65) but < AUTO_ACCEPT', () => {
   const attempts = [];
   const context = {};
   const result = resolveComponentRef('PAW3300', {
-    rule: { component_db_ref: 'sensor' },
+    rule: { component: { type: 'sensor' } },
     fieldKey: 'sensor',
     rawCandidate: 'PAW3300',
     lookupComponent: () => null,
@@ -123,8 +123,7 @@ test('resolveComponentRef suggests new component when allow_new_components is tr
   const context = {};
   const result = resolveComponentRef('HERO X2', {
     rule: {
-      component_db_ref: 'sensor',
-      component: { allow_new_components: true }
+      component: { type: 'sensor', allow_new_components: true }
     },
     fieldKey: 'sensor',
     rawCandidate: 'HERO X2',
@@ -144,7 +143,7 @@ test('resolveComponentRef suggests new component when allow_new_components is tr
 test('resolveComponentRef returns component_not_found when no match and no allow_new', () => {
   const attempts = [];
   const result = resolveComponentRef('HERO X2', {
-    rule: { component_db_ref: 'sensor' },
+    rule: { component: { type: 'sensor' } },
     fieldKey: 'sensor',
     rawCandidate: 'HERO X2',
     lookupComponent: () => null,
@@ -157,23 +156,15 @@ test('resolveComponentRef returns component_not_found when no match and no allow
   assert.equal(result.reason_code, 'component_not_found');
 });
 
-// ── resolveComponentRef: property-aware scoring ───────────────────────────────
+// ── resolveComponentRef: property-aware scoring (propertyKeys passed in) ──────
 
-test('resolveComponentRef uses property scoring with variance policies', () => {
+test('resolveComponentRef property scoring uses caller-provided propertyKeys', () => {
+  // Phase 1: propKeys come from field_studio_map.component_sources via the
+  // engine's componentRelationIndex, no longer from rule.component.match.
   const attempts = [];
   const context = { identityObservations: [], extractedValues: { max_dpi: 26000 } };
   const result = resolveComponentRef('PAW 3395', {
-    rule: {
-      component_db_ref: 'sensor',
-      component: {
-        match: {
-          name_weight: 0.4,
-          property_weight: 0.6,
-          property_keys: ['max_dpi'],
-          auto_accept_score: 0.90
-        }
-      }
-    },
+    rule: { component: { type: 'sensor' } },
     fieldKey: 'sensor',
     rawCandidate: 'PAW 3395',
     lookupComponent: () => null,
@@ -183,16 +174,15 @@ test('resolveComponentRef uses property scoring with variance policies', () => {
         properties: { max_dpi: 26000 },
         __variance_policies: { max_dpi: 'authoritative' }
       },
-      score: 0.85,
+      score: 0.95,
       alternatives: []
     }),
-    rules: {
-      max_dpi: { contract: { type: 'number', shape: 'scalar' } }
-    },
+    rules: { max_dpi: { contract: { type: 'number', shape: 'scalar' } } },
     context,
-    attempts
+    attempts,
+    propertyKeys: ['max_dpi']
   });
-  // name_score=0.85 * 0.4 = 0.34, prop_score=1.0 * 0.6 = 0.6, combined=0.94 >= 0.90
+  // name_score=0.95 * 0.4 = 0.38, prop_score=1.0 * 0.6 = 0.6, combined=0.98 >= 0.95
   assert.equal(result.ok, true);
   assert.equal(result.value, 'PAW3395');
   assert.ok(attempts.some(a => a.startsWith('component:auto_accept')));
@@ -202,17 +192,7 @@ test('resolveComponentRef upper_bound variance gives full credit when extracted 
   const attempts = [];
   const context = { identityObservations: [], extractedValues: { max_dpi: 20000 } };
   const result = resolveComponentRef('PAW 3395', {
-    rule: {
-      component_db_ref: 'sensor',
-      component: {
-        match: {
-          name_weight: 0.4,
-          property_weight: 0.6,
-          property_keys: ['max_dpi'],
-          auto_accept_score: 0.90
-        }
-      }
-    },
+    rule: { component: { type: 'sensor' } },
     fieldKey: 'sensor',
     rawCandidate: 'PAW 3395',
     lookupComponent: () => null,
@@ -222,16 +202,15 @@ test('resolveComponentRef upper_bound variance gives full credit when extracted 
         properties: { max_dpi: 26000 },
         __variance_policies: { max_dpi: 'upper_bound' }
       },
-      score: 0.85,
+      score: 0.95,
       alternatives: []
     }),
-    rules: {
-      max_dpi: { contract: { type: 'number', shape: 'scalar' } }
-    },
+    rules: { max_dpi: { contract: { type: 'number', shape: 'scalar' } } },
     context,
-    attempts
+    attempts,
+    propertyKeys: ['max_dpi']
   });
-  // prop_score should be 1.0 (20000 <= 26000)
+  // prop_score should be 1.0 (20000 <= 26000) → combined >= 0.95
   assert.equal(result.ok, true);
   assert.equal(result.value, 'PAW3395');
 });

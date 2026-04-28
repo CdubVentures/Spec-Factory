@@ -49,7 +49,7 @@ test('studio numeric parsers clamp invalid values without losing explicit zero v
 });
 
 test('studio nested-value helpers and workbench rows preserve explicit zero evidence thresholds', async () => {
-  const [{ numN }, { buildWorkbenchRows }, { STUDIO_NUMERIC_KNOB_BOUNDS, STUDIO_COMPONENT_MATCH_DEFAULTS }] = await Promise.all([
+  const [{ numN }, { buildWorkbenchRows }, { STUDIO_NUMERIC_KNOB_BOUNDS }] = await Promise.all([
     loadNestedValueHelpers(),
     loadWorkbenchHelpers(),
     loadStudioNumericBounds(),
@@ -60,7 +60,7 @@ test('studio nested-value helpers and workbench rows preserve explicit zero evid
     max: 10,
     fallback: 0,
   });
-  assert.equal(STUDIO_COMPONENT_MATCH_DEFAULTS.fuzzyThreshold, 0.75);
+  assert.equal('componentMatch' in STUDIO_NUMERIC_KNOB_BOUNDS, false, 'componentMatch bounds retired');
 
   assert.equal(
     numN({ evidence: { min_evidence_refs: 0 } }, 'evidence.min_evidence_refs', 3),

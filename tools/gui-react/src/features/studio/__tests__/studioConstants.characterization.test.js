@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { FIELD_RULE_STUDIO_TIPS } from '../../../../../../src/field-rules/fieldRuleSchema.js';
 import { loadBundledModule } from '../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 async function loadStudioConstants() {
@@ -19,12 +20,6 @@ test('STUDIO_TIPS characterizes the current field-rule tooltip key surface', asy
     'comp_allow_new',
     'comp_constraints',
     'comp_field_key',
-    'comp_match_auto_accept_score',
-    'comp_match_flag_review_score',
-    'comp_match_fuzzy_threshold',
-    'comp_match_name_weight',
-    'comp_match_property_keys',
-    'comp_match_property_weight',
     'comp_override_allowed',
     'comp_require_identity_evidence',
     'comp_tolerance',
@@ -91,4 +86,17 @@ test('STUDIO_TIPS characterizes the current field-rule tooltip key surface', asy
     assert.equal(typeof value, 'string', `${key} value should be a string`);
     assert.ok(value.trim().length > 0, `${key} value should be non-empty`);
   }
+});
+
+test('STUDIO_TIPS derives field-rule tooltip strings from the registry', async () => {
+  const { STUDIO_TIPS } = await loadStudioConstants();
+
+  assert.deepEqual(
+    Object.fromEntries(
+      Object.keys(FIELD_RULE_STUDIO_TIPS)
+        .sort()
+        .map((key) => [key, STUDIO_TIPS[key]]),
+    ),
+    Object.fromEntries(Object.entries(FIELD_RULE_STUDIO_TIPS).sort()),
+  );
 });

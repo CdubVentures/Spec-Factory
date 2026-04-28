@@ -383,44 +383,6 @@ export const CONSUMER_BADGE_REGISTRY = Object.freeze([
       'llm.kf': { desc: 'Rendered as the type label in the always-on PRODUCT_COMPONENTS inventory block and in the per-key relation pointer ("This key IS the {type} component identity" / "This key belongs to the {type} component"). keyLlmAdapter.js:211-216, 219-236; productResolvedStateReader.js:86, 108.' },
     } },
 
-  { path: 'component.match.name_weight', type: 'presence', flatAliases: [],
-    section: 'Components', key: 'Name Weight',
-    consumers: {
-      'eng.component': { desc: 'Weight for component name similarity in match scoring.' },
-    } },
-
-  { path: 'component.match.property_weight', type: 'presence', flatAliases: [],
-    section: 'Components', key: 'Property Weight',
-    consumers: {
-      'eng.component': { desc: 'Weight for component property alignment in match scoring.' },
-    } },
-
-  { path: 'component.match.property_keys', type: 'array', flatAliases: [],
-    section: 'Components', key: 'Property Keys',
-    consumers: {
-      'eng.component': { desc: 'Declares which property fields are compared during component matching.' },
-      'comp.review': { desc: 'Maps property columns in component review panel.' },
-      'llm.kf': { desc: 'Drives the subfield list under each component in the PRODUCT_COMPONENTS inventory block and the subfield→parent map used for the per-key relation pointer. productResolvedStateReader.js:31-36, 72-83.' },
-    } },
-
-  { path: 'component.match.auto_accept_score', type: 'presence', flatAliases: [],
-    section: 'Components', key: 'Auto Accept Score',
-    consumers: {
-      'eng.component': { desc: 'Threshold above which component matches are automatically accepted.' },
-    } },
-
-  { path: 'component.match.flag_review_score', type: 'presence', flatAliases: [],
-    section: 'Components', key: 'Flag Review Score',
-    consumers: {
-      'eng.component': { desc: 'Threshold below which component matches are flagged for manual review.' },
-    } },
-
-  { path: 'component.match.fuzzy_threshold', type: 'presence', flatAliases: [],
-    section: 'Components', key: 'Match Fuzzy Threshold',
-    consumers: {
-      'eng.component': { desc: 'Fuzzy similarity threshold for component name matching.' },
-    } },
-
   { path: 'component.allow_new_components', type: 'presence', flatAliases: [],
     section: 'Components', key: 'Allow New Components',
     consumers: {

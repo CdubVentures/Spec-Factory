@@ -73,7 +73,41 @@ describe('finder settings registry contract', () => {
             );
           }
         }
+        if (entry.scope !== undefined) {
+          ok(
+            entry.scope === 'global' || entry.scope === 'category',
+            `entry.scope "${entry.scope}" not allowed (${moduleId}.${entry.key})`,
+          );
+        }
       }
+    }
+  });
+
+  it('PIF engine-behavior groups are global-scoped while view contracts stay category-scoped', () => {
+    const schema = FINDER_SETTINGS_REGISTRY.productImageFinder;
+    const byKey = new Map(schema.map((entry) => [entry.key, entry]));
+    const globalKeys = [
+      'heroEnabled',
+      'heroCount',
+      'heroAttemptBudget',
+      'evalEnabled',
+      'evalThumbSize',
+      'evalHeroCount',
+      'rmbgConcurrency',
+      'urlHistoryEnabled',
+      'queryHistoryEnabled',
+      'priorityViewRunImageHistoryEnabled',
+      'individualViewRunImageHistoryEnabled',
+      'loopRunImageHistoryEnabled',
+      'priorityViewRunLinkValidationEnabled',
+      'individualViewRunLinkValidationEnabled',
+      'loopRunLinkValidationEnabled',
+    ];
+    for (const key of globalKeys) {
+      strictEqual(byKey.get(key)?.scope, 'global', `${key} should be global-scoped`);
+    }
+    for (const key of ['viewConfig', 'viewBudget', 'carouselScoredViews', 'carouselOptionalViews']) {
+      strictEqual(byKey.get(key)?.scope, undefined, `${key} should inherit category scope`);
     }
   });
 

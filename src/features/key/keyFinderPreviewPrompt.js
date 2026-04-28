@@ -181,7 +181,7 @@ export async function compileKeyFinderPreviewPrompt(ctx) {
 
   // Context injection upstreams — mirrors keyFinder.js step 6.7 so preview
   // and live runner produce byte-identical prompts (drift guard enforces).
-  const componentRelationIndex = buildComponentRelationIndex(engine.rules);
+  const componentRelationIndex = buildComponentRelationIndex(engine.rules, engine.componentSources);
   const productComponents = resolveProductComponentInventory({
     specDb, productId: product.product_id,
     compiledRulesFields: engine.rules, componentRelationIndex,

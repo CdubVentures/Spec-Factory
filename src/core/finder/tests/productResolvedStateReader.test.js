@@ -26,14 +26,15 @@ import {
 
 // ── Fixtures ────────────────────────────────────────────────────────────
 
-// Parent-component rule shape mirrors mouse/_generated/field_rules.json
-// (trimmed to the fields the reader actually reads).
-function parentRule(type, propertyKeys) {
+// Parent-component rule shape — Phase 1: property lists no longer live in the
+// compiled rule, so the test fixture only carries the type/source. The
+// property list comes via the SOURCES fixture below (mirroring
+// field_studio_map.component_sources, the runtime SSOT).
+function parentRule(type) {
   return {
     field_key: type,
     component: {
       type,
-      match: { property_keys: propertyKeys },
       source: `component_db.${type}`,
     },
     contract: { type: 'string', shape: 'scalar' },
@@ -41,8 +42,8 @@ function parentRule(type, propertyKeys) {
   };
 }
 
-function subfieldRule(key) {
-  return { field_key: key, component: null, contract: { type: 'string', shape: 'scalar' } };
+function subfieldRule(key, contractType = 'string') {
+  return { field_key: key, component: null, contract: { type: contractType, shape: 'scalar' } };
 }
 
 function scalarRule(key) {
@@ -54,21 +55,36 @@ function variantRule(key) {
 }
 
 const RULES = {
-  sensor: parentRule('sensor', ['sensor_type', 'sensor_date']),
+  sensor: parentRule('sensor'),
   sensor_type: subfieldRule('sensor_type'),
   sensor_date: subfieldRule('sensor_date'),
-  switch: parentRule('switch', ['switch_type']),
+  switch: parentRule('switch'),
   switch_type: subfieldRule('switch_type'),
-  encoder: parentRule('encoder', ['encoder_steps', 'encoder_life_span']),
-  encoder_steps: subfieldRule('encoder_steps'),
-  encoder_life_span: subfieldRule('encoder_life_span'),
-  material: parentRule('material', []), // parent with no declared property_keys
+  encoder: parentRule('encoder'),
+  encoder_steps: subfieldRule('encoder_steps', 'integer'),
+  encoder_life_span: subfieldRule('encoder_life_span', 'integer'),
+  material: parentRule('material'),
   weight_g: scalarRule('weight_g'),
   release_date: scalarRule('release_date'),
   sku: scalarRule('sku'),
   variant_price: variantRule('variant_price'),
   polling_rate: scalarRule('polling_rate'),
 };
+
+const SOURCES = [
+  { component_type: 'sensor', roles: { properties: [
+    { field_key: 'sensor_type', variance_policy: 'authoritative' },
+    { field_key: 'sensor_date', variance_policy: 'authoritative' },
+  ] } },
+  { component_type: 'switch', roles: { properties: [
+    { field_key: 'switch_type', variance_policy: 'authoritative' },
+  ] } },
+  { component_type: 'encoder', roles: { properties: [
+    { field_key: 'encoder_steps', variance_policy: 'upper_bound' },
+    { field_key: 'encoder_life_span', variance_policy: 'upper_bound' },
+  ] } },
+  { component_type: 'material', roles: { properties: [] } },
+];
 
 function makeSpecDbStub({ links = [], resolved = {} } = {}) {
   return {
@@ -82,8 +98,8 @@ function makeSpecDbStub({ links = [], resolved = {} } = {}) {
 
 // ── buildComponentRelationIndex ─────────────────────────────────────────
 
-test('buildComponentRelationIndex: collects parents and subfields', () => {
-  const idx = buildComponentRelationIndex(RULES);
+test('buildComponentRelationIndex: collects parents and subfields (sourced from componentSources)', () => {
+  const idx = buildComponentRelationIndex(RULES, SOURCES);
   assert.ok(idx.parentKeys.has('sensor'));
   assert.ok(idx.parentKeys.has('switch'));
   assert.ok(idx.parentKeys.has('encoder'));
@@ -101,19 +117,19 @@ test('buildComponentRelationIndex: collects parents and subfields', () => {
 });
 
 test('buildComponentRelationIndex: empty rules → empty sets', () => {
-  const idx = buildComponentRelationIndex({});
+  const idx = buildComponentRelationIndex({}, []);
   assert.equal(idx.parentKeys.size, 0);
   assert.equal(idx.subfieldToParent.size, 0);
 });
 
-test('buildComponentRelationIndex: parent with no property_keys still counts as parent', () => {
-  const idx = buildComponentRelationIndex({ material: parentRule('material', []) });
+test('buildComponentRelationIndex: parent with no componentSources entry still counts as parent', () => {
+  const idx = buildComponentRelationIndex({ material: parentRule('material') }, []);
   assert.ok(idx.parentKeys.has('material'));
   assert.equal(idx.subfieldToParent.size, 0);
 });
 
 test('buildComponentRelationIndex: null rule object is skipped', () => {
-  const idx = buildComponentRelationIndex({ missing: null, sensor: RULES.sensor });
+  const idx = buildComponentRelationIndex({ missing: null, sensor: RULES.sensor }, SOURCES);
   assert.ok(idx.parentKeys.has('sensor'));
   assert.equal(idx.parentKeys.has('missing'), false);
 });
@@ -121,7 +137,7 @@ test('buildComponentRelationIndex: null rule object is skipped', () => {
 // ── resolveProductComponentInventory ────────────────────────────────────
 
 test('inventory: emits one entry per parent, sorted by parentFieldKey', () => {
-  const idx = buildComponentRelationIndex(RULES);
+  const idx = buildComponentRelationIndex(RULES, SOURCES);
   const specDb = makeSpecDbStub({
     links: [
       { field_key: 'sensor', component_type: 'sensor', component_name: 'Hero 25K' },
@@ -139,8 +155,8 @@ test('inventory: emits one entry per parent, sorted by parentFieldKey', () => {
   assert.deepEqual(fks, ['encoder', 'material', 'sensor', 'switch']); // sorted asc
 });
 
-test('inventory: resolved parent yields identity + product-resolved subfields only', () => {
-  const idx = buildComponentRelationIndex(RULES);
+test('inventory: resolved parent yields identity + product-resolved subfields with variance policy', () => {
+  const idx = buildComponentRelationIndex(RULES, SOURCES);
   const specDb = makeSpecDbStub({
     links: [{ field_key: 'sensor', component_type: 'sensor', component_name: 'Hero 25K' }],
     resolved: { sensor_type: 'optical' }, // sensor_date NOT resolved
@@ -152,11 +168,49 @@ test('inventory: resolved parent yields identity + product-resolved subfields on
   assert.equal(sensor.componentType, 'sensor');
   assert.equal(sensor.resolvedValue, 'Hero 25K');
   // Only sensor_type should appear — sensor_date was not in `resolved`.
-  assert.deepEqual(sensor.subfields, [{ field_key: 'sensor_type', value: 'optical' }]);
+  assert.deepEqual(sensor.subfields, [
+    { field_key: 'sensor_type', value: 'optical', variancePolicy: 'authoritative' },
+  ]);
+});
+
+test('inventory: numeric subfield keeps numeric variance policy (upper_bound)', () => {
+  const idx = buildComponentRelationIndex(RULES, SOURCES);
+  const specDb = makeSpecDbStub({
+    links: [{ field_key: 'encoder', component_type: 'encoder', component_name: 'TTC' }],
+    resolved: { encoder_steps: 24, encoder_life_span: 5_000_000 },
+  });
+  const inv = resolveProductComponentInventory({
+    specDb, productId: 'p1', compiledRulesFields: RULES, componentRelationIndex: idx,
+  });
+  const encoder = inv.find((e) => e.parentFieldKey === 'encoder');
+  assert.deepEqual(encoder.subfields, [
+    { field_key: 'encoder_steps', value: 24, variancePolicy: 'upper_bound' },
+    { field_key: 'encoder_life_span', value: 5_000_000, variancePolicy: 'upper_bound' },
+  ]);
+});
+
+test('inventory: non-numeric subfield collapses upper_bound → authoritative', () => {
+  const STRING_SOURCES = [
+    { component_type: 'sensor', roles: { properties: [
+      { field_key: 'sensor_type', variance_policy: 'upper_bound' }, // non-numeric → collapse
+    ] } },
+  ];
+  const idx = buildComponentRelationIndex(RULES, STRING_SOURCES);
+  const specDb = makeSpecDbStub({
+    links: [{ field_key: 'sensor', component_type: 'sensor', component_name: 'Hero 25K' }],
+    resolved: { sensor_type: 'optical' },
+  });
+  const inv = resolveProductComponentInventory({
+    specDb, productId: 'p1', compiledRulesFields: RULES, componentRelationIndex: idx,
+  });
+  const sensor = inv.find((e) => e.parentFieldKey === 'sensor');
+  assert.deepEqual(sensor.subfields, [
+    { field_key: 'sensor_type', value: 'optical', variancePolicy: 'authoritative' },
+  ]);
 });
 
 test('inventory: unidentified component (no item link) yields empty resolvedValue', () => {
-  const idx = buildComponentRelationIndex(RULES);
+  const idx = buildComponentRelationIndex(RULES, SOURCES);
   const specDb = makeSpecDbStub({ links: [], resolved: {} });
   const inv = resolveProductComponentInventory({
     specDb, productId: 'p1', compiledRulesFields: RULES, componentRelationIndex: idx,
@@ -168,7 +222,7 @@ test('inventory: unidentified component (no item link) yields empty resolvedValu
 });
 
 test('inventory: parent with subfields resolved but no identity → subfields still included', () => {
-  const idx = buildComponentRelationIndex(RULES);
+  const idx = buildComponentRelationIndex(RULES, SOURCES);
   const specDb = makeSpecDbStub({
     links: [], // no identity
     resolved: { sensor_type: 'optical' },
@@ -178,11 +232,13 @@ test('inventory: parent with subfields resolved but no identity → subfields st
   });
   const sensor = inv.find((e) => e.parentFieldKey === 'sensor');
   assert.equal(sensor.resolvedValue, '');
-  assert.deepEqual(sensor.subfields, [{ field_key: 'sensor_type', value: 'optical' }]);
+  assert.deepEqual(sensor.subfields, [
+    { field_key: 'sensor_type', value: 'optical', variancePolicy: 'authoritative' },
+  ]);
 });
 
 test('inventory: item-link for non-parent key is ignored', () => {
-  const idx = buildComponentRelationIndex(RULES);
+  const idx = buildComponentRelationIndex(RULES, SOURCES);
   const specDb = makeSpecDbStub({
     links: [{ field_key: 'polling_rate', component_type: 'sensor', component_name: 'Stray' }],
   });
@@ -195,7 +251,10 @@ test('inventory: item-link for non-parent key is ignored', () => {
 });
 
 test('inventory: component_name wins over component_maker when both present', () => {
-  const idx = buildComponentRelationIndex({ sensor: RULES.sensor, sensor_type: RULES.sensor_type });
+  const idx = buildComponentRelationIndex(
+    { sensor: RULES.sensor, sensor_type: RULES.sensor_type },
+    SOURCES,
+  );
   const specDb = makeSpecDbStub({
     links: [{ field_key: 'sensor', component_type: 'sensor', component_name: 'Hero 25K', component_maker: 'Logitech' }],
   });
@@ -211,7 +270,7 @@ test('inventory: component_name wins over component_maker when both present', ()
 // ── resolveKeyComponentRelation ─────────────────────────────────────────
 
 test('relation: parent rule (component non-null) → relation=parent', () => {
-  const idx = buildComponentRelationIndex(RULES);
+  const idx = buildComponentRelationIndex(RULES, SOURCES);
   const rel = resolveKeyComponentRelation({
     fieldKey: 'sensor', fieldRule: RULES.sensor, componentRelationIndex: idx,
   });
@@ -219,7 +278,7 @@ test('relation: parent rule (component non-null) → relation=parent', () => {
 });
 
 test('relation: subfield (listed in a parent property_keys) → relation=subfield_of', () => {
-  const idx = buildComponentRelationIndex(RULES);
+  const idx = buildComponentRelationIndex(RULES, SOURCES);
   const rel = resolveKeyComponentRelation({
     fieldKey: 'sensor_type', fieldRule: RULES.sensor_type, componentRelationIndex: idx,
   });
@@ -227,7 +286,7 @@ test('relation: subfield (listed in a parent property_keys) → relation=subfiel
 });
 
 test('relation: plain scalar with no component relation → null', () => {
-  const idx = buildComponentRelationIndex(RULES);
+  const idx = buildComponentRelationIndex(RULES, SOURCES);
   const rel = resolveKeyComponentRelation({
     fieldKey: 'polling_rate', fieldRule: RULES.polling_rate, componentRelationIndex: idx,
   });
@@ -235,7 +294,7 @@ test('relation: plain scalar with no component relation → null', () => {
 });
 
 test('relation: fieldKey unknown to index → null', () => {
-  const idx = buildComponentRelationIndex(RULES);
+  const idx = buildComponentRelationIndex(RULES, SOURCES);
   const rel = resolveKeyComponentRelation({
     fieldKey: 'made_up_field', fieldRule: { field_key: 'made_up_field', component: null }, componentRelationIndex: idx,
   });

@@ -417,4 +417,52 @@ describe('dedup: URL dedup self-heal + content hash gate', () => {
     // Tick must trail the SQL upsert — same count of upserts as ticks.
     assert.equal(store._upserts.length, 2, 'upsert count must match tick count');
   });
+
+  it('persists each variant run, summary, and progress tick inside one SQL transaction', async () => {
+    const pid = 'tick-transaction';
+    writeCefData(pid, { selected: { colors: ['black'], color_names: {}, editions: {} } });
+
+    const events = [];
+    let transactionDepth = 0;
+    const variants = [
+      { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color', color_atoms: ['black'] },
+    ];
+    const store = {
+      getSetting: () => '',
+      insertRun: (run) => events.push({ type: 'insertRun', depth: transactionDepth, run }),
+      upsert: (row) => events.push({ type: 'upsert', depth: transactionDepth, row }),
+    };
+    const specDb = {
+      ...makeSpecDbStub(store, variants),
+      db: {
+        transaction: (work) => (...args) => {
+          events.push({ type: 'begin', depth: transactionDepth });
+          transactionDepth += 1;
+          try {
+            return work(...args);
+          } finally {
+            transactionDepth -= 1;
+            events.push({ type: 'commit', depth: transactionDepth });
+          }
+        },
+      },
+    };
+
+    await runProductImageFinder({
+      product: { ...PRODUCT, product_id: pid },
+      appDb: {},
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      _callLlmOverride: makeLlmOverride([
+        { view: 'top', url: `http://127.0.0.1:${port}/img-a.png` },
+      ]),
+      onVariantPersisted: (event) => events.push({ type: 'persisted', depth: transactionDepth, event }),
+    });
+
+    assert.deepEqual(
+      events.map((event) => `${event.type}:${event.depth}`),
+      ['begin:0', 'insertRun:1', 'upsert:1', 'persisted:1', 'commit:0'],
+    );
+  });
 });

@@ -35,6 +35,15 @@ export function simpleSimilarity(left, right) {
   return matches / Math.max(short.length, long.length);
 }
 
+// Component-match scoring defaults. Phase 1 retired the per-rule
+// `component.match.*` knobs — every field rule used the same baked-in numbers
+// in practice, so the knobs were dead UX. Engine collapses to inline.
+const FUZZY_THRESHOLD = 0.75;
+const NAME_WEIGHT = 0.4;
+const PROP_WEIGHT = 0.6;
+const AUTO_ACCEPT = 0.95;
+const FLAG_REVIEW = 0.65;
+
 /**
  * Resolves a component_ref type field value.
  *
@@ -43,6 +52,9 @@ export function simpleSimilarity(left, right) {
  *   { ok: true, value } — on success (caller sets value to result.value)
  *
  * Mutates `attempts` array and `context` arrays (identityObservations).
+ *
+ * `propertyKeys` is the list of property field_keys for the component type,
+ * sourced by the caller from field_studio_map.component_sources (the SSOT).
  */
 export function resolveComponentRef(value, {
   rule, fieldKey, rawCandidate,
@@ -50,9 +62,10 @@ export function resolveComponentRef(value, {
   fuzzyMatchComponent,
   rules,
   context,
-  attempts
+  attempts,
+  propertyKeys = []
 }) {
-  const dbName = normalizeText(rule?.component_db_ref || rule?.component?.type);
+  const dbName = normalizeText(rule?.component?.type);
   if (!dbName) {
     return {
       ok: false,
@@ -80,18 +93,8 @@ export function resolveComponentRef(value, {
 
   // Property-aware tiered scoring for component resolution
   const componentRule = isObject(rule?.component) ? rule.component : {};
-  const matchConfig = isObject(componentRule.match) ? componentRule.match : {};
-  const nameWeight = Number.isFinite(Number(matchConfig.name_weight)) ? Number(matchConfig.name_weight) : 0.4;
-  const propWeight = Number.isFinite(Number(matchConfig.property_weight)) ? Number(matchConfig.property_weight) : 0.6;
-  const propKeys = toArray(matchConfig.property_keys);
-  const autoAcceptScore = Number.isFinite(Number(matchConfig.auto_accept_score)) ? Number(matchConfig.auto_accept_score) : 0.95;
-  const flagReviewScore = Number.isFinite(Number(matchConfig.flag_review_score)) ? Number(matchConfig.flag_review_score) : 0.65;
-
-  const rawThreshold = Number(matchConfig.fuzzy_threshold);
-  const componentThreshold = Number.isFinite(rawThreshold)
-    ? Math.max(0, Math.min(1, rawThreshold))
-    : 0.75;
-  const fuzzy = fuzzyMatchComponent(dbName, query, componentThreshold);
+  const propKeys = toArray(propertyKeys);
+  const fuzzy = fuzzyMatchComponent(dbName, query, FUZZY_THRESHOLD);
 
   const nameScore = fuzzy.score || 0;
 
@@ -175,10 +178,10 @@ export function resolveComponentRef(value, {
   }
 
   const combinedScore = propKeys.length > 0
-    ? (nameScore * nameWeight) + (propScore * propWeight)
+    ? (nameScore * NAME_WEIGHT) + (propScore * PROP_WEIGHT)
     : nameScore;
 
-  if (fuzzy.match && combinedScore >= autoAcceptScore) {
+  if (fuzzy.match && combinedScore >= AUTO_ACCEPT) {
     attempts.push(`component:auto_accept:${combinedScore.toFixed(2)}`);
     if (Array.isArray(context?.identityObservations)) {
       context.identityObservations.push({
@@ -193,7 +196,7 @@ export function resolveComponentRef(value, {
     return { ok: true, value: fuzzy.match.canonical_name };
   }
 
-  if (fuzzy.match && combinedScore >= flagReviewScore) {
+  if (fuzzy.match && combinedScore >= FLAG_REVIEW) {
     attempts.push(`component:flagged_review:${combinedScore.toFixed(2)}`);
     return { ok: true, value: fuzzy.match.canonical_name };
   }

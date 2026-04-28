@@ -284,6 +284,19 @@ describe('createFinderSqlStore — settings scope routing', () => {
     ],
   };
 
+  const MIXED_MODULE = {
+    id: 'mixedFinder',
+    tableName: 'mixed_finder',
+    runsTableName: 'mixed_finder_runs',
+    summaryColumns: [{ name: 'items', type: 'TEXT', default: "'[]'" }],
+    summaryIndexes: [],
+    settingsScope: 'category',
+    settingsSchema: [
+      { key: 'viewBudget', type: 'string', default: '', allowEmpty: true },
+      { key: 'heroCount', type: 'int', default: 3, min: 1, max: 20, scope: 'global' },
+    ],
+  };
+
   it('scope=global writes into finder_global_settings keyed by module_id', () => {
     const db = new Database(':memory:');
     for (const stmt of generateFinderDdl([GLOBAL_MODULE])) db.exec(stmt);
@@ -345,6 +358,32 @@ describe('createFinderSqlStore — settings scope routing', () => {
     assert.ok(!tables.includes('finder_global_settings'));
 
     db.close();
+  });
+
+  it('mixed scope routes global entries to finder_global_settings and category entries to the category table', () => {
+    const db = new Database(':memory:');
+    for (const stmt of generateFinderDdl([MIXED_MODULE])) db.exec(stmt);
+    const globalDb = new Database(':memory:');
+    globalDb.exec(GLOBAL_DDL);
+
+    const store = createFinderSqlStore({ db, category: 'mouse', module: MIXED_MODULE, globalDb });
+    store.setSetting('viewBudget', '["top"]');
+    store.setSetting('heroCount', '1');
+
+    assert.equal(
+      db.prepare('SELECT value FROM mixed_finder_settings WHERE key = ?').get('viewBudget').value,
+      '["top"]',
+    );
+    assert.equal(
+      globalDb.prepare('SELECT value FROM finder_global_settings WHERE module_id = ? AND key = ?').get('mixedFinder', 'heroCount').value,
+      '1',
+    );
+    assert.equal(store.getSetting('viewBudget'), '["top"]');
+    assert.equal(store.getSetting('heroCount'), '1');
+    assert.deepEqual(store.getAllSettings(), { viewBudget: '["top"]', heroCount: '1' });
+
+    db.close();
+    globalDb.close();
   });
 
   it('scope=global returns schema defaults when no row exists', () => {

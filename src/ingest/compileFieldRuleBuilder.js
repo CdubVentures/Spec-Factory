@@ -702,33 +702,10 @@ export function buildStudioFieldRule({
     }
     : {};
 
-  // Extend component block with match, ai, and priority sub-objects if authored
+  // Extend component block with ai and priority sub-objects if authored.
+  // Phase 1: component.match.* retired — engine uses inline defaults; keyFinder
+  // readers source property_keys directly from field_studio_map.component_sources.
   if (Object.keys(nestedComponent).length > 0) {
-    const matchInput = isObject(componentBlock.match) ? componentBlock.match : {};
-    const rawFuzzyThreshold = asNumber(matchInput.fuzzy_threshold);
-    const rawPropWeight = asNumber(matchInput.property_weight);
-    const rawNameWeight = asNumber(matchInput.name_weight);
-    const rawAutoAccept = asNumber(matchInput.auto_accept_score);
-    const rawFlagReview = asNumber(matchInput.flag_review_score);
-    nestedComponent.match = {
-      fuzzy_threshold: rawFuzzyThreshold !== null ? Math.max(0, Math.min(1, rawFuzzyThreshold)) : 0.75,
-      property_weight: rawPropWeight !== null ? Math.max(0, Math.min(1, rawPropWeight)) : 0.6,
-      name_weight: rawNameWeight !== null ? Math.max(0, Math.min(1, rawNameWeight)) : 0.4,
-      property_keys: (() => {
-        const authored = toArray(matchInput.property_keys).map(k => normalizeFieldKey(k)).filter(Boolean);
-        if (authored.length > 0) return authored;
-        const cSources = toArray(map?.component_sources).length > 0
-          ? toArray(map.component_sources)
-          : toArray(map?.component_sheets);
-        const cRow = findComponentSourceRowByType(cSources, nestedComponent.type);
-        return toArray(isObject(cRow?.roles) ? cRow.roles.properties : [])
-          .map(entry => normalizeFieldKey(entry?.field_key || entry?.key || entry?.property_key || ''))
-          .filter(Boolean);
-      })(),
-      auto_accept_score: rawAutoAccept !== null ? Math.max(0, Math.min(1, rawAutoAccept)) : 0.95,
-      flag_review_score: rawFlagReview !== null ? Math.max(0, Math.min(1, rawFlagReview)) : 0.65,
-    };
-
     const aiInput = isObject(componentBlock.ai) ? componentBlock.ai : {};
     const validAiModes = ['judge', 'planner', 'advisory', 'off'];
     const validContextLevels = ['name_only', 'properties', 'properties_and_evidence'];

@@ -58,6 +58,16 @@
       "consumer": "src/engine/fieldRulesEngine.js:buildRuleEnumSpec",
       "description": "Enum value source reference (known_values or component_db)"
     },
+    "enum.match.format_hint": {
+      "status": "live",
+      "consumer": "src/features/publisher/validation/checks/checkFormat.js",
+      "description": "Custom format pattern applied by publisher validation after extraction"
+    },
+    "enum.values": {
+      "status": "live",
+      "consumer": "src/features/key/keyLlmAdapter.js:return-contract allowed values",
+      "description": "Inline enum vocabulary rendered into per-key finder return contracts"
+    },
     "enum.new_value_policy": {
       "status": "live",
       "consumer": "src/engine/fieldRulesEngine.js:normalizeCandidate",
@@ -88,6 +98,16 @@
       "consumer": "src/extract/componentResolver.js:resolveFromCandidates",
       "description": "Component database type for matching (sensor, switch, encoder, material)"
     },
+    "constraints": {
+      "status": "live",
+      "consumer": "src/features/key/keyLlmAdapter.js + src/features/review/ + src/field-rules/compilerComponentHelpers.js",
+      "description": "Cross-field constraints rendered into finder prompts and enforced by component review metadata"
+    },
+    "variance_policy": {
+      "status": "live",
+      "consumer": "src/features/key/keyLlmAdapter.js + src/features/review/ + src/field-rules/compilerComponentHelpers.js",
+      "description": "Policy for resolving variant or component-property disagreement across sources"
+    },
     "priority.required_level": {
       "status": "live",
       "consumer": "src/runner/runUntilComplete.js + src/review/reviewGridData.js",
@@ -107,6 +127,31 @@
       "status": "live",
       "consumer": "src/runner/runUntilComplete.js:inferRuleEffort",
       "description": "Weighted effort score for search budget allocation"
+    },
+    "variant_dependent": {
+      "status": "live",
+      "consumer": "src/core/finder/finderModuleRegistry.js + src/features/review/domain/reviewGridData.js + src/features/key/keyBundler.js",
+      "description": "Declares whether a field resolves per variant instead of product scope; affects review lanes and product-scoped bundling"
+    },
+    "aliases": {
+      "status": "live",
+      "consumer": "src/indexlab/queryBuilder.js + src/features/key/keyLlmAdapter.js + src/engine/fieldRulesEngine.js",
+      "description": "Source-text synonyms for search enrichment, enum matching, and per-key finder prompt context"
+    },
+    "search_hints.domain_hints": {
+      "status": "live",
+      "consumer": "src/indexlab/queryBuilder.js + src/features/key/keyLlmAdapter.js",
+      "description": "Preferred domains or domain types used by search planning and per-key finder prompt context"
+    },
+    "search_hints.content_types": {
+      "status": "live",
+      "consumer": "src/indexlab/queryBuilder.js + src/features/key/keyLlmAdapter.js",
+      "description": "Preferred content classes used by search planning and per-key finder prompt context"
+    },
+    "search_hints.query_terms": {
+      "status": "live",
+      "consumer": "src/indexlab/queryBuilder.js + src/features/key/keyLlmAdapter.js",
+      "description": "Field-specific query terms used by search planning and per-key finder prompt context"
     },
     "parse.template": {
       "status": "retired",
@@ -152,6 +197,11 @@
       "status": "ui_only",
       "consumer": "React GUI (tools/gui-react/)",
       "description": "Human-readable field label"
+    },
+    "group": {
+      "status": "live",
+      "consumer": "src/indexlab needset planning + src/features/key/keyPassengerBuilder.js",
+      "description": "Field group used for needset planning, same-group bundling, and Field Studio organization"
     },
     "ui.group": {
       "status": "live",

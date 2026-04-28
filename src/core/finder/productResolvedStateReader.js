@@ -22,26 +22,74 @@ function isParentRule(rule) {
 }
 
 /**
+ * Build a Map<componentType, { propertyKeys, propertyVariancePolicies }>
+ * from field_studio_map.component_sources — the SSOT for component property
+ * lists (Phase 1: replaced the duplicate `component.match.property_keys`
+ * compile-output read).
+ *
+ * @param {Array<object>} componentSources
+ * @returns {Map<string, { propertyKeys: string[], variancePolicies: Record<string, string> }>}
+ */
+function buildComponentSourcesIndex(componentSources = []) {
+  const out = new Map();
+  for (const source of (Array.isArray(componentSources) ? componentSources : [])) {
+    if (!source || typeof source !== 'object') continue;
+    const type = String(source.component_type || source.type || '').trim();
+    if (!type) continue;
+    const properties = Array.isArray(source?.roles?.properties) ? source.roles.properties : [];
+    const propertyKeys = [];
+    const variancePolicies = {};
+    for (const entry of properties) {
+      const fk = String(entry?.field_key || entry?.key || entry?.property_key || '').trim();
+      if (!fk) continue;
+      propertyKeys.push(fk);
+      const vp = String(entry?.variance_policy || '').trim();
+      if (vp) variancePolicies[fk] = vp;
+    }
+    out.set(type, { propertyKeys, variancePolicies });
+  }
+  return out;
+}
+
+/**
  * Build a one-pass reverse index so resolveKeyComponentRelation + callers can
  * answer parent/subfield questions in O(1) without re-scanning the ruleset.
  *
  * @param {Record<string, object>} compiledRulesFields
- * @returns {{ parentKeys: Set<string>, subfieldToParent: Map<string, string> }}
+ * @param {Array<object>} [componentSources] — field_studio_map.component_sources
+ *   entries; SSOT for property_keys after Phase 1.
+ * @returns {{ parentKeys: Set<string>, subfieldToParent: Map<string, string>, componentSourcesIndex: Map<string, {propertyKeys: string[], variancePolicies: Record<string, string>}> }}
  */
-export function buildComponentRelationIndex(compiledRulesFields = {}) {
+export function buildComponentRelationIndex(compiledRulesFields = {}, componentSources = []) {
   const parentKeys = new Set();
   const subfieldToParent = new Map();
+  const componentSourcesIndex = buildComponentSourcesIndex(componentSources);
   for (const [fk, rule] of Object.entries(compiledRulesFields)) {
     if (!isParentRule(rule)) continue;
     parentKeys.add(fk);
-    const propertyKeys = Array.isArray(rule.component.match?.property_keys)
-      ? rule.component.match.property_keys
+    const type = String(rule.component?.type || '').trim();
+    const propertyKeys = type
+      ? (componentSourcesIndex.get(type)?.propertyKeys || [])
       : [];
     for (const sub of propertyKeys) {
       if (typeof sub === 'string' && sub) subfieldToParent.set(sub, fk);
     }
   }
-  return { parentKeys, subfieldToParent };
+  return { parentKeys, subfieldToParent, componentSourcesIndex };
+}
+
+// Numeric-only variance policies. For non-numeric subfield contracts these
+// collapse to `authoritative` so the rendered label can never claim a band
+// that the field's contract can't actually represent.
+const NUMERIC_ONLY_VARIANCE_POLICIES = new Set(['upper_bound', 'lower_bound', 'range']);
+
+function resolveSubfieldVariance(rawPolicy, subKey, compiledRulesFields) {
+  const policy = String(rawPolicy || 'authoritative');
+  if (!NUMERIC_ONLY_VARIANCE_POLICIES.has(policy)) return policy;
+  const subRule = compiledRulesFields?.[subKey];
+  const contractType = String(subRule?.contract?.type || '').trim().toLowerCase();
+  if (contractType === 'number' || contractType === 'integer') return policy;
+  return 'authoritative';
 }
 
 /**
@@ -50,7 +98,7 @@ export function buildComponentRelationIndex(compiledRulesFields = {}) {
  * (from field_candidates). Entries are sorted by parentFieldKey so the rendered
  * prompt stays byte-stable across runs.
  *
- * @returns {Array<{parentFieldKey: string, componentType: string, resolvedValue: string, subfields: Array<{field_key: string, value: unknown}>}>}
+ * @returns {Array<{parentFieldKey: string, componentType: string, resolvedValue: string, subfields: Array<{field_key: string, value: unknown, variancePolicy: string}>}>}
  */
 export function resolveProductComponentInventory({
   specDb,
@@ -68,6 +116,7 @@ export function resolveProductComponentInventory({
     if (row && typeof row.field_key === 'string') linkByFieldKey.set(row.field_key, row);
   }
 
+  const sourcesIndex = componentRelationIndex.componentSourcesIndex || new Map();
   const out = [];
   const parentKeys = [...componentRelationIndex.parentKeys].sort();
   for (const parentKey of parentKeys) {
@@ -75,21 +124,26 @@ export function resolveProductComponentInventory({
     if (!rule) continue;
     const link = linkByFieldKey.get(parentKey) || null;
     const resolvedValue = String(link?.component_name || '').trim();
-    const propertyKeys = Array.isArray(rule.component?.match?.property_keys)
-      ? rule.component.match.property_keys
-      : [];
+    const componentType = String(rule.component?.type || parentKey);
+    const sourcesEntry = sourcesIndex.get(componentType) || { propertyKeys: [], variancePolicies: {} };
+    const propertyKeys = sourcesEntry.propertyKeys || [];
     const subfields = [];
     for (const subKey of propertyKeys) {
       const row = typeof specDb.getResolvedFieldCandidate === 'function'
         ? specDb.getResolvedFieldCandidate(productId, subKey)
         : null;
       if (row && row.value !== undefined && row.value !== null) {
-        subfields.push({ field_key: subKey, value: row.value });
+        const variancePolicy = resolveSubfieldVariance(
+          sourcesEntry.variancePolicies?.[subKey],
+          subKey,
+          compiledRulesFields,
+        );
+        subfields.push({ field_key: subKey, value: row.value, variancePolicy });
       }
     }
     out.push({
       parentFieldKey: parentKey,
-      componentType: String(rule.component?.type || parentKey),
+      componentType,
       resolvedValue,
       subfields,
     });

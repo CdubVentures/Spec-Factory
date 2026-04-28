@@ -8,7 +8,7 @@ import {
   numN,
   strN,
 } from '../state/nestedValueHelpers.ts';
-import { STUDIO_NUMERIC_KNOB_BOUNDS, STUDIO_COMPONENT_MATCH_DEFAULTS } from '../state/studioNumericKnobBounds.ts';
+import { STUDIO_NUMERIC_KNOB_BOUNDS } from '../state/studioNumericKnobBounds.ts';
 import { deriveInputControl } from '../state/deriveInputControl.ts';
 import type { ComponentSource } from '../../../types/studio.ts';
 
@@ -107,14 +107,6 @@ function formatRounding(rule: Record<string, unknown>, type: string): string {
   const decimals = numN(rule, 'contract.rounding.decimals', 0);
   const mode = strN(rule, 'contract.rounding.mode', 'nearest');
   return `${decimals}\u00b7${mode}`;
-}
-
-function formatMatchCfg(rule: Record<string, unknown>): string {
-  const compType = strN(rule, 'component.type');
-  if (!compType) return '';
-  const fuzzy = numN(rule, 'component.match.fuzzy_threshold', STUDIO_COMPONENT_MATCH_DEFAULTS.fuzzyThreshold);
-  const nameW = numN(rule, 'component.match.name_weight', STUDIO_COMPONENT_MATCH_DEFAULTS.nameWeight);
-  return `fuzzy ${fuzzy}\u00b7name ${nameW}`;
 }
 
 // WHY: Reverse lookup — for each property field_key, find the owning component
@@ -219,7 +211,6 @@ export function buildWorkbenchRows(
 
       // Components
       componentType: strN(r, 'component.type'),
-      matchCfgSummary: formatMatchCfg(r),
       belongsToComponent: propOwnership.get(key)?.componentType || '',
       propertyVariance: propOwnership.get(key)?.variancePolicy || '',
 

@@ -10,7 +10,7 @@ export interface AiAssistToggleSubsectionProps {
   currentRule: Record<string, unknown>;
   updateField: (key: string, path: string, value: unknown) => void;
   BadgeRenderer: ComponentType<{ p: string }>;
-  path: "ai_assist.variant_inventory_usage" | "ai_assist.pif_priority_images";
+  path: string;
   label: string;
   ariaLabel: string;
   tooltipKey: keyof typeof STUDIO_TIPS;

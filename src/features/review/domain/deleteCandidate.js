@@ -24,24 +24,26 @@ export function deleteCandidateBySourceId({ specDb, category, productId, fieldKe
     return { deleted: false, republished: false, artifacts_cleaned: false };
   }
 
-  specDb.deleteFieldCandidateBySourceId(productId, fieldKey, sourceId);
+  const { productJson, result } = deleteSqlThenMirrorProductJson({
+    productRoot,
+    productId,
+    deleteSql: () => specDb.deleteFieldCandidateBySourceId(productId, fieldKey, sourceId),
+    mutateProductJson: (json) => {
+      if (Array.isArray(json.candidates?.[fieldKey])) {
+        json.candidates[fieldKey] = json.candidates[fieldKey]
+          .filter(e => e.source_id !== sourceId);
+      }
 
-  const productJson = readProductJson(productRoot, productId);
+      return {
+        republished: rederiveIfNonVariant({ specDb, productId, fieldKey, config, productJson: json }),
+      };
+    },
+  });
   if (!productJson) {
     return { deleted: true, republished: false, artifacts_cleaned: false };
   }
 
-  if (Array.isArray(productJson.candidates?.[fieldKey])) {
-    productJson.candidates[fieldKey] = productJson.candidates[fieldKey]
-      .filter(e => e.source_id !== sourceId);
-  }
-
-  const republished = rederiveIfNonVariant({ specDb, productId, fieldKey, config, productJson });
-
-  productJson.updated_at = new Date().toISOString();
-  writeProductJson(productRoot, productId, productJson);
-
-  return { deleted: true, republished, artifacts_cleaned: false };
+  return { deleted: true, republished: Boolean(result?.republished), artifacts_cleaned: false };
 }
 
 /**
@@ -60,21 +62,22 @@ export function deleteAllCandidatesForField({ specDb, category, productId, field
 
   const deletedCount = rows.length;
 
-  specDb.deleteFieldCandidatesByProductAndField(productId, fieldKey);
-
-  const productJson = readProductJson(productRoot, productId);
+  const { productJson, result } = deleteSqlThenMirrorProductJson({
+    productRoot,
+    productId,
+    deleteSql: () => specDb.deleteFieldCandidatesByProductAndField(productId, fieldKey),
+    mutateProductJson: (json) => {
+      delete json.candidates?.[fieldKey];
+      return {
+        republished: rederiveIfNonVariant({ specDb, productId, fieldKey, config, productJson: json }),
+      };
+    },
+  });
   if (!productJson) {
     return { deleted: deletedCount, republished: false, artifacts_cleaned: false };
   }
 
-  delete productJson.candidates?.[fieldKey];
-
-  const republished = rederiveIfNonVariant({ specDb, productId, fieldKey, config, productJson });
-
-  productJson.updated_at = new Date().toISOString();
-  writeProductJson(productRoot, productId, productJson);
-
-  return { deleted: deletedCount, republished, artifacts_cleaned: false };
+  return { deleted: deletedCount, republished: Boolean(result?.republished), artifacts_cleaned: false };
 }
 
 // ── Internal helpers ────────────────────────────────────────────────
@@ -87,6 +90,21 @@ function rederiveIfNonVariant({ specDb, productId, fieldKey, config, productJson
   if (isVariantBackedField(fieldKey)) return false;
   const result = republishField({ specDb, productId, fieldKey, config: config || {}, productJson });
   return result.status === 'republished' || result.status === 'unpublished';
+}
+
+function deleteSqlThenMirrorProductJson({ productRoot, productId, deleteSql, mutateProductJson }) {
+  deleteSql();
+
+  const productJson = readProductJson(productRoot, productId);
+  if (!productJson) {
+    return { productJson: null, result: null };
+  }
+
+  const result = mutateProductJson(productJson);
+  productJson.updated_at = new Date().toISOString();
+  writeProductJson(productRoot, productId, productJson);
+
+  return { productJson, result };
 }
 
 function readProductJson(productRoot, productId) {

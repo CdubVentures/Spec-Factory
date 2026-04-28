@@ -71,10 +71,11 @@ test('studio workbench contracts preserve core field metadata after publish-gate
   const newColumnIds = [
     'variantDependent', 'pifDependent', 'contractRange', 'listRulesSummary', 'roundingSummary',
     'variantInventoryUsage', 'pifPriorityImages', 'reasoningNoteFilled',
-    'matchCfgSummary', 'belongsToComponent', 'propertyVariance',
+    'belongsToComponent', 'propertyVariance',
     'tooltipMdFilled',
     'egLocked',
   ];
+  assert.equal(columnIds.includes('matchCfgSummary'), false, 'matchCfgSummary column should be retired');
   for (const id of newColumnIds) {
     assert.equal(columnIds.includes(id), true, `${id} column should be registered`);
   }

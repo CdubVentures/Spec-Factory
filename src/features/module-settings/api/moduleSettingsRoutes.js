@@ -18,7 +18,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { FINDER_MODULE_MAP } from '../../../core/finder/finderModuleRegistry.js';
-import { deriveFinderSettingsDefaults } from '../../../core/finder/finderSettingsSchema.js';
+import {
+  deriveFinderSettingsDefaults,
+  filterFinderSettingsForScope,
+  hasFinderSettingsScope,
+  mergeFinderScopedSettings,
+} from '../../../core/finder/finderSettingsSchema.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { rebuildPifVariantProgressFromJson } from '../../product-image/pifVariantProgressRebuild.js';
 
@@ -46,6 +51,30 @@ function categorySettingsJsonPath(helperRoot, category, mod) {
   return path.join(helperRoot, category, `${mod.filePrefix}_settings.json`);
 }
 
+function readGlobalScopedSettings(mod, appDb) {
+  return mergeFinderScopedSettings({
+    mod,
+    scope: 'global',
+    stored: appDb?.listFinderGlobalSettings?.(mod.id) || {},
+  });
+}
+
+function readCategoryScopedSettings(mod, store) {
+  return mergeFinderScopedSettings({
+    mod,
+    scope: 'category',
+    stored: store?.getAllSettings?.() || {},
+  });
+}
+
+function readEffectiveSettings(mod, { appDb, store }) {
+  return {
+    ...deriveFinderSettingsDefaults(mod.settingsSchema || []),
+    ...readCategoryScopedSettings(mod, store),
+    ...readGlobalScopedSettings(mod, appDb),
+  };
+}
+
 export function registerModuleSettingsRoutes(ctx) {
   const { jsonRes, readJsonBody, getSpecDb, broadcastWs, helperRoot, productRoot, appDb } = ctx;
 
@@ -64,23 +93,21 @@ export function registerModuleSettingsRoutes(ctx) {
       return jsonRes(res, 404, { error: `unknown module: ${moduleId}` });
     }
 
-    const moduleScope = mod.settingsScope || 'category';
-
     // ── Global scope ──────────────────────────────────────────────
     if (scopeOrCategory === 'global') {
-      if (moduleScope !== 'global') {
-        return jsonRes(res, 404, { error: `module ${moduleId} is not global-scope` });
+      if (!hasFinderSettingsScope(mod, 'global')) {
+        return jsonRes(res, 404, { error: `module ${moduleId} has no global-scope settings` });
       }
       if (!appDb) {
         return jsonRes(res, 503, { error: 'appDb not ready' });
       }
 
       if (method === 'GET') {
-        const settings = appDb.listFinderGlobalSettings(moduleId);
-        // WHY: Merge schema defaults so first-time reads return a complete
-        // payload even before any PUT has seeded the table.
-        const withDefaults = mergeDefaults(mod, settings);
-        return jsonRes(res, 200, { scope: 'global', module: moduleId, settings: withDefaults });
+        return jsonRes(res, 200, {
+          scope: 'global',
+          module: moduleId,
+          settings: readGlobalScopedSettings(mod, appDb),
+        });
       }
 
       if (method === 'PUT') {
@@ -89,13 +116,14 @@ export function registerModuleSettingsRoutes(ctx) {
           return jsonRes(res, 400, { error: 'body must be a JSON object' });
         }
         const patch = body.settings || body;
-        for (const [key, value] of Object.entries(patch)) {
+        const globalPatch = filterFinderSettingsForScope(mod, patch, 'global');
+        for (const [key, value] of Object.entries(globalPatch)) {
           if (typeof key === 'string' && key.length > 0) {
             appDb.upsertFinderGlobalSetting(moduleId, key, value);
           }
         }
 
-        const allSettings = mergeDefaults(mod, appDb.listFinderGlobalSettings(moduleId));
+        const allSettings = readGlobalScopedSettings(mod, appDb);
         if (helperRoot) {
           writeSettingsJson(globalSettingsJsonPath(helperRoot, mod), allSettings);
         }
@@ -104,7 +132,7 @@ export function registerModuleSettingsRoutes(ctx) {
           broadcastWs,
           event: 'module-settings-updated',
           domains: ['module-settings'],
-          meta: { scope: 'global', moduleId, keys: Object.keys(patch) },
+          meta: { scope: 'global', moduleId, keys: Object.keys(globalPatch) },
         });
 
         return jsonRes(res, 200, { ok: true, scope: 'global', module: moduleId, settings: allSettings });
@@ -115,8 +143,11 @@ export function registerModuleSettingsRoutes(ctx) {
 
     // ── Per-category scope ────────────────────────────────────────
     const category = scopeOrCategory;
-    if (moduleScope !== 'category') {
+    if (!hasFinderSettingsScope(mod, 'category')) {
       return jsonRes(res, 404, { error: `module ${moduleId} is global-scope; use /module-settings/global/${moduleId}` });
+    }
+    if (hasFinderSettingsScope(mod, 'global') && !appDb) {
+      return jsonRes(res, 503, { error: 'appDb not ready' });
     }
 
     const specDb = getSpecDb(category);
@@ -130,7 +161,7 @@ export function registerModuleSettingsRoutes(ctx) {
     }
 
     if (method === 'GET') {
-      const settings = store.getAllSettings();
+      const settings = readEffectiveSettings(mod, { appDb, store });
       return jsonRes(res, 200, { category, module: moduleId, settings });
     }
 
@@ -141,16 +172,26 @@ export function registerModuleSettingsRoutes(ctx) {
       }
 
       const settings = body.settings || body;
-      const settingKeys = Object.keys(settings);
-      for (const [key, value] of Object.entries(settings)) {
+      const categoryPatch = filterFinderSettingsForScope(mod, settings, 'category');
+      const globalPatch = filterFinderSettingsForScope(mod, settings, 'global');
+      const settingKeys = [...Object.keys(categoryPatch), ...Object.keys(globalPatch)];
+      for (const [key, value] of Object.entries(categoryPatch)) {
         if (typeof key === 'string' && key.length > 0) {
           store.setSetting(key, value);
         }
       }
+      for (const [key, value] of Object.entries(globalPatch)) {
+        if (typeof key === 'string' && key.length > 0) {
+          appDb.upsertFinderGlobalSetting(moduleId, key, value);
+        }
+      }
 
-      const allSettings = store.getAllSettings();
+      const categorySettings = readCategoryScopedSettings(mod, store);
       if (helperRoot) {
-        writeSettingsJson(categorySettingsJsonPath(helperRoot, category, mod), allSettings);
+        writeSettingsJson(categorySettingsJsonPath(helperRoot, category, mod), categorySettings);
+        if (Object.keys(globalPatch).length > 0) {
+          writeSettingsJson(globalSettingsJsonPath(helperRoot, mod), readGlobalScopedSettings(mod, appDb));
+        }
       }
 
       const pifProgressChanged = moduleId === 'productImageFinder'
@@ -174,18 +215,10 @@ export function registerModuleSettingsRoutes(ctx) {
         },
       });
 
+      const allSettings = readEffectiveSettings(mod, { appDb, store });
       return jsonRes(res, 200, { ok: true, category, module: moduleId, settings: allSettings });
     }
 
     return false;
   };
-}
-
-function mergeDefaults(mod, stored) {
-  const schema = Array.isArray(mod.settingsSchema) ? mod.settingsSchema : [];
-  const out = schema.length > 0 ? { ...deriveFinderSettingsDefaults(schema) } : {};
-  for (const [key, value] of Object.entries(stored || {})) {
-    out[key] = value;
-  }
-  return out;
 }

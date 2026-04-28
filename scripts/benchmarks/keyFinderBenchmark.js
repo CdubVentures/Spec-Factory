@@ -515,6 +515,44 @@ function renderCandidateDetail(benchmark) {
   }).join('');
 }
 
+function renderProblemRows(product, fieldLabels) {
+  const rows = Object.entries(product.cells)
+    .filter(([, cell]) => ['wrong', 'missing', 'needs_review', 'extra', 'unmatched_product'].includes(cell.status))
+    .map(([fieldKey, cell]) => `
+          <tr>
+            <td><span class="pill ${escapeHtml(cell.status)}">${escapeHtml(cell.status)}</span></td>
+            <td>${escapeHtml(fieldLabels.get(fieldKey) || fieldKey)}</td>
+            <td>${escapeHtml(fieldKey)}</td>
+            <td>${htmlValue(cell.benchmark)}</td>
+            <td>${htmlValue(cell.app)}</td>
+            <td>${escapeHtml(cell.reason)}</td>
+          </tr>`);
+
+  if (rows.length === 0) {
+    return '<p class="row-details-empty">No wrong, missing, or needs-review cells for this product.</p>';
+  }
+
+  return `
+        <table class="row-details-table">
+          <thead><tr><th>Status</th><th>Label</th><th>Key</th><th>Benchmark</th><th>App DB</th><th>Reason</th></tr></thead>
+          <tbody>${rows.join('')}</tbody>
+        </table>`;
+}
+
+function renderProductRowDetails(product, fieldLabels) {
+  const count = product.summary.wrong
+    + product.summary.missing
+    + product.summary.needs_review
+    + product.summary.extra
+    + product.summary.unmatched_product;
+  const summary = count > 0 ? `Show problem cells (${count})` : 'No problem cells';
+  return `
+          <details class="row-details">
+            <summary>${escapeHtml(summary)}</summary>
+            ${renderProblemRows(product, fieldLabels)}
+          </details>`;
+}
+
 function renderScorecard(scorecard, benchmark) {
   if (!scorecard) return '';
   const fieldLabels = new Map((benchmark.fields || []).map((field) => [field.field_key, field.label]));
@@ -528,6 +566,7 @@ function renderScorecard(scorecard, benchmark) {
         <td class="bad num">${product.summary.wrong}</td>
         <td class="miss num">${product.summary.missing}</td>
         <td class="review num">${product.summary.needs_review}</td>
+        <td>${renderProductRowDetails(product, fieldLabels)}</td>
       </tr>`).join('');
   const fieldRows = (scorecard.fields || []).map((field) => `
       <tr>
@@ -539,29 +578,6 @@ function renderScorecard(scorecard, benchmark) {
         <td class="miss num">${field.missing}</td>
         <td class="review num">${field.needs_review}</td>
       </tr>`).join('');
-  const details = (scorecard.products || []).map((product) => {
-    const rows = Object.entries(product.cells)
-      .filter(([, cell]) => !['correct', 'skipped'].includes(cell.status))
-      .map(([fieldKey, cell]) => `
-        <tr>
-          <td><span class="pill ${escapeHtml(cell.status)}">${escapeHtml(cell.status)}</span></td>
-          <td>${escapeHtml(fieldLabels.get(fieldKey) || fieldKey)}</td>
-          <td>${escapeHtml(fieldKey)}</td>
-          <td>${htmlValue(cell.benchmark)}</td>
-          <td>${htmlValue(cell.app)}</td>
-          <td>${escapeHtml(cell.reason)}</td>
-        </tr>`).join('');
-    if (!rows) return '';
-    return `
-      <section>
-        <h2>${escapeHtml(product.display_name)}</h2>
-        <table>
-          <thead><tr><th>Status</th><th>Label</th><th>Key</th><th>Benchmark</th><th>App DB</th><th>Reason</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </section>`;
-  }).join('');
-
   return `
     <section class="summary">
       <div><strong>Accuracy</strong><span>${scorecard.summary.accuracy}%</span></div>
@@ -574,7 +590,7 @@ function renderScorecard(scorecard, benchmark) {
     <section>
       <h2>Product Scores</h2>
       <table>
-        <thead><tr><th>Benchmark Product</th><th>App Product ID</th><th>Match</th><th>Accuracy</th><th>Correct</th><th>Wrong</th><th>Missing</th><th>Needs Review</th></tr></thead>
+        <thead><tr><th>Benchmark Product</th><th>App Product ID</th><th>Match</th><th>Accuracy</th><th>Correct</th><th>Wrong</th><th>Missing</th><th>Needs Review</th><th>Details</th></tr></thead>
         <tbody>${productRows}</tbody>
       </table>
     </section>
@@ -584,8 +600,7 @@ function renderScorecard(scorecard, benchmark) {
         <thead><tr><th>Label</th><th>Key</th><th>Accuracy</th><th>Correct</th><th>Wrong</th><th>Missing</th><th>Needs Review</th></tr></thead>
         <tbody>${fieldRows}</tbody>
       </table>
-    </section>
-    ${details}`;
+    </section>`;
 }
 
 export function htmlReport({ title, benchmark, scorecard = null } = {}) {
@@ -612,6 +627,11 @@ export function htmlReport({ title, benchmark, scorecard = null } = {}) {
     .summary span { display: block; margin-top: 6px; font-size: 24px; font-weight: 700; }
     .ok { color: #126b3a; } .bad { color: #a72020; } .miss { color: #915d00; } .review { color: #6f3da8; }
     .pill { display: inline-block; border-radius: 4px; padding: 2px 6px; font-size: 12px; font-weight: 700; background: #eef2f7; }
+    .row-details summary { cursor: pointer; font-weight: 700; color: #1f4f82; }
+    .row-details[open] summary { margin-bottom: 8px; }
+    .row-details-table { margin: 0; }
+    .row-details-table th, .row-details-table td { font-size: 12px; }
+    .row-details-empty { color: #526071; margin: 8px 0 0; }
     .wrong { background: #ffe4e4; color: #8b1b1b; } .missing { background: #fff0d6; color: #774b00; }
     .needs_review { background: #eee5ff; color: #58308b; } .unmatched_product { background: #e9eef5; color: #334155; }
   </style>

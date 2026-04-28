@@ -86,6 +86,49 @@ describe('writeCrawlCheckpoint', () => {
     fs.rmSync(outRoot, { recursive: true });
   });
 
+  test('projects checkpoint sources into run-scoped SQL rows when provided', () => {
+    const outRoot = makeTmpDir();
+    const calls = [];
+    writeCrawlCheckpoint({
+      checkpoint: {
+        ...SAMPLE_CHECKPOINT,
+        sources: [
+          {
+            url: 'https://example.com/a',
+            final_url: 'https://example.com/final',
+            status: 200,
+            content_hash: 'hash-a',
+            html_file: 'hash-a.html.gz',
+            screenshot_count: 1,
+          },
+          {
+            url: 'https://example.com/no-hash',
+            final_url: 'https://example.com/no-hash',
+            status: 403,
+            content_hash: null,
+          },
+        ],
+      },
+      outRoot,
+      runId: 'run-004b',
+      category: 'mouse',
+      insertRunSource: (row) => calls.push(row),
+    });
+
+    assert.equal(calls.length, 1);
+    assert.equal(calls[0].run_id, 'run-001');
+    assert.equal(calls[0].category, 'mouse');
+    assert.equal(calls[0].product_id, 'mouse-test');
+    assert.equal(calls[0].source_url, 'https://example.com/a');
+    assert.equal(calls[0].final_url, 'https://example.com/final');
+    assert.equal(calls[0].content_hash, 'hash-a');
+    assert.equal(calls[0].file_path, 'hash-a.html.gz');
+    assert.equal(calls[0].has_screenshot, 1);
+    assert.equal(calls[0].crawled_at, SAMPLE_CHECKPOINT.created_at);
+
+    fs.rmSync(outRoot, { recursive: true });
+  });
+
   test('SQL failure swallowed — file still written', () => {
     const outRoot = makeTmpDir();
     const { checkpointPath } = writeCrawlCheckpoint({

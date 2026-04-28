@@ -1,6 +1,6 @@
 // WHY: Lock down that every per-field option dropdown reads from the registry SSOT.
 // Hardcoded option lists drifted from the axis simplification (2026-04-21) once before
-// (`required_level`/`availability` had 7+5 stale legacy values in WorkbenchDrawerContractTab.tsx).
+// (`required_level`/`availability` had 7+5 stale legacy values in Workbench surfaces).
 // This guard fails the build if any monitored surface re-introduces literal option values.
 
 import { describe, it } from 'node:test';
@@ -31,24 +31,27 @@ const RETIRED_SHAPE_LITERALS = [
 ];
 
 const SURFACE_FILES = [
-  'tools/gui-react/src/features/studio/workbench/WorkbenchDrawerContractTab.tsx',
-  'tools/gui-react/src/features/studio/components/key-sections/KeyContractSection.tsx',
+  'tools/gui-react/src/features/studio/workbench/workbenchColumns.tsx',
+  'tools/gui-react/src/features/studio/workbench/WorkbenchBulkBar.tsx',
+  'tools/gui-react/src/features/studio/components/key-sections/bodies/KeyContractBody.tsx',
 ];
 
-describe('registryDriftGuard — every monitored surface reads option lists from the SSOT registries', () => {
-  it('WorkbenchDrawerContractTab.tsx imports priority + type/shape registries', () => {
-    const source = readSource('tools/gui-react/src/features/studio/workbench/WorkbenchDrawerContractTab.tsx');
+describe('registryDriftGuard - every monitored surface reads option lists from the SSOT registries', () => {
+  it('workbenchColumns.tsx imports priority registry options', () => {
+    const source = readSource('tools/gui-react/src/features/studio/workbench/workbenchColumns.tsx');
     assert.match(source, /REQUIRED_LEVEL_OPTIONS/, 'must import REQUIRED_LEVEL_OPTIONS');
-    assert.match(source, /AVAILABILITY_OPTIONS/, 'must import AVAILABILITY_OPTIONS');
-    assert.match(source, /DIFFICULTY_OPTIONS/, 'must import DIFFICULTY_OPTIONS');
-    assert.match(source, /VALID_TYPES/, 'must import VALID_TYPES');
-    assert.match(source, /VALID_SHAPES/, 'must import VALID_SHAPES');
     assert.match(source, /from\s+['"][^'"]*registries\/fieldRuleTaxonomy/, 'must import from fieldRuleTaxonomy');
-    assert.match(source, /from\s+['"][^'"]*typeShapeRegistry/, 'must import from typeShapeRegistry');
   });
 
-  it('KeyContractSection.tsx imports type/shape registry', () => {
-    const source = readSource('tools/gui-react/src/features/studio/components/key-sections/KeyContractSection.tsx');
+  it('WorkbenchBulkBar.tsx imports priority and enum registry options', () => {
+    const source = readSource('tools/gui-react/src/features/studio/workbench/WorkbenchBulkBar.tsx');
+    assert.match(source, /REQUIRED_LEVEL_OPTIONS/, 'must import REQUIRED_LEVEL_OPTIONS');
+    assert.match(source, /ENUM_POLICY_OPTIONS/, 'must import ENUM_POLICY_OPTIONS');
+    assert.match(source, /from\s+['"][^'"]*registries\/fieldRuleTaxonomy/, 'must import from fieldRuleTaxonomy');
+  });
+
+  it('KeyContractBody.tsx imports type/shape registry', () => {
+    const source = readSource('tools/gui-react/src/features/studio/components/key-sections/bodies/KeyContractBody.tsx');
     assert.match(source, /VALID_TYPES/, 'must import VALID_TYPES');
     assert.match(source, /VALID_SHAPES/, 'must import VALID_SHAPES');
     assert.match(source, /from\s+['"][^'"]*typeShapeRegistry/, 'must import from typeShapeRegistry');
@@ -61,7 +64,7 @@ describe('registryDriftGuard — every monitored surface reads option lists from
         assert.equal(
           source.includes(literal),
           false,
-          `${surface} must not contain retired priority literal ${literal}. Use REQUIRED_LEVEL_OPTIONS / AVAILABILITY_OPTIONS from the registry instead.`,
+          `${surface} must not contain retired priority literal ${literal}. Use registry-derived options instead.`,
         );
       }
     });

@@ -1,6 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import {
+  FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS,
+  FIELD_RULE_COMPONENT_TYPE_CONTROL,
+  FIELD_RULE_CONSTRAINT_CONTROL,
+  FIELD_RULE_EVIDENCE_CONTROLS,
+  FIELD_RULE_PRIORITY_CONTROLS,
+  FIELD_RULE_SEARCH_HINT_CONTROLS,
+} from '../../../../../../../src/field-rules/fieldRuleSchema.js';
 import { loadBundledModule } from '../../../../../../../src/shared/tests/helpers/loadBundledModule.js';
 
 function renderNode(node) {
@@ -129,12 +137,6 @@ const STUDIO_CONSTANTS_STUB = `
     variant_inventory_usage: 'variant inventory',
     pif_priority_images: 'pif priority images',
     component_db: 'component db',
-    comp_match_fuzzy_threshold: 'fuzzy threshold',
-    comp_match_name_weight: 'name weight',
-    comp_match_auto_accept_score: 'auto accept',
-    comp_match_flag_review_score: 'flag review',
-    comp_match_property_weight: 'property weight',
-    comp_match_property_keys: 'property keys',
   };
 `;
 
@@ -142,14 +144,6 @@ const NUMERIC_BOUNDS_STUB = `
   export const STUDIO_NUMERIC_KNOB_BOUNDS = {
     evidenceMinRefs: { min: 1, max: 5, fallback: 1 },
     contractRoundingDecimals: { min: 0, max: 4, fallback: 0 },
-    componentMatch: { min: 0, max: 1 },
-  };
-  export const STUDIO_COMPONENT_MATCH_DEFAULTS = {
-    fuzzyThreshold: 0.75,
-    nameWeight: 0.4,
-    autoAcceptScore: 0.95,
-    flagReviewScore: 0.65,
-    propertyWeight: 0.6,
   };
 `;
 
@@ -189,20 +183,7 @@ test('KeyAiAssistBody wires toggle props and reasoning_note updates to character
     label: node.props.label,
     ariaLabel: node.props.ariaLabel,
     tooltipKey: node.props.tooltipKey,
-  })), [
-    {
-      path: 'ai_assist.variant_inventory_usage',
-      label: 'Variant Inventory Context',
-      ariaLabel: 'Use variant inventory context',
-      tooltipKey: 'variant_inventory_usage',
-    },
-    {
-      path: 'ai_assist.pif_priority_images',
-      label: 'PIF Priority Images',
-      ariaLabel: 'Use PIF priority images',
-      tooltipKey: 'pif_priority_images',
-    },
-  ]);
+  })), FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS);
 
   assert.ok(badgePaths(tree).includes('ai_assist.reasoning_note'));
   const textarea = collectNodes(tree, (node) => node.type === 'textarea')[0];
@@ -213,6 +194,49 @@ test('KeyAiAssistBody wires toggle props and reasoning_note updates to character
   assert.deepEqual(updates, [
     { key: 'design', path: 'ai_assist.reasoning_note', value: 'Manual note' },
     { key: 'design', path: 'ai_assist.reasoning_note', value: '' },
+  ]);
+});
+
+test('KeyPriorityBody wires priority controls to registry-derived paths and options', async () => {
+  const { KeyPriorityBody } = await loadBundledModule(
+    'tools/gui-react/src/features/studio/components/key-sections/bodies/KeyPriorityBody.tsx',
+    {
+      prefix: 'key-priority-body-contracts-',
+      stubs: {
+        'react/jsx-runtime': JSX_STUB,
+        '../../../../../shared/ui/feedback/Tip.tsx': TIP_STUB,
+        '../../../state/nestedValueHelpers.ts': NESTED_HELPERS_STUB,
+        '../../studioConstants.ts': STUDIO_CONSTANTS_STUB,
+      },
+    },
+  );
+
+  const { props, updates } = createBaseProps({
+    currentRule: {
+      priority: {
+        required_level: 'mandatory',
+        availability: 'sometimes',
+        difficulty: 'hard',
+      },
+    },
+  });
+  const tree = renderNode(KeyPriorityBody(props));
+  const selects = collectNodes(tree, (node) => node.type === 'select');
+
+  assert.deepEqual(badgePaths(tree), FIELD_RULE_PRIORITY_CONTROLS.map((control) => control.path));
+  assert.deepEqual(
+    selects.map((select) => collectNodes(select, (node) => node.type === 'option').map((option) => option.props.value)),
+    FIELD_RULE_PRIORITY_CONTROLS.map((control) => control.options),
+  );
+
+  selects[0].props.onChange({ target: { value: 'non_mandatory' } });
+  selects[1].props.onChange({ target: { value: 'rare' } });
+  selects[2].props.onChange({ target: { value: 'very_hard' } });
+
+  assert.deepEqual(updates, [
+    { key: 'design', path: 'priority.required_level', value: 'non_mandatory' },
+    { key: 'design', path: 'priority.availability', value: 'rare' },
+    { key: 'design', path: 'priority.difficulty', value: 'very_hard' },
   ]);
 });
 
@@ -374,7 +398,7 @@ test('KeyEvidenceBody characterizes evidence paths', async () => {
   });
   const tree = renderNode(KeyEvidenceBody(props));
 
-  assert.deepEqual(badgePaths(tree), ['evidence.min_evidence_refs', 'evidence.tier_preference']);
+  assert.deepEqual(badgePaths(tree), FIELD_RULE_EVIDENCE_CONTROLS.map((control) => control.path));
   collectNodes(tree, (node) => node.type === 'NumberStepper')[0].props.onChange('3');
   collectNodes(tree, (node) => node.type === 'TierPicker')[0].props.onChange(['tier3']);
 
@@ -416,12 +440,19 @@ test('KeySearchHintsBody characterizes alias and search hint paths', async () =>
   const tree = renderNode(KeySearchHintsBody(props));
   const tagPickers = collectNodes(tree, (node) => node.type === 'TagPicker');
 
-  assert.deepEqual(badgePaths(tree), [
-    'aliases',
-    'search_hints.domain_hints',
-    'search_hints.content_types',
-    'search_hints.query_terms',
-  ]);
+  assert.deepEqual(badgePaths(tree), FIELD_RULE_SEARCH_HINT_CONTROLS.map((control) => control.path));
+  assert.deepEqual(
+    tagPickers.map((tagPicker) => ({
+      suggestions: tagPicker.props.suggestions,
+      placeholder: tagPicker.props.placeholder,
+    })),
+    [
+      { suggestions: undefined, placeholder: 'source phrases and alternate field names' },
+      { suggestions: ['manufacturer'], placeholder: 'manufacturer, rtings.com...' },
+      { suggestions: ['spec_sheet'], placeholder: 'spec_sheet, datasheet...' },
+      { suggestions: undefined, placeholder: 'alternative search terms' },
+    ],
+  );
 
   tagPickers[0].props.onChange(['alias2']);
   tagPickers[1].props.onChange(['support']);
@@ -429,10 +460,10 @@ test('KeySearchHintsBody characterizes alias and search hint paths', async () =>
   tagPickers[3].props.onChange(['shape']);
 
   assert.deepEqual(updates, [
-    { key: 'design', path: 'aliases', value: ['alias2'] },
-    { key: 'design', path: 'search_hints.domain_hints', value: ['support'] },
-    { key: 'design', path: 'search_hints.content_types', value: ['manual'] },
-    { key: 'design', path: 'search_hints.query_terms', value: ['shape'] },
+    { key: 'design', path: FIELD_RULE_SEARCH_HINT_CONTROLS[0].path, value: ['alias2'] },
+    { key: 'design', path: FIELD_RULE_SEARCH_HINT_CONTROLS[1].path, value: ['support'] },
+    { key: 'design', path: FIELD_RULE_SEARCH_HINT_CONTROLS[2].path, value: ['manual'] },
+    { key: 'design', path: FIELD_RULE_SEARCH_HINT_CONTROLS[3].path, value: ['shape'] },
   ]);
 });
 
@@ -531,7 +562,7 @@ test('KeyConstraintsBody adapts constraint updates to the constraints path', asy
   node.props.onChange(['requires design != none']);
 
   assert.deepEqual(updates, [
-    { key: 'design', path: 'constraints', value: ['requires design != none'] },
+    { key: 'design', path: FIELD_RULE_CONSTRAINT_CONTROL.path, value: ['requires design != none'] },
   ]);
 });
 
@@ -600,28 +631,19 @@ test('KeyComponentsBody characterizes component and match setting paths', async 
   const tree = renderNode(KeyComponentsBody(props));
 
   assert.deepEqual(badgePaths(tree), [
-    'component.type',
-    'component.match.fuzzy_threshold',
-    'component.match.name_weight',
-    'component.match.auto_accept_score',
-    'component.match.flag_review_score',
-    'component.match.property_weight',
-    'component.match.property_keys',
+    FIELD_RULE_COMPONENT_TYPE_CONTROL.path,
   ]);
 
   const componentSelect = collectNodes(tree, (node) => node.type === 'select' && node.props?.value === 'sensor')[0];
   componentSelect.props.onChange({ target: { value: '' } });
   componentSelect.props.onChange({ target: { value: 'switch' } });
-  for (const input of collectNodes(tree, (node) => node.type === 'input' && node.props?.type === 'number')) {
-    input.props.onChange({ target: { value: '0.5' } });
-  }
 
   assert.deepEqual(updates, [
-    { key: 'design', path: 'component', value: null },
-    { key: 'design', path: 'component.type', value: '' },
+    { key: 'design', path: FIELD_RULE_COMPONENT_TYPE_CONTROL.path.split('.')[0], value: null },
+    { key: 'design', path: FIELD_RULE_COMPONENT_TYPE_CONTROL.path, value: '' },
     {
       key: 'design',
-      path: 'component',
+      path: FIELD_RULE_COMPONENT_TYPE_CONTROL.path.split('.')[0],
       value: {
         type: 'switch',
         source: 'component_db.switch',
@@ -629,10 +651,5 @@ test('KeyComponentsBody characterizes component and match setting paths', async 
         require_identity_evidence: true,
       },
     },
-    { key: 'design', path: 'component.match.fuzzy_threshold', value: 0.5 },
-    { key: 'design', path: 'component.match.name_weight', value: 0.5 },
-    { key: 'design', path: 'component.match.auto_accept_score', value: 0.5 },
-    { key: 'design', path: 'component.match.flag_review_score', value: 0.5 },
-    { key: 'design', path: 'component.match.property_weight', value: 0.5 },
   ]);
 });

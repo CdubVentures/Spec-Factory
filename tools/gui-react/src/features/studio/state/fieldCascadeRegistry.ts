@@ -92,7 +92,6 @@ export const CASCADE_RULES: Record<string, CascadeRule[]> = {
           condition: (rule) => strN(rule, 'enum.policy') === 'open_prefer_known',
         },
         { path: 'component.source', action: 'clear' },
-        { path: 'component.match', action: 'clear' },
       ],
     },
   ],

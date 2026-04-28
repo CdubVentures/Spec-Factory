@@ -395,12 +395,6 @@ export function buildColumns(
       },
     },
     {
-      accessorKey: 'matchCfgSummary',
-      header: 'Match Cfg',
-      size: 130,
-      cell: ({ getValue }) => <MutedOrEmDash value={getValue() as string} />,
-    },
-    {
       accessorKey: 'belongsToComponent',
       header: 'Belongs To',
       size: 100,
@@ -541,7 +535,7 @@ const PRESET_COLUMNS: Record<ColumnPreset, string[]> = {
   ],
   components: [
     ...ALWAYS_VISIBLE,
-    'componentType', 'matchCfgSummary', 'belongsToComponent', 'propertyVariance',
+    'componentType', 'belongsToComponent', 'propertyVariance',
   ],
   constraints: [
     ...ALWAYS_VISIBLE,
@@ -604,7 +598,6 @@ export const ALL_COLUMN_IDS_WITH_LABELS: { id: string; label: string }[] = [
   { id: 'knownValuesCount', label: 'KV Count' },
   // Components
   { id: 'componentType', label: 'Component' },
-  { id: 'matchCfgSummary', label: 'Match Cfg' },
   { id: 'belongsToComponent', label: 'Belongs To' },
   { id: 'propertyVariance', label: 'Variance' },
   // Constraints

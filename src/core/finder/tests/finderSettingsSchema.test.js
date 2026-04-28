@@ -53,6 +53,16 @@ describe('validateFinderSettingsSchema', () => {
     assert.equal(parsed[2].hidden, true);
   });
 
+  it('accepts per-setting scope metadata', () => {
+    const parsed = validateFinderSettingsSchema([
+      { key: 'heroCount', type: 'int', default: 1, scope: 'global' },
+      { key: 'viewBudget', type: 'string', default: '', scope: 'category' },
+    ]);
+
+    assert.equal(parsed[0].scope, 'global');
+    assert.equal(parsed[1].scope, 'category');
+  });
+
   it('accepts entries that reference a named widget via widget + widgetProps', () => {
     const parsed = validateFinderSettingsSchema([
       {
@@ -85,6 +95,10 @@ describe('validateFinderSettingsSchema', () => {
 
   it('rejects entries with an unsupported type', () => {
     assert.throws(() => validateFinderSettingsSchema([{ key: 'x', type: 'date', default: '2024-01-01' }]));
+  });
+
+  it('rejects invalid per-setting scope values', () => {
+    assert.throws(() => validateFinderSettingsSchema([{ key: 'x', type: 'string', default: '', scope: 'product' }]));
   });
 
   it('rejects bool entries with a non-boolean default', () => {

@@ -1,6 +1,8 @@
 // ── Studio constants: option arrays, tooltip text, shared styles ────
 
 // ── Shared style classes ────────────────────────────────────────────
+import { FIELD_RULE_STUDIO_TIPS } from '../../../../src/field-rules/fieldRuleSchema.js';
+
 export const selectCls = 'sf-input w-full rounded border px-2 py-1.5 sf-text-label';
 export const inputCls = 'sf-input w-full rounded border px-2 py-1.5 sf-text-label';
 export const labelCls = 'sf-text-caption font-medium mb-1';
@@ -36,7 +38,7 @@ export const TIER_DEFS = [
 ] as const;
 
 // ── Tooltip text for every studio input ─────────────────────────────
-export const STUDIO_TIPS: Record<string, string> = {
+const LOCAL_STUDIO_TIPS: Record<string, string> = {
   // Tab 1: Mapping Studio
   tooltip_bank_file: 'Path to a JS/JSON/MD file with tooltip text for field keys. Auto-discovered if matching hbs_tooltips*.',
   tooltip_section_tooltip_bank: 'Tooltips source controls the shared tooltip reference file used for field guidance.',
@@ -65,26 +67,13 @@ export const STUDIO_TIPS: Record<string, string> = {
 
   // Tab 2: Key Navigator - Contract
   key_section_contract: 'Contract defines the field data type, shape, unit, and numeric formatting applied during parsing and reporting.',
-  data_type: 'Fundamental data type. string: text, number: decimal, integer: whole, boolean: yes/no, date, url, enum: from a fixed set, component_ref: links to component DB.',
-  shape: 'Value cardinality. scalar: single value, list: array, structured: nested object, key_value: dictionary.',
-  contract_unit: 'Measurement unit for numeric fields (g, mm, Hz, dpi, ms). Blank for non-numeric.',
-  contract_range: 'Optional min/max bounds for numeric values. IDX uses these limits during extraction guidance and runtime validation.',
   list_rules: 'List normalization rules for list-shaped contracts. IDX applies these rules during runtime normalization when the field resolves to a list.',
-  list_rules_dedupe: 'Remove duplicate list items during runtime normalization. Case-insensitive for strings; exact-match for numbers.',
-  list_rules_sort: 'Sort list items after parsing. none keeps source order; asc/desc apply normalized list ordering.',
   list_rules_item_union: 'How approved list candidates merge across sources. Leave blank to keep the winning list only.',
-  rounding_decimals: 'Decimal places for rounding numeric values. 0 = integer. Only affects number/integer types.',
-  rounding_mode: 'nearest: standard rounding, floor: always down, ceil: always up.',
 
   // Tab 2: Key Navigator - Priority
   key_section_priority: 'Extraction priority controls scheduling, routing, and model/search budget.',
-  required_level: 'Field importance. mandatory: essential for publish (identity + critical data). non_mandatory: nice-to-have.',
-  availability: 'How often this data exists. always: every product, sometimes: ~half, rare: editorial/niche only.',
-  difficulty: 'Extraction difficulty. easy: directly stated, medium: some inference, hard: buried/inconsistent, very_hard: needs multi-source synthesis or physical measurement.',
   // Tab 2: Key Navigator - Enum
   key_section_enum: 'Enum policy and enum source define accepted vocabulary, matching behavior, and suggestions for this field.',
-  enum_policy: 'Enum Policy controls vocabulary matching after parsing. closed: requires a known list, rejects unknowns. open_prefer_known: prefers known values but accepts new evidence-backed values and queues them as suggestions. open: accepts any value (valid for all field types including number, url, date). For boolean fields, this is auto-locked to closed/yes_no.',
-  enum_source: 'Enum value list source. Use data_lists.{name} for enum lists (e.g. data_lists.shape), component_db.{type} for component names (e.g. component_db.sensor), or yes_no for boolean enums.',
   // Tab 2: Key Navigator - Enum (expanded)
   enum_value_source: 'Where enum values come from. Values are authored in the Mapping Studio data lists. Use data_lists.{name} to link a field to an enum list.',
   enum_detected_values: 'Values currently in the known_values list for this field. Blue = from canonical source. Amber = discovered during pipeline runs (not yet in canonical list).',
@@ -92,9 +81,6 @@ export const STUDIO_TIPS: Record<string, string> = {
 
   // Tab 2: Key Navigator - Evidence
   key_section_evidence: 'Evidence settings determine proof requirements and confidence thresholds for accepting values for this field.',
-  min_evidence_refs: 'Minimum distinct source references needed to accept a value. Higher = more confident but more unknowns.',
-  tier_preference: 'Source trust ordering. Tier 1 (Manufacturer): OEM specs. Tier 2 (Lab): independent tests. Tier 3 (Retailer): store listings. Tier 4 (Community): forums/reviews. Tier 5 (Aggregator): comparison sites.',
-
   // Tab 2: Key Navigator - UI & Display
   key_section_ui: 'Tooltip guidance is display help for users in generated product views. It is separate from the AI reasoning note.',
   ui_label: 'Human-readable display name shown in UI and reports (e.g. \'Weight\' instead of \'weight_grams\').',
@@ -105,39 +91,18 @@ export const STUDIO_TIPS: Record<string, string> = {
   display_decimals: 'Decimal places for display rendering. Does not affect stored precision.',
   ui_order: 'Sort position within its group. Lower = first. Same order = alphabetical.',
   tooltip_guidance: 'Markdown tooltip shown to users in the final spec output. UI-only; not the AI reasoning note sent to keyFinder.',
-  aliases: 'Alternative source phrases and field names used for search enrichment and source-text matching. Keep enum values and display tooltip text separate.',
-
   // Tab 2: Key Navigator - Search Hints & Aliases
   key_section_search: 'Search hints and aliases bias crawling and extraction by prioritizing source phrases, domains, content types, and query terms.',
-  domain_hints: 'Preferred website domains/types. E.g. \'manufacturer\' for OEM sites, or specific domains like \'rtings.com\'.',
   content_types: 'Content types most likely to have this data. E.g. spec_sheet, datasheet, review, manual, pdf.',
-  query_terms: 'Extra search terms for this field. E.g. for polling_rate: \'report rate\', \'USB poll rate\'.',
 
   // Tab 2: Key Navigator - Component
   key_section_components: 'Component settings control matching and inference from component databases.',
   key_section_constraints: 'Cross-field constraints enforce logical relationships and consistency checks between this field and others.',
-  component_db: 'Links this field to a component database (sensor, switch, encoder, material). Pipeline looks up component data alongside product data.',
-  comp_match_fuzzy_threshold: 'Minimum string similarity (0-1) for a component name to be considered a fuzzy match candidate. Default 0.75 means 75% character similarity required. Lower = more candidates but more false matches.',
-  comp_match_name_weight: 'How much the name similarity score counts in the combined matching score (0-1). Default 0.4 = 40% from name. The rest comes from property_weight. Higher = name matters more than property comparison.',
-  comp_match_property_weight: 'How much property value comparison counts in the combined matching score (0-1). Default 0.6 = 60% from properties. Uses the property_keys list to compare extracted product values against known component DB values.',
-  comp_match_auto_accept_score: 'Combined score threshold (0-1) for auto-accepting a component match without human review. Default 0.95. Matches above this are confirmed automatically. Lower = more auto-accepts but higher risk of wrong matches.',
-  comp_match_flag_review_score: 'Combined score threshold (0-1) for flagging a match for human/AI review. Default 0.65. Between this and auto_accept_score = provisional match queued for review. Below this = rejected (or new component if allow_new_components is on).',
-  comp_match_property_keys: 'Which product field keys to compare against component DB properties during matching. E.g. for a sensor: dpi, ips, acceleration. The engine compares extracted values against known component values using variance-aware numeric comparison.',
   comp_allow_new: 'If enabled, the pipeline can suggest new components not in the database when no fuzzy match meets the flag_review_score threshold. Suggestions are flagged for review. If disabled, unmatched values are rejected.',
   comp_require_identity_evidence: 'If enabled, component identity matching requires supporting evidence from at least one source. Prevents phantom component assignments from noisy extraction.',
 
   // Tab 2: Key Navigator - Ai Assist
   key_section_ai_assist: 'AI Assist controls field-specific prompt guidance and whether keyFinder receives variant inventory context.',
-  ai_reasoning_note: 'Extraction guidance injected directly into the LLM prompt for this field. The AI reads this note when deciding how to extract the value.\n\n'
-    + 'When empty, guidance is auto-generated from field properties (data type, difficulty, evidence requirements, enum policy, component type).\n\n'
-    + 'Examples:\n'
-    + '• "Check manufacturer spec sheets first, this value is often in PDF datasheets not web pages"\n'
-    + '• "This is a calculated field: polling rate = 1000/response_time_ms"\n'
-    + '• "Multiple conflicting values are common — prefer tier 1 manufacturer specs over reviews"\n\n'
-    + 'Write a custom note to override the auto-generated guidance.',
-  variant_inventory_usage: 'Enable only when edition, SKU, release, colorway, or PIF identity facts help keyFinder filter evidence for this key without ambiguity. Most model-level keys are invariant across variants. Put union/exact/base/default interpretation rules in AI reasoning note.',
-  pif_priority_images: 'Enable only when default/base PIF priority-view images add visual evidence value for this key. Missing images are not negative evidence. Put edition-specific yes/no or list interpretation rules in AI reasoning note.',
-
   // Tab 3: Field Rules Workbench
   field_contract_table: 'Read-only overview of all field contracts. Edit fields in the Key Navigator tab.',
 
@@ -148,3 +113,8 @@ export const STUDIO_TIPS: Record<string, string> = {
   generated_artifacts: 'Files from the last successful compile. These drive the extraction pipeline.',
   guardrails_report: 'Automated validation checking field rules for consistency and completeness.',
 };
+
+export const STUDIO_TIPS: Record<string, string> = Object.freeze({
+  ...LOCAL_STUDIO_TIPS,
+  ...FIELD_RULE_STUDIO_TIPS,
+});

@@ -1,26 +1,47 @@
-// WHY: Single Source of Truth for all field-rule enum values, ranks, and chip
-// classifications. Every dropdown, badge, sort, and validation in the frontend
-// must derive from these registries. Adding a new enum value = add one entry here.
+// WHY: Field-rule enum values come from the backend field-rule schema registry.
+// This file owns GUI-only rank/chip presentation metadata for those values.
+
+import {
+  FIELD_RULE_PRIORITY_CONTROLS,
+  FIELD_RULE_SCHEMA,
+} from '../../../../src/field-rules/fieldRuleSchema.js';
 
 // ── Registries ──────────────────────────────────────────────────────────
 
-const REQUIRED_LEVEL_REGISTRY = [
-  { value: 'mandatory',     rank: 2, chip: 'sf-chip-danger' },
-  { value: 'non_mandatory', rank: 1, chip: 'sf-chip-neutral' },
-] as const;
+function priorityOptions(path: string): readonly string[] {
+  return FIELD_RULE_PRIORITY_CONTROLS.find((entry) => entry.path === path)?.options ?? [];
+}
 
-const DIFFICULTY_REGISTRY = [
-  { value: 'very_hard', rank: 4, chip: 'sf-chip-danger' },
-  { value: 'hard',      rank: 3, chip: 'sf-chip-warning' },
-  { value: 'medium',    rank: 2, chip: 'sf-chip-info' },
-  { value: 'easy',      rank: 1, chip: 'sf-chip-success' },
-] as const;
+function schemaOptions(path: string): readonly string[] {
+  return FIELD_RULE_SCHEMA.find((entry) => entry.path === path)?.options ?? [];
+}
 
-const AVAILABILITY_REGISTRY = [
-  { value: 'always',    rank: 3, chip: 'sf-chip-success' },
-  { value: 'sometimes', rank: 2, chip: 'sf-chip-warning' },
-  { value: 'rare',      rank: 1, chip: 'sf-chip-neutral' },
-] as const;
+const REQUIRED_LEVEL_META: Record<string, { rank: number; chip: string }> = {
+  mandatory: { rank: 2, chip: 'sf-chip-danger' },
+  non_mandatory: { rank: 1, chip: 'sf-chip-neutral' },
+};
+
+const DIFFICULTY_META: Record<string, { rank: number; chip: string }> = {
+  very_hard: { rank: 4, chip: 'sf-chip-danger' },
+  hard: { rank: 3, chip: 'sf-chip-warning' },
+  medium: { rank: 2, chip: 'sf-chip-info' },
+  easy: { rank: 1, chip: 'sf-chip-success' },
+};
+
+const AVAILABILITY_META: Record<string, { rank: number; chip: string }> = {
+  always: { rank: 3, chip: 'sf-chip-success' },
+  sometimes: { rank: 2, chip: 'sf-chip-warning' },
+  rare: { rank: 1, chip: 'sf-chip-neutral' },
+};
+
+const REQUIRED_LEVEL_REGISTRY = priorityOptions('priority.required_level')
+  .map((value) => ({ value, ...REQUIRED_LEVEL_META[value] }));
+
+const DIFFICULTY_REGISTRY = priorityOptions('priority.difficulty')
+  .map((value) => ({ value, ...DIFFICULTY_META[value] }));
+
+const AVAILABILITY_REGISTRY = priorityOptions('priority.availability')
+  .map((value) => ({ value, ...AVAILABILITY_META[value] }));
 
 const AI_MODE_REGISTRY = [
   { value: 'off',      rank: 0 },
@@ -35,11 +56,7 @@ const AI_MODEL_STRATEGY_REGISTRY = [
   { value: 'force_deep', rank: 2 },
 ] as const;
 
-const ENUM_POLICY_REGISTRY = [
-  { value: 'open' },
-  { value: 'closed' },
-  { value: 'open_prefer_known' },
-] as const;
+const ENUM_POLICY_REGISTRY = schemaOptions('enum.policy').map((value) => ({ value }));
 
 // ── Derived option arrays ───────────────────────────────────────────────
 

@@ -167,7 +167,7 @@ After the JSON files, include the markdown report shape below.
 - **Aliases:** <additions, or "none">
 - **Search hints:** <domain_hints / query_terms to add, or "none">
 - **Cross-field constraints:** <additions or corrections, or "none">
-- **Component relation:** <confirm / correct \`component.type\` / \`component.match.property_keys\`>
+- **Component relation:** <confirm / correct \`component.type\` and the matching \`component_sources[X].roles.properties[]\` list in field_studio_map>
 - **Why:** <one sentence>
 
 (repeat per field, grouped by Part 6's group order)

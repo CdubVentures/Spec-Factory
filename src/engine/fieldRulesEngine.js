@@ -45,6 +45,21 @@ import {
 import { simpleSimilarity, resolveComponentRef } from './engineComponentResolver.js';
 import { crossValidate as _crossValidate } from './engineCrossValidator.js';
 
+function buildPropertyKeysByComponentType(componentSources) {
+  const map = new Map();
+  for (const source of toArray(componentSources)) {
+    if (!isObject(source)) continue;
+    const type = normalizeFieldKey(source.component_type || source.type || '');
+    if (!type) continue;
+    const properties = toArray(isObject(source.roles) ? source.roles.properties : []);
+    const keys = properties
+      .map((entry) => normalizeFieldKey(entry?.field_key || entry?.key || entry?.property_key || ''))
+      .filter(Boolean);
+    if (keys.length > 0) map.set(type, keys);
+  }
+  return map;
+}
+
 function parseRuleNormalizationFn(rule = {}) {
   const contract = isObject(rule.contract) ? rule.contract : {};
   const parseBlock = isObject(rule.parse) ? rule.parse : {};
@@ -71,6 +86,8 @@ export class FieldRulesEngine {
     this.parseTemplates = isObject(projectedLoaded?.parseTemplates?.templates) ? projectedLoaded.parseTemplates.templates : {};
     this.crossValidationRules = toArray(projectedLoaded?.crossValidation);
     this.componentDBs = isObject(projectedLoaded?.componentDBs) ? projectedLoaded.componentDBs : {};
+    this.componentSources = toArray(projectedLoaded?.componentSources);
+    this.propertyKeysByComponentType = buildPropertyKeysByComponentType(this.componentSources);
     this.uiFieldCatalog = projectedLoaded?.uiFieldCatalog || { fields: [] };
     this.uiGroupByField = buildUiGroupIndex(this.uiFieldCatalog);
     this.keyMigrations = isObject(keyMigrations) ? keyMigrations : {};
@@ -93,11 +110,20 @@ export class FieldRulesEngine {
       // WHY: componentDBs now source from SQL (component_identity/values/aliases)
       // instead of a duplicate copy in the blob. Loader pre-builds __index Maps.
       const componentDBs = loadComponentDbsFromSpecDb(options.specDb);
+      const fieldStudioMapRow = typeof options.specDb.getFieldStudioMap === 'function'
+        ? options.specDb.getFieldStudioMap()
+        : null;
+      // The store returns a raw DB row; the actual map lives in `map_json`
+      // (string column). Test stubs may pass a pre-parsed object directly.
+      const fieldStudioMap = fieldStudioMapRow && typeof fieldStudioMapRow.map_json === 'string'
+        ? safeJsonParse(fieldStudioMapRow.map_json) || {}
+        : (fieldStudioMapRow || {});
+      const componentSources = toArray(fieldStudioMap.component_sources);
       const uiFieldCatalog = blob.ui_field_catalog || { category, fields: [] };
       keyMigrations = blob.key_migrations || {};
       loaded = { category, rules, knownValues, parseTemplates,
         crossValidation: toArray(crossValidation.rules || crossValidation),
-        componentDBs, uiFieldCatalog };
+        componentDBs, componentSources, uiFieldCatalog };
     } else {
       // JSON path — existing behavior (tests, CLI)
       loaded = await loadFieldRules(category, options);
@@ -481,14 +507,17 @@ export class FieldRulesEngine {
         };
       }
       value = urlValue;
-    } else if (type === 'component_ref' || normalizeText(rule?.component_db_ref || rule?.component?.type)) {
+    } else if (type === 'component_ref' || normalizeText(rule?.component?.type)) {
+      const dbName = normalizeText(rule?.component?.type);
+      const propertyKeys = dbName ? (this.propertyKeysByComponentType.get(dbName) || []) : [];
       const componentResult = resolveComponentRef(value, {
         rule, fieldKey: key, rawCandidate,
         lookupComponent: (db, q) => this.lookupComponent(db, q),
         fuzzyMatchComponent: (db, q, t) => this.fuzzyMatchComponent(db, q, t),
         rules: this.rules,
         context,
-        attempts
+        attempts,
+        propertyKeys
       });
       if (!componentResult.ok) {
         return componentResult;

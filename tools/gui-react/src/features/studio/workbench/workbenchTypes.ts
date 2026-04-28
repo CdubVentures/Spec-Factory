@@ -35,7 +35,6 @@ export interface WorkbenchRow {
 
   // Components
   componentType: string;        // this field IS a component_db field (e.g., "sensor")
-  matchCfgSummary: string;      // "fuzzy 0.85·name 0.6" or ""
   belongsToComponent: string;   // this field is a PROPERTY of a component (e.g., dpi → "sensor")
   propertyVariance: string;     // resolved variance for the property ("" | "authoritative" | "upper_bound" | …)
 

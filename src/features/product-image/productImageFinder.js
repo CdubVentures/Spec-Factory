@@ -421,6 +421,11 @@ function finishImageValidation(entry, { accepted = false, stage, reason }) {
   return entry;
 }
 
+function runSpecDbTransaction(specDb, work) {
+  if (typeof specDb?.db?.transaction !== 'function') return work();
+  return specDb.db.transaction(work)();
+}
+
 async function runSingleVariant({
   product, variant, priorityViews = [], additionalViews = [], viewQualityMap,
   callLlm, productRoot, specDb, actualModel, actualFallbackUsed,
@@ -1102,30 +1107,32 @@ export async function runProductImageFinder({
 
     const store = specDb.getFinderStore('productImageFinder');
     const latestRun = merged.runs[merged.runs.length - 1];
-    store.insertRun({
-      category: product.category,
-      product_id: product.product_id,
-      run_number: latestRun.run_number,
-      ran_at: ranAt,
-      model: _mt.actualModel,
-      fallback_used: _mt.actualFallbackUsed,
-      effort_level: _mt.actualEffortLevel,
-      access_mode: _mt.actualAccessMode,
-      thinking: _mt.actualThinking,
-      web_search: _mt.actualWebSearch,
-      selected,
-      prompt: latestRun.prompt,
-      response: latestRun.response,
+    runSpecDbTransaction(specDb, () => {
+      store.insertRun({
+        category: product.category,
+        product_id: product.product_id,
+        run_number: latestRun.run_number,
+        ran_at: ranAt,
+        model: _mt.actualModel,
+        fallback_used: _mt.actualFallbackUsed,
+        effort_level: _mt.actualEffortLevel,
+        access_mode: _mt.actualAccessMode,
+        thinking: _mt.actualThinking,
+        web_search: _mt.actualWebSearch,
+        selected,
+        prompt: latestRun.prompt,
+        response: latestRun.response,
+      });
+
+      store.upsert(buildProductImageFinderSqlSummaryRow({
+        category: product.category,
+        productId: product.product_id,
+        data: merged,
+        ranAt,
+      }));
+
+      onVariantPersisted?.({ variantKey: variant.key, variantId: variant.variant_id || null });
     });
-
-    store.upsert(buildProductImageFinderSqlSummaryRow({
-      category: product.category,
-      productId: product.product_id,
-      data: merged,
-      ranAt,
-    }));
-
-    onVariantPersisted?.({ variantKey: variant.key, variantId: variant.variant_id || null });
 
     return { images: result.images, errors: result.errors };
   }
@@ -1627,30 +1634,32 @@ export async function runCarouselLoop({
 
       const store = specDb.getFinderStore('productImageFinder');
       const latestRun = merged.runs[merged.runs.length - 1];
-      store.insertRun({
-        category: product.category,
-        product_id: product.product_id,
-        run_number: latestRun.run_number,
-        ran_at: ranAt,
-        model: _mtLoop.actualModel,
-        fallback_used: _mtLoop.actualFallbackUsed,
-        effort_level: _mtLoop.actualEffortLevel,
-        access_mode: _mtLoop.actualAccessMode,
-        thinking: _mtLoop.actualThinking,
-        web_search: _mtLoop.actualWebSearch,
-        selected,
-        prompt: latestRun.prompt,
-        response: latestRun.response,
+      runSpecDbTransaction(specDb, () => {
+        store.insertRun({
+          category: product.category,
+          product_id: product.product_id,
+          run_number: latestRun.run_number,
+          ran_at: ranAt,
+          model: _mtLoop.actualModel,
+          fallback_used: _mtLoop.actualFallbackUsed,
+          effort_level: _mtLoop.actualEffortLevel,
+          access_mode: _mtLoop.actualAccessMode,
+          thinking: _mtLoop.actualThinking,
+          web_search: _mtLoop.actualWebSearch,
+          selected,
+          prompt: latestRun.prompt,
+          response: latestRun.response,
+        });
+
+        store.upsert(buildProductImageFinderSqlSummaryRow({
+          category: product.category,
+          productId: product.product_id,
+          data: merged,
+          ranAt,
+        }));
+
+        onVariantPersisted?.({ variantKey: variant.key, variantId: variant.variant_id || null });
       });
-
-      store.upsert(buildProductImageFinderSqlSummaryRow({
-        category: product.category,
-        productId: product.product_id,
-        data: merged,
-        ranAt,
-      }));
-
-      onVariantPersisted?.({ variantKey: variant.key, variantId: variant.variant_id || null });
 
       // WHY: Re-evaluate carousel AFTER persist to get accurate post-call progress
       const postCallImages = merged.selected.images.map(img => ({

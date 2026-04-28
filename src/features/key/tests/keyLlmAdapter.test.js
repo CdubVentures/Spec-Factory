@@ -539,29 +539,59 @@ test('ADDITIONAL_COMPONENT_KEYS empty when componentInjectionEnabled OFF (even w
 
 // ── Product-level: PRODUCT_COMPONENTS (ALWAYS ON — ungated by either knob) ──
 
-test('PRODUCT_COMPONENTS renders grouped inventory with identity + product-resolved subfields', () => {
+test('PRODUCT_COMPONENTS renders grouped inventory with identity + product-resolved subfields + variance suffix', () => {
   const out = renderPrimary('polling_rate', POLLING_RATE_RULE, {
     productComponents: [
       {
         parentFieldKey: 'sensor', componentType: 'sensor',
         resolvedValue: 'Logitech Hero 25K',
         subfields: [
-          { field_key: 'sensor_type', value: 'optical' },
-          { field_key: 'sensor_date', value: '2021-04-15' },
+          { field_key: 'sensor_type', value: 'optical', variancePolicy: 'authoritative' },
+          { field_key: 'sensor_date', value: '2021-04-15', variancePolicy: 'authoritative' },
         ],
       },
       {
         parentFieldKey: 'switch', componentType: 'switch',
         resolvedValue: 'Omron D2F-01F',
-        subfields: [{ field_key: 'switch_type', value: 'mechanical' }],
+        subfields: [{ field_key: 'switch_type', value: 'mechanical', variancePolicy: 'authoritative' }],
       },
     ],
   });
   assert.match(out, /Components on this product/i);
   assert.match(out, /Logitech Hero 25K/);
-  assert.match(out, /sensor_type.*optical/);
-  assert.match(out, /sensor_date.*2021-04-15/);
+  assert.match(out, /sensor_type:\s*optical\s+\(authoritative\)/);
+  assert.match(out, /sensor_date:\s*2021-04-15\s+\(authoritative\)/);
   assert.match(out, /Omron D2F-01F/);
+});
+
+test('PRODUCT_COMPONENTS renders upper_bound suffix for numeric subfields', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE, {
+    productComponents: [
+      {
+        parentFieldKey: 'sensor', componentType: 'sensor',
+        resolvedValue: 'Hero 25K',
+        subfields: [
+          { field_key: 'dpi', value: 25000, variancePolicy: 'upper_bound' },
+          { field_key: 'ips', value: 650, variancePolicy: 'upper_bound' },
+        ],
+      },
+    ],
+  });
+  assert.match(out, /dpi:\s*25000\s+\(upper_bound \u2014 products can be lower\)/);
+  assert.match(out, /ips:\s*650\s+\(upper_bound \u2014 products can be lower\)/);
+});
+
+test('PRODUCT_COMPONENTS missing variancePolicy defaults to authoritative', () => {
+  const out = renderPrimary('polling_rate', POLLING_RATE_RULE, {
+    productComponents: [
+      {
+        parentFieldKey: 'sensor', componentType: 'sensor',
+        resolvedValue: 'Hero 25K',
+        subfields: [{ field_key: 'sensor_type', value: 'optical' }],
+      },
+    ],
+  });
+  assert.match(out, /sensor_type:\s*optical\s+\(authoritative\)/);
 });
 
 test('PRODUCT_COMPONENTS still renders when BOTH injection knobs OFF (ungated)', () => {

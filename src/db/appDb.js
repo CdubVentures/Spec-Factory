@@ -8,6 +8,10 @@ import Database from 'better-sqlite3';
 import { APP_DB_SCHEMA } from './appDbSchema.js';
 import { applyAppDbMigrations } from './appDbMigrations.js';
 import { FINDER_MODULES } from '../core/finder/finderModuleRegistry.js';
+import {
+  hasFinderSettingsScope,
+  resolveFinderSettingScope,
+} from '../core/finder/finderSettingsSchema.js';
 
 function safeParseJson(str, fallback) {
   try { return JSON.parse(str); } catch { return fallback; }
@@ -309,7 +313,7 @@ export class AppDb {
     const globalDir = path.join(helperRoot, '_global');
     let seeded = 0;
     for (const mod of FINDER_MODULES) {
-      if (mod.settingsScope !== 'global') continue;
+      if (!hasFinderSettingsScope(mod, 'global')) continue;
       const jsonPath = path.join(globalDir, `${mod.filePrefix}_settings.json`);
       let raw;
       try {
@@ -326,6 +330,7 @@ export class AppDb {
       if (!parsed || typeof parsed !== 'object') continue;
       for (const [key, value] of Object.entries(parsed)) {
         if (typeof key !== 'string' || key.length === 0) continue;
+        if (resolveFinderSettingScope(mod, key) !== 'global') continue;
         this._upsertFinderGlobalSetting.run(mod.id, key, String(value));
         seeded += 1;
       }

@@ -1,0 +1,17 @@
+{
+  "heroEnabled": "true",
+  "heroCount": "1",
+  "heroAttemptBudget": "3",
+  "priorityViewRunImageHistoryEnabled": "true",
+  "individualViewRunImageHistoryEnabled": "true",
+  "loopRunImageHistoryEnabled": "true",
+  "priorityViewRunLinkValidationEnabled": "true",
+  "individualViewRunLinkValidationEnabled": "true",
+  "loopRunLinkValidationEnabled": "true",
+  "evalEnabled": "true",
+  "evalThumbSize": "768",
+  "evalHeroCount": "3",
+  "rmbgConcurrency": "0",
+  "urlHistoryEnabled": "true",
+  "queryHistoryEnabled": "true"
+}

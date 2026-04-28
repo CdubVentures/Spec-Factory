@@ -256,6 +256,7 @@ export function seedFromCheckpoint({ specDb, checkpoint, rawJson }) {
         const runId = checkpoint.run?.run_id || '';
         if (runId) {
           specDb.db.prepare('DELETE FROM crawl_sources WHERE run_id = ?').run(runId);
+          specDb.db.prepare('DELETE FROM run_sources WHERE run_id = ?').run(runId);
           specDb.db.prepare('DELETE FROM run_artifacts WHERE run_id = ?').run(runId);
         }
       } else {
@@ -263,6 +264,7 @@ export function seedFromCheckpoint({ specDb, checkpoint, rawJson }) {
         if (pid) {
           specDb.db.prepare('DELETE FROM query_cooldowns WHERE product_id = ?').run(pid);
           specDb.db.prepare('DELETE FROM crawl_sources WHERE product_id = ?').run(pid);
+          specDb.db.prepare('DELETE FROM run_sources WHERE product_id = ?').run(pid);
         }
       }
       return seed(specDb, checkpoint);

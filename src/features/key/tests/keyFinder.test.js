@@ -141,11 +141,13 @@ function makeSpecDbStub({
   fieldCandidateRows = {},
   pifProgressRows = [],
   compiledRules = COMPILED_FIELD_RULES,
+  fieldStudioMap = null,
 } = {}) {
   return {
     category,
     getFinderStore: (id) => (id === 'keyFinder' ? finderStore : null),
     getCompiledRules: () => compiledRules,
+    getFieldStudioMap: () => fieldStudioMap,
     getProduct: () => null,
     variants: {
       listActive: () => variants,
@@ -188,6 +190,7 @@ function setupForProduct(productId, opts = {}) {
     fieldCandidateRows: opts.fieldCandidateRows,
     pifProgressRows: opts.pifProgressRows,
     compiledRules: opts.compiledRules,
+    fieldStudioMap: opts.fieldStudioMap,
   });
   return { fsStub, specDb };
 }
@@ -635,11 +638,21 @@ test('run record round-trips — response.primary_field_key echoed; SQL insertRu
 // Compiled rules with one parent component (sensor) + its subfield (sensor_type)
 // + two scalar peers (polling_rate, release_date). The scalars let us exercise
 // known-fields dedup behavior alongside the always-on inventory.
+// Phase 1: property_keys come from field_studio_map.component_sources
+// (passed via specDb.getFieldStudioMap()), not from the compiled rule.
+const FIELD_STUDIO_MAP_WITH_COMPONENT = {
+  component_sources: [
+    { component_type: 'sensor', roles: { properties: [
+      { field_key: 'sensor_type', variance_policy: 'authoritative' },
+    ] } },
+  ],
+};
+
 const RULES_WITH_COMPONENT = {
   fields: {
     sensor: {
       field_key: 'sensor',
-      component: { type: 'sensor', match: { property_keys: ['sensor_type'] } },
+      component: { type: 'sensor' },
       contract: { type: 'string', shape: 'scalar' },
       difficulty: 'hard', required_level: 'mandatory', availability: 'rare',
       group: 'sensor_performance', enum: { policy: 'open' },
@@ -674,6 +687,7 @@ test('step 6.7: PRODUCT_COMPONENTS inventory fires regardless of componentInject
       knownFieldsInjectionEnabled: 'false',
     },
     compiledRules: RULES_WITH_COMPONENT,
+    fieldStudioMap: FIELD_STUDIO_MAP_WITH_COMPONENT,
     componentLinks: [{ field_key: 'sensor', component_type: 'sensor', component_name: 'Hero 25K' }],
     resolvedFields: { sensor_type: 'optical' },
   });
@@ -695,7 +709,9 @@ test('step 6.7: PRODUCT_COMPONENTS inventory fires regardless of componentInject
   const sensorEntry = inv.find((e) => e.parentFieldKey === 'sensor');
   assert.ok(sensorEntry, 'inventory must include sensor even when componentInjectionEnabled is false');
   assert.equal(sensorEntry.resolvedValue, 'Hero 25K');
-  assert.deepEqual(sensorEntry.subfields, [{ field_key: 'sensor_type', value: 'optical' }]);
+  assert.deepEqual(sensorEntry.subfields, [
+    { field_key: 'sensor_type', value: 'optical', variancePolicy: 'authoritative' },
+  ]);
 });
 
 test('step 6.7: per-key relation pointer gated by componentInjectionEnabled', async (t) => {
@@ -703,6 +719,7 @@ test('step 6.7: per-key relation pointer gated by componentInjectionEnabled', as
   const { specDb } = setupForProduct('kf-rel-off', {
     settings: { ...KNOB_DEFAULTS, componentInjectionEnabled: 'false' },
     compiledRules: RULES_WITH_COMPONENT,
+    fieldStudioMap: FIELD_STUDIO_MAP_WITH_COMPONENT,
     componentLinks: [{ field_key: 'sensor', component_type: 'sensor', component_name: 'Hero 25K' }],
   });
   let capturedDomainArgs = null;
@@ -731,6 +748,7 @@ test('step 6.7: per-key relation pointer emitted when componentInjectionEnabled=
   const { specDb } = setupForProduct('kf-rel-on', {
     settings: KNOB_DEFAULTS, // componentInjectionEnabled defaults to 'true'
     compiledRules: RULES_WITH_COMPONENT,
+    fieldStudioMap: FIELD_STUDIO_MAP_WITH_COMPONENT,
     componentLinks: [{ field_key: 'sensor', component_type: 'sensor', component_name: 'Hero 25K' }],
   });
   let capturedDomainArgs = null;
@@ -761,6 +779,7 @@ test('step 6.7: product-scoped facts exclude primary, component inventory, and r
   const { specDb } = setupForProduct('kf-known-dedup', {
     settings: KNOB_DEFAULTS,
     compiledRules: RULES_WITH_COMPONENT,
+    fieldStudioMap: FIELD_STUDIO_MAP_WITH_COMPONENT,
     componentLinks: [{ field_key: 'sensor', component_type: 'sensor', component_name: 'Hero 25K' }],
     resolvedFields: { sensor_type: 'optical' },
     fieldCandidateRows: {
@@ -798,6 +817,7 @@ test('step 6.7: knownFieldsInjectionEnabled=false -> productScopedFacts empty re
   const { specDb } = setupForProduct('kf-known-off', {
     settings: { ...KNOB_DEFAULTS, knownFieldsInjectionEnabled: 'false' },
     compiledRules: RULES_WITH_COMPONENT,
+    fieldStudioMap: FIELD_STUDIO_MAP_WITH_COMPONENT,
     fieldCandidateRows: {
       weight_g: [{ field_key: 'weight_g', value: 63, status: 'resolved', confidence: 90, variant_id: null }],
     },

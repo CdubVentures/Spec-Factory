@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
+import { FIELD_RULE_SCHEMA } from '../../../../field-rules/fieldRuleSchema.js';
 import {
   PriorityProfileSchema,
   AiAssistConfigSchema,
@@ -135,4 +136,22 @@ test('AiAssistConfigSchema strips unsupported nested toggle metadata but rejects
     }).success,
     false,
   );
+});
+
+test('PriorityProfileSchema key surface is derived from field-rule schema priority entries', () => {
+  const expectedKeys = FIELD_RULE_SCHEMA
+    .filter((entry) => entry.path.startsWith('priority.') && Array.isArray(entry.options))
+    .map((entry) => entry.path.replace('priority.', ''))
+    .sort();
+
+  assert.deepEqual(Object.keys(PriorityProfileSchema.shape).sort(), expectedKeys);
+});
+
+test('AiAssistConfigSchema key surface is derived from field-rule schema ai_assist entries', () => {
+  const expectedKeys = FIELD_RULE_SCHEMA
+    .filter((entry) => entry.path.startsWith('ai_assist.'))
+    .map((entry) => entry.path.replace('ai_assist.', '').replace(/\.enabled$/, ''))
+    .sort();
+
+  assert.deepEqual(Object.keys(AiAssistConfigSchema.shape).sort(), expectedKeys);
 });

@@ -304,7 +304,7 @@ export async function runKeyFinder(opts) {
   //  - product-scoped facts are gated by knownFieldsInjectionEnabled; the exclude
   //    set dedups against the primary + passengers (current query targets)
   //    AND against every field_key rendered in the inventory.
-  const componentRelationIndex = buildComponentRelationIndex(engine.rules);
+  const componentRelationIndex = buildComponentRelationIndex(engine.rules, engine.componentSources);
   const productComponents = resolveProductComponentInventory({
     specDb, productId: product.product_id,
     compiledRulesFields: engine.rules, componentRelationIndex,

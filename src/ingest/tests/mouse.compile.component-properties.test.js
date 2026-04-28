@@ -206,17 +206,9 @@ test('FRC-05-C - buildStudioFieldRule auto-derives property_keys from component_
     const sensor = fieldRules.fields?.sensor;
     assert.ok(sensor, 'sensor field should exist in compiled output');
     assert.ok(sensor.component, 'sensor field should have a component block');
-    assert.ok(sensor.component.match, 'sensor component should have a match block');
-    assert.ok(Array.isArray(sensor.component.match.property_keys), 'property_keys should be an array');
-    assert.ok(
-      sensor.component.match.property_keys.length > 0,
-      'property_keys should be auto-derived from component_sources (not empty)',
-    );
-    assert.deepStrictEqual(
-      sensor.component.match.property_keys,
-      ['dpi', 'sensor_date'],
-      'property_keys should be derived from component_sources[sensor].roles.properties[].field_key',
-    );
+    // Phase 1: component.match.* retired from compile output. property_keys
+    // are now sourced at runtime from field_studio_map.component_sources.
+    assert.equal(sensor.component.match, undefined, 'component.match block should not be emitted');
   } finally {
     await cleanup();
   }

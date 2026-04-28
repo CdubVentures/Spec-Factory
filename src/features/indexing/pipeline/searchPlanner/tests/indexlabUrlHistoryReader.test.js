@@ -7,6 +7,27 @@ import { strictEqual, deepStrictEqual } from 'node:assert';
 import { readIndexlabUrlHistory } from '../indexlabUrlHistoryReader.js';
 
 describe('readIndexlabUrlHistory', () => {
+  it('prefers indexed URL history projection with per-run provenance', () => {
+    const result = readIndexlabUrlHistory('mouse-indexed', {
+      specDb: {
+        getIndexedUrlHistoryByProduct: (productId) => {
+          strictEqual(productId, 'mouse-indexed');
+          return [
+            { url: 'https://indexed.example.com/a', run_id: 'run-2', last_crawled_at: '2026-03-29T00:00:00Z' },
+            { url: 'https://indexed.example.com/b', run_id: 'run-1', last_crawled_at: '2026-03-28T00:00:00Z' },
+          ];
+        },
+        getUrlCrawlEntriesByProduct: () => [
+          { canonical_url: 'https://ledger.example.com/stale' },
+        ],
+      },
+    });
+
+    deepStrictEqual(result, {
+      urls: ['https://indexed.example.com/a', 'https://indexed.example.com/b'],
+    });
+  });
+
   it('prefers SQL crawl history and does not read product.json when rows exist', () => {
     const result = readIndexlabUrlHistory('mouse-sql', {
       specDb: {

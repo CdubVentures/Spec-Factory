@@ -107,18 +107,21 @@ describe('AppDb — reseedFinderGlobalSettingsFromJson', () => {
     }
   });
 
-  it('skips category-scoped finders (only global-scope modules seeded)', () => {
-    // PIF is category-scoped. Even if a _global/product_images_settings.json exists,
-    // it should be ignored.
+  it('seeds mixed-scope PIF global entries and ignores PIF category entries', () => {
     fs.writeFileSync(
       path.join(tmpDir, '_global', 'product_images_settings.json'),
-      JSON.stringify({ satisfactionThreshold: '5' }),
+      JSON.stringify({ heroCount: '1', evalThumbSize: '1024', viewBudget: '["top"]' }),
     );
 
     const db = createTestDb();
     try {
-      db.reseedFinderGlobalSettingsFromJson({ helperRoot: tmpDir });
-      assert.deepEqual(db.listFinderGlobalSettings('productImageFinder'), {});
+      const { seeded } = db.reseedFinderGlobalSettingsFromJson({ helperRoot: tmpDir });
+      assert.equal(seeded, 2);
+      assert.deepEqual(db.listFinderGlobalSettings('productImageFinder'), {
+        heroCount: '1',
+        evalThumbSize: '1024',
+      });
+      assert.equal(db.getFinderGlobalSetting('productImageFinder', 'viewBudget'), null);
     } finally {
       db.close();
     }

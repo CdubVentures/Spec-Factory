@@ -4,25 +4,47 @@
 
 import { z } from 'zod';
 
+import { FIELD_RULE_SCHEMA } from '../../../field-rules/fieldRuleSchema.js';
+
 // ---------------------------------------------------------------------------
 // Leaf domain schemas (dependencies of API schemas)
 // ---------------------------------------------------------------------------
 
-export const PriorityProfileSchema = z.object({
-  required_level: z.enum(['mandatory', 'non_mandatory']).optional(),
-  availability: z.enum(['always', 'sometimes', 'rare']).optional(),
-  difficulty: z.enum(['easy', 'medium', 'hard', 'very_hard']).optional(),
-});
+function priorityProfileShapeFromRegistry() {
+  return Object.fromEntries(
+    FIELD_RULE_SCHEMA
+      .filter((entry) => entry.path.startsWith('priority.') && Array.isArray(entry.options))
+      .map((entry) => [
+        entry.path.replace('priority.', ''),
+        z.enum(entry.options).optional(),
+      ]),
+  );
+}
 
-export const AiAssistConfigSchema = z.object({
-  reasoning_note: z.string().optional(),
-  variant_inventory_usage: z.object({
+function aiAssistShapeFromRegistry() {
+  const enabledToggleSchema = z.object({
     enabled: z.boolean().optional(),
-  }).optional(),
-  pif_priority_images: z.object({
-    enabled: z.boolean().optional(),
-  }).optional(),
-});
+  });
+
+  return Object.fromEntries(
+    FIELD_RULE_SCHEMA
+      .filter((entry) => entry.path.startsWith('ai_assist.'))
+      .map((entry) => {
+        if (entry.path === 'ai_assist.reasoning_note') {
+          return ['reasoning_note', z.string().optional()];
+        }
+
+        const key = entry.path
+          .replace('ai_assist.', '')
+          .replace(/\.enabled$/, '');
+        return [key, enabledToggleSchema.optional()];
+      }),
+  );
+}
+
+export const PriorityProfileSchema = z.object(priorityProfileShapeFromRegistry());
+
+export const AiAssistConfigSchema = z.object(aiAssistShapeFromRegistry());
 
 // ---------------------------------------------------------------------------
 // Composed domain schemas (.passthrough for [k: string]: unknown)

@@ -359,6 +359,7 @@ export function createPipelineCommands({
           outRoot,
           runId: result.runId,
           upsertRunArtifact: specDb ? (row) => specDb.upsertRunArtifact(row) : undefined,
+          insertRunSource: specDb ? (row) => specDb.insertRunSource(row) : undefined,
           category,
         });
         writeProductCheckpoint({ productCheckpoint: productCp, productRoot, runId: result.runId });

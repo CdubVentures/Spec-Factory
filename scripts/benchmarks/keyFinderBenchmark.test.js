@@ -173,5 +173,7 @@ describe('key finder benchmark contract', () => {
     assert.match(scorecardHtml, /Scorecard/);
     assert.match(scorecardHtml, /Accuracy/);
     assert.match(scorecardHtml, /Missing/);
+    assert.match(scorecardHtml, /<details class="row-details"/);
+    assert.match(scorecardHtml, /Show problem cells/);
   });
 });

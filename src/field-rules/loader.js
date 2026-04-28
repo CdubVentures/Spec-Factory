@@ -399,13 +399,15 @@ export async function loadFieldRules(category, options = {}) {
   }
 
   const overrideDir = path.join(helperRoot, resolvedCategory, '_overrides', 'components');
-  const [rulesRaw, knownRaw, parseRaw, crossRaw, uiRaw, componentDBs] = await Promise.all([
+  const fieldStudioMapPath = path.join(helperRoot, resolvedCategory, '_control_plane', 'field_studio_map.json');
+  const [rulesRaw, knownRaw, parseRaw, crossRaw, uiRaw, componentDBs, fieldStudioMapRaw] = await Promise.all([
     readJsonIfExists(fieldRulesPath),
     readJsonIfExists(path.join(generatedRoot, 'known_values.json')),
     readJsonIfExists(path.join(generatedRoot, 'parse_templates.json')),
     readJsonIfExists(path.join(generatedRoot, 'cross_validation_rules.json')),
     readJsonIfExists(path.join(generatedRoot, 'ui_field_catalog.json')),
-    readComponentDbs(path.join(generatedRoot, 'component_db'))
+    readComponentDbs(path.join(generatedRoot, 'component_db')),
+    readJsonIfExists(fieldStudioMapPath)
   ]);
 
   // WHY: Phase E3 — component overrides loaded from SQL by caller, passed via options
@@ -464,6 +466,8 @@ export async function loadFieldRules(category, options = {}) {
   const crossValidation = normalizeCrossValidation(crossRaw || {}, rules);
   const uiFieldCatalog = isObject(uiRaw) ? uiRaw : { category: resolvedCategory, fields: [] };
 
+  const componentSources = toArray(isObject(fieldStudioMapRaw) ? fieldStudioMapRaw.component_sources : []);
+
   const loaded = {
     category: resolvedCategory,
     generatedRoot,
@@ -472,6 +476,7 @@ export async function loadFieldRules(category, options = {}) {
     parseTemplates,
     crossValidation: toArray(crossValidation.rules),
     componentDBs,
+    componentSources,
     uiFieldCatalog
   };
 

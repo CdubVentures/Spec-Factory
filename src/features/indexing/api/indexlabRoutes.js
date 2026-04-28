@@ -140,9 +140,14 @@ export function registerIndexlabRoutes(ctx) {
     const category = String(meta?.category || '').trim();
     if (!category || typeof getSpecDb !== 'function') return null;
     const specDb = getSpecDb(category);
-    if (!specDb || typeof specDb.getCrawlSourcesByRunId !== 'function') return null;
+    if (!specDb) return null;
 
-    const sources = specDb.getCrawlSourcesByRunId(runId) || [];
+    let sources = typeof specDb.getRunSourcesByRunId === 'function'
+      ? specDb.getRunSourcesByRunId(runId) || []
+      : [];
+    if (sources.length === 0) {
+      sources = specDb.getCrawlSourcesByRunId?.(runId) || [];
+    }
     const screenshots = typeof specDb.getScreenshotsByRunId === 'function'
       ? specDb.getScreenshotsByRunId(runId) || []
       : [];

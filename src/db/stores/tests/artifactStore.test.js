@@ -131,6 +131,76 @@ test('insertCrawlSource upserts on same content_hash + product_id', () => {
   db.close();
 });
 
+test('run source projection preserves duplicate content_hash provenance across runs', () => {
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  specDb.insertCrawlSource({
+    content_hash: 'dup-run-hash',
+    product_id: 'p1',
+    run_id: 'run-1',
+    source_url: 'https://first.example.com',
+    crawled_at: '2026-03-27T00:00:00Z',
+  });
+  specDb.insertCrawlSource({
+    content_hash: 'dup-run-hash',
+    product_id: 'p1',
+    run_id: 'run-2',
+    source_url: 'https://second.example.com',
+    crawled_at: '2026-03-28T00:00:00Z',
+  });
+
+  assert.equal(specDb.getCrawlSourcesByProduct('p1').length, 1, 'crawl_sources remains product-hash deduped');
+  assert.deepEqual(
+    specDb.getRunSourcesByRunId('run-1').map((row) => row.source_url),
+    ['https://first.example.com'],
+  );
+  assert.deepEqual(
+    specDb.getRunSourcesByRunId('run-2').map((row) => row.source_url),
+    ['https://second.example.com'],
+  );
+  specDb.db.close();
+});
+
+test('indexed URL history projects run-scoped source rows for seed planning', () => {
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  specDb.insertRunSource({
+    run_id: 'run-history-1',
+    content_hash: 'history-hash-1',
+    product_id: 'p-history',
+    source_url: 'https://history.example.com/a',
+    final_url: 'https://history.example.com/final-a',
+    crawled_at: '2026-03-28T00:00:00Z',
+  });
+  specDb.insertRunSource({
+    run_id: 'run-history-2',
+    content_hash: 'history-hash-2',
+    product_id: 'p-history',
+    source_url: 'https://history.example.com/b',
+    crawled_at: '2026-03-29T00:00:00Z',
+  });
+
+  const rows = specDb.getIndexedUrlHistoryByProduct('p-history');
+  assert.deepEqual(rows.map((row) => ({
+    run_id: row.run_id,
+    product_id: row.product_id,
+    url: row.url,
+    last_crawled_at: row.last_crawled_at,
+  })), [
+    {
+      run_id: 'run-history-2',
+      product_id: 'p-history',
+      url: 'https://history.example.com/b',
+      last_crawled_at: '2026-03-29T00:00:00Z',
+    },
+    {
+      run_id: 'run-history-1',
+      product_id: 'p-history',
+      url: 'https://history.example.com/a',
+      last_crawled_at: '2026-03-28T00:00:00Z',
+    },
+  ]);
+  specDb.db.close();
+});
+
 // --- source_screenshots ---
 
 test('insertScreenshot inserts and getScreenshotsByProduct retrieves', () => {

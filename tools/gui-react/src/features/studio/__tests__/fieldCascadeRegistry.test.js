@@ -134,7 +134,7 @@ test('cascade: clearing component type clears component.* and reverts component_
 
   const paths = effects.map(e => e.path);
   assert.ok(paths.includes('component.source'), 'should clear component.source');
-  assert.ok(paths.includes('component.match'), 'should clear component.match');
+  assert.ok(!paths.includes('component.match'), 'component.match retired in Phase 1');
   // enum.source should clear because it starts with component_db.
   const enumSourceEffect = effects.find(e => e.path === 'enum.source');
   assert.ok(enumSourceEffect, 'should clear enum.source');

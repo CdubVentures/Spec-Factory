@@ -118,7 +118,9 @@ describe('moduleSettingsRoutes — /global/:moduleId (scope=global)', () => {
     assert.equal(parsed.queryHistoryEnabled, 'false');
   });
 
-  it('GET /global/<category-scoped-module> returns 404', async () => {
+  it('GET /global/productImageFinder returns only PIF global-scoped settings', async () => {
+    appDb.upsertFinderGlobalSetting('productImageFinder', 'heroCount', '1');
+    appDb.upsertFinderGlobalSetting('productImageFinder', 'evalThumbSize', '1024');
     const handler = registerModuleSettingsRoutes({
       jsonRes: (res, status, body) => { res.statusCode = status; res.body = body; return true; },
       readJsonBody: () => Promise.resolve({}),
@@ -127,10 +129,18 @@ describe('moduleSettingsRoutes — /global/:moduleId (scope=global)', () => {
       helperRoot: tmpDir,
       appDb,
     });
+
     const res = makeRes();
-    // PIF is settingsScope=category — global endpoint must reject.
     await handler(['module-settings', 'global', 'productImageFinder'], {}, 'GET', {}, res);
-    assert.equal(res.statusCode, 404);
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.body.scope, 'global');
+    assert.equal(res.body.module, 'productImageFinder');
+    assert.equal(res.body.settings.heroCount, '1');
+    assert.equal(res.body.settings.evalThumbSize, '1024');
+    assert.equal(res.body.settings.loopRunImageHistoryEnabled, 'false');
+    assert.equal(res.body.settings.viewBudget, undefined);
+    assert.equal(res.body.settings.carouselScoredViews, undefined);
   });
 
   it('GET /global/:unknown returns 404', async () => {
@@ -166,6 +176,8 @@ describe('moduleSettingsRoutes — /:category/:moduleId (scope=category)', () =>
   it('GET /:category/productImageFinder reads per-category store', async () => {
     const store = specDb.getFinderStore('productImageFinder');
     store.setSetting('satisfactionThreshold', '7');
+    store.setSetting('viewBudget', '["top","left"]');
+    appDb.upsertFinderGlobalSetting('productImageFinder', 'heroCount', '1');
 
     const handler = registerModuleSettingsRoutes({
       jsonRes: (res, status, body) => { res.statusCode = status; res.body = body; return true; },
@@ -180,6 +192,8 @@ describe('moduleSettingsRoutes — /:category/:moduleId (scope=category)', () =>
     assert.equal(res.statusCode, 200);
     assert.equal(res.body.category, 'mouse');
     assert.equal(res.body.settings.satisfactionThreshold, '7');
+    assert.equal(res.body.settings.viewBudget, '["top","left"]');
+    assert.equal(res.body.settings.heroCount, '1');
   });
 
   it('GET /:category/<global-scoped-module> returns 404', async () => {
@@ -200,7 +214,7 @@ describe('moduleSettingsRoutes — /:category/:moduleId (scope=category)', () =>
   it('PUT /:category/productImageFinder writes per-category JSON', async () => {
     const handler = registerModuleSettingsRoutes({
       jsonRes: (res, status, body) => { res.statusCode = status; res.body = body; return true; },
-      readJsonBody: async () => ({ settings: { satisfactionThreshold: '9' } }),
+      readJsonBody: async () => ({ settings: { satisfactionThreshold: '9', heroCount: '1', evalEnabled: 'false' } }),
       getSpecDb: () => specDb,
       broadcastWs: () => {},
       helperRoot: tmpDir,
@@ -209,10 +223,20 @@ describe('moduleSettingsRoutes — /:category/:moduleId (scope=category)', () =>
     const res = makeRes();
     await handler(['module-settings', 'mouse', 'productImageFinder'], {}, 'PUT', {}, res);
     assert.equal(res.statusCode, 200);
-    const jsonPath = path.join(tmpDir, 'mouse', 'product_images_settings.json');
-    assert.ok(fs.existsSync(jsonPath));
-    const parsed = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-    assert.equal(parsed.satisfactionThreshold, '9');
+    const categoryJsonPath = path.join(tmpDir, 'mouse', 'product_images_settings.json');
+    assert.ok(fs.existsSync(categoryJsonPath));
+    const categoryParsed = JSON.parse(fs.readFileSync(categoryJsonPath, 'utf8'));
+    assert.equal(categoryParsed.satisfactionThreshold, '9');
+    assert.equal(categoryParsed.heroCount, undefined);
+    assert.equal(categoryParsed.evalEnabled, undefined);
+
+    const globalJsonPath = path.join(tmpDir, '_global', 'product_images_settings.json');
+    assert.ok(fs.existsSync(globalJsonPath));
+    const globalParsed = JSON.parse(fs.readFileSync(globalJsonPath, 'utf8'));
+    assert.equal(globalParsed.heroCount, '1');
+    assert.equal(globalParsed.evalEnabled, 'false');
+    assert.equal(globalParsed.viewBudget, undefined);
+    assert.equal(appDb.getFinderGlobalSetting('productImageFinder', 'heroCount'), '1');
   });
 
   it('PUT /:category/productImageFinder carousel settings rebuilds PIF progress before broadcast', async () => {

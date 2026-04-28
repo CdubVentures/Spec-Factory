@@ -1,6 +1,10 @@
 // WHY: Body for Contract panel: variant_dependent + product_image_dependent toggles,
 // Type & Shape, Unit & Range, List Rules, Precision sub-sections. Shared between
 // Key Navigator and Workbench drawer.
+import {
+  FIELD_RULE_CONTRACT_CONTROLS,
+  FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS,
+} from "../../../../../../../../src/field-rules/fieldRuleSchema.js";
 import type { KeySectionBaseProps } from "../keySectionContracts.ts";
 import { SubSection } from "../../Section.tsx";
 import { Tip } from "../../../../../shared/ui/feedback/Tip.tsx";
@@ -13,7 +17,6 @@ import {
 import { STUDIO_NUMERIC_KNOB_BOUNDS } from "../../../state/studioNumericKnobBounds.ts";
 import { isStudioContractFieldDeferredLocked } from "../../../state/studioBehaviorContracts.ts";
 import { isFieldAvailable } from "../../../state/fieldCascadeRegistry.ts";
-import { VALID_TYPES, VALID_SHAPES } from "../../../state/typeShapeRegistry.ts";
 import {
   selectCls,
   inputCls,
@@ -22,6 +25,39 @@ import {
 } from "../../studioConstants.ts";
 
 const TIP_STYLE = { position: "relative" as const, left: "-3px", top: "-4px" };
+
+function contractControl(path: string): typeof FIELD_RULE_CONTRACT_CONTROLS[number] {
+  const control = FIELD_RULE_CONTRACT_CONTROLS.find((entry) => entry.path === path);
+  if (!control) throw new Error(`Missing contract control metadata for ${path}`);
+  return control;
+}
+
+function dependencyControl(path: string): typeof FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS[number] {
+  const control = FIELD_RULE_CONTRACT_DEPENDENCY_CONTROLS.find((entry) => entry.path === path);
+  if (!control) throw new Error(`Missing contract dependency metadata for ${path}`);
+  return control;
+}
+
+function optionLabel(
+  control: typeof FIELD_RULE_CONTRACT_CONTROLS[number],
+  option: string,
+  index: number,
+): string {
+  return control.optionLabels?.[index] ?? option;
+}
+
+const VARIANT_DEPENDENT_CONTROL = dependencyControl("variant_dependent");
+const PRODUCT_IMAGE_DEPENDENT_CONTROL = dependencyControl("product_image_dependent");
+const CONTRACT_TYPE_CONTROL = contractControl("contract.type");
+const CONTRACT_SHAPE_CONTROL = contractControl("contract.shape");
+const CONTRACT_UNIT_CONTROL = contractControl("contract.unit");
+const CONTRACT_RANGE_MIN_CONTROL = contractControl("contract.range.min");
+const CONTRACT_RANGE_MAX_CONTROL = contractControl("contract.range.max");
+const CONTRACT_LIST_DEDUPE_CONTROL = contractControl("contract.list_rules.dedupe");
+const CONTRACT_LIST_SORT_CONTROL = contractControl("contract.list_rules.sort");
+const CONTRACT_LIST_ITEM_UNION_CONTROL = contractControl("contract.list_rules.item_union");
+const CONTRACT_ROUNDING_DECIMALS_CONTROL = contractControl("contract.rounding.decimals");
+const CONTRACT_ROUNDING_MODE_CONTROL = contractControl("contract.rounding.mode");
 
 export interface KeyContractBodyProps extends KeySectionBaseProps {}
 
@@ -35,11 +71,11 @@ export function KeyContractBody({
   const { data: unitRegistryData } = useUnitRegistryQuery();
   const registryUnits = (unitRegistryData?.units ?? []).map((u) => u.canonical);
   const currentContractType = currentRule
-    ? strN(currentRule, "contract.type", "string")
-    : "string";
+    ? strN(currentRule, CONTRACT_TYPE_CONTROL.path, String(CONTRACT_TYPE_CONTROL.fallback))
+    : String(CONTRACT_TYPE_CONTROL.fallback);
 
-  const numericAvailable = isFieldAvailable(currentRule, "contract.unit");
-  const listAvailable = isFieldAvailable(currentRule, "contract.list_rules.dedupe");
+  const numericAvailable = isFieldAvailable(currentRule, CONTRACT_UNIT_CONTROL.path);
+  const listAvailable = isFieldAvailable(currentRule, CONTRACT_LIST_DEDUPE_CONTROL.path);
 
   function parseContractRangeValue(value: string): number | undefined {
     const trimmed = value.trim();
@@ -51,8 +87,8 @@ export function KeyContractBody({
     return Number.isFinite(parsed) ? parsed : undefined;
   }
 
-  const variantDependent = boolN(currentRule, "variant_dependent", false);
-  const productImageDependent = boolN(currentRule, "product_image_dependent", false);
+  const variantDependent = boolN(currentRule, VARIANT_DEPENDENT_CONTROL.path, false);
+  const productImageDependent = boolN(currentRule, PRODUCT_IMAGE_DEPENDENT_CONTROL.path, false);
 
   return (
     <>

@@ -1,6 +1,7 @@
 // WHY: Body for Ai Assist panel: variant_inventory_usage toggle, pif_priority_images
 // toggle, and Extraction Guidance (reasoning_note) with auto-derived placeholder.
 // Shared between Key Navigator and Workbench drawer.
+import { FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS } from "../../../../../../../../src/field-rules/fieldRuleSchema.js";
 import type { KeySectionBaseProps } from "../keySectionContracts.ts";
 import { Tip } from "../../../../../shared/ui/feedback/Tip.tsx";
 import { AiAssistToggleSubsection } from "../AiAssistToggleSubsection.tsx";
@@ -32,28 +33,20 @@ export function KeyAiAssistBody({
 
   return (
     <>
-      <AiAssistToggleSubsection
-        selectedKey={selectedKey}
-        currentRule={currentRule}
-        updateField={updateField}
-        BadgeRenderer={B}
-        path="ai_assist.variant_inventory_usage"
-        label="Variant Inventory Context"
-        ariaLabel="Use variant inventory context"
-        tooltipKey="variant_inventory_usage"
-        disabled={disabled}
-      />
-      <AiAssistToggleSubsection
-        selectedKey={selectedKey}
-        currentRule={currentRule}
-        updateField={updateField}
-        BadgeRenderer={B}
-        path="ai_assist.pif_priority_images"
-        label="PIF Priority Images"
-        ariaLabel="Use PIF priority images"
-        tooltipKey="pif_priority_images"
-        disabled={disabled}
-      />
+      {FIELD_RULE_AI_ASSIST_TOGGLE_CONTROLS.map((control) => (
+        <AiAssistToggleSubsection
+          key={control.path}
+          selectedKey={selectedKey}
+          currentRule={currentRule}
+          updateField={updateField}
+          BadgeRenderer={B}
+          path={control.path}
+          label={control.label}
+          ariaLabel={control.ariaLabel}
+          tooltipKey={control.tooltipKey}
+          disabled={disabled}
+        />
+      ))}
       <ExtractionGuidanceSubsection
         selectedKey={selectedKey}
         currentRule={currentRule}

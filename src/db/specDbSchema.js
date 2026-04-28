@@ -305,6 +305,42 @@ CREATE INDEX IF NOT EXISTS idx_cs_product ON crawl_sources(product_id);
 CREATE INDEX IF NOT EXISTS idx_cs_run ON crawl_sources(run_id);
 CREATE INDEX IF NOT EXISTS idx_cs_host ON crawl_sources(host);
 
+CREATE TABLE IF NOT EXISTS run_sources (
+  run_id             TEXT NOT NULL,
+  content_hash       TEXT NOT NULL,
+  category           TEXT NOT NULL,
+  product_id         TEXT NOT NULL,
+  source_url         TEXT NOT NULL,
+  final_url          TEXT NOT NULL DEFAULT '',
+  host               TEXT NOT NULL DEFAULT '',
+  http_status        INTEGER DEFAULT 0,
+  doc_kind           TEXT NOT NULL DEFAULT 'other',
+  source_tier        INTEGER DEFAULT 5,
+  content_type       TEXT NOT NULL DEFAULT '',
+  size_bytes         INTEGER DEFAULT 0,
+  file_path          TEXT NOT NULL DEFAULT '',
+  has_screenshot     INTEGER DEFAULT 0,
+  has_pdf            INTEGER DEFAULT 0,
+  has_ldjson         INTEGER DEFAULT 0,
+  has_dom_snippet    INTEGER DEFAULT 0,
+  crawled_at         TEXT NOT NULL DEFAULT '',
+  PRIMARY KEY (run_id, content_hash)
+);
+CREATE INDEX IF NOT EXISTS idx_rs_product ON run_sources(product_id);
+CREATE INDEX IF NOT EXISTS idx_rs_hash_product ON run_sources(content_hash, product_id);
+
+CREATE VIEW IF NOT EXISTS indexed_url_history AS
+SELECT
+  run_id,
+  product_id,
+  category,
+  source_url AS url,
+  final_url,
+  content_hash,
+  crawled_at AS last_crawled_at
+FROM run_sources
+WHERE source_url != '';
+
 CREATE TABLE IF NOT EXISTS source_screenshots (
   screenshot_id      TEXT PRIMARY KEY,
   content_hash       TEXT NOT NULL,
