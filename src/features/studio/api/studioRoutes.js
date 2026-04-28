@@ -101,6 +101,83 @@ function sanitizeFieldStudioMapForSave({ fieldStudioMap, appDb }) {
   return normalizedFieldStudioMap;
 }
 
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value ?? null));
+}
+
+function groupDisplayNamesByKey(groups = []) {
+  return new Map((Array.isArray(groups) ? groups : []).map((group) => [
+    group.group_key,
+    group.display_name,
+  ]));
+}
+
+function defaultAddedKeyRule(addKey, groupDisplayName) {
+  const uiGroup = String(groupDisplayName || addKey.group_key || 'ungrouped').trim() || 'ungrouped';
+  return {
+    label: addKey.display_name,
+    group: uiGroup,
+    ui: {
+      label: addKey.display_name,
+      group: uiGroup,
+      ...(addKey.ui && typeof addKey.ui === 'object' ? addKey.ui : {}),
+    },
+    priority: {
+      required_level: 'non_mandatory',
+      availability: 'conditional',
+      difficulty: 'medium',
+      ...(addKey.priority && typeof addKey.priority === 'object' ? addKey.priority : {}),
+    },
+    contract: {
+      type: 'string',
+      shape: 'scalar',
+      unit: '',
+      ...(addKey.contract && typeof addKey.contract === 'object' ? addKey.contract : {}),
+    },
+    aliases: Array.isArray(addKey.aliases) ? addKey.aliases : [],
+    search_hints: {
+      query_terms: [],
+      domain_hints: [],
+      content_types: [],
+      ...(addKey.search_hints && typeof addKey.search_hints === 'object' ? addKey.search_hints : {}),
+    },
+    constraints: [],
+    ai_assist: {
+      reasoning_note: addKey.rationale,
+    },
+    evidence: {
+      min_evidence_refs: 1,
+      tier_preference: [],
+    },
+    notes: addKey.notes || '',
+  };
+}
+
+function addKeyOrderPatchFieldsToStudioMap({ fieldStudioMap, patchDoc }) {
+  const next = cloneJson(fieldStudioMap || {});
+  const groupNames = groupDisplayNamesByKey(patchDoc.groups);
+  const selectedKeys = new Set(Array.isArray(next.selected_keys) ? next.selected_keys : []);
+  next.field_overrides = next.field_overrides && typeof next.field_overrides === 'object'
+    ? cloneJson(next.field_overrides)
+    : {};
+  next.field_groups = Array.isArray(next.field_groups) ? [...next.field_groups] : [];
+
+  for (const addKey of patchDoc.add_keys || []) {
+    const groupDisplayName = groupNames.get(addKey.group_key) || addKey.group_key || 'ungrouped';
+    selectedKeys.add(addKey.field_key);
+    if (!next.field_groups.includes(groupDisplayName)) {
+      next.field_groups.push(groupDisplayName);
+    }
+    next.field_overrides[addKey.field_key] = {
+      ...(next.field_overrides[addKey.field_key] || {}),
+      ...defaultAddedKeyRule(addKey, groupDisplayName),
+    };
+  }
+
+  next.selected_keys = [...selectedKeys];
+  return next;
+}
+
 async function writeAuditorResponsePatchFiles({ category, outputRoot, docs, fs, path }) {
   const responsesDir = path.resolve(outputRoot, category, 'auditors-responses');
   const categoryRoot = path.resolve(outputRoot, category);
@@ -610,6 +687,33 @@ export function registerStudioRoutes(ctx) {
           fs,
           path,
         });
+        let mapHash = null;
+        if (result.document.add_keys.length > 0) {
+          if (!hasStudioMapHandlers) {
+            throw new Error('studio map handlers are required to add keys');
+          }
+          const patchedMap = addKeyOrderPatchFieldsToStudioMap({
+            fieldStudioMap: readCurrentFieldStudioMap({ category, getSpecDb }),
+            patchDoc: result.document,
+          });
+          const validation = validateFieldStudioMap(patchedMap, { category });
+          if (validation?.valid === false) {
+            const details = Array.isArray(validation.errors) ? validation.errors.join('; ') : 'unknown validation error';
+            throw new Error(`added key field_studio_map failed validation: ${details}`);
+          }
+          const normalizedMap = validation?.normalized && typeof validation.normalized === 'object'
+            ? validation.normalized
+            : patchedMap;
+          const saveReadyFieldStudioMap = sanitizeFieldStudioMapForSave({
+            fieldStudioMap: normalizedMap,
+            appDb,
+          });
+          mapHash = hashJson(saveReadyFieldStudioMap);
+          specDb.upsertFieldStudioMap(JSON.stringify(saveReadyFieldStudioMap), mapHash);
+          saveFieldStudioMap({ category, fieldStudioMap: saveReadyFieldStudioMap, config }).catch((err) => {
+            console.warn(`[studio-map] JSON export failed (non-critical): ${err.message}`);
+          });
+        }
         const outputRoot = path.resolve(config?.localInputRoot || '.workspace', 'reports');
         const storageDir = await writeAuditorResponsePatchFiles({
           category,
@@ -643,6 +747,7 @@ export function registerStudioRoutes(ctx) {
           warnings: result.document.rename_keys.length > 0
             ? ['rename_keys are review proposals only; importer does not rename field rule files']
             : [],
+          map_hash: mapHash,
           storageDir,
         });
       } catch (err) {

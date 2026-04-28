@@ -1,114 +1,152 @@
 # Frontend Cross-Screen Data-Sharing Audits
 
-Date: 2026-04-27
-Scope: `tools/gui-react/**` and the backend events / caches that drive its state.
-Goal: identify every place where shared data should refresh instantly across panels but doesn't, so the app behaves like a single live SSOT instead of N independent caches.
+Date: 2026-04-28
+Scope: `tools/gui-react/**` plus backend events/caches that drive GUI state.
 
-## Audit set
+This index is the active backlog. Stale or resolved findings were removed from the per-audit files.
 
-### Round 1 — primary surfaces
+## Audit Set
 
-| File | Domain | Severity (worst) |
+| File | Domain | Current severity |
 |---|---|---|
-| [review-overview-data-sync.md](./review-overview-data-sync.md) | Review grid ↔ Overview catalog ↔ field_candidates / published / variants | HIGH |
-| [field-studio-propagation.md](./field-studio-propagation.md) | Field Rules Studio → Review / Overview / prompts / KF | MEDIUM |
-| [finder-cross-screen-propagation.md](./finder-cross-screen-propagation.md) | Finder runs (CEF, PIF, RDF, SKU, KF) → all consumers | CRITICAL |
-| [indexlab-storage-runtime-ops-sync.md](./indexlab-storage-runtime-ops-sync.md) | IndexLab ↔ Storage ↔ Runtime Ops ↔ Overview last-run ↔ Command Console | HIGH |
-| [settings-config-propagation.md](./settings-config-propagation.md) | Pipeline / LLM / module settings → live UI | HIGH |
+| [review-overview-data-sync.md](./review-overview-data-sync.md) | Review grid / Overview catalog sync | LOW-MEDIUM |
+| [field-studio-propagation.md](./field-studio-propagation.md) | Field Studio propagation | MEDIUM |
+| [finder-cross-screen-propagation.md](./finder-cross-screen-propagation.md) | Finder cross-screen propagation | HIGH |
+| [indexlab-storage-runtime-ops-sync.md](./indexlab-storage-runtime-ops-sync.md) | IndexLab / Storage / Runtime Ops sync | MEDIUM |
+| [settings-config-propagation.md](./settings-config-propagation.md) | Settings/config propagation | MEDIUM |
+| [operations-queue-state.md](./operations-queue-state.md) | Operations / queue state | MEDIUM-HIGH |
+| [selection-focus-state.md](./selection-focus-state.md) | Selection / drawer focus state | HIGH |
+| [server-side-caches.md](./server-side-caches.md) | Server in-memory caches | LOW-MEDIUM |
+| [drawer-modal-freshness.md](./drawer-modal-freshness.md) | Drawer/modal freshness | MEDIUM |
+| [auxiliary-registries.md](./auxiliary-registries.md) | Brand/color/unit registries | MEDIUM |
+| [evidence-pipeline.md](./evidence-pipeline.md) | Evidence pipeline | LOW |
+| [billing-cost-telemetry.md](./billing-cost-telemetry.md) | Billing/cost telemetry | MEDIUM |
+| [data-authority-snapshot.md](./data-authority-snapshot.md) | Data authority snapshot query | LOW |
+| [websocket-schema.md](./websocket-schema.md) | WebSocket schema/transport | HIGH |
+| [routing-url-state.md](./routing-url-state.md) | URL/deep-link state | MEDIUM |
+| [test-coverage-invariants.md](./test-coverage-invariants.md) | Cross-screen/rebuild test coverage | HIGH |
+| [codegen-drift.md](./codegen-drift.md) | Codegen drift | HIGH |
+| [loading-error-ux.md](./loading-error-ux.md) | Loading/error UX | HIGH |
+| [run-artifact-read-paths.md](./run-artifact-read-paths.md) | Run artifacts/read paths | HIGH |
+| [appdb-specdb-boundary.md](./appdb-specdb-boundary.md) | AppDb/SpecDb boundary | LOW |
 
-### Round 2 — runtime, selection, drawers, registries
+## Active Issues by Severity
 
-| File | Domain | Severity (worst) |
-|---|---|---|
-| [operations-queue-state.md](./operations-queue-state.md) | Operations store ↔ process status ↔ queue badges across panels | MEDIUM |
-| [selection-focus-state.md](./selection-focus-state.md) | Selection / drawer focus / picker state vs deletes & cross-panel sync | HIGH |
-| [server-side-caches.md](./server-side-caches.md) | Backend in-memory caches (`sessionCache`, `reviewLayoutByCategory`, `fieldRulesEngine`) | MEDIUM |
-| [drawer-modal-freshness.md](./drawer-modal-freshness.md) | Drawer/modal `staleTime` policies and snapshot avoidance | MEDIUM |
-| [auxiliary-registries.md](./auxiliary-registries.md) | Brand / color / unit / components-DB registries → consumers | CRITICAL |
+### Critical
 
-### Round 3 — pipelines, telemetry, transport, routing
+None confirmed after removing stale findings.
 
-| File | Domain | Severity (worst) |
-|---|---|---|
-| [evidence-pipeline.md](./evidence-pipeline.md) | Evidence kind enum, gates, replace-semantics, URL HEAD-check | LOW |
-| [billing-cost-telemetry.md](./billing-cost-telemetry.md) | Cost ledger, telemetry events, billing dashboard freshness | MEDIUM |
-| [data-authority-snapshot.md](./data-authority-snapshot.md) | `['data-authority','snapshot',cat]` query — broad invalidation, single consumer | LOW |
-| [websocket-schema.md](./websocket-schema.md) | WS channels, message validation, orphans, reconnect | HIGH |
-| [routing-url-state.md](./routing-url-state.md) | URL / hash router / deep links / refresh restoration | MEDIUM |
+### High
 
-### Round 4 — verification, build, UX, storage layout
+1. Full-suite baseline is not clean.
+2. PIF runtime JSON read/modify paths need contract tightening.
+3. Storage Run Detail B2 durable `run_sources` projection/finalizer coverage is not confirmed.
+4. Uneven deleted-DB rebuild coverage for SQL projections.
+5. SQL-to-JSON mirror writes need consistent atomicity proof.
+6. Shared delete/reset paths need atomic helper coverage.
+7. Malformed WS payloads need adversarial store-safety tests.
+8. Operations WS messages lack runtime shape validation.
+9. Receive-side WS validation is inconsistent across channels.
+10. Screencast frame cache is unbounded.
+11. No global error toast/notification contract.
+12. Mutation rollback is invisible to users.
+13. WS disconnect/reconnect state is silent.
+14. Major pages lack consistent skeleton/loading structure.
+15. Review drawer can keep stale `activeCell` after entity deletion.
+16. No codegen drift guard after registry/codegen changes.
+17. Run-All fan-out is not visually synchronous (medium-high, grouped here for triage).
 
-| File | Domain | Severity (worst) |
-|---|---|---|
-| [test-coverage-invariants.md](./test-coverage-invariants.md) | Tests of cross-screen / dual-state / rebuild contracts | CRITICAL |
-| [codegen-drift.md](./codegen-drift.md) | `*.generated.*` files and CI guards for them | HIGH |
-| [loading-error-ux.md](./loading-error-ux.md) | Loading skeletons, error toasts, retry, WS-offline UX | HIGH |
-| [run-artifact-read-paths.md](./run-artifact-read-paths.md) | Screenshots / video / HTML / extractions / run.json read paths | HIGH |
-| [appdb-specdb-boundary.md](./appdb-specdb-boundary.md) | Global AppDb vs per-category SpecDb — ownership, rebuild, drift | MEDIUM |
+### Medium
 
-## Cross-cutting themes
+1. LLM policy edits propagate to other tabs only after save.
+2. Field Studio prompt-preview invalidation covers Key Finder but not every finder.
+3. Manual enum/list edit model needs a product decision.
+4. StudioPage still has manual/broad invalidation paths.
+5. Storage detail page lacks active-run refresh.
+6. Run-finalize Catalog coverage needs per-run-type audit.
+7. IndexLab URL history B3 table/finalization/rebuild path needs confirmation.
+8. CommandConsole still has manual/broad invalidation leftovers.
+9. Process-status and operations state have semantic drift.
+10. Data-change does not suppress completed operations.
+11. Review drawer state is not refresh-safe.
+12. Overview multi-select is not refresh-safe.
+13. Contextual deep links are missing.
+14. IndexLab picker requires session state.
+15. PIF variant popover uses a 30-second stale window.
+16. Component Review impact drawer uses a 60-second stale window.
+17. BrandManager bypasses the shared data-change mutation pattern.
+18. Component-review batch paths have manual/broad invalidation leftovers.
+19. Run-summary telemetry is capped at 6000 events.
+20. `crawl_sources.sources[]` has no pagination.
+21. HTML artifacts have no HTTP serve route.
+22. crawl4ai extractions are write-only.
+23. Storage run detail freshness is stale-window based.
+24. Query-key scope contract is incomplete.
+25. Mutation response shapes do not consistently return changed entities.
+26. Catalog sortable finder columns are hardcoded in tests.
+27. Finder-specific knob schemas are not tied to rendered controls.
+28. Cross-finder cascade data-state invariants are thin.
+29. Prompt wording assertions are brittle.
+30. No root regenerate-all codegen entry point.
+31. LLM phase generator is a super-generator.
+32. Finder typegen has opt-in coverage.
+33. Broader generated-code checks are still needed before closing Registry/O(1) stage work.
+34. Indexing action errors are terse.
+35. Retry/backoff UX is not explicit.
+36. Process-status payload naming is mixed snake/camel.
+37. WS channel handlers need local try/catch isolation.
+38. LLM stream chunks need stronger validation.
 
-1. **Mutations bypass `useDataChangeMutation`.** Brands, Studio threshold, CommandConsole bulk paths, unit registry — manual `invalidateQueries` calls miss most domain templates.
-2. **Missing event-registry entries.** KF deletions and run-finalize aren't mapped → resolver returns no domains → caches don't invalidate.
-3. **Domain coverage gaps.** KF run/loop omits `'catalog'`; `'review-layout'` only invalidates KF prompt-preview; `'module-settings-updated'` has no downstream mapping; no `'billing-updated'` mapping.
-4. **Settings propagation is split.** `publishSettingsPropagation` (localStorage) refetches the editor's query but doesn't reach downstream consumers.
-5. **Mutations return `{ ok }` instead of changed entity.** Forces broad invalidation.
-6. **Catalog last-run timestamps never tick on run completion.** No `data-change` with `domains: ['catalog']` is emitted at finalize.
-7. **Drawer/modal `staleTime` drift.** PIF popover (30 s) and ComponentReview impact (60 s) too long.
-8. **Selection state isn't pruned on entity deletion.** Review drawer, Overview multi-select, IndexLab picker, discovery drawer all hold IDs that may no longer exist.
-9. **WS reconnect doesn't re-sync the operations store.**
-10. **Server-side cache pair is split.** `sessionCache` + `reviewLayoutByCategory` only co-invalidated on `field-studio-map` saves.
-11. **Frontend has no runtime WS message validation.** Operations channel especially exposed.
-12. **Screencast frame cache unbounded.** `lastScreencastFrames` grows GB-scale on long runs.
-13. **Telemetry events truncated at 6 000 per run.** Long runs lose tail telemetry silently.
-14. **No URL state for drawers / selection / pickers.** Refresh wipes context; deep links aren't shareable.
-15. **`run_summary` orphan counters never surfaced.** `llm_orphan_finish`, `llm_missing_telemetry` invisible.
-16. **Rebuild contract is essentially untested.** Only PIF variant progress has a "delete table → rebuild from JSON" test; 8+ projections claim "rebuild yes" without proof. Highest data-loss risk.
-17. **Codegen has no CI guard.** A developer can edit a registry without re-running codegen and ship stale generated TypeScript silently.
-18. **No global error toast / retry UI.** Query and mutation failures are largely invisible to users; WS reconnect can cascade into a silent page reload.
-19. **Storage detail still does a `run.json` JSON-fallback parse + per-source `fs.stat()` loop.** ~46 K-line files + ~2 K syscalls per request.
-20. **Two artifact types are write-only.** HTML and crawl4ai extractions are persisted but not exposed via the HTTP API.
-21. **`studio_maps` in AppDb is likely orphaned.** Real field-studio-map lives in SpecDb; AppDb copy can drift silently.
-22. **`brand_categories` rebuild is implicit.** Wiping AppDb without re-walking every SpecDb leaves the m:n table empty.
-23. **Anti-patterns in tests.** Prompt wording locked in assertions (`feedback_prompt_test_looseness.md` violation); hardcoded finder field lists; no negative tests for invalidation cascade scope.
+### Low
 
-## Top fixes (sorted by user-visible impact + data safety)
+1. Review optimistic patches do not synchronously patch Overview.
+2. `publishConfidenceThreshold` local invalidation is broad.
+3. PIF `image-processed` does not update `pif_variant_progress` unless ring semantics change.
+4. Settings queries rely on implicit stale-time defaults.
+5. No central knob-consumer registry.
+6. Command Console selection can persist after row deletion.
+7. Data-change domain mapping is not easy to audit from source.
+8. Optimistic operation stub can vanish silently on POST failure.
+9. LLM stream chunks are lost on WS drop.
+10. Direct field-key-order PUT may miss `reviewLayoutByCategory` invalidation.
+11. `reviewLayoutByCategory` may be unused.
+12. Component/enum cache invalidation plumbing may be dead.
+13. Discovery history drawer has no explicit freshness contract.
+14. Unit registry has no cross-feature event contract.
+15. 404 or rejected evidence is not visually surfaced in Review.
+16. No cross-system evidence enum-sync test.
+17. Orphaned billing-event counters are not surfaced.
+18. Billing dashboard freshness is timer-based.
+19. Broad data-authority snapshot invalidation intent is undocumented.
+20. Data-authority observability payload is not clearly consumed.
+21. Data-authority polling plus invalidation is redundant.
+22. No data-authority cascade-scope regression test.
+23. Discovery history drawer state is not persistent.
+24. No deletion-to-route auto-close contract.
+25. Component Review flagged items are row-index based.
+26. Future multi-category selection mismatch.
+27. PIF variant ring click does not sync Review filter.
+28. Some registries probably need generated consumers.
+29. `tsconfig.tsbuildinfo` is tracked.
+30. Codegen script test coverage is sparse.
+31. Stale-refetch indication is inconsistent.
+32. Empty-state copy is inconsistent.
+33. Error boundary does not catch async failures.
+34. Global Suspense fallback is undifferentiated.
+35. Screenshot directory candidate resolution is duplicated.
+36. No explicit AppDb `categories` table.
+37. AppDb `settings` table reserved sections are undocumented.
+38. Cross-DB brand reference is contract-only.
+39. Negative invalidation-scope tests are sparse.
+40. Runtime event interface is loose.
+41. Data-change validation is stronger server-side than UI-side.
+42. Test-progress WS channels are unused or partially wired.
+43. Heartbeat handling is implicit.
 
-1. **Add a rebuild test per SQL projection** — biggest silent-data-loss prevention.
-2. **Emit `data-change` on run finalization** with `domains: ['catalog']` — fixes Overview last-run for every finder.
-3. **Add operations WS message validator** — prevents silent Zustand corruption.
-4. **Global error toast + retry UI** — make failures visible.
-5. **Add the three missing KF events to `EVENT_REGISTRY`** + `'catalog'` to KF run/loop/delete domains.
-6. **Migrate `BrandManager` mutations to `useDataChangeMutation`**.
-7. **Map `'module-settings-updated'` to consumer query keys**.
-8. **CI / pre-commit `git diff --exit-code` after codegen** — catches stale generated files.
-9. **Cap `lastScreencastFrames` Map** with LRU or TTL.
-10. **Drop `run.json` fallback in `/storage/runs/:runId`** — pure SQL path.
-11. **Persist `overviewSelectionStore` and add Review drawer URL params**.
-12. **Investigate / remove `studio_maps` AppDb orphan; explicit `brand_categories` rebuild**.
-13. **Invalidate `['indexlab','runs']` from `useDeleteRun`**.
-14. **Add `reviewLayoutByCategory.delete(category)` to the `field-key-order` PUT handler**.
-15. **Drop drawer/modal `staleTime`s above 30 s** to 5 s or 0.
-16. **Wrap WS channel handlers in try/catch**.
-17. **Refetch operations on WS reconnect**.
-18. **Raise `run_summary` event cap** + surface "events truncated" flag.
-19. **Emit `billing-updated` data-change on run finalize**.
-20. **Add `WS reconnect` UI status (connected / reconnecting / offline)** instead of silent reload.
+## Working Priority
 
-## Confirmed-good patterns to model
-
-- `tools/gui-react/src/features/catalog/api/catalogRowPatch.ts` — surgical row patch with refetch-on-failure fallback.
-- `tools/gui-react/src/features/catalog/components/productCacheOptimism.ts` — optimistic patches with rollback.
-- `tools/gui-react/src/features/review/state/reviewCandidateCache.ts` — surgical `setQueryData` per mutation.
-- `tools/gui-react/src/features/runtime-ops/state/runtimeOpsInvalidationScheduler.ts` — debounced exact-key invalidation.
-- `promptPreviewQueries.ts:66` — `staleTime: 0` for "always fresh on open" surfaces.
-- `ColorRegistryPage.tsx:25–38` — golden `useDataChangeMutation` example for registries.
-- `src/features/publisher/publish/evidenceGate.js::evaluateFieldBuckets` — single SSOT for confidence + concrete gates.
-- `src/core/finder/discoveryHistoryScrub.js:301` — SQL-first then JSON-mirror.
-- `tools/gui-react/src/api/ws.ts` reconnect handler list — clean fan-out for reconnect.
-- `tools/gui-react/src/features/billing/**` — model loading-state UX (skeletons + empty states + stale-refetch styling).
-- `src/core/events/tests/eventRegistryCoverage.test.js` — every emitted event is asserted to be in `EVENT_REGISTRY`.
-
-## Status
-
-Each per-domain file has a full gap list (file:line), severity, and fix shape. No code changes were made — these audits are pure findings for triage and prioritization. 20 audit files across 4 rounds.
+1. Fix data-loss and corruption risks first: rebuild coverage, dual-write proof, WS validation, screencast cache.
+2. Fix user trust next: global errors, rollback visibility, connection status, loading skeletons.
+3. Fix stale focus/selection state: Review drawer deletion, Overview selection, IndexLab picker.
+4. Fix workflow polish: deep links, drawer freshness, Storage detail refresh.
+5. Fix maintainability backlog: codegen drift, registry propagation, cache cleanup, low-severity docs/tests.

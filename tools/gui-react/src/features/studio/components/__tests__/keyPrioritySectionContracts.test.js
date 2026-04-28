@@ -106,6 +106,74 @@ async function loadKeyPrioritySection() {
   );
 }
 
+async function loadKeyAiAssistSection() {
+  return loadBundledModule(
+    'tools/gui-react/src/features/studio/components/key-sections/KeyAiAssistSection.tsx',
+    {
+      prefix: 'key-ai-assist-section-',
+      stubs: {
+        'react/jsx-runtime': `
+          export function jsx(type, props) {
+            return { type, props: props || {} };
+          }
+          export const jsxs = jsx;
+          export const Fragment = Symbol.for('fragment');
+        `,
+        '../Section.tsx': `
+          export function Section(props) {
+            return { type: 'Section', props };
+          }
+        `,
+        '../../../../shared/ui/feedback/Tip.tsx': `
+          export function Tip(props) {
+            return { type: 'Tip', props };
+          }
+        `,
+        '../../../state/nestedValueHelpers.ts': `
+          function readPath(obj, path) {
+            return String(path || '').split('.').reduce((acc, key) => acc && acc[key], obj);
+          }
+          export function strN(obj, path, fallback = '') {
+            const value = readPath(obj || {}, path);
+            return value == null ? fallback : String(value);
+          }
+          export function numN(obj, path, fallback = 0) {
+            const value = Number(readPath(obj || {}, path));
+            return Number.isFinite(value) ? value : fallback;
+          }
+        `,
+        '../../../state/studioNumericKnobBounds.ts': `
+          export const STUDIO_NUMERIC_KNOB_BOUNDS = {
+            evidenceMinRefs: { fallback: 1 },
+          };
+        `,
+        '../../state/studioPriority.ts': `
+          function readPath(obj, path) {
+            return String(path || '').split('.').reduce((acc, key) => acc && acc[key], obj);
+          }
+          export function readAiAssistToggleEnabled(rule, path) {
+            const nested = readPath(rule || {}, path + '.enabled');
+            if (typeof nested === 'boolean') return nested;
+            const direct = readPath(rule || {}, path);
+            return typeof direct === 'boolean' ? direct : false;
+          }
+        `,
+        '../studioConstants.ts': `
+          export const selectCls = 'select';
+          export const inputCls = 'input';
+          export const labelCls = 'label';
+          export const STUDIO_TIPS = {
+            key_section_ai_assist: 'ai assist',
+            ai_reasoning_note: 'reasoning note',
+            variant_inventory_usage: 'variant inventory',
+            pif_priority_images: 'pif priority images',
+          };
+        `,
+      },
+    },
+  );
+}
+
 function createProps(overrides = {}) {
   const updates = [];
   return {
@@ -146,28 +214,31 @@ function createProps(overrides = {}) {
   };
 }
 
-test('KeyPrioritySection separates Priority from Ai Assist', async () => {
+test('KeyPrioritySection renders only the Priority section', async () => {
   const { KeyPrioritySection } = await loadKeyPrioritySection();
   const { props } = createProps();
   const tree = renderNode(KeyPrioritySection(props));
   const sections = collectNodes(tree, (node) => node.type === 'Section');
 
-  assert.equal(sections.length, 2);
+  assert.equal(sections.length, 1);
   assert.equal(sections[0].props.title, 'Priority');
-  assert.equal(sections[1].props.title, 'Ai Assist');
   assert.equal(sections[0].props.persistKey, 'studio:keyNavigator:section:priority:mouse');
-  assert.equal(sections[1].props.persistKey, 'studio:keyNavigator:section:aiAssist:mouse');
 
   assert.equal(textContent(sections[0]).includes('Extraction Guidance'), false);
-  assert.ok(textContent(sections[1]).includes('Extraction Guidance'));
-  assert.ok(textContent(sections[1]).includes('Variant Inventory Context'));
-  assert.ok(textContent(sections[1]).includes('PIF Priority Images'));
 });
 
-test('KeyPrioritySection wires simple AI Assist injection controls to ai_assist paths', async () => {
-  const { KeyPrioritySection } = await loadKeyPrioritySection();
+test('KeyAiAssistSection wires simple AI Assist injection controls to ai_assist paths', async () => {
+  const { KeyAiAssistSection } = await loadKeyAiAssistSection();
   const { props, updates } = createProps();
-  const tree = renderNode(KeyPrioritySection(props));
+  const tree = renderNode(KeyAiAssistSection(props));
+  const sections = collectNodes(tree, (node) => node.type === 'Section');
+
+  assert.equal(sections.length, 1);
+  assert.equal(sections[0].props.title, 'Ai Assist');
+  assert.equal(sections[0].props.persistKey, 'studio:keyNavigator:section:aiAssist:mouse');
+  assert.ok(textContent(sections[0]).includes('Extraction Guidance'));
+  assert.ok(textContent(sections[0]).includes('Variant Inventory Context'));
+  assert.ok(textContent(sections[0]).includes('PIF Priority Images'));
 
   const enabledToggle = collectNodes(
     tree,

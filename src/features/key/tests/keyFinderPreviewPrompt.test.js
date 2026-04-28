@@ -196,6 +196,7 @@ function setup(productId, {
   const finderStore = makeFinderStoreStub(settings);
   const productImageFinderStore = {
     getSetting: (k) => (k in pifSettings ? String(pifSettings[k]) : ''),
+    get: () => pifProgressRows[0] || null,
   };
   const specDb = makeSpecDbStub({
     finderStore,
@@ -277,6 +278,41 @@ test('prompt preview includes PIF priority image context and sidecar images when
   });
   const { specDb } = setup(productId, {
     compiledRules,
+    pifProgressRows: [
+      {
+        product_id: productId,
+        category: 'mouse',
+        images: [
+          {
+            filename: 'top-black.png',
+            view: 'top',
+            variant_id: 'v_black',
+            variant_key: 'color:black',
+            variant_label: 'Black',
+            variant_type: 'color',
+            bytes: 111,
+          },
+          {
+            filename: 'bottom-black.png',
+            view: 'bottom',
+            variant_id: 'v_black',
+            variant_key: 'color:black',
+            variant_label: 'Black',
+            variant_type: 'color',
+          },
+        ],
+        carousel_slots: {},
+        eval_state: {
+          'top-black.png': {
+            eval_best: true,
+            eval_reasoning: 'Clear top shell view.',
+          },
+          'bottom-black.png': {
+            eval_best: true,
+          },
+        },
+      },
+    ],
     activeVariants: [
       { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', variant_type: 'color', color_atoms: ['black'] },
     ],

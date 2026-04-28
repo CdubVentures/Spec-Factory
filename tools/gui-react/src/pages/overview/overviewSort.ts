@@ -1,20 +1,19 @@
 import type { SortingState } from '@tanstack/react-table';
 import type { CatalogRow } from '../../types/product.ts';
 import type { KeyTierProgressGen } from '../../types/product.generated.ts';
+import { FINDER_PANELS } from '../../features/indexing/state/finderPanelRegistry.generated.ts';
 import { getScoreCard } from './scoreCard.ts';
 
 const OVERVIEW_SORT_STORAGE_KEY_PREFIX = 'sf:overview:sort:';
 const OVERVIEW_SORT_STORAGE_VERSION = 2;
 
-export const OVERVIEW_SORTABLE_COLUMN_IDS = [
+const OVERVIEW_PREFIX_SORTABLE_COLUMN_IDS = [
   'brand',
   'base_model',
   'variant',
-  'cefRunCount',
-  'pifVariants',
-  'rdfVariants',
-  'skuVariants',
-  'key',
+] as const;
+
+const OVERVIEW_SUFFIX_SORTABLE_COLUMN_IDS = [
   'scoreCard',
   'coverage',
   'confidence',
@@ -23,27 +22,52 @@ export const OVERVIEW_SORTABLE_COLUMN_IDS = [
   'lastRun',
 ] as const;
 
+type OverviewFinderSortKind = 'runCount' | 'variants' | 'key';
+
+interface OverviewFinderSortColumn {
+  readonly id: string;
+  readonly catalogKey: string;
+  readonly kind: OverviewFinderSortKind;
+}
+
+function buildOverviewFinderSortColumns(): readonly OverviewFinderSortColumn[] {
+  return FINDER_PANELS.flatMap((panel): OverviewFinderSortColumn[] => {
+    if (panel.moduleClass === 'variantGenerator') {
+      return [{ id: `${panel.catalogKey}RunCount`, catalogKey: panel.catalogKey, kind: 'runCount' }];
+    }
+    if (panel.moduleClass === 'variantArtifactProducer' || panel.moduleClass === 'variantFieldProducer') {
+      return [{ id: `${panel.catalogKey}Variants`, catalogKey: panel.catalogKey, kind: 'variants' }];
+    }
+    if (panel.moduleClass === 'productFieldProducer') {
+      return [{ id: 'key', catalogKey: panel.catalogKey, kind: 'key' }];
+    }
+    return [];
+  });
+}
+
+const OVERVIEW_FINDER_SORT_COLUMNS = buildOverviewFinderSortColumns();
+const OVERVIEW_FINDER_SORT_COLUMN_BY_ID = new Map(
+  OVERVIEW_FINDER_SORT_COLUMNS.map((column) => [column.id, column]),
+);
+const OVERVIEW_LAST_RUN_FIELD_IDS = FINDER_PANELS.map((panel) => `${panel.catalogKey}LastRunAt`);
+
+export const OVERVIEW_SORTABLE_COLUMN_IDS = [
+  ...OVERVIEW_PREFIX_SORTABLE_COLUMN_IDS,
+  ...OVERVIEW_FINDER_SORT_COLUMNS.map((column) => column.id),
+  ...OVERVIEW_SUFFIX_SORTABLE_COLUMN_IDS,
+] as readonly string[];
+
 export type OverviewSortableColumnId = typeof OVERVIEW_SORTABLE_COLUMN_IDS[number];
 
-const FIRST_SORT_DESC: Readonly<Record<OverviewSortableColumnId, boolean>> = {
-  brand: false,
-  base_model: false,
-  variant: false,
-  cefRunCount: true,
-  pifVariants: true,
-  rdfVariants: true,
-  skuVariants: true,
-  key: true,
-  scoreCard: true,
-  coverage: true,
-  confidence: true,
-  fieldsFilled: true,
-  live: true,
-  lastRun: true,
-};
+const FIRST_SORT_DESC: Readonly<Record<string, boolean>> = Object.freeze(
+  Object.fromEntries(OVERVIEW_SORTABLE_COLUMN_IDS.map((columnId) => [
+    columnId,
+    !OVERVIEW_PREFIX_SORTABLE_COLUMN_IDS.includes(columnId as typeof OVERVIEW_PREFIX_SORTABLE_COLUMN_IDS[number]),
+  ])),
+);
 
-function isOverviewSortableColumnId(columnId: string): columnId is OverviewSortableColumnId {
-  return OVERVIEW_SORTABLE_COLUMN_IDS.includes(columnId as OverviewSortableColumnId);
+function isOverviewSortableColumnId(columnId: string): boolean {
+  return OVERVIEW_SORTABLE_COLUMN_IDS.includes(columnId);
 }
 
 function getLocalStorage(): Storage | null {
@@ -151,7 +175,7 @@ export function overviewSortingUsesLive(sorting: SortingState): boolean {
 }
 
 export function getOverviewColumnFirstSortDesc(columnId: string): boolean {
-  return isOverviewSortableColumnId(columnId) ? FIRST_SORT_DESC[columnId] : false;
+  return isOverviewSortableColumnId(columnId) ? FIRST_SORT_DESC[columnId] ?? false : false;
 }
 
 export function toggleOverviewSortStack(current: SortingState, columnId: string): SortingState {
@@ -159,7 +183,7 @@ export function toggleOverviewSortStack(current: SortingState, columnId: string)
 
   const existing = current.find((entry) => entry.id === columnId);
   const rest = current.filter((entry) => entry.id !== columnId);
-  const firstDesc = FIRST_SORT_DESC[columnId];
+  const firstDesc = FIRST_SORT_DESC[columnId] ?? false;
 
   if (!existing) return [{ id: columnId, desc: firstDesc }, ...rest];
   if (existing.desc === firstDesc) return [{ id: columnId, desc: !firstDesc }, ...rest];
@@ -199,25 +223,40 @@ function compareOverviewRows(
 function compareOverviewColumn(
   a: CatalogRow,
   b: CatalogRow,
-  columnId: OverviewSortableColumnId,
+  columnId: string,
   runningByProduct: ReadonlyMap<string, readonly string[]>,
 ): number {
+  const finderResult = compareOverviewFinderColumn(a, b, columnId);
+  if (finderResult !== null) return finderResult;
+
   switch (columnId) {
     case 'brand': return compareText(a.brand, b.brand);
     case 'base_model': return compareText(a.base_model, b.base_model);
     case 'variant': return compareText(a.variant, b.variant);
-    case 'cefRunCount': return compareNumber(a.cefRunCount, b.cefRunCount);
-    case 'pifVariants': return compareNumber(a.pifVariants.length, b.pifVariants.length);
-    case 'rdfVariants': return compareNumber(a.rdfVariants.length, b.rdfVariants.length);
-    case 'skuVariants': return compareNumber(a.skuVariants.length, b.skuVariants.length);
-    case 'key': return compareKeyTiers(a.keyTierProgress, b.keyTierProgress);
     case 'scoreCard': return compareNumber(getScoreCard(a).score, getScoreCard(b).score);
     case 'coverage': return compareNumber(a.coverage, b.coverage);
     case 'confidence': return compareNumber(a.confidence, b.confidence);
     case 'fieldsFilled': return compareNumber(a.fieldsFilled, b.fieldsFilled);
     case 'live': return compareLive(a.productId, b.productId, runningByProduct);
     case 'lastRun': return compareNumber(getOverviewLastRunMs(a), getOverviewLastRunMs(b));
+    default: return 0;
   }
+}
+
+function compareOverviewFinderColumn(a: CatalogRow, b: CatalogRow, columnId: string): number | null {
+  const column = OVERVIEW_FINDER_SORT_COLUMN_BY_ID.get(columnId);
+  if (!column) return null;
+  if (column.kind === 'key') return compareKeyTiers(a.keyTierProgress, b.keyTierProgress);
+  if (column.kind === 'runCount') {
+    return compareNumber(
+      readCatalogNumber(a, `${column.catalogKey}RunCount`),
+      readCatalogNumber(b, `${column.catalogKey}RunCount`),
+    );
+  }
+  return compareNumber(
+    readCatalogArrayLength(a, `${column.catalogKey}Variants`),
+    readCatalogArrayLength(b, `${column.catalogKey}Variants`),
+  );
 }
 
 function compareText(a: string, b: string): number {
@@ -261,10 +300,27 @@ function parseDateMs(value: string): number {
 
 export function getOverviewLastRunMs(row: CatalogRow): number {
   return Math.max(
-    parseDateMs(row.cefLastRunAt),
-    parseDateMs(row.pifLastRunAt),
-    parseDateMs(row.rdfLastRunAt),
-    parseDateMs(row.skuLastRunAt),
-    parseDateMs(row.kfLastRunAt),
+    0,
+    ...OVERVIEW_LAST_RUN_FIELD_IDS.map((fieldId) => parseDateMs(readCatalogString(row, fieldId))),
   );
+}
+
+function readCatalogValue(row: CatalogRow, key: string): unknown {
+  const record = row as unknown as Record<string, unknown>;
+  return record[key];
+}
+
+function readCatalogArrayLength(row: CatalogRow, key: string): number {
+  const value = readCatalogValue(row, key);
+  return Array.isArray(value) ? value.length : 0;
+}
+
+function readCatalogNumber(row: CatalogRow, key: string): number {
+  const value = readCatalogValue(row, key);
+  return typeof value === 'number' ? value : 0;
+}
+
+function readCatalogString(row: CatalogRow, key: string): string {
+  const value = readCatalogValue(row, key);
+  return typeof value === 'string' ? value : '';
 }

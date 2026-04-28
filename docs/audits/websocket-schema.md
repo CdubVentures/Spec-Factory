@@ -1,109 +1,79 @@
 # WebSocket Channel + Schema Audit
 
-Date: 2026-04-27
-Worst severity: **HIGH** — every WS channel except `data-change` is consumed without runtime shape validation; one bad message can corrupt the operations Zustand store silently.
+Date: 2026-04-28
+Current severity: **HIGH**
 
-## Channel inventory
+## Scope
 
-| Channel | Backend emitter | Frontend handler | Backend validates? | Frontend validates? |
-|---|---|---|---|---|
-| `events` | `realtimeBridge.js` | `useWsEventBridge.ts:113` | ✗ | only `Array.isArray` |
-| `process` | `processRuntime.js` | `useWsEventBridge.ts` | ✗ | `Array.isArray` |
-| `process-status` | `processRuntime.js` | `useWsEventBridge.ts:108–112` | ✗ | `typeof === 'object'` |
-| `indexlab-event` | `realtimeBridge.js` | `useWsEventBridge.ts:113` | ✗ | `Array.isArray` |
-| `operations` | `core/operations/operationsRegistry.js:113–131` | `useWsEventBridge.ts:116–129` | ✗ | only `isFullLlmCallRecord` for one branch |
-| `llm-stream` | `core/llm/streamBatcher.js` | `useWsEventBridge.ts:130–149` | ✗ | `operationId && text` only |
-| `data-change` | many | `useWsEventBridge.ts:150–174` | ✓ `isDataChangePayload` | ✗ (cast only) |
-| `heartbeat` | `realtimeBridge.js:234` | implicit (resets idle timer in `ws.ts`) | n/a | n/a |
-| `screencast-*` (dynamic) | `realtimeBridge.js:137–144` | base64 frame consumer | ✗ | basic frame check |
+Reconnect behavior has improved, but receive-side runtime validation remains thin. Bad WS payloads can still corrupt local UI state or break handlers.
 
-### Orphaned channels (declared but never emitted)
-- `test-import-progress`
-- `test-run-progress`
-- `test-repair-progress`
+## Active Findings
 
-Declared in `tools/gui-react/src/api/ws.ts` Channel type; subscribed in `useWsEventBridge.ts:178`; backend emits zero. Dead code from an old feature.
+### G1. Operations channel lacks runtime shape validation - HIGH
 
-## Identified gaps
+Operation upsert/remove payloads are trusted too early at the UI boundary.
 
-### G1. Operations channel has no shape validation — **HIGH**
-**Files:** `src/core/operations/operationsRegistry.js:113–131`, `tools/gui-react/src/pages/layout/hooks/useWsEventBridge.ts:116–129`
-Frontend casts the message and calls `store.upsert(operation)` with whatever shape arrives. A corrupted/spoofed message with `stages: null`, `currentStageIndex: 'invalid'`, `status: 'invalid_status'` lands in the Zustand store and breaks every consumer.
+**Fix shape:** Add runtime guards for operation upsert/remove messages before mutating Zustand.
 
-**Fix shape:** define a zod (or ajv) schema for each `action` (`upsert`, `remove`, `llm-call-append`, `llm-call-update`); validate before any store call; log+drop on failure.
+### G2. Receive-side validation is inconsistent across channels - HIGH
 
-### G2. No receive-side validation on any channel — HIGH
-**File:** `tools/gui-react/src/pages/layout/hooks/useWsEventBridge.ts`
-Backend validates `data-change` only. All other channels rely on TypeScript `as` casts (zero runtime enforcement). Silent corruption is possible across `events`, `process-status`, `indexlab-event`, `llm-stream`.
+Many channel handlers rely on TypeScript casts rather than runtime checks.
 
-**Fix shape:** add per-channel zod schemas (or hand-rolled type guards) that mirror the frontend types; route every handler through the validator; emit a single `wsRejected` telemetry counter.
+**Fix shape:** Add small validators per externally received channel, starting with high-write channels.
 
-### G3. Process-status field naming dual snake/camel — MEDIUM
-**Files:** `tools/gui-react/src/types/events.ts:12–30`, `useWsEventBridge.ts:108–112`
-Type allows both `run_id`/`runId`, `product_id`/`productId`, etc. Backend emits whichever the source uses; consumers must read both forms (`status?.runId || status?.run_id`). Code that reads only one form silently misses values.
+### G3. Screencast frame cache is unbounded - HIGH
+**File:** `src/app/api/realtimeBridge.js`
 
-**Fix shape:** normalize to camelCase on receive; collapse the type to a single field set; keep server-side conversion in one bridge function.
+`lastScreencastFrames` can grow during long runs.
 
-### G4. Screencast frame cache unbounded — HIGH
-**File:** `src/app/api/realtimeBridge.js:137–144`
-`lastScreencastFrames` Map keyed by `${runId}::${workerId}` keeps base64 frames forever. Long runs × many workers × many pages = potential GB-scale RAM growth.
+**Fix shape:** Cap with LRU or TTL and clear by run/session lifecycle.
 
-**Fix shape:** LRU with hard cap (e.g. 1 000 entries) or TTL eviction (e.g. 60 s). Add a metric.
+### G4. Process-status payload naming is dual snake/camel - MEDIUM
 
-### G5. No try/catch around per-channel handlers — MEDIUM
-**File:** `useWsEventBridge.ts:101–175`
-Each `if (channel === ...)` branch directly calls a Zustand store method. If one throws (memory cap, bad schema in already-stored data), the rest of `handleWsMessage` exits and other channels in the same WS frame are dropped.
+Payloads carry or consume mixed naming conventions.
 
-**Fix shape:** wrap each branch in a `try { ... } catch (e) { logRejected(channel, e); }` block. Continue.
+**Fix shape:** Normalize at the boundary and keep internal shape consistent.
 
-### G6. LLM-stream chunks accumulated without validation — MEDIUM
-**File:** `useWsEventBridge.ts:130–149`
-Only checks `operationId && text`; everything else (`callId`, `lane`, `label`, `channel`) is accepted. Corrupted chunks pollute `callStreamBufRef`.
+### G5. Channel handlers need local try/catch isolation - MEDIUM
 
-**Fix shape:** add `isLlmCallStreamChunk` validator before append.
+One bad handler branch can disrupt other message handling.
 
-### G7. Loose `RuntimeEvent` interface — LOW
-**File:** `tools/gui-react/src/types/events.ts:1–10`
-`[key: string]: unknown` open-record. No required-field guard. Acceptable for log lines; risky if business logic ever conditions on a field.
+**Fix shape:** Wrap per-channel handling and log rejected messages without mutating state.
 
-**Fix shape:** add narrow guards in any handler that branches on a specific event field.
+### G6. LLM stream chunks are accumulated without enough validation - MEDIUM
 
-### G8. Data-change validation is one-sided — LOW
-Backend validates before broadcast; frontend trusts. Defense-in-depth would re-validate on receive.
+Stream text/chunk messages can be malformed.
 
-**Fix shape:** export `isDataChangePayload` to frontend (or copy the predicate) and run it as the receive guard. Cheap and removes a class of bug.
+**Fix shape:** Validate chunk shape and size before append.
 
-### G9. Three orphaned channels still subscribed — LOW
-`test-import-progress`, `test-run-progress`, `test-repair-progress` — dead code.
+### G7. Runtime event interface is loose - LOW
 
-**Fix shape:** drop from the Channel type union and subscription list.
+Generic runtime event typing reduces confidence in consumers.
 
-### G10. No explicit heartbeat handler — LOW
-`heartbeat` resets the idle timer implicitly via `onmessage`. No observability for missed heartbeats.
+**Fix shape:** Tighten types only when touching runtime event consumers.
 
-**Fix shape:** explicit handler in `useWsEventBridge` that increments a counter; warn after N missed.
+### G8. Data-change validation is stronger server-side than UI-side - LOW
 
-## Confirmed-good patterns
+The UI still benefits from a small guard before resolving invalidation keys.
 
-- Single subscription model (`{ subscribe: [], category, productId }`); resent on reconnect.
-- Heartbeat ping bypasses the channel filter (correct).
-- WS reconnect runs all reconnect handlers and re-subscribes channels.
-- 75 ms data-change scheduler + 150 ms llm-stream coalescer prevent thundering-herd UI updates.
-- JSON.parse error guard in `ws.ts:115` keeps the socket alive on bad frames.
+**Fix shape:** Add a defensive UI-side data-change guard.
 
-## Subscription / reconnect model
+### G9. Test-progress channels are unused or partially wired - LOW
 
-- Client subscribes once: `{ subscribe: [...channels], category?, productId? }`.
-- Server stores `_channels` per client; broadcasts filtered.
-- On reconnect, ws.ts:95–105 re-runs subscription + resets handlers. Caches invalidate via the reconnect handler list.
+Frontend types include `test-import-progress`, `test-run-progress`, and `test-repair-progress`; active backend emitters were not found in this audit pass.
 
-## Recommended fix order
+**Fix shape:** Remove unused channel types/subscriptions or document their owner.
 
-1. **G1** — operations message validator (highest user-impact channel).
-2. **G5** — try/catch around channel handlers (one bad branch shouldn't kill others).
-3. **G4** — bound screencast cache.
-4. **G2** — wider receive-side validators.
-5. **G3** — normalize process-status field naming.
-6. **G6** — llm-stream chunk validator.
-7. **G9** — drop orphaned channels.
-8. **G7, G8, G10** — defense-in-depth + cleanup.
+### G10. Heartbeat handling is implicit - LOW
+
+Connection health is not modeled as explicit UI state.
+
+**Fix shape:** Pair heartbeat handling with the Loading/Error UX connection status work.
+
+## Recommended Fix Order
+
+1. **G1** - Operations message validator.
+2. **G3** - Bound screencast cache.
+3. **G2/G5** - Wider validators and handler isolation.
+4. **G4/G6** - Normalize process status and stream chunks.
+5. **G7/G8/G9/G10** - Cleanup and defense-in-depth.

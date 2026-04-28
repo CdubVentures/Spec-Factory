@@ -135,3 +135,43 @@ test('describePossibleValues renders option lists / kind hints', () => {
   const listEntry = byPath('aliases');
   assert.match(describePossibleValues(listEntry), /list/i);
 });
+
+test('FIELD_RULE_SCHEMA characterizes the full path/kind/options surface', () => {
+  assert.deepEqual(
+    FIELD_RULE_SCHEMA.map(({ path, kind, options, appliesWhen }) => ({
+      path,
+      kind,
+      ...(options ? { options } : {}),
+      ...(appliesWhen ? { appliesWhen } : {}),
+    })),
+    [
+      { path: 'priority.required_level', kind: 'enum', options: ['mandatory', 'non_mandatory'] },
+      { path: 'priority.availability', kind: 'enum', options: ['always', 'sometimes', 'rare'] },
+      { path: 'priority.difficulty', kind: 'enum', options: ['easy', 'medium', 'hard', 'very_hard'] },
+      { path: 'contract.type', kind: 'enum', options: ['string', 'number', 'integer', 'boolean', 'date'] },
+      { path: 'contract.shape', kind: 'enum', options: ['scalar', 'list'] },
+      { path: 'contract.unit', kind: 'string' },
+      { path: 'contract.rounding.decimals', kind: 'integer', appliesWhen: { 'contract.type': ['number', 'integer', 'float'] } },
+      { path: 'contract.rounding.mode', kind: 'enum', options: ['nearest', 'floor', 'ceil', 'half_even'], appliesWhen: { 'contract.type': ['number', 'integer', 'float'] } },
+      { path: 'contract.list_rules.dedupe', kind: 'boolean', appliesWhen: { 'contract.shape': 'list' } },
+      { path: 'contract.list_rules.sort', kind: 'enum', options: ['none', 'asc', 'desc', 'insert'], appliesWhen: { 'contract.shape': 'list' } },
+      { path: 'contract.range.min', kind: 'number-nullable', appliesWhen: { 'contract.type': ['number', 'integer', 'float'] } },
+      { path: 'contract.range.max', kind: 'number-nullable', appliesWhen: { 'contract.type': ['number', 'integer', 'float'] } },
+      { path: 'enum.policy', kind: 'enum', options: ['closed', 'open_prefer_known', 'open'] },
+      { path: 'enum.values', kind: 'string-list' },
+      { path: 'enum.source', kind: 'enum-or-freeform', options: ['(inline)', 'data_lists.<name>'] },
+      { path: 'aliases', kind: 'string-list' },
+      { path: 'variance_policy', kind: 'enum', options: ['authoritative', 'upper_bound', 'lower_bound', 'majority_vote'] },
+      { path: 'ai_assist.reasoning_note', kind: 'prose' },
+      { path: 'ai_assist.variant_inventory_usage.enabled', kind: 'boolean' },
+      { path: 'ai_assist.pif_priority_images.enabled', kind: 'boolean' },
+      { path: 'search_hints.domain_hints', kind: 'string-list' },
+      { path: 'search_hints.query_terms', kind: 'string-list' },
+      { path: 'constraints', kind: 'constraint-list' },
+      { path: 'component.type', kind: 'component-ref' },
+      { path: 'evidence.min_evidence_refs', kind: 'integer' },
+      { path: 'evidence.tier_preference', kind: 'ordered-list', options: ['tier1', 'tier2', 'tier3'] },
+      { path: 'group', kind: 'group-ref' },
+    ],
+  );
+});

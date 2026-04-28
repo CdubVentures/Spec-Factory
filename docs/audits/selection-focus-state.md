@@ -1,71 +1,68 @@
 # Selection / Focus State Audit
 
-Date: 2026-04-27
-Worst severity: **HIGH** — Review drawer keeps a stale `activeCell` if the targeted product/field is deleted in another flow.
+Date: 2026-04-28
+Current severity: **HIGH**
 
-## Selection store inventory
+## Scope
 
-| Store | File | Scope | Persist? |
-|---|---|---|---|
-| Overview selection | `pages/overview/overviewSelectionStore.ts` | Multi-select product ids per category | No (in-memory) |
-| IndexLab picker | `features/indexing/state/indexlabStore.ts` | brand / model / productId / runId + recents | localStorage |
-| Review drawer | `features/review/state/reviewStore.ts` | `activeCell {productId, field}` | No |
-| Discovery history drawer | `stores/finderDiscoveryHistoryStore.ts` | finderId / productId / category + filters | No |
-| Component review | `features/review/state/componentReviewStore.ts` | `selectedEntity {type, name, maker, rowIndex}` + `flaggedItems` | No |
+Selection and drawer stores keep entity ids in memory. They need a consistent pruning contract when products, runs, fields, variants, or component rows disappear.
 
-## Identified gaps
+## Active Findings
 
-### G1. Review drawer keeps stale `activeCell` after entity deletion — **HIGH**
-**File:** `tools/gui-react/src/features/review/components/ReviewPage.tsx`
-If the active product/field is deleted (in another tab, by another panel, or by `key-finder-field-deleted`), the drawer remains open but `activeProduct`/`activeFieldState` resolve to undefined. User can type but mutations error silently.
+### G1. Review drawer can keep stale `activeCell` after deletion - HIGH
 
-**Fix shape:** add an effect that closes the drawer when `activeProduct == null` or the field is no longer in the field map.
+If the targeted product or field is deleted elsewhere, Review can keep a drawer focused on an entity that no longer exists.
 
-### G2. Overview selection survives bulk delete — MEDIUM
-**File:** `pages/overview/CommandConsole.tsx:330–350` (PIF/CEF Delete-All paths)
-`useOverviewSelectionStore` keeps deleted product ids in `byCategory[category]`. After bulk delete, ActiveAndSelectedRow can show ghost badges.
+**Fix shape:** Subscribe Review focus state to deletion events and close the drawer with a visible notice when the active entity disappears.
 
-**Fix shape:** subscribe the selection store to catalog row removals, or call `clear(category)` (or filter ids) on successful delete.
+### G2. Overview selection can survive bulk delete - MEDIUM
 
-### G3. IndexLab picker can hold a deleted productId/runId — MEDIUM
-**File:** `pages/overview/IndexLabLink.tsx:36–38`
-Picker state is persisted to localStorage. If the product is deleted server-side, the next IndexingPage load shows blank or "Not in catalog" until the self-heal effect runs.
+The selection store can retain ids after selected rows are deleted.
 
-**Fix shape:** when bulk delete completes, if the deleted ids include current `pickerProductId`/`pickerRunId`, clear them immediately.
+**Fix shape:** Prune selected ids after product/run deletion and after bulk command completion where rows disappear.
 
-### G4. Discovery history drawer can target a ghost product — MEDIUM
-**File:** `shared/ui/finder/DiscoveryHistoryDrawer.tsx`
-Reopening the drawer for a deleted product produces an empty/404 result with no user feedback.
+### G3. IndexLab picker can hold deleted product/run ids - MEDIUM
 
-**Fix shape:** validate `(productId, finderId)` against the catalog query before rendering content; auto-close + toast if invalid.
+Picker state is persisted and can point at removed entities.
 
-### G5. Component-review flagged-items rowIndex drifts after sort/filter — LOW-MEDIUM
-**File:** `pages/component-review/ComponentSubTab.tsx`
-`flaggedItems[].rowIndex` is captured at flag time; after re-sort/filter, the index points at a different entity.
+**Fix shape:** Clear picker product/run ids when deletion events include the active targets.
 
-**Fix shape:** store identity (`type, name, maker, variant`) only; derive `rowIndex` at render via `Array.findIndex`.
+### G4. Discovery history drawer can target a deleted product - MEDIUM
 
-### G6. Multi-category selection mismatch (future) — LOW
-**File:** `useUiCategoryStore` + `CommandConsole.tsx`
-Today the app is single-category ("mouse"). When a second category is added, selections from the previous category will leak into Command Console actions because `category` is captured by props at render.
+The drawer target can become invalid after product deletion.
 
-**Fix shape:** subscribe Command Console to category and re-render; clear selection on category change.
+**Fix shape:** Validate target existence and close with a notice if missing.
 
-### G7. PIF variant ring click → no Review filter sync (future) — LOW
-**Files:** `pages/overview/PifVariantPopover.tsx`, `features/product-image-finder/components/ProductImageFinderPanel.tsx`
-Today Review has no variant dimension; if it gets one, clicking a PIF variant ring won't filter Review. Document the boundary.
+### G5. Component Review flagged items are row-index based - LOW-MEDIUM
 
-## Confirmed-good patterns
+Sort/filter changes can move rows while flagged state still refers to row indexes.
 
-- Drawer close (`useReviewStore.closeDrawer`) resets all transient state.
-- Discovery history drawer fields (`fieldKeyFilter`, `variantIdFilter`) reset on close.
-- IndexLab picker localStorage persistence + sanitization on hydration.
-- Overview selection keyed by category — no cross-category leak today.
+**Fix shape:** Store stable entity ids instead of row indexes.
 
-## Recommended fix order
+### G6. Future multi-category selection mismatch - LOW
 
-1. **G1** — close Review drawer if active entity vanishes. ~30 min.
-2. **G2** — clear selection on bulk delete. ~15 min.
-3. **G3** — clear IndexLab picker when deletion includes its targets. ~15 min.
-4. **G4** — discovery drawer target validation. ~30 min.
-5. **G5** — refactor flagged-items to identity-based.
+Selection behavior can become confusing if multi-category workflows are added.
+
+**Fix shape:** Keep selection category-scoped.
+
+### G7. PIF variant ring click does not sync Review filter - LOW
+
+This is an optional navigation enhancement, not a correctness issue.
+
+**Fix shape:** Defer unless users expect ring-to-review drilldown.
+
+### G8. Component-review batch paths have manual/broad invalidation leftovers - MEDIUM
+**Files:** component-review batch mutation paths
+
+Some component-review batch flows still rely on manual or broad invalidation. They need a precise event/query-key contract before they can be safely narrowed.
+
+**Fix shape:** Inventory batch paths, add backend data-change events where missing, then narrow frontend invalidation to affected component/entity scopes.
+
+## Recommended Fix Order
+
+1. **G1** - Close Review drawer when active entity vanishes.
+2. **G2/G3** - Prune Overview selection and IndexLab picker after deletes.
+3. **G4** - Validate Discovery History target.
+4. **G8** - Tighten component-review batch invalidation after backend event coverage is confirmed.
+5. **G5** - Move flagged items to identity-based state.
+6. **G6/G7** - Defer.

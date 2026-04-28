@@ -1,59 +1,36 @@
 # Drawer / Modal Freshness Audit
 
-Date: 2026-04-27
-Worst severity: **MEDIUM** — PIF and ComponentReview drawers carry 30–60 s `staleTime`; reopening after a mutation can show pre-mutation data.
+Date: 2026-04-28
+Current severity: **MEDIUM**
 
-## Inventory
+## Scope
 
-| Component | File | Lifecycle | `staleTime` | Verdict |
-|---|---|---|---|---|
-| DiscoveryHistoryDrawer | `shared/ui/finder/DiscoveryHistoryDrawer.tsx` | Portal, stays mounted, query enabled when open | (none — global default 5 s) | LOW gap (implicit) |
-| PromptPreviewModal | `shared/ui/finder/PromptPreviewModal.tsx` | Unmounts on close | `0` (via `promptPreviewQueries.ts:66`) | ✅ Excellent |
-| PifVariantPopover | `pages/overview/PifVariantPopover.tsx` | Stays mounted; query lazy on `popOpen` | `30_000` | MEDIUM gap |
-| KeyTierPopover | `pages/overview/KeyTierPopover.tsx` | Stays mounted; query lazy on open | `5_000` | ✅ |
-| ComponentReviewDrawer | `pages/component-review/ComponentReviewDrawer.tsx` | Drawer | `60_000` (impact query) | MEDIUM gap |
-| CefRunPopover | `pages/overview/CefRunPopover.tsx` | No queries | n/a | ✅ |
+Drawer and popover queries should avoid showing old snapshots after a user closes and reopens a detail surface.
 
-## Identified gaps
+## Active Findings
 
-### G1. DiscoveryHistoryDrawer has no explicit `staleTime` — LOW
-**File:** `shared/ui/finder/DiscoveryHistoryDrawer.tsx`
-`runsQuery` inherits the global 5 s default. Works today, but the drawer is a "show me the truth right now" surface — it should be explicit.
+### G1. PIF variant popover uses a 30-second stale window - MEDIUM
+**File:** `tools/gui-react/src/features/product-image-finder/components/PifVariantPopover.tsx`
 
-**Fix shape:** declare `staleTime: 0` (or document the 5 s).
+Several PIF popover queries can show pre-mutation image/evaluation data after reopen.
 
-### G2. PifVariantPopover holds 30 s `staleTime` — MEDIUM
-**File:** `pages/overview/PifVariantPopover.tsx:106–148`
-Closing the popover during a PIF mutation and reopening within 30 s shows pre-mutation data (rings, image counts, slot fills).
+**Fix shape:** Lower stale time to a small value or zero for popover detail queries.
 
-**Fix shape:** either drop to `5_000` (matches KeyTierPopover), or invalidate on the popover-open transition after a relevant mutation. The data-change WS path will refresh open popovers; the gap is the *closed→open* transition window.
+### G2. Component Review impact drawer uses a 60-second stale window - MEDIUM
+**File:** `tools/gui-react/src/features/component-review/components/ComponentReviewDrawer.tsx`
 
-### G3. ComponentReviewDrawer impact query holds 60 s `staleTime` — MEDIUM
-**File:** `pages/component-review/ComponentReviewDrawer.tsx`
-`['componentImpact', category, componentType, item.name]` is cached for 60 s. Cross-product impact counts can be obviously stale after a fast workflow (override → next item).
+Impact data can stay stale for up to a minute after related mutations.
 
-**Fix shape:** drop to `30_000` or `0`; or rely on data-change events to invalidate.
+**Fix shape:** Lower stale time and/or invalidate on relevant component/enum events.
 
-## Confirmed-good patterns
+### G3. Discovery history drawer has no explicit freshness contract - LOW
 
-- **PromptPreviewModal** with `staleTime: 0` is the canonical "always fresh on open" pattern. New drawers should follow it.
-- All audited drawers/modals avoid the snapshot-via-props anti-pattern (no `data` prop carrying cached state).
-- All mutations inside drawers go through `useDataChangeMutation` with `extraQueryKeys` for surgical invalidation.
-- Lazy query enablement (`enabled: open && …`) avoids wasted fetches.
-- WS bridge handler invalidates open popovers via the data-change scheduler.
+The drawer relies on defaults rather than a local stale-time decision.
 
-## Recommended `staleTime` policy
+**Fix shape:** Add an explicit freshness policy if the drawer becomes a stale-data complaint.
 
-| Surface category | `staleTime` |
-|---|---|
-| Prompts / live previews | 0 |
-| Per-product summaries / counts | 5 000 |
-| Cross-product impact / metadata | 30 000 |
-| Truly static reference (reserved keys, etc.) | Infinity |
+## Recommended Fix Order
 
-## Recommended fix order
-
-1. **G2** — PIF popover `staleTime: 5_000`. ~1-line change.
-2. **G3** — ComponentReview impact `staleTime: 30_000`. ~1-line.
-3. **G1** — discovery history drawer explicit `staleTime: 0`. ~1-line.
-4. Add a lint rule (or PR-time check) that flags new `useQuery({ … staleTime: > 30_000 })` calls inside `*Drawer*.tsx` / `*Modal*.tsx` / `*Popover*.tsx`.
+1. **G1** - PIF popover freshness.
+2. **G2** - Component Review impact freshness.
+3. **G3** - Defer.

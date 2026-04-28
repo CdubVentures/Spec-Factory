@@ -209,6 +209,7 @@ function createCtx(requestBody, options = {}) {
     },
   ];
   const settings = options.settings ?? {};
+  let finderRow = options.finderRow ? { ...options.finderRow } : null;
   const specDb = {
     db: {
       transaction: (work) => (...args) => {
@@ -238,10 +239,18 @@ function createCtx(requestBody, options = {}) {
         updateSummaryField: (...args) => {
           projectionEvents.push({ type: 'summaryField', txDepth: transactionDepth });
           summaryUpdates.push(args);
+          const [productId, field, value] = args;
+          finderRow = {
+            category: CATEGORY,
+            product_id: productId,
+            ...(finderRow || {}),
+            [field]: value,
+          };
         },
         upsert: (row) => {
           projectionEvents.push({ type: 'summaryUpsert', txDepth: transactionDepth });
           summaryUpserts.push(row);
+          finderRow = { ...row };
         },
         insertRun: (row) => {
           projectionEvents.push({ type: 'runInsert', txDepth: transactionDepth });
@@ -260,6 +269,7 @@ function createCtx(requestBody, options = {}) {
         remove: () => {
           projectionEvents.push({ type: 'summaryRemove', txDepth: transactionDepth });
         },
+        get: (productId) => (finderRow?.product_id === productId ? finderRow : null),
         getSetting: (key) => settings[key] ?? '',
       };
     },
@@ -353,6 +363,43 @@ describe('productImageFinderRoutes data-change contract', () => {
       'progress',
       'transaction:commit',
     ]);
+  });
+
+  it('recomputes PIF variant progress from the SQL projection instead of product_images.json', async () => {
+    writeProductImagesDoc();
+    const ctx = createCtx({
+      variant_key: 'color:black',
+      slot: 'top',
+      filename: 'top-black.png',
+    }, {
+      finderRow: {
+        category: CATEGORY,
+        product_id: PRODUCT_ID,
+        images: [{
+          view: 'top',
+          filename: 'top-black.png',
+          variant_key: 'color:black',
+          variant_id: 'variant-black',
+        }],
+        image_count: 1,
+        carousel_slots: {},
+        eval_state: {},
+      },
+    });
+    const handler = registerProductImageFinderRoutes(ctx);
+
+    const result = await handler(
+      ['product-image-finder', CATEGORY, PRODUCT_ID, 'carousel-slot'],
+      new URLSearchParams(),
+      'PATCH',
+      {},
+      {},
+    );
+
+    assert.equal(result.status, 200);
+    assert.equal(ctx._progressUpserts.length, 1);
+    assert.equal(ctx._progressUpserts[0].imageCount, 1);
+    assert.equal(ctx._progressUpserts[0].priorityFilled, 1);
   });
 
   it('projects optional carousel placeholders as overfill and extra-image progress', async () => {
@@ -519,11 +566,23 @@ describe('productImageFinderRoutes data-change contract', () => {
 
   it('clear-all carousel winners updates projections and emits the carousel-updated event', async () => {
     writeProductImagesDocWithCarouselState();
+    const currentDoc = readProductImagesDoc();
     const ctx = createCtx({}, {
       variants: [
         { variant_id: 'variant-black', variant_key: 'color:black' },
         { variant_id: 'variant-white', variant_key: 'color:white' },
       ],
+      finderRow: {
+        category: CATEGORY,
+        product_id: PRODUCT_ID,
+        images: currentDoc.selected.images,
+        image_count: currentDoc.selected.images.length,
+        carousel_slots: currentDoc.carousel_slots,
+        eval_state: {
+          'top-black.png': { eval_best: true, eval_reasoning: 'best black' },
+          'top-white.png': { eval_best: true, eval_reasoning: 'best white' },
+        },
+      },
     });
     const handler = registerProductImageFinderRoutes(ctx);
 

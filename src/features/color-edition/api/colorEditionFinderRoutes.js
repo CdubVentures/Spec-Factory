@@ -10,6 +10,7 @@
  */
 
 import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
+import { FINDER_MODULE_MAP } from '../../../core/finder/finderModuleRegistry.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 import { deriveColorNamesFromVariants, derivePublishedFromVariants, deleteAllVariants, deleteVariant } from '../variantLifecycle.js';
@@ -25,7 +26,7 @@ export function registerColorEditionFinderRoutes(ctx) {
     moduleId: 'colorEditionFinder',
     moduleType: 'cef',
     phase: 'colorFinder',
-    fieldKeys: ['colors', 'editions'],
+    fieldKeys: FINDER_MODULE_MAP.colorEditionFinder.fieldKeys,
 
     runFinder: runColorEditionFinder,
     deleteRun: deleteColorEditionFinderRun,

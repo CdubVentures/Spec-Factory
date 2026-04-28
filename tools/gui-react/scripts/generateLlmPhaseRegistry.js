@@ -484,6 +484,7 @@ function generateFinderPanelRegistry() {
     lines.push(`    scopeLevel: ${quote(deriveScopeLevel(m.moduleClass))},`);
     lines.push(`    routePrefix: ${quote(m.routePrefix || '')},`);
     lines.push(`    moduleType: ${quote(m.moduleType || '')},`);
+    lines.push(`    catalogKey: ${quote(m.catalogKey || m.moduleType || '')},`);
     lines.push(`    phase: ${quote(m.phase || '')},`);
     if (m.valueKey) lines.push(`    valueKey: ${quote(m.valueKey)},`);
     if (m.panelTitle) lines.push(`    panelTitle: ${quote(m.panelTitle)},`);

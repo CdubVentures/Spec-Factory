@@ -1,83 +1,40 @@
-# `data-authority/snapshot` Query Audit
+# Data Authority Snapshot Query Audit
 
-Date: 2026-04-27
-Worst severity: **LOW** — broad invalidation looks scary but only one consumer mounts the query, so impact is small. Documentation gap is the real problem.
+Date: 2026-04-28
+Current severity: **LOW**
 
-## Endpoint
+## Scope
 
-`GET /data-authority/{category}/snapshot` — `src/features/category-authority/api/dataAuthorityRoutes.js`
+The `['data-authority','snapshot',category]` query has broad invalidation but limited consumer surface.
 
-Cheap: O(1) reads from `sessionCache`, `specDb.getSpecDbSyncState`, `getDataPropagationCountersSnapshot`, `getSettingsPersistenceCountersSnapshot`. No DB queries, no filesystem.
+## Active Findings
 
-Returns:
-```
-{
-  category,
-  authority_version,        // composite: map_hash | compiled_hash | sync_version | updated_at
-  version: { map_hash, compiled_hash, specdb_sync_version, updated_at },
-  changed_domains: string[],
-  compile_stale: boolean,
-  source_timestamps: { compiled_at, map_saved_at, specdb_sync_at },
-  specdb_sync: { status, version, updated_at, meta },
-  observability: {
-    data_change: { total, last_broadcast_at, category_count, by_event },
-    queue_cleanup: { ... },
-    settings_persistence: { writes, deletes },
-  },
-}
-```
+### G1. Broad invalidation intent is undocumented - LOW
 
-## Consumer
+The broad data-authority snapshot invalidation is hard to reason about without local comments.
 
-**Single consumer:** `tools/gui-react/src/features/studio/state/useStudioPageDocsController.ts` via `tools/gui-react/src/hooks/useAuthoritySnapshot.js`.
+**Fix shape:** Add a WHY comment near the event/domain mapping.
 
-```
-queryKey: ['data-authority', 'snapshot', category],
-staleTime: 2_500,
-refetchInterval: 10_000,
-enabled: category !== 'all',
-```
+### G2. Observability payload is not clearly consumed - LOW-MEDIUM
 
-Only the composite `authorityVersionToken` is read. `observability` payload is fetched but unused on the client.
+The snapshot carries observability-style data, but consumer ownership is unclear.
 
-## Invalidation coverage
+**Fix shape:** Either document the payload as reserved or split it into a separate endpoint when a second consumer appears.
 
-`withAuthoritySnapshot()` appends the key to 11 domains: studio, mapping, review-layout, labels, catalog, identity, review, component, enum, product, key-finder. ~9–15 distinct events trigger it.
+### G3. Polling plus invalidation is redundant - LOW
 
-The breadth looks expensive but is benign because **only one consumer mounts the query**. Invalidation = "next refocus / 10 s tick refetches a cheap endpoint once".
+Polling remains even though event invalidation exists.
 
-## Identified gaps
+**Fix shape:** Raise stale time or remove polling once invalidation confidence is high.
 
-### G1. No documentation of "why so broad" — LOW
-**File:** `src/core/events/eventRegistry.js`
-`withAuthoritySnapshot()` is opaque — readers see snapshot in 11 domain templates and assume it's a heavy cross-screen dependency.
+### G4. No regression test for cascade scope - LOW
 
-**Fix shape:** add a 3-line comment above the helper explaining: "Studio Page is the only consumer; snapshot is appended broadly because the snapshot payload reflects all authority sources; invalidation cost is one cheap endpoint call."
+The broad template could expand accidentally.
 
-### G2. Unused `observability` payload — LOW-MEDIUM
-**File:** `dataAuthorityRoutes.js:174` builds observability counters; client extracts only `authorityVersionToken`. The wire payload is heavier than needed and risks drift if someone reuses it.
+**Fix shape:** Add a small invariant test if this query becomes performance-sensitive.
 
-**Fix shape:** either (a) ship a separate lightweight `/version-token` endpoint and let Studio use that, OR (b) keep the rich payload and document "reserved for future telemetry dashboards" so future consumers know how to plug in.
+## Recommended Fix Order
 
-### G3. Polling + invalidation redundancy — LOW
-2.5 s `staleTime` + 10 s `refetchInterval` + WS-driven invalidation can result in 2–3 fetches when one would do. Cheap endpoint, so not a real problem.
-
-**Fix shape:** consider raising `staleTime` to e.g. 30 s once `data-change` is trusted to invalidate reliably; keep polling as fallback.
-
-### G4. No regression test for cascade — LOW
-Tests assert presence of the key in resolved invalidations but not absence elsewhere. If someone added a snapshot append to 50 unrelated domains, current tests wouldn't catch it.
-
-**Fix shape:** add a negative test ("snapshot must only be in these 11 domains") OR document the invariant.
-
-## Confirmed-good patterns
-
-- Lightweight endpoint suitable for high-frequency polling.
-- Single `withAuthoritySnapshot` helper concentrates the append logic.
-- `resolveAuthoritySnapshotInvalidationQueryKeys` (`tools/gui-react/src/hooks/authoritySnapshotHelpers.js:65–79`) cleanly merges domain templates with the snapshot key per scoped category.
-
-## Recommended fix order
-
-1. **G1** — comment in `eventRegistry.js`. ~3 min.
-2. **G2** — pick a path (separate endpoint or document); ~30 min if splitting.
-3. **G4** — negative test or invariant doc.
-4. **G3** — raise `staleTime` once confidence in invalidation is high.
+1. **G1** - Document broad invalidation.
+2. **G2** - Decide payload ownership.
+3. **G3/G4** - Defer.

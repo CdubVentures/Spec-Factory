@@ -461,6 +461,7 @@ export const FINDER_MODULES = Object.freeze([
     moduleClass: 'variantFieldProducer',
     variantSource: 'colorEditionFinder',
     moduleType: 'skf',
+    catalogKey: 'sku',
     moduleLabel: 'SKF',
     chipStyle: 'sf-chip-success',
 

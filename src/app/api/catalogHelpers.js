@@ -1,4 +1,5 @@
 import { isReservedFieldKey } from '../../core/finder/finderExclusions.js';
+import { FINDER_MODULES } from '../../core/finder/finderModuleRegistry.js';
 import { isConcreteEvidence } from '../../features/key/index.js';
 import { normalizeConfidence } from '../../features/publisher/index.js';
 import { resolveProductImageDependencyStatus } from '../../features/product-image/productImageIdentityDependencies.js';
@@ -212,14 +213,17 @@ function buildLastRunMap(specDb, moduleId, category) {
   return map;
 }
 
+function catalogLastRunPrefix(mod) {
+  return String(mod.catalogKey || mod.moduleType || '').trim().toLowerCase();
+}
+
 function buildLastRunMaps(specDb, category) {
-  return {
-    cef: buildLastRunMap(specDb, 'colorEditionFinder', category),
-    pif: buildLastRunMap(specDb, 'productImageFinder', category),
-    rdf: buildLastRunMap(specDb, 'releaseDateFinder', category),
-    sku: buildLastRunMap(specDb, 'skuFinder', category),
-    kf:  buildLastRunMap(specDb, 'keyFinder', category),
-  };
+  return Object.fromEntries(
+    FINDER_MODULES.map((mod) => [
+      catalogLastRunPrefix(mod),
+      buildLastRunMap(specDb, mod.id, category),
+    ]),
+  );
 }
 
 function buildCatalogProjectionContext(specDb, category) {
@@ -255,6 +259,12 @@ function buildCatalogRowFromSql({ specDb, cleanVariant, category, row, context }
   const rdfVariants = buildScalarVariants(specDb, pid, 'release_date');
   const keyTierProgress = buildKeyTierProgress(specDb, pid, context.keyGateKnobs);
   const pifDependencyStatus = buildPifDependencyStatus(specDb, category, row);
+  const lastRunFields = Object.fromEntries(
+    FINDER_MODULES.map((mod) => [
+      `${catalogLastRunPrefix(mod)}LastRunAt`,
+      context.lastRunMaps[catalogLastRunPrefix(mod)]?.get(pid) || '',
+    ]),
+  );
 
   return {
     productId: pid,
@@ -276,11 +286,7 @@ function buildCatalogRowFromSql({ specDb, cleanVariant, category, row, context }
     skuVariants,
     rdfVariants,
     keyTierProgress,
-    cefLastRunAt: context.lastRunMaps.cef.get(pid) || '',
-    pifLastRunAt: context.lastRunMaps.pif.get(pid) || '',
-    rdfLastRunAt: context.lastRunMaps.rdf.get(pid) || '',
-    skuLastRunAt: context.lastRunMaps.sku.get(pid) || '',
-    kfLastRunAt:  context.lastRunMaps.kf.get(pid)  || '',
+    ...lastRunFields,
   };
 }
 

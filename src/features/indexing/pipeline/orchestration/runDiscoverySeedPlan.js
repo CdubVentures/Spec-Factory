@@ -46,13 +46,11 @@ function buildInitialContext(params) {
   });
 
   const queryExecutionHistory = frontierDb?.buildQueryExecutionHistory?.(job?.productId) || { queries: [] };
-  // WHY: Product-scoped URL history for IndexLab — read from product.json::sources[].
+  // WHY: Product-scoped URL history for IndexLab comes from SQL runtime state.
   // Parallel shape to queryExecutionHistory so runSearchPlanner can gate injection
-  // uniformly via discoveryUrlHistoryEnabled. Safe even when productRoot unset
-  // (the reader returns { urls: [] } on any I/O error).
+  // uniformly via discoveryUrlHistoryEnabled.
   const readUrlHistoryFn = params.readIndexlabUrlHistoryFn || readIndexlabUrlHistory;
   const urlExecutionHistory = readUrlHistoryFn(job?.productId, {
-    productRoot: config.productRoot,
     frontierDb,
   });
 

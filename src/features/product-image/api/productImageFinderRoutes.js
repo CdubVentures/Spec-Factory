@@ -9,6 +9,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { createFinderRouteHandler } from '../../../core/finder/finderRoutes.js';
+import { FINDER_MODULE_MAP } from '../../../core/finder/finderModuleRegistry.js';
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 import { registerOperation, getOperationSignal, countRunningOperations, updateStage, updateModelInfo, updateProgressText, updateLoopProgress, updateQueueDelay, appendLlmCall, completeOperation, failOperation, cancelOperation, fireAndForget } from '../../../core/operations/index.js';
 import { createStreamBatcher } from '../../../core/llm/streamBatcher.js';
@@ -29,7 +30,7 @@ import {
 } from '../productImageStore.js';
 import { fullResetProductImages } from '../productImageFullReset.js';
 import { runEvalView, runEvalHero, runEvalCarouselLoop } from '../carouselBuild.js';
-import { writeCarouselSlot, clearCarouselWinners, clearAllCarouselWinners, resolveCarouselSlots, deleteEvalRecord, extractEvalState } from '../imageEvaluator.js';
+import { writeCarouselSlot, clearCarouselWinners, clearAllCarouselWinners, resolveCarouselSlots, deleteEvalRecord, extractEvalState, PIF_EVAL_FIELDS } from '../imageEvaluator.js';
 import { compilePifPreviewPrompt } from '../productImagePreviewPrompt.js';
 import { resolveProductImageDependencyStatus } from '../productImageIdentityDependencies.js';
 
@@ -98,20 +99,35 @@ function countSlotFillsAndImages({ fullImages, carouselSlots, variantKey, varian
   };
 }
 
+function readPifProgressProjection({ specDb, productId }) {
+  const finderStore = specDb.getFinderStore?.('productImageFinder');
+  const row = typeof finderStore?.get === 'function' ? finderStore.get(productId) : null;
+  if (!row) return { fullImages: [], carouselSlots: {} };
+
+  const images = parseJsonArray(row.images);
+  const evalState = parseJsonValue(row.eval_state, {});
+  const fullImages = images.map((img) => {
+    const filename = String(img?.filename || '');
+    const overlay = filename ? evalState?.[filename] : null;
+    const baseImage = { ...img };
+    for (const field of PIF_EVAL_FIELDS) delete baseImage[field];
+    return overlay && typeof overlay === 'object' ? { ...baseImage, ...overlay } : baseImage;
+  });
+
+  return {
+    fullImages,
+    carouselSlots: parseJsonValue(row.carousel_slots, {}),
+  };
+}
+
 function writePifVariantProgress({ specDb, category, productId, carouselProgressByKey }) {
   if (!specDb?.upsertPifVariantProgress) return;
   const variants = specDb.variants?.listActive?.(productId) || [];
   if (variants.length === 0) return;
 
-  // Source of truth = product_images.json (full selected image set, with
-  // eval_best / hero / hero_rank flags persisted). Combined with the
-  // carousel_slots overrides map, this is exactly what resolveCarouselSlots
-  // needs to decide which slot is occupied for each variant.
+  // SQL is the runtime source; JSON remains the durable rebuild/audit mirror.
   const buckets = computePifProgressBuckets({ specDb, category });
-  const productRoot = defaultProductRoot();
-  const doc = readProductImages({ productId, productRoot });
-  const fullImages = doc?.selected?.images || [];
-  const carouselSlots = doc?.carousel_slots || {};
+  const { fullImages, carouselSlots } = readPifProgressProjection({ specDb, productId });
 
   for (const v of variants) {
     const { priorityFilled, loopFilled, heroFilled, imageCount } = countSlotFillsAndImages({
@@ -533,7 +549,7 @@ export function registerProductImageFinderRoutes(ctx) {
     moduleId: 'productImageFinder',
     moduleType: 'pif',
     phase: 'imageFinder',
-    fieldKeys: [],
+    fieldKeys: FINDER_MODULE_MAP.productImageFinder.fieldKeys,
 
     runFinder: runProductImageFinder,
     deleteRun: deleteProductImageFinderRun,

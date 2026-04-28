@@ -4,6 +4,7 @@ import {
   SettingRow,
   SettingToggle,
 } from '../../pipeline-settings/index.ts';
+import type { FinderIdWithSettings } from '../../pipeline-settings/state/finderSettingsRegistry.generated.ts';
 import type { LlmPhaseId } from '../types/llmPhaseTypes.generated.ts';
 import type { LlmPhaseOverride, LlmPhaseOverrides } from '../types/llmPhaseOverrideTypes.generated.ts';
 import type { LlmProviderEntry } from '../types/llmProviderRegistryTypes.ts';
@@ -24,6 +25,8 @@ import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { PromptTemplateEditor, UserMessageInjectionPanel, VariableReferencePanels } from '../../../shared/ui/prompt-template/PromptTemplateEditor.tsx';
 import type { TemplateVariableDef, UserMessageInjection } from '../../../shared/ui/prompt-template/PromptTemplateEditor.tsx';
 import { NumberStepper } from '../../../shared/ui/forms/NumberStepper.tsx';
+
+const PIF_PROMPT_MODULE_ID: FinderIdWithSettings = 'productImageFinder';
 
 /** Shape of a prompt template definition from the backend registry. */
 export interface PromptTemplateDef {
@@ -368,7 +371,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
         {phaseSchema.prompt_templates && phaseSchema.prompt_templates.length > 0 ? (
           phaseSchema.eval_criteria_defaults && phaseSchema.eval_criteria_categories ? (
             /* Image-evaluator: single column — view eval, criteria tabs, then hero eval */
-            <EvalPromptLayout
+            <PifEvalPromptLayout
               phaseId={phaseId}
               promptTemplates={phaseSchema.prompt_templates}
               phaseOverrides={phaseOverrides}
@@ -399,7 +402,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
                 && phaseSchema.view_prompt_categories
                 && phaseSchema.view_prompt_roles
                   ? (
-                    <DiscoveryViewPromptTabs
+                    <PifDiscoveryViewPromptTabs
                       phaseSchema={phaseSchema as DiscoveryViewPromptTabsPhaseSchema}
                       activeCategory={activeCategory}
                     />
@@ -409,7 +412,7 @@ export const LlmPhaseSection = memo(function LlmPhaseSection({
             />
           )
         ) : phaseSchema.eval_criteria_defaults && phaseSchema.eval_criteria_categories ? (
-          <CategoryViewPromptTabs phaseSchema={phaseSchema as CategoryViewPromptTabsPhaseSchema} />
+          <PifCategoryViewPromptTabs phaseSchema={phaseSchema as CategoryViewPromptTabsPhaseSchema} />
         ) : (
           /* Fallback: read-only display for phases without templates */
           <div className="space-y-3">
@@ -532,7 +535,7 @@ function ModulePromptTemplateEditor({ templateDef, category, hideVariablesPanel,
 
 const EVAL_VIEW_TABS = ['top', 'bottom', 'left', 'right', 'front', 'rear', 'sangle', 'angle'] as const;
 
-function EvalPromptLayout({ promptTemplates, responseSchemas, phaseSchema }: {
+function PifEvalPromptLayout({ promptTemplates, responseSchemas, phaseSchema }: {
   readonly phaseId: LlmPhaseId;
   readonly promptTemplates: readonly PromptTemplateDef[];
   readonly phaseOverrides: LlmPhaseOverrides;
@@ -558,7 +561,7 @@ function EvalPromptLayout({ promptTemplates, responseSchemas, phaseSchema }: {
 
   const { settings, saveSetting, isLoading } = useModuleSettingsAuthority({
     category: activeCategory,
-    moduleId: 'productImageFinder',
+    moduleId: PIF_PROMPT_MODULE_ID,
   });
 
   return (
@@ -917,7 +920,7 @@ interface CategoryViewPromptTabsPhaseSchema {
   readonly eval_criteria_categories: readonly string[];
 }
 
-function CategoryViewPromptTabs({ phaseSchema }: { readonly phaseSchema: CategoryViewPromptTabsPhaseSchema }) {
+function PifCategoryViewPromptTabs({ phaseSchema }: { readonly phaseSchema: CategoryViewPromptTabsPhaseSchema }) {
   const categories = phaseSchema.eval_criteria_categories;
   const defaults = phaseSchema.eval_criteria_defaults;
 
@@ -934,7 +937,7 @@ function CategoryViewPromptTabs({ phaseSchema }: { readonly phaseSchema: Categor
 
   const { settings, saveSetting, isLoading } = useModuleSettingsAuthority({
     category: activeCategory,
-    moduleId: 'productImageFinder',
+    moduleId: PIF_PROMPT_MODULE_ID,
   });
 
   const dbValue = settings[settingKeyForView(activeView as ViewTab)] ?? '';
@@ -1099,7 +1102,7 @@ interface DiscoveryViewPromptTabsPhaseSchema {
   readonly view_prompt_roles: readonly DiscoveryRole[];
 }
 
-function DiscoveryViewPromptTabs({ phaseSchema, activeCategory }: {
+function PifDiscoveryViewPromptTabs({ phaseSchema, activeCategory }: {
   readonly phaseSchema: DiscoveryViewPromptTabsPhaseSchema;
   readonly activeCategory: string;
 }) {
@@ -1138,7 +1141,7 @@ function DiscoveryViewPromptTabs({ phaseSchema, activeCategory }: {
       {/* Three role editors stacked */}
       <div className="space-y-3 mt-2">
         {roles.map((role) => (
-          <DiscoveryRoleEditor
+          <PifDiscoveryRoleEditor
             key={role}
             role={role}
             category={activeCategory}
@@ -1151,7 +1154,7 @@ function DiscoveryViewPromptTabs({ phaseSchema, activeCategory }: {
   );
 }
 
-function DiscoveryRoleEditor({ role, category, view, defaultValue }: {
+function PifDiscoveryRoleEditor({ role, category, view, defaultValue }: {
   readonly role: DiscoveryRole;
   readonly category: string;
   readonly view: DiscoveryViewTab;
@@ -1159,7 +1162,7 @@ function DiscoveryRoleEditor({ role, category, view, defaultValue }: {
 }) {
   const { settings, saveSetting, isLoading } = useModuleSettingsAuthority({
     category,
-    moduleId: 'productImageFinder',
+    moduleId: PIF_PROMPT_MODULE_ID,
   });
   const settingKey = discoveryPromptSettingKey(role, view);
   const dbValue = (settings[settingKey] as string) ?? '';

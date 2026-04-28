@@ -5,24 +5,24 @@
       "version_id": null
     },
     "field_rules": {
-      "changed": false,
-      "hash": "ed40e6b733df63b8932a7db23f2e793552ad2db3ce507c66c2a653f22ed812e6",
+      "changed": true,
+      "hash": "f0174ef8a8e176c3bd8e9e17737d25d8948868e882581bf2b8c34976bf1929fd",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\field_rules.json"
     },
     "key_migrations": null,
     "known_values": {
-      "hash": "567abcc380b7d25976a118865cfb67fd9e9063e8722274d988e23423354cbb52",
+      "hash": "6b66128fc867c980e608e4c5d31512e3281cb186f66e991228f2d0d77724bbf6",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "936df0cd89d59feb2d2e33ef8d1f4f52b81b75a8de2d552b1b8fdbf9b78bee44",
+      "hash": "8a29ef46918fb39ca9289669b87327dbf8623406cc9963f265999f87ff3dde1d",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\ui_field_catalog.json"
     }
   },
   "category": "mouse",
   "compile_mode": "field_studio",
   "compiled": true,
-  "compiled_at": "2026-04-27T23:47:18.448Z",
+  "compiled_at": "2026-04-28T02:44:58.500Z",
   "counts": {
     "component_types": 3,
     "enums": 25,
@@ -31,8 +31,8 @@
     "non_mandatory": 63
   },
   "diff": {
-    "changed": false,
-    "current_hash": "ed40e6b733df63b8932a7db23f2e793552ad2db3ce507c66c2a653f22ed812e6",
+    "changed": true,
+    "current_hash": "f0174ef8a8e176c3bd8e9e17737d25d8948868e882581bf2b8c34976bf1929fd",
     "fields": {
       "added_count": 0,
       "added_keys": [],
@@ -44,11 +44,11 @@
     "previous_hash": "ed40e6b733df63b8932a7db23f2e793552ad2db3ce507c66c2a653f22ed812e6"
   },
   "errors": [],
-  "field_studio_map_hash": "65daa61a92afd1b1b2deb182eaa27ceef5d1bef7107ceaefcaba0986cfceeb1b",
+  "field_studio_map_hash": "8dc78347e30bc6561e91aebeeb0c1821731cf23ba85bc96da7c6eebea0e7311e",
   "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_control_plane\\field_studio_map.json",
   "field_studio_source_hash": null,
   "field_studio_source_path": "",
-  "generated_at": "2026-04-27T23:47:18.448Z",
+  "generated_at": "2026-04-28T02:44:58.500Z",
   "source_summary": {
     "component_sheets": 3,
     "component_sources": 3,

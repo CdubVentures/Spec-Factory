@@ -565,7 +565,7 @@ export async function evaluateViewCandidates({
 
 // WHY: Eval fields to clear before applying fresh results.
 // This list must match the TypeScript ProductImageEntry eval fields.
-const EVAL_FIELDS = [
+export const PIF_EVAL_FIELDS = [
   'eval_best',
   'eval_flags',
   'eval_reasoning',
@@ -581,18 +581,18 @@ const EVAL_FIELDS = [
   'hero',
   'hero_rank',
 ];
-const VIEW_EVAL_FIELDS = EVAL_FIELDS.filter((field) => field !== 'hero' && field !== 'hero_rank');
+const VIEW_EVAL_FIELDS = PIF_EVAL_FIELDS.filter((field) => field !== 'hero' && field !== 'hero_rank');
 
 function clearEvalFieldsForVariant(images = [], selector) {
   for (const img of (images || [])) {
     if (!matchVariant(img, selector)) continue;
-    for (const field of EVAL_FIELDS) delete img[field];
+    for (const field of PIF_EVAL_FIELDS) delete img[field];
   }
 }
 
 function clearEvalFieldsForAll(images = []) {
   for (const img of (images || [])) {
-    for (const field of EVAL_FIELDS) delete img[field];
+    for (const field of PIF_EVAL_FIELDS) delete img[field];
   }
 }
 
@@ -736,10 +736,10 @@ export function mergeEvaluation({ productId, productRoot, variantKey, variantId,
 export function extractEvalState(doc) {
   const state = {};
   for (const img of (doc?.selected?.images || [])) {
-    const hasEval = EVAL_FIELDS.some(f => img[f] !== undefined);
+    const hasEval = PIF_EVAL_FIELDS.some(f => img[f] !== undefined);
     if (hasEval) {
       state[img.filename] = {};
-      for (const f of EVAL_FIELDS) {
+      for (const f of PIF_EVAL_FIELDS) {
         if (img[f] !== undefined) state[img.filename][f] = img[f];
       }
     }

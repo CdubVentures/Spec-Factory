@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createCatalogBuilder } from '../catalogHelpers.js';
+import { FINDER_MODULES } from '../../../core/finder/finderModuleRegistry.js';
 
 function cleanVariant(variant) {
   const token = String(variant ?? '').trim().toLowerCase();
@@ -140,15 +141,18 @@ test('CatalogRow lastRun: per-product mapping comes from per-finder maps', async
   assert.equal(byPid['mouse-2'].pifLastRunAt, '2026-04-26T11:00:00Z');
 });
 
-test('CatalogRow lastRun: queries each finder summary table exactly once per build', async () => {
-  const callCounts = { cef: 0, pif: 0, rdf: 0, sku: 0, kf: 0 };
-  const stores = {
-    colorEditionFinder: { listByCategory: () => { callCounts.cef += 1; return []; }, getSetting: () => null },
-    productImageFinder: { listByCategory: () => { callCounts.pif += 1; return []; }, getSetting: () => null },
-    releaseDateFinder:  { listByCategory: () => { callCounts.rdf += 1; return []; }, getSetting: () => null },
-    skuFinder:          { listByCategory: () => { callCounts.sku += 1; return []; }, getSetting: () => null },
-    keyFinder:          { listByCategory: () => { callCounts.kf  += 1; return []; }, getSetting: () => null },
-  };
+test('CatalogRow lastRun: queries each registered finder summary table exactly once per build', async () => {
+  const callCounts = Object.fromEntries(FINDER_MODULES.map((mod) => [mod.moduleType, 0]));
+  const stores = Object.fromEntries(FINDER_MODULES.map((mod) => [
+    mod.id,
+    {
+      listByCategory: () => {
+        callCounts[mod.moduleType] += 1;
+        return [];
+      },
+      getSetting: () => null,
+    },
+  ]));
   const specDb = {
     getAllProducts: () => [
       { ...PRODUCT, id: 1, product_id: 'p1' },
@@ -174,9 +178,7 @@ test('CatalogRow lastRun: queries each finder summary table exactly once per bui
   await buildCatalog('mouse');
 
   // 5 queries total — NOT 5 × N. Confirms the batched-projection pattern.
-  assert.equal(callCounts.cef, 1);
-  assert.equal(callCounts.pif, 1);
-  assert.equal(callCounts.rdf, 1);
-  assert.equal(callCounts.sku, 1);
-  assert.equal(callCounts.kf, 1);
+  for (const mod of FINDER_MODULES) {
+    assert.equal(callCounts[mod.moduleType], 1, `${mod.id} should be queried once`);
+  }
 });

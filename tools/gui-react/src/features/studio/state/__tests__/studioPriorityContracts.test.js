@@ -230,3 +230,68 @@ test('normalizeAiAssistConfig boundary characterization', async () => {
     assert.deepEqual(normalizeAiAssistConfig(input), expected, label);
   }
 });
+
+test('readAiAssistToggleEnabled characterizes legacy and simple toggle defaults', async () => {
+  const { readAiAssistToggleEnabled } = await loadStudioPriority();
+
+  const cases = [
+    {
+      label: 'variant inventory missing uses legacy default-on behavior',
+      rule: {},
+      path: 'ai_assist.variant_inventory_usage',
+      expected: true,
+    },
+    {
+      label: 'variant inventory explicit enabled false wins',
+      rule: { ai_assist: { variant_inventory_usage: { enabled: false, mode: 'append' } } },
+      path: 'ai_assist.variant_inventory_usage',
+      expected: false,
+    },
+    {
+      label: 'variant inventory direct boolean is accepted',
+      rule: { ai_assist: { variant_inventory_usage: true } },
+      path: 'ai_assist.variant_inventory_usage',
+      expected: true,
+    },
+    {
+      label: 'variant inventory legacy off disables',
+      rule: { ai_assist: { variant_inventory_usage: { mode: 'off' } } },
+      path: 'ai_assist.variant_inventory_usage',
+      expected: false,
+    },
+    {
+      label: 'variant inventory legacy active mode enables',
+      rule: { ai_assist: { variant_inventory_usage: { mode: 'append' } } },
+      path: 'ai_assist.variant_inventory_usage',
+      expected: true,
+    },
+    {
+      label: 'pif priority images missing defaults off',
+      rule: {},
+      path: 'ai_assist.pif_priority_images',
+      expected: false,
+    },
+    {
+      label: 'pif priority images direct boolean is accepted',
+      rule: { ai_assist: { pif_priority_images: true } },
+      path: 'ai_assist.pif_priority_images',
+      expected: true,
+    },
+    {
+      label: 'pif priority images explicit enabled false wins',
+      rule: { ai_assist: { pif_priority_images: { enabled: false } } },
+      path: 'ai_assist.pif_priority_images',
+      expected: false,
+    },
+    {
+      label: 'pif priority images does not use legacy mode fallback',
+      rule: { ai_assist: { pif_priority_images: { mode: 'append' } } },
+      path: 'ai_assist.pif_priority_images',
+      expected: false,
+    },
+  ];
+
+  for (const { label, rule, path, expected } of cases) {
+    assert.equal(readAiAssistToggleEnabled(rule, path), expected, label);
+  }
+});

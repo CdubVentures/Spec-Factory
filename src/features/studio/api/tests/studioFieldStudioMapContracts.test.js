@@ -272,6 +272,7 @@ test('studio field-studio-patches apply stores auditor responses, saves SQL map,
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'studio-patch-import-'));
   const emitted = [];
   const sqlWrites = [];
+  const mapWrites = [];
 
   try {
     const result = await invokeStudioRoute({
@@ -397,6 +398,7 @@ test('studio key-order-patches apply stores response and updates SQL and JSON or
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'key-order-patch-import-'));
   const emitted = [];
   const sqlWrites = [];
+  const mapWrites = [];
 
   try {
     const result = await invokeStudioRoute({
@@ -417,8 +419,10 @@ test('studio key-order-patches apply stores response and updates SQL and JSON or
       }),
       getSpecDb: () => ({
         getFieldKeyOrder: () => ({ order_json: JSON.stringify(['__grp::Product & Variants', 'sku', '__grp::Sensor Performance', 'dpi', 'ips']) }),
+        getFieldStudioMap: () => ({ map_json: JSON.stringify({ selected_keys: ['sku', 'dpi', 'ips'], field_overrides: {} }) }),
         getCompiledRules: () => ({ fields: { sku: {}, dpi: {}, ips: {} } }),
         setFieldKeyOrder: (_category, orderJson) => { sqlWrites.push(JSON.parse(orderJson)); },
+        upsertFieldStudioMap: (mapJson) => { mapWrites.push(JSON.parse(mapJson)); },
       }),
       broadcastWs: (channel, payload) => {
         emitted.push({ channel, payload });
@@ -435,6 +439,9 @@ test('studio key-order-patches apply stores response and updates SQL and JSON or
       'lod_sync',
     ]);
     assert.ok(result.body.changes.some((change) => change.kind === 'key_added' && change.key === 'lod_sync'));
+    assert.equal(mapWrites[0].field_overrides.lod_sync.ui.label, 'LOD Sync');
+    assert.equal(mapWrites[0].field_overrides.lod_sync.ui.group, 'Sensor Performance');
+    assert.ok(mapWrites[0].selected_keys.includes('lod_sync'));
     assert.equal(emitted[0].payload.event, 'field-key-order-saved');
 
     const storedPatch = JSON.parse(await fs.readFile(

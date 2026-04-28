@@ -45,6 +45,7 @@ const VARIANTS = [
 ];
 
 function makeFinderStoreStub(overrides = {}) {
+  const { summaryRow = null, runs = [], ...settingOverrides } = overrides;
   const settings = {
     viewBudget: '["top","angle"]',
     heroEnabled: 'true',
@@ -61,10 +62,12 @@ function makeFinderStoreStub(overrides = {}) {
     heroEvalPromptOverride: '',
     heroEvalCriteria: '',
     evalThumbSize: '512',
-    ...overrides,
+    ...settingOverrides,
   };
   return {
     getSetting: (key) => settings[key] ?? '',
+    get: () => summaryRow,
+    listRuns: () => runs,
     _settings: settings,
   };
 }
@@ -652,6 +655,37 @@ describe('compilePifPreviewPrompt', () => {
 
     assert.equal(envelope.prompts.length, 0);
     assert.ok(envelope.notes.some((n) => n.toLowerCase().includes('no hero candidates')));
+  });
+
+  it('preview history reads SQL projection before product_images.json', async () => {
+    const finderStore = makeFinderStoreStub({
+      urlHistoryEnabled: 'true',
+      summaryRow: {
+        product_id: PRODUCT.product_id,
+        images: [],
+        eval_state: {},
+      },
+      runs: [
+        priorRun({ runScopeKey: 'priority-view', urls: ['https://sql/priority'] }),
+      ],
+    });
+    const specDb = makeSpecDbStub({ finderStore });
+    writeProductImagesJson(PRODUCT.product_id, [], [
+      priorRun({ runScopeKey: 'priority-view', urls: ['https://json/stale-priority'] }),
+    ]);
+
+    const envelope = await compilePifPreviewPrompt({
+      product: PRODUCT,
+      appDb: null,
+      specDb,
+      config: {},
+      productRoot: PRODUCT_ROOT,
+      body: { variant_key: 'color:black', mode: 'view' },
+    });
+
+    const sys = envelope.prompts[0].system;
+    assert.ok(sys.includes('https://sql/priority'));
+    assert.ok(!sys.includes('https://json/stale-priority'));
   });
 
   it('unknown variant_key throws a 400-coded error', async () => {

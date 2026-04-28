@@ -1,91 +1,93 @@
 # Test Coverage of Cross-Screen Invariants Audit
 
-Date: 2026-04-27
-Worst severity: **CRITICAL** — only 1 SQL projection has a "delete table → rebuild from JSON" test (PIF variant progress); 8+ projections claim "rebuild yes" without proof.
+Date: 2026-04-28
+Current severity: **HIGH**
 
-## Invariants WITH coverage
+## Scope
 
-| Invariant | Test file | Strength |
-|---|---|---|
-| Every emitted event is in `EVENT_REGISTRY` | `src/core/events/tests/eventRegistryCoverage.test.js:67–103` | ✓ Hard guard |
-| Backend ↔ frontend domain map parity | `src/core/events/tests/dataChangeDomainParity.test.js:15–30` | ✓ Byte-identical |
-| `data-change` payload shape | `src/core/events/tests/dataChangeContract.test.js:10–81` | ✓ Round-trip |
-| 40+ event → domain → query-key chains | `tools/gui-react/src/features/data-change/__tests__/dataChangeInvalidationMap.test.js` | ✓ Comprehensive |
-| Studio map save → correct domains | `src/features/studio/api/tests/studioFieldStudioMapContracts.test.js:50–82` | ✓ |
-| `useDataChangeMutation` order + invalidation | `tools/gui-react/src/features/data-change/__tests__/useDataChangeMutation.test.js:40–120` | ✓ |
-| PIF variant progress rebuild from JSON | `src/features/product-image/tests/pifVariantProgressRebuild.test.js` | ✓ Only rebuild test in repo |
-| Settings registry derived maps stay aligned | `src/shared/tests/registryDerivedSettingsMaps.test.js:12–64` | ✓ |
-| Finder module path derivation (deterministic) | `src/core/finder/tests/finderModuleRegistry.test.js:17–110` | ✓ Includes future-finder cases |
-| WS bridge wiring + heartbeat | `src/app/api/tests/apiRealtimeBridgeWiring.test.js:54–120`, `apiRealtimeBridgeHeartbeat.test.js` | Happy path only |
+Rebuild coverage is broader than the original audit stated, but it is uneven and not always expressed as deleted-DB recovery tests. The highest risk remains data-loss or stale-state regressions across durable JSON, SQL projections, WS transport, and generated registries.
 
-## Invariants WITHOUT coverage (regression risk)
+## Active Findings
 
-### G1. Rebuild contract for SQL projections — **CRITICAL**
-Per CLAUDE.md "Rebuild Contract", every "rebuild yes" projection should have a test. Only **1 / 9+** projections does.
+### G1. Full-suite baseline is not clean - HIGH
 
-Missing tests:
-- `field_candidates` — delete table → rebuild from JSON
-- `color_edition_finder_runs`, `release_date_finder_runs`, `sku_finder_runs`, `key_finder_runs`
-- `run_meta` (rebuild from `run_artifacts.run_summary`)
-- `variants` (rebuild from `product_images.json`)
-- `component_override`, `enum_override`
-- `field_studio_map` SQL projection (rebuild from `field_studio_map.json`)
-- `crawl_sources` (run.json + filesystem) — see also run-artifact-read-paths audit
+Focused tests and TypeScript checks can pass while the full `npm test` baseline remains red from unrelated failures such as mouse contract drift and scalar prompt golden drift. Until the baseline is clean, full-suite proof cannot be used as a reliable phase-completion gate.
 
-**Fix shape:** one test per projection: seed JSON → delete table → call rebuilder → assert row counts + sample values.
+**Fix shape:** Triage unrelated failures separately, then re-run the full suite before closing major audit stages.
 
-### G2. SQL → JSON mirror writes — HIGH
-No test asserts that mutations on SQL also mirror to the JSON memory layer (e.g., `submitCandidate` writes `field_candidates` row AND updates `product.json.candidates[]`).
+### G2. Deleted-DB rebuild coverage is uneven - HIGH
 
-**Fix shape:** for each dual-writer (`submitCandidate`, `manualOverride`, `clearPublished`, finder run completion), add a test that asserts BOTH SQL row and JSON file are updated atomically.
+Multiple rebuild paths have tests, but coverage is not consistently framed as "delete SQLite table/file -> rebuild from durable JSON -> assert rows and representative values."
 
-### G3. Catalog last-run / sort columns derived from `FINDER_MODULES` — MEDIUM
-`tools/gui-react/src/pages/overview/__tests__/overviewSort.test.ts:326–346` hardcodes the column list. Adding a finder doesn't fail any test until the user notices a missing ring or `lastRunAt` field.
+**Fix shape:** Add targeted deleted-DB tests for projections with weak or indirect coverage, rather than creating broad source-text tests.
 
-**Fix shape:** assert `OVERVIEW_SORTABLE_COLUMN_IDS` is derived from `FINDER_MODULES` plus a static prefix (e.g., `brand`, `base_model`). Negative test: a synthetic new finder appears automatically.
+### G3. SQL-to-JSON mirror writes need consistent atomicity proof - HIGH
 
-### G4. Malformed WS messages don't corrupt the store — HIGH
-No test sends an invalid `data-change`, `operations`, or `llm-stream` payload and asserts the queryClient cache / Zustand store stays clean. Pairs with the WebSocket schema audit's G1 + G2.
+Some dual-write paths are tested, but mutation classes should consistently prove SQL and JSON rebuild mirrors update together.
 
-**Fix shape:** add adversarial test fixtures: missing fields, type-confused values, oversize payloads. Assert handlers reject + log without mutation.
+**Fix shape:** For each high-value mutation class, assert both SQL rows and durable JSON are updated in the same contract test.
 
-### G5. Finder-specific knob schemas drive panels — MEDIUM
-No test asserts that `finderSettingsRegistry`'s schema is what the UI panels render — UI could hardcode field lists and silently drift.
+### G4. Shared delete/reset paths need atomic helper coverage - HIGH
+**Files:** `src/core/finder/finderRoutes.js`, `src/features/publisher/candidate-gate/deleteCandidate.js`
 
-**Fix shape:** snapshot test comparing `finderSettingsRegistry[finderId].settingsSchema` keys against the rendered panel's input names.
+Shared finder delete/reset and candidate-delete paths still have SQL-first then JSON-mirror windows without a shared atomic helper. Failures between the two writes can leave runtime projection and durable mirror out of sync.
 
-### G6. Cross-finder cascade invariants — MEDIUM
-CEF `variant-deleted` cascades to PIF/RDF/SKU/publisher. Coverage exists in invalidation tests, but not for the actual data state — i.e., there's no test that running CEF delete-all leaves `field_candidates` for PIF/RDF/SKU empty.
+**Fix shape:** Add a shared write helper or transaction-style orchestration that proves SQL and JSON mirror writes complete together or roll back/repair predictably.
 
-**Fix shape:** integration test that arranges all four finders' state, deletes a CEF variant, and asserts cascade deletion across SQL projections.
+### G5. Malformed WS messages lack adversarial store-safety tests - HIGH
 
-## Anti-patterns in existing tests
+Runtime channel handlers need fixtures for invalid `operations`, `data-change`, and stream payloads to prove bad messages do not corrupt Zustand or query cache state.
 
-### A1. Prompt wording locked
-**File:** `src/features/key/tests/keyFinderPreviewPrompt.test.js:7–12`
-```
-assert.match(prompt.system, /PIF_PRIORITY_IMAGES/);
-assert.match(prompt.system, /default\/base variant images are attached/i);
-assert.match(prompt.system, /Priority views from PIF viewConfig: top/);
-```
-Violates `feedback_prompt_test_looseness.md`. Replace with structural assertions: PIF images array present, viewConfig keys included.
+**Fix shape:** Add adversarial UI-boundary tests paired with the WebSocket schema cleanup.
 
-### A2. Hardcoded field lists in tests
-`overviewSort.test.ts:326–346` and `apiCatalogHelpersWiring.test.js` hardcode 5× `LastRunAt` field names — re-runs the registry-scaling violation (`registry-scaling` audit G2).
+### G6. Query-key scope contract is incomplete - MEDIUM
 
-**Fix shape:** derive expected lists from `FINDER_MODULES` in the test setup.
+Event registry mappings have been narrowed in places, but the documented scope contract for each event/domain/query-key chain is still incomplete.
 
-### A3. No negative tests for cascade scope
-Tests assert "this event invalidates these keys" but not "this event MUST NOT invalidate other unrelated keys". A bug that adds a snapshot append to 50 unrelated domains wouldn't fail any current test.
+**Fix shape:** Document event scope expectations next to the source registry and add focused tests for high-blast-radius mappings.
 
-**Fix shape:** add invariants like "data-authority snapshot template appears in exactly N domains, never more".
+### G7. Mutation response shapes do not consistently return changed entities - MEDIUM
 
-## Recommended fix order
+Many POST/PUT paths still return `{ ok }` without canonical changed entity payloads. This forces broad invalidation and makes optimistic/surgical UI updates harder to maintain.
 
-1. **G1** — add one rebuild test per SQL projection (8+ files). Highest data-loss prevention value.
-2. **G4** — adversarial WS fixture suite. Pairs with WS-schema audit.
-3. **G2** — dual-write SQL+JSON tests for the four mutation classes.
-4. **A1** — replace prompt-wording assertions with structural ones.
-5. **G3, G5, A2** — derive test fixtures from FINDER_MODULES instead of hardcoding.
-6. **G6** — cross-finder cascade integration test on a fixture product.
-7. **A3** — negative invariants for invalidation cascade scope.
+**Fix shape:** For high-traffic mutations, return canonical changed entities and update callers to patch precise query keys.
+
+### G8. Catalog sortable finder columns are hardcoded in tests - MEDIUM
+
+Some tests hardcode finder-derived column ids. Adding a finder can silently miss Overview sort/ring coverage.
+
+**Fix shape:** Derive expected lists from `FINDER_MODULES` in tests.
+
+### G9. Finder-specific knob schemas are not tied to rendered controls - MEDIUM
+
+There is no test proving finder settings schema keys match the panel inputs rendered by the GUI.
+
+**Fix shape:** Add a focused schema-to-rendered-control contract test.
+
+### G10. Cross-finder cascade data-state invariants are thin - MEDIUM
+
+Invalidation tests cover query keys, but not full data-state results after CEF variant deletion cascades into PIF/RDF/SKU/publisher projections.
+
+**Fix shape:** Add an integration test with all affected projections populated, then delete a CEF variant and assert cascade cleanup.
+
+### A1. Prompt wording assertions are brittle - MEDIUM
+
+Some prompt tests assert exact wording rather than structural prompt inputs.
+
+**Fix shape:** Replace wording assertions with structural assertions for inputs, attached images, and view-config keys.
+
+### A2. Negative invalidation-scope tests are sparse - LOW-MEDIUM
+
+Tests mostly assert what should invalidate, not what must not invalidate.
+
+**Fix shape:** Add small negative invariants for broad templates with high blast radius.
+
+## Recommended Fix Order
+
+1. **G1** - Clean full-suite baseline.
+2. **G2** - Normalize deleted-DB rebuild tests for weak projections.
+3. **G4** - Shared atomic delete/reset helper coverage.
+4. **G5** - Adversarial WS fixture suite.
+5. **G3/G7** - Dual-write and changed-entity response contracts.
+6. **G6/G8/G9/A1** - Remove hardcoded/brittle contract assumptions.
+7. **G10/A2** - Add cascade data-state and negative-scope tests.

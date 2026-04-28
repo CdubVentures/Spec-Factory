@@ -1,87 +1,67 @@
 # Codegen Drift Audit
 
-Date: 2026-04-27
-Worst severity: **HIGH** — only 1 of 11 codegen scripts is auto-invoked at build time; CI has no `git diff --exit-code` guard, so a developer can edit a registry and ship without regenerating.
+Date: 2026-04-28
+Current severity: **HIGH**
 
-## Codegen inventory
+## Scope
 
-| Script | Inputs | Outputs | Auto-run | Drift risk |
-|---|---|---|---|---|
-| `tools/gui-react/scripts/generateLlmPhaseRegistry.js` | `llmPhaseDefs.js`, `finderModuleRegistry.js`, `operationTypeRegistry.js` | 10 frontend files (phase IDs, overrides, operation registry, finder panels, module settings, billing call types, finder settings, phase schemas backend) | ✗ | **HIGH** |
-| `tools/gui-react/scripts/generateFinderTypes.js` | `finderModuleRegistry.js` + per-finder schema | per-finder `types.generated.ts` | ✗ | MEDIUM |
-| `tools/gui-react/scripts/generateFinderHooks.js` | same as above | per-finder `*Queries.generated.ts` | ✗ | MEDIUM |
-| `tools/gui-react/scripts/generateManifestTypes.js` | `settingsRegistry.js` | `runtimeSettingsManifestTypes.ts` + backend `settingsDefaults.d.ts` | ✗ | MEDIUM |
-| `tools/gui-react/scripts/generateLlmPolicyAdapter.js` | `llmPolicySchema.js`, `settingsRegistry.js` | `llmPolicyAdapter.generated.ts` | ✗ | MEDIUM |
-| `tools/gui-react/scripts/generateRuntimeStageKeys.js` | `runtimeStageDefs.js` | 3 stage-keys generated files | ✗ | MEDIUM |
-| `tools/gui-react/scripts/generateProductTypes.js` | `catalogShapes.js`, `productShapes.js` | `product.generated.ts` | ✗ | LOW |
-| `tools/gui-react/scripts/generateReviewTypes.js` | `reviewFieldContract.js`, `componentReviewShapes.js` | `review.generated.ts`, `componentReview.generated.ts` | ✗ | LOW |
-| `tools/gui-react/scripts/generateRuntimeOpsTypes.js` | 3 runtime-ops contracts | `runtime-ops/types.generated.ts` (35+ interfaces) | ✗ | LOW |
-| `tools/gui-react/scripts/generateAutomationQueueTypes.js` | `automationQueueContract.js` | `indexing/types.generated.ts` | ✗ | LOW |
-| `generate-studio-types.js` (root) | `studioSchemas.js` (zod) | `tools/gui-react/src/types/studio.ts` | **✓ at GUI build** | MEDIUM |
+Generated files are tracked, but there is no single regeneration entry point or CI guard proving generated outputs are current.
 
-35+ `*.generated.*` files committed to git.
+## Active Findings
 
-## Identified gaps
+### G1. No CI/pre-commit drift guard after codegen - HIGH
 
-### G1. No CI / pre-commit `git diff --exit-code` after codegen — **HIGH**
-Nothing prevents committing a stale generated file. A developer adds a phase to `llmPhaseDefs.js`, forgets to run `generateLlmPhaseRegistry.js`, and the frontend ships with stale types — TypeScript may even compile because the unchanged types still satisfy.
+A registry can change without regenerated TypeScript being updated.
 
-**Fix shape:** add a one-liner CI step (or pre-push hook) that runs all codegen, then `git diff --exit-code`. Fail build if anything changed.
+**Fix shape:** Add a validation command that runs generators and fails on `git diff --exit-code`, after explicit approval for script changes.
 
-### G2. No "regen all" entry point — MEDIUM
-There's no `npm run codegen` or equivalent at the repo root that runs all 11 scripts. Developers must remember the list.
+### G2. No root "regen all" entry point - MEDIUM
 
-**Fix shape:** add `npm run codegen` at root that fans out to each generator. Keep the order documented (e.g., schemas → adapters → types → hooks).
+Developers must know individual generator scripts.
 
-### G3. `generateLlmPhaseRegistry` is a super-generator — MEDIUM
-Single script, 10 outputs, 3 input registries. Highest drift surface area; touching any of the three inputs requires running the script.
+**Fix shape:** Add a root codegen script only with explicit approval for package script changes.
 
-**Fix shape:** keep as one script for transactional generation, but raise its priority in the pre-commit hook (always run first) so the 10 dependent files never desync.
+### G3. LLM phase generator is a super-generator - MEDIUM
 
-### G4. Opt-in finder typegen creates two-tier reality — MEDIUM
-`generateFinderTypes` and `generateFinderHooks` only emit for finders with `getResponseSchemaExport`. CEF and PIF hand-write their types and hooks. Two patterns side-by-side invite drift over time.
+One generator emits multiple outputs and effectively leads part of the codegen pipeline.
 
-**Fix shape:** decide intent. Either (a) generate for all finders and let CEF/PIF supply schemas, or (b) document the boundary and lint that hand-written files don't masquerade as `.generated.ts`.
+**Fix shape:** Document that role or split when it becomes hard to maintain.
 
-### G5. `generate-studio-types.js` is the only build-coupled generator — LOW
-Auto-runs at GUI build. Inconsistent with the other 10 that are manual.
+### G4. Finder typegen has opt-in coverage - MEDIUM
 
-**Fix shape:** unify under the `npm run codegen` entry; or move studio-types into the same script registry so build-time invocation pulls them all.
+Some finder types are generated, while future modules can fall into a two-tier model.
 
-### G6. Uncodegen'd registries that probably should be — LOW-MEDIUM
-9 backend registries with no frontend codegen:
-- `eventRegistry.js` (frontend may hardcode event names — already a noted risk)
-- `commandRegistry.js`
-- `unitRegistry.js`
-- `sourceRegistry.js`
-- (plus backend-only: `adapterRegistry`, `pluginRegistry`, `consumerBadgeRegistry`, `formatRegistry`, `typeCoercionRegistry`)
+**Fix shape:** Decide between universal finder typegen or clearly documented opt-in criteria.
 
-`eventRegistry` is the priority: frontend already references event names as string literals. Codegen would catch typos and unmapped events at build time.
+### G5. Some registries probably need generated consumers - LOW-MEDIUM
 
-**Fix shape:** generate `EVENT_NAMES` enum from the backend registry; replace string literals; let TS catch drift.
+Event names and related registry constants still have string-literal usage risk.
 
-### G7. `tsconfig.tsbuildinfo` committed — LOW
-File appears in git status; this is the TypeScript incremental build cache. Either keep committed (faster cold builds) or gitignore.
+**Fix shape:** Generate consumer constants when drift appears or when touching the registry pipeline.
 
-**Fix shape:** policy decision; either is fine. Document and stick to one.
+### G6. `tsconfig.tsbuildinfo` is tracked - LOW
 
-### G8. Test coverage for codegen scripts is sparse — LOW
-Only 2 of 11 generators have tests (`generateFinderTypes`, `generateFinderHooks`).
+Build info churn can create noisy diffs.
 
-**Fix shape:** add a smoke test per generator: run it on the canonical input, snapshot the output, fail on diff.
+**Fix shape:** Remove from tracking only with explicit cleanup approval.
 
-## Confirmed-good patterns
+### G7. Codegen script test coverage is sparse - LOW
 
-- 35 `.generated.*` files are committed (not gitignored) — the diff visibility is itself a drift safeguard if reviewers pay attention.
-- `generate-studio-types` running at build time is the right pattern for the others to follow.
-- Shape descriptors in `catalogShapes.js`, `reviewFieldContract.js`, `runtimeOpsContract.js` give a clean codegen → TS interface path.
+Generators have limited smoke tests.
 
-## Recommended fix order
+**Fix shape:** Add minimal smoke tests around generator output shape.
 
-1. **G1** — CI / pre-commit `git diff --exit-code` after codegen. Single highest-value fix.
-2. **G2** — `npm run codegen` aggregator at root.
-3. **G6** — codegen `EVENT_NAMES` from `eventRegistry.js`; replace string literals.
-4. **G4** — pick a model for opt-in vs. universal finder typegen.
-5. **G8** — add smoke tests for each generator.
-6. **G3** — keep as-is but document it leads the codegen pipeline.
-7. **G5, G7** — minor cleanup.
+### G8. Broader generated-code checks are still needed before closing Registry/O(1) stage work - MEDIUM
+
+Recent registry/O(1) items may be addressed locally, but stage closure still needs a broader generated-code drift check across all generated artifacts.
+
+**Fix shape:** Run the agreed codegen/check sequence and inspect generated diffs before marking registry/O(1) stage work closed.
+
+## Recommended Fix Order
+
+1. **G1** - Codegen drift guard.
+2. **G2** - Regenerate-all entry point.
+3. **G8** - Broader generated-code checks before Registry/O(1) closure.
+4. **G4/G5** - Registry/typegen coverage decisions.
+5. **G7** - Generator smoke tests.
+6. **G3/G6** - Cleanup/documentation.
