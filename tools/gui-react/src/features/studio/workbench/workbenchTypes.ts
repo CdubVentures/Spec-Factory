@@ -36,6 +36,9 @@ export interface WorkbenchRow {
   // Components
   componentType: string;        // this field IS a component_db field (e.g., "sensor")
   componentLocked: boolean;     // enum.source === `component_db.${self}` — Phase 2 lock contract
+  componentLockKind: '' | 'component_self' | 'identity_projection';
+  identityProjectionFacet: string;
+  contractLocked: boolean;
   belongsToComponent: string;   // this field is a PROPERTY of a component (e.g., dpi → "sensor")
   propertyVariance: string;     // resolved variance for the property ("" | "authoritative" | "upper_bound" | …)
 

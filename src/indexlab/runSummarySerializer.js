@@ -3,7 +3,10 @@
 // instead of querying bridge_events SQL + runs SQL + run_artifacts SQL.
 // Product knowledge (needset, search_profile, brand_resolution) stays in SQL.
 
-import { RUN_SUMMARY_SCHEMA_VERSION } from '../features/indexing/api/contracts/runSummaryContract.js';
+import {
+  RUN_SUMMARY_SCHEMA_VERSION,
+  RUN_SUMMARY_EVENTS_LIMIT,
+} from '../features/indexing/api/contracts/runSummaryContract.js';
 
 /**
  * Build the run-summary.json payload from bridge in-memory state + SQL events.
@@ -62,9 +65,26 @@ export async function serializeRunSummary(state) {
 
   // ── telemetry.events (read from SQL — bridge doesn't buffer events in-memory) ──
   let events = [];
+  let event_limit = {
+    limit: RUN_SUMMARY_EVENTS_LIMIT,
+    captured: 0,
+    truncated: false,
+  };
   if (state.specDb && state.runId) {
     try {
-      events = state.specDb.getBridgeEventsByRunId(state.runId, 6000) || [];
+      const rawEvents = state.specDb.getBridgeEventsByRunId(
+        state.runId,
+        RUN_SUMMARY_EVENTS_LIMIT + 1
+      ) || [];
+      const truncated = rawEvents.length > RUN_SUMMARY_EVENTS_LIMIT;
+      events = truncated
+        ? rawEvents.slice(rawEvents.length - RUN_SUMMARY_EVENTS_LIMIT)
+        : rawEvents;
+      event_limit = {
+        limit: RUN_SUMMARY_EVENTS_LIMIT,
+        captured: events.length,
+        truncated,
+      };
     } catch { /* best-effort: empty events if SQL fails */ }
   }
 
@@ -88,7 +108,7 @@ export async function serializeRunSummary(state) {
 
   return {
     schema_version: RUN_SUMMARY_SCHEMA_VERSION,
-    telemetry: { meta, events, llm_agg, observability },
+    telemetry: { meta, events, event_limit, llm_agg, observability },
   };
 }
 

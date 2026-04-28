@@ -50,6 +50,7 @@ async function loadUseWsEventBridgeModule() {
           export function useOperationsStore() {}
           useOperationsStore.getState = function getState() {
             return {
+              operations: globalThis.__wsEventBridgeHarness.operations,
               appendLlmCall(id, call) {
                 globalThis.__wsEventBridgeHarness.operationsCalls.push({ type: 'appendLlmCall', id, call });
               },
@@ -67,12 +68,14 @@ async function loadUseWsEventBridgeModule() {
               },
               remove(id) {
                 globalThis.__wsEventBridgeHarness.operationsCalls.push({ type: 'remove', id });
+                globalThis.__wsEventBridgeHarness.operations.delete(id);
               },
               updateLlmCall(id, callIndex, call) {
                 globalThis.__wsEventBridgeHarness.operationsCalls.push({ type: 'updateLlmCall', id, callIndex, call });
               },
               upsert(operation) {
                 globalThis.__wsEventBridgeHarness.operationsCalls.push({ type: 'upsert', operation });
+                globalThis.__wsEventBridgeHarness.operations.set(operation.id, operation);
               },
             };
           };
@@ -152,6 +155,7 @@ function createHarness(overrides = {}) {
     effects: [],
     indexLabEvents: [],
     invalidations: [],
+    operations: new Map(),
     operationsCalls: [],
     processOutput: [],
     processStatuses: [],
@@ -250,6 +254,135 @@ test('malformed state-mutating WS payloads do not mutate stores or schedule cach
     assert.deepEqual(globalThis.__wsEventBridgeHarness.operationsCalls, []);
     assert.equal(globalThis.__wsEventBridgeHarness.dataChangePatches.length, 0);
     assert.equal(globalThis.__wsEventBridgeHarness.dataChangeSchedules.length, 0);
+  } finally {
+    delete globalThis.__wsEventBridgeHarness;
+  }
+});
+
+test('process-status WS payloads are normalized before state and query cache writes', async () => {
+  globalThis.__wsEventBridgeHarness = createHarness();
+
+  try {
+    const { useWsEventBridge } = await loadUseWsEventBridgeModule();
+    useWsEventBridge({ category: 'mouse', queryClient: makeQueryClient() });
+
+    const { onMessage } = globalThis.__wsEventBridgeHarness.subscriptionOptions;
+    onMessage('process-status', {
+      running: false,
+      run_id: 'run_12345678',
+      category: 'mouse',
+      product_id: 'mouse-1',
+      storage_destination: 'local',
+      pid: null,
+      command: null,
+      startedAt: null,
+      exitCode: 0,
+      endedAt: '2026-04-28T00:05:00.000Z',
+    });
+
+    const expected = {
+      running: false,
+      run_id: 'run_12345678',
+      runId: 'run_12345678',
+      category: 'mouse',
+      product_id: 'mouse-1',
+      productId: 'mouse-1',
+      brand: null,
+      base_model: null,
+      model: null,
+      variant: null,
+      storage_destination: 'local',
+      storageDestination: 'local',
+      pid: null,
+      command: null,
+      startedAt: null,
+      exitCode: 0,
+      endedAt: '2026-04-28T00:05:00.000Z',
+    };
+
+    assert.deepEqual(globalThis.__wsEventBridgeHarness.processStatuses, [expected]);
+    assert.deepEqual(globalThis.__wsEventBridgeHarness.queryData, {
+      key: ['processStatus'],
+      value: expected,
+    });
+  } finally {
+    delete globalThis.__wsEventBridgeHarness;
+  }
+});
+
+test('terminal data-change suppresses a still-active correlated operation', async () => {
+  globalThis.__wsEventBridgeHarness = createHarness({
+    operations: new Map([['op-1', makeOperation({ id: 'op-1', status: 'running' })]]),
+  });
+
+  try {
+    const { useWsEventBridge } = await loadUseWsEventBridgeModule();
+    useWsEventBridge({ category: 'mouse', queryClient: makeQueryClient() });
+
+    const cleanupDataChangeEffect = globalThis.__wsEventBridgeHarness.effects[2]();
+    const { onMessage } = globalThis.__wsEventBridgeHarness.subscriptionOptions;
+
+    onMessage('data-change', makeDataChange({
+      meta: {
+        operationId: 'op-1',
+        operationStatus: 'done',
+      },
+    }));
+
+    cleanupDataChangeEffect();
+
+    assert.deepEqual(globalThis.__wsEventBridgeHarness.operationsCalls, [
+      { type: 'remove', id: 'op-1' },
+    ]);
+    assert.equal(globalThis.__wsEventBridgeHarness.operations.has('op-1'), false);
+    assert.equal(globalThis.__wsEventBridgeHarness.dataChangePatches.length, 1);
+    assert.equal(globalThis.__wsEventBridgeHarness.dataChangeSchedules.length, 1);
+  } finally {
+    delete globalThis.__wsEventBridgeHarness;
+  }
+});
+
+test('data-change suppression ignores uncorrelated, non-terminal, and already-terminal operations', async () => {
+  globalThis.__wsEventBridgeHarness = createHarness({
+    operations: new Map([
+      ['running-op', makeOperation({ id: 'running-op', status: 'running' })],
+      ['done-op', makeOperation({ id: 'done-op', status: 'done', endedAt: '2026-04-28T00:01:00.000Z' })],
+    ]),
+  });
+
+  try {
+    const { useWsEventBridge } = await loadUseWsEventBridgeModule();
+    useWsEventBridge({ category: 'mouse', queryClient: makeQueryClient() });
+
+    const cleanupDataChangeEffect = globalThis.__wsEventBridgeHarness.effects[2]();
+    const { onMessage } = globalThis.__wsEventBridgeHarness.subscriptionOptions;
+
+    onMessage('data-change', makeDataChange({
+      meta: {
+        operationId: 'running-op',
+        phase: 'registered',
+      },
+    }));
+    onMessage('data-change', makeDataChange({
+      meta: {
+        operationId: 'running-op',
+        operationStatus: 'running',
+      },
+    }));
+    onMessage('data-change', makeDataChange({
+      meta: {
+        operationId: 'done-op',
+        operationStatus: 'done',
+      },
+    }));
+
+    cleanupDataChangeEffect();
+
+    assert.deepEqual(globalThis.__wsEventBridgeHarness.operationsCalls, []);
+    assert.equal(globalThis.__wsEventBridgeHarness.operations.has('running-op'), true);
+    assert.equal(globalThis.__wsEventBridgeHarness.operations.has('done-op'), true);
+    assert.equal(globalThis.__wsEventBridgeHarness.dataChangePatches.length, 3);
+    assert.equal(globalThis.__wsEventBridgeHarness.dataChangeSchedules.length, 3);
   } finally {
     delete globalThis.__wsEventBridgeHarness;
   }

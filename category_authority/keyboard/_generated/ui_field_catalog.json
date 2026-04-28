@@ -424,7 +424,7 @@
       "tooltip_md": "Force required to actuate the switch.",
       "tooltip_source": null,
       "type": "number",
-      "unit": "gf"
+      "unit": "g"
     },
     {
       "aliases": [
@@ -515,7 +515,7 @@
       "tooltip_md": "Force required to bottom out.",
       "tooltip_source": null,
       "type": "number",
-      "unit": "gf"
+      "unit": "g"
     },
     {
       "aliases": [
@@ -3128,6 +3128,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-26T08:51:46.204Z",
+  "generated_at": "2026-04-28T06:44:30.978Z",
   "version": 1
 }

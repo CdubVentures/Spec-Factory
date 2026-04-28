@@ -104,7 +104,8 @@ function readOptionalNullableFiniteNumber(
 ): number | null | undefined | typeof INVALID_VALUE {
   if (!hasOwn(record, key) || record[key] === undefined) return undefined;
   if (record[key] === null) return null;
-  return Number.isFinite(record[key]) ? record[key] : INVALID_VALUE;
+  const value = record[key];
+  return typeof value === 'number' && Number.isFinite(value) ? value : INVALID_VALUE;
 }
 
 function isStringArray(value: unknown): value is string[] {

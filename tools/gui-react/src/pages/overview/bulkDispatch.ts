@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { api } from '../../api/client.ts';
 import { useOperationsStore } from '../../features/operations/state/operationsStore.ts';
+import { markOptimisticOperationFailed } from '../../features/operations/state/optimisticOperationFailure.ts';
 import {
   awaitOperationTerminal as defaultAwaitOperationTerminal,
   awaitPassengersRegistered as defaultAwaitPassengersRegistered,
@@ -96,8 +97,10 @@ export function useBulkFire(category: string) {
     async (p: BulkFireParams): Promise<string> => {
       const tempId = p.optimisticId ?? `_pending_${++_tempSeq}`;
       const alreadyPreinserted = Boolean(p.optimisticId && p.optimisticPreinserted);
+      let optimisticStub = useOperationsStore.getState().operations.get(tempId) ?? null;
       if (!alreadyPreinserted) {
-        upsert(makeStub(tempId, p, category, new Date().toISOString()));
+        optimisticStub = makeStub(tempId, p, category, new Date().toISOString());
+        upsert(optimisticStub);
       }
       try {
         const data = await api.post<AcceptedResponse>(p.url, p.body);
@@ -109,7 +112,10 @@ export function useBulkFire(category: string) {
         try { p.onDispatched?.(data.operationId); } catch { /* caller bug must not break fire */ }
         return data.operationId;
       } catch (err) {
-        remove(tempId);
+        const failedStub = optimisticStub ?? useOperationsStore.getState().operations.get(tempId);
+        if (failedStub && activeStatus(failedStub.status)) {
+          upsert(markOptimisticOperationFailed(failedStub, err));
+        }
         throw err;
       }
     },
@@ -140,7 +146,18 @@ function preinsertOptimisticBulkFireParams(
 
 function removeOptimisticBulkFireParam(param: BulkFireParams): void {
   if (!param.optimisticId) return;
-  useOperationsStore.getState().remove(param.optimisticId);
+  const operationsStore = useOperationsStore.getState();
+  const operation = operationsStore.operations.get(param.optimisticId);
+  if (!operation || !activeStatus(operation.status)) return;
+  operationsStore.remove(param.optimisticId);
+}
+
+function failOptimisticBulkFireParam(param: BulkFireParams, error: unknown): void {
+  if (!param.optimisticId) return;
+  const operationsStore = useOperationsStore.getState();
+  const operation = operationsStore.operations.get(param.optimisticId);
+  if (!operation || !activeStatus(operation.status)) return;
+  operationsStore.upsert(markOptimisticOperationFailed(operation, error));
 }
 
 function productLabel(row: CatalogRow): string {
@@ -260,6 +277,9 @@ async function dispatchBulkFireParams(
     return await dispatchTasks(prepared, options, async (param) => {
       try {
         return await fire(param);
+      } catch (error) {
+        failOptimisticBulkFireParam(param, error);
+        throw error;
       } finally {
         removeOptimisticBulkFireParam(param);
       }
@@ -634,8 +654,9 @@ async function runKfProductChain({
           if (status === 'cancelled') break;
           latestSummary = await fetchKfSummary(category, plan.row.productId).catch(() => latestSummary);
         }
-      } catch {
+      } catch (error) {
         failures += 1;
+        failOptimisticBulkFireParam(params, error);
         removeOptimisticBulkFireParam(params);
       }
     }

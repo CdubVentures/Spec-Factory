@@ -54,7 +54,7 @@ test('validateFieldStudioMap preserves selected_keys order (normalized but not s
   assert.deepEqual(checked.normalized.selected_keys, ['dpi', 'connection', 'weight']);
 });
 
-test('validateFieldStudioMap accepts scratch-only maps without key_list and blank property columns', () => {
+test('validateFieldStudioMap accepts component source property maps without key_list or columns', () => {
   const checked = validateFieldStudioMap({
     version: 2,
     field_studio_source_path: '',
@@ -73,18 +73,10 @@ test('validateFieldStudioMap accepts scratch-only maps without key_list and blan
     ],
     component_sources: [
       {
-        mode: 'scratch',
-        type: 'switch',
-        sheet: '',
-        header_row: 1,
-        first_data_row: 2,
+        component_type: 'switch',
         roles: {
-          primary_identifier: 'A',
-          maker: '',
-          aliases: [],
-          links: [],
           properties: [
-            { field_key: 'switch_type', column: '', type: 'string', variance_policy: 'authoritative' },
+            { field_key: 'switch_type', type: 'string', variance_policy: 'authoritative' },
           ],
         },
       },
@@ -102,7 +94,7 @@ test('validateFieldStudioMap accepts scratch-only maps without key_list and blan
   );
 });
 
-test('validateFieldStudioMap rejects component_sources sheet mode without sheet binding', () => {
+test('validateFieldStudioMap rejects component source rows without component_type', () => {
   const checked = validateFieldStudioMap({
     version: 2,
     field_studio_source_path: '',
@@ -110,17 +102,9 @@ test('validateFieldStudioMap rejects component_sources sheet mode without sheet 
     product_table: null,
     component_sources: [
       {
-        type: 'switch',
-        sheet: '',
-        header_row: 1,
-        first_data_row: 2,
         roles: {
-          primary_identifier: 'A',
-          maker: '',
-          aliases: [],
-          links: [],
           properties: [
-            { field_key: 'switch_type', column: '', type: 'string', variance_policy: 'authoritative' },
+            { field_key: 'switch_type', type: 'string', variance_policy: 'authoritative' },
           ],
         },
       },
@@ -129,7 +113,7 @@ test('validateFieldStudioMap rejects component_sources sheet mode without sheet 
 
   assert.equal(checked.valid, false);
   assert.equal(
-    checked.errors.some((row) => String(row).includes('component_sources: sheet is required when mode=sheet')),
+    checked.errors.some((row) => String(row).includes('type is required')),
     true,
   );
 });
@@ -155,26 +139,12 @@ test('normalizeFieldStudioMap returns empty field_groups when not an array', () 
   assert.deepEqual(checked.normalized.field_groups, []);
 });
 
-test('validateFieldStudioMap still requires key_list for field-studio-source-backed component maps', () => {
+test('validateFieldStudioMap still requires key_list for field-studio-source-backed maps', () => {
   const checked = validateFieldStudioMap({
     version: 2,
-    sheet_roles: [{ sheet: 'dataEntry', role: 'product_table' }],
-    component_sources: [
-      {
-        type: 'sensor',
-        source: 'field_studio_source',
-        sheet: 'sensors',
-        roles: {
-          primary_identifier: 'C',
-          maker: 'B',
-          aliases: [],
-          links: [],
-          properties: [],
-        },
-      },
-    ],
+    field_studio_source_path: 'mouseData.xlsm',
   }, {
-    sheetNames: ['dataEntry', 'sensors'],
+    sheetNames: ['dataEntry'],
   });
 
   assert.equal(checked.valid, false);

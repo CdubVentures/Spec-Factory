@@ -127,6 +127,7 @@ export {
   sortRunsNewestFirst,
 } from './scalarFinderSelectors.ts';
 export { FinderHowItWorks } from './FinderHowItWorks.tsx';
+export { FinderContentLoadingSkeleton } from './FinderContentLoadingSkeleton.tsx';
 export { DiscoveryHistoryButton } from './DiscoveryHistoryButton.tsx';
 export { DiscoveryHistoryDrawer } from './DiscoveryHistoryDrawer.tsx';
 export type {

@@ -22,33 +22,41 @@ Verification refreshed on 2026-04-28:
 
 | Command | Result |
 |---|---|
-| `npm test` | RED: 12,608 tests, 12,556 passed, 42 failed, 10 cancelled. Log: `.tmp/npm-test-after-continue.log`. |
+| `npm test` | PASS: 12,613 tests, 12,613 passed, 0 failed. Log: `.tmp/npm-test-full-audit-all3-2026-04-28.log`. |
 | `npm run gui:check` | PASS. |
+| `node --test --test-force-exit ...` | PASS: 104 focused Auditor 1 continuation tests, 104 passed, 0 failed. Covers M19-M22 storage/run-summary/runtime artifact contracts. |
+| `node --test --test-force-exit tools\gui-react\src\features\data-change\__tests__\dataChangeInvalidationMap.test.js` | PASS: 29 passed, 0 failed. Covers M23 storage freshness invalidation contract. |
+| `cd tools\gui-react && npm exec -- tsc -b` | PASS. Rechecked after the earlier dirty-file syntax blocker; TypeScript build is no longer blocked. |
 
-Auditor 1 has no remaining stale high-priority findings from the earlier PIF/runtime, storage run detail, rebuild, mirror atomicity, delete/reset atomicity, or codegen drift batch. The active Auditor 1 queue is now the backend/data subset of the refreshed full-suite failures plus the medium/low backlog below.
+Auditor 1 has no active critical or high-priority blockers after the refreshed full-suite audit. Remaining work is medium/low backlog only.
 
 ## Critical Priority
 
-| ID | Issue | Primary Area | Current Evidence | Work Shape |
-|---|---|---|---|---|
-| C1 | Full-suite gate is still red | Test baseline | `npm test` fails with 20 tests. | Fix or classify each remaining failing cluster; keep the log path above current until green. |
+No active critical Auditor 1 findings remain after this audit.
 
 ## High Priority
 
-| ID | Issue | Primary Area | Current Evidence | Work Shape |
-|---|---|---|---|---|
-| H1 | Mouse source-authority host contract fails | Category authority | `category_authority/mouse/tests/mouse.contract.test.js`: `razer.com` is not approved for acceleration hints. | Decide whether the authority fixture or allowlist is correct; update the data contract, not the test blindly. |
-| H2 | Scalar finder prompt goldens drifted | Finder prompt contracts | `src/core/finder/tests/scalarFinderPromptGolden.test.js`: SKU and RDF goldens differ by prompt text/spacing. | Determine whether prompt render change is intentional; regenerate goldens only after contract review. |
-| H3 | Crawl ledger cooldown upsert contract is broken | URL crawl ledger | `src/db/stores/tests/crawlLedgerStore.test.js`: cooldown lookup returns null and `attempt_count` is null. | Fix SQL/store behavior or update schema migration if the unique key changed. |
-| H4 | Color Edition Finder run UPSERT is not idempotent | CEF SQL store | `src/db/tests/colorEditionFinderStore.test.js`: duplicate `run_number` hits `SQLITE_CONSTRAINT_UNIQUE`. | Restore idempotent insert/update behavior through the store public API. |
-| H5 | Color registry seed reconcile expectations drifted | Global color registry | `src/features/color-registry/tests/colorRegistrySeed.test.js`: default/source color values do not match expected CSS tokens. | Decide whether the new registry values are intended; update seed logic or tests with explicit contract proof. |
-| H6 | PIF dedup callback order/count contract fails | Product Image Finder | `src/features/product-image/tests/productImageFinder.dedup.test.js`: `onVariantPersisted` callback result changed. | Reconcile callback timing with the new staged SQL/JSON persistence path. |
-| H7 | Review ecosystem component links are missing from seed projection | Review/component seed | `reviewEcosystem.component.test.js` and `reviewEcosystem.specdb.test.js`: component links/candidates missing. | Repair fixture seed/projection path; verify table counts and representative component links. |
+No active high-priority Auditor 1 findings remain after this audit.
 
 ## Closed Since Last Audit
 
 | ID | Closed Finding | Proof |
 |---|---|---|
+| C1-green | Full-suite red gate | Current `npm test` is green: 12,613 passed, 0 failed. |
+| H1-authority | Mouse source-authority host contract | Full suite now passes the mouse authority hostname contract. |
+| H2-prompt | Scalar finder prompt golden drift | Full suite now passes SKU and RDF prompt golden tests. |
+| H3-crawl-ledger | Crawl ledger cooldown upsert contract | Full suite now passes crawl ledger cooldown tests. |
+| H4-cef-upsert | Color Edition Finder run UPSERT idempotency | Full suite now passes CEF store idempotency tests. |
+| H5-color-registry | Color registry seed reconcile expectations | Full suite now passes color registry seed tests. |
+| H6-pif-callback | PIF dedup callback order/count contract | Full suite now passes Product Image Finder dedup callback tests. |
+| H7-review-seed | Review ecosystem component seed/link projection | Full suite now passes review ecosystem component/spec DB tests. |
+| M2 | Field Studio prompt-preview invalidation | Review-layout data-change invalidation now derives field-rule-backed prompt preview families from `FINDER_MODULES`; focused data-change/event registry proof passed. |
+| M6 | Run-finalize Catalog coverage | `process-completed` now includes the `catalog` domain after a run-type/product-field matrix confirmed successful compile and IndexLab completions can change Catalog row projections. Focused event/process proof passed. |
+| M19 | Run-summary telemetry event cap visibility | `run-summary` schema v2 now includes `telemetry.event_limit` with `limit`, `captured`, and `truncated`; serializer reads one extra bridge event and preserves the newest capped window. Focused run-summary proof passed. |
+| M20 | Storage run source pagination | `/storage/runs/:runId` now passes a bounded `sourcesPage` contract to the SQL detail reader, returns `sources_page` metadata, and uses SQL limit/offset plus count readers for `run_sources`/`crawl_sources`. Focused storage proof passed. |
+| M21 | Storage HTML artifact serve route | `GET /storage/runs/:runId/sources/:contentHash/html` now serves SQL-indexed gzipped HTML artifacts with path validation under the run HTML artifact directory. Focused storage route proof passed. |
+| M22 | Crawl4AI extraction artifact API | Runtime Ops now serves persisted Crawl4AI JSON extraction artifacts through `GET /indexlab/run/:runId/runtime/extractions/crawl4ai/:filename`, matching the existing GUI panel contract. Focused Runtime Ops route proof passed. |
+| M23 | Storage run detail freshness contract | Documented that storage mutation events invalidate broad `['storage']`, which includes run-detail queries `['storage', 'runs', runId]`; the 60s stale window is not the post-mutation freshness boundary. Focused invalidation proof passed. |
 | H2-old | PIF runtime JSON read/modify paths | SQL-first runtime reader table and focused PIF suite: 184 passed, 0 failed. |
 | H3-old | Storage Run Detail B2 durable projection/finalizer coverage | `run_sources` schema/finalizer/rebuild confirmed; focused storage/indexing suite: 44 passed, 0 failed. |
 | H4-old | Deleted-DB rebuild coverage for `field_key_order` | `fieldKeyOrderReseed` proof: 7 passed, 0 failed. |
@@ -62,13 +70,6 @@ Auditor 1 has no remaining stale high-priority findings from the earlier PIF/run
 
 | ID | Issue | Primary Area | Work Shape |
 |---|---|---|---|
-| M2 | Field Studio prompt-preview invalidation covers Key Finder but not every finder | Event/query contract | Extend review-layout prompt-preview invalidation to all finders that read field rules. Coordinate UI verification with Auditor 2. |
-| M6 | Run-finalize Catalog coverage needs per-run-type audit | IndexLab/Catalog contract | Build run-type/event/product-field matrix before adding generic finalize events. |
-| M19 | Run-summary telemetry is capped at 6000 events | Run telemetry | Add truncation flag, raise cap, or move telemetry to paginated reader. |
-| M20 | `crawl_sources.sources[]` has no pagination | Storage API | Add cursor or limit/offset pagination on SQL query and UI contract; coordinate UI with Auditor 2 if needed. |
-| M21 | HTML artifacts have no HTTP serve route | Run artifacts | Decide user-facing vs internal-only; add route only if user-facing. |
-| M22 | crawl4ai extractions are write-only | Extraction artifacts | Project into SQL/API or document debug-only cleanup policy. |
-| M23 | Storage run detail freshness is stale-window based | Storage detail data contract | Provide exact invalidation/refetch contract for Auditor 2 if frontend work is needed. |
 | M24 | Query-key scope contract is incomplete | Event registry/tests | Document event scope expectations next to source registry and add focused tests. |
 | M26 | Catalog sortable finder columns are hardcoded in tests | Overview/finder registry tests | Derive expected lists from `FINDER_MODULES`. |
 | M27 | Finder-specific knob schemas are not tied to rendered controls | Finder settings tests | Add schema-to-rendered-control contract test. |
@@ -106,7 +107,165 @@ Auditor 1 has no remaining stale high-priority findings from the earlier PIF/run
 
 ## Work Log
 
-### 2026-04-28 - Full Audit Refresh
+### 2026-04-28 - M23 Storage Run Detail Freshness Contract
+
+Closed M23 as a contract/documentation gap. Storage mutation events already resolve to the `storage` domain, and `DOMAIN_QUERY_TEMPLATES.storage` includes the broad query key:
+
+```text
+['storage']
+```
+
+That broad key intentionally invalidates active run-detail queries such as:
+
+```text
+['storage', 'runs', runId]
+```
+
+So the `useRunDetail` 60s `staleTime` is a soft cache window only; after storage mutations, data-change invalidation is the freshness boundary. Added a WHY comment next to the source registry to make the exact contract visible.
+
+Proof:
+
+```text
+node --test --test-force-exit tools\gui-react\src\features\data-change\__tests__\dataChangeInvalidationMap.test.js
+```
+
+Expected storage events covered: `storage-runs-deleted`, `storage-runs-bulk-deleted`, `storage-pruned`, `storage-purged`, `storage-urls-deleted`, `storage-history-purged`.
+
+Result: 29 tests passed, 0 failed.
+
+### 2026-04-28 - M22 Crawl4AI Extraction Artifact API
+
+Closed M22 by matching the existing Runtime Ops Crawl4AI panel contract. The GUI already points each Crawl4AI artifact to:
+
+```text
+GET /indexlab/run/:runId/runtime/extractions/crawl4ai/:filename
+```
+
+The backend now serves `.json` artifact files from the run's `extractions/crawl4ai/` directory after rejecting traversal, absolute paths, and non-JSON filenames. This makes persisted Crawl4AI bundles API-readable instead of write-only.
+
+Proof:
+
+```text
+node --test --test-force-exit src\features\indexing\api\tests\runtimeOpsRoutes.assets.test.js
+```
+
+Result: 4 tests passed, 0 failed.
+
+### 2026-04-28 - M21 Storage HTML Artifact Route
+
+Closed M21 by treating Storage Manager HTML artifacts as user-facing because run detail already exposes `html_file` in expanded source artifact rows. Added a deterministic artifact route:
+
+```text
+GET /storage/runs/:runId/sources/:contentHash/html
+```
+
+Contract:
+
+| Boundary | Contract |
+|---|---|
+| Identity | Route resolves a source by `run_id` + `content_hash` from SQL (`run_sources`, then `crawl_sources`). |
+| Path safety | Artifact files are served only when the resolved path stays under the run's `html/` artifact directory in the configured IndexLab root or default IndexLab root. |
+| Payload | Gzipped HTML is served as `text/html; charset=utf-8` with `Content-Encoding: gzip`. |
+
+Proof:
+
+```text
+node --test --test-force-exit src\features\indexing\api\tests\storageManagerRouteContract.test.js src\features\indexing\api\tests\indexlabRoutes.test.js
+```
+
+Result: 30 tests passed, 0 failed.
+
+### 2026-04-28 - M20 Storage Run Source Pagination
+
+Closed M20 by moving Storage Run Detail sources to an explicit page contract:
+
+| Boundary | Contract |
+|---|---|
+| HTTP | `GET /storage/runs/:runId?sourcesLimit=<n>&sourcesOffset=<n>` normalizes source pagination and returns `sources_page`. Default page is bounded at 100 rows; max accepted page size is 500. |
+| SQL | `run_sources` and `crawl_sources` expose count plus limit/offset readers ordered by newest crawl first. |
+| Response | `sources_page` includes `limit`, `offset`, `total`, and `has_more`; `sources` contains only the requested page. |
+| GUI type contract | `RunDetailResponse` includes optional `sources_page` metadata for consumers. |
+
+Proof:
+
+```text
+node --test --test-force-exit src\features\indexing\api\tests\storageManagerRouteContract.test.js src\db\stores\tests\artifactStore.test.js
+node --test --test-force-exit src\features\indexing\api\tests\indexlabRoutes.test.js
+```
+
+Result: 39 tests passed, 0 failed.
+
+GUI typecheck was re-run after the later workspace update and now passes:
+
+```text
+cd tools\gui-react && npm exec -- tsc -b
+```
+
+### 2026-04-28 - M19 Run-Summary Telemetry Cap Visibility
+
+Closed M19 by making the run-summary event cap explicit in the serialized contract. `run-summary` schema v2 now includes `telemetry.event_limit`:
+
+| Field | Contract |
+|---|---|
+| `limit` | Central `RUN_SUMMARY_EVENTS_LIMIT` value used by the serializer. |
+| `captured` | Number of events serialized into `telemetry.events`. |
+| `truncated` | `true` when SQL had more rows than the summary event window. |
+
+The serializer reads `RUN_SUMMARY_EVENTS_LIMIT + 1` rows, detects overflow, and preserves the newest `RUN_SUMMARY_EVENTS_LIMIT` events in chronological order.
+
+Proof:
+
+```text
+node --test --test-force-exit src\features\indexing\api\contracts\tests\runSummaryContract.test.js src\indexlab\tests\runSummarySerializer.test.js src\indexlab\tests\runSummaryFinalize.test.js src\features\indexing\api\builders\tests\readRunSummaryEventsCharacterization.test.js
+```
+
+Result: 59 tests passed, 0 failed.
+
+### 2026-04-28 - M6 Run-Finalize Catalog Coverage
+
+Run-type/product-field matrix:
+
+| Completion path | Event | Catalog-sensitive fields | Required invalidation |
+|---|---|---|---|
+| Successful IndexLab process (`indexlab ... --category <cat>`) | `process-completed` | Coverage, confidence, filled-field counts, field candidates, CEF/PIF/RDF/SKU/key finder columns, last-run columns | `catalog`, `storage`, existing review/studio domains |
+| Successful compile process (`category-compile` / `compile-rules`) | `process-completed` | Field totals, labels/order, key-tier progress shape, component/enum-backed catalog projections | `catalog`, existing studio/review-layout/component/enum domains |
+| Failed or categoryless process | No data-change payload | None | No invalidation |
+
+Closed the gap by adding `catalog` to the existing `process-completed` event domains. This keeps one generic process-completion event while making Catalog refresh with finalized SQL projections.
+
+Proof:
+
+```text
+node --test --test-force-exit tools\gui-react\src\features\data-change\__tests__\dataChangeInvalidationMap.test.js
+node --test --test-force-exit src\core\events\tests\eventRegistryCoverage.test.js src\core\events\tests\dataChangeContract.test.js src\core\events\tests\dataChangeDomainParity.test.js src\app\api\services\tests\compileProcessCompletion.test.js
+```
+
+Result: 43 tests passed, 0 failed.
+
+### 2026-04-28 - M2 Field Studio Prompt Preview Invalidation
+
+Closed M2 by deriving review-layout prompt-preview invalidation from `FINDER_MODULES` entries marked `promptPreviewFieldRuleBacked`. Field Studio saves now invalidate the Key Finder and PIF prompt-preview query families, covering both preview paths that read compiled field rules.
+
+Proof:
+
+```text
+node --test --test-force-exit tools\gui-react\src\features\data-change\__tests__\dataChangeInvalidationMap.test.js
+node --test --test-force-exit src\core\events\tests\eventRegistryCoverage.test.js src\core\events\tests\dataChangeContract.test.js src\core\events\tests\dataChangeDomainParity.test.js
+```
+
+Result: 40 tests passed, 0 failed.
+
+### 2026-04-28 - Full Audit All 3 Green Refresh
+
+Refreshed full-suite proof:
+
+```text
+npm test 2>&1 | Tee-Object -FilePath .tmp\npm-test-full-audit-all3-2026-04-28.log
+```
+
+Result: 12,613 tests, 12,613 passed, 0 failed. The previous Auditor 1 critical/high failure clusters are closed; only the medium/low backlog remains active in this doc.
+
+### 2026-04-28 - Superseded Full Audit Refresh
 
 Refreshed full-suite proof:
 
@@ -114,7 +273,7 @@ Refreshed full-suite proof:
 npm test 2>&1 | Tee-Object -FilePath .tmp\npm-test-full-audit-2026-04-28.log
 ```
 
-Result: 12,531 tests, 12,511 passed, 20 failed. Remaining Auditor 1-owned failure clusters are mouse authority host approval, scalar prompt golden drift, crawl ledger cooldown upsert, Color Edition Finder run UPSERT idempotency, color registry seed reconcile values, Product Image Finder `onVariantPersisted` callback behavior, and review ecosystem component seed/link projection.
+Historical result, superseded by the green audit above: 12,531 tests, 12,511 passed, 20 failed. Those Auditor 1-owned failure clusters are now closed.
 
 ### 2026-04-28 - H1/H2 Start
 
@@ -170,7 +329,7 @@ Full-suite refresh after this follow-up:
 npm test 2>&1 | Tee-Object -FilePath .tmp\npm-test-after-continue.log
 ```
 
-Result: RED, 12,608 tests, 12,556 passed, 42 failed, 10 cancelled. The focused PIF/generic mutation response slice is green; remaining failures are separate authority, prompt golden, crawl ledger, CEF store idempotency, color registry seed, PIF callback, review seed, compiler/studio, and GUI contract clusters.
+Historical result, superseded by the green audit above: 12,608 tests, 12,556 passed, 42 failed, 10 cancelled. The focused PIF/generic mutation response slice was green; the remaining failure clusters are now closed.
 
 Focused proof run:
 

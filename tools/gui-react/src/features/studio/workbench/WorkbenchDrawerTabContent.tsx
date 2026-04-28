@@ -29,6 +29,7 @@ export interface WorkbenchDrawerTabContentProps {
   onUpdate: (path: string, value: unknown) => void;
   onNavigate: (key: string) => void;
   isEgLocked?: boolean;
+  isIdentityLocked?: boolean;
   disabled?: boolean;
   B: BadgeSlot;
 }

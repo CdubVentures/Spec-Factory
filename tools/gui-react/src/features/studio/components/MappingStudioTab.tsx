@@ -27,6 +27,9 @@ import {
   createEmptyComponentSource as emptyComponentSource,
 } from "../state/studioComponentSources.ts";
 import {
+  shouldPersistStudioMapPayload,
+} from "../state/studioPagePersistence.ts";
+import {
   inputCls,
   labelCls,
   STUDIO_TIPS,
@@ -88,17 +91,6 @@ export function MappingStudioTab({
   const { updateField } = useStudioFieldRulesActions();
   const [tooltipPath, setTooltipPath] = useState("");
   const [compSources, setCompSources] = useState<ComponentSource[]>([]);
-  // Phase 3: track which expanded component_sources rows are form-invalid
-  // (mode=sheet + empty sheet). The Save button gates on this set.
-  const [invalidComponentRows, setInvalidComponentRows] = useState<Set<number>>(() => new Set());
-  const setRowValidity = useCallback((rowIndex: number, invalid: boolean) => {
-    setInvalidComponentRows((prev) => {
-      const next = new Set(prev);
-      if (invalid) next.add(rowIndex);
-      else next.delete(rowIndex);
-      return next;
-    });
-  }, []);
   const [dataLists, setDataLists] = useState<DataListEntry[]>([]);
   const [seededVersion, setSeededVersion] = useState("");
   const lastMapAutoSaveFingerprintRef = useRef("");
@@ -219,7 +211,12 @@ export function MappingStudioTab({
         ai_assist: normalizeAiAssistConfig(dl.ai_assist),
       })),
     };
-    lastMapAutoSaveFingerprintRef.current = autoSaveFingerprint(seededPayload);
+    lastMapAutoSaveFingerprintRef.current = shouldPersistStudioMapPayload({
+      payload: seededPayload,
+      force: false,
+    })
+      ? autoSaveFingerprint(seededPayload)
+      : '';
     setSeededVersion(mapSeedVersion);
   }, [wbMap, mapSeedVersion, seededVersion, rules]);
 
@@ -249,12 +246,9 @@ export function MappingStudioTab({
     };
   }, [wbMap, tooltipPath, compSources, dataLists]);
 
-  // Phase 3: gate save when any expanded component_sources row is form-invalid
-  // (mode=sheet + empty sheet name). Prevents the compile pipeline 400.
-  const hasInvalidComponentRows = invalidComponentRows.size > 0;
   function handleSave() {
-    if (hasInvalidComponentRows) return;
     const nextMap = assembleMap();
+    if (!shouldPersistStudioMapPayload({ payload: nextMap, force: false })) return;
     lastMapAutoSaveFingerprintRef.current = autoSaveFingerprint(nextMap);
     onSaveMap(nextMap);
   }
@@ -267,9 +261,8 @@ export function MappingStudioTab({
 
   useEffect(() => {
     if (!autoSaveMapEnabled || !mapHydrated.current) return;
-    // Phase 3: skip auto-save while any component_sources row is form-invalid.
-    if (hasInvalidComponentRows) return;
     const nextMap = assembleMap();
+    if (!shouldPersistStudioMapPayload({ payload: nextMap, force: false })) return;
     const nextFingerprint = autoSaveFingerprint(nextMap);
     if (
       nextFingerprint &&
@@ -288,7 +281,6 @@ export function MappingStudioTab({
     dataLists,
     assembleMap,
     onSaveMap,
-    hasInvalidComponentRows,
   ]);
 
   useEffect(() => {
@@ -297,6 +289,7 @@ export function MappingStudioTab({
       isDirty: () => {
         if (!autoSaveMapEnabled || !mapHydrated.current) return false;
         const nextMap = assembleMap();
+        if (!shouldPersistStudioMapPayload({ payload: nextMap, force: false })) return false;
         const fp = autoSaveFingerprint(nextMap);
         return Boolean(fp) && fp !== lastMapAutoSaveFingerprintRef.current;
       },
@@ -311,7 +304,12 @@ export function MappingStudioTab({
       },
       markFlushed: () => {
         const nextMap = assembleMap();
-        lastMapAutoSaveFingerprintRef.current = autoSaveFingerprint(nextMap);
+        lastMapAutoSaveFingerprintRef.current = shouldPersistStudioMapPayload({
+          payload: nextMap,
+          force: false,
+        })
+          ? autoSaveFingerprint(nextMap)
+          : '';
       },
     });
   }, [autoSaveMapEnabled, assembleMap]);
@@ -320,6 +318,7 @@ export function MappingStudioTab({
     () => () => {
       if (isDomainFlushedByUnload('studioMap')) return;
       const nextMap = assembleMap();
+      if (!shouldPersistStudioMapPayload({ payload: nextMap, force: true })) return;
       const nextFingerprint = autoSaveFingerprint(nextMap);
       if (
         !shouldFlushStudioMapOnUnmount({
@@ -409,8 +408,7 @@ export function MappingStudioTab({
         <div className="flex-1" />
         <button
           onClick={handleSave}
-          disabled={saving || autoSaveMapEnabled || hasInvalidComponentRows}
-          title={hasInvalidComponentRows ? 'Fix component_sources rows before saving (sheet name required when mode=sheet)' : undefined}
+          disabled={saving || autoSaveMapEnabled}
           className={`${autoSaveMapEnabled ? btnSecondary : btnPrimary} relative h-11 min-h-11 text-sm rounded inline-flex items-center justify-center overflow-visible whitespace-nowrap ${actionBtnWidth}`}
         >
           <span className="w-full text-center font-medium truncate">
@@ -553,8 +551,7 @@ export function MappingStudioTab({
           </span>
           <div className="pt-0.5">
             <p className="text-xs sf-text-muted mt-1">
-              Required: Primary Identifier role. Optional: Maker, Name Variants,
-              Reference URLs, Attributes.
+              Declare component identity keys and their properties.
             </p>
           </div>
         </div>
@@ -572,7 +569,7 @@ export function MappingStudioTab({
               <div className="space-y-6">
                 {compSources.map((src, idx) => {
                   const lockedComponentKeys = compSources
-                    .map((entry) => entry.component_type || entry.type || "")
+                    .map((entry) => entry.component_type || "")
                     .filter((key, entryIdx) => key && entryIdx !== idx);
                   return (
                     <EditableComponentSource
@@ -593,7 +590,6 @@ export function MappingStudioTab({
                         if (oldType) updateField(oldType, "enum.source", "");
                         if (newType) updateField(newType, "enum.source", `component_db.${newType}`);
                       }}
-                      onValidityChange={(invalid) => setRowValidity(idx, invalid)}
                     />
                   );
                 })}

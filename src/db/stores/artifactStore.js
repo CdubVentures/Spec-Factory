@@ -69,9 +69,58 @@ export function createArtifactStore({ db, category, stmts }) {
     return stmts._getCrawlSourcesByRunId.all(String(runId || ''));
   }
 
+  function normalizeSourcePage({ limit = 100, offset = 0 } = {}) {
+    return {
+      limit: Math.max(1, Number(limit) || 100),
+      offset: Math.max(0, Number(offset) || 0),
+    };
+  }
+
+  function getCrawlSourcesPageByRunId(runId, page = {}) {
+    if (typeof stmts._getCrawlSourcesPageByRunId?.all !== 'function') {
+      const { limit, offset } = normalizeSourcePage(page);
+      return getCrawlSourcesByRunId(runId).slice(offset, offset + limit);
+    }
+    const { limit, offset } = normalizeSourcePage(page);
+    return stmts._getCrawlSourcesPageByRunId.all(String(runId || ''), limit, offset);
+  }
+
+  function countCrawlSourcesByRunId(runId) {
+    if (typeof stmts._countCrawlSourcesByRunId?.get !== 'function') return getCrawlSourcesByRunId(runId).length;
+    return Number(stmts._countCrawlSourcesByRunId.get(String(runId || ''))?.count) || 0;
+  }
+
+  function getCrawlSourceByRunIdAndHash(runId, contentHash) {
+    if (typeof stmts._getCrawlSourceByRunIdAndHash?.get !== 'function') {
+      return getCrawlSourcesByRunId(runId).find((row) => row.content_hash === String(contentHash || ''));
+    }
+    return stmts._getCrawlSourceByRunIdAndHash.get(String(runId || ''), String(contentHash || ''));
+  }
+
   function getRunSourcesByRunId(runId) {
     if (typeof stmts._getRunSourcesByRunId?.all !== 'function') return getCrawlSourcesByRunId(runId);
     return stmts._getRunSourcesByRunId.all(String(runId || ''));
+  }
+
+  function getRunSourcesPageByRunId(runId, page = {}) {
+    if (typeof stmts._getRunSourcesPageByRunId?.all !== 'function') {
+      const { limit, offset } = normalizeSourcePage(page);
+      return getRunSourcesByRunId(runId).slice(offset, offset + limit);
+    }
+    const { limit, offset } = normalizeSourcePage(page);
+    return stmts._getRunSourcesPageByRunId.all(String(runId || ''), limit, offset);
+  }
+
+  function countRunSourcesByRunId(runId) {
+    if (typeof stmts._countRunSourcesByRunId?.get !== 'function') return getRunSourcesByRunId(runId).length;
+    return Number(stmts._countRunSourcesByRunId.get(String(runId || ''))?.count) || 0;
+  }
+
+  function getRunSourceByRunIdAndHash(runId, contentHash) {
+    if (typeof stmts._getRunSourceByRunIdAndHash?.get !== 'function') {
+      return getRunSourcesByRunId(runId).find((row) => row.content_hash === String(contentHash || ''));
+    }
+    return stmts._getRunSourceByRunIdAndHash.get(String(runId || ''), String(contentHash || ''));
   }
 
   function getRunSourcesByProduct(productId) {
@@ -144,8 +193,14 @@ export function createArtifactStore({ db, category, stmts }) {
     insertVideo,
     getCrawlSourcesByProduct,
     getCrawlSourcesByRunId,
+    getCrawlSourcesPageByRunId,
+    countCrawlSourcesByRunId,
+    getCrawlSourceByRunIdAndHash,
     getRunSourcesByRunId,
     getRunSourcesByProduct,
+    getRunSourcesPageByRunId,
+    countRunSourcesByRunId,
+    getRunSourceByRunIdAndHash,
     getIndexedUrlHistoryByProduct,
     getScreenshotsByProduct,
     getScreenshotsByRunId,

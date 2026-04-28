@@ -3,7 +3,7 @@
 // Column 2: header card + settings for the SELECTED section only.
 
 import { Suspense, lazy } from 'react';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { SettingsPanelLoadingSkeleton } from '../../../shared/ui/feedback/SettingsPanelLoadingSkeleton.tsx';
 import { GenericSectionPanel } from './GenericSectionPanel.tsx';
 import { findCategory } from '../state/SettingsCategoryRegistry.ts';
 import type { SettingsCategoryId, SettingsSectionDef } from '../state/SettingsCategoryRegistry.ts';
@@ -210,7 +210,7 @@ export function CategoryPanel({
             {/* Settings for this section */}
             <div className="space-y-4">
               {activeSectionDef.customComponent === 'TierHierarchy' ? (
-                <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+                <Suspense fallback={<SettingsPanelLoadingSkeleton groups={2} rowsPerGroup={3} />}>
                   <TierHierarchyPanel
                     runtimeDraft={runtimeDraft}
                     onStringChange={onStringChange}
@@ -218,11 +218,11 @@ export function CategoryPanel({
                   />
                 </Suspense>
               ) : activeSectionDef.customComponent === 'PublisherReconcile' ? (
-                <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+                <Suspense fallback={<SettingsPanelLoadingSkeleton groups={2} rowsPerGroup={3} />}>
                   <PublisherReconcileSection />
                 </Suspense>
               ) : activeSectionDef.customComponent === 'VideoRecording' ? (
-                <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+                <Suspense fallback={<SettingsPanelLoadingSkeleton groups={2} rowsPerGroup={3} />}>
                   <VideoSectionPanel
                     categoryId={categoryId}
                     sectionId={activeSection}
@@ -234,7 +234,7 @@ export function CategoryPanel({
                   />
                 </Suspense>
               ) : activeSectionDef.customComponent === 'RmbgModelSection' ? (
-                <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+                <Suspense fallback={<SettingsPanelLoadingSkeleton groups={2} rowsPerGroup={3} />}>
                   <RmbgModelSection
                     categoryId={categoryId}
                     sectionId={activeSection}

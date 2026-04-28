@@ -52,10 +52,7 @@ function normKey(s) {
 
 function readSourceRows(map) {
   if (!isObject(map)) return [];
-  if (Array.isArray(map.component_sources) && map.component_sources.length > 0) {
-    return map.component_sources;
-  }
-  return toArray(map.component_sheets);
+  return toArray(map.component_sources);
 }
 
 function buildSourcesByType(map) {

@@ -118,6 +118,8 @@ export const FINDER_MODULES = Object.freeze([
     moduleClass: 'variantArtifactProducer',
     variantSource: 'colorEditionFinder',
     moduleType: 'pif',
+    promptPreviewFinderKey: 'pif',
+    promptPreviewFieldRuleBacked: true,
     moduleLabel: 'PIF',
     chipStyle: 'sf-chip-info',
 
@@ -560,6 +562,8 @@ export const FINDER_MODULES = Object.freeze([
     moduleClass: 'productFieldProducer',
     // No variantSource — keyFinder runs once per product across many fields.
     moduleType: 'kf',
+    promptPreviewFinderKey: 'key',
+    promptPreviewFieldRuleBacked: true,
     moduleLabel: 'KF',
     chipStyle: 'sf-chip-accent',
 

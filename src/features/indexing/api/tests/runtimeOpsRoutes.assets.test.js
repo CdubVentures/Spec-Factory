@@ -205,3 +205,57 @@ test('runtimeOpsRoutes: runtime asset route serves output-root screenshot keys r
   }
 });
 
+test('runtimeOpsRoutes: serves Crawl4AI JSON extraction artifact by filename', async () => {
+  const { tempRoot, indexLabRoot, outputRoot } = await createRuntimeOpsRoot('runtime-ops-crawl4ai-artifact-');
+  const runId = 'run-ops-crawl4ai-artifact';
+  const filename = 'abcdef123456.json';
+  const payload = {
+    schema_version: 2,
+    plugin: 'crawl4ai',
+    markdown: '# Specs',
+    tables: [],
+    lists: [],
+  };
+  await createRunFixture({
+    rootDir: indexLabRoot,
+    runId,
+    meta: {
+      run_id: runId,
+      category: 'mouse',
+      product_id: 'mouse-test-brand-model',
+      started_at: '2026-02-20T00:00:00.000Z',
+      ended_at: '2026-02-20T00:10:00.000Z',
+      status: 'completed',
+    },
+    events: [],
+  });
+
+  try {
+    const artifactPath = path.join(indexLabRoot, runId, 'extractions', 'crawl4ai', filename);
+    await fs.mkdir(path.dirname(artifactPath), { recursive: true });
+    await fs.writeFile(artifactPath, JSON.stringify(payload), 'utf8');
+
+    const handler = createRuntimeOpsHandler({
+      indexLabRoot,
+      outputRoot,
+      config: {},
+      readRunSummaryEvents: async () => [],
+      readIndexLabRunMeta: async () => ({ run_id: runId, category: 'mouse', product_id: 'mouse-test-brand-model', status: 'completed' }),
+    });
+
+    const res = createMockRes();
+    await handler(
+      ['indexlab', 'run', runId, 'runtime', 'extractions', 'crawl4ai', encodeURIComponent(filename)],
+      new URLSearchParams(),
+      'GET',
+      null,
+      res,
+    );
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.headers['content-type'], 'application/json; charset=utf-8');
+    assert.deepEqual(JSON.parse(String(res.body)), payload);
+  } finally {
+    await cleanupTempRoot(tempRoot);
+  }
+});

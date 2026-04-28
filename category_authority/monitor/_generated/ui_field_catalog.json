@@ -458,7 +458,7 @@
       "tooltip_key": "frc",
       "tooltip_md": "Frame Rate Control dithering to simulate higher bit depth",
       "tooltip_source": null,
-      "type": "string",
+      "type": "boolean",
       "unit": ""
     },
     {
@@ -3404,6 +3404,6 @@
       "unit": ""
     }
   ],
-  "generated_at": "2026-04-22T03:39:57.663Z",
+  "generated_at": "2026-04-28T06:44:32.811Z",
   "version": 1
 }

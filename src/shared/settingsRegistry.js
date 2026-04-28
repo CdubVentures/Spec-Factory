@@ -259,6 +259,9 @@ export const RUNTIME_SETTINGS_REGISTRY = Object.freeze([
 // This registry lets downstream layers (audit, docs, GUI env editor) discover
 // them without scraping manifest group files.
 export const BOOTSTRAP_ENV_REGISTRY = Object.freeze([
+  // --- core ---
+  { key: "port", envKey: "PORT", type: "int", default: 8788, group: "core" },
+
   // --- llm ---
   { key: "llmPhaseOverridesJson", envKey: "LLM_PHASE_OVERRIDES_JSON", type: "string", default: "{}", group: "llm" },
   { key: "llmProviderRegistryJson", envKey: "LLM_PROVIDER_REGISTRY_JSON", type: "string", default: "", group: "llm" },

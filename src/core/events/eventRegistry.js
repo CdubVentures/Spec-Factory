@@ -21,6 +21,12 @@ const finderModuleQueryTemplates = Object.freeze(
   FINDER_MODULES.map((mod) => Object.freeze([mod.routePrefix, CATEGORY_TOKEN])),
 );
 
+const fieldRuleBackedPromptPreviewTemplates = Object.freeze(
+  FINDER_MODULES
+    .filter((mod) => mod.promptPreviewFieldRuleBacked === true && mod.promptPreviewFinderKey)
+    .map((mod) => Object.freeze(['prompt-preview', mod.promptPreviewFinderKey, CATEGORY_TOKEN])),
+);
+
 export const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   studio: withAuthoritySnapshot([
     ['studio', CATEGORY_TOKEN],
@@ -42,7 +48,7 @@ export const DOMAIN_QUERY_TEMPLATES = Object.freeze({
   'review-layout': withAuthoritySnapshot([
     ['reviewLayout', CATEGORY_TOKEN],
     ['componentReviewLayout', CATEGORY_TOKEN],
-    ['prompt-preview', 'key', CATEGORY_TOKEN],
+    ...fieldRuleBackedPromptPreviewTemplates,
   ]),
   labels: withAuthoritySnapshot([
     ['fieldLabels', CATEGORY_TOKEN],
@@ -141,6 +147,8 @@ export const DOMAIN_QUERY_TEMPLATES = Object.freeze({
     ['prompt-preview'],
   ]),
   storage: Object.freeze([
+    // Broad key intentionally covers run-detail queries: ['storage', 'runs', runId].
+    // The 60s React Query stale window is not the freshness boundary after storage mutations.
     ['storage'],
     ['storage', 'overview'],
     ['storage', 'runs', CATEGORY_TOKEN],
@@ -176,7 +184,7 @@ export const EVENT_REGISTRY = Object.freeze({
   ...FINDER_DATA_CHANGE_EVENTS,
   'field-studio-map-saved': ['studio', 'mapping', 'review-layout', 'labels'],
   'field-key-order-saved': ['studio', 'mapping', 'review-layout'],
-  'process-completed': ['studio', 'review-layout', 'component', 'enum', 'storage'],
+  'process-completed': ['studio', 'review-layout', 'component', 'enum', 'storage', 'catalog'],
   'catalog-bulk-add': ['catalog', 'queue', 'identity'],
   'catalog-product-add': ['catalog', 'queue', 'identity'],
   'catalog-product-update': ['catalog', 'queue', 'identity'],

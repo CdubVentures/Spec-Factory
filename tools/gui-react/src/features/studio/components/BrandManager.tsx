@@ -5,8 +5,8 @@ import { useUiCategoryStore } from "../../../stores/uiCategoryStore.ts";
 import { usePersistedToggle } from "../../../stores/collapseStore.ts";
 import { usePersistedTab, usePersistedExpandMap } from "../../../stores/tabStore.ts";
 import { DataTable } from "../../../shared/ui/data-display/DataTable.tsx";
-import { Spinner } from "../../../shared/ui/feedback/Spinner.tsx";
 import { inputCls, labelCls } from "./studioConstants.ts";
+import { BrandManagerSkeleton } from "./BrandManagerSkeleton.tsx";
 import { invalidateFieldRulesQueries } from "../state/invalidateFieldRulesQueries.ts";
 import { patchCachedBrand, removeCachedBrand } from "./brandCacheOptimism.ts";
 import {
@@ -736,7 +736,7 @@ export function BrandManager() {
   }
   const totalProducts = impactData?.total_products ?? 0;
   const productsByCategory = impactData?.products_by_category ?? {};
-  if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
+  if (isLoading) return <BrandManagerSkeleton drawerOpen={drawerOpen} />;
   return (
     <>
       {" "}

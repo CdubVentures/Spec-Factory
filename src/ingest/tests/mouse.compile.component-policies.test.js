@@ -11,20 +11,13 @@ test('FRC-05-D - compiler coerces string property variance_policy to authoritati
   const rawMap = {
     component_sources: [
       {
-        type: 'sensor',
-        sheet: 'sensors',
-        header_row: 1,
-        first_data_row: 2,
+        component_type: 'sensor',
         roles: {
-          primary_identifier: 'C',
-          maker: 'B',
-          aliases: [],
-          links: ['J'],
           properties: [
-            { column: 'F', field_key: 'dpi', type: 'number', variance_policy: 'upper_bound' },
-            { column: 'G', field_key: 'sensor_type', type: 'string', variance_policy: 'upper_bound' },
-            { column: 'I', field_key: 'sensor_date', type: 'string', variance_policy: 'range' },
-            { column: 'H', field_key: 'detent_type', variance_policy: 'lower_bound' },
+            { field_key: 'dpi', type: 'number', variance_policy: 'upper_bound' },
+            { field_key: 'sensor_type', type: 'string', variance_policy: 'upper_bound' },
+            { field_key: 'sensor_date', type: 'string', variance_policy: 'range' },
+            { field_key: 'detent_type', variance_policy: 'lower_bound' },
           ],
         },
       },
@@ -80,7 +73,7 @@ test('FRC-05-E - mouse sensor component policies remain numeric upper_bound for 
   assert.ok(loaded?.map, 'mouse field studio map should load');
 
   const sources = Array.isArray(loaded.map.component_sources) ? loaded.map.component_sources : [];
-  const sensorSource = sources.find((row) => String(row?.type || row?.component_type || '').toLowerCase() === 'sensor');
+  const sensorSource = sources.find((row) => String(row?.component_type || '').toLowerCase() === 'sensor');
   assert.ok(sensorSource, 'sensor component source should exist in the current mouse field studio map');
 
   const props = Array.isArray(sensorSource?.roles?.properties) ? sensorSource.roles.properties : [];

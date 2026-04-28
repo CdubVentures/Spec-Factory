@@ -2,10 +2,12 @@ import {
   DEFAULT_PRIORITY_PROFILE,
   normalizeAiAssistConfig,
 } from "./studioPriority.ts";
-import type { ComponentSource, FieldRule } from "../../../types/studio.ts";
+import type { ComponentSource, ComponentSourceProperty, FieldRule } from "../../../types/studio.ts";
 
 export interface PropertyMapping {
   field_key: string;
+  type?: "string" | "number" | "integer";
+  unit?: string;
   variance_policy:
     | "authoritative"
     | "upper_bound"
@@ -13,6 +15,7 @@ export interface PropertyMapping {
     | "range"
     | "override_allowed";
   tolerance: number | null;
+  constraints?: string[];
   // WHY: When true, the property stays scoped to the component DB and never
   // appears as a product-level field (Key Navigator, Review grid). Optional so
   // legacy rows without the flag stay shape-compatible.
@@ -34,8 +37,13 @@ const LEGACY_PROPERTY_MAP: Record<string, string> = {
   polling_rate: "polling_rate",
 };
 
+type LegacyPropertyInput = ComponentSourceProperty & {
+  key?: unknown;
+  property_key?: unknown;
+};
+
 export function migrateProperty(
-  property: Record<string, unknown>,
+  property: LegacyPropertyInput,
   _rules?: Record<string, FieldRule>,
 ): PropertyMapping {
   const legacyKey = String(property.key || property.field_key || "");
@@ -55,6 +63,13 @@ export function migrateProperty(
       : "authoritative") as PropertyMapping["variance_policy"],
     tolerance: property.tolerance != null ? Number(property.tolerance) : null,
   };
+  if (["string", "number", "integer"].includes(String(property.type || ""))) {
+    out.type = String(property.type) as PropertyMapping["type"];
+  }
+  if (typeof property.unit === "string") out.unit = property.unit;
+  if (Array.isArray(property.constraints) && property.constraints.length > 0) {
+    out.constraints = property.constraints.map(String);
+  }
   // WHY: Only carry the flag when explicitly true so the default shape stays
   // minimal — legacy round-trip tests assert the 3-key default form.
   if (property.component_only === true) out.component_only = true;
@@ -64,15 +79,7 @@ export function migrateProperty(
 export function createEmptyComponentSource(): ComponentSource {
   return {
     component_type: "",
-    // Phase 3: default to mode=sheet + empty sheet so the inline gate fires
-    // immediately on row creation (matches the back-end's normalizeSourceMode
-    // default and forces the author to fill the sheet name before save).
-    mode: "sheet",
-    sheet: "",
     roles: {
-      maker: "yes",
-      aliases: [],
-      links: [],
       properties: [],
     },
     priority: { ...DEFAULT_PRIORITY_PROFILE },

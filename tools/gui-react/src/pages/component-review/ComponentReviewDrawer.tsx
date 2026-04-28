@@ -486,7 +486,7 @@ function LinksEditor({
 
   return (
     <DrawerSection
-      title="Links"
+      title="Link"
       meta={anyOverridden ? <span className="sf-text-micro sf-status-text-warning font-bold">OVR</span> : undefined}
     >
       <div className="space-y-1">
@@ -538,7 +538,7 @@ function LinksEditor({
               disabled={isPending}
               className="px-3 py-1 sf-text-label sf-confirm-button-solid rounded disabled:opacity-50"
             >
-              Save Links
+              Save Link
             </button>
           </ActionTooltip>
         )}
@@ -1014,7 +1014,7 @@ export function ComponentReviewDrawer({
 
     return (
       <CellDrawer
-        title={focusedProperty === '__name' ? 'Name' : 'Maker'}
+        title={focusedProperty === '__name' ? 'Name' : 'Brand'}
         subtitle={subtitle}
         onClose={onClose}
         currentValue={{
@@ -1393,7 +1393,7 @@ export function ComponentReviewDrawer({
             isPending={overrideMut.isPending}
           />
           <IdentityOverrideRow
-            label="Maker"
+            label="Brand"
             value={item.maker}
             tracked={item.maker_tracked}
             property="__maker"

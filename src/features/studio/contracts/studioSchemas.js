@@ -117,6 +117,8 @@ export const EnumEntrySchema = z.object({
 
 export const ComponentSourcePropertySchema = z.object({
   field_key: z.string().optional(),
+  type: z.enum(['string', 'number', 'integer']).optional(),
+  unit: z.string().optional(),
   variance_policy: z.enum([
     'authoritative', 'upper_bound', 'lower_bound', 'range', 'override_allowed',
   ]).optional(),
@@ -130,12 +132,8 @@ export const ComponentSourcePropertySchema = z.object({
 }).passthrough();
 
 export const ComponentSourceSchema = z.object({
-  type: z.string().optional(),
   component_type: z.string().optional(),
   roles: z.object({
-    maker: z.string().optional(),
-    aliases: z.array(z.string()).optional(),
-    links: z.array(z.string()).optional(),
     properties: z.array(ComponentSourcePropertySchema).optional(),
   }).passthrough().optional(),
   priority: PriorityProfileSchema.optional(),

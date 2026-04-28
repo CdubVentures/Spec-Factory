@@ -27,6 +27,7 @@ export interface KeyStickyHeaderProps {
   saveIfAutoSaveEnabled: () => void;
   category: string;
   isEgLocked?: boolean;
+  isIdentityLocked?: boolean;
   BadgeRenderer?: React.ComponentType<{ p: string }>;
 }
 
@@ -45,6 +46,7 @@ export function KeyStickyHeader({
   onSetAutoSaveEnabled,
   updateField,
   isEgLocked = false,
+  isIdentityLocked = false,
   BadgeRenderer: B,
 }: KeyStickyHeaderProps) {
   // Label edit state
@@ -194,8 +196,8 @@ export function KeyStickyHeader({
           {/* Identity: label + key */}
           <div className="flex items-center gap-2 min-w-0">
             <span
-              className="text-lg font-semibold sf-text-primary truncate cursor-pointer hover:text-accent transition-colors leading-snug"
-              onClick={() => {
+              className={`text-lg font-semibold truncate leading-snug ${isIdentityLocked ? 'sf-text-muted' : 'sf-text-primary cursor-pointer hover:text-accent transition-colors'}`}
+              onClick={isIdentityLocked ? undefined : () => {
                 setEditingLabel(true);
                 setEditLabelValue(
                   displayLabel(
@@ -204,42 +206,44 @@ export function KeyStickyHeader({
                   ),
                 );
               }}
-              title="Click to edit label"
+              title={isIdentityLocked ? "Generated component identity field (label locked)" : "Click to edit label"}
             >
               {displayLabel(
                 selectedKey,
                 currentRule as Record<string, unknown>,
               )}
             </span>
-            <span
-              className="text-[10px] sf-text-subtle cursor-pointer hover:text-accent transition-colors flex-shrink-0"
-              onClick={() => {
-                setEditingLabel(true);
-                setEditLabelValue(
-                  displayLabel(
-                    selectedKey,
-                    currentRule as Record<string, unknown>,
-                  ),
-                );
-              }}
-            >
-              &#9998;
-            </span>
+            {!isIdentityLocked && (
+              <span
+                className="text-[10px] sf-text-subtle cursor-pointer hover:text-accent transition-colors flex-shrink-0"
+                onClick={() => {
+                  setEditingLabel(true);
+                  setEditLabelValue(
+                    displayLabel(
+                      selectedKey,
+                      currentRule as Record<string, unknown>,
+                    ),
+                  );
+                }}
+              >
+                &#9998;
+              </span>
+            )}
             {B ? <B p="ui.label" /> : null}
             <span className="sf-text-subtle select-none text-lg leading-snug">
               |
             </span>
             <span
-              className={`text-sm sf-text-muted font-mono truncate leading-snug${isEgLocked ? '' : ' cursor-pointer hover:text-accent transition-colors'}`}
-              onClick={isEgLocked ? undefined : () => {
+              className={`text-sm sf-text-muted font-mono truncate leading-snug${isEgLocked || isIdentityLocked ? '' : ' cursor-pointer hover:text-accent transition-colors'}`}
+              onClick={isEgLocked || isIdentityLocked ? undefined : () => {
                 setRenamingKey(true);
                 setRenameValue(selectedKey);
               }}
-              title={isEgLocked ? 'EG-locked field (rename disabled)' : 'Click to rename key'}
+              title={isIdentityLocked ? 'Generated component identity field (key locked)' : isEgLocked ? 'EG-locked field (rename disabled)' : 'Click to rename key'}
             >
               {selectedKey}
             </span>
-            {!isEgLocked && (
+            {!isEgLocked && !isIdentityLocked && (
               <span
                 className="text-[10px] sf-text-subtle cursor-pointer hover:text-accent transition-colors flex-shrink-0"
                 onClick={() => {
@@ -302,7 +306,7 @@ export function KeyStickyHeader({
                 />
               )}
             </button>
-            {!isEgLocked && (
+            {!isEgLocked && !isIdentityLocked && (
               !confirmDelete ? (
                 <button
                   onClick={() => setConfirmDelete(true)}

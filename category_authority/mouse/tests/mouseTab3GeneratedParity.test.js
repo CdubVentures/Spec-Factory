@@ -16,7 +16,16 @@ async function readJson(filePath) {
   return JSON.parse(raw);
 }
 
-test('mouse tab3 map keys are covered by generated field rules (with migrations)', async () => {
+async function readJsonIfExists(filePath, fallback) {
+  try {
+    return await readJson(filePath);
+  } catch (error) {
+    if (error?.code === 'ENOENT') return fallback;
+    throw error;
+  }
+}
+
+test('mouse tab3 map keys are covered by generated field rules and optional migrations', async () => {
   const categoryRoot = path.join(process.cwd(), 'category_authority', 'mouse');
   const generatedRoot = path.join(categoryRoot, '_generated');
   const controlRoot = path.join(categoryRoot, '_control_plane');
@@ -24,7 +33,7 @@ test('mouse tab3 map keys are covered by generated field rules (with migrations)
   const [fieldStudioMap, fieldRules, keyMigrations] = await Promise.all([
     readJson(path.join(controlRoot, 'field_studio_map.json')),
     readJson(path.join(generatedRoot, 'field_rules.json')),
-    readJson(path.join(generatedRoot, 'key_migrations.json')),
+    readJsonIfExists(path.join(generatedRoot, 'key_migrations.json'), { migrations: [] }),
   ]);
 
   const generatedKeys = new Set(Object.keys(asObject(fieldRules.fields)));

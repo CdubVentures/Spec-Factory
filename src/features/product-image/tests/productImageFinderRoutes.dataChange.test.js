@@ -541,6 +541,11 @@ describe('productImageFinderRoutes data-change contract', () => {
     });
     assert.deepEqual(Object.keys(ctx._summaryUpserts[0].eval_state), ['hero-black.png']);
     assert.equal(ctx._summaryUpserts[0].eval_state['hero-black.png'].eval_reasoning, 'best hero before processing');
+
+    const emitted = ctx._emitted.find((entry) => entry.channel === 'data-change');
+    assert.equal(emitted?.payload?.event, 'product-image-finder-image-processed');
+    assert.equal(typeof emitted?.payload?.meta?.operationId, 'string');
+    assert.equal(emitted?.payload?.meta?.operationStatus, 'done');
   });
 
   it('run delete recomputes PIF SQL carousel and eval state for surviving images', async () => {

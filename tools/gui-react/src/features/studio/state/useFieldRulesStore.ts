@@ -40,14 +40,14 @@ function cloneRulesForEditing(rules: RuleMap): RuleMap {
   const cleaned: RuleMap = JSON.parse(JSON.stringify(rules));
   for (const key of Object.keys(cleaned)) {
     delete cleaned[key]._edited;
-    enforceStudioRuleInvariants(cleaned[key] as Record<string, unknown>);
+    enforceStudioRuleInvariants(cleaned[key] as Record<string, unknown>, key);
   }
   return cleaned;
 }
 
-function ruleForEditing(rule: FieldRule, edited = true): FieldRule {
+function ruleForEditing(rule: FieldRule, key: string, edited = true): FieldRule {
   const next = { ...rule } as Record<string, unknown>;
-  enforceStudioRuleInvariants(next);
+  enforceStudioRuleInvariants(next, key);
   if (edited) next._edited = true;
   return next as FieldRule;
 }
@@ -186,9 +186,10 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
       // WHY: Component-locked fields (enum.source === component_db.<self>) only
       // allow edits to the editable-path set; the contract identity belongs
       // to the Field Studio Map.
+      const currentRule = state.editedRules[key] as Record<string, unknown> | undefined;
       if (
-        isComponentLocked(state.editedRules[key] as Record<string, unknown> | undefined, key)
-        && !isComponentLockEditablePath(path)
+        isComponentLocked(currentRule, key)
+        && !isComponentLockEditablePath(path, currentRule)
       ) {
         return state;
       }
@@ -227,7 +228,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
             (merged[section] as Record<string, unknown>)[property] = val;
           }
         }
-        enforceStudioRuleInvariants(merged);
+        enforceStudioRuleInvariants(merged, key);
         merged._edited = true;
         next[key] = merged;
       } else {
@@ -255,7 +256,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
       } else {
         nextOrder.push(key);
       }
-      const nextRules = { ...state.editedRules, [key]: ruleForEditing(rule) };
+      const nextRules = { ...state.editedRules, [key]: ruleForEditing(rule, key) };
       return {
         editedFieldOrder: nextOrder,
         editedRules: syncGroupsFromOrder(nextOrder, nextRules),
@@ -291,7 +292,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
           ? rewriteConstraints(rule.constraints as string[], oldKey, newKey)
           : rule.constraints;
         if (k === oldKey) {
-          const updated: Record<string, unknown> = { ...rule, constraints: rewritten };
+          const updated: Record<string, unknown> = { ...rule, key: newKey, constraints: rewritten };
           const newLabel = newKey.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
           if (updated.label && (updated.label as string).toLowerCase() === oldKey.toLowerCase()) {
             updated.label = newLabel;
@@ -302,7 +303,8 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
             updated.ui = { ...uiObj, label: newLabel };
             updated.display_name = newLabel;
           }
-          nextRules[newKey] = updated;
+          enforceStudioRuleInvariants(updated, newKey);
+          nextRules[newKey] = updated as FieldRule;
         } else {
           nextRules[k] = { ...rule, constraints: rewritten };
         }
@@ -321,7 +323,7 @@ export const useFieldRulesStore = create<FieldRulesState>((set, get) => ({
       const nextRules = { ...state.editedRules };
       for (const { key, rule } of entries) {
         nextOrder.push(key);
-        nextRules[key] = ruleForEditing(rule);
+        nextRules[key] = ruleForEditing(rule, key);
       }
       return { editedFieldOrder: nextOrder, editedRules: syncGroupsFromOrder(nextOrder, nextRules) };
     });

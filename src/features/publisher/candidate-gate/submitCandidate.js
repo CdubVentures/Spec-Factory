@@ -51,6 +51,32 @@ function rejectAbsentCandidate({ value, validationResult }) {
   };
 }
 
+function isObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function enumSourceFieldKey(fieldRule) {
+  const source = fieldRule?.enum?.source;
+  if (typeof source !== 'string') return '';
+  if (!source.startsWith('data_lists.')) return '';
+  return source.slice('data_lists.'.length).trim();
+}
+
+function resolveKnownValuesForField({ knownValues, fieldKey, fieldRule }) {
+  const direct = knownValues?.[fieldKey];
+  if (isObject(direct)) return direct;
+  const enumEntry = knownValues?.enums?.[fieldKey];
+  if (isObject(enumEntry)) return enumEntry;
+  const sourceKey = enumSourceFieldKey(fieldRule);
+  const sourceEntry = sourceKey ? knownValues?.enums?.[sourceKey] : null;
+  if (isObject(sourceEntry)) return sourceEntry;
+  const policy = fieldRule?.enum?.policy;
+  if (policy === 'open_prefer_known' || policy === 'closed') {
+    return { policy, values: [] };
+  }
+  return null;
+}
+
 /**
  * @param {{ category: string, productId: string, fieldKey: string, value: *, confidence: number, sourceMeta: object, fieldRules: object, knownValues: object|null, componentDb: object|null, specDb: object, productRoot: string, config?: object }} opts
  * @returns {{ status: 'accepted'|'rejected', candidateId: number|null, value: *, validationResult: object, publishResult?: object }}
@@ -93,7 +119,7 @@ export async function submitCandidate({
   }
 
   // --- Validate ---
-  const perFieldKnown = knownValues?.[fieldKey] || null;
+  const perFieldKnown = resolveKnownValuesForField({ knownValues, fieldKey, fieldRule });
   const validationResult = validateField({ fieldKey, value, fieldRule, knownValues: perFieldKnown, componentDb, appDb });
 
   if (isAbsentCandidateValue(validationResult.value)) {

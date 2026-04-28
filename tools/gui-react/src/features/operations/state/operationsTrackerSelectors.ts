@@ -1,5 +1,6 @@
 import type { Operation } from './operationsStore.ts';
 import type { CatalogRow } from '../../../types/product.ts';
+import { countUiActiveOperations } from './operationStatusContract.ts';
 
 export const EMPTY_OPERATIONS_MAP: ReadonlyMap<string, Operation> = new Map();
 
@@ -12,13 +13,7 @@ export interface OperationIndexLabLinkIdentity {
 export function selectActiveOperationCount(
   operations: ReadonlyMap<string, Operation>,
 ): number {
-  let count = 0;
-  for (const op of operations.values()) {
-    if (op.status === 'queued' || op.status === 'running') {
-      count += 1;
-    }
-  }
-  return count;
+  return countUiActiveOperations(operations.values());
 }
 
 export function selectVisibleOperationsMap(

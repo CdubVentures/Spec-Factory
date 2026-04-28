@@ -211,7 +211,7 @@ export function assembleCompileOutput({
   const policyForKnownValueRef = (fieldKey) => (
     fieldKey === 'yes_no'
       ? 'closed'
-      : (fieldsRuntime[fieldKey]?.enum_policy || 'open')
+      : (normalizeToken(fieldsRuntime[fieldKey]?.enum_policy || fieldsRuntime[fieldKey]?.enum?.policy || '') || 'open')
   );
   const knownValuesArtifact = {
     version: 1,
@@ -249,9 +249,7 @@ export function assembleCompileOutput({
   const currentHash = hashBuffer(Buffer.from(`${JSON.stringify(fieldRulesCanonical, null, 2)}\n`, 'utf8'));
   const changed = Boolean(previousHash && previousHash !== currentHash);
   const fieldDiff = diffFieldRuleSets(previousGeneratedFieldRules, fieldRulesCanonical);
-  const componentSourceCount = toArray(map.component_sources).length > 0
-    ? toArray(map.component_sources).length
-    : toArray(map.component_sheets).length;
+  const componentSourceCount = toArray(map.component_sources).length;
 
   const compileReport = {
     version: 1,
@@ -278,8 +276,7 @@ export function assembleCompileOutput({
       sampled_product_columns: toArray(samples.columns).length,
       sampled_values: Object.values(samples.byField || {}).reduce((sum, list) => sum + toArray(list).length, 0),
       enum_lists: toArray(map.enum_lists).length,
-      component_sources: componentSourceCount,
-      component_sheets: componentSourceCount
+      component_sources: componentSourceCount
     },
     diff: {
       changed,

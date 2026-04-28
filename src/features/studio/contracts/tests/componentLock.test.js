@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   isComponentLocked,
   isComponentLockEditablePath,
+  isComponentIdentityProjectionLocked,
   sanitizeComponentLockedOverrides,
 } from '../componentLock.js';
 
@@ -39,6 +40,56 @@ describe('isComponentLocked', () => {
 
   it('returns false for data_lists.* sources', () => {
     assert.equal(isComponentLocked({ enum: { source: 'data_lists.lighting' } }, 'lighting'), false);
+  });
+
+  it('returns true for generated component identity projection fields', () => {
+    assert.equal(
+      isComponentLocked({
+        component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+        enum: { source: 'data_lists.mouse_sensor_brand' },
+      }, 'sensor_brand'),
+      true,
+    );
+    assert.equal(
+      isComponentLocked({
+        component_identity_projection: { component_type: 'sensor', facet: 'link' },
+        enum: { policy: 'open', source: null },
+      }, 'sensor_link'),
+      true,
+    );
+  });
+});
+
+describe('isComponentIdentityProjectionLocked', () => {
+  it('accepts generated brand/link projection metadata', () => {
+    assert.equal(
+      isComponentIdentityProjectionLocked({
+        component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+      }),
+      true,
+    );
+    assert.equal(
+      isComponentIdentityProjectionLocked({
+        component_identity_projection: { component_type: 'sensor', facet: 'link' },
+      }),
+      true,
+    );
+  });
+
+  it('rejects missing or unknown projection metadata', () => {
+    assert.equal(isComponentIdentityProjectionLocked({}), false);
+    assert.equal(
+      isComponentIdentityProjectionLocked({
+        component_identity_projection: { component_type: 'sensor', facet: 'aliases' },
+      }),
+      false,
+    );
+    assert.equal(
+      isComponentIdentityProjectionLocked({
+        component_identity_projection: { facet: 'brand' },
+      }),
+      false,
+    );
   });
 });
 
@@ -130,6 +181,7 @@ describe('sanitizeComponentLockedOverrides', () => {
     const input = {
       sensor: {
         enum: { source: 'component_db.sensor', policy: 'open' },
+        enum_policy: 'open',
         enum_source: 'component_db.sensor',
         enum_values: ['a', 'b'],
       },
@@ -137,7 +189,39 @@ describe('sanitizeComponentLockedOverrides', () => {
     const out = sanitizeComponentLockedOverrides(input);
     assert.equal(out.sensor.enum_source, undefined);
     assert.equal(out.sensor.enum_values, undefined);
-    assert.equal(out.sensor.enum.policy, 'open');
+    assert.equal(out.sensor.enum.policy, 'open_prefer_known');
+    assert.equal(out.sensor.enum_policy, 'open_prefer_known');
+  });
+
+  it('strips identity projection contract, enum, and label overrides', () => {
+    const input = {
+      sensor_brand: {
+        component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+        ui: { label: 'Maker', group: 'sensor identity' },
+        variant_dependent: true,
+        product_image_dependent: true,
+        enum: { policy: 'closed', source: 'data_lists.maker' },
+        contract: { type: 'number', shape: 'list', unit: 'dpi' },
+        priority: { required_level: 'mandatory' },
+      },
+      sensor_link: {
+        component_identity_projection: { component_type: 'sensor', facet: 'link' },
+        enum_policy: 'closed',
+        enum_source: 'data_lists.sensor_link',
+      },
+    };
+
+    const out = sanitizeComponentLockedOverrides(input);
+
+    assert.equal(out.sensor_brand.contract, undefined);
+    assert.equal(out.sensor_brand.enum, undefined);
+    assert.equal(out.sensor_brand.ui.label, undefined);
+    assert.equal(out.sensor_brand.ui.group, 'sensor identity');
+    assert.equal(out.sensor_brand.variant_dependent, undefined);
+    assert.equal(out.sensor_brand.product_image_dependent, undefined);
+    assert.deepEqual(out.sensor_brand.priority, { required_level: 'mandatory' });
+    assert.equal(out.sensor_link.enum_policy, undefined);
+    assert.equal(out.sensor_link.enum_source, undefined);
   });
 
   it('passes through overrides that are not component-locked (referential equality)', () => {

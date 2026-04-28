@@ -107,7 +107,77 @@ function getEffectiveRuleType(rule: Record<string, unknown>): FieldType | '' {
   return (candidates[0] || '') as FieldType | '';
 }
 
-export function enforceStudioRuleInvariants(rule: Record<string, unknown>): void {
+function getEnumSourceText(rule: Record<string, unknown>): string {
+  const nested = getN(rule, 'enum.source');
+  if (typeof nested === 'string') return nested.trim();
+  const flat = rule.enum_source;
+  if (typeof flat === 'string') return flat.trim();
+  if (flat && typeof flat === 'object') {
+    const source = flat as { type?: unknown; ref?: unknown };
+    const type = String(source.type || '').trim();
+    const ref = String(source.ref || '').trim();
+    return type && ref ? `${type}.${ref}` : '';
+  }
+  return '';
+}
+
+function getEnumPolicyText(rule: Record<string, unknown>): string {
+  const nested = getN(rule, 'enum.policy');
+  if (typeof nested === 'string') return nested.trim();
+  if (typeof rule.enum_policy === 'string') return rule.enum_policy.trim();
+  return '';
+}
+
+function setEnumPolicy(rule: Record<string, unknown>, policy: string): void {
+  setNestedRuleValue(rule, 'enum.policy', policy);
+  rule.enum_policy = policy;
+}
+
+function setEnumSource(rule: Record<string, unknown>, source: string): void {
+  setNestedRuleValue(rule, 'enum.source', source);
+  rule.enum_source = source;
+}
+
+function clearEnumSource(rule: Record<string, unknown>): void {
+  setNestedRuleValue(rule, 'enum.source', null);
+  rule.enum_source = null;
+}
+
+function isKnownEnumPolicy(policy: string): boolean {
+  return policy === 'closed' || policy === 'closed_with_curation' || policy === 'open_prefer_known';
+}
+
+function isComponentSource(source: string): boolean {
+  return source.startsWith('component_db.');
+}
+
+function isSelfComponentSource(source: string, key: string): boolean {
+  return Boolean(key) && source === `component_db.${key}`;
+}
+
+function enforceEnumPolicySourceLocks(rule: Record<string, unknown>, key = ''): void {
+  const policy = getEnumPolicyText(rule);
+  const source = getEnumSourceText(rule);
+  const fieldKey = String(key || '').trim();
+  if (policy === 'open') {
+    if (isComponentSource(source)) {
+      setEnumPolicy(rule, 'open_prefer_known');
+      return;
+    }
+    if (source) clearEnumSource(rule);
+    return;
+  }
+  if (!isKnownEnumPolicy(policy) || !fieldKey) return;
+  if (isSelfComponentSource(source, fieldKey)) return;
+  if (isComponentSource(source)) {
+    setEnumPolicy(rule, 'open_prefer_known');
+    return;
+  }
+  setEnumSource(rule, `data_lists.${fieldKey}`);
+}
+
+export function enforceStudioRuleInvariants(rule: Record<string, unknown>, key = ''): void {
+  enforceEnumPolicySourceLocks(rule, key);
   const type = getEffectiveRuleType(rule);
   if (!type) return;
   if (type === 'boolean') {
@@ -141,6 +211,7 @@ export function applyStudioRuleCommand({
     'contract.type': getN(rule, 'contract.type'),
     'contract.shape': getN(rule, 'contract.shape'),
     'enum.source': getN(rule, 'enum.source'),
+    'enum.policy': getN(rule, 'enum.policy'),
     'priority.required_level': getN(rule, 'priority.required_level'),
   };
 
@@ -167,7 +238,7 @@ export function applyStudioRuleCommand({
   if (postEnumSource !== undefined) rule.enum_source = postEnumSource;
   if (postEnumPolicy !== undefined) rule.enum_policy = postEnumPolicy;
 
-  enforceStudioRuleInvariants(rule);
+  enforceStudioRuleInvariants(rule, key);
 
   rule._edited = true;
 }

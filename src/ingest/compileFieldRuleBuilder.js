@@ -11,8 +11,7 @@ import {
   titleFromKey,
   stableSortStrings,
   orderedUniqueStrings,
-  sortDeep,
-  findComponentSourceRowByType
+  sortDeep
 } from './compileUtils.js';
 import { isAllowedEnumBucket } from './compileMapNormalization.js';
 import {
@@ -142,6 +141,8 @@ export function sourceRefToString(source = null) {
   }
   return `${sourceType}.${sourceRef}`;
 }
+
+const KNOWN_ENUM_POLICIES = new Set(['closed', 'closed_with_curation', 'open_prefer_known']);
 
 export const BOOLEAN_ENUM_VALUES = Object.freeze(['yes', 'no']);
 
@@ -597,10 +598,17 @@ export function buildStudioFieldRule({
   const source = contractType === 'boolean'
     ? createBooleanEnumSource()
     : parseEnumSource(rule.enum_source || enumBlock.source || componentDerivedEnumSource, key);
-  const sourceRef = sourceRefToString(source);
   const policy = contractType === 'boolean'
     ? 'closed'
     : normalizeToken(rule.enum_policy || enumBlock.policy || 'open_prefer_known');
+  const rawSourceRef = sourceRefToString(source);
+  const sourceRef = (() => {
+    if (contractType === 'boolean') return 'yes_no';
+    if (policy === 'open') return null;
+    if (rawSourceRef === `component_db.${ruleKey}`) return rawSourceRef;
+    if (KNOWN_ENUM_POLICIES.has(policy)) return `data_lists.${ruleKey || key}`;
+    return rawSourceRef;
+  })();
   // WHY: parse_template eliminated. contractType drives all behavior.
   // WHY: Fallback chain handles both merge-path objects and studio-output
   // passthrough objects while giving contract.type/data_type authority.
@@ -800,14 +808,6 @@ export function buildStudioFieldRule({
       };
     }
   }
-  if (source?.type === 'component_db') {
-    const componentRows = toArray(map?.component_sources).length > 0 ? toArray(map.component_sources) : toArray(map?.component_sheets);
-    const componentRow = findComponentSourceRowByType(componentRows, normalizeFieldKey(source.ref || ''));
-    if (componentRow && !normalizeText(fieldStudioHints.component_sheet || '')) {
-      fieldStudioHints.component_sheet = normalizeText(componentRow.sheet || '') || null;
-    }
-  }
-
   const defaultSearchHints = buildSearchHints({
     key,
     requiredLevel,
@@ -948,6 +948,16 @@ export function buildStudioFieldRule({
   }
   if (isObject(rule.selection_policy) && Object.keys(rule.selection_policy).length > 0) {
     out.selection_policy = sortDeep(rule.selection_policy);
+  }
+  if (isObject(rule.component_identity_projection)) {
+    const componentType = normalizeFieldKey(rule.component_identity_projection.component_type || '');
+    const facet = normalizeToken(rule.component_identity_projection.facet || '');
+    if (componentType && facet) {
+      out.component_identity_projection = {
+        component_type: componentType,
+        facet,
+      };
+    }
   }
   if (rule.product_image_dependent === true) {
     out.product_image_dependent = true;

@@ -23,10 +23,10 @@ test('compileCategoryFieldStudio accepts component_reference when component type
   await fs.copyFile(sourceFieldStudioSourcePath, localFieldStudioSourcePath);
   const fieldStudioMap = buildMouseFieldStudioMap(localFieldStudioSourcePath);
   fieldStudioMap.component_sources = [
-    { component_type: 'sensor', mode: 'scratch', sheet: '', roles: { properties: [] } },
-    { component_type: 'switch', mode: 'scratch', sheet: '', roles: { properties: [] } },
-    { component_type: 'encoder', mode: 'scratch', sheet: '', roles: { properties: [] } },
-    { component_type: 'material', mode: 'scratch', sheet: '', roles: { properties: [] } },
+    { component_type: 'sensor', roles: { properties: [] } },
+    { component_type: 'switch', roles: { properties: [] } },
+    { component_type: 'encoder', roles: { properties: [] } },
+    { component_type: 'material', roles: { properties: [] } },
   ];
   // WHY: Phase 4 INV-1 — every component_sources entry needs a self-locked parent rule.
   fieldStudioMap.selected_keys = Array.from(new Set([...fieldStudioMap.selected_keys, 'material']));
@@ -305,13 +305,13 @@ test('compileCategoryFieldStudio falls back to app-native compile when field stu
   }
 });
 
-test('compileCategoryFieldStudio ignores sheet column bindings on scratch component sources', async () => {
+test('compileCategoryFieldStudio strips legacy component source workbook metadata', async () => {
   const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'spec-harvester-category-compile-scratch-guard-'));
   const helperRoot = path.join(tempRoot, 'category_authority');
   await fs.mkdir(path.join(helperRoot, 'mouse'), { recursive: true });
   const fieldStudioSourcePath = mouseFieldStudioSourcePath(tempRoot);
-  const workbookModeSensorSource = {
-    type: 'sensor',
+  const legacySensorSource = {
+    component_type: 'sensor',
     mode: 'sheet',
     sheet: 'sensors',
     header_row: 1,
@@ -334,7 +334,7 @@ test('compileCategoryFieldStudio ignores sheet column bindings on scratch compon
     },
   };
   const fieldStudioMap = buildMouseFieldStudioMap(fieldStudioSourcePath);
-  fieldStudioMap.component_sources = [workbookModeSensorSource];
+  fieldStudioMap.component_sources = [legacySensorSource];
   // WHY: Phase 4 INV-2 — drop unused component-typed selected_keys.
   fieldStudioMap.selected_keys = fieldStudioMap.selected_keys.filter(
     (k) => !['switch', 'encoder'].includes(k),
@@ -348,56 +348,43 @@ test('compileCategoryFieldStudio ignores sheet column bindings on scratch compon
         categoryAuthorityRoot: helperRoot,
       },
     });
+    const loaded = await loadFieldStudioMap({
+      category: 'mouse',
+      config: {
+        categoryAuthorityRoot: helperRoot,
+      },
+    });
+    assert.deepEqual(loaded.map.component_sources, [
+      {
+        component_type: 'sensor',
+        roles: {
+          properties: [
+            {
+              field_key: 'dpi',
+              type: 'number',
+              unit: 'dpi',
+              variance_policy: 'upper_bound',
+            },
+          ],
+        },
+        priority: {
+          required_level: 'non_mandatory',
+          availability: 'sometimes',
+          difficulty: 'medium',
+        },
+        ai_assist: { reasoning_note: '' },
+      },
+    ]);
     const generatedRoot = path.join(helperRoot, 'mouse', '_generated');
     await seedComponentDb(generatedRoot);
-    const baseline = await compileCategoryFieldStudio({
+    const result = await compileCategoryFieldStudio({
       category: 'mouse',
       fieldStudioSourcePath: fieldStudioSourcePath,
       config: {
         categoryAuthorityRoot: helperRoot,
       },
     });
-    assert.equal(baseline.compiled, true);
-    const baselineSensors = JSON.parse(await fs.readFile(path.join(generatedRoot, 'component_db', 'sensors.json'), 'utf8'));
-    const baselineSensorCount = Array.isArray(baselineSensors.items) ? baselineSensors.items.length : 0;
-
-    fieldStudioMap.component_sources = [
-      workbookModeSensorSource,
-      {
-        type: 'sensor',
-        mode: 'scratch',
-        sheet: 'sensors',
-        header_row: 1,
-        first_data_row: 2,
-        stop_after_blank_primary: 10,
-        roles: {
-          primary_identifier: 'A',
-          maker: '',
-          aliases: [],
-          links: [],
-          properties: [],
-        },
-      },
-    ];
-
-    await saveFieldStudioMap({
-      category: 'mouse',
-      fieldStudioMap,
-      config: {
-        categoryAuthorityRoot: helperRoot,
-      },
-    });
-    const withScratch = await compileCategoryFieldStudio({
-      category: 'mouse',
-      fieldStudioSourcePath: fieldStudioSourcePath,
-      config: {
-        categoryAuthorityRoot: helperRoot,
-      },
-    });
-    assert.equal(withScratch.compiled, true, JSON.stringify(withScratch.errors || []));
-    const scratchSensors = JSON.parse(await fs.readFile(path.join(generatedRoot, 'component_db', 'sensors.json'), 'utf8'));
-    const scratchSensorCount = Array.isArray(scratchSensors.items) ? scratchSensors.items.length : 0;
-    assert.equal(scratchSensorCount, baselineSensorCount);
+    assert.equal(result.compiled, true, JSON.stringify(result.errors || []));
   } finally {
     await fs.rm(tempRoot, { recursive: true, force: true });
   }

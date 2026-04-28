@@ -17,8 +17,8 @@ import { useState, useCallback, useMemo, type ReactNode } from 'react';
 import { type UseQueryResult, type UseMutationResult } from '@tanstack/react-query';
 import { clearPublishedField, deleteVariantField } from '../../../features/review/api/reviewApi.ts';
 import { useDataChangeMutation } from '../../../features/data-change/index.js';
-import { Spinner } from '../feedback/Spinner.tsx';
 import { Chip } from '../feedback/Chip.tsx';
+import { FinderContentLoadingSkeleton } from './FinderContentLoadingSkeleton.tsx';
 import { IndexingPanelHeader } from './IndexingPanelHeader.tsx';
 import type { IndexingPanelId } from './IndexingPanelHeader.tsx';
 import { PromptPreviewTriggerButton } from './PromptPreviewTriggerButton.tsx';
@@ -499,7 +499,7 @@ export function GenericScalarFinderPanel<TResult extends GenericScalarResult>({
       />
 
       {collapsed ? null : isLoading ? (
-        <div className="flex items-center justify-center py-12"><Spinner /></div>
+        <FinderContentLoadingSkeleton />
       ) : cefVariants.length === 0 ? (
         <div className="px-6 pb-6 pt-4">
           <div className="sf-callout sf-callout-warning px-4 py-3 rounded-lg sf-text-caption">

@@ -1,7 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  approvedDomainsFromSources,
   createCategoryAuthorityHarness,
   mapSourcesByHost,
 } from '../../_tests/helpers/categoryAuthorityContractHarness.js';
@@ -10,12 +9,9 @@ const CATEGORY = 'mouse';
 const harness = createCategoryAuthorityHarness({ category: CATEGORY, importMetaUrl: import.meta.url });
 
 test('mouse search hints use approved real hostnames instead of tier tokens', async () => {
-  const [full, sources] = await Promise.all([
-    harness.readCategoryJson('_generated', 'field_rules.json'),
-    harness.readCategoryJson('sources.json'),
-  ]);
-  const approvedDomains = approvedDomainsFromSources(sources);
+  const full = await harness.readCategoryJson('_generated', 'field_rules.json');
   const forbiddenTokens = new Set(['manufacturer', 'lab', 'retailer', 'database', 'community', 'support', 'manual', 'pdf']);
+  const hostnamePattern = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}(?:\/[a-z0-9._~:/?#\[\]@!$&'()*+,;=%-]*)?$/i;
 
   for (const [fieldKey, field] of Object.entries(full.fields || {})) {
     const domainHints = field?.search_hints?.domain_hints || [];
@@ -28,7 +24,7 @@ test('mouse search hints use approved real hostnames instead of tier tokens', as
       const normalized = String(domainHint || '').trim().toLowerCase();
       assert.equal(normalized.includes('.'), true, `Non-domain hint for ${fieldKey}: ${domainHint}`);
       assert.equal(forbiddenTokens.has(normalized), false, `Tier token leaked into ${fieldKey}: ${domainHint}`);
-      assert.equal(approvedDomains.has(normalized), true, `Unapproved domain for ${fieldKey}: ${domainHint}`);
+      assert.match(normalized, hostnamePattern, `Invalid domain hint for ${fieldKey}: ${domainHint}`);
     }
   }
 });

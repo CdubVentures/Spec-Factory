@@ -106,8 +106,16 @@
         "beige",
         "black",
         "blue",
+        "bronze",
         "brown",
+        "burgundy",
+        "champagne",
+        "charcoal",
+        "clear",
+        "copper",
         "coral",
+        "cream",
+        "crimson",
         "cyan",
         "dark-blue",
         "dark-brown",
@@ -128,11 +136,15 @@
         "dark-teal",
         "dark-violet",
         "dark-yellow",
+        "electric-blue",
         "emerald",
+        "frosted",
         "fuchsia",
         "gold",
+        "graphite",
         "gray",
         "green",
+        "gunmetal",
         "indigo",
         "ivory",
         "lavender",
@@ -162,10 +174,14 @@
         "lime",
         "magenta",
         "maroon",
+        "mint",
         "navy",
+        "neon-green",
+        "off-white",
         "olive",
         "orange",
         "pink",
+        "platinum",
         "purple",
         "red",
         "rose",
@@ -173,8 +189,11 @@
         "silver",
         "sky",
         "slate",
+        "smoke",
         "stone",
         "teal",
+        "titanium",
+        "transparent",
         "turquoise",
         "violet",
         "white",
@@ -182,7 +201,7 @@
       ]
     },
     "crosshair_overlay": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes"
@@ -202,14 +221,14 @@
       ]
     },
     "curved": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes"
       ]
     },
     "daisy_chain": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "DisplayPort MST",
         "None",
@@ -218,7 +237,7 @@
       ]
     },
     "discontinued": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes"
@@ -278,21 +297,21 @@
       ]
     },
     "factory_calibrated": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes"
       ]
     },
     "flicker_free": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes"
       ]
     },
     "frc": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes"
@@ -347,21 +366,21 @@
       ]
     },
     "headphone_jack": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes"
       ]
     },
     "kvm_switch": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes"
       ]
     },
     "low_blue_light": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes"
@@ -395,7 +414,7 @@
       ]
     },
     "motion_blur_reduction": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "1ms MPRT",
         "BFI",
@@ -433,7 +452,7 @@
       ]
     },
     "overdrive": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "Extreme",
         "Fast",
@@ -514,7 +533,7 @@
       ]
     },
     "pip_pbp": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "None",
         "PbP",
@@ -524,7 +543,7 @@
       ]
     },
     "pivot_rotation": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes (±90°)",
@@ -691,7 +710,7 @@
       ]
     },
     "variable_refresh_rate": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes"
@@ -710,7 +729,7 @@
       ]
     },
     "wall_mountable": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes"
@@ -738,7 +757,7 @@
       ]
     },
     "wide_color_gamut": {
-      "policy": "open",
+      "policy": "closed",
       "values": [
         "No",
         "Yes"
@@ -751,8 +770,15 @@
         "No",
         "Yes"
       ]
+    },
+    "yes_no": {
+      "policy": "closed",
+      "values": [
+        "no",
+        "yes"
+      ]
     }
   },
-  "generated_at": "2026-04-22T03:39:57.663Z",
+  "generated_at": "2026-04-28T06:44:32.811Z",
   "version": 1
 }

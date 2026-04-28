@@ -19,6 +19,12 @@ function cleanup(filePath) {
   try { unlinkSync(filePath); } catch { /* ignore */ }
 }
 
+function defaultColorHex(name) {
+  const entry = EG_DEFAULT_COLORS.find((color) => color.name === name);
+  assert.ok(entry, `missing default color ${name}`);
+  return entry.hex;
+}
+
 // ── EG_DEFAULT_COLORS ──
 
 describe('EG_DEFAULT_COLORS', () => {
@@ -79,7 +85,7 @@ describe('seedColorRegistry — no JSON file', () => {
       const row = db.getColor('red');
       // WHY: Full reconcile means the source (EG_DEFAULT_COLORS) wins.
       // JSON edits are real — the source file is the truth.
-      assert.equal(row.hex, '#ef4444');
+      assert.equal(row.hex, defaultColorHex('red'));
     } finally {
       db.close();
     }
@@ -133,7 +139,7 @@ describe('seedColorRegistry — with JSON file', () => {
       const data = JSON.parse(raw);
       assert.equal(data._version, 1);
       assert.ok(data.colors.black);
-      assert.equal(data.colors.black.hex, '#3A3F41');
+      assert.equal(data.colors.black.hex, defaultColorHex('black'));
       assert.equal(data.colors.black.css_var, '--color-black');
     } finally {
       db.close();

@@ -507,6 +507,74 @@ test('KeyTooltipBody characterizes tooltip path', async () => {
   ]);
 });
 
+test('KeyStickyHeader locks label, rename, and delete for generated identity projections', async () => {
+  const { KeyStickyHeader } = await loadBundledModule(
+    'tools/gui-react/src/features/studio/components/key-sections/KeyStickyHeader.tsx',
+    {
+      prefix: 'key-sticky-header-generated-identity-lock-',
+      stubs: {
+        react: `
+          export function useState(initial) {
+            return [initial, () => {}];
+          }
+          export function useEffect() {}
+        `,
+        'react/jsx-runtime': JSX_STUB,
+        '../../state/studioDisplayLabel.ts': `
+          export function displayLabel(key, rule) {
+            return rule?.ui?.label || key;
+          }
+        `,
+        '../../state/keyUtils.ts': `
+          export function validateNewKeyTs() {
+            return null;
+          }
+        `,
+        '../studioConstants.ts': `
+          export const inputCls = 'input';
+        `,
+        '../studioSharedTypes.ts': `
+          export const btnPrimary = 'primary';
+        `,
+      },
+    },
+  );
+
+  const tree = renderNode(KeyStickyHeader({
+    selectedKey: 'sensor_brand',
+    currentRule: { ui: { label: 'Sensor Brand' } },
+    editedRules: { sensor_brand: { ui: { label: 'Sensor Brand' } } },
+    activeFieldOrder: ['sensor_brand'],
+    saving: false,
+    saveSuccess: false,
+    autoSaveEnabled: true,
+    autoSaveLocked: false,
+    autoSaveLockReason: '',
+    onSaveAll() {},
+    onRenameKey() {},
+    onDeleteKey() {},
+    onUpdateLabel() {},
+    onSetAutoSaveEnabled() {},
+    updateField() {},
+    saveIfAutoSaveEnabled() {},
+    category: 'mouse',
+    isIdentityLocked: true,
+  }));
+
+  const labelNode = collectNodes(tree, (node) => node.props?.title === 'Generated component identity field (label locked)')[0];
+  assert.ok(labelNode, 'locked identity label should render without edit affordance');
+  assert.equal(
+    collectNodes(tree, (node) => node.props?.children === 'Delete').length,
+    0,
+    'delete action should be hidden for generated identity fields',
+  );
+  assert.equal(
+    collectNodes(tree, (node) => node.props?.children === '\u270e').length,
+    0,
+    'pencil edit affordances should be hidden for generated identity fields',
+  );
+});
+
 test('KeyEnumBody adapts EnumConfigurator path updates and badge suffixes', async () => {
   const { KeyEnumBody } = await loadBundledModule(
     'tools/gui-react/src/features/studio/components/key-sections/bodies/KeyEnumBody.tsx',
@@ -581,13 +649,16 @@ test('EnumConfigurator wires enum controls to registry-derived paths and options
     rule: {
       contract: { type: 'string' },
       enum: {
-        policy: 'open',
+        policy: 'open_prefer_known',
         source: 'data_lists.colors',
         match: { format_hint: 'XXXX' },
       },
     },
     knownValues: { design: ['black'] },
-    enumLists: [{ field: 'colors', values: ['black'] }],
+    enumLists: [
+      { field: 'colors', values: ['red'] },
+      { field: 'design', values: ['black'] },
+    ],
     contractType: 'string',
     onUpdate(path, value) {
       updates.push({ path, value });
@@ -604,7 +675,6 @@ test('EnumConfigurator wires enum controls to registry-derived paths and options
     enumControl('enum_policy').options,
   );
   selects[0].props.onChange({ target: { value: 'closed' } });
-  selects[1].props.onChange({ target: { value: 'colors' } });
 
   const formatInput = collectNodes(tree, (node) => node.type === 'FormatPatternInput')[0];
   assert.equal(formatInput.props.fieldPath, enumControl('enum_format_hint').path);
@@ -612,9 +682,187 @@ test('EnumConfigurator wires enum controls to registry-derived paths and options
 
   assert.deepEqual(updates, [
     { path: enumControl('enum_policy').path, value: 'closed' },
-    { path: enumControl('enum_source').path, value: 'data_lists.colors' },
     { path: enumControl('enum_format_hint').path, value: 'YYYY' },
   ]);
+
+  assert.equal(selects.length, 1, 'source is derived from the field key, not separately selectable');
+  assert.ok(
+    collectNodes(tree, (node) => String(node.props?.children || '').includes('data_lists.design')).length > 0,
+    'source display should use the key-matched enum list',
+  );
+});
+
+test('EnumConfigurator locks source to none when policy is open', async () => {
+  const { EnumConfigurator } = await loadBundledModule(
+    'tools/gui-react/src/features/studio/components/EnumConfigurator.tsx',
+    {
+      prefix: 'enum-configurator-open-source-lock-',
+      stubs: {
+        'react/jsx-runtime': JSX_STUB,
+        '../../../shared/ui/feedback/Tip.tsx': TIP_STUB,
+        './Section.tsx': `
+          export function SubSection(props) {
+            return { type: 'SubSection', props };
+          }
+        `,
+        '../state/nestedValueHelpers.ts': NESTED_HELPERS_STUB,
+        '../../publisher/index.ts': `
+          export function FormatPatternInput(props) {
+            return { type: 'FormatPatternInput', props };
+          }
+        `,
+        './studioConstants.ts': `
+          export const labelCls = 'label';
+          export const selectCls = 'select';
+          export const STUDIO_TIPS = {
+            enum_policy: 'enum policy',
+            enum_source: 'enum source',
+          };
+        `,
+      },
+    },
+  );
+
+  const tree = renderNode(EnumConfigurator({
+    fieldKey: 'design',
+    rule: {
+      contract: { type: 'string' },
+      enum: {
+        policy: 'open',
+        source: 'data_lists.colors',
+      },
+    },
+    knownValues: {},
+    enumLists: [{ field: 'colors', values: ['black'] }],
+    contractType: 'string',
+    onUpdate() {},
+    isEgLocked: false,
+  }));
+
+  const selects = collectNodes(tree, (node) => node.type === 'select');
+  assert.equal(selects.length, 1, 'open policy still only exposes policy select');
+  assert.ok(
+    collectNodes(tree, (node) => String(node.props?.children || '').includes('(none)')).length > 0,
+    'open policy source display should be none',
+  );
+});
+
+test('EnumConfigurator excludes open policy for component-locked keys', async () => {
+  const { EnumConfigurator } = await loadBundledModule(
+    'tools/gui-react/src/features/studio/components/EnumConfigurator.tsx',
+    {
+      prefix: 'enum-configurator-component-open-lock-',
+      stubs: {
+        'react/jsx-runtime': JSX_STUB,
+        '../../../shared/ui/feedback/Tip.tsx': TIP_STUB,
+        './Section.tsx': `
+          export function SubSection(props) {
+            return { type: 'SubSection', props };
+          }
+        `,
+        '../state/nestedValueHelpers.ts': NESTED_HELPERS_STUB,
+        '../../publisher/index.ts': `
+          export function FormatPatternInput(props) {
+            return { type: 'FormatPatternInput', props };
+          }
+        `,
+        './studioConstants.ts': `
+          export const labelCls = 'label';
+          export const selectCls = 'select';
+          export const STUDIO_TIPS = {
+            enum_policy: 'enum policy',
+            enum_source: 'enum source',
+          };
+        `,
+      },
+    },
+  );
+
+  const tree = renderNode(EnumConfigurator({
+    fieldKey: 'sensor',
+    rule: {
+      contract: { type: 'string' },
+      enum: {
+        policy: 'open',
+        source: 'component_db.sensor',
+        match: { format_hint: 'PAW\\d+' },
+      },
+    },
+    knownValues: {},
+    enumLists: [],
+    contractType: 'string',
+    onUpdate() {},
+    isEgLocked: false,
+  }));
+
+  const selects = collectNodes(tree, (node) => node.type === 'select');
+  const policyOptions = collectNodes(selects[0], (node) => node.type === 'option')
+    .map((node) => node.props.value);
+  assert.equal(policyOptions.includes('open'), false);
+  assert.equal(selects[0].props.value, 'open_prefer_known');
+  const formatInput = collectNodes(tree, (node) => node.type === 'FormatPatternInput')[0];
+  assert.equal(formatInput.props.disabled, false);
+});
+
+test('EnumConfigurator renders generated identity projection enum policy and source as locked', async () => {
+  const { EnumConfigurator } = await loadBundledModule(
+    'tools/gui-react/src/features/studio/components/EnumConfigurator.tsx',
+    {
+      prefix: 'enum-configurator-generated-identity-lock-',
+      stubs: {
+        'react/jsx-runtime': JSX_STUB,
+        '../../../shared/ui/feedback/Tip.tsx': TIP_STUB,
+        './Section.tsx': `
+          export function SubSection(props) {
+            return { type: 'SubSection', props };
+          }
+        `,
+        '../state/nestedValueHelpers.ts': NESTED_HELPERS_STUB,
+        '../../publisher/index.ts': `
+          export function FormatPatternInput(props) {
+            return { type: 'FormatPatternInput', props };
+          }
+        `,
+        './studioConstants.ts': `
+          export const labelCls = 'label';
+          export const selectCls = 'select';
+          export const STUDIO_TIPS = {
+            enum_policy: 'enum policy',
+            enum_source: 'enum source',
+            component_lock: 'component lock',
+          };
+        `,
+      },
+    },
+  );
+
+  const tree = renderNode(EnumConfigurator({
+    fieldKey: 'sensor_link',
+    rule: {
+      component_identity_projection: { component_type: 'sensor', facet: 'link' },
+      contract: { type: 'url' },
+      enum: {
+        policy: 'open',
+        source: null,
+      },
+    },
+    knownValues: {},
+    enumLists: [{ field: 'sensor_link', values: ['https://example.com'] }],
+    contractType: 'url',
+    onUpdate() {
+      throw new Error('generated identity projection enum should not update');
+    },
+    isEgLocked: false,
+  }));
+
+  const selects = collectNodes(tree, (node) => node.type === 'select');
+  assert.equal(selects.length, 0, 'generated identity enum has no editable selects');
+  const lockBanner = collectNodes(tree, (node) => String(node.props?.title || '').includes('component lock'))[0];
+  assert.ok(lockBanner, 'generated identity enum lock banner should render');
+  const lockedValues = collectNodes(tree, (node) => String(node.props?.className || '').includes('font-mono'))
+    .map((node) => node.props?.children);
+  assert.ok(lockedValues.includes('open'));
+  assert.ok(lockedValues.includes('(none)'));
 });
 
 test('KeyConstraintsBody adapts constraint updates to the constraints path', async () => {
@@ -650,4 +898,3 @@ test('KeyConstraintsBody adapts constraint updates to the constraints path', asy
     { key: 'design', path: FIELD_RULE_CONSTRAINT_CONTROL.path, value: ['requires design != none'] },
   ]);
 });
-

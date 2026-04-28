@@ -6,8 +6,8 @@ import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
 import { TrafficLight } from '../../../shared/ui/feedback/TrafficLight.tsx';
 import { Chip } from '../../../shared/ui/feedback/Chip.tsx';
 import { TabStrip, type TabItem } from '../../../shared/ui/navigation/TabStrip.tsx';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
+import { ProductHistoryPanelLoadingSkeleton } from './ProductHistoryLoadingSkeleton.tsx';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 import { relativeTime } from '../../../utils/formatting.ts';
@@ -421,7 +421,7 @@ export function ProductHistoryPanel({ productId, category }: ProductHistoryPanel
       </div>
 
       {collapsed ? null : isLoading ? (
-        <div className="flex items-center justify-center py-12"><Spinner /></div>
+        <ProductHistoryPanelLoadingSkeleton />
       ) : !data || data.runs.length === 0 ? (
         <div className="text-center py-12 sf-text-muted">
           <p className="text-sm">No run history for this product yet.</p>

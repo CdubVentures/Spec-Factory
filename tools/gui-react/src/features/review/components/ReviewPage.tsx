@@ -19,7 +19,7 @@ import { FieldReviewDrawer } from './FieldReviewDrawer.tsx';
 import { BrandFilterBar } from './BrandFilterBar.tsx';
 import { ReviewDashboardStrip } from './ReviewDashboardStrip.tsx';
 import { ReviewToolbar } from './ReviewToolbar.tsx';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { ReviewPageSkeleton } from './ReviewPageSkeleton.tsx';
 import { useFieldLabels } from '../../../hooks/useFieldLabels.ts';
 import { computeReviewDashboardMetrics, deriveReviewKpiCards } from '../selectors/reviewMetricsSelectors.ts';
 import { useDebouncedCallback } from '../../../hooks/useDebounce.ts';
@@ -742,7 +742,7 @@ export function ReviewPage() {
     productHeaderActionState.fieldKeys,
   ]);
 
-  if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
+  if (isLoading) return <ReviewPageSkeleton drawerOpen={drawerOpen} />;
   if (!layout || !indexData || indexData.total === 0) {
     const hasCatalog = catalogRows && catalogRows.length > 0;
     return (

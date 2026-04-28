@@ -9,6 +9,8 @@ This feature is the control plane for need-driven discovery and deterministic in
 - `GET /billing/global/model-costs`: returns the registry-owned model cost catalog; provider IDs are registry provider IDs, and `provider_kind` is the normalized display/logo kind.
 - `GET /billing/global/dashboard`: bundles current-month filtered + unfiltered rollups + prior-month filtered summary + daily breakdown into one payload (collapses 9 page-load queries into 1). Accepts `category`, `model`, `reason`, `access`, `month` (default current YYYY-MM), `prior_month` (default month-1), `months` (default 1).
 - `GET /indexlab/runs`: returns category-scoped run summaries with persisted picker metadata (`picker_label`, `storage_origin`, `storage_state`) for GUI run selection.
+- `GET /storage/runs/:runId`: returns SQL-projected storage run detail with bounded `sources` and `sources_page` metadata; `GET /storage/runs/:runId/sources/:contentHash/html` serves the SQL-indexed gzipped HTML artifact for a source.
+- `GET /indexlab/run/:runId/runtime/extractions/crawl4ai/:filename`: serves a persisted Crawl4AI JSON extraction artifact for Runtime Ops.
 - `src/features/indexing/{discovery,learning,search}/index.js`: feature-owned subcontracts used inside indexing and by approved callers that need those focused seams.
 - `readSourcesDocument({ root, category, specDb? })` / `writeSourcesDocument({ root, category, data, specDb? })`: source strategy persistence helpers. SpecDb is runtime primary when supplied; `sources.json` is rebuild/fallback.
 

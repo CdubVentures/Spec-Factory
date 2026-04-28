@@ -45,6 +45,8 @@ export interface AiAssistConfig {
 
 export interface ComponentSourceProperty {
   field_key?: string;
+  type?: 'string' | 'number' | 'integer';
+  unit?: string;
   variance_policy?: 'authoritative' | 'upper_bound' | 'lower_bound' | 'range' | 'override_allowed';
   tolerance?: number | null;
   constraints?: string[];
@@ -53,12 +55,8 @@ export interface ComponentSourceProperty {
 }
 
 export interface ComponentSource {
-  type?: string;
   component_type?: string;
   roles?: {
-    maker?: string;
-    aliases?: string[];
-    links?: string[];
     properties?: ComponentSourceProperty[];
     [k: string]: unknown;
   };

@@ -7,13 +7,19 @@
  *
  * Invariants:
  * - id is a UUID (globally unique)
- * - status transitions: running → done | error | cancelled (terminal, no re-entry)
+ * - status transitions: queued -> running -> done | error | cancelled (terminal, no re-entry)
  * - currentStageIndex ∈ [0, stages.length)
  * - Lost on server restart (acceptable — see plan CQRS exception)
  */
 
 import crypto from 'node:crypto';
 import { extractEffortFromModelName } from '../../shared/effortFromModelName.js';
+import {
+  countResourceRunningOperations,
+  isOperationResourceRunningStatus,
+  isOperationTerminalStatus,
+  isOperationUiActiveStatus,
+} from './operationStatusContract.js';
 
 /** @type {Map<string, object>} */
 const ops = new Map();
@@ -57,8 +63,8 @@ let _seq = 0;
 
 // WHY: Cap the registry to bound memory and frontend render cost. When a
 // registration or terminal transition leaves the count above MAX_OPS, the
-// oldest terminal op (done | error | cancelled) is evicted. Running ops are
-// never evicted — concurrency is not capped here.
+// oldest terminal op (done | error | cancelled) is evicted. Queued/running ops
+// are never evicted -- concurrency is not capped here.
 const MAX_OPS = 250;
 
 function compactObject(value) {
@@ -134,7 +140,7 @@ function broadcastRemove(id) {
 function enforceCap() {
   if (ops.size <= MAX_OPS) return;
   const terminals = [...ops.values()]
-    .filter(o => o.status !== 'running')
+    .filter(o => isOperationTerminalStatus(o.status))
     .sort((a, b) => {
       const cmp = a.startedAt.localeCompare(b.startedAt);
       return cmp !== 0 ? cmp : a._seq - b._seq;
@@ -208,7 +214,7 @@ export function setStatus({ id, status }) {
   if (!op) return;
   if (status !== 'queued' && status !== 'running') return;
   // Terminal ops cannot be reset
-  if (op.status === 'done' || op.status === 'error' || op.status === 'cancelled') return;
+  if (isOperationTerminalStatus(op.status)) return;
   // Don't allow running → queued (only queued → running)
   if (op.status === 'running' && status === 'queued') return;
   if (op.status === status) return;
@@ -225,7 +231,7 @@ export function queueOperation({ id }) {
   const op = ops.get(id);
   if (!op) return;
   if (op.status === 'queued') return;
-  if (op.status !== 'running') return;
+  if (!isOperationResourceRunningStatus(op.status)) return;
   op.status = 'queued';
   broadcast(op);
 }
@@ -235,7 +241,7 @@ export function getOperationStatus(id) {
 }
 
 export function countRunningOperations() {
-  return [...ops.values()].filter((op) => op.status === 'running').length;
+  return countResourceRunningOperations(ops.values());
 }
 
 /**
@@ -244,7 +250,7 @@ export function countRunningOperations() {
  */
 export function updateStage({ id, stageIndex, stageName }) {
   const op = ops.get(id);
-  if (!op || op.status !== 'running') return;
+  if (!op || !isOperationResourceRunningStatus(op.status)) return;
 
   if (typeof stageIndex === 'number') {
     op.currentStageIndex = Math.min(stageIndex, op.stages.length - 1);
@@ -261,7 +267,7 @@ export function updateStage({ id, stageIndex, stageName }) {
  */
 export function updateQueueDelay({ id, queueDelayMs }) {
   const op = ops.get(id);
-  if (!op || op.status !== 'running') return;
+  if (!op || !isOperationResourceRunningStatus(op.status)) return;
   op.queueDelayMs = typeof queueDelayMs === 'number' ? queueDelayMs : 0;
   broadcast(op);
 }
@@ -272,7 +278,7 @@ export function updateQueueDelay({ id, queueDelayMs }) {
  */
 export function updateProgressText({ id, text }) {
   const op = ops.get(id);
-  if (!op || op.status !== 'running') return;
+  if (!op || !isOperationResourceRunningStatus(op.status)) return;
   op.progressText = typeof text === 'string' ? text : '';
   broadcast(op);
 }
@@ -284,7 +290,7 @@ export function updateProgressText({ id, text }) {
  */
 export function updateLoopProgress({ id, loopProgress }) {
   const op = ops.get(id);
-  if (!op || op.status !== 'running') return;
+  if (!op || !isOperationResourceRunningStatus(op.status)) return;
   op.loopProgress = loopProgress && typeof loopProgress === 'object' ? loopProgress : null;
   broadcast(op);
 }
@@ -309,7 +315,7 @@ function researchBaseCallId(callId) {
 
 export function appendLlmCall({ id, call }) {
   const op = ops.get(id);
-  if (!op || op.status !== 'running') return;
+  if (!op || !isOperationResourceRunningStatus(op.status)) return;
   if (!op.llmCalls) op.llmCalls = [];
 
   const callId = typeof call?.callId === 'string' ? call.callId : '';
@@ -376,7 +382,7 @@ export function appendLlmCall({ id, call }) {
  */
 export function updateModelInfo({ id, model, provider, isFallback, accessMode, thinking, webSearch, effortLevel }) {
   const op = ops.get(id);
-  if (!op || op.status !== 'running') return;
+  if (!op || !isOperationResourceRunningStatus(op.status)) return;
   const modelStr = typeof model === 'string' ? model : '';
   op.modelInfo = {
     model: modelStr,
@@ -401,7 +407,7 @@ export function updateModelInfo({ id, model, provider, isFallback, accessMode, t
  */
 export function markPassengersRegistered({ id, passengerFieldKeys }) {
   const op = ops.get(id);
-  if (!op || op.status !== 'running') return;
+  if (!op || !isOperationResourceRunningStatus(op.status)) return;
   if (op.passengersRegistered === true) return;
   op.passengersRegistered = true;
   if (Array.isArray(passengerFieldKeys)) {
@@ -415,7 +421,7 @@ export function markPassengersRegistered({ id, passengerFieldKeys }) {
  */
 export function completeOperation({ id }) {
   const op = ops.get(id);
-  if (!op || op.status !== 'running') return;
+  if (!op || !isOperationResourceRunningStatus(op.status)) return;
   op.status = 'done';
   op.endedAt = new Date().toISOString();
   controllers.delete(id);
@@ -428,7 +434,7 @@ export function completeOperation({ id }) {
  */
 export function failOperation({ id, error }) {
   const op = ops.get(id);
-  if (!op || op.status !== 'running') return;
+  if (!op || !isOperationResourceRunningStatus(op.status)) return;
   op.status = 'error';
   op.error = typeof error === 'string' ? error.slice(0, 200) : 'Unknown error';
   op.endedAt = new Date().toISOString();
@@ -447,7 +453,7 @@ export function failOperation({ id, error }) {
 export function cancelOperation({ id }) {
   const op = ops.get(id);
   if (!op) return;
-  if (op.status !== 'running' && op.status !== 'queued') return;
+  if (!isOperationUiActiveStatus(op.status)) return;
   controllers.get(id)?.abort();
   controllers.delete(id);
   op.status = 'cancelled';

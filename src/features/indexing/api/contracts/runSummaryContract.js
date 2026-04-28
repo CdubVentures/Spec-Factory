@@ -4,7 +4,8 @@
 // This file defines the canonical shape so serializer + deserializer + tests
 // all derive from the same constants.
 
-export const RUN_SUMMARY_SCHEMA_VERSION = 1;
+export const RUN_SUMMARY_SCHEMA_VERSION = 2;
+export const RUN_SUMMARY_EVENTS_LIMIT = 6000;
 
 // ── Telemetry Meta (mirrors writeRunMeta doc assembly) ──
 
@@ -46,6 +47,15 @@ export const RUN_SUMMARY_EVENT_SHAPE = Object.freeze([
 ]);
 export const RUN_SUMMARY_EVENT_KEYS = Object.freeze(RUN_SUMMARY_EVENT_SHAPE.map(s => s.key));
 
+// Event capture limit metadata. The serializer keeps the newest limit-sized
+// event window and marks truncation when SQL contains more rows.
+export const RUN_SUMMARY_EVENT_LIMIT_SHAPE = Object.freeze([
+  { key: 'limit', coerce: 'int' },
+  { key: 'captured', coerce: 'int' },
+  { key: 'truncated', coerce: 'bool' },
+]);
+export const RUN_SUMMARY_EVENT_LIMIT_KEYS = Object.freeze(RUN_SUMMARY_EVENT_LIMIT_SHAPE.map(s => s.key));
+
 // ── LLM Aggregates (from bridge._llmTracker.getLlmAgg()) ──
 
 export const RUN_SUMMARY_LLM_AGG_SHAPE = Object.freeze([
@@ -84,6 +94,7 @@ export const RUN_SUMMARY_TOP_KEYS = Object.freeze([
 export const RUN_SUMMARY_TELEMETRY_KEYS = Object.freeze([
   'meta',
   'events',
+  'event_limit',
   'llm_agg',
   'observability',
 ]);

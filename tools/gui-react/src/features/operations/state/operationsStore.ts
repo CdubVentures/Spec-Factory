@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { isOperationTerminalStatus } from './operationStatusContract.ts';
 
 /**
  * PIF-only carousel grid shape. Emitted by productImageFinder.js. Rendered by
@@ -268,7 +269,7 @@ function normalizeOperationUpsert(op: OperationUpsert, existing?: Operation): Op
 }
 
 function isTerminalOperation(op: Pick<Operation, 'status'>): boolean {
-  return op.status === 'done' || op.status === 'error' || op.status === 'cancelled';
+  return isOperationTerminalStatus(op.status);
 }
 
 function mergeLlmCall(existing: LlmCallRecord, incoming: LlmCallRecord): LlmCallRecord {

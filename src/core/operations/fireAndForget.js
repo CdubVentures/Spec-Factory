@@ -113,9 +113,17 @@ export function fireAndForget({
   getOperationStatus = getRegistryOperationStatus,
   onSettled,
 }) {
-  const emitChange = () => {
+  const emitChange = (operationStatus) => {
     if (emitArgs && broadcastWs && emitDataChange) {
-      emitDataChange({ broadcastWs, ...emitArgs });
+      emitDataChange({
+        broadcastWs,
+        ...emitArgs,
+        meta: {
+          ...(emitArgs.meta && typeof emitArgs.meta === 'object' ? emitArgs.meta : {}),
+          operationId: op.id,
+          operationStatus,
+        },
+      });
     }
   };
 
@@ -136,7 +144,7 @@ export function fireAndForget({
       // accumulated results. The signal is aborted but asyncWork resolved.
       if (signal?.aborted && cancelOperation) {
         cancelOperation({ id: op.id });
-        emitChange();
+        emitChange('cancelled');
         runOnSettled();
         return;
       }
@@ -146,12 +154,13 @@ export function fireAndForget({
           ? (result.rejections?.[0]?.message || 'LLM call failed')
           : (result.rejections?.[0]?.message || 'Rejected');
         failOperation({ id: op.id, error: reason });
+        emitChange('error');
       } else {
         completeOperation({ id: op.id });
+        emitChange('done');
       }
       // WHY: Emit data-change for BOTH success and rejection.
       // Rejected runs still update state (persisted run history, cooldown).
-      emitChange();
       runOnSettled();
     } catch (err) {
       if (batcher) batcher.dispose();
@@ -160,7 +169,7 @@ export function fireAndForget({
       // Route to cancelOperation instead of failOperation.
       if ((err.name === 'AbortError' || signal?.aborted) && cancelOperation) {
         cancelOperation({ id: op.id });
-        emitChange();
+        emitChange('cancelled');
         runOnSettled();
         return;
       }

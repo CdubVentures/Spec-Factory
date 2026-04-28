@@ -42,4 +42,4 @@ Adapters register per-consumer prompt rendering:
 - **Render-time faithfulness.** Per-key prompt previews call the same renderers the live keyFinder calls, so regenerated reports must reflect prompt-rendering changes.
 - **Per-key docs are flat and sorted.** No group folders and no `sorted/` child folder are emitted; `sorted.basePath` aliases the direct `per-key/` folder for API compatibility.
 - **Reserved keys get stubs.** Fields owned by other finder modules get a direct `.reserved.md` stub and are listed in `<outputRoot>/<category>/per-key/_reserved-keys.md`.
-- **Contract schema catalog is the SSOT for "every possible parameter".** When a rule parameter is added to the compiler, add a row to `contractSchemaCatalog.js`.
+- **Field-rule schema is the SSOT for authorable parameters.** Audit schema tables read `FIELD_RULE_SCHEMA` through `contractSchemaCatalog.js`; add new rule parameters in `src/field-rules/fieldRuleSchema.js` and keep audit-only rendering helpers local to category-audit.

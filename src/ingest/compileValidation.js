@@ -102,12 +102,10 @@ export function runComponentInvariantChecks({ fields, map }) {
   const warnings = [];
   const fieldsObj = isObject(fields) ? fields : {};
   const componentSourcesByType = new Map();
-  const sourceRows = isObject(map) && Array.isArray(map.component_sources) && map.component_sources.length > 0
-    ? toArray(map.component_sources)
-    : (isObject(map) ? toArray(map.component_sheets) : []);
+  const sourceRows = isObject(map) ? toArray(map.component_sources) : [];
   for (const row of sourceRows) {
     if (!isObject(row)) continue;
-    const type = normalizeFieldKey(row.component_type || row.type || '');
+    const type = normalizeFieldKey(row.component_type || '');
     if (!type) continue;
     if (!componentSourcesByType.has(type)) componentSourcesByType.set(type, row);
   }
@@ -171,6 +169,8 @@ export function runComponentInvariantChecks({ fields, map }) {
 
   return { errors, warnings };
 }
+
+const KNOWN_ENUM_POLICIES = new Set(['closed', 'closed_with_curation', 'open_prefer_known']);
 
 export function buildCompileValidation({ fields, knownValues, enumLists, componentDb, map = null }) {
   const errors = [];
@@ -310,17 +310,28 @@ export function buildCompileValidation({ fields, knownValues, enumLists, compone
       }
     }
     const enumSource = resolvedEnumSource;
-    const hasInlineKnownValues = toArray(rule.vocab?.known_values).length > 0;
-    if ((resolvedEnumPolicy === 'closed' || resolvedEnumPolicy === 'closed_with_curation') && !enumSource && !hasInlineKnownValues) {
+    const enumSourceType = enumSource ? normalizeToken(enumSource.type) : '';
+    const enumSourceRef = enumSource ? normalizeFieldKey(enumSource.ref || fieldKey) : '';
+    if (KNOWN_ENUM_POLICIES.has(resolvedEnumPolicy) && !enumSource) {
       errors.push(`field ${fieldKey}: enum_source is required for ${resolvedEnumPolicy}`);
     }
+    if (resolvedEnumPolicy === 'open' && enumSource) {
+      errors.push(`field ${fieldKey}: enum_source must be empty when enum_policy=open`);
+    }
+    if (resolvedEnumPolicy === 'open' && enumSourceType === 'component_db') {
+      errors.push(`field ${fieldKey}: component_db enum_source cannot use enum_policy=open`);
+    }
     if (enumSource) {
-      const sourceType = normalizeToken(enumSource.type);
+      const sourceType = enumSourceType;
       const sourceRef = normalizeText(enumSource.ref);
       if (sourceType === 'known_values') {
-        if ((resolvedEnumPolicy === 'closed' || resolvedEnumPolicy === 'closed_with_curation')
-          && !knownValueFields.has(sourceRef || fieldKey)
-          && !hasInlineKnownValues) {
+        const isBooleanYesNo = resolvedType === 'boolean' && enumSourceRef === 'yes_no';
+        if (!isBooleanYesNo && KNOWN_ENUM_POLICIES.has(resolvedEnumPolicy) && enumSourceRef !== normalizeFieldKey(fieldKey)) {
+          errors.push(`field ${fieldKey}: enum_source must be data_lists.${fieldKey}`);
+        }
+        if (!isBooleanYesNo
+          && !KNOWN_ENUM_POLICIES.has(resolvedEnumPolicy)
+          && !knownValueFields.has(sourceRef || fieldKey)) {
           warnings.push(`field ${fieldKey}: enum_source known_values ref '${sourceRef || fieldKey}' not found`);
         }
       } else if (sourceType === 'component_db') {

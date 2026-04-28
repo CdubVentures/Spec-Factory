@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import { PubMark, PubLegend } from '../../../shared/ui/feedback/PubMark.tsx';
 import {
   IndexingPanelHeader,
@@ -21,6 +20,7 @@ import {
   PagerSizeSelector,
   PagerNavFooter,
   getIndexingPanelCollapsedDefault,
+  FinderContentLoadingSkeleton,
 } from '../../../shared/ui/finder/index.ts';
 import { HeaderActionButton, RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { usePromptPreviewQuery } from '../../indexing/api/promptPreviewQueries.ts';
@@ -338,7 +338,7 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
 
       {/* Body */}
       {collapsed ? null : isLoading ? (
-        <div className="flex items-center justify-center py-12"><Spinner /></div>
+        <FinderContentLoadingSkeleton />
       ) : !effectiveResult ? (
         <div className="text-center py-12 sf-text-muted">
           <p className="text-sm">No color or edition data yet.</p>

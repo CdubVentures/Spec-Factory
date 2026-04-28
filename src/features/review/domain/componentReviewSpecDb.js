@@ -29,7 +29,8 @@ import {
   discoveredFromSource,
   enforceNonDiscoveredRows,
   resolveDeclaredComponentPropertyColumns,
-  mergePropertyColumns,
+  hasDeclaredComponentSource,
+  resolveComponentReviewPropertyColumns,
   componentLaneSlug,
 } from './componentReviewHelpers.js';
 import { resolvePropertyFieldMeta } from './componentReviewHelpers.js';
@@ -41,10 +42,12 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
 
   let allComponents = specDb.getAllComponentsForType(componentType);
 
-  const propertyColumns = mergePropertyColumns(
-    specDb.getPropertyColumnsForType(componentType),
-    resolveDeclaredComponentPropertyColumns({ fieldRules, componentType })
-  );
+  const declaredColumns = resolveDeclaredComponentPropertyColumns({ fieldRules, componentType });
+  const propertyColumns = resolveComponentReviewPropertyColumns({
+    observedColumns: specDb.getPropertyColumnsForType(componentType),
+    declaredColumns,
+    declaredComponentSource: hasDeclaredComponentSource({ fieldRules, componentType }),
+  });
 
   // WHY: Reference baseline sourced from SQL (component_identity/values/aliases)
   // via loadComponentDbsFromSpecDb — no longer from a stale blob copy. After this

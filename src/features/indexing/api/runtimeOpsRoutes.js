@@ -267,6 +267,40 @@ export function registerRuntimeOpsRoutes(ctx) {
       // Fast path missed — fall through to full resolution below.
     }
 
+    if (earlySubPath === 'extractions' && parts[5] === 'crawl4ai' && parts[6] && !parts[7]) {
+      let filename = '';
+      try {
+        filename = decodeURIComponent(String(parts[6] || '').trim());
+      } catch {
+        return jsonRes(res, 400, { error: 'invalid_filename' });
+      }
+      if (isInvalidAssetFilename(filename, path) || path.extname(filename).toLowerCase() !== '.json') {
+        return jsonRes(res, 400, { error: 'invalid_filename' });
+      }
+      const fs = await import('node:fs/promises');
+      const candidateDirs = [
+        path.resolve(path.join(defaultIndexLabRoot(), runId, 'extractions', 'crawl4ai')),
+        path.resolve(path.join(directRunDir, 'extractions', 'crawl4ai')),
+      ];
+      for (const dir of [...new Set(candidateDirs)]) {
+        const candidatePath = path.resolve(path.join(dir, filename));
+        if (!candidatePath.startsWith(dir)) continue;
+        try {
+          const content = await fs.readFile(candidatePath);
+          res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Content-Length': content.length,
+            'Cache-Control': 'private, max-age=300, stale-while-revalidate=3600',
+          });
+          res.end(content);
+          return true;
+        } catch {
+          // Try the next run root candidate.
+        }
+      }
+      return jsonRes(res, 404, { error: 'extraction_artifact_not_found', run_id: runId, plugin: 'crawl4ai', filename });
+    }
+
     const runDir = typeof resolveIndexLabRunDirectory === 'function'
       ? (await resolveIndexLabRunDirectory(runId).catch(() => '')) || directRunDir
       : directRunDir;

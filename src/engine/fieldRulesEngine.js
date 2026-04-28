@@ -56,11 +56,11 @@ function buildPropertyKeysByComponentType(componentSources) {
   const map = new Map();
   for (const source of toArray(componentSources)) {
     if (!isObject(source)) continue;
-    const type = normalizeFieldKey(source.component_type || source.type || '');
+    const type = normalizeFieldKey(source.component_type || '');
     if (!type) continue;
     const properties = toArray(isObject(source.roles) ? source.roles.properties : []);
     const keys = properties
-      .map((entry) => normalizeFieldKey(entry?.field_key || entry?.key || entry?.property_key || ''))
+      .map((entry) => normalizeFieldKey(entry?.field_key || ''))
       .filter(Boolean);
     if (keys.length > 0) map.set(type, keys);
   }

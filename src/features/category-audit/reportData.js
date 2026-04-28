@@ -112,21 +112,40 @@ function normalizeComponent(rule, componentRelations) {
   return null;
 }
 
-/** Build a reverse index: which component_db[type] lists this field_key as a property */
-function buildComponentRelations(componentDBs) {
+/** Build a reverse index: which component source/component_db lists this field_key as a property */
+function buildComponentRelations(componentDBs, componentSources = []) {
   const subfieldOf = {};
   const identityOf = {};
+  for (const row of componentSources || []) {
+    const type = String(row?.component_type || '').trim();
+    if (!type) continue;
+    const properties = Array.isArray(row?.roles?.properties) ? row.roles.properties : [];
+    for (const property of properties) {
+      if (property?.component_only === true) continue;
+      const fieldKey = String(property?.field_key || '').trim();
+      if (!fieldKey) continue;
+      subfieldOf[fieldKey] = type;
+    }
+  }
+  if ((componentSources || []).length > 0) {
+    return { subfieldOf, identityOf };
+  }
   for (const [type, db] of Object.entries(componentDBs || {})) {
     const items = db?.items || db?.entries || [];
     const sample = Array.isArray(items) ? items : Object.values(items || {});
     for (const item of sample) {
       const props = item?.properties || {};
       for (const propKey of Object.keys(props)) {
+        if (subfieldOf[propKey]) continue;
         subfieldOf[propKey] = type;
       }
     }
   }
   return { subfieldOf, identityOf };
+}
+
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value ?? null));
 }
 
 function normalizeEvidence(rule) {
@@ -254,6 +273,14 @@ function buildComponentInventory(componentDBs, keysByField) {
   return list.sort((a, b) => a.type.localeCompare(b.type));
 }
 
+function normalizeComponentSources(componentSources) {
+  return Array.isArray(componentSources)
+    ? componentSources
+      .filter((row) => row && typeof row === 'object' && !Array.isArray(row))
+      .map((row) => cloneJson(row))
+    : [];
+}
+
 function buildStats(keyRecords, groups) {
   const stats = {
     totalKeys: keyRecords.length,
@@ -310,8 +337,11 @@ export function extractReportData({
   const rules = loadedRules?.rules?.fields || loadedRules?.fields || {};
   const knownValuesEnums = loadedRules?.knownValues?.enums || loadedRules?.knownValues || {};
   const componentDBs = loadedRules?.componentDBs || {};
+  const componentSources = normalizeComponentSources(
+    loadedRules?.componentSources || loadedRules?.fieldStudioMap?.component_sources || [],
+  );
 
-  const componentRelations = buildComponentRelations(componentDBs);
+  const componentRelations = buildComponentRelations(componentDBs, componentSources);
 
   const keyRecords = [];
   const keysByField = {};
@@ -336,6 +366,7 @@ export function extractReportData({
     keys: keyRecords,
     enums,
     components,
+    componentSources,
     knownValues: loadedRules?.knownValues || { enums: knownValuesEnums },
     globalFragments: globalFragments || {},
     tierBundles: tierBundles || {},

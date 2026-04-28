@@ -34,8 +34,26 @@ describe('Component lock guards', async () => {
           enum: { source: 'data_lists.lighting', policy: 'open_prefer_known' },
           ui: { label: 'Lighting' },
         },
+        sensor_brand: {
+          key: 'sensor_brand',
+          component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+          variant_dependent: false,
+          product_image_dependent: false,
+          contract: { type: 'string', shape: 'scalar' },
+          enum: { source: 'data_lists.mouse_sensor_brand', policy: 'open_prefer_known' },
+          ui: { label: 'Sensor Brand' },
+        },
+        sensor_link: {
+          key: 'sensor_link',
+          component_identity_projection: { component_type: 'sensor', facet: 'link' },
+          variant_dependent: false,
+          product_image_dependent: false,
+          contract: { type: 'url', shape: 'scalar' },
+          enum: { source: null, policy: 'open' },
+          ui: { label: 'Sensor Link' },
+        },
       },
-      ['sensor', 'dpi', 'lighting'],
+      ['sensor', 'dpi', 'lighting', 'sensor_brand', 'sensor_link'],
       [],
       ['ui.aliases', 'search_hints.domain_hints', 'ui.tooltip_md'],
       {},
@@ -77,6 +95,13 @@ describe('Component lock guards', async () => {
       useFieldRulesStore.getState().updateField('sensor', 'enum.policy', 'closed');
       const rule = useFieldRulesStore.getState().editedRules.sensor;
       assert.equal(rule.enum.policy, 'closed');
+    });
+
+    it('rejects open enum.policy on component-locked key', () => {
+      useFieldRulesStore.getState().updateField('sensor', 'enum.policy', 'open');
+      const rule = useFieldRulesStore.getState().editedRules.sensor;
+      assert.equal(rule.enum.policy, 'open_prefer_known');
+      assert.equal(rule.enum.source, 'component_db.sensor');
     });
 
     it('allows enum.match.format_hint on component-locked key', () => {
@@ -133,10 +158,54 @@ describe('Component lock guards', async () => {
       assert.equal(rule.contract.type, 'integer');
     });
 
-    it('allows enum.source on a regular data_lists key (lighting)', () => {
+    it('keeps regular known enum source key-matched', () => {
       useFieldRulesStore.getState().updateField('lighting', 'enum.source', 'data_lists.lighting2');
       const rule = useFieldRulesStore.getState().editedRules.lighting;
-      assert.equal(rule.enum.source, 'data_lists.lighting2');
+      assert.equal(rule.enum.source, 'data_lists.lighting');
+    });
+
+    it('clears enum.source when a regular key switches to open policy', () => {
+      useFieldRulesStore.getState().updateField('lighting', 'enum.policy', 'open');
+      const rule = useFieldRulesStore.getState().editedRules.lighting;
+      assert.equal(rule.enum.policy, 'open');
+      assert.equal(rule.enum.source, null);
+    });
+
+    it('blocks contract and dependency edits on generated component identity projections', () => {
+      useFieldRulesStore.getState().updateField('sensor_brand', 'contract.type', 'number');
+      useFieldRulesStore.getState().updateField('sensor_brand', 'contract.shape', 'list');
+      useFieldRulesStore.getState().updateField('sensor_brand', 'variant_dependent', true);
+      useFieldRulesStore.getState().updateField('sensor_brand', 'product_image_dependent', true);
+
+      const rule = useFieldRulesStore.getState().editedRules.sensor_brand;
+      assert.equal(rule.contract.type, 'string');
+      assert.equal(rule.contract.shape, 'scalar');
+      assert.equal(rule.variant_dependent, false);
+      assert.equal(rule.product_image_dependent, false);
+    });
+
+    it('blocks display label edits on generated component identity projections', () => {
+      useFieldRulesStore.getState().updateField('sensor_brand', 'ui.label', 'Maker');
+      const rule = useFieldRulesStore.getState().editedRules.sensor_brand;
+      assert.equal(rule.ui.label, 'Sensor Brand');
+    });
+
+    it('blocks enum policy/source edits on generated component identity projections', () => {
+      useFieldRulesStore.getState().updateField('sensor_link', 'enum.policy', 'closed');
+      useFieldRulesStore.getState().updateField('sensor_link', 'enum.source', 'data_lists.sensor_link');
+
+      const rule = useFieldRulesStore.getState().editedRules.sensor_link;
+      assert.equal(rule.enum.policy, 'open');
+      assert.equal(rule.enum.source, null);
+    });
+
+    it('still allows priority and AI assist edits on generated component identity projections', () => {
+      useFieldRulesStore.getState().updateField('sensor_brand', 'priority.required_level', 'mandatory');
+      useFieldRulesStore.getState().updateField('sensor_brand', 'ai_assist.reasoning_note', 'Use resolved sensor evidence.');
+
+      const rule = useFieldRulesStore.getState().editedRules.sensor_brand;
+      assert.equal(rule.priority.required_level, 'mandatory');
+      assert.equal(rule.ai_assist.reasoning_note, 'Use resolved sensor evidence.');
     });
   });
 
@@ -158,6 +227,13 @@ describe('Component lock guards', async () => {
       useFieldRulesStore.getState().removeKey('lighting');
       const order = useFieldRulesStore.getState().editedFieldOrder;
       assert.ok(!order.includes('lighting'));
+    });
+
+    it('blocks deletion of generated component identity projections', () => {
+      useFieldRulesStore.getState().removeKey('sensor_link');
+      const order = useFieldRulesStore.getState().editedFieldOrder;
+      assert.ok(order.includes('sensor_link'), 'generated projection should not be removed');
+      assert.ok(useFieldRulesStore.getState().editedRules.sensor_link, 'generated projection should still exist');
     });
   });
 });

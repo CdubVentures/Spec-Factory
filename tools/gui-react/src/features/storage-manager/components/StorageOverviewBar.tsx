@@ -4,6 +4,7 @@ import type { RunInventoryRow } from '../types.ts';
 import { formatBytes, runSizeBytes } from '../helpers.ts';
 import { StorageBreakdownDonut } from './StorageBreakdownDonut.tsx';
 import { RunStatusBar } from './RunStatusBar.tsx';
+import { StorageOverviewSkeleton } from './StorageLoadingSkeleton.tsx';
 
 /* ── KPI Card (mirrors RuntimeOps OverviewTab pattern) ────────── */
 
@@ -58,12 +59,7 @@ export function StorageOverviewBar({ runs, isLoading }: StorageOverviewBarProps)
   }, [runs]);
 
   if (isLoading) {
-    return (
-      <div className="sf-surface-card rounded-lg p-5">
-        <h2 className="text-lg font-bold sf-text-primary mb-2">Storage Overview</h2>
-        <div className="text-sm sf-text-muted">Loading storage data...</div>
-      </div>
-    );
+    return <StorageOverviewSkeleton />;
   }
 
   return (

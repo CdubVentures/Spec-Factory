@@ -136,18 +136,108 @@ export function registerIndexlabRoutes(ctx) {
       : (groups.byUrl.get(url) || []);
   }
 
-  async function readStorageRunDetailState({ runId, meta }) {
+  function normalizeSourcesPage(sourcesPage = {}) {
+    return {
+      limit: Math.max(1, Number(sourcesPage.limit) || 100),
+      offset: Math.max(0, Number(sourcesPage.offset) || 0),
+    };
+  }
+
+  function readPagedSources({ specDb, runId, page }) {
+    if (typeof specDb.countRunSourcesByRunId === 'function') {
+      const total = Number(specDb.countRunSourcesByRunId(runId)) || 0;
+      if (total > 0 && typeof specDb.getRunSourcesPageByRunId === 'function') {
+        return {
+          sources: specDb.getRunSourcesPageByRunId(runId, page) || [],
+          total,
+        };
+      }
+    }
+
+    if (typeof specDb.countCrawlSourcesByRunId === 'function') {
+      const total = Number(specDb.countCrawlSourcesByRunId(runId)) || 0;
+      if (total > 0 && typeof specDb.getCrawlSourcesPageByRunId === 'function') {
+        return {
+          sources: specDb.getCrawlSourcesPageByRunId(runId, page) || [],
+          total,
+        };
+      }
+    }
+
+    let rows = typeof specDb.getRunSourcesByRunId === 'function'
+      ? specDb.getRunSourcesByRunId(runId) || []
+      : specDb.getCrawlSourcesByRunId?.(runId) || [];
+    if (rows.length === 0) rows = specDb.getCrawlSourcesByRunId?.(runId) || [];
+    return {
+      sources: rows.slice(page.offset, page.offset + page.limit),
+      total: rows.length,
+    };
+  }
+
+  function isInsideDirectory(filePath, directory) {
+    const relative = path.relative(directory, filePath);
+    return relative === '' || (relative && !relative.startsWith('..') && !path.isAbsolute(relative));
+  }
+
+  function htmlCandidatePaths({ runId, source }) {
+    const rawPath = String(source?.file_path || '').trim();
+    if (!rawPath) return [];
+    const filename = path.basename(rawPath);
+    const roots = [
+      currentIndexLabRoot(),
+      defaultIndexLabRoot(),
+    ].map((root) => String(root || '').trim()).filter(Boolean);
+    const candidates = [];
+    if (path.isAbsolute(rawPath)) candidates.push(rawPath);
+    for (const root of roots) {
+      candidates.push(path.join(root, runId, 'html', filename));
+    }
+    return [...new Set(candidates.map((candidate) => path.resolve(candidate)))];
+  }
+
+  async function readStorageRunSourceHtmlArtifact({ runId, meta, contentHash }) {
     const category = String(meta?.category || '').trim();
     if (!category || typeof getSpecDb !== 'function') return null;
     const specDb = getSpecDb(category);
     if (!specDb) return null;
+    const source = specDb.getRunSourceByRunIdAndHash?.(runId, contentHash)
+      || specDb.getCrawlSourceByRunIdAndHash?.(runId, contentHash);
+    if (!source) return null;
 
-    let sources = typeof specDb.getRunSourcesByRunId === 'function'
-      ? specDb.getRunSourcesByRunId(runId) || []
-      : [];
-    if (sources.length === 0) {
-      sources = specDb.getCrawlSourcesByRunId?.(runId) || [];
+    const fs = await import('node:fs/promises');
+    const allowedDirs = [
+      currentIndexLabRoot(),
+      defaultIndexLabRoot(),
+    ].map((root) => String(root || '').trim())
+      .filter(Boolean)
+      .map((root) => path.resolve(path.join(root, runId, 'html')));
+
+    for (const candidate of htmlCandidatePaths({ runId, source })) {
+      if (!allowedDirs.some((dir) => isInsideDirectory(candidate, dir))) continue;
+      try {
+        const content = await fs.readFile(candidate);
+        return {
+          run_id: runId,
+          content_hash: contentHash,
+          filename: path.basename(candidate),
+          content,
+        };
+      } catch {
+        // Try the next safe candidate.
+      }
     }
+    return null;
+  }
+
+  async function readStorageRunDetailState({ runId, meta, sourcesPage }) {
+    const category = String(meta?.category || '').trim();
+    if (!category || typeof getSpecDb !== 'function') return null;
+    const specDb = getSpecDb(category);
+    if (!specDb) return null;
+    const page = normalizeSourcesPage(sourcesPage);
+
+    const sourcePage = readPagedSources({ specDb, runId, page });
+    const sources = sourcePage.sources;
     const screenshots = typeof specDb.getScreenshotsByRunId === 'function'
       ? specDb.getScreenshotsByRunId(runId) || []
       : [];
@@ -196,6 +286,12 @@ export function registerIndexlabRoutes(ctx) {
         dedupe_mode: meta.dedupe_mode || '',
       },
       sources: detailSources,
+      sources_page: {
+        limit: page.limit,
+        offset: page.offset,
+        total: sourcePage.total,
+        has_more: page.offset + detailSources.length < sourcePage.total,
+      },
     };
   }
 
@@ -213,6 +309,7 @@ export function registerIndexlabRoutes(ctx) {
       isRunStillActive,
       readRunMeta: readIndexLabRunMeta,
       readRunDetailState: readStorageRunDetailState,
+      readRunSourceHtmlArtifact: readStorageRunSourceHtmlArtifact,
       deleteArchivedRun: async (runId) => {
         const fs = await import('node:fs/promises');
         const runDir = safeJoin(currentIndexLabRoot(), runId);

@@ -18,17 +18,8 @@ import {
 
 function buildEncoderSourceWithProps(properties) {
   return {
-    type: 'encoder',
-    sheet: 'encoder',
-    auto_derive_aliases: true,
-    header_row: 1,
-    first_data_row: 2,
-    stop_after_blank_primary: 10,
+    component_type: 'encoder',
     roles: {
-      primary_identifier: 'C',
-      maker: 'B',
-      aliases: [],
-      links: ['G'],
       properties,
     },
   };
@@ -41,7 +32,7 @@ test('component_only:true property does NOT promote to fieldRules.fields or ui_f
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
   fieldStudioMap.component_sources = [
     buildEncoderSourceWithProps([
-      { column: 'E', field_key: 'encoder_steps', type: 'number', unit: '', variance_policy: 'authoritative', constraints: [], component_only: true },
+      { field_key: 'encoder_steps', type: 'number', unit: '', variance_policy: 'authoritative', component_only: true },
     ]),
   ];
 
@@ -83,7 +74,7 @@ test('component_only:true property STILL appears in component_db_sources roles.p
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
   fieldStudioMap.component_sources = [
     buildEncoderSourceWithProps([
-      { column: 'E', field_key: 'encoder_steps', type: 'number', unit: '', variance_policy: 'authoritative', constraints: [], component_only: true },
+      { field_key: 'encoder_steps', type: 'number', unit: '', variance_policy: 'authoritative', component_only: true },
     ]),
   ];
 
@@ -116,7 +107,7 @@ test('component_only:false (default) property STILL promotes — regression guar
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
   fieldStudioMap.component_sources = [
     buildEncoderSourceWithProps([
-      { column: 'E', field_key: 'encoder_steps', type: 'number', unit: '', variance_policy: 'authoritative', constraints: [] },
+      { field_key: 'encoder_steps', type: 'number', unit: '', variance_policy: 'authoritative' },
     ]),
   ];
 
@@ -150,8 +141,8 @@ test('mixed: component_only:true and false on same source — only flagged ones 
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
   fieldStudioMap.component_sources = [
     buildEncoderSourceWithProps([
-      { column: 'E', field_key: 'encoder_steps', type: 'number', unit: '', variance_policy: 'authoritative', constraints: [], component_only: true },
-      { column: 'F', field_key: 'encoder', type: 'string', unit: '', variance_policy: 'authoritative', constraints: [] },
+      { field_key: 'encoder_steps', type: 'number', unit: '', variance_policy: 'authoritative', component_only: true },
+      { field_key: 'encoder', type: 'string', unit: '', variance_policy: 'authoritative' },
     ]),
   ];
 
@@ -183,7 +174,7 @@ test('component_only:true with non-empty constraints emits a warning (constraint
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, cleanup } = workspace;
   fieldStudioMap.component_sources = [
     buildEncoderSourceWithProps([
-      { column: 'E', field_key: 'encoder_steps', type: 'number', unit: '', variance_policy: 'authoritative', constraints: ['encoder_steps <= 100'], component_only: true },
+      { field_key: 'encoder_steps', type: 'number', unit: '', variance_policy: 'authoritative', constraints: ['encoder_steps <= 100'], component_only: true },
     ]),
   ];
 
@@ -219,7 +210,7 @@ test('component_only:true on key in selected_keys auto-prunes selected_keys with
   fieldStudioMap.selected_keys = [...(fieldStudioMap.selected_keys || []), 'encoder_steps'];
   fieldStudioMap.component_sources = [
     buildEncoderSourceWithProps([
-      { column: 'E', field_key: 'encoder_steps', type: 'number', unit: '', variance_policy: 'authoritative', constraints: [], component_only: true },
+      { field_key: 'encoder_steps', type: 'number', unit: '', variance_policy: 'authoritative', component_only: true },
     ]),
   ];
 
@@ -263,7 +254,7 @@ test('component_only:true on EG-locked key emits warning and the EG key still pr
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
   fieldStudioMap.component_sources = [
     buildEncoderSourceWithProps([
-      { column: 'E', field_key: 'release_date', type: 'string', unit: '', variance_policy: 'authoritative', constraints: [], component_only: true },
+      { field_key: 'release_date', type: 'string', unit: '', variance_policy: 'authoritative', component_only: true },
     ]),
   ];
 

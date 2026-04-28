@@ -163,6 +163,28 @@ test('cascade: setting enum.source = data_lists.X does NOT trigger component-loc
   assert.equal(effects.length, 0, 'data_lists.* should not trigger component-lock cascade');
 });
 
+test('cascade: setting enum.policy=open clears a non-component enum source', async () => {
+  const { collectCascadeEffects } = await loadCascadeRegistry();
+  const rule = { enum: { policy: 'open', source: 'data_lists.colors' } };
+  const effects = collectCascadeEffects(rule, 'enum.policy', 'open_prefer_known', 'open');
+
+  const clearSource = effects.find(e => e.path === 'enum.source');
+  assert.ok(clearSource, 'open policy should clear known-list source');
+  assert.equal(clearSource.action, 'clear-if');
+});
+
+test('cascade: setting enum.policy=open does not clear component_db source', async () => {
+  const { collectCascadeEffects } = await loadCascadeRegistry();
+  const rule = { enum: { policy: 'open', source: 'component_db.sensor' } };
+  const effects = collectCascadeEffects(rule, 'enum.policy', 'open_prefer_known', 'open');
+
+  assert.equal(
+    effects.some(e => e.path === 'enum.source'),
+    false,
+    'component source is preserved so the invariant layer can keep policy known-preferred',
+  );
+});
+
 // ---------------------------------------------------------------------------
 // CASCADE_RULES — priority.required_level transitions
 // ---------------------------------------------------------------------------

@@ -37,6 +37,7 @@ import {
 import {
   buildPropertyConstraintsFromMap,
   resolveComponentPropertyMetaFromMap,
+  resolveComponentIdentityProjectionMetaFromMap,
   applyKeyLevelConstraintsToEntities,
   buildComponentSourceSummary,
   declaredComponentPropertyKeysFromMap,
@@ -107,6 +108,75 @@ function enforceBooleanEnumContract(rule, enumLists = {}) {
     known_values: [...BOOLEAN_ENUM_VALUES]
   };
   rule.new_value_policy = null;
+}
+
+const KEY_MATCHED_ENUM_POLICIES = new Set(['closed', 'closed_with_curation', 'open_prefer_known']);
+
+function enumSourceIsComponentDb(rule) {
+  const nestedSource = typeof rule?.enum?.source === 'string' ? rule.enum.source : '';
+  if (nestedSource.startsWith('component_db.')) return true;
+  const flatSource = rule?.enum_source;
+  if (typeof flatSource === 'string') return flatSource.startsWith('component_db.');
+  return isObject(flatSource) && normalizeToken(flatSource.type) === 'component_db';
+}
+
+function setNestedEnumSource(rule, source) {
+  rule.enum = {
+    ...(isObject(rule.enum) ? rule.enum : {}),
+    source,
+  };
+}
+
+function enforceKeyMatchedEnumSource(rule, fieldKey) {
+  const policy = normalizeToken(rule?.enum_policy || rule?.enum?.policy || '');
+  if (!policy) return;
+  if (policy === 'open') {
+    if (enumSourceIsComponentDb(rule)) {
+      rule.enum_policy = 'open_prefer_known';
+      rule.enum = {
+        ...(isObject(rule.enum) ? rule.enum : {}),
+        policy: 'open_prefer_known',
+      };
+      return;
+    }
+    rule.enum_source = null;
+    setNestedEnumSource(rule, null);
+    return;
+  }
+  if (!KEY_MATCHED_ENUM_POLICIES.has(policy) || enumSourceIsComponentDb(rule)) return;
+  const enumRef = normalizeFieldKey(fieldKey);
+  if (!enumRef) return;
+  rule.enum_source = {
+    type: 'known_values',
+    ref: enumRef,
+  };
+  rule.enum = {
+    ...(isObject(rule.enum) ? rule.enum : {}),
+    policy,
+    source: `data_lists.${enumRef}`,
+  };
+}
+
+function registerRuleKnownValues(rule, fallbackField, knownValues) {
+  if (!isObject(rule.enum_source) || normalizeToken(rule.enum_source.type) !== 'known_values') return;
+  const enumRef = normalizeFieldKey(rule.enum_source.ref || fallbackField) || fallbackField;
+  rule.enum_source = {
+    type: 'known_values',
+    ref: enumRef
+  };
+  if (!Object.prototype.hasOwnProperty.call(knownValues, enumRef)) {
+    knownValues[enumRef] = [];
+  }
+  const inlineKnownValues = stableSortStrings(toArray(rule.vocab?.known_values));
+  if (inlineKnownValues.length > 0) {
+    knownValues[enumRef] = stableSortStrings([
+      ...toArray(knownValues[enumRef]),
+      ...inlineKnownValues
+    ]);
+  }
+  if (enumRef === 'yes_no' && toArray(knownValues[enumRef]).length === 0) {
+    knownValues[enumRef] = ['yes', 'no'];
+  }
 }
 
 export async function compileCategoryFieldStudio({
@@ -209,7 +279,14 @@ export async function compileCategoryFieldStudio({
       || baselineFieldOverrides?.[rawAliasField]
       || null;
     const componentPropertyMeta = resolveComponentPropertyMetaFromMap(map, outputField);
-    if (isObject(baselineRule) && !isObject(editedOverride) && !isObject(mapOverride) && !componentPropertyMeta) {
+    const componentIdentityProjectionMeta = resolveComponentIdentityProjectionMetaFromMap(map, outputField);
+    if (
+      isObject(baselineRule)
+      && !isObject(editedOverride)
+      && !isObject(mapOverride)
+      && !componentPropertyMeta
+      && !componentIdentityProjectionMeta
+    ) {
       const passthrough = JSON.parse(JSON.stringify(baselineRule));
       passthrough.key = outputField;
       if (outputField !== field) {
@@ -220,6 +297,8 @@ export async function compileCategoryFieldStudio({
         keyMigrations[outputField] = passthroughCanonical;
       }
       enforceBooleanEnumContract(passthrough, enumLists);
+      enforceKeyMatchedEnumSource(passthrough, outputField);
+      registerRuleKnownValues(passthrough, outputField, knownValues);
       enforceExpectationPriority({
         key: outputField,
         rule: passthrough,
@@ -324,19 +403,72 @@ export async function compileCategoryFieldStudio({
         merged.round = 'none';
       }
     }
+    if (componentIdentityProjectionMeta) {
+      merged.type = componentIdentityProjectionMeta.type;
+      merged.shape = 'scalar';
+      merged.value_form = 'scalar';
+      merged.unit = '';
+      merged.round = 'none';
+      merged.contract = {
+        ...(isObject(merged.contract) ? merged.contract : {}),
+        type: componentIdentityProjectionMeta.type,
+        shape: 'scalar',
+      };
+      if (componentIdentityProjectionMeta.type === 'url') {
+        merged.enum_policy = 'open';
+        merged.enum_source = null;
+        merged.enum = {
+          ...(isObject(merged.enum) ? merged.enum : {}),
+          policy: 'open',
+          source: null,
+        };
+      } else {
+        merged.enum_policy = componentIdentityProjectionMeta.enum_policy;
+        merged.enum_source = {
+          type: 'known_values',
+          ref: outputField,
+        };
+        merged.enum = {
+          ...(isObject(merged.enum) ? merged.enum : {}),
+          policy: componentIdentityProjectionMeta.enum_policy,
+          source: `data_lists.${outputField}`,
+        };
+      }
+      merged.vocab = {
+        ...(isObject(merged.vocab) ? merged.vocab : {}),
+        mode: componentIdentityProjectionMeta.type === 'url' ? 'open' : (merged.vocab?.mode || componentIdentityProjectionMeta.enum_policy),
+        allow_new: true,
+        known_values: stableSortStrings(toArray(merged.vocab?.known_values || [])),
+      };
+      merged.new_value_policy = isObject(merged.new_value_policy)
+        ? merged.new_value_policy
+        : {
+          accept_if_evidence: true,
+          mark_needs_curation: true,
+        };
+      merged.parse_rules = {
+        ...defaultParseRules(componentIdentityProjectionMeta.type, 'scalar'),
+        ...(isObject(merged.parse_rules) ? merged.parse_rules : {}),
+      };
+      merged.component_identity_projection = {
+        component_type: componentIdentityProjectionMeta.component_type,
+        facet: componentIdentityProjectionMeta.facet,
+      };
+      merged.field_studio_hints = {
+        ...(isObject(merged.field_studio_hints) ? merged.field_studio_hints : {}),
+        related_to: componentIdentityProjectionMeta.component_type,
+        component_identity_facet: componentIdentityProjectionMeta.facet,
+      };
+      merged.ui = {
+        ...(isObject(merged.ui) ? merged.ui : {}),
+        label: componentIdentityProjectionMeta.label,
+        group: normalizeText(merged.ui?.group || '') || componentIdentityProjectionMeta.group,
+      };
+    }
     if (!Array.isArray(merged.constraints)) {
       merged.constraints = buildPropertyConstraintsFromMap(map, outputField);
     }
 
-    if ((merged.enum_policy === 'closed' || merged.enum_policy === 'closed_with_curation') && (!merged.vocab?.known_values || merged.vocab.known_values.length === 0)) {
-      merged.enum_policy = 'open_prefer_known';
-      merged.vocab = {
-        ...(merged.vocab || {}),
-        mode: 'open_prefer_known',
-        allow_new: true,
-        known_values: []
-      };
-    }
     if (componentType) {
       merged.enum_source = {
         type: 'component_db',
@@ -369,6 +501,7 @@ export async function compileCategoryFieldStudio({
       };
       merged.new_value_policy = null;
     }
+    enforceKeyMatchedEnumSource(merged, outputField);
     enforceBooleanEnumContract(merged, enumLists);
     // WHY: latency_list_modes_ms template retired. Latency fields split into scalar keys in Phase 3.
     if (!isObject(merged.ui)) {
@@ -436,26 +569,7 @@ export async function compileCategoryFieldStudio({
         source_field: field
       };
     }
-    if (isObject(merged.enum_source) && normalizeToken(merged.enum_source.type) === 'known_values') {
-      const enumRef = normalizeFieldKey(merged.enum_source.ref || field) || field;
-      merged.enum_source = {
-        type: 'known_values',
-        ref: enumRef
-      };
-      if (!Object.prototype.hasOwnProperty.call(knownValues, enumRef)) {
-        knownValues[enumRef] = [];
-      }
-      const inlineKnownValues = stableSortStrings(toArray(merged.vocab?.known_values));
-      if (inlineKnownValues.length > 0) {
-        knownValues[enumRef] = stableSortStrings([
-          ...toArray(knownValues[enumRef]),
-          ...inlineKnownValues
-        ]);
-      }
-      if (enumRef === 'yes_no' && toArray(knownValues[enumRef]).length === 0) {
-        knownValues[enumRef] = ['yes', 'no'];
-      }
-    }
+    registerRuleKnownValues(merged, outputField, knownValues);
 
     enforceExpectationPriority({
       key: outputField,

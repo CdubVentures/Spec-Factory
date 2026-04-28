@@ -4,6 +4,7 @@ import { Tip } from '../../../shared/ui/feedback/Tip.tsx';
 import { SubSection } from './Section.tsx';
 import { selectCls, labelCls, STUDIO_TIPS } from './studioConstants.ts';
 import { strN } from '../state/nestedValueHelpers.ts';
+import { getComponentIdentityProjectionLock } from '../state/componentLockClient.ts';
 import { FormatPatternInput } from '../../publisher/index.ts';
 import type { EnumEntry } from '../../../types/studio.ts';
 
@@ -30,6 +31,10 @@ function enumControl(controlId: string): typeof FIELD_RULE_ENUM_CONTROLS[number]
 const ENUM_POLICY_CONTROL = enumControl('enum_policy');
 const ENUM_SOURCE_CONTROL = enumControl('enum_source');
 const ENUM_FORMAT_HINT_CONTROL = enumControl('enum_format_hint');
+
+function isKnownEnumPolicy(policy: string): boolean {
+  return policy === 'closed' || policy === 'closed_with_curation' || policy === 'open_prefer_known';
+}
 
 type RegexCheck =
   | { state: 'empty' }
@@ -61,7 +66,8 @@ export function EnumConfigurator({
   const currentSource = strN(rule, ENUM_SOURCE_CONTROL.path, strN(rule, 'enum_source'));
   const currentPolicy = strN(rule, ENUM_POLICY_CONTROL.path, strN(rule, 'enum_policy', String(ENUM_POLICY_CONTROL.fallback)));
   const isBoolean = contractType === 'boolean';
-  const effectivePolicy = isBoolean ? 'closed' : currentPolicy;
+  const identityProjection = getComponentIdentityProjectionLock(rule);
+  const isIdentityProjectionLocked = Boolean(identityProjection);
 
   // Phase 4: lock display requires SELF-lock (enum.source = component_db.<self>).
   // Cross-locks (e.g. property rule with enum.source pointing at parent
@@ -69,17 +75,28 @@ export function EnumConfigurator({
   // display them as locked, otherwise authors can't clear the bad value.
   const isComponentLocked = currentSource === `component_db.${fieldKey}`;
   const componentTypeLabel = isComponentLocked ? fieldKey : '';
+  const effectivePolicy = isBoolean
+    ? 'closed'
+    : (isComponentLocked && currentPolicy === 'open' ? 'open_prefer_known' : currentPolicy);
+  const isOpenPolicy = effectivePolicy === 'open';
+  const policyOptions = (ENUM_POLICY_CONTROL.options || [])
+    .filter((value) => !isComponentLocked || value !== 'open');
 
   const fieldKnownValues = knownValues[fieldKey] || [];
 
-  const selectedEnumList = currentSource.startsWith('data_lists.')
-    ? currentSource.replace('data_lists.', '')
+  const keyMatchedSource = `data_lists.${fieldKey}`;
+  const effectiveSource = isBoolean
+    ? 'yes_no'
+    : (isComponentLocked
+      ? currentSource
+      : (isOpenPolicy
+        ? ''
+        : (isKnownEnumPolicy(effectivePolicy) ? keyMatchedSource : currentSource)));
+  const sourceDisplay = effectiveSource || '(none)';
+  const selectedEnumList = effectiveSource.startsWith('data_lists.')
+    ? effectiveSource.replace('data_lists.', '')
     : '';
   const selectedListEntry = enumLists.find((e) => e.field === selectedEnumList);
-
-  function handleEnumListSelect(listName: string) {
-    onUpdate(ENUM_SOURCE_CONTROL.path, listName ? `data_lists.${listName}` : '');
-  }
 
   // Live preview validation for enum.match.format_hint regex.
   const formatHintValue = strN(rule, ENUM_FORMAT_HINT_CONTROL.path);
@@ -131,6 +148,19 @@ export function EnumConfigurator({
         </div>
       ) : null}
 
+      {isIdentityProjectionLocked ? (
+        <div
+          className="flex items-center gap-2 px-3 py-2 rounded sf-surface-alt sf-border-soft border text-[11px] sf-text-subtle"
+          title={STUDIO_TIPS.component_lock}
+        >
+          <span aria-label="component-lock" role="img">ðŸ”§</span>
+          <span>
+            Generated Component Identity Field &mdash; <strong>{identityProjection?.componentType}</strong> {identityProjection?.facet}.
+            Policy and source are compiler-owned.
+          </span>
+        </div>
+      ) : null}
+
       {!isBoolean && currentPolicy === 'closed' && fieldKnownValues.length === 0 ? (
         <div className="flex items-center gap-2 px-3 py-2 rounded sf-surface-warning-soft border sf-border-warning text-xs">
           Closed enum with zero known values — all extraction values will be rejected.
@@ -145,16 +175,23 @@ export function EnumConfigurator({
               <span>{ENUM_POLICY_CONTROL.label}<Tip text={STUDIO_TIPS[ENUM_POLICY_CONTROL.tooltipKey || '']} /></span>
               {renderLabelSuffix?.(ENUM_POLICY_CONTROL.path)}
             </div>
-            <select
-              className={`${selectCls} w-full`}
-              value={effectivePolicy}
-              onChange={(e) => onUpdate(ENUM_POLICY_CONTROL.path, e.target.value)}
-              disabled={isBoolean}
-            >
-              {(ENUM_POLICY_CONTROL.options || []).map((value) => (
-                <option key={value} value={value}>{value}</option>
-              ))}
-            </select>
+            {isIdentityProjectionLocked ? (
+              <div className="sf-input w-full rounded border px-2 py-1.5 sf-text-label sf-bg-surface-soft-strong sf-text-muted font-mono flex items-center gap-2">
+                <span className="font-mono">{effectivePolicy || '(none)'}</span>
+                <span className="text-[10px] px-1 rounded sf-chip-info-soft">locked</span>
+              </div>
+            ) : (
+              <select
+                className={`${selectCls} w-full`}
+                value={effectivePolicy}
+                onChange={(e) => onUpdate(ENUM_POLICY_CONTROL.path, e.target.value)}
+                disabled={isBoolean}
+              >
+                {policyOptions.map((value) => (
+                  <option key={value} value={value}>{value}</option>
+                ))}
+              </select>
+            )}
           </div>
           {!isBoolean ? (
             <div>
@@ -162,24 +199,21 @@ export function EnumConfigurator({
                 <span>{ENUM_SOURCE_CONTROL.label}<Tip text={STUDIO_TIPS[ENUM_SOURCE_CONTROL.tooltipKey || '']} /></span>
                 {renderLabelSuffix?.(ENUM_SOURCE_CONTROL.path)}
               </div>
-              {isComponentLocked ? (
+              {isIdentityProjectionLocked ? (
                 <div className="sf-input w-full rounded border px-2 py-1.5 sf-text-label sf-bg-surface-soft-strong sf-text-muted font-mono flex items-center gap-2">
-                  <span>{currentSource}</span>
+                  <span className="font-mono">{sourceDisplay}</span>
+                  <span className="text-[10px] px-1 rounded sf-chip-info-soft">locked</span>
+                </div>
+              ) : isComponentLocked ? (
+                <div className="sf-input w-full rounded border px-2 py-1.5 sf-text-label sf-bg-surface-soft-strong sf-text-muted font-mono flex items-center gap-2">
+                  <span className="font-mono">{sourceDisplay}</span>
                   <span className="text-[10px] px-1 rounded sf-chip-info-soft">🔧 locked</span>
                 </div>
               ) : (
-                <select
-                  className={`${selectCls} w-full`}
-                  value={selectedEnumList}
-                  onChange={(e) => handleEnumListSelect(e.target.value)}
-                >
-                  <option value="">(none)</option>
-                  {enumLists.map((el) => (
-                    <option key={el.field} value={el.field}>
-                      {el.field} ({(el.values || []).length})
-                    </option>
-                  ))}
-                </select>
+                <div className="sf-input w-full rounded border px-2 py-1.5 sf-text-label sf-bg-surface-soft-strong sf-text-muted font-mono flex items-center gap-2">
+                  <span className="font-mono">{sourceDisplay}</span>
+                  <span className="text-[10px] px-1 rounded sf-chip-info-soft">locked</span>
+                </div>
               )}
             </div>
           ) : null}
@@ -216,12 +250,12 @@ export function EnumConfigurator({
             value={formatHintValue}
             onChange={(nextValue) => onUpdate(ENUM_FORMAT_HINT_CONTROL.path, nextValue)}
             fieldKey={fieldKey}
-            disabled={currentPolicy === 'closed'}
+            disabled={effectivePolicy === 'closed'}
             disabledReason="N/A — closed enum"
             renderLabelSuffix={renderLabelSuffix}
           />
           {/* Live preview validation against the rendered pattern. */}
-          {currentPolicy !== 'closed' && formatHintValue ? (
+          {effectivePolicy !== 'closed' && formatHintValue ? (
             <div className="mt-2">
               <label className={`${labelCls} flex items-center`}>
                 <span>Preview value (test pattern)</span>

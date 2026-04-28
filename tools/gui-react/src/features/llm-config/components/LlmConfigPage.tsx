@@ -14,7 +14,7 @@ import {
 import { useSettingsAuthorityStore } from '../../../stores/settingsAuthorityStore.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { LlmConfigPageShell } from './LlmConfigPageShell.tsx';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { SettingsPanelLoadingSkeleton } from '../../../shared/ui/feedback/SettingsPanelLoadingSkeleton.tsx';
 import { TypedConfirmModal } from '../../../shared/ui/feedback/TypedConfirmModal.tsx';
 import { LLM_PHASE_IDS, LLM_PHASES } from '../state/llmPhaseRegistry.generated.ts';
 import type { LlmPhaseId } from '../types/llmPhaseTypes.generated.ts';
@@ -361,7 +361,7 @@ export function LlmConfigPage() {
   let activePanel = null;
   if (activePhase === 'global') {
     activePanel = (
-      <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+      <Suspense fallback={<SettingsPanelLoadingSkeleton groups={3} rowsPerGroup={3} />}>
         <LlmGlobalSection
           runtimeDraft={runtimeDraft}
           inputCls={inputCls}
@@ -377,13 +377,13 @@ export function LlmConfigPage() {
     );
   } else if (activePhase === 'global-prompts') {
     activePanel = (
-      <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+      <Suspense fallback={<SettingsPanelLoadingSkeleton groups={2} rowsPerGroup={3} />}>
         <GlobalPromptsSection />
       </Suspense>
     );
   } else if (activePhase === 'key-finder') {
     activePanel = (
-      <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+      <Suspense fallback={<SettingsPanelLoadingSkeleton groups={3} rowsPerGroup={3} />}>
         <LlmKeyFinderSection
           inputCls={inputCls}
           llmModelOptions={llmModelOptions}
@@ -400,7 +400,7 @@ export function LlmConfigPage() {
     );
   } else if (uiPhaseIdToOverrideKey(activePhase) !== undefined) {
     activePanel = (
-      <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+      <Suspense fallback={<SettingsPanelLoadingSkeleton groups={3} rowsPerGroup={3} />}>
         <LlmPhaseSection
           phaseId={activePhase}
           inputCls={inputCls}

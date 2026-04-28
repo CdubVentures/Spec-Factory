@@ -1,13 +1,11 @@
 import {
   toArray,
   isObject,
-  asInt,
   normalizeText,
   normalizeToken,
   normalizeFieldKey,
-  normalizeSourceMode,
   isNumericContractType,
-  stableSortStrings
+  titleFromKey,
 } from './compileUtils.js';
 import { EG_LOCKED_KEYS as EG_LOCKED_KEYS_LIST } from '../features/studio/contracts/egPresets.js';
 
@@ -25,15 +23,13 @@ export function resolveComponentPropertyMetaFromMap(map, fieldKey) {
     return null;
   }
   const numericOnlyPolicies = new Set(['upper_bound', 'lower_bound', 'range']);
-  const sources = toArray(map?.component_sources).length > 0
-    ? toArray(map.component_sources)
-    : toArray(map?.component_sheets);
+  const sources = toArray(map?.component_sources);
   for (const row of sources) {
     if (!isObject(row)) continue;
     const rolesBlock = isObject(row.roles) ? row.roles : {};
     for (const entry of toArray(rolesBlock.properties)) {
       if (!isObject(entry)) continue;
-      const entryKey = normalizeFieldKey(entry.field_key || entry.key || entry.property_key || '');
+      const entryKey = normalizeFieldKey(entry.field_key || '');
       if (entryKey !== normalizedFieldKey) {
         continue;
       }
@@ -80,12 +76,12 @@ export function buildComponentSourceSummary({
 } = {}) {
   const fr = isObject(fieldsRuntime) ? fieldsRuntime : {};
   const out = {};
-  const sourceRows = toArray(map?.component_sources).length > 0 ? toArray(map.component_sources) : toArray(map?.component_sheets);
+  const sourceRows = toArray(map?.component_sources);
   for (const row of sourceRows) {
     if (!isObject(row)) {
       continue;
     }
-    const componentType = normalizeFieldKey(row.component_type || row.type || '');
+    const componentType = normalizeFieldKey(row.component_type || '');
     if (!componentType) {
       continue;
     }
@@ -94,96 +90,52 @@ export function buildComponentSourceSummary({
       .filter((entry) => isObject(entry))
       .map((entry) => {
         const fieldKey = normalizeFieldKey(entry.field_key || '');
-        const legacyKey = normalizeFieldKey(entry.key || entry.property_key || '');
-        const resolvedKey = fieldKey || legacyKey;
+        const resolvedKey = fieldKey;
         const keyLevelConstraints = Array.isArray(fr[resolvedKey]?.constraints) ? fr[resolvedKey].constraints.filter(Boolean) : null;
         const mapConstraints = Array.isArray(entry.constraints) ? entry.constraints.map((c) => normalizeText(c)) : [];
-        return {
+        const out = {
           key: resolvedKey,
-          column: normalizeText(entry.column || entry.col || '').toUpperCase(),
-          type: ['number', 'string'].includes(normalizeToken(entry.type)) ? normalizeToken(entry.type) : 'string',
+          type: ['number', 'integer', 'string'].includes(normalizeToken(entry.type)) ? normalizeToken(entry.type) : 'string',
           unit: normalizeText(entry.unit || ''),
           field_key: fieldKey || undefined,
           variance_policy: normalizeToken(entry.variance_policy || 'authoritative'),
           constraints: keyLevelConstraints !== null ? keyLevelConstraints : mapConstraints
         };
+        if (entry.component_only === true) out.component_only = true;
+        const tolerance = entry.tolerance != null ? Number(entry.tolerance) : null;
+        if (Number.isFinite(tolerance)) out.tolerance = tolerance;
+        return out;
       })
-      .filter((entry) => entry.column);
-    const primaryIdentifier = normalizeText(
-      rolesBlock.primary_identifier
-      || ''
-    );
-    const makerColumn = normalizeText(
-      rolesBlock.maker || ''
-    ) || null;
-    const sourceBlock = {
-      mode: normalizeSourceMode(row.mode),
-      sheet: normalizeText(row.sheet),
-      header_row: asInt(row.header_row, 1),
-      first_data_row: asInt(row.first_data_row || row.row_start, 2),
-      primary_identifier_column: primaryIdentifier,
-      alias_columns: stableSortStrings(toArray(rolesBlock.aliases)),
-      auto_derive_aliases: row.auto_derive_aliases !== false,
-      maker_column: makerColumn,
-      link_columns: stableSortStrings(toArray(rolesBlock.links)),
-      property_columns: stableSortStrings(propertyMappings.map((entry) => entry.column)),
-      property_mappings: propertyMappings,
-      stop_after_blank_primary: Math.max(1, asInt(row.stop_after_blank_primary || row.stop_after_blank_names, 10)),
-      stop_after_blank_names: Math.max(1, asInt(row.stop_after_blank_primary || row.stop_after_blank_names, 10))
-    };
+      .filter((entry) => entry.field_key);
     const entries = toArray(componentDb?.[componentType]);
     const sampleEntities = entries
       .map((rowValue) => normalizeText(rowValue?.name || rowValue?.canonical_name || ''))
       .filter(Boolean)
       .slice(0, 10);
-    const stats = isObject(sourceStats?.[componentType]) ? sourceStats[componentType] : {};
-    const previewStats = {
-      scanned_rows: asInt(stats.scanned_rows, 0),
-      entity_count: asInt(stats.entity_count, entries.length),
-      non_blank_names: asInt(stats.non_blank_names, entries.length),
-      numeric_only_names: asInt(stats.numeric_only_names, 0),
-      numeric_only_ratio: Number(stats.numeric_only_ratio ?? 0),
-      first_20_names: toArray(stats.first_20_names).slice(0, 20),
-      first_20_all_numeric: Boolean(stats.first_20_all_numeric),
-      stop_after_blank_primary: Math.max(1, asInt(stats.stop_after_blank_primary, sourceBlock.stop_after_blank_primary)),
-      stop_after_blank_names: Math.max(1, asInt(stats.stop_after_blank_names, sourceBlock.stop_after_blank_names))
-    };
 
     out[componentType] = {
       type: componentType,
-      sheet: sourceBlock.sheet,
       roles: {
-        primary_identifier: sourceBlock.primary_identifier_column || null,
-        maker: sourceBlock.maker_column,
-        aliases: sourceBlock.alias_columns,
-        links: sourceBlock.link_columns,
-        properties: sourceBlock.property_mappings
+        properties: propertyMappings
       },
-      name_column: sourceBlock.primary_identifier_column || null,
-      field_studio: sourceBlock,
       entity_count: entries.length,
-      sample_entities: sampleEntities,
-      preview_stats: previewStats
+      sample_entities: sampleEntities
     };
   }
   return out;
 }
 
 export function declaredComponentTypesFromMap(map = {}) {
-  const rows = toArray(map?.component_sources).length > 0
-    ? toArray(map.component_sources)
-    : toArray(map?.component_sheets);
+  const rows = toArray(map?.component_sources);
   return new Set(
     rows
-      .map((row) => normalizeFieldKey(row?.component_type || row?.type || ''))
+      .map((row) => normalizeFieldKey(row?.component_type || ''))
       .filter(Boolean)
   );
 }
 
 export function declaredComponentPropertyKeysFromMap(map = {}) {
-  const rows = toArray(map?.component_sources).length > 0
-    ? toArray(map.component_sources)
-    : toArray(map?.component_sheets);
+  const rows = toArray(map?.component_sources);
   const out = new Set();
   for (const row of rows) {
     if (!isObject(row)) {
@@ -199,16 +151,71 @@ export function declaredComponentPropertyKeysFromMap(map = {}) {
       // properties promote into product-level field_rules + ui_field_catalog.
       // EG-locked keys (colors/editions/release_date) override this — they are
       // variant generators that must always be product fields regardless.
-      if (prop.component_only === true && !EG_LOCKED_KEYS.has(normalizeFieldKey(prop.field_key || prop.key || prop.property_key || ''))) {
+      if (prop.component_only === true && !EG_LOCKED_KEYS.has(normalizeFieldKey(prop.field_key || ''))) {
         continue;
       }
-      const key = normalizeFieldKey(prop.field_key || prop.key || prop.property_key || '');
+      const key = normalizeFieldKey(prop.field_key || '');
       if (key) {
         out.add(key);
       }
     }
   }
   return out;
+}
+
+export const COMPONENT_IDENTITY_PROJECTION_SPECS = Object.freeze({
+  brand: Object.freeze({
+    suffix: 'brand',
+    facet: 'brand',
+    type: 'string',
+    enum_policy: 'open_prefer_known',
+  }),
+  link: Object.freeze({
+    suffix: 'link',
+    facet: 'link',
+    type: 'url',
+    enum_policy: 'open',
+  }),
+});
+
+export function componentIdentityProjectionKey(componentType = '', facet = '') {
+  const type = normalizeFieldKey(componentType);
+  const spec = COMPONENT_IDENTITY_PROJECTION_SPECS[normalizeToken(facet)];
+  return type && spec ? `${type}_${spec.suffix}` : '';
+}
+
+export function declaredComponentIdentityProjectionKeysFromMap(map = {}) {
+  const out = new Set();
+  for (const componentType of declaredComponentTypesFromMap(map)) {
+    for (const spec of Object.values(COMPONENT_IDENTITY_PROJECTION_SPECS)) {
+      const key = componentIdentityProjectionKey(componentType, spec.facet);
+      if (key) out.add(key);
+    }
+  }
+  return out;
+}
+
+export function resolveComponentIdentityProjectionMetaFromMap(map = {}, fieldKey = '') {
+  const key = normalizeFieldKey(fieldKey);
+  if (!key) {
+    return null;
+  }
+  for (const componentType of declaredComponentTypesFromMap(map)) {
+    for (const spec of Object.values(COMPONENT_IDENTITY_PROJECTION_SPECS)) {
+      if (key !== componentIdentityProjectionKey(componentType, spec.facet)) {
+        continue;
+      }
+      return {
+        component_type: componentType,
+        facet: spec.facet,
+        type: spec.type,
+        enum_policy: spec.enum_policy,
+        label: `${titleFromKey(componentType)} ${titleFromKey(spec.suffix)}`,
+        group: `${titleFromKey(componentType)} Identity`,
+      };
+    }
+  }
+  return null;
 }
 
 // WHY: Variant-generator keys must always promote to product fields even if

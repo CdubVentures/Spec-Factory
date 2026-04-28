@@ -52,6 +52,10 @@ export function createVariantStore({ db, category, stmts }) {
     return stmts._listVariantsByProduct.all(category, String(productId || '')).map(hydrateRow);
   }
 
+  function listByCategory() {
+    return stmts._listVariantsByCategory.all(category).map(hydrateRow);
+  }
+
   function listActive(productId) {
     return stmts._listActiveVariantsByProduct.all(category, String(productId || '')).map(hydrateRow);
   }
@@ -101,5 +105,5 @@ export function createVariantStore({ db, category, stmts }) {
     onAfterSync?.({ productId });
   }
 
-  return { upsert, get, listByProduct, listActive, remove, removeByProduct, syncFromRegistry };
+  return { upsert, get, listByProduct, listByCategory, listActive, remove, removeByProduct, syncFromRegistry };
 }

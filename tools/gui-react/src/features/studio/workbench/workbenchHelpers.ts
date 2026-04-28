@@ -10,6 +10,10 @@ import {
 } from '../state/nestedValueHelpers.ts';
 import { STUDIO_NUMERIC_KNOB_BOUNDS } from '../state/studioNumericKnobBounds.ts';
 import { deriveInputControl } from '../state/deriveInputControl.ts';
+import {
+  getComponentIdentityProjectionLock,
+  getComponentLockKind,
+} from '../state/componentLockClient.ts';
 import type { ComponentSource } from '../../../types/studio.ts';
 import { readFieldRuleAiAssistToggleEnabled } from '../../../../../../src/field-rules/fieldRuleSchema.js';
 
@@ -114,6 +118,7 @@ function formatRounding(rule: Record<string, unknown>, type: string): string {
 // and its variance policy. Same numeric-only collapse the body uses so the
 // table cell matches what the drawer's Property Keys widget shows.
 const NUMERIC_ONLY_VARIANCE_POLICIES = new Set(['upper_bound', 'lower_bound', 'range']);
+const KEY_MATCHED_ENUM_POLICIES = new Set(['closed', 'closed_with_curation', 'open_prefer_known']);
 
 interface PropertyOwnership {
   componentType: string;
@@ -127,7 +132,7 @@ function buildPropertyOwnership(
   const map = new Map<string, PropertyOwnership>();
   if (!componentSources || componentSources.length === 0) return map;
   for (const src of componentSources) {
-    const compType = src.component_type || src.type || '';
+    const compType = src.component_type || '';
     if (!compType) continue;
     const props = src.roles?.properties || [];
     for (const prop of props) {
@@ -173,8 +178,21 @@ export function buildWorkbenchRows(
     const contractType = strN(r, 'contract.type', strN(r, 'data_type', 'string'));
     const isBoolean = contractType === 'boolean';
     const contractShape = isBoolean ? 'scalar' : strN(r, 'contract.shape', 'scalar');
-    const enumPolicy = isBoolean ? 'closed' : strN(r, 'enum.policy', strN(r, 'enum_policy', 'open'));
-    const enumSource = isBoolean ? 'yes_no' : strN(r, 'enum.source', strN(r, 'enum_source'));
+    const rawEnumSource = isBoolean ? 'yes_no' : strN(r, 'enum.source', strN(r, 'enum_source'));
+    const componentLockKind = getComponentLockKind(r, key);
+    const identityProjection = getComponentIdentityProjectionLock(r);
+    const componentLocked = componentLockKind !== '';
+    const rawEnumPolicy = isBoolean ? 'closed' : strN(r, 'enum.policy', strN(r, 'enum_policy', 'open'));
+    const enumPolicy = componentLockKind === 'component_self' && rawEnumPolicy === 'open'
+      ? 'open_prefer_known'
+      : rawEnumPolicy;
+    const enumSource = isBoolean
+      ? 'yes_no'
+      : (enumPolicy === 'open' && componentLockKind !== 'component_self'
+        ? ''
+        : (componentLockKind === 'component_self'
+          ? rawEnumSource
+          : (KEY_MATCHED_ENUM_POLICIES.has(enumPolicy) ? `data_lists.${key}` : rawEnumSource)));
     const knownValuesForField = kv[key] || (isBoolean ? kv.yes_no : undefined) || [];
 
     return {
@@ -217,10 +235,11 @@ export function buildWorkbenchRows(
       // as locked components. `belongsToComponent` (below) is the legitimate
       // "this key is a property of <component>" derivation, sourced from
       // component_sources[].roles.properties[].
-      componentType: enumSource === `component_db.${key}`
-        ? key
-        : '',
-      componentLocked: enumSource === `component_db.${key}`,
+      componentType: componentLockKind === 'component_self' ? key : identityProjection?.componentType || '',
+      componentLocked,
+      componentLockKind,
+      identityProjectionFacet: identityProjection?.facet || '',
+      contractLocked: componentLocked,
       belongsToComponent: propOwnership.get(key)?.componentType || '',
       propertyVariance: propOwnership.get(key)?.variancePolicy || '',
 

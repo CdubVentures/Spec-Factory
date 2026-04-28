@@ -237,6 +237,7 @@ describe('crawlLedgerStore — aggregateDomainStats', () => {
 describe('crawlLedgerStore — upsertQueryCooldown', () => {
   it('inserts a new query cooldown entry', () => {
     const db = createHarness();
+    const cooldownUntil = new Date(Date.now() + 86400000 * 30).toISOString();
     db.upsertQueryCooldown({
       query_hash: 'hash-1',
       product_id: 'prod-1',
@@ -250,7 +251,7 @@ describe('crawlLedgerStore — upsertQueryCooldown', () => {
       attempt_count: 1,
       result_count: 10,
       last_executed_at: '2026-03-28T00:00:00Z',
-      cooldown_until: '2026-04-27T00:00:00Z',
+      cooldown_until: cooldownUntil,
     });
 
     const row = db.getQueryCooldown('hash-1', 'prod-1');
@@ -258,11 +259,13 @@ describe('crawlLedgerStore — upsertQueryCooldown', () => {
     strictEqual(row.query_text, 'razer viper specifications');
     strictEqual(row.tier, 'seed');
     strictEqual(row.attempt_count, 1);
-    strictEqual(row.cooldown_until, '2026-04-27T00:00:00Z');
+    strictEqual(row.cooldown_until, cooldownUntil);
   });
 
   it('increments attempt_count on upsert', () => {
     const db = createHarness();
+    const firstCooldownUntil = new Date(Date.now() + 86400000 * 30).toISOString();
+    const secondCooldownUntil = new Date(Date.now() + 86400000 * 31).toISOString();
     db.upsertQueryCooldown({
       query_hash: 'hash-1',
       product_id: 'prod-1',
@@ -273,7 +276,7 @@ describe('crawlLedgerStore — upsertQueryCooldown', () => {
       attempt_count: 1,
       result_count: 10,
       last_executed_at: '2026-03-28T00:00:00Z',
-      cooldown_until: '2026-04-27T00:00:00Z',
+      cooldown_until: firstCooldownUntil,
     });
     db.upsertQueryCooldown({
       query_hash: 'hash-1',
@@ -285,13 +288,13 @@ describe('crawlLedgerStore — upsertQueryCooldown', () => {
       attempt_count: 1,
       result_count: 5,
       last_executed_at: '2026-03-29T00:00:00Z',
-      cooldown_until: '2026-04-28T00:00:00Z',
+      cooldown_until: secondCooldownUntil,
     });
 
     const row = db.getQueryCooldown('hash-1', 'prod-1');
     strictEqual(row.attempt_count, 2, 'attempt_count should accumulate');
     strictEqual(row.provider, 'bing', 'provider should be latest');
-    strictEqual(row.cooldown_until, '2026-04-28T00:00:00Z', 'cooldown_until should update');
+    strictEqual(row.cooldown_until, secondCooldownUntil, 'cooldown_until should update');
   });
 });
 

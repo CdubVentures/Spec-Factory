@@ -1,5 +1,8 @@
 import { emitDataChange } from '../../../core/events/dataChangeContract.js';
 
+const DEFAULT_RUN_SOURCE_PAGE_LIMIT = 100;
+const MAX_RUN_SOURCE_PAGE_LIMIT = 500;
+
 export function createStorageManagerHandler(opts) {
   const {
     jsonRes,
@@ -14,6 +17,7 @@ export function createStorageManagerHandler(opts) {
     isRunStillActive,
     readRunMeta,
     readRunDetailState,
+    readRunSourceHtmlArtifact,
     deleteArchivedRun,
     fsRoots,
   } = opts;
@@ -44,6 +48,52 @@ export function createStorageManagerHandler(opts) {
 
   function resolveBackendDetail() {
     return { root_path: String(indexLabRoot || '') };
+  }
+
+  function resolveSourcesPage(params) {
+    const rawLimit = toInt(params.get('sourcesLimit'), DEFAULT_RUN_SOURCE_PAGE_LIMIT);
+    const rawOffset = toInt(params.get('sourcesOffset'), 0);
+    return {
+      limit: Math.min(MAX_RUN_SOURCE_PAGE_LIMIT, Math.max(1, rawLimit)),
+      offset: Math.max(0, rawOffset),
+    };
+  }
+
+  function resolveSourcesPageResponse({ requestedPage, detailSources, detailPage }) {
+    if (detailPage && typeof detailPage === 'object') return detailPage;
+    const sources = Array.isArray(detailSources) ? detailSources : [];
+    return {
+      limit: requestedPage.limit,
+      offset: requestedPage.offset,
+      total: sources.length,
+      has_more: false,
+    };
+  }
+
+  async function serveRunSourceHtml({ runId, contentHash, meta, req, res }) {
+    const artifact = typeof readRunSourceHtmlArtifact === 'function'
+      ? await readRunSourceHtmlArtifact({ runId, contentHash, meta, req })
+      : null;
+    if (!artifact?.content) {
+      return jsonRes(res, 404, {
+        error: 'html_artifact_not_found',
+        run_id: runId,
+        content_hash: contentHash,
+      });
+    }
+    const content = Buffer.isBuffer(artifact.content)
+      ? artifact.content
+      : Buffer.from(artifact.content);
+    const filename = String(artifact.filename || `${contentHash}.html.gz`).replace(/"/g, '');
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Encoding': 'gzip',
+      'Content-Length': content.length,
+      'Cache-Control': 'private, max-age=300, stale-while-revalidate=3600',
+      'Content-Disposition': `inline; filename="${filename}"`,
+    });
+    res.end(content);
+    return true;
   }
 
   return async function handleStorageManagerRoutes(parts, params, method, req, res) {
@@ -83,6 +133,20 @@ export function createStorageManagerHandler(opts) {
     // GET /storage/runs (list) or GET /storage/runs/:runId (detail)
     if (parts[1] === 'runs') {
       const runId = parts[2] ? String(parts[2]).trim() : '';
+      if (runId && parts[3] === 'sources' && parts[4] && parts[5] === 'html' && !parts[6] && method === 'GET') {
+        let contentHash = '';
+        try {
+          contentHash = decodeURIComponent(String(parts[4] || '')).trim();
+        } catch {
+          return jsonRes(res, 400, { error: 'invalid_content_hash', run_id: runId });
+        }
+        if (!contentHash) return jsonRes(res, 400, { error: 'content_hash_required', run_id: runId });
+        const meta = typeof readRunMeta === 'function'
+          ? await readRunMeta(runId)
+          : null;
+        if (!meta) return jsonRes(res, 404, { error: 'run_not_found', run_id: runId });
+        return serveRunSourceHtml({ runId, contentHash, meta, req, res });
+      }
 
       // GET /storage/runs/:runId — single run detail.
       if (runId && !parts[3] && method === 'GET') {
@@ -90,20 +154,38 @@ export function createStorageManagerHandler(opts) {
           ? await readRunMeta(runId)
           : null;
         if (!meta) return jsonRes(res, 404, { error: 'run_not_found', run_id: runId });
+        const sourcesPage = resolveSourcesPage(params);
 
         const sqlDetail = typeof readRunDetailState === 'function'
-          ? await readRunDetailState({ runId, meta })
+          ? await readRunDetailState({ runId, meta, sourcesPage })
           : null;
         if (sqlDetail) {
+          const sources = Array.isArray(sqlDetail.sources) ? sqlDetail.sources : [];
           return jsonRes(res, 200, {
             run_id: runId,
             ...meta,
-            sources: Array.isArray(sqlDetail.sources) ? sqlDetail.sources : [],
+            sources,
+            sources_page: resolveSourcesPageResponse({
+              requestedPage: sourcesPage,
+              detailSources: sources,
+              detailPage: sqlDetail.sources_page,
+            }),
             identity: sqlDetail.identity && typeof sqlDetail.identity === 'object' ? sqlDetail.identity : {},
           });
         }
 
-        return jsonRes(res, 200, { run_id: runId, ...meta, sources: [], identity: {} });
+        return jsonRes(res, 200, {
+          run_id: runId,
+          ...meta,
+          sources: [],
+          sources_page: {
+            limit: sourcesPage.limit,
+            offset: sourcesPage.offset,
+            total: 0,
+            has_more: false,
+          },
+          identity: {},
+        });
       }
 
       // DELETE /storage/runs/:runId — delete single run (full cascade)

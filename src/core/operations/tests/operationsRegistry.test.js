@@ -835,6 +835,18 @@ describe('operation cap', () => {
     assert.ok(ops.find(o => o.id === newId));
   });
 
+  it('retains queued operations when evicting oldest terminal', () => {
+    const queuedId = registerOperation({ ...VALID_OP, productId: 'p-queued-first', status: 'queued' }).id;
+    const doneIds = [];
+    for (let i = 1; i < MAX_RETAINED_OPERATIONS; i += 1) doneIds.push(registerDone(`p-${i}`));
+    registerDone('p-new-terminal');
+
+    const ops = listOperations();
+    assert.equal(ops.length, MAX_RETAINED_OPERATIONS);
+    assert.ok(ops.find(o => o.id === queuedId), 'queued op preserved');
+    assert.ok(!ops.find(o => o.id === doneIds[0]), 'oldest terminal evicted');
+  });
+
   it('broadcasts {action:"remove", id} on eviction', () => {
     const spy = makeBroadcastSpy();
     initOperationsRegistry({ broadcastWs: spy });

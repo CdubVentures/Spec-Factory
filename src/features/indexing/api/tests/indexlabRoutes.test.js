@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
+import { gzipSync, gunzipSync } from 'node:zlib';
 
 import {
   initIndexLabDataBuilders,
@@ -333,6 +334,71 @@ test('indexlabRoutes: storage run detail uses run_sources rebuilt from durable c
     assert.equal(body.sources[0].screenshot_count, 1);
     assert.equal(body.sources[0].video_file, 'fetch-1.webm');
     assert.equal(body.sources[0].total_size, 4106);
+  } finally {
+    specDb.close();
+    await fs.rm(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test('indexlabRoutes: storage source HTML route serves SQL-indexed gzipped artifact', async () => {
+  const tempRoot = await fs.mkdtemp(path.join(os.tmpdir(), 'storage-source-html-route-'));
+  const indexLabRoot = path.join(tempRoot, 'indexlab');
+  const runId = 'run-storage-source-html';
+  const productId = 'mouse-storage-source-html';
+  const contentHash = 'e'.repeat(64);
+  const runDir = path.join(indexLabRoot, runId);
+  const htmlDir = path.join(runDir, 'html');
+  const htmlFilename = `${contentHash.slice(0, 12)}.html.gz`;
+  const htmlPath = path.join(htmlDir, htmlFilename);
+  const html = '<html><body>spec proof</body></html>';
+
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  try {
+    await fs.mkdir(htmlDir, { recursive: true });
+    await fs.writeFile(htmlPath, gzipSync(Buffer.from(html, 'utf8')));
+    specDb.upsertRun({
+      run_id: runId,
+      category: 'mouse',
+      product_id: productId,
+      status: 'completed',
+      started_at: '2026-04-01T04:30:00.000Z',
+      ended_at: '2026-04-01T04:31:00.000Z',
+      counters: {},
+    });
+    specDb.insertRunSource({
+      run_id: runId,
+      content_hash: contentHash,
+      category: 'mouse',
+      product_id: productId,
+      source_url: 'https://example.com/specs',
+      final_url: 'https://example.com/specs',
+      content_type: 'text/html',
+      size_bytes: Buffer.byteLength(html, 'utf8'),
+      file_path: htmlPath,
+      crawled_at: '2026-04-01T04:30:30.000Z',
+    });
+
+    const handler = createIndexlabRouteHandler({
+      INDEXLAB_ROOT: indexLabRoot,
+      readJsonBody: async () => ({}),
+      getSpecDb: (category) => (category === 'mouse' ? specDb : null),
+      readIndexLabRunMeta: async (id) => specDb.getRunByRunId(id),
+      listIndexLabRuns: async () => [specDb.getRunByRunId(runId)].filter(Boolean),
+    });
+
+    const res = createMockRes();
+    await handler(
+      ['storage', 'runs', runId, 'sources', contentHash, 'html'],
+      new URLSearchParams(),
+      'GET',
+      { headers: {} },
+      res,
+    );
+
+    assert.equal(res.statusCode, 200);
+    assert.equal(res.headers['content-type'], 'text/html; charset=utf-8');
+    assert.equal(res.headers['content-encoding'], 'gzip');
+    assert.equal(gunzipSync(Buffer.from(res.body)).toString('utf8'), html);
   } finally {
     specDb.close();
     await fs.rm(tempRoot, { recursive: true, force: true });

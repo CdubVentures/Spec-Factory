@@ -72,8 +72,10 @@ export function buildEgColorFieldRule(ctx) {
       },
     },
     enum_policy: 'closed',
+    enum_source: { type: 'known_values', ref: 'colors' },
     enum: {
       policy: 'closed',
+      source: 'data_lists.colors',
       new_value_policy: { accept_if_evidence: true, mark_needs_curation: false },
     },
     // WHY: vocab.known_values populated from ctx.colorNames (color registry).

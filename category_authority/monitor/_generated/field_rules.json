@@ -1,59 +1,7 @@
 {
   "category": "monitor",
   "publish_gate": "required_complete",
-  "component_db_sources": {
-    "panel": {
-      "entity_count": 20,
-      "field_studio": {
-        "alias_columns": [],
-        "auto_derive_aliases": true,
-        "first_data_row": 2,
-        "header_row": 1,
-        "link_columns": [],
-        "maker_column": "PANEL_MANUFACTURER",
-        "mode": "scratch",
-        "primary_identifier_column": "PANEL_TYPE",
-        "property_columns": [],
-        "property_mappings": [],
-        "sheet": "",
-        "stop_after_blank_names": 10,
-        "stop_after_blank_primary": 10
-      },
-      "name_column": "PANEL_TYPE",
-      "preview_stats": {
-        "entity_count": 20,
-        "first_20_all_numeric": false,
-        "first_20_names": [],
-        "non_blank_names": 20,
-        "numeric_only_names": 0,
-        "numeric_only_ratio": 0,
-        "scanned_rows": 0,
-        "stop_after_blank_names": 10,
-        "stop_after_blank_primary": 10
-      },
-      "roles": {
-        "aliases": [],
-        "links": [],
-        "maker": "PANEL_MANUFACTURER",
-        "primary_identifier": "PANEL_TYPE",
-        "properties": []
-      },
-      "sample_entities": [
-        "IPS",
-        "VA",
-        "TN",
-        "OLED",
-        "QD-OLED",
-        "W-OLED",
-        "Nano IPS",
-        "Fast IPS",
-        "Rapid IPS",
-        "AH-IPS"
-      ],
-      "sheet": "",
-      "type": "panel"
-    }
-  },
+  "component_db_sources": {},
   "enum_buckets": {},
   "field_count": 113,
   "fields": {
@@ -67,7 +15,6 @@
         "G-Sync"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -166,7 +113,6 @@
         "aspect ratio"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -264,7 +210,6 @@
         "audio output"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -361,7 +306,6 @@
         "illumination"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -459,7 +403,6 @@
       },
       "aliases": [],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -553,7 +496,6 @@
         "black uniformity"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -654,7 +596,6 @@
       },
       "aliases": [],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -750,7 +691,6 @@
         "peak brightness"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -856,7 +796,6 @@
         "typical brightness"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -964,7 +903,6 @@
         "cable length"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -1059,7 +997,6 @@
         "cable type"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -1156,7 +1093,6 @@
         "included cables"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
@@ -1260,7 +1196,6 @@
       },
       "aliases": [],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -1354,7 +1289,6 @@
         "chassis color"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
@@ -1463,7 +1397,6 @@
         "delta E"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -1567,7 +1500,6 @@
         "Adobe RGB gamut"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -1670,7 +1602,6 @@
         "P3 gamut"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -1774,7 +1705,6 @@
         "sRGB gamut"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -1877,7 +1807,6 @@
         "colors"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
@@ -2000,7 +1929,6 @@
         "static contrast"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2097,7 +2025,6 @@
         "dynamic contrast"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2192,7 +2119,6 @@
         "on-screen crosshair"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2203,12 +2129,8 @@
       "display_name": "Crosshair Overlay",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.crosshair_overlay"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2287,7 +2209,6 @@
         "curve radius"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2383,7 +2304,6 @@
         "curved display"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2394,12 +2314,8 @@
       "display_name": "Curved",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.curved"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2479,7 +2395,6 @@
         "MST"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2490,12 +2405,8 @@
       "display_name": "Daisy Chain (DP Out)",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.daisy_chain"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2574,7 +2485,6 @@
         "thickness"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -2677,7 +2587,6 @@
         "end of life"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2688,12 +2597,8 @@
       "display_name": "Discontinued",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.discontinued"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -2772,7 +2677,6 @@
         "DSC"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2870,7 +2774,6 @@
         "DP"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2969,7 +2872,6 @@
         "DP version"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3065,7 +2967,6 @@
         "editions"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "consumers": {
         "enum.match.format_hint": {
@@ -3169,7 +3070,6 @@
         "Energy Star"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3266,7 +3166,6 @@
         "RJ45"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3363,7 +3262,6 @@
         "pre-calibrated"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3374,12 +3272,8 @@
       "display_name": "Factory Calibrated",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.factory_calibrated"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -3458,7 +3352,6 @@
         "flicker-free"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3469,12 +3362,8 @@
       "display_name": "Flicker-Free",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.flicker_free"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -3556,7 +3445,6 @@
         "PWM frequency"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -3662,23 +3550,18 @@
         "FRC"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
-        "type": "string"
+        "type": "boolean"
       },
-      "data_type": "string",
+      "data_type": "boolean",
       "difficulty": "easy",
       "display_name": "FRC (Dithering)",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.frc"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -3757,7 +3640,6 @@
         "gradient handling"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3853,7 +3735,6 @@
         "gray uniformity 50%"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -3954,7 +3835,6 @@
       },
       "aliases": [],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -4048,7 +3928,6 @@
         "HDMI ports"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -4147,7 +4026,6 @@
         "HDMI version"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -4246,7 +4124,6 @@
         "HDR support"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
@@ -4359,7 +4236,6 @@
         "headphone jack"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -4370,12 +4246,8 @@
       "display_name": "Headphone Jack",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.headphone_jack"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -4455,7 +4327,6 @@
         "panel height"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -4559,7 +4430,6 @@
         "height adjustment"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -4656,7 +4526,6 @@
         "height with stand"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -4760,7 +4629,6 @@
         "viewing angle horizontal"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -4864,7 +4732,6 @@
         "input lag"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -4969,7 +4836,6 @@
         "input lag 120Hz"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -5074,7 +4940,6 @@
         "input lag 60Hz"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -5179,7 +5044,6 @@
         "input lag max refresh"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -5284,7 +5148,6 @@
         "KVM switch"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5295,12 +5158,8 @@
       "display_name": "KVM Switch",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.kvm_switch"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -5381,7 +5240,6 @@
         "local dimming"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -5486,7 +5344,6 @@
         "low blue light"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5497,12 +5354,8 @@
       "display_name": "Low Blue Light",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.low_blue_light"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -5582,7 +5435,6 @@
         "macOS compatibility"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5677,7 +5529,6 @@
         "body material"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5774,7 +5625,6 @@
         "max refresh rate displayport"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -5882,7 +5732,6 @@
         "max refresh rate hdmi"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -5990,7 +5839,6 @@
         "microphone"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6084,7 +5932,6 @@
       },
       "aliases": [],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6181,7 +6028,6 @@
         "motion blur reduction"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6192,12 +6038,8 @@
       "display_name": "Motion Blur Reduction",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.motion_blur_reduction"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -6277,7 +6119,6 @@
       },
       "aliases": [],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6372,7 +6213,6 @@
         "number of colors"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6468,7 +6308,6 @@
         "OSD type"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6563,7 +6402,6 @@
         "response time overdrive"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6574,12 +6412,8 @@
       "display_name": "Overdrive",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.overdrive"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -6660,7 +6494,6 @@
         "overshoot 120Hz"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -6764,7 +6597,6 @@
         "overshoot 60Hz"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -6868,7 +6700,6 @@
         "overshoot max refresh"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -6974,7 +6805,6 @@
         "panel bit depth"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7072,7 +6902,6 @@
         "surface treatment"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7170,7 +6999,6 @@
         "panel manufacturer"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7268,7 +7096,6 @@
         "panel type"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7372,7 +7199,6 @@
         "PiP"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7383,12 +7209,8 @@
       "display_name": "PiP / PbP",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.pip_pbp"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -7470,7 +7292,6 @@
         "rotation"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7481,12 +7302,8 @@
       "display_name": "Pivot / Portrait",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.pivot_rotation"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -7567,7 +7384,6 @@
         "PPI"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -7672,7 +7488,6 @@
         "maximum power consumption"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -7776,7 +7591,6 @@
         "typical power"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -7883,7 +7697,6 @@
         "retail price"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7979,7 +7792,6 @@
         "PS5 compatibility"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8075,7 +7887,6 @@
         "total reflections"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -8180,7 +7991,6 @@
         "refresh rate"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -8291,7 +8101,6 @@
         "release date"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8395,7 +8204,6 @@
         "native resolution"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8496,7 +8304,6 @@
         "response time 120Hz"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -8602,7 +8409,6 @@
         "response time 60Hz"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -8709,7 +8515,6 @@
         "response time"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -8816,7 +8621,6 @@
         "MPRT"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -8922,7 +8726,6 @@
         "screen size"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -9026,7 +8829,6 @@
       },
       "aliases": [],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9120,7 +8922,6 @@
         "built-in speakers"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9218,7 +9019,6 @@
         "subpixel structure"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9313,7 +9113,6 @@
         "swivel range"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9409,7 +9208,6 @@
         "text clarity"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9506,7 +9304,6 @@
         "Thunderbolt ports"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9604,7 +9401,6 @@
         "Thunderbolt version"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9701,7 +9497,6 @@
         "tilt range"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9799,7 +9594,6 @@
         "USB-C"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9896,7 +9690,6 @@
         "USB ports"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9993,7 +9786,6 @@
         "USB-C PD"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -10100,7 +9892,6 @@
         "VRR"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -10111,12 +9902,8 @@
       "display_name": "Variable Refresh Rate",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.variable_refresh_rate"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -10193,7 +9980,6 @@
       },
       "aliases": [],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -10289,7 +10075,6 @@
         "viewing angle vertical"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -10394,7 +10179,6 @@
         "VESA mount"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -10494,7 +10278,6 @@
         "VRR range"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -10590,7 +10373,6 @@
         "wall mountable"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -10601,12 +10383,8 @@
       "display_name": "Wall Mountable",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.wall_mountable"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -10686,7 +10464,6 @@
         "warranty period"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -10782,7 +10559,6 @@
         "integrated webcam"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -10880,7 +10656,6 @@
         "weight with stand"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -10985,7 +10760,6 @@
         "weight without stand"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -11091,7 +10865,6 @@
         "wide gamut"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -11102,12 +10875,8 @@
       "display_name": "Wide Color Gamut",
       "enum": {
         "match": {},
-        "new_value_policy": {
-          "accept_if_evidence": true,
-          "mark_needs_curation": true
-        },
-        "policy": "open",
-        "source": "data_lists.wide_color_gamut"
+        "policy": "closed",
+        "source": "yes_no"
       },
       "evidence": {
         "min_evidence_refs": 1,
@@ -11188,7 +10957,6 @@
         "panel width"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -11293,7 +11061,6 @@
         "Xbox Series X compatibility"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -11381,7 +11148,7 @@
       }
     }
   },
-  "generated_at": "2026-04-22T03:39:57.663Z",
+  "generated_at": "2026-04-28T06:44:32.811Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",

@@ -182,35 +182,19 @@ test('normalizeFieldStudioMap characterizes representative normalized studio map
         ai_assist: { reasoning_note: 'enum note' },
       },
     ],
-    component_sheets: [],
     component_sources: [
       {
-        mode: 'sheet',
-        sheet: 'Sensors',
-        type: 'sensor',
         component_type: 'sensor',
-        header_row: 1,
-        first_data_row: 2,
         roles: {
-          primary_identifier: 'A',
-          maker: 'B',
-          aliases: ['C'],
-          links: [],
           properties: [
             {
-              key: 'dpi',
-              column: 'D',
+              field_key: 'dpi',
               type: 'number',
               unit: '',
-              field_key: 'dpi',
               variance_policy: 'range',
-              constraints: [],
             },
           ],
         },
-        auto_derive_aliases: true,
-        stop_after_blank_primary: 10,
-        start_row: 2,
         priority: {
           required_level: 'non_mandatory',
           availability: 'sometimes',

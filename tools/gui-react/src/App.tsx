@@ -2,9 +2,9 @@ import { lazy, Suspense, type ComponentType } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { AppShell } from './pages/layout/AppShell.tsx';
+import { AppShellLoadingSkeleton } from './pages/layout/AppShellLoadingSkeleton.tsx';
 import { ErrorBoundary } from './shared/ui/feedback/ErrorBoundary.tsx';
 import { GlobalNotifications } from './shared/ui/feedback/GlobalNotifications.tsx';
-import { Spinner } from './shared/ui/feedback/Spinner.tsx';
 import { ROUTE_ENTRIES } from './registries/pageRegistry.ts';
 import { wsManager } from './api/ws.ts';
 import { api } from './api/client.ts';
@@ -47,7 +47,7 @@ wsManager.onReconnect(() => {
 function wrap(Component: ComponentType) {
   return (
     <ErrorBoundary>
-      <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+      <Suspense fallback={<AppShellLoadingSkeleton />}>
         <Component />
       </Suspense>
     </ErrorBoundary>

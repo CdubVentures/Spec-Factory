@@ -16,6 +16,39 @@ const TOP_LEVEL_KEYS = new Set([
 ]);
 const PATCH_KEYS = new Set(['data_lists', 'field_overrides', 'component_sources']);
 const AUDIT_KEYS = new Set(['sources_checked', 'products_checked', 'conclusion', 'open_questions']);
+const RETIRED_DATA_LIST_KEYS = new Set([
+  'mode',
+  'sheet',
+  'value_column',
+  'column',
+  'header_row',
+  'row_start',
+  'start_row',
+  'row_end',
+  'end_row',
+]);
+const RETIRED_COMPONENT_SOURCE_KEYS = new Set([
+  'type',
+  'mode',
+  'sheet',
+  'header_row',
+  'first_data_row',
+  'start_row',
+  'row_end',
+  'stop_after_blank_primary',
+  'stop_after_blank_names',
+  'auto_derive_aliases',
+  'primary_identifier_column',
+  'maker_column',
+  'canonical_name_column',
+  'name_column',
+  'brand_column',
+  'alias_columns',
+  'link_columns',
+  'property_columns',
+]);
+const RETIRED_COMPONENT_ROLE_KEYS = new Set(['primary_identifier', 'maker', 'aliases', 'links']);
+const RETIRED_COMPONENT_PROPERTY_KEYS = new Set(['key', 'property_key', 'column', 'col']);
 
 function isObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value);
@@ -27,6 +60,14 @@ function cloneJson(value) {
 
 function sortedKeys(value) {
   return Object.keys(value || {}).sort((a, b) => a.localeCompare(b));
+}
+
+function normalizeFieldKey(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '');
 }
 
 function assertStrictKeys(value, allowed, label) {
@@ -133,6 +174,11 @@ function validatePatchBlock(patch, fieldKey) {
       if (row.field !== fieldKey) {
         throw new Error(`patch.data_lists[${index}].field must equal ${fieldKey}`);
       }
+      for (const key of Object.keys(row)) {
+        if (RETIRED_DATA_LIST_KEYS.has(key)) {
+          throw new Error(`patch.data_lists[${index}].${key} is retired; use field and manual_values only`);
+        }
+      }
     });
   }
 
@@ -144,13 +190,32 @@ function validatePatchBlock(patch, fieldKey) {
       if (!isObject(row)) {
         throw new Error(`patch.component_sources[${index}] must be an object`);
       }
-      const componentType = row.component_type || row.type;
+      for (const key of Object.keys(row)) {
+        if (RETIRED_COMPONENT_SOURCE_KEYS.has(key)) {
+          throw new Error(`patch.component_sources[${index}].${key} is retired; use component_type and roles.properties[] only`);
+        }
+      }
+      const componentType = row.component_type;
       if (!componentType) {
-        throw new Error(`patch.component_sources[${index}] must include component_type or type`);
+        throw new Error(`patch.component_sources[${index}] must include component_type`);
+      }
+      const roles = isObject(row.roles) ? row.roles : {};
+      for (const key of Object.keys(roles)) {
+        if (RETIRED_COMPONENT_ROLE_KEYS.has(key)) {
+          throw new Error(`patch.component_sources[${index}].roles.${key} is retired; roles may only carry properties`);
+        }
       }
       if (componentType === fieldKey) return;
-      const properties = Array.isArray(row.roles?.properties) ? row.roles.properties : [];
-      const touchesField = properties.some((prop) => (prop?.field_key || prop?.key) === fieldKey);
+      const properties = Array.isArray(roles.properties) ? roles.properties : [];
+      properties.forEach((prop, propIndex) => {
+        if (!isObject(prop)) return;
+        for (const key of Object.keys(prop)) {
+          if (RETIRED_COMPONENT_PROPERTY_KEYS.has(key)) {
+            throw new Error(`patch.component_sources[${index}].roles.properties[${propIndex}].${key} is retired; use field_key`);
+          }
+        }
+      });
+      const touchesField = properties.some((prop) => prop?.field_key === fieldKey);
       if (!touchesField) {
         throw new Error(`patch.component_sources[${index}] must identify ${fieldKey} as a component property`);
       }
@@ -230,11 +295,11 @@ function mergeJson(base, patch) {
 }
 
 function componentKey(row) {
-  return row?.component_type || row?.type || '';
+  return row?.component_type || '';
 }
 
 function propertyKey(row) {
-  return row?.field_key || row?.key || '';
+  return row?.field_key || '';
 }
 
 function jsonChanged(before, after) {
@@ -285,6 +350,127 @@ function componentSourceByType(map, type) {
 function componentPropertyByKey(row, fieldKey) {
   const properties = Array.isArray(row?.roles?.properties) ? row.roles.properties : [];
   return properties.find((prop) => propertyKey(prop) === fieldKey);
+}
+
+function enumSourceForRule(rule, fieldKey = '') {
+  if (!isObject(rule)) return '';
+  if (typeof rule.enum?.source === 'string') return rule.enum.source;
+  if (typeof rule.enum_source === 'string') return rule.enum_source;
+  if (isObject(rule.enum_source) && rule.enum_source.type === 'component_db') {
+    const ref = normalizeFieldKey(rule.enum_source.ref || '');
+    return ref ? `component_db.${ref}` : '';
+  }
+  if (isObject(rule.component) && typeof rule.component.source === 'string' && rule.component.source.startsWith('component_db.')) {
+    return rule.component.source;
+  }
+  const normalizedFieldKey = normalizeFieldKey(fieldKey || rule.field_key || rule.key || '');
+  const inferredComponentType = normalizeFieldKey(
+    rule.field_studio_hints?.component_db
+    || rule.parse?.component_type
+    || rule.parse_rules?.component_type
+    || '',
+  );
+  if (normalizedFieldKey && inferredComponentType && inferredComponentType === normalizedFieldKey) {
+    return `component_db.${inferredComponentType}`;
+  }
+  return '';
+}
+
+function buildFieldKeySet(map) {
+  const keys = new Set();
+  for (const key of Array.isArray(map?.selected_keys) ? map.selected_keys : []) {
+    const normalized = normalizeFieldKey(key);
+    if (normalized) keys.add(normalized);
+  }
+  for (const key of Object.keys(isObject(map?.field_overrides) ? map.field_overrides : {})) {
+    const normalized = normalizeFieldKey(key);
+    if (normalized) keys.add(normalized);
+  }
+  return keys;
+}
+
+function validateLinkedPatchReferences(map) {
+  const errors = [];
+  const dataListFields = new Set((Array.isArray(map?.data_lists) ? map.data_lists : [])
+    .map((row) => normalizeFieldKey(row?.field))
+    .filter(Boolean));
+  const componentTypes = new Set((Array.isArray(map?.component_sources) ? map.component_sources : [])
+    .map((row) => normalizeFieldKey(componentKey(row)))
+    .filter(Boolean));
+  const fieldOverrides = isObject(map?.field_overrides) ? map.field_overrides : {};
+  const knownFieldKeys = buildFieldKeySet(map);
+  const shouldValidatePropertyFields = knownFieldKeys.size > 0;
+
+  for (const [fieldKeyRaw, rule] of Object.entries(fieldOverrides)) {
+    const fieldKey = normalizeFieldKey(fieldKeyRaw);
+    const source = enumSourceForRule(rule, fieldKey);
+    if (source.startsWith('data_lists.')) {
+      const ref = normalizeFieldKey(source.slice('data_lists.'.length));
+      if (ref && !dataListFields.has(ref)) {
+        errors.push(`field_overrides.${fieldKey}.enum.source references data_lists.${ref} but no data_lists row with field "${ref}" exists after import`);
+      }
+    }
+    if (source.startsWith('component_db.')) {
+      const ref = normalizeFieldKey(source.slice('component_db.'.length));
+      if (ref && ref !== fieldKey) {
+        errors.push(`field_overrides.${fieldKey}.enum.source = component_db.${ref} must self-lock to component_db.${fieldKey}`);
+      }
+      if (ref && !componentTypes.has(ref)) {
+        errors.push(`field_overrides.${fieldKey}.enum.source references component_db.${ref} but no component_sources row for "${ref}" exists after import`);
+      }
+    }
+  }
+
+  for (const row of Array.isArray(map?.component_sources) ? map.component_sources : []) {
+    const type = normalizeFieldKey(componentKey(row));
+    if (!type) continue;
+    const parentSource = enumSourceForRule(fieldOverrides[type], type);
+    if (parentSource !== `component_db.${type}`) {
+      errors.push(`component_sources[${type}]: matching field_overrides.${type}.enum.source must be "component_db.${type}"`);
+    }
+    const properties = Array.isArray(row?.roles?.properties) ? row.roles.properties : [];
+    for (const property of properties) {
+      if (property?.component_only === true) continue;
+      const key = normalizeFieldKey(propertyKey(property));
+      if (!key) continue;
+      if (shouldValidatePropertyFields && !knownFieldKeys.has(key)) {
+        errors.push(`component_sources[${type}].roles.properties.${key}: no selected key or field_overrides entry exists after import`);
+      }
+    }
+  }
+
+  return { errors, warnings: [] };
+}
+
+function validatePatchedFieldStudioMap({ category, patched, validateFieldStudioMap }) {
+  const validation = typeof validateFieldStudioMap === 'function'
+    ? validateFieldStudioMap(patched, { category })
+    : { valid: true, errors: [], warnings: [], normalized: patched };
+  const normalized = isObject(validation?.normalized) ? validation.normalized : patched;
+  const linkedValidation = validateLinkedPatchReferences(normalized);
+  const errors = [
+    ...(Array.isArray(validation?.errors) ? validation.errors : []),
+    ...linkedValidation.errors,
+  ];
+  const warnings = [
+    ...(Array.isArray(validation?.warnings) ? validation.warnings : []),
+    ...linkedValidation.warnings,
+  ];
+  const valid = validation?.valid !== false && errors.length === 0;
+
+  return {
+    valid,
+    errors,
+    warnings,
+    normalized,
+    validation: {
+      ...(isObject(validation) ? validation : {}),
+      valid,
+      errors,
+      warnings,
+      normalized,
+    },
+  };
 }
 
 export function buildFieldStudioPatchChangeLog({ before, after, patchDocs }) {
@@ -498,19 +684,17 @@ export function previewFieldStudioPatchDocuments({
 
   const before = cloneJson(fieldStudioMap || {});
   const patched = applyFieldStudioPatchDocuments(before, docs);
-  const validation = typeof validateFieldStudioMap === 'function'
-    ? validateFieldStudioMap(patched, { category })
-    : { valid: true, errors: [], warnings: [], normalized: patched };
-  const normalized = isObject(validation?.normalized) ? validation.normalized : patched;
+  const validationResult = validatePatchedFieldStudioMap({ category, patched, validateFieldStudioMap });
+  const normalized = validationResult.normalized;
 
   return {
     category,
-    valid: validation?.valid !== false,
+    valid: validationResult.valid,
     files: docs.map(patchFileSummary),
     changes: buildFieldStudioPatchChangeLog({ before, after: normalized, patchDocs: docs }),
-    errors: Array.isArray(validation?.errors) ? validation.errors : [],
-    warnings: Array.isArray(validation?.warnings) ? validation.warnings : [],
-    validation,
+    errors: validationResult.errors,
+    warnings: validationResult.warnings,
+    validation: validationResult.validation,
     fieldStudioMap: normalized,
   };
 }
@@ -575,11 +759,9 @@ export async function importFieldStudioPatchDirectory({
 }) {
   const docs = await loadFieldStudioPatchDocuments({ category, inputDir });
   const patched = applyFieldStudioPatchDocuments(fieldStudioMap, docs);
-  const validation = typeof validateFieldStudioMap === 'function'
-    ? validateFieldStudioMap(patched, { category })
-    : { valid: true, errors: [], warnings: [], normalized: patched };
-  if (validation?.valid === false) {
-    const details = Array.isArray(validation.errors) ? validation.errors.join('; ') : 'unknown validation error';
+  const validationResult = validatePatchedFieldStudioMap({ category, patched, validateFieldStudioMap });
+  if (!validationResult.valid) {
+    const details = validationResult.errors.length > 0 ? validationResult.errors.join('; ') : 'unknown validation error';
     throw new Error(`patched field_studio_map failed validation: ${details}`);
   }
   return {
@@ -591,7 +773,7 @@ export async function importFieldStudioPatchDirectory({
       navigatorOrdinal: doc.navigator_ordinal ?? null,
       verdict: doc.verdict,
     })),
-    fieldStudioMap: isObject(validation?.normalized) ? validation.normalized : patched,
-    validation,
+    fieldStudioMap: validationResult.normalized,
+    validation: validationResult.validation,
   };
 }

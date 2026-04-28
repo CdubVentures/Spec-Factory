@@ -7,9 +7,9 @@ import { useUiCategoryStore } from '../../stores/uiCategoryStore.ts';
 import { useComponentReviewStore } from '../../stores/componentReviewStore.ts';
 import { useEnumReviewData } from './useEnumReviewData.ts';
 import { MetricRow } from '../../shared/ui/data-display/MetricRow.tsx';
-import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { ComponentSubTab } from './ComponentSubTab.tsx';
 import { EnumSubTab } from './EnumSubTab.tsx';
+import { ComponentReviewContentSkeleton, ComponentReviewPageSkeleton } from './ComponentReviewPageSkeleton.tsx';
 import { pct } from '../../utils/formatting.ts';
 import type { ComponentReviewLayout, ComponentReviewPayload } from '../../types/componentReview.ts';
 
@@ -99,7 +99,7 @@ export function ComponentReviewPage() {
     return null;
   }, [activeSubTab, componentData, enumDataFromStore]);
 
-  if (layoutLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
+  if (layoutLoading) return <ComponentReviewPageSkeleton category={category} />;
   if (!layout || layout.types.length === 0) {
     return <p className="sf-text-muted mt-8 text-center">No component data found. Run a compile first.</p>;
   }
@@ -147,7 +147,9 @@ export function ComponentReviewPage() {
       </div>
 
       {/* Content */}
-      {isLoading && <Spinner className="h-6 w-6 mx-auto mt-8" />}
+      {isLoading && (
+        <ComponentReviewContentSkeleton mode={activeSubTab === 'enums' ? 'enums' : 'components'} />
+      )}
 
       {!isLoading && activeSubTab === 'enums' && enumDataFromStore && (
         <EnumSubTab

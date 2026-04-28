@@ -8,7 +8,7 @@
 import { useMemo } from 'react';
 import { useProductHistoryQuery } from '../api/productHistoryQuery.ts';
 import { Sparkline } from '../../runtime-ops/components/Sparkline.tsx';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { ProductHistoryKpiLoadingSkeleton } from './ProductHistoryLoadingSkeleton.tsx';
 import { parseBackendMs } from '../../../utils/dateTime.ts';
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import type { ProductHistoryResponse, ProductHistoryRunRow } from '../types.ts';
@@ -91,9 +91,7 @@ export function ProductHistoryKpiRow({ productId, category }: ProductHistoryKpiR
   }), [data?.runs]);
 
   if (!productId) return null;
-  if (isLoading) return (
-    <div className="flex items-center justify-center py-6"><Spinner /></div>
-  );
+  if (isLoading) return <ProductHistoryKpiLoadingSkeleton />;
 
   const agg = data?.aggregate ?? EMPTY_AGG;
 

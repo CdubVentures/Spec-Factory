@@ -16,7 +16,7 @@ import { OverviewTab } from '../panels/overview/OverviewTab.tsx';
 import { WorkersTab } from '../panels/workers/WorkersTab.tsx';
 import { DocumentsTab } from '../panels/overview/DocumentsTab.tsx';
 import { RuntimeOpsRunPicker } from './RuntimeOpsRunPicker.tsx';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { RuntimeOpsLoadingSkeleton } from './RuntimeOpsLoadingSkeleton.tsx';
 import type {
   RuntimeOpsTab,
   RuntimeOpsSummaryResponse,
@@ -349,7 +349,7 @@ export function RuntimeOpsPage() {
 
         <div className="flex flex-1 min-h-0 min-w-0 flex-col">
           {showRunsLoadingState ? (
-            <Spinner className="h-8 w-8 mx-auto mt-12" />
+            <RuntimeOpsLoadingSkeleton />
           ) : showNoRunsState ? (
             <div className="flex flex-col items-center justify-center flex-1 gap-4 p-8">
               <div className="text-4xl opacity-30">{`\u2699\uFE0F`}</div>

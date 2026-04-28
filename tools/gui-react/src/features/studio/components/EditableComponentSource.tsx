@@ -1,7 +1,6 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import { usePersistedToggle } from "../../../stores/collapseStore.ts";
 import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
-import { TagPicker } from "../../../shared/ui/forms/TagPicker.tsx";
 import { StaticBadges } from "./StaticBadges.tsx";
 import {
   normalizeAiAssistConfig,
@@ -26,7 +25,6 @@ import type {
   AiAssistConfig,
 } from "../../../types/studio.ts";
 import { btnDanger } from "./studioSharedTypes.ts";
-import type { RoleId } from "./studioSharedTypes.ts";
 
 export interface EditableComponentSourceProps {
   index: number;
@@ -44,10 +42,6 @@ export interface EditableComponentSourceProps {
   // calls that auto-link the matching field rule (`enum.source = component_db.<new>`)
   // and unlock the OLD key (`enum.source = ''`) so Phase 3's lock contract holds.
   onComponentTypeChange?: (oldType: string, newType: string) => void;
-  // WHY: parent gates its global Save button when any expanded row is
-  // form-invalid (e.g. mode=sheet + empty sheet name). Prevents 400s from the
-  // compile pipeline.
-  onValidityChange?: (invalid: boolean) => void;
 }
 
 export function EditableComponentSource({
@@ -60,26 +54,12 @@ export function EditableComponentSource({
   knownValues,
   lockedComponentKeys = [],
   onComponentTypeChange,
-  onValidityChange,
 }: EditableComponentSourceProps) {
   const roles = source.roles || {
-    maker: "",
-    aliases: [],
-    links: [],
     properties: [],
   };
   const sourcePriority = normalizePriorityProfile(source.priority);
   const sourceAiAssist = normalizeAiAssistConfig(source.ai_assist);
-  const [activeRoles, setActiveRoles] = useState<Set<RoleId>>(() => {
-    const set = new Set<RoleId>();
-    if (roles.maker) set.add("maker");
-    if (Array.isArray(roles.aliases) && roles.aliases.length > 0)
-      set.add("aliases");
-    if (Array.isArray(roles.links) && roles.links.length > 0) set.add("links");
-    if (Array.isArray(roles.properties) && roles.properties.length > 0)
-      set.add("properties");
-    return set;
-  });
 
   const [propertyRows, setPropertyRows] = useState<PropertyMapping[]>(() => {
     if (!Array.isArray(roles.properties)) return [];
@@ -88,13 +68,9 @@ export function EditableComponentSource({
     );
   });
   const [pendingFieldKey, setPendingFieldKey] = useState("");
-  const csKey = source.component_type || source.type || `idx-${index}`;
+  const csKey = source.component_type || `idx-${index}`;
   const [showAiSections, toggleCsAiSections] = usePersistedToggle(
     `studio:compSource:${csKey}:ai`,
-    false,
-  );
-  const [showTrackedRoles, toggleTrackedRoles] = usePersistedToggle(
-    `studio:compSource:${csKey}:roles`,
     false,
   );
   const [showAttributes, toggleAttributes] = usePersistedToggle(
@@ -105,21 +81,11 @@ export function EditableComponentSource({
   // Phase 3: strict Component Type select. Options come from available
   // field keys, excluding rows already locked by another component_sources[]
   // entry. Self stays selectable when editing an existing row.
-  const compType = source.component_type || source.type || "";
+  const compType = source.component_type || "";
   const availableComponentTypeOptions = useMemo(() => {
     const lockedSet = new Set(lockedComponentKeys.filter((k) => k && k !== compType));
     return fieldOrder.filter((key) => !key.startsWith("__grp::") && !lockedSet.has(key));
   }, [fieldOrder, lockedComponentKeys, compType]);
-
-  // Phase 3: sheet-required gate. Default mode='sheet' + sheet=''; fire
-  // onValidityChange so MappingStudioTab can disable Save while invalid.
-  const sourceMeta = source as Record<string, unknown>;
-  const mode = String(sourceMeta.mode ?? "sheet");
-  const sheet = String(sourceMeta.sheet ?? "");
-  const sheetMissing = mode === "sheet" && sheet.trim().length === 0;
-  useEffect(() => {
-    onValidityChange?.(sheetMissing);
-  }, [sheetMissing, onValidityChange]);
 
   // Group field keys by ui.group for the field key picker
   const fieldKeyGroups = useMemo(() => {
@@ -228,13 +194,29 @@ export function EditableComponentSource({
   }
 
   function selectFieldKey(pidx: number, fieldKey: string) {
-    updatePropertyField(pidx, { field_key: fieldKey });
+    const info = fieldKey ? getInheritedInfo(fieldKey) : null;
+    const propertyType = ["string", "number", "integer"].includes(info?.type || "")
+      ? (info!.type as PropertyMapping["type"])
+      : "string";
+    updatePropertyField(pidx, {
+      field_key: fieldKey,
+      type: propertyType,
+      unit: info?.unit,
+      constraints: info?.constraints,
+    });
   }
 
   function addPropertyFromFieldKey(fieldKey: string) {
     if (propertyRows.some((r) => r.field_key === fieldKey)) return;
+    const info = getInheritedInfo(fieldKey);
+    const propertyType = ["string", "number", "integer"].includes(info.type)
+      ? (info.type as PropertyMapping["type"])
+      : "string";
     const newRow: PropertyMapping = {
       field_key: fieldKey,
+      type: propertyType,
+      unit: info.unit,
+      constraints: info.constraints,
       variance_policy: "authoritative",
       tolerance: null,
     };
@@ -249,12 +231,8 @@ export function EditableComponentSource({
   );
   const [confirmingRemove, setConfirmingRemove] = useState(false);
   const sourceTitle = compType ? displayLabel(compType) : `Source ${index + 1}`;
-  const trackedRoleCount = ["maker", "aliases", "links"].filter((role) =>
-    activeRoles.has(role as RoleId),
-  ).length;
   const componentSummary = [
     `${propertyRows.length} attribute${propertyRows.length !== 1 ? "s" : ""}`,
-    `${trackedRoleCount} tracked role${trackedRoleCount !== 1 ? "s" : ""}`,
   ];
 
   if (!expanded) {
@@ -390,7 +368,7 @@ export function EditableComponentSource({
           onChange={(e) => {
             const v = e.target.value;
             if (v === compType) return;
-            onUpdate({ component_type: v, type: v });
+            onUpdate({ component_type: v });
             onComponentTypeChange?.(compType, v);
           }}
         >
@@ -402,37 +380,6 @@ export function EditableComponentSource({
           ))}
         </select>
       </div>
-
-      {/* Sheet config — required when mode=sheet (default). Inline gate
-          prevents the compile-pipeline 400 (sheet is required when mode=sheet). */}
-      <div className="mb-3 grid grid-cols-3 gap-3">
-        <div>
-          <div className={labelCls}>Mode</div>
-          <select
-            className={`${selectCls} w-full`}
-            value={mode}
-            onChange={(e) => onUpdate({ mode: e.target.value })}
-          >
-            <option value="sheet">sheet</option>
-            <option value="scratch">scratch</option>
-          </select>
-        </div>
-        <div className="col-span-2">
-          <div className={labelCls}>Sheet name</div>
-          <input
-            className={`${inputCls} w-full ${sheetMissing ? "sf-border-danger" : ""}`}
-            value={sheet}
-            onChange={(e) => onUpdate({ sheet: e.target.value })}
-            placeholder="e.g. Sensors"
-            disabled={mode !== "sheet"}
-          />
-        </div>
-      </div>
-      {sheetMissing ? (
-        <div className="mb-3 px-3 py-2 rounded sf-callout sf-callout-danger text-[11px]">
-          Sheet name is required when mode=sheet &mdash; enter a sheet name to enable save.
-        </div>
-      ) : null}
 
       {/* Component-level full review priority */}
       <button
@@ -566,120 +513,8 @@ export function EditableComponentSource({
             );
           })()}
 
-      {/* Tracked Roles */}
       <div className="border-t sf-border-default pt-3">
-        <button
-          type="button"
-          onClick={() => toggleTrackedRoles()}
-          className="w-full flex items-center justify-between gap-2 mb-2"
-        >
-          <span className="flex items-center gap-2">
-            <span className="inline-flex items-center justify-center w-5 h-5 border sf-border-soft rounded text-xs font-medium sf-text-muted">
-              {showTrackedRoles ? "-" : "+"}
-            </span>
-            <span className="text-xs font-semibold sf-text-muted">
-              Tracked Roles
-            </span>
-          </span>
-          <span className="text-[10px] sf-text-subtle">
-            {trackedRoleCount} tracked roles
-          </span>
-        </button>
-        {showTrackedRoles ? (
           <div className="space-y-2">
-            <div className="flex flex-wrap gap-2">
-              {(
-                [
-                  { id: "name" as const, label: "Name", alwaysOn: true },
-                  {
-                    id: "maker" as const,
-                    label: "Maker (Brand)",
-                    alwaysOn: false,
-                  },
-                  { id: "aliases" as const, label: "Aliases", alwaysOn: false },
-                  {
-                    id: "links" as const,
-                    label: "Links (URLs)",
-                    alwaysOn: false,
-                  },
-                ] as const
-              ).map((role) => {
-                const isOn =
-                  role.alwaysOn ||
-                  (role.id === "maker"
-                    ? activeRoles.has("maker")
-                    : role.id === "aliases"
-                      ? activeRoles.has("aliases")
-                      : activeRoles.has("links"));
-                return (
-                  <button
-                    key={role.id}
-                    disabled={role.alwaysOn}
-                    className={`px-3 py-1.5 text-xs font-medium rounded border transition-colors ${
-                      isOn
-                        ? "sf-chip-success"
-                        : "sf-bg-surface-soft-strong sf-dk-surface-800 sf-text-muted sf-border-soft sf-hover-surface-soft-200 sf-dk-hover-surface-700"
-                    } ${role.alwaysOn ? "cursor-default opacity-80" : ""}`}
-                    onClick={() => {
-                      if (role.alwaysOn) return;
-                      const next = new Set(activeRoles);
-                      if (role.id === "maker") {
-                        if (next.has("maker")) {
-                          next.delete("maker");
-                          updateRoles({ maker: "" });
-                        } else {
-                          next.add("maker");
-                          updateRoles({ maker: "yes" });
-                        }
-                      } else if (role.id === "aliases") {
-                        if (next.has("aliases")) {
-                          next.delete("aliases");
-                          updateRoles({ aliases: [] });
-                        } else {
-                          next.add("aliases");
-                        }
-                      } else if (role.id === "links") {
-                        if (next.has("links")) {
-                          next.delete("links");
-                          updateRoles({ links: [] });
-                        } else {
-                          next.add("links");
-                        }
-                      }
-                      setActiveRoles(next);
-                    }}
-                  >
-                    {role.label}
-                  </button>
-                );
-              })}
-            </div>
-            <div className="text-[10px] sf-text-subtle mb-3">
-              All tracked roles use{" "}
-              <span className="font-semibold sf-text-muted">Authoritative</span>{" "}
-              variance policy
-            </div>
-
-            {/* Alias values — shown when aliases role is active */}
-            {activeRoles.has("aliases") ? (
-              <div className="mb-4 border sf-border-default rounded p-3 sf-bg-surface-soft sf-dk-surface-900a20">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className={labelCls}>Alias Values</div>
-                </div>
-                <TagPicker
-                  values={
-                    Array.isArray(roles.aliases)
-                      ? roles.aliases.filter(
-                          (a) => a.length > 1 || !/^[A-Z]$/.test(a),
-                        )
-                      : []
-                  }
-                  onChange={(v) => updateRoles({ aliases: v })}
-                  placeholder="Type an alias and press Enter..."
-                />
-              </div>
-            ) : null}
-
             {/* Attributes (Properties) */}
             <button
               type="button"
@@ -1170,16 +1005,12 @@ export function EditableComponentSource({
               </div>
             ) : null}
           </div>
-        ) : null}
 
         {/* Summary line */}
         <div className="mt-3 text-xs sf-text-subtle flex flex-wrap gap-1.5">
           <span className="px-1.5 py-0.5 rounded sf-chip-success">
             {propertyRows.length} attribute
             {propertyRows.length !== 1 ? "s" : ""}
-          </span>
-          <span className="px-1.5 py-0.5 rounded sf-chip-info">
-            {trackedRoleCount} tracked role{trackedRoleCount !== 1 ? "s" : ""}
           </span>
         </div>
       </div>

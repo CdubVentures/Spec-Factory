@@ -97,26 +97,50 @@ describe('createFinderSqlStore — generic SQL store', () => {
     assert.deepEqual(runs[0].selected, { items: ['a'] });
   });
 
-  it('insertRun rejects duplicate run_number instead of replacing history', () => {
+  it('listRunsByCategory returns runs across products in product/run order', () => {
+    store.insertRun({
+      category: 'cat', product_id: 'p-list-b', run_number: 2,
+      ran_at: '2026-04-03', model: 'gpt', fallback_used: false,
+      selected: {}, prompt: {}, response: {},
+    });
+    store.insertRun({
+      category: 'cat', product_id: 'p-list-a', run_number: 1,
+      ran_at: '2026-04-01', model: 'gpt', fallback_used: false,
+      selected: {}, prompt: {}, response: {},
+    });
+    store.insertRun({
+      category: 'cat', product_id: 'p-list-b', run_number: 1,
+      ran_at: '2026-04-02', model: 'gpt', fallback_used: false,
+      selected: {}, prompt: {}, response: {},
+    });
+
+    const rows = store.listRunsByCategory('cat')
+      .filter((row) => row.product_id.startsWith('p-list-'));
+
+    assert.deepEqual(
+      rows.map((row) => `${row.product_id}:${row.run_number}`),
+      ['p-list-a:1', 'p-list-b:1', 'p-list-b:2'],
+    );
+  });
+
+  it('insertRun upserts duplicate run_number with the latest run payload', () => {
     store.insertRun({
       category: 'cat', product_id: 'p-dup', run_number: 1,
       ran_at: '2026-04-01', model: 'first', fallback_used: false,
       selected: { items: ['first'] }, prompt: { system: 'first' }, response: { items: ['first'] },
     });
-
-    assert.throws(
-      () => store.insertRun({
-        category: 'cat', product_id: 'p-dup', run_number: 1,
-        ran_at: '2026-04-02', model: 'second', fallback_used: true,
-        selected: { items: ['second'] }, prompt: { system: 'second' }, response: { items: ['second'] },
-      }),
-      /UNIQUE constraint failed/,
-    );
+    store.insertRun({
+      category: 'cat', product_id: 'p-dup', run_number: 1,
+      ran_at: '2026-04-02', model: 'second', fallback_used: true,
+      selected: { items: ['second'] }, prompt: { system: 'second' }, response: { items: ['second'] },
+    });
 
     const runs = store.listRuns('p-dup');
     assert.equal(runs.length, 1);
-    assert.equal(runs[0].model, 'first');
-    assert.deepEqual(runs[0].selected, { items: ['first'] });
+    assert.equal(runs[0].model, 'second');
+    assert.equal(runs[0].fallback_used, true);
+    assert.equal(runs[0].ran_at, '2026-04-02');
+    assert.deepEqual(runs[0].selected, { items: ['second'] });
   });
 
   // WHY: Global guardrail — every finder's insertRun routes through this

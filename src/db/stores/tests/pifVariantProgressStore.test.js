@@ -44,6 +44,15 @@ function makeStore(db, category = 'mouse') {
         WHERE category = ? AND product_id = ?
         ORDER BY variant_key`
     ),
+    _listPifVariantProgressByCategory: db.prepare(
+      `SELECT product_id, variant_id, variant_key,
+              priority_filled, priority_total,
+              loop_filled, loop_total,
+              hero_filled, hero_target, image_count, updated_at
+         FROM pif_variant_progress
+        WHERE category = ?
+        ORDER BY product_id, variant_key`
+    ),
     _deletePifVariantProgressByProduct: db.prepare(
       'DELETE FROM pif_variant_progress WHERE category = ? AND product_id = ?'
     ),
@@ -122,6 +131,22 @@ test('listByProduct sorts by variant_key ascending', () => {
   store.upsert({ productId: 'p', variantId: 'v_2', variantKey: 'color:blue',  priorityFilled: 0, priorityTotal: 3, heroFilled: 0, heroTarget: 1 });
   const rows = store.listByProduct('p');
   assert.deepEqual(rows.map(r => r.variant_key), ['color:black', 'color:blue', 'color:red']);
+  db.close();
+});
+
+test('listByCategory returns rows across products sorted by product then variant key', () => {
+  const db = createTestDb();
+  const store = makeStore(db);
+  store.upsert({ productId: 'p2', variantId: 'v_3', variantKey: 'color:red', priorityFilled: 0, priorityTotal: 3, heroFilled: 0, heroTarget: 1, imageCount: 3 });
+  store.upsert({ productId: 'p1', variantId: 'v_1', variantKey: 'color:black', priorityFilled: 0, priorityTotal: 3, heroFilled: 0, heroTarget: 1, imageCount: 1 });
+  store.upsert({ productId: 'p2', variantId: 'v_2', variantKey: 'color:blue', priorityFilled: 0, priorityTotal: 3, heroFilled: 0, heroTarget: 1, imageCount: 2 });
+
+  const rows = store.listByCategory();
+
+  assert.deepEqual(
+    rows.map((row) => `${row.product_id}:${row.variant_key}:${row.image_count}`),
+    ['p1:color:black:0', 'p2:color:blue:0', 'p2:color:red:0'],
+  );
   db.close();
 });
 

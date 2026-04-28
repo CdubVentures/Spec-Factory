@@ -5,7 +5,6 @@ import {
   CATEGORY,
   buildComponentReviewLayout,
   createComponentRowHarness,
-  upsertComponentLane,
 } from './helpers/componentReviewRowHarness.js';
 
 function buildSensorFieldRules() {
@@ -45,13 +44,28 @@ function buildSensorFieldRules() {
 }
 
 function seedBlankPropertyLane(specDb) {
-  upsertComponentLane(specDb, {
+  specDb.upsertComponentIdentity({
+    componentType: 'sensor',
+    canonicalName: 'PAW3950',
+    maker: 'PixArt',
+    links: ['https://pixart.example/paw3950'],
+    source: 'component_db',
+  });
+  specDb.upsertComponentValue({
     componentType: 'sensor',
     componentName: 'PAW3950',
     componentMaker: 'PixArt',
     propertyKey: 'dpi_max',
     value: '35000',
     variancePolicy: 'upper_bound',
+  });
+  specDb.upsertComponentValue({
+    componentType: 'sensor',
+    componentName: 'PAW3950',
+    componentMaker: 'PixArt',
+    propertyKey: 'legacy_observed_only',
+    value: 'stale',
+    variancePolicy: 'authoritative',
   });
 }
 
@@ -68,5 +82,5 @@ test('component layout keeps contract-declared property columns when component v
   const sensorType = (layout.types || []).find((type) => type.type === 'sensor');
 
   assert.ok(sensorType, 'expected sensor component type in layout');
-  assert.ok((sensorType.property_columns || []).includes('ips'));
+  assert.deepEqual(sensorType.property_columns || [], ['dpi_max', 'ips']);
 });

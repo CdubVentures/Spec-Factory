@@ -38,6 +38,9 @@ export {
 
 // Component-lock contract (self-lock via enum.source = component_db.<self>).
 export {
+  getComponentIdentityProjectionLock,
+  getComponentLockKind,
+  isComponentIdentityProjectionLocked,
   isComponentLockEditablePath,
   isComponentLocked,
   sanitizeComponentLockedOverrides,

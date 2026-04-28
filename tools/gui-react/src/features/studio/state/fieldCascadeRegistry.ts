@@ -96,6 +96,22 @@ export const CASCADE_RULES: Record<string, CascadeRule[]> = {
     },
   ],
 
+  'enum.policy': [
+    {
+      // WHY: open enums accept arbitrary values, so they must not carry a
+      // known-list source. component_db sources are preserved and repaired by
+      // the invariant layer because component identity keys cannot be open.
+      when: (_old, new_) => new_ === 'open',
+      effects: [
+        {
+          path: 'enum.source',
+          action: 'clear-if',
+          condition: (rule) => !strN(rule, 'enum.source').startsWith('component_db.'),
+        },
+      ],
+    },
+  ],
+
   'priority.required_level': [
     {
       // WHY: identity/required fields must have at least 1 evidence ref

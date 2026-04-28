@@ -261,6 +261,7 @@ export async function generatePerKeyDocs({
       allKeyRecords: reportData.keys || [],
       groups: reportData.groups || [],
       componentInventory: reportData.components || [],
+      componentSources: reportData.componentSources || [],
       preview,
       navigatorOrdinal: navigatorOrdinals.get(fieldKey) || ordinal,
     });

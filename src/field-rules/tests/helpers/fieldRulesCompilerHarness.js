@@ -41,7 +41,6 @@ export function buildMouseWorkbookMap(workbookPath) {
       deep_fields: ['release_date'],
     },
     enum_lists: [],
-    component_sheets: [],
     field_overrides: {},
     selected_keys: [
       'brand',

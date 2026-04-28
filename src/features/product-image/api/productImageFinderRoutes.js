@@ -911,7 +911,13 @@ export function registerProductImageFinderRoutes(ctx) {
         event: 'product-image-finder-image-processed',
         category,
         entities: { productIds: [productId] },
-        meta: { productId, filename: masterFilename, bg_removed: result.bg_removed },
+        meta: {
+          productId,
+          filename: masterFilename,
+          bg_removed: result.bg_removed,
+          operationId: op.id,
+          operationStatus: 'done',
+        },
       });
 
       return jsonRes(res, 200, { ok: true, ...result, filename: masterFilename, original_filename: originalFilename });

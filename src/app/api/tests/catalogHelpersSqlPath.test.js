@@ -23,26 +23,64 @@ function createMockSpecDb({
   resolvedByPidField = {},
   concreteByPidField = {},
   candidateReads = null,
+  projectionReads = null,
 } = {}) {
   const pif = pifSettings || {};
   const kfs = keyFinderSettings || {};
+  const countRead = (key) => {
+    if (!projectionReads) return;
+    projectionReads[key] = (projectionReads[key] || 0) + 1;
+  };
+  const fieldCandidateRowsByCategory = () =>
+    Object.entries(candidatesByPid).flatMap(([product_id, rows]) =>
+      (rows || []).map((row) => ({ product_id, ...row })));
+  const rowsByCategory = (rowsByPid) =>
+    Object.entries(rowsByPid || {}).flatMap(([product_id, rows]) =>
+      (rows || []).map((row) => ({ product_id, ...row })));
   return {
     getAllProducts: () => products,
     getProduct: (pid) => products.find((row) => row.product_id === pid) || null,
     getAllFieldCandidatesByProduct: (pid) => {
+      countRead('allCandidatesByProduct');
       if (candidateReads) candidateReads.push(pid);
       return candidatesByPid[pid] || [];
     },
+    getAllFieldCandidatesByCategory: () => {
+      countRead('allCandidatesByCategory');
+      return fieldCandidateRowsByCategory();
+    },
     getFieldCandidatesByProductAndField: (pid, fk, variantId) => {
+      countRead('fieldCandidatesByProductAndField');
       const rows = candidatesByPidField[pid]?.[fk] || [];
       if (variantId === undefined) return rows;
       return rows.filter((r) => (r.variant_id ?? null) === (variantId ?? null));
     },
     getFieldKeyOrder: () => (fieldOrderJson == null ? null : { order_json: fieldOrderJson }),
-    listColorEditionFinderRuns: (pid) => cefRunsByPid[pid] || [],
-    listPifVariantProgressByProduct: (pid) => pifProgressByPid[pid] || [],
+    listColorEditionFinderRuns: (pid) => {
+      countRead('cefRunsByProduct');
+      return cefRunsByPid[pid] || [];
+    },
+    listColorEditionFinderRunsByCategory: () => {
+      countRead('cefRunsByCategory');
+      return rowsByCategory(cefRunsByPid);
+    },
+    listPifVariantProgressByProduct: (pid) => {
+      countRead('pifProgressByProduct');
+      return pifProgressByPid[pid] || [];
+    },
+    listPifVariantProgressByCategory: () => {
+      countRead('pifProgressByCategory');
+      return rowsByCategory(pifProgressByPid);
+    },
     variants: {
-      listByProduct: (pid) => variantsByPid[pid] || [],
+      listByProduct: (pid) => {
+        countRead('variantsByProduct');
+        return variantsByPid[pid] || [];
+      },
+      listByCategory: () => {
+        countRead('variantsByCategory');
+        return rowsByCategory(variantsByPid);
+      },
     },
     getFinderStore: (moduleId) => {
       if (moduleId === 'productImageFinder') return { getSetting: (key) => pif[key] ?? null };
@@ -50,7 +88,10 @@ function createMockSpecDb({
       return null;
     },
     getCompiledRules: () => (compiledFields ? { fields: compiledFields } : null),
-    getResolvedFieldCandidate: (pid, fk) => Boolean(resolvedByPidField[pid]?.[fk]),
+    getResolvedFieldCandidate: (pid, fk) => {
+      countRead('resolvedFieldCandidate');
+      return Boolean(resolvedByPidField[pid]?.[fk]);
+    },
     // isConcreteEvidence routes through evaluateFieldBuckets → listFieldBuckets.
     // For test isolation we stub listFieldBuckets to return one "bucket" per fk
     // with a bucket-value and evidence-count that match the test fixture's
@@ -66,6 +107,28 @@ function createMockSpecDb({
       const conf = Number(hit.confidence) || 0;
       if (conf < Number(minConf || 0) * 100) return 0;
       return Number(hit.evidenceCount) || 0;
+    },
+    listFieldBucketsByCategory: () => {
+      countRead('fieldBucketsByCategory');
+      return Object.entries(concreteByPidField).flatMap(([product_id, fields]) =>
+        Object.entries(fields || {}).map(([field_key, hit]) => ({
+          product_id,
+          field_key,
+          variant_id_key: '',
+          value_fingerprint: 'fp',
+          top_confidence: hit.confidence || 0,
+        })));
+    },
+    listPooledQualifyingEvidenceCountsByCategory: () => {
+      countRead('pooledEvidenceCountsByCategory');
+      return Object.entries(concreteByPidField).flatMap(([product_id, fields]) =>
+        Object.entries(fields || {}).map(([field_key, hit]) => ({
+          product_id,
+          field_key,
+          variant_id_key: '',
+          value_fingerprint: 'fp',
+          total: hit.evidenceCount || 0,
+        })));
     },
   };
 }
@@ -437,6 +500,64 @@ test('SQL catalog builder: cefRunCount reflects listColorEditionFinderRuns lengt
   assert.equal(byPid['mouse-a'].cefRunCount, 0);
   assert.equal(byPid['mouse-b'].cefRunCount, 1);
   assert.equal(byPid['mouse-c'].cefRunCount, 3);
+});
+
+test('SQL catalog builder: full catalog uses category projections instead of per-product point reads', async () => {
+  const projectionReads = {};
+  const buildCatalog = createCatalogBuilder({
+    getSpecDb: () => createMockSpecDb({
+      products: [
+        { id: 1, product_id: 'mouse-a', brand: 'Acme', model: 'A', base_model: 'A', variant: '', identifier: '', status: 'active' },
+        { id: 2, product_id: 'mouse-b', brand: 'Beta', model: 'B', base_model: 'B', variant: '', identifier: '', status: 'active' },
+      ],
+      candidatesByPid: {
+        'mouse-a': [
+          { field_key: 'dpi_max', status: 'resolved', confidence: 90 },
+          { field_key: 'sku', variant_id: 'v_black', value: 'A-BLK', status: 'resolved', confidence: 91 },
+        ],
+        'mouse-b': [
+          { field_key: 'dpi_max', status: 'resolved', confidence: 80 },
+          { field_key: 'release_date', variant_id: 'v_white', value: '2026-01-01', status: 'resolved', confidence: 92 },
+        ],
+      },
+      fieldOrderJson: JSON.stringify(['dpi_max', 'sku', 'release_date']),
+      cefRunsByPid: {
+        'mouse-a': [{ run_number: 1 }],
+        'mouse-b': [{ run_number: 1 }, { run_number: 2 }],
+      },
+      pifProgressByPid: {
+        'mouse-a': [{ variant_id: 'v_black', variant_key: 'color:black', image_count: 3 }],
+        'mouse-b': [{ variant_id: 'v_white', variant_key: 'color:white', image_count: 4 }],
+      },
+      variantsByPid: {
+        'mouse-a': [{ variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', color_atoms: ['black'] }],
+        'mouse-b': [{ variant_id: 'v_white', variant_key: 'color:white', variant_label: 'White', color_atoms: ['white'] }],
+      },
+      projectionReads,
+    }),
+    cleanVariant,
+  });
+
+  const rows = await buildCatalog('mouse');
+  const byPid = Object.fromEntries(rows.map((row) => [row.productId, row]));
+
+  assert.equal(byPid['mouse-a'].fieldsFilled, 2);
+  assert.equal(byPid['mouse-b'].fieldsFilled, 2);
+  assert.equal(byPid['mouse-a'].cefRunCount, 1);
+  assert.equal(byPid['mouse-b'].cefRunCount, 2);
+  assert.equal(byPid['mouse-a'].pifVariants[0].image_count, 3);
+  assert.equal(byPid['mouse-b'].rdfVariants[0].value, '2026-01-01');
+
+  assert.equal(projectionReads.allCandidatesByCategory, 1);
+  assert.equal(projectionReads.variantsByCategory, 1);
+  assert.equal(projectionReads.pifProgressByCategory, 1);
+  assert.equal(projectionReads.cefRunsByCategory, 1);
+  assert.equal(projectionReads.allCandidatesByProduct || 0, 0);
+  assert.equal(projectionReads.fieldCandidatesByProductAndField || 0, 0);
+  assert.equal(projectionReads.variantsByProduct || 0, 0);
+  assert.equal(projectionReads.pifProgressByProduct || 0, 0);
+  assert.equal(projectionReads.cefRunsByProduct || 0, 0);
+  assert.equal(projectionReads.resolvedFieldCandidate || 0, 0);
 });
 
 test('SQL catalog builder: keyTierProgress buckets fields by difficulty and counts resolved', async () => {

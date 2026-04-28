@@ -30,15 +30,238 @@ function readFieldKeyOrderCount(specDb, category) {
   }
 }
 
+function productIdOf(row) {
+  return String(row?.product_id || '').trim();
+}
+
+function shouldUseCategoryProjection(productRows) {
+  return Array.isArray(productRows) && productRows.length > 1;
+}
+
+function productIdSet(productRows) {
+  return new Set((productRows || []).map(productIdOf).filter(Boolean));
+}
+
+function groupRowsByProduct(rows, allowedProductIds = null) {
+  const map = new Map();
+  for (const row of rows || []) {
+    const productId = productIdOf(row);
+    if (!productId) continue;
+    if (allowedProductIds && !allowedProductIds.has(productId)) continue;
+    if (!map.has(productId)) map.set(productId, []);
+    map.get(productId).push(row);
+  }
+  return map;
+}
+
+function buildCandidatesByProduct(specDb, productRows) {
+  if (
+    !shouldUseCategoryProjection(productRows)
+    || typeof specDb?.getAllFieldCandidatesByCategory !== 'function'
+  ) {
+    return null;
+  }
+  return groupRowsByProduct(
+    specDb.getAllFieldCandidatesByCategory() || [],
+    productIdSet(productRows),
+  );
+}
+
+function buildVariantsByProduct(specDb, productRows) {
+  if (
+    !shouldUseCategoryProjection(productRows)
+    || typeof specDb?.variants?.listByCategory !== 'function'
+  ) {
+    return null;
+  }
+  return groupRowsByProduct(
+    specDb.variants.listByCategory() || [],
+    productIdSet(productRows),
+  );
+}
+
+function buildPifProgressByProduct(specDb, productRows) {
+  if (
+    !shouldUseCategoryProjection(productRows)
+    || typeof specDb?.listPifVariantProgressByCategory !== 'function'
+  ) {
+    return null;
+  }
+  return groupRowsByProduct(
+    specDb.listPifVariantProgressByCategory() || [],
+    productIdSet(productRows),
+  );
+}
+
+function buildCefRunCountsByProduct(specDb, category, productRows) {
+  if (
+    !shouldUseCategoryProjection(productRows)
+    || typeof specDb?.listColorEditionFinderRunsByCategory !== 'function'
+  ) {
+    return null;
+  }
+  const counts = new Map();
+  const allowedProductIds = productIdSet(productRows);
+  for (const row of specDb.listColorEditionFinderRunsByCategory(category) || []) {
+    const productId = productIdOf(row);
+    if (!productId || !allowedProductIds.has(productId)) continue;
+    counts.set(productId, (counts.get(productId) || 0) + 1);
+  }
+  return counts;
+}
+
+function buildResolvedFieldKeysByProduct(candidatesByProduct) {
+  if (!candidatesByProduct) return null;
+  const map = new Map();
+  for (const [productId, candidates] of candidatesByProduct.entries()) {
+    const fieldKeys = new Set(
+      candidates
+        .filter((candidate) => String(candidate.status || '').trim() === 'resolved')
+        .map((candidate) => String(candidate.field_key || '').trim())
+        .filter(Boolean),
+    );
+    map.set(productId, fieldKeys);
+  }
+  return map;
+}
+
+function evidenceBucketKey(row) {
+  return [
+    String(row?.product_id || ''),
+    String(row?.field_key || ''),
+    String(row?.variant_id_key ?? ''),
+    String(row?.value_fingerprint ?? ''),
+  ].join('\u0000');
+}
+
+function normalizedConfidencePasses(value, threshold) {
+  const raw = Number(value || 0);
+  const normalized = raw > 1 ? raw / 100 : raw;
+  return normalized >= Number(threshold || 0);
+}
+
+function buildConcreteFieldKeysByProduct(specDb, gateKnobs, productRows) {
+  const gateActive = gateKnobs.excludeConf > 0 && gateKnobs.excludeEvd > 0;
+  if (
+    !gateActive
+    || !shouldUseCategoryProjection(productRows)
+    || typeof specDb?.listFieldBucketsByCategory !== 'function'
+    || typeof specDb?.listPooledQualifyingEvidenceCountsByCategory !== 'function'
+  ) {
+    return null;
+  }
+
+  const threshold = Number(gateKnobs.excludeConf) / 100;
+  const required = Math.floor(Number(gateKnobs.excludeEvd) || 0);
+  const allowedProductIds = productIdSet(productRows);
+  const countsByBucket = new Map();
+  for (const row of specDb.listPooledQualifyingEvidenceCountsByCategory({ minConfidence: threshold }) || []) {
+    countsByBucket.set(evidenceBucketKey(row), Number(row.total || 0));
+  }
+
+  const map = new Map();
+  for (const bucket of specDb.listFieldBucketsByCategory() || []) {
+    const productId = productIdOf(bucket);
+    const fieldKey = String(bucket.field_key || '').trim();
+    if (!productId || !fieldKey || !allowedProductIds.has(productId)) continue;
+    if (!normalizedConfidencePasses(bucket.top_confidence, threshold)) continue;
+    if ((countsByBucket.get(evidenceBucketKey(bucket)) || 0) < required) continue;
+    if (!map.has(productId)) map.set(productId, new Set());
+    map.get(productId).add(fieldKey);
+  }
+  return map;
+}
+
+function readCompiledFields(specDb) {
+  const compiled = specDb?.getCompiledRules?.() || null;
+  return compiled?.fields || {};
+}
+
+function getCandidatesForProduct(specDb, productId, context) {
+  if (context.candidatesByProduct) return context.candidatesByProduct.get(productId) || [];
+  return specDb.getAllFieldCandidatesByProduct?.(productId) || [];
+}
+
+function variantMatches(row, variantId) {
+  return (row?.variant_id ?? null) === (variantId ?? null);
+}
+
+function getFieldCandidatesForProduct(specDb, productId, fieldKey, variantId, context) {
+  if (!context.candidatesByProduct) {
+    return specDb.getFieldCandidatesByProductAndField?.(productId, fieldKey, variantId) || [];
+  }
+  return (context.candidatesByProduct.get(productId) || [])
+    .filter((candidate) => String(candidate.field_key || '') === String(fieldKey || ''))
+    .filter((candidate) => variantId === undefined || variantMatches(candidate, variantId));
+}
+
+function getVariantsForProduct(specDb, productId, context) {
+  if (context.variantsByProduct) return context.variantsByProduct.get(productId) || [];
+  return specDb.variants?.listByProduct?.(productId) || [];
+}
+
+function getPifProgressForProduct(specDb, productId, context) {
+  if (context.pifProgressByProduct) return context.pifProgressByProduct.get(productId) || [];
+  return specDb.listPifVariantProgressByProduct?.(productId) || [];
+}
+
+function getCefRunCountForProduct(specDb, productId, context) {
+  if (context.cefRunCountsByProduct) return context.cefRunCountsByProduct.get(productId) || 0;
+  return (specDb.listColorEditionFinderRuns?.(productId) || []).length;
+}
+
+function pickTopCandidate(candidates) {
+  let top = null;
+  for (const candidate of candidates || []) {
+    if (!top) {
+      top = candidate;
+      continue;
+    }
+    const topConf = Number(top.confidence) || 0;
+    const candidateConf = Number(candidate.confidence) || 0;
+    if (candidateConf > topConf) {
+      top = candidate;
+      continue;
+    }
+    if (
+      candidateConf === topConf
+      && String(candidate.status) === 'resolved'
+      && String(top.status) !== 'resolved'
+    ) {
+      top = candidate;
+    }
+  }
+  return top;
+}
+
+function pickTopResolvedCandidate(candidates) {
+  return pickTopCandidate(
+    (candidates || []).filter((candidate) => String(candidate.status || '') === 'resolved'),
+  );
+}
+
+function createProjectionSpecDb(specDb, context) {
+  if (!context.candidatesByProduct) return specDb;
+  return {
+    getCompiledRules: () => ({ fields: context.compiledFields }),
+    getFieldCandidatesByProductAndField: (productId, fieldKey, variantId) =>
+      getFieldCandidatesForProduct(specDb, productId, fieldKey, variantId, context),
+    getResolvedFieldCandidate: (productId, fieldKey) =>
+      pickTopResolvedCandidate(
+        getFieldCandidatesForProduct(specDb, productId, fieldKey, undefined, context),
+      ),
+  };
+}
+
 // Joins pif_variant_progress rows with variants metadata for the Overview cell.
 // Every active variant produces a row — if no progress is recorded yet, the
 // row carries zero filled counts with targets from the PIF settings, so empty
 // rings still render (user confirmed 2026-04-23: "show empty rings if
 // variant exists").
-function buildPifVariants(specDb, productId, pifTargets) {
-  const variants = specDb.variants?.listByProduct?.(productId) || [];
+function buildPifVariants(specDb, productId, pifTargets, context) {
+  const variants = getVariantsForProduct(specDb, productId, context);
   if (variants.length === 0) return [];
-  const progressRows = specDb.listPifVariantProgressByProduct?.(productId) || [];
+  const progressRows = getPifProgressForProduct(specDb, productId, context);
   const progressById = new Map();
   for (const p of progressRows) progressById.set(p.variant_id, p);
 
@@ -64,24 +287,15 @@ function buildPifVariants(specDb, productId, pifTargets) {
 // this shape — they're both variant-scoped scalars. Returns one row per
 // active variant, with empty value + 0 confidence when no candidate exists
 // (so empty-diamond cells render for every known variant).
-function buildScalarVariants(specDb, productId, fieldKey) {
-  const variants = specDb.variants?.listByProduct?.(productId) || [];
+function buildScalarVariants(specDb, productId, fieldKey, context) {
+  const variants = getVariantsForProduct(specDb, productId, context);
   if (variants.length === 0) return [];
 
   return variants.map((v) => {
-    const candidates = specDb.getFieldCandidatesByProductAndField?.(productId, fieldKey, v.variant_id) || [];
+    const candidates = getFieldCandidatesForProduct(specDb, productId, fieldKey, v.variant_id, context);
     // Pick highest-confidence candidate for this variant. Tie-break: resolved
     // status wins (it's the authoritative value the publisher picked).
-    let top = null;
-    for (const c of candidates) {
-      if (!top) { top = c; continue; }
-      const topConf = Number(top.confidence) || 0;
-      const cConf = Number(c.confidence) || 0;
-      if (cConf > topConf) { top = c; continue; }
-      if (cConf === topConf && String(c.status) === 'resolved' && String(top.status) !== 'resolved') {
-        top = c;
-      }
-    }
+    const top = pickTopCandidate(candidates);
     return {
       variant_id: v.variant_id,
       variant_key: v.variant_key || '',
@@ -123,9 +337,31 @@ function readPifTargets(specDb, category) {
 // them, so they shouldn't count toward keyFinder progress.
 const KEY_TIER_ORDER = Object.freeze(['easy', 'medium', 'hard', 'very_hard', 'mandatory']);
 
-function buildKeyTierProgress(specDb, productId, gateKnobs) {
-  const compiled = specDb?.getCompiledRules?.() || null;
-  const fields = compiled?.fields || {};
+function hasResolvedField(specDb, productId, fieldKey, context) {
+  if (context.resolvedFieldKeysByProduct) {
+    return context.resolvedFieldKeysByProduct.get(productId)?.has(fieldKey) || false;
+  }
+  return typeof specDb?.getResolvedFieldCandidate === 'function'
+    ? Boolean(specDb.getResolvedFieldCandidate(productId, fieldKey))
+    : false;
+}
+
+function hasConcreteField(specDb, productId, fieldKey, fieldRule, context) {
+  const gateKnobs = context.keyGateKnobs;
+  const gateActive = gateKnobs.excludeConf > 0 && gateKnobs.excludeEvd > 0;
+  if (!gateActive) return false;
+  if (context.concreteFieldKeysByProduct) {
+    return context.concreteFieldKeysByProduct.get(productId)?.has(fieldKey) || false;
+  }
+  return isConcreteEvidence({
+    specDb, productId, fieldKey, fieldRule,
+    excludeConf: gateKnobs.excludeConf,
+    excludeEvd: gateKnobs.excludeEvd,
+  });
+}
+
+function buildKeyTierProgress(specDb, productId, context) {
+  const fields = context.compiledFields || {};
   const tiers = {
     easy:      { tier: 'easy',      total: 0, resolved: 0, perfect: 0 },
     medium:    { tier: 'medium',    total: 0, resolved: 0, perfect: 0 },
@@ -133,8 +369,6 @@ function buildKeyTierProgress(specDb, productId, gateKnobs) {
     very_hard: { tier: 'very_hard', total: 0, resolved: 0, perfect: 0 },
     mandatory: { tier: 'mandatory', total: 0, resolved: 0, perfect: 0 },
   };
-  const hasResolved = typeof specDb?.getResolvedFieldCandidate === 'function';
-  const gateActive = gateKnobs.excludeConf > 0 && gateKnobs.excludeEvd > 0;
 
   for (const [fk, rule] of Object.entries(fields)) {
     if (!rule || isReservedFieldKey(fk)) continue;
@@ -143,15 +377,8 @@ function buildKeyTierProgress(specDb, productId, gateKnobs) {
     if (!bucket) continue;
     const isMandatory = String(rule.required_level || '') === 'mandatory';
 
-    const resolved = hasResolved
-      ? Boolean(specDb.getResolvedFieldCandidate(productId, fk))
-      : false;
-    const perfect = gateActive
-      ? isConcreteEvidence({
-        specDb, productId, fieldKey: fk, fieldRule: rule,
-        excludeConf: gateKnobs.excludeConf, excludeEvd: gateKnobs.excludeEvd,
-      })
-      : false;
+    const resolved = hasResolvedField(specDb, productId, fk, context);
+    const perfect = hasConcreteField(specDb, productId, fk, rule, context);
 
     bucket.total += 1;
     if (resolved) bucket.resolved += 1;
@@ -166,9 +393,9 @@ function buildKeyTierProgress(specDb, productId, gateKnobs) {
   return KEY_TIER_ORDER.map((t) => tiers[t]);
 }
 
-function buildPifDependencyStatus(specDb, category, productRow) {
+function buildPifDependencyStatus(specDb, category, productRow, context) {
   const status = resolveProductImageDependencyStatus({
-    specDb,
+    specDb: context.projectedSpecDb,
     product: {
       ...productRow,
       product_id: productRow.product_id,
@@ -226,13 +453,24 @@ function buildLastRunMaps(specDb, category) {
   );
 }
 
-function buildCatalogProjectionContext(specDb, category) {
-  return {
+function buildCatalogProjectionContext(specDb, category, productRows = []) {
+  const keyGateKnobs = readKeyFinderGateKnobs(specDb);
+  const candidatesByProduct = buildCandidatesByProduct(specDb, productRows);
+  const context = {
     totalFieldCount: readFieldKeyOrderCount(specDb, category),
     pifTargets: readPifTargets(specDb, category),
-    keyGateKnobs: readKeyFinderGateKnobs(specDb),
+    keyGateKnobs,
+    compiledFields: readCompiledFields(specDb),
     lastRunMaps: buildLastRunMaps(specDb, category),
+    candidatesByProduct,
+    resolvedFieldKeysByProduct: buildResolvedFieldKeysByProduct(candidatesByProduct),
+    concreteFieldKeysByProduct: buildConcreteFieldKeysByProduct(specDb, keyGateKnobs, productRows),
+    variantsByProduct: buildVariantsByProduct(specDb, productRows),
+    pifProgressByProduct: buildPifProgressByProduct(specDb, productRows),
+    cefRunCountsByProduct: buildCefRunCountsByProduct(specDb, category, productRows),
   };
+  context.projectedSpecDb = createProjectionSpecDb(specDb, context);
+  return context;
 }
 
 function buildCatalogRowFromSql({ specDb, cleanVariant, category, row, context }) {
@@ -246,19 +484,19 @@ function buildCatalogRowFromSql({ specDb, cleanVariant, category, row, context }
   const model = String(row.model || '').trim() || [base_model, variant].filter(Boolean).join(' ').trim();
   if (!brand || !base_model) return null;
 
-  const candidates = specDb.getAllFieldCandidatesByProduct?.(pid) || [];
+  const candidates = getCandidatesForProduct(specDb, pid, context);
   const resolvedCandidates = candidates.filter(c => String(c.status || '').trim() === 'resolved');
   const fieldKeysWithData = new Set(resolvedCandidates.map(c => String(c.field_key || '').trim()).filter(Boolean));
   const avgConfidence = resolvedCandidates.length > 0
     ? resolvedCandidates.reduce((s, c) => s + normalizeConfidence(Number(c.confidence)), 0) / resolvedCandidates.length
     : 0;
 
-  const cefRuns = specDb.listColorEditionFinderRuns?.(pid) || [];
-  const pifVariants = buildPifVariants(specDb, pid, context.pifTargets);
-  const skuVariants = buildScalarVariants(specDb, pid, 'sku');
-  const rdfVariants = buildScalarVariants(specDb, pid, 'release_date');
-  const keyTierProgress = buildKeyTierProgress(specDb, pid, context.keyGateKnobs);
-  const pifDependencyStatus = buildPifDependencyStatus(specDb, category, row);
+  const cefRunCount = getCefRunCountForProduct(specDb, pid, context);
+  const pifVariants = buildPifVariants(specDb, pid, context.pifTargets, context);
+  const skuVariants = buildScalarVariants(specDb, pid, 'sku', context);
+  const rdfVariants = buildScalarVariants(specDb, pid, 'release_date', context);
+  const keyTierProgress = buildKeyTierProgress(specDb, pid, context);
+  const pifDependencyStatus = buildPifDependencyStatus(specDb, category, row, context);
   const lastRunFields = Object.fromEntries(
     FINDER_MODULES.map((mod) => [
       `${catalogLastRunPrefix(mod)}LastRunAt`,
@@ -280,7 +518,7 @@ function buildCatalogRowFromSql({ specDb, cleanVariant, category, row, context }
     coverage: context.totalFieldCount > 0 ? fieldKeysWithData.size / context.totalFieldCount : 0,
     fieldsFilled: fieldKeysWithData.size,
     fieldsTotal: context.totalFieldCount,
-    cefRunCount: cefRuns.length,
+    cefRunCount,
     ...pifDependencyStatus,
     pifVariants,
     skuVariants,
@@ -294,7 +532,7 @@ function buildCatalogFromSql({ specDb, cleanVariant, category }) {
   if (!specDb) return [];
 
   const allProducts = specDb.getAllProducts() || [];
-  const context = buildCatalogProjectionContext(specDb, category);
+  const context = buildCatalogProjectionContext(specDb, category, allProducts);
   const seen = new Map();
 
   for (const row of allProducts) {
@@ -345,7 +583,7 @@ export function createCatalogRowBuilder({
       : (specDb.getAllProducts?.() || []).find((product) => product?.product_id === normalizedProductId) || null;
     if (!row) return null;
 
-    const context = buildCatalogProjectionContext(specDb, category);
+    const context = buildCatalogProjectionContext(specDb, category, [row]);
     return buildCatalogRowFromSql({ specDb, cleanVariant, category, row, context });
   };
 }

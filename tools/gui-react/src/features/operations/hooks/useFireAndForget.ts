@@ -1,18 +1,14 @@
 /**
- * useFireAndForget — generic hook for 202 fire-and-forget calls with optimistic operation insert.
+ * Generic hook for 202 fire-and-forget calls with optimistic operation insert.
  *
- * Every LLM-backed action (CEF run, PIF view/hero/loop, future modules) uses
- * the same pattern: insert stub instantly → POST → swap temp ID for real operationId
- * → WS fills in real data. This hook encapsulates that pattern.
- *
- * Usage:
- *   const fire = useFireAndForget({ type: 'pif', category, productId });
- *   fire('/product-image-finder/cat/p1', { variant_key: 'black' }, { subType: 'priority-view', variantKey: 'black' });
+ * Every LLM-backed action uses the same pattern: insert stub instantly, POST,
+ * swap temp ID for real operationId, then let WS fill in real data.
  */
 
 import { useCallback } from 'react';
 import { api } from '../../../api/client.ts';
 import { useOperationsStore } from '../state/operationsStore.ts';
+import { markOptimisticOperationFailed } from '../state/optimisticOperationFailure.ts';
 
 interface AcceptedResponse {
   ok: boolean;
@@ -28,12 +24,9 @@ interface FireAndForgetContext {
 interface FireOptions {
   readonly subType?: string;
   readonly variantKey?: string;
-  /** Per-key scope — keyFinder uses this. */
+  /** Per-key scope: keyFinder uses this. */
   readonly fieldKey?: string;
-  /** Invoked with the real server-assigned operationId as soon as the 202
-   *  accepts the POST. Use this to chain on the op (await terminal, await a
-   *  mid-flight flag like passengersRegistered) without changing the fire()
-   *  return type. Not called if the POST fails. */
+  /** Invoked with the real server-assigned operationId after the POST accepts. */
   readonly onDispatched?: (operationId: string) => void;
 }
 
@@ -69,11 +62,7 @@ function makeStub(
 
 /**
  * Returns a stable `fire(url, body, opts)` function.
- * Each call is fully independent — safe to spam.
- *
- * Inserts an optimistic stub BEFORE the POST fires (instant feedback).
- * When the 202 returns, swaps the temp ID for the real operationId.
- * If the POST fails, removes the stub.
+ * Each call is fully independent and safe to spam.
  */
 export function useFireAndForget({ type, category, productId }: FireAndForgetContext) {
   const upsert = useOperationsStore((s) => s.upsert);
@@ -83,23 +72,24 @@ export function useFireAndForget({ type, category, productId }: FireAndForgetCon
     (url: string, body: Record<string, unknown>, opts: FireOptions = {}) => {
       // WHY: Insert stub synchronously so it appears in the tracker on the same frame as the click.
       const tempId = `_pending_${++_tempSeq}`;
-      upsert(makeStub(tempId, type, category, productId, opts));
+      const optimisticStub = makeStub(tempId, type, category, productId, opts);
+      upsert(optimisticStub);
 
       api.post<AcceptedResponse>(url, body)
         .then((data) => {
           remove(tempId);
-          // WHY: WS broadcast from registerOperation often arrives BEFORE the 202.
-          // If it already delivered the real op (with stages, model, etc.), don't
-          // overwrite it with an empty stub — that causes "stuck at queued..." with no stages.
+          // WHY: WS broadcast from registerOperation often arrives before the 202.
+          // If it already delivered the real op, do not overwrite it with an empty stub.
           const alreadyDelivered = useOperationsStore.getState().operations.has(data.operationId);
           if (!alreadyDelivered) {
             upsert(makeStub(data.operationId, type, category, productId, opts));
           }
           try { opts.onDispatched?.(data.operationId); } catch { /* caller bug must not break fire */ }
         })
-        .catch(() => {
-          // WHY: POST failed — remove the optimistic stub so it doesn't linger.
-          remove(tempId);
+        .catch((error: unknown) => {
+          // WHY: POST failed before the backend registered a real operation.
+          // Keep an inline terminal card so the click failure is visible.
+          upsert(markOptimisticOperationFailed(optimisticStub, error));
         });
     },
     [upsert, remove, type, category, productId],

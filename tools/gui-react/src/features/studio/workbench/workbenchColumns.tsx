@@ -38,17 +38,29 @@ const ENUM_POLICY_HUMAN: Record<string, { label: string; tip: string }> = {
     tip: 'Open enum, but prefer known values from the configured source. New values accepted only with clear evidence.',
   },
 };
+const COMPONENT_ENUM_POLICY_OPTIONS = ENUM_POLICY_OPTIONS.filter((value) => value !== 'open');
 
 // ── Cell Renderers ───────────────────────────────────────────────────
 
 function FieldNameCell({ row }: { row: WorkbenchRow }) {
+  const generatedIdentityLocked = row.componentLockKind === 'identity_projection';
   return (
     <div className="leading-tight">
       <div className="flex items-center gap-1">
-        <span className="text-sm font-medium truncate">{row.displayName}</span>
+        <span
+          className={`text-sm font-medium truncate ${generatedIdentityLocked ? 'sf-text-muted' : ''}`}
+          title={generatedIdentityLocked ? 'Generated component identity field (label locked)' : undefined}
+        >
+          {row.displayName}
+        </span>
         {row.draftDirty && <span className="w-1.5 h-1.5 rounded-full sf-dot-warning flex-shrink-0" title="Modified" />}
       </div>
-      <div className="text-[10px] sf-status-text-muted font-mono truncate">{row.key}</div>
+      <div
+        className="text-[10px] sf-status-text-muted font-mono truncate"
+        title={generatedIdentityLocked ? 'Generated component identity field (key locked)' : undefined}
+      >
+        {row.key}
+      </div>
     </div>
   );
 }
@@ -85,11 +97,11 @@ function RequiredBadge({ value }: { value: string }) {
   );
 }
 
-function BoolIconCell({ value, title }: { value: boolean; title?: string }) {
+function BoolIconCell({ value, title, locked = false }: { value: boolean; title?: string; locked?: boolean }) {
   return (
     <span
-      className={`inline-flex items-center justify-center w-4 h-4 text-[12px] ${value ? 'sf-status-text-info' : 'sf-status-text-muted'}`}
-      title={title || (value ? 'On' : 'Off')}
+      className={`inline-flex items-center justify-center w-4 h-4 text-[12px] ${value ? 'sf-status-text-info' : 'sf-status-text-muted'} ${locked ? 'opacity-60' : ''}`}
+      title={locked ? `${title || (value ? 'On' : 'Off')} (locked)` : title || (value ? 'On' : 'Off')}
     >
       {value ? '\u2713' : '\u2014'}
     </span>
@@ -115,6 +127,23 @@ function EnumPolicyHumanizedCell({ value }: { value: string }) {
   return (
     <span className="text-xs sf-text-muted truncate" title={meta.tip}>
       {meta.label}
+    </span>
+  );
+}
+
+function LockedTextCell({ value }: { value: string }) {
+  return (
+    <span className="font-mono text-xs sf-text-muted opacity-70" title="Generated component identity contract (locked)">
+      {value || '\u2014'}
+    </span>
+  );
+}
+
+function LockedEnumPolicyCell({ value }: { value: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 opacity-70" title="Generated component identity enum policy (locked)">
+      <EnumPolicyHumanizedCell value={value} />
+      <span className="text-[10px] px-1 rounded sf-chip-info-soft">locked</span>
     </span>
   );
 }
@@ -253,7 +282,11 @@ export function buildColumns(
       header: 'Variant Dep',
       size: 80,
       cell: ({ row }) => (
-        <BoolIconCell value={row.original.variantDependent} title="Variant Dependent" />
+        <BoolIconCell
+          value={row.original.variantDependent}
+          title="Variant Dependent"
+          locked={row.original.contractLocked}
+        />
       ),
     },
     {
@@ -261,20 +294,32 @@ export function buildColumns(
       header: 'PIF Dep',
       size: 70,
       cell: ({ row }) => (
-        <BoolIconCell value={row.original.pifDependent} title="Product Image Dependent" />
+        <BoolIconCell
+          value={row.original.pifDependent}
+          title="Product Image Dependent"
+          locked={row.original.contractLocked}
+        />
       ),
     },
     {
       accessorKey: 'contractType',
       header: 'Type',
       size: 80,
-      cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span>,
+      cell: ({ row, getValue }) => (
+        row.original.contractLocked
+          ? <LockedTextCell value={getValue() as string} />
+          : <span className="font-mono text-xs">{getValue() as string}</span>
+      ),
     },
     {
       accessorKey: 'contractShape',
       header: 'Shape',
       size: 75,
-      cell: ({ getValue }) => <span className="font-mono text-xs">{getValue() as string}</span>,
+      cell: ({ row, getValue }) => (
+        row.original.contractLocked
+          ? <LockedTextCell value={getValue() as string} />
+          : <span className="font-mono text-xs">{getValue() as string}</span>
+      ),
     },
     {
       accessorKey: 'contractUnit',
@@ -354,10 +399,13 @@ export function buildColumns(
       size: 130,
       cell: ({ row }) => {
         const policy = row.original.enumPolicy;
+        if (row.original.componentLockKind === 'identity_projection') {
+          return <LockedEnumPolicyCell value={policy} />;
+        }
         return (
           <InlineSelectCell
             value={policy}
-            options={ENUM_POLICY_OPTIONS}
+            options={row.original.componentLocked ? COMPONENT_ENUM_POLICY_OPTIONS : ENUM_POLICY_OPTIONS}
             editingCell={editingCell}
             cellId={{ key: row.original.key, column: 'enumPolicy' }}
             onStartEdit={onStartEdit}
@@ -398,12 +446,15 @@ export function buildColumns(
       accessorKey: 'componentLocked',
       header: 'Component Lock',
       size: 110,
-      cell: ({ getValue }) => {
+      cell: ({ row, getValue }) => {
         const locked = getValue() as boolean;
+        const title = row.original.componentLockKind === 'identity_projection'
+          ? `Generated ${row.original.identityProjectionFacet} field for ${row.original.componentType}`
+          : 'enum.source = component_db.<self> - this key IS a component identity';
         return locked ? (
           <span
             className="text-[12px]"
-            title="enum.source = component_db.<self> — this key IS a component identity"
+            title={title}
           >
             🔧
           </span>

@@ -7,6 +7,7 @@ import type { RunInventoryRow, RunSourceEntry } from '../../types.ts';
 import { formatBytes, formatDuration, formatRelativeDate, runSizeBytes } from '../../helpers.ts';
 import { useRunDetail } from '../../state/useRunDetail.ts';
 import { usePersistedTab, usePersistedExpandMap } from '../../../../stores/tabStore.ts';
+import { StorageProductTableSkeleton } from '../StorageLoadingSkeleton.tsx';
 
 /* ── Constants ────────────────────────────────────────────────── */
 
@@ -237,7 +238,7 @@ export function ProductTable({ products, isLoading, onDeleteAll, onDeleteRun, is
   }
 
   if (isLoading) {
-    return <div className="text-sm sf-text-muted py-4">Loading inventory...</div>;
+    return <StorageProductTableSkeleton />;
   }
 
   return (

@@ -80,6 +80,141 @@ function displayValue(value) {
   return `\`${String(value)}\``;
 }
 
+function cloneJson(value) {
+  return JSON.parse(JSON.stringify(value ?? null));
+}
+
+function componentSourceType(row) {
+  return String(row?.component_type || '').trim();
+}
+
+function findComponentSource(componentSources, type) {
+  return (componentSources || []).find((row) => componentSourceType(row) === type) || null;
+}
+
+function buildContractPatchExample(record) {
+  const contract = {
+    type: record.contract.type || 'string',
+    shape: record.contract.shape || 'scalar',
+  };
+  if (record.contract.unit) contract.unit = record.contract.unit;
+  if (record.contract.rounding) contract.rounding = record.contract.rounding;
+  if (record.contract.list_rules) contract.list_rules = record.contract.list_rules;
+  if (record.contract.range) contract.range = record.contract.range;
+  return contract;
+}
+
+function buildEnumPatchExample(record) {
+  const currentPolicy = record.enum?.policy || 'open_prefer_known';
+  if (record.component?.relation === 'parent') {
+    return {
+      policy: currentPolicy,
+      source: `component_db.${record.component.type}`,
+    };
+  }
+  if (typeof record.enum?.source === 'string' && record.enum.source.startsWith('component_db.')) {
+    return {
+      policy: currentPolicy,
+      source: record.enum.source,
+    };
+  }
+  if (typeof record.enum?.source === 'string' && record.enum.source.startsWith('data_lists.')) {
+    return {
+      policy: currentPolicy,
+      source: record.enum.source,
+    };
+  }
+  if ((record.enum?.values || []).length > 0 || record.enum?.policy) {
+    return {
+      policy: currentPolicy,
+      source: `data_lists.${record.fieldKey}`,
+    };
+  }
+  return null;
+}
+
+function buildDataListPatchExample(record, enumPatch) {
+  if (!enumPatch?.source?.startsWith('data_lists.')) return [];
+  const field = enumPatch.source.slice('data_lists.'.length) || record.fieldKey;
+  return [{
+    field,
+    normalize: 'lower_trim',
+    manual_values: Array.isArray(record.enum?.values) ? record.enum.values : [],
+  }];
+}
+
+function buildComponentSourcePatchExample(record, componentSources) {
+  if (!record.component?.type) return [];
+  const existing = findComponentSource(componentSources, record.component.type);
+  if (!existing) return [];
+  const roles = existing.roles || {};
+  const properties = Array.isArray(roles.properties) ? roles.properties : [];
+  return [{
+    component_type: componentSourceType(existing),
+    roles: {
+      properties: properties
+        .map((property) => {
+          const out = {
+            field_key: property.field_key || property.key,
+            type: property.type || 'string',
+            unit: property.unit || '',
+            variance_policy: property.variance_policy || 'authoritative',
+          };
+          if (Array.isArray(property.constraints) && property.constraints.length > 0) {
+            out.constraints = property.constraints;
+          }
+          if (property.component_only === true) out.component_only = true;
+          if (property.tolerance !== null && property.tolerance !== undefined) {
+            out.tolerance = property.tolerance;
+          }
+          return out;
+        })
+        .filter((property) => property.field_key),
+    },
+    ...(existing.priority ? { priority: cloneJson(existing.priority) } : {}),
+    ...(existing.ai_assist ? { ai_assist: cloneJson(existing.ai_assist) } : {}),
+  }];
+}
+
+function buildPatchExample(record, category, ordinalNumber, componentSources) {
+  const enumPatch = buildEnumPatchExample(record);
+  const fieldOverride = {
+    priority: cloneJson(record.priority),
+    contract: buildContractPatchExample(record),
+    ai_assist: {
+      color_edition_context: {
+        enabled: record.ai_assist?.color_edition_context?.enabled === true,
+      },
+      pif_priority_images: {
+        enabled: record.ai_assist?.pif_priority_images?.enabled === true,
+      },
+      reasoning_note: `Paste-ready extraction guidance for ${record.fieldKey}.`,
+    },
+  };
+  if (enumPatch) fieldOverride.enum = enumPatch;
+
+  return {
+    schema_version: 'field-studio-patch.v1',
+    category,
+    field_key: record.fieldKey,
+    navigator_ordinal: ordinalNumber,
+    verdict: 'minor_revise',
+    patch: {
+      field_overrides: {
+        [record.fieldKey]: fieldOverride,
+      },
+      data_lists: buildDataListPatchExample(record, enumPatch),
+      component_sources: buildComponentSourcePatchExample(record, componentSources),
+    },
+    audit: {
+      sources_checked: [],
+      products_checked: [],
+      conclusion: '',
+      open_questions: [],
+    },
+  };
+}
+
 function formatTierBundle(preview) {
   const bundle = preview?.tierBundle || {};
   if (!bundle.model) return 'tier unresolved; audit `priority.difficulty` against category tier settings';
@@ -391,7 +526,7 @@ function buildExampleBankSection(record, category) {
   };
 }
 
-function buildPerKeyLlmAuditPromptSection(record, category, navigatorOrdinal = '') {
+function buildPerKeyLlmAuditPromptSection(record, category, navigatorOrdinal = '', componentSources = []) {
   const ordinalNumber = navigatorOrdinal ? Number(navigatorOrdinal) : null;
   const fieldToken = navigatorOrdinal ? `${navigatorOrdinal}-${record.fieldKey}` : record.fieldKey;
   const fileName = expectedFieldStudioPatchFileName({
@@ -400,6 +535,7 @@ function buildPerKeyLlmAuditPromptSection(record, category, navigatorOrdinal = '
     navigatorOrdinal: ordinalNumber,
   });
   const ordinalJson = ordinalNumber == null ? 'null' : String(ordinalNumber);
+  const exampleJson = JSON.stringify(buildPatchExample(record, category, ordinalNumber, componentSources), null, 2);
 
   return {
     id: 'llm-audit-prompt',
@@ -430,83 +566,22 @@ The JSON must be strict and importable:
 - null means clear this setting. Arrays replace arrays. Objects deep-merge.
 - field_overrides may patch only "${record.fieldKey}".
 - data_lists rows must use field "${record.fieldKey}".
-- component_sources rows must either be the component type itself or include "${record.fieldKey}" in roles.properties.
+- component_sources rows declare component_type and may include "${record.fieldKey}" in roles.properties.
 
 Expected file: ${fileName}
 Sort/key token: ${fieldToken}
 
-Use this exact envelope:
+Use this exact envelope. Delete any empty arrays/unchanged paths before returning a real patch, but keep the same strict shape:
 
 \`\`\`json
-{
-  "schema_version": "field-studio-patch.v1",
-  "category": "${category}",
-  "field_key": "${record.fieldKey}",
-  "navigator_ordinal": ${ordinalJson},
-  "verdict": "minor_revise",
-  "patch": {
-    "field_overrides": {
-      "${record.fieldKey}": {
-        "priority": {
-          "required_level": "mandatory",
-          "availability": "always",
-          "difficulty": "medium"
-        },
-        "contract": {
-          "type": "string",
-          "shape": "scalar"
-        },
-        "enum": {
-          "policy": "open_prefer_known",
-          "source": "data_lists.${record.fieldKey}"
-        },
-        "ai_assist": {
-          "color_edition_context": {
-            "enabled": false
-          },
-          "pif_priority_images": {
-            "enabled": false
-          },
-          "reasoning_note": "Paste-ready extraction guidance for ${record.fieldKey}."
-        }
-      }
-    },
-    "data_lists": [
-      {
-        "field": "${record.fieldKey}",
-        "mode": "manual",
-        "normalize": "lower_trim",
-        "manual_values": []
-      }
-    ],
-    "component_sources": [
-      {
-        "component_type": "sensor",
-        "roles": {
-          "properties": [
-            {
-              "field_key": "${record.fieldKey}",
-              "variance_policy": "authoritative"
-            }
-          ]
-        }
-      }
-    ]
-  },
-  "audit": {
-    "sources_checked": [],
-    "products_checked": [],
-    "conclusion": "",
-    "open_questions": []
-  }
-}
+${exampleJson}
 \`\`\`
 
 For a keep verdict, return the same envelope with "patch": {}.
 
 Mapping Studio patch guidance:
-- Component Source Mapping belongs under patch.component_sources. Use it for source/type, primary identifier role, maker role, aliases/name variants, reference URLs/links, component _link fields, and property variance. A component _link field should point to a manufacturer component page, datasheet/spec-sheet PDF, or authorized component distributor page; not eBay, forums, or pages that merely mention the component.
-- Enum Data Lists belong under patch.data_lists. Return the final ordered canonical values when replacing a list; keep aliases/source phrases out of public chips.
+- Component Source Mapping belongs under patch.component_sources. Use it for component type and property variance only. Component entity names, makers, aliases, and source URLs are maintained through Component Review, not Field Studio patches.
+- Enum Data Lists belong under patch.data_lists. Use field, normalize, and manual_values; return the final ordered canonical values when replacing a list; keep aliases/source phrases out of public chips.
 
 Key Navigator patch guidance:
 - Field contract, priority, evidence, enum policy, constraints, aliases, search_hints, and ai_assist belong under patch.field_overrides.${record.fieldKey}.
@@ -550,7 +625,75 @@ function formatConstraintPreview(constraints) {
     + (entries.length > 8 ? ' | ...' : '');
 }
 
-function buildComponentSection(record, componentInventory) {
+function sourceList(value) {
+  return Array.isArray(value) && value.length > 0 ? value.map((entry) => `\`${entry}\``).join(', ') : '-';
+}
+
+function formatComponentSourceCell(value) {
+  if (value === true) return '`true`';
+  if (value === false) return '`false`';
+  if (Array.isArray(value)) return sourceList(value);
+  if (value === null || value === undefined || value === '') return '-';
+  return `\`${String(value)}\``;
+}
+
+function buildComponentSourceMappingBlocks(record, componentSources) {
+  const c = record.component;
+  if (!c?.type) return [];
+  const source = findComponentSource(componentSources, c.type);
+  if (!source) {
+    return [{
+      kind: 'note',
+      tone: 'warn',
+      text: `No current \`component_sources.${c.type}\` mapping row was loaded. If this key should be component-backed, the auditor must create a component source row with \`component_type\` and \`roles.properties[]\`.`,
+    }];
+  }
+
+  const roles = source.roles || {};
+  const properties = Array.isArray(roles.properties) ? roles.properties : [];
+  const displaySource = buildComponentSourcePatchExample({ component: { type: c.type } }, [source])[0] || {
+    component_type: componentSourceType(source),
+    roles: { properties: [] },
+  };
+  const blocks = [
+    { kind: 'subheading', level: 4, text: `Current component source mapping: ${c.type}` },
+    {
+      kind: 'paragraph',
+      text: 'This is the Mapping Studio row that declares the component type and property mappings. Component entity names, makers, aliases, and URLs are maintained in Component Review.',
+    },
+    {
+      kind: 'table',
+      headers: ['Component', 'Property count'],
+      rows: [[
+        `\`${componentSourceType(source)}\``,
+        String(properties.length),
+      ]],
+    },
+    {
+      kind: 'table',
+      headers: ['Property field_key', 'Type', 'Unit', 'Variance policy', 'Component-only', 'Constraints', 'Relevant to this key?'],
+      rows: properties.length > 0
+        ? properties.map((property) => [
+          formatComponentSourceCell(property.field_key || property.key),
+          formatComponentSourceCell(property.type),
+          formatComponentSourceCell(property.unit),
+          formatComponentSourceCell(property.variance_policy),
+          formatComponentSourceCell(property.component_only === true),
+          formatComponentSourceCell(property.constraints),
+          (property.field_key || property.key) === record.fieldKey ? 'yes' : '-',
+        ])
+        : [['-', '-', '-', '-', '-', '-', '-']],
+    },
+    {
+      kind: 'codeBlock',
+      lang: 'json',
+      text: JSON.stringify(displaySource, null, 2),
+    },
+  ];
+  return blocks;
+}
+
+function buildComponentSection(record, componentInventory, componentSources = []) {
   const c = record.component;
   const blocks = [];
 
@@ -594,6 +737,7 @@ function buildComponentSection(record, componentInventory) {
   }
 
   const relevant = c ? inventory.find((entry) => entry.type === c.type) : null;
+  blocks.push(...buildComponentSourceMappingBlocks(record, componentSources));
   if (relevant) {
     blocks.push({ kind: 'subheading', level: 4, text: `Relevant component detail: ${c.type}` });
     blocks.push({
@@ -781,6 +925,7 @@ export function buildPerKeyDocStructure(keyRecord, {
   allKeyRecords = [],
   groups = [],
   componentInventory = [],
+  componentSources = [],
   preview,
   navigatorOrdinal = '',
 }) {
@@ -793,11 +938,11 @@ export function buildPerKeyDocStructure(keyRecord, {
     buildContractSchemaSection(keyRecord, schemaCatalog),
     buildConsumerSurfaceSection(keyRecord),
     buildEnumSection(keyRecord),
-    buildComponentSection(keyRecord, componentInventory),
+    buildComponentSection(keyRecord, componentInventory, componentSources),
     buildCrossFieldSection(keyRecord, allKeyRecords),
     buildSiblingsSection(keyRecord, siblingsInGroup),
     buildExampleBankSection(keyRecord, category),
-    buildPerKeyLlmAuditPromptSection(keyRecord, category, navigatorOrdinal),
+    buildPerKeyLlmAuditPromptSection(keyRecord, category, navigatorOrdinal, componentSources),
     buildFullPromptSection(preview),
     buildPerSlotSection(preview),
     buildReservedOwnerSection(preview),

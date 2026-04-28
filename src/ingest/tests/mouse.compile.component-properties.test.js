@@ -10,6 +10,13 @@ import {
   seedComponentDb,
 } from './helpers/categoryCompileHarness.js';
 
+function componentSource(componentType, properties) {
+  return {
+    component_type: componentType,
+    roles: { properties },
+  };
+}
+
 test('compileCategoryFieldStudio includes component property keys even when missing from extracted key list', async () => {
   const workspace = await createMouseCompileWorkspace({
     localWorkbook: true,
@@ -21,31 +28,14 @@ test('compileCategoryFieldStudio includes component property keys even when miss
   // in component_sources.
   fieldStudioMap.selected_keys = ['sensor', 'encoder'];
   fieldStudioMap.component_sources = [
-    {
-      type: 'encoder',
-      mode: 'sheet',
-      sheet: 'encoder',
-      auto_derive_aliases: true,
-      header_row: 1,
-      first_data_row: 2,
-      stop_after_blank_primary: 10,
-      roles: {
-        primary_identifier: 'C',
-        maker: 'B',
-        aliases: [],
-        links: ['G'],
-        properties: [
-          {
-            column: 'E',
-            field_key: 'encoder_steps',
-            type: 'number',
-            unit: '',
-            variance_policy: 'authoritative',
-            constraints: [],
-          },
-        ],
+    componentSource('encoder', [
+      {
+        field_key: 'encoder_steps',
+        type: 'number',
+        unit: '',
+        variance_policy: 'authoritative',
       },
-    },
+    ]),
   ];
 
   try {
@@ -73,6 +63,88 @@ test('compileCategoryFieldStudio includes component property keys even when miss
   }
 });
 
+test('compileCategoryFieldStudio auto-generates component identity projection keys', async () => {
+  const workspace = await createMouseCompileWorkspace({
+    tempPrefix: 'spec-harvester-component-identity-projections-',
+  });
+  const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
+  fieldStudioMap.selected_keys = ['sensor'];
+  fieldStudioMap.field_overrides = {
+    sensor_brand: {
+      contract: { type: 'number', shape: 'list' },
+      type: 'number',
+      ui: { label: 'Sensor Maker' },
+    },
+    sensor_link: {
+      enum: {
+        policy: 'closed',
+        source: 'data_lists.sensor_link',
+      },
+      enum_policy: 'closed',
+      enum_source: { type: 'known_values', ref: 'sensor_link' },
+    },
+  };
+  fieldStudioMap.data_lists = [
+    {
+      field: 'sensor_brand',
+      mode: 'scratch',
+      manual_values: ['PixArt', 'Razer'],
+    },
+  ];
+  fieldStudioMap.component_sources = [
+    componentSource('sensor', []),
+  ];
+
+  try {
+    await saveFieldStudioMap({
+      category: 'mouse',
+      fieldStudioMap,
+      config: { categoryAuthorityRoot: helperRoot },
+    });
+
+    const result = await compileCategoryFieldStudio({
+      category: 'mouse',
+      fieldStudioSourcePath,
+      config: { categoryAuthorityRoot: helperRoot },
+    });
+    assert.equal(result.compiled, true, JSON.stringify(result.errors || []));
+
+    const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
+    const brand = fieldRules.fields?.sensor_brand;
+    const link = fieldRules.fields?.sensor_link;
+
+    assert.ok(brand, 'sensor_brand should be materialized from component_sources identity facets');
+    assert.equal(brand.contract?.type, 'string');
+    assert.equal(brand.contract?.shape, 'scalar');
+    assert.equal(brand.enum?.policy, 'open_prefer_known');
+    assert.equal(brand.enum?.source, 'data_lists.sensor_brand');
+    assert.equal(brand.ui?.label, 'Sensor Brand');
+    assert.deepEqual(brand.component_identity_projection, {
+      component_type: 'sensor',
+      facet: 'brand',
+    });
+
+    assert.ok(link, 'sensor_link should be materialized from component_sources identity facets');
+    assert.equal(link.contract?.type, 'url');
+    assert.equal(link.contract?.shape, 'scalar');
+    assert.equal(link.enum?.policy, 'open');
+    assert.equal(link.enum?.source, null);
+    assert.equal(link.ui?.label, 'Sensor Link');
+    assert.deepEqual(link.component_identity_projection, {
+      component_type: 'sensor',
+      facet: 'link',
+    });
+
+    assert.deepEqual(
+      fieldRules.component_db_sources?.sensor?.roles?.properties,
+      [],
+      'identity facets are not authored component attributes',
+    );
+  } finally {
+    await cleanup();
+  }
+});
+
 test('FRC-05-B - buildStudioFieldRule emits constraints for component property fields', async () => {
   const workspace = await createMouseCompileWorkspace({
     tempPrefix: 'spec-harvester-frc05b-',
@@ -85,38 +157,21 @@ test('FRC-05-B - buildStudioFieldRule emits constraints for component property f
     (k) => !['switch', 'encoder'].includes(k),
   );
   fieldStudioMap.component_sources = [
-    {
-      type: 'sensor',
-      sheet: 'sensors',
-      auto_derive_aliases: true,
-      header_row: 1,
-      first_data_row: 2,
-      stop_after_blank_primary: 10,
-      roles: {
-        primary_identifier: 'C',
-        maker: 'B',
-        aliases: [],
-        links: ['J'],
-        properties: [
-          {
-            column: 'F',
-            field_key: 'dpi',
-            type: 'number',
-            unit: 'dpi',
-            variance_policy: 'upper_bound',
-            constraints: [],
-          },
-          {
-            column: 'I',
-            field_key: 'sensor_date',
-            type: 'string',
-            unit: '',
-            variance_policy: 'authoritative',
-            constraints: ['sensor_date <= release_date'],
-          },
-        ],
+    componentSource('sensor', [
+      {
+        field_key: 'dpi',
+        type: 'number',
+        unit: 'dpi',
+        variance_policy: 'upper_bound',
       },
-    },
+      {
+        field_key: 'sensor_date',
+        type: 'string',
+        unit: '',
+        variance_policy: 'authoritative',
+        constraints: ['sensor_date <= release_date'],
+      },
+    ]),
   ];
 
   try {
@@ -166,38 +221,21 @@ test('FRC-05-C - buildStudioFieldRule auto-derives property_keys from component_
     (k) => !['switch', 'encoder'].includes(k),
   );
   fieldStudioMap.component_sources = [
-    {
-      type: 'sensor',
-      sheet: 'sensors',
-      auto_derive_aliases: true,
-      header_row: 1,
-      first_data_row: 2,
-      stop_after_blank_primary: 10,
-      roles: {
-        primary_identifier: 'C',
-        maker: 'B',
-        aliases: [],
-        links: ['J'],
-        properties: [
-          {
-            column: 'F',
-            field_key: 'dpi',
-            type: 'number',
-            unit: 'dpi',
-            variance_policy: 'upper_bound',
-            constraints: [],
-          },
-          {
-            column: 'I',
-            field_key: 'sensor_date',
-            type: 'string',
-            unit: '',
-            variance_policy: 'authoritative',
-            constraints: ['sensor_date <= release_date'],
-          },
-        ],
+    componentSource('sensor', [
+      {
+        field_key: 'dpi',
+        type: 'number',
+        unit: 'dpi',
+        variance_policy: 'upper_bound',
       },
-    },
+      {
+        field_key: 'sensor_date',
+        type: 'string',
+        unit: '',
+        variance_policy: 'authoritative',
+        constraints: ['sensor_date <= release_date'],
+      },
+    ]),
   ];
 
   try {
@@ -234,38 +272,21 @@ test('FRC-05-F - component property type and variance_policy propagate to genera
   });
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
   fieldStudioMap.component_sources = [
-    {
-      type: 'sensor',
-      sheet: 'sensors',
-      auto_derive_aliases: true,
-      header_row: 1,
-      first_data_row: 2,
-      stop_after_blank_primary: 10,
-      roles: {
-        primary_identifier: 'C',
-        maker: 'B',
-        aliases: [],
-        links: ['J'],
-        properties: [
-          {
-            column: 'F',
-            field_key: 'dpi',
-            type: 'number',
-            unit: 'dpi',
-            variance_policy: 'upper_bound',
-            constraints: [],
-          },
-          {
-            column: 'I',
-            field_key: 'sensor_date',
-            type: 'string',
-            unit: '',
-            variance_policy: 'authoritative',
-            constraints: ['sensor_date <= release_date'],
-          },
-        ],
+    componentSource('sensor', [
+      {
+        field_key: 'dpi',
+        type: 'number',
+        unit: 'dpi',
+        variance_policy: 'upper_bound',
       },
-    },
+      {
+        field_key: 'sensor_date',
+        type: 'string',
+        unit: '',
+        variance_policy: 'authoritative',
+        constraints: ['sensor_date <= release_date'],
+      },
+    ]),
   ];
 
   try {
@@ -298,38 +319,20 @@ test('FRC-05-G - component integer properties compile with type=integer', async 
   });
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
   fieldStudioMap.component_sources = [
-    {
-      type: 'sensor',
-      sheet: 'sensors',
-      auto_derive_aliases: true,
-      header_row: 1,
-      first_data_row: 2,
-      stop_after_blank_primary: 10,
-      roles: {
-        primary_identifier: 'C',
-        maker: 'B',
-        aliases: [],
-        links: ['J'],
-        properties: [
-          {
-            column: 'F',
-            field_key: 'dpi',
-            type: 'number',
-            unit: 'dpi',
-            variance_policy: 'upper_bound',
-            constraints: [],
-          },
-          {
-            column: 'A',
-            field_key: 'sensor_rank',
-            type: 'integer',
-            unit: '',
-            variance_policy: 'authoritative',
-            constraints: [],
-          },
-        ],
+    componentSource('sensor', [
+      {
+        field_key: 'dpi',
+        type: 'number',
+        unit: 'dpi',
+        variance_policy: 'upper_bound',
       },
-    },
+      {
+        field_key: 'sensor_rank',
+        type: 'integer',
+        unit: '',
+        variance_policy: 'authoritative',
+      },
+    ]),
   ];
 
   try {
@@ -360,30 +363,14 @@ test('FRC-05-H - numeric component properties with known values compile as close
   });
   const { helperRoot, fieldStudioSourcePath, fieldStudioMap, generatedRoot, cleanup } = workspace;
   fieldStudioMap.component_sources = [
-    {
-      type: 'encoder',
-      sheet: 'encoder',
-      auto_derive_aliases: true,
-      header_row: 1,
-      first_data_row: 2,
-      stop_after_blank_primary: 10,
-      roles: {
-        primary_identifier: 'C',
-        maker: 'B',
-        aliases: [],
-        links: ['G'],
-        properties: [
-          {
-            column: 'E',
-            field_key: 'encoder_steps',
-            type: 'number',
-            unit: '',
-            variance_policy: 'authoritative',
-            constraints: [],
-          },
-        ],
+    componentSource('encoder', [
+      {
+        field_key: 'encoder_steps',
+        type: 'number',
+        unit: '',
+        variance_policy: 'authoritative',
       },
-    },
+    ]),
   ];
   fieldStudioMap.data_lists = [
     {
@@ -432,25 +419,11 @@ test('compileCategoryFieldStudio summarizes component property coverage warnings
     (k) => !['switch', 'encoder'].includes(k),
   );
   fieldStudioMap.component_sources = [
-    {
-      type: 'sensor',
-      sheet: 'sensors',
-      auto_derive_aliases: true,
-      header_row: 1,
-      first_data_row: 2,
-      stop_after_blank_primary: 10,
-      roles: {
-        primary_identifier: 'C',
-        maker: 'B',
-        aliases: [],
-        links: ['J'],
-        properties: [
-          { column: 'F', field_key: 'dpi', type: 'number', unit: 'dpi', variance_policy: 'upper_bound', constraints: [] },
-          { column: 'I', field_key: 'sensor_date', type: 'string', unit: '', variance_policy: 'authoritative', constraints: [] },
-          { column: 'P', field_key: 'flawless_sensor', type: 'string', unit: '', variance_policy: 'authoritative', constraints: [] },
-        ],
-      },
-    },
+    componentSource('sensor', [
+      { field_key: 'dpi', type: 'number', unit: 'dpi', variance_policy: 'upper_bound' },
+      { field_key: 'sensor_date', type: 'string', unit: '', variance_policy: 'authoritative' },
+      { field_key: 'flawless_sensor', type: 'string', unit: '', variance_policy: 'authoritative' },
+    ]),
   ];
 
   try {

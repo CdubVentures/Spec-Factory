@@ -8,6 +8,10 @@
  */
 import { useCallback, useMemo } from 'react';
 import { useOperationsStore, type Operation } from '../state/operationsStore.ts';
+import {
+  isOperationTerminalStatus,
+  isOperationUiActiveStatus,
+} from '../state/operationStatusContract.ts';
 
 /* ── Pure selectors (testable without React) ───────────────────────── */
 
@@ -78,7 +82,7 @@ export function selectKeyFieldOpStatesSignature(
   const byFieldKey = new Map<string, { status: 'running' | 'queued'; mode: 'run' | 'loop' }>();
   for (const op of ops.values()) {
     if (op.type !== type || op.productId !== productId || !op.fieldKey) continue;
-    if (op.status !== 'running' && op.status !== 'queued') continue;
+    if (!isOperationUiActiveStatus(op.status)) continue;
     const mode = op.subType === 'loop' ? 'loop' : 'run';
     // Later ops on the same key overwrite — most recent state wins.
     byFieldKey.set(op.fieldKey, { status: op.status, mode });
@@ -243,7 +247,7 @@ export function selectActiveModulesByProduct(
 ): string {
   const byPid = new Map<string, Set<string>>();
   for (const op of ops.values()) {
-    if (op.status !== 'running' && op.status !== 'queued') continue;
+    if (!isOperationUiActiveStatus(op.status)) continue;
     if (!op.productId) continue;
     if (category && op.category !== category) continue;
     let set = byPid.get(op.productId);
@@ -531,8 +535,6 @@ export function useActivePassengers(type: string, productId: string): ReadonlyMa
 
 /* ── Imperative promise helpers (for chain orchestration) ─────────── */
 
-const TERMINAL_STATUSES: ReadonlySet<Operation['status']> = new Set(['done', 'error', 'cancelled']);
-
 export type PassengersRegisteredOutcome = 'registered' | 'terminal' | 'timeout';
 
 /**
@@ -552,7 +554,7 @@ export function awaitPassengersRegistered(
   return new Promise<PassengersRegisteredOutcome>((resolve) => {
     const current = useOperationsStore.getState().operations.get(operationId);
     if (current?.passengersRegistered) { resolve('registered'); return; }
-    if (current && TERMINAL_STATUSES.has(current.status)) { resolve('terminal'); return; }
+    if (current && isOperationTerminalStatus(current.status)) { resolve('terminal'); return; }
 
     let done = false;
     const finalize = (outcome: PassengersRegisteredOutcome) => {
@@ -567,7 +569,7 @@ export function awaitPassengersRegistered(
       const op = state.operations.get(operationId);
       if (!op) return;
       if (op.passengersRegistered) { finalize('registered'); return; }
-      if (TERMINAL_STATUSES.has(op.status)) finalize('terminal');
+      if (isOperationTerminalStatus(op.status)) finalize('terminal');
     });
 
     const timer = setTimeout(() => finalize('timeout'), timeoutMs);
@@ -589,7 +591,7 @@ export type TerminalStatus = 'done' | 'error' | 'cancelled';
 export function awaitOperationTerminal(operationId: string): Promise<TerminalStatus> {
   return new Promise<TerminalStatus>((resolve) => {
     const current = useOperationsStore.getState().operations.get(operationId);
-    if (current && TERMINAL_STATUSES.has(current.status)) {
+    if (current && isOperationTerminalStatus(current.status)) {
       resolve(current.status as TerminalStatus);
       return;
     }
@@ -597,7 +599,7 @@ export function awaitOperationTerminal(operationId: string): Promise<TerminalSta
     const unsubscribe = useOperationsStore.subscribe((state) => {
       const op = state.operations.get(operationId);
       if (!op) return;
-      if (TERMINAL_STATUSES.has(op.status)) {
+      if (isOperationTerminalStatus(op.status)) {
         unsubscribe();
         resolve(op.status as TerminalStatus);
       }

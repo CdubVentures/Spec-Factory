@@ -108,7 +108,7 @@ test('validateFieldStudioPatchDocument rejects prose sentinels and filename/body
   assert.throws(
     () => validateFieldStudioPatchDocument(validPatch({
       patch: { field_overrides: { design: { ai_assist: { reasoning_note: 'No change' } } } },
-    }), { category: 'mouse', fileName: 'mouse-07-design.field-studio-patch.v1.json' }),
+    }), { category: 'mouse' }),
     /No change/i,
   );
 
@@ -128,6 +128,23 @@ test('validateFieldStudioPatchDocument rejects prose sentinels and filename/body
   );
 });
 
+test('validateFieldStudioPatchDocument rejects retired data-list mode', () => {
+  assert.throws(
+    () => validateFieldStudioPatchDocument(validPatch({
+      patch: {
+        data_lists: [
+          {
+            field: 'design',
+            mode: 'manual',
+            manual_values: ['standard'],
+          },
+        ],
+      },
+    }), { category: 'mouse', fileName: 'mouse-07-design.field-studio-patch.v1.json' }),
+    /data_lists\[0\]\.mode is retired/i,
+  );
+});
+
 test('applyFieldStudioPatchDocument deep-merges one key and data list without touching unrelated settings', () => {
   const next = applyFieldStudioPatchDocument(baseMap(), validPatch());
 
@@ -144,6 +161,240 @@ test('applyFieldStudioPatchDocument deep-merges one key and data list without to
   assert.deepEqual(next.field_overrides.design.ai_assist.pif_priority_images, { enabled: true });
   assert.deepEqual(next.field_overrides.design.ai_assist.color_edition_context, { enabled: true });
   assert.equal(next.field_overrides.weight.contract.unit, 'g');
+});
+
+test('previewFieldStudioPatchDocuments rejects field enum links without matching data list rows', () => {
+  const preview = previewFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: baseMap(),
+    patchDocs: [
+      validPatch({
+        patch: {
+          field_overrides: {
+            design: {
+              enum: { policy: 'closed', source: 'data_lists.missing_design' },
+            },
+          },
+        },
+      }),
+    ],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: map,
+    }),
+  });
+
+  assert.equal(preview.valid, false);
+  assert.match(preview.errors.join('\n'), /data_lists\.missing_design/i);
+});
+
+test('previewFieldStudioPatchDocuments rejects component_db links without a matching component source', () => {
+  const preview = previewFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: baseMap(),
+    patchDocs: [
+      validPatch({
+        patch: {
+          field_overrides: {
+            design: {
+              enum: { policy: 'open_prefer_known', source: 'component_db.sensor' },
+            },
+          },
+        },
+      }),
+    ],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: map,
+    }),
+  });
+
+  assert.equal(preview.valid, false);
+  assert.match(preview.errors.join('\n'), /component_db\.sensor/i);
+  assert.match(preview.errors.join('\n'), /self-lock/i);
+});
+
+test('previewFieldStudioPatchDocuments rejects component source rows without parent self-lock', () => {
+  const componentPatch = validPatch({
+    field_key: 'switch_type',
+    navigator_ordinal: 12,
+    patch: {
+      field_overrides: {
+        switch_type: {
+          contract: { type: 'string', shape: 'scalar' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'switch',
+          roles: {
+            properties: [
+              {
+                field_key: 'switch_type',
+                type: 'string',
+                variance_policy: 'authoritative',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  const preview = previewFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: {
+      ...baseMap(),
+      selected_keys: ['design', 'weight', 'switch_type'],
+    },
+    patchDocs: [componentPatch],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: map,
+    }),
+  });
+
+  assert.equal(preview.valid, false);
+  assert.match(preview.errors.join('\n'), /component_sources\[switch\].*component_db\.switch/i);
+});
+
+test('previewFieldStudioPatchDocuments accepts linked component source rows when parent self-lock exists', () => {
+  const componentPatch = validPatch({
+    field_key: 'switch_type',
+    navigator_ordinal: 12,
+    patch: {
+      field_overrides: {
+        switch_type: {
+          contract: { type: 'string', shape: 'scalar' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'switch',
+          roles: {
+            properties: [
+              {
+                field_key: 'switch_type',
+                type: 'string',
+                variance_policy: 'authoritative',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  const preview = previewFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: {
+      ...baseMap(),
+      selected_keys: ['design', 'weight', 'switch', 'switch_type'],
+      field_overrides: {
+        ...baseMap().field_overrides,
+        switch: {
+          field_key: 'switch',
+          enum: { policy: 'open_prefer_known', source: 'component_db.switch' },
+        },
+      },
+    },
+    patchDocs: [componentPatch],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: map,
+    }),
+  });
+
+  assert.equal(preview.valid, true);
+  assert.ok(preview.changes.some((change) => change.kind === 'component_source' && change.componentType === 'switch'));
+});
+
+test('previewFieldStudioPatchDocuments accepts existing component parent lock hints', () => {
+  const componentPatch = validPatch({
+    field_key: 'switch_type',
+    navigator_ordinal: 12,
+    patch: {
+      field_overrides: {
+        switch_type: {
+          contract: { type: 'string', shape: 'scalar' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'switch',
+          roles: {
+            properties: [
+              {
+                field_key: 'switch_type',
+                type: 'string',
+                variance_policy: 'authoritative',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  const preview = previewFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: {
+      ...baseMap(),
+      selected_keys: ['design', 'weight', 'switch', 'switch_type'],
+      field_overrides: {
+        ...baseMap().field_overrides,
+        switch: {
+          field_key: 'switch',
+          field_studio_hints: { component_db: 'switch' },
+          parse: { component_type: 'switch' },
+        },
+      },
+    },
+    patchDocs: [componentPatch],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: map,
+    }),
+  });
+
+  assert.equal(preview.valid, true);
+});
+
+test('validateFieldStudioPatchDocument rejects retired component source workbook fields', () => {
+  assert.throws(
+    () => validateFieldStudioPatchDocument(validPatch({
+      field_key: 'switch_type',
+      patch: {
+        component_sources: [
+          {
+            component_type: 'switch',
+            sheet: 'switches',
+            roles: {
+              properties: [
+                {
+                  field_key: 'switch_type',
+                  column: 'F',
+                  type: 'string',
+                  variance_policy: 'authoritative',
+                },
+              ],
+            },
+          },
+        ],
+      },
+    }), { category: 'mouse' }),
+    /component_sources\[0\]\.sheet is retired/i,
+  );
 });
 
 test('loadFieldStudioPatchDocuments loads valid patch files from a folder in filename order', async () => {
@@ -274,7 +525,17 @@ test('previewFieldStudioPatchDocuments returns a change log for key edits and co
 
   const preview = previewFieldStudioPatchDocuments({
     category: 'mouse',
-    fieldStudioMap: baseMap(),
+    fieldStudioMap: {
+      ...baseMap(),
+      selected_keys: ['design', 'weight', 'switch', 'switch_type'],
+      field_overrides: {
+        ...baseMap().field_overrides,
+        switch: {
+          field_key: 'switch',
+          enum: { policy: 'open_prefer_known', source: 'component_db.switch' },
+        },
+      },
+    },
     patchDocs: [validPatch(), componentPatch],
     validateFieldStudioMap: (map) => ({
       valid: true,

@@ -8,7 +8,7 @@
 
 import { useEffect, type ReactNode } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { Spinner } from '../feedback/Spinner.tsx';
+import { SkeletonBlock } from '../feedback/SkeletonBlock.tsx';
 import { PromptPreviewView } from './PromptPreviewView.tsx';
 import { PromptPreviewList } from './PromptPreviewList.tsx';
 import type { PromptPreviewResponse } from '../../../features/indexing/api/promptPreviewTypes.ts';
@@ -24,6 +24,39 @@ interface PromptPreviewModalProps {
    *  button — callers use it to inject a mode toggle (Run ↔ Loop for keyFinder).
    *  Omit for finders that don't need a mode selector. */
   readonly headerSlot?: ReactNode;
+}
+
+const PROMPT_PREVIEW_SECTIONS = ['system', 'user', 'response'] as const;
+const PROMPT_PREVIEW_LINES = ['primary', 'secondary', 'tertiary'] as const;
+
+export function PromptPreviewLoadingSkeleton() {
+  return (
+    <div
+      className="space-y-3"
+      data-testid="prompt-preview-loading-skeleton"
+      data-region="prompt-preview-loading-shell"
+      aria-busy="true"
+    >
+      <span className="sr-only">Loading prompt preview</span>
+      {PROMPT_PREVIEW_SECTIONS.map((section) => (
+        <section
+          key={section}
+          className="rounded border sf-border-soft sf-surface-elevated p-3 space-y-2"
+          data-region="prompt-preview-loading-section"
+          data-skeleton-section={section}
+        >
+          <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted">
+            <SkeletonBlock className="sf-skel-caption" />
+          </div>
+          {PROMPT_PREVIEW_LINES.map((line) => (
+            <div key={`${section}-${line}`} data-region="prompt-preview-loading-line">
+              <SkeletonBlock className="sf-skel-bar" />
+            </div>
+          ))}
+        </section>
+      ))}
+    </div>
+  );
 }
 
 export function PromptPreviewModal({ open, onClose, query, title, subtitle, storageKeyPrefix, headerSlot }: PromptPreviewModalProps) {
@@ -86,11 +119,7 @@ function PromptPreviewModalBody({
   readonly storageKeyPrefix: string;
 }) {
   if (query.isLoading || (query.isFetching && !query.data)) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <Spinner />
-      </div>
-    );
+    return <PromptPreviewLoadingSkeleton />;
   }
 
   if (query.isError) {

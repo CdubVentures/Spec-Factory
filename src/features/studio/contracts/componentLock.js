@@ -1,7 +1,8 @@
 // WHY: SSOT for component-lock contract — when a field rule self-locks via
 // `enum.source === component_db.<self>`, the rule's contract identity is owned
 // by the field_studio_map.component_sources[] row. Authors can edit value
-// policy / aliases / priority / search_hints / etc., but not contract.* or
+// policy / aliases / priority / search_hints / etc., but component policies
+// are normalized away from `open`, and authors cannot edit contract.* or
 // enum.source/values.
 //
 // Phase 4 extracts this from the GUI store (Phase 3 had it inline) so the same
@@ -35,7 +36,48 @@ const EDITABLE_PATH_PREFIXES = Object.freeze([
   'search_hints.',
 ]);
 
-export function isComponentLockEditablePath(path) {
+const IDENTITY_PROJECTION_EDITABLE_PATHS = Object.freeze(new Set([
+  'aliases',
+  'constraints',
+  'ui.group',
+  'ui.order',
+  'ui.tooltip_md',
+  'ui.aliases',
+]));
+
+const COMPONENT_IDENTITY_PROJECTION_FACETS = Object.freeze(new Set(['brand', 'link']));
+
+function normalizeText(value) {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+export function getComponentIdentityProjectionLock(rule) {
+  if (!rule || typeof rule !== 'object') return null;
+  const projection = rule.component_identity_projection;
+  if (!projection || typeof projection !== 'object') return null;
+  const componentType = normalizeText(projection.component_type);
+  const facet = normalizeText(projection.facet).toLowerCase();
+  if (!componentType || !COMPONENT_IDENTITY_PROJECTION_FACETS.has(facet)) return null;
+  return { componentType, facet };
+}
+
+export function isComponentIdentityProjectionLocked(rule) {
+  return Boolean(getComponentIdentityProjectionLock(rule));
+}
+
+function isComponentIdentityProjectionEditablePath(path) {
+  if (typeof path !== 'string') return false;
+  if (IDENTITY_PROJECTION_EDITABLE_PATHS.has(path)) return true;
+  for (const prefix of EDITABLE_PATH_PREFIXES) {
+    if (path.startsWith(prefix)) return true;
+  }
+  return false;
+}
+
+export function isComponentLockEditablePath(path, rule = null) {
+  if (isComponentIdentityProjectionLocked(rule)) {
+    return isComponentIdentityProjectionEditablePath(path);
+  }
   if (typeof path !== 'string') return false;
   if (EXACT_EDITABLE_PATHS.has(path)) return true;
   for (const prefix of EDITABLE_PATH_PREFIXES) {
@@ -49,7 +91,7 @@ export function isComponentLockEditablePath(path) {
 // Cross-locks (enum.source = component_db.X where X !== key) are bugs that
 // INV-2 catches at compile time; visual indicators must NOT flag them as locked.
 
-export function isComponentLocked(rule, key) {
+function isComponentSelfLocked(rule, key) {
   if (!rule || typeof rule !== 'object' || !key) return false;
   const enumBlock = rule.enum && typeof rule.enum === 'object' ? rule.enum : null;
   const nestedSource = enumBlock && typeof enumBlock.source === 'string' ? enumBlock.source : '';
@@ -63,6 +105,16 @@ export function isComponentLocked(rule, key) {
       && flatSource.type === 'component_db'
       && flatSource.ref === key) return true;
   return false;
+}
+
+export function getComponentLockKind(rule, key) {
+  if (isComponentSelfLocked(rule, key)) return 'component_self';
+  if (isComponentIdentityProjectionLocked(rule)) return 'identity_projection';
+  return '';
+}
+
+export function isComponentLocked(rule, key) {
+  return Boolean(getComponentLockKind(rule, key));
 }
 
 // ── Server-side override sanitizer ───────────────────────────────────────────
@@ -85,6 +137,14 @@ const NON_EDITABLE_TOP_LEVEL_KEYS = Object.freeze([
   'enum_values',
 ]);
 
+const IDENTITY_PROJECTION_NON_EDITABLE_TOP_LEVEL_KEYS = Object.freeze([
+  'enum_source',
+  'enum_policy',
+  'enum_values',
+  'variant_dependent',
+  'product_image_dependent',
+]);
+
 function deletePath(obj, dotPath) {
   const parts = dotPath.split('.');
   let cursor = obj;
@@ -105,6 +165,24 @@ function pruneEmptyContainer(obj, key) {
   }
 }
 
+function stripIdentityProjectionOverrides(sanitized) {
+  delete sanitized.contract;
+  delete sanitized.enum;
+  deletePath(sanitized, 'ui.label');
+  for (const flatKey of IDENTITY_PROJECTION_NON_EDITABLE_TOP_LEVEL_KEYS) {
+    delete sanitized[flatKey];
+  }
+}
+
+function enforceComponentKnownPolicy(obj) {
+  if (obj.enum && typeof obj.enum === 'object' && obj.enum.policy === 'open') {
+    obj.enum.policy = 'open_prefer_known';
+  }
+  if (obj.enum_policy === 'open') {
+    obj.enum_policy = 'open_prefer_known';
+  }
+}
+
 export function sanitizeComponentLockedOverrides(fieldOverrides) {
   if (!fieldOverrides || typeof fieldOverrides !== 'object') return fieldOverrides;
   let cloned = null;
@@ -114,15 +192,21 @@ export function sanitizeComponentLockedOverrides(fieldOverrides) {
     // override exists. Pass-through returns referential equality otherwise.
     if (!cloned) cloned = { ...fieldOverrides };
     const sanitized = JSON.parse(JSON.stringify(override));
-    for (const dotPath of NON_EDITABLE_NESTED_PATHS) {
-      deletePath(sanitized, dotPath);
-    }
-    for (const flatKey of NON_EDITABLE_TOP_LEVEL_KEYS) {
-      delete sanitized[flatKey];
+    if (isComponentIdentityProjectionLocked(sanitized)) {
+      stripIdentityProjectionOverrides(sanitized);
+    } else {
+      for (const dotPath of NON_EDITABLE_NESTED_PATHS) {
+        deletePath(sanitized, dotPath);
+      }
+      for (const flatKey of NON_EDITABLE_TOP_LEVEL_KEYS) {
+        delete sanitized[flatKey];
+      }
+      enforceComponentKnownPolicy(sanitized);
     }
     // Prune emptied container objects so save round-trips don't accumulate `{}`.
     pruneEmptyContainer(sanitized, 'contract');
     pruneEmptyContainer(sanitized, 'enum');
+    pruneEmptyContainer(sanitized, 'ui');
     cloned[key] = sanitized;
   }
   return cloned || fieldOverrides;

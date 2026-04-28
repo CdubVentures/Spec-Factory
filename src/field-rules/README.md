@@ -27,3 +27,4 @@ Field rule compilation, loading, session caching, and consumer gating. Compiles 
 - Field keys are canonical after migration. No aliases survive past the migration step.
 - Session cache invalidation clears all cached rules for a category. Partial invalidation is not supported.
 - Cross-validation rules reference field keys that must exist in the same rule set.
+- Enum policy/source coupling is invariant: `open` has no `enum.source`; `closed` and `open_prefer_known` auto-lock to `data_lists.<field_key>`; component identity keys self-lock to `component_db.<key>` and cannot use `open`.

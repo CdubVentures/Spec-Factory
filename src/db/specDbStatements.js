@@ -318,6 +318,18 @@ export function prepareStatements(db) {
       SELECT * FROM crawl_sources WHERE run_id = ? ORDER BY crawled_at DESC
     `),
 
+    _getCrawlSourcesPageByRunId: db.prepare(`
+      SELECT * FROM crawl_sources WHERE run_id = ? ORDER BY crawled_at DESC LIMIT ? OFFSET ?
+    `),
+
+    _countCrawlSourcesByRunId: db.prepare(`
+      SELECT COUNT(*) AS count FROM crawl_sources WHERE run_id = ?
+    `),
+
+    _getCrawlSourceByRunIdAndHash: db.prepare(`
+      SELECT * FROM crawl_sources WHERE run_id = ? AND content_hash = ? LIMIT 1
+    `),
+
     _insertRunSource: db.prepare(`
       INSERT OR REPLACE INTO run_sources (
         run_id, content_hash, category, product_id, source_url, final_url,
@@ -332,6 +344,18 @@ export function prepareStatements(db) {
 
     _getRunSourcesByRunId: db.prepare(`
       SELECT * FROM run_sources WHERE run_id = ? ORDER BY crawled_at DESC
+    `),
+
+    _getRunSourcesPageByRunId: db.prepare(`
+      SELECT * FROM run_sources WHERE run_id = ? ORDER BY crawled_at DESC LIMIT ? OFFSET ?
+    `),
+
+    _countRunSourcesByRunId: db.prepare(`
+      SELECT COUNT(*) AS count FROM run_sources WHERE run_id = ?
+    `),
+
+    _getRunSourceByRunIdAndHash: db.prepare(`
+      SELECT * FROM run_sources WHERE run_id = ? AND content_hash = ? LIMIT 1
     `),
 
     _getRunSourcesByProduct: db.prepare(`
@@ -733,6 +757,45 @@ export function prepareStatements(db) {
        ORDER BY top_confidence DESC, value_fingerprint ASC`
     ),
 
+    _listFieldBucketsByCategory: db.prepare(
+      `SELECT
+         product_id,
+         field_key,
+         variant_id_key,
+         value_fingerprint,
+         MAX(confidence) AS top_confidence,
+         COUNT(*) AS member_count,
+         GROUP_CONCAT(id) AS member_ids_csv,
+         (SELECT value FROM field_candidates
+            WHERE category = fc.category AND product_id = fc.product_id
+              AND field_key = fc.field_key
+              AND variant_id_key = fc.variant_id_key
+              AND value_fingerprint = fc.value_fingerprint
+            ORDER BY confidence DESC, id ASC LIMIT 1) AS value
+       FROM field_candidates fc
+       WHERE fc.category = ?
+         AND fc.variant_id_key = ''
+         AND fc.value_fingerprint != ''
+       GROUP BY product_id, field_key, variant_id_key, value_fingerprint
+       ORDER BY product_id ASC, field_key ASC, top_confidence DESC, value_fingerprint ASC`
+    ),
+
+    _listPooledQualifyingEvidenceCountsByCategory: db.prepare(
+      `SELECT
+         fc.product_id,
+         fc.field_key,
+         fc.variant_id_key,
+         fc.value_fingerprint,
+         COUNT(DISTINCT fce.url) AS total
+         FROM field_candidate_evidence fce
+         JOIN field_candidates fc ON fc.id = fce.candidate_id
+        WHERE fc.category = ?
+          AND fc.variant_id_key = ''
+          AND fc.value_fingerprint != ''
+          AND (fce.confidence IS NULL OR (fce.confidence * 1.0) / 100.0 >= ?)
+        GROUP BY fc.product_id, fc.field_key, fc.variant_id_key, fc.value_fingerprint`
+    ),
+
     // WHY: keyFinderLoop satisfaction check — publish state is "any row
     // resolved for this field." Replaces the single-row getResolvedFieldCandidate
     // lookup at the loop pre-check.
@@ -762,6 +825,9 @@ export function prepareStatements(db) {
     ),
     _listVariantsByProduct: db.prepare(
       'SELECT * FROM variants WHERE category = ? AND product_id = ? ORDER BY variant_type, variant_key'
+    ),
+    _listVariantsByCategory: db.prepare(
+      'SELECT * FROM variants WHERE category = ? ORDER BY product_id, variant_type, variant_key'
     ),
     // WHY: listActive is now an alias for listByProduct — no retired column exists.
     _listActiveVariantsByProduct: db.prepare(
@@ -804,6 +870,15 @@ export function prepareStatements(db) {
          FROM pif_variant_progress
         WHERE category = ? AND product_id = ?
         ORDER BY variant_key`
+    ),
+    _listPifVariantProgressByCategory: db.prepare(
+      `SELECT product_id, variant_id, variant_key,
+              priority_filled, priority_total,
+              loop_filled, loop_total,
+              hero_filled, hero_target, image_count, updated_at
+         FROM pif_variant_progress
+        WHERE category = ?
+        ORDER BY product_id, variant_key`
     ),
     _deletePifVariantProgressByProduct: db.prepare(
       'DELETE FROM pif_variant_progress WHERE category = ? AND product_id = ?'

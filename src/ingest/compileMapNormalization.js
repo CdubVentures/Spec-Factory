@@ -59,16 +59,6 @@ function pruneComponentOnlySelected(selectedKeys, componentSheets, warnings) {
   return out;
 }
 
-function guessComponentType(sheetName) {
-  const token = normalizeToken(sheetName);
-  if (token.includes('sensor')) return 'sensor';
-  if (token.includes('switch')) return 'switch';
-  if (token.includes('encoder')) return 'encoder';
-  if (token.includes('mcu')) return 'mcu';
-  if (token.includes('material')) return 'material';
-  return 'component';
-}
-
 const REAL_ENUM_BUCKET_ALLOWLIST = new Set([
   'yes_no', 'connection', 'connectivity', 'form_factor', 'shape', 'hump',
   'front_flare', 'sensor_type', 'mcu', 'switch_type', 'lighting',
@@ -132,6 +122,13 @@ function stripRetiredEvidenceKnobs(overrides) {
     if (isObject(rest.evidence)) {
       const { required: _req, conflict_policy: _cp, ...restEv } = rest.evidence;
       rest.evidence = restEv;
+    }
+    if (isObject(rest.field_studio_hints)) {
+      const { component_sheet: _componentSheet, ...hints } = rest.field_studio_hints;
+      rest.field_studio_hints = hints;
+      if (Object.keys(rest.field_studio_hints).length === 0) {
+        delete rest.field_studio_hints;
+      }
     }
     // WHY: Empty ai_assist blocks (reasoning_note: "") are compiled defaults,
     // not user-authored overrides. Strip them so they don't pollute the
@@ -324,14 +321,9 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
     }
   }
 
-  const componentRowsRaw = toArray(map.component_sources).length > 0 ? toArray(map.component_sources) : toArray(map.component_sheets);
+  const componentRowsRaw = toArray(map.component_sources);
   const componentSheets = componentRowsRaw.map((row) => {
     const rolesRaw = isObject(row.roles) ? row.roles : {};
-    const headerRow = Math.max(1, asInt(row.header_row, 1));
-    const firstDataRow = Math.max(1, asInt(
-      row.first_data_row || row.row_start || row.start_row,
-      Math.max(2, headerRow + 1)
-    ));
     const propertyMappingsRaw = Array.isArray(rolesRaw.properties)
       ? rolesRaw.properties
       : toArray(row.property_mappings);
@@ -365,83 +357,25 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
           warnings.push(`component_sources: EG-locked key '${resolvedKey}' cannot be component_only; ignoring flag`);
         }
         const out = {
-          key: resolvedKey,
-          column: normalizeText(entry.column || entry.col || '').toUpperCase(),
+          field_key: resolvedKey,
           type: propType,
           unit: normalizeText(entry.unit || ''),
-          field_key: fieldKey || undefined,
           variance_policy: effectivePolicy,
-          constraints: normalizedConstraints,
         };
+        const tolerance = entry.tolerance != null ? Number(entry.tolerance) : null;
+        if (Number.isFinite(tolerance)) out.tolerance = tolerance;
+        if (normalizedConstraints.length > 0) out.constraints = normalizedConstraints;
         if (componentOnly) out.component_only = true;
         return out;
       })
-      .filter((entry) => entry.column || entry.field_key);
-    if (propertyMappings.length === 0) {
-      for (const col of stableSortStrings(toArray(row.property_columns || row.props_columns).map((entry) => normalizeText(entry).toUpperCase()))) {
-        if (!col) continue;
-        propertyMappings.push({
-          key: normalizeFieldKey(col),
-          column: col,
-          type: 'string',
-          unit: '',
-          field_key: undefined,
-          variance_policy: 'authoritative',
-          constraints: []
-        });
-      }
-    }
-    const propertyColumns = stableSortStrings(propertyMappings.map((entry) => entry.column));
-    const primaryIdentifierColumn = normalizeText(
-      rolesRaw.primary_identifier
-      || row.primary_identifier_column
-      || row.canonical_name_column
-      || row.name_column
-      || row.canonical_column
-      || 'A'
-    ).toUpperCase();
-    const makerColumn = normalizeText(
-      rolesRaw.maker
-      || row.maker_column
-      || row.brand_column
-      || ''
-    ).toUpperCase();
-    const aliasColumns = stableSortStrings(
-      toArray(rolesRaw.aliases || row.alias_columns || row.alias_cols).map((entry) => normalizeText(entry).toUpperCase())
-    );
-    const linkColumns = stableSortStrings(
-      toArray(rolesRaw.links || row.link_columns || row.links_columns).map((entry) => normalizeText(entry).toUpperCase())
-    );
-    const stopAfterBlankPrimary = Math.max(1, asInt(row.stop_after_blank_primary || row.stop_after_blank_names, 10));
+      .filter((entry) => entry.field_key);
     const rowPriority = normalizeReviewPriority(row.priority || row.review_priority);
     const rowAiAssist = normalizeReviewAiAssist(row.ai_assist);
-    const rowMode = normalizeSourceMode(row.mode);
     return {
-      mode: rowMode,
-      sheet: normalizeText(row.sheet),
-      component_type: normalizeToken(row.component_type || row.type || guessComponentType(row.sheet)),
-      primary_identifier_column: primaryIdentifierColumn,
-      maker_column: makerColumn,
-      canonical_name_column: primaryIdentifierColumn,
-      name_column: primaryIdentifierColumn,
-      brand_column: makerColumn,
-      alias_columns: aliasColumns,
-      link_columns: linkColumns,
-      property_mappings: propertyMappings,
-      property_columns: propertyColumns,
+      component_type: normalizeToken(row.component_type || row.type || ''),
       roles: {
-        primary_identifier: primaryIdentifierColumn,
-        maker: makerColumn,
-        aliases: aliasColumns,
-        links: linkColumns,
         properties: propertyMappings
       },
-      auto_derive_aliases: row.auto_derive_aliases !== false,
-      header_row: headerRow,
-      first_data_row: firstDataRow,
-      stop_after_blank_primary: stopAfterBlankPrimary,
-      stop_after_blank_names: stopAfterBlankPrimary,
-      row_end: asInt(row.row_end || row.end_row, 0),
       priority: rowPriority,
       ai_assist: rowAiAssist
     };
@@ -504,26 +438,13 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         priority: row.priority,
         ai_assist: row.ai_assist
       })),
-    component_sheets: [],
     component_sources: componentSheets
-      .filter((row) => row.sheet || row.component_type)
+      .filter((row) => row.component_type)
       .map((row) => ({
-        mode: row.mode,
-        sheet: row.sheet,
-        type: row.component_type,
         component_type: row.component_type,
-        header_row: row.header_row,
-        first_data_row: row.first_data_row,
         roles: {
-          primary_identifier: row.primary_identifier_column,
-          maker: row.maker_column || '',
-          aliases: row.alias_columns,
-          links: row.link_columns,
-          properties: row.property_mappings
+          properties: row.roles.properties
         },
-        auto_derive_aliases: row.auto_derive_aliases,
-        stop_after_blank_primary: row.stop_after_blank_primary,
-        start_row: row.first_data_row,
         priority: row.priority,
         ai_assist: row.ai_assist
       })),
@@ -585,10 +506,26 @@ export function validateFieldStudioMap(map = {}, options = {}) {
     }
   };
 
-  const normalizedComponentRows = toArray(normalized.component_sources).length > 0
-    ? toArray(normalized.component_sources)
-    : toArray(normalized.component_sheets);
-  const hasSheetBackedComponentRows = normalizedComponentRows.some((row) => normalizeSourceMode(row?.mode) === 'sheet');
+  const normalizedComponentRows = toArray(normalized.component_sources);
+  const rawComponentRows = toArray(rawMap.component_sources);
+  rawComponentRows.forEach((row, index) => {
+    if (!isObject(row)) return;
+    const componentType = normalizeFieldKey(row.component_type || row.type || '');
+    if (!componentType) {
+      errors.push(`component_sources[${index}]: type is required`);
+    }
+    const rolesRaw = isObject(row.roles) ? row.roles : {};
+    const propertyMappingsRaw = Array.isArray(rolesRaw.properties)
+      ? rolesRaw.properties
+      : toArray(row.property_mappings);
+    propertyMappingsRaw.forEach((prop, propIndex) => {
+      if (!isObject(prop)) return;
+      const fieldKey = normalizeFieldKey(prop.field_key || prop.key || prop.property_key || '');
+      if (!fieldKey) {
+        errors.push(`component_sources[${componentType || index}].roles.properties[${propIndex}]: property mapping missing key`);
+      }
+    });
+  });
   const hasSheetBackedDataLists = toArray(normalized.data_lists).some((row) => {
     const mode = normalizeSourceMode(row?.mode);
     if (mode !== 'sheet') {
@@ -598,7 +535,6 @@ export function validateFieldStudioMap(map = {}, options = {}) {
   });
   const requiresKeyList = Boolean(normalized.product_table?.sheet)
     || Boolean(normalizeText(normalized.field_studio_source_path))
-    || hasSheetBackedComponentRows
     || hasSheetBackedDataLists;
 
   if (!normalized.key_list || !normalized.key_list.sheet) {
@@ -668,81 +604,29 @@ export function validateFieldStudioMap(map = {}, options = {}) {
 
   for (const row of normalizedComponentRows) {
     const roles = isObject(row.roles) ? row.roles : {};
-    const sheetToken = normalizeText(row.sheet);
-    const mode = normalizeSourceMode(row.mode);
-    const isSheetBacked = mode === 'sheet';
-    const componentType = normalizeFieldKey(row.component_type || row.type || '');
-    const primaryIdentifierColumn = normalizeText(
-      roles.primary_identifier
-      || ''
-    ).toUpperCase();
-    const makerColumn = normalizeText(roles.maker || '').toUpperCase();
-    const aliasColumns = stableSortStrings(toArray(roles.aliases).map((entry) => normalizeText(entry).toUpperCase()));
-    const linkColumns = stableSortStrings(toArray(roles.links).map((entry) => normalizeText(entry).toUpperCase()));
+    const componentType = normalizeFieldKey(row.component_type || '');
     const propertyMappings = toArray(roles.properties).filter((entry) => isObject(entry));
-    const propertyColumns = stableSortStrings(propertyMappings.map((entry) => normalizeText(entry.column || '').toUpperCase()));
-    const stopAfterBlankPrimary = Math.max(1, asInt(row.stop_after_blank_primary || row.stop_after_blank_names, 10));
 
-    checkSheet(row.sheet, 'component_sources');
-    if (isSheetBacked && !sheetToken) {
-      errors.push(`component_sources: sheet is required when mode=sheet for type '${componentType || '?'}'`);
-    }
     if (!componentType) {
-      errors.push(`component_sources: type is required for sheet '${row.sheet}'`);
-    }
-    if (isSheetBacked && !colToIndex(primaryIdentifierColumn)) {
-      errors.push(`component_sources: invalid primary_identifier column '${primaryIdentifierColumn}' for sheet '${row.sheet}'`);
-    }
-    if (isSheetBacked && row.header_row <= 0) {
-      errors.push(`component_sources: header_row must be > 0 for sheet '${row.sheet}'`);
-    }
-    if (isSheetBacked && row.first_data_row <= 0) {
-      errors.push(`component_sources: first_data_row must be > 0 for sheet '${row.sheet}'`);
-    }
-    if (isSheetBacked && row.first_data_row <= row.header_row) {
-      errors.push(`component_sources: first_data_row must be > header_row for sheet '${row.sheet}'`);
-    }
-    if (isSheetBacked && stopAfterBlankPrimary <= 0) {
-      errors.push(`component_sources: stop_after_blank_primary must be > 0 for sheet '${row.sheet}'`);
-    }
-    if (isSheetBacked && makerColumn && !colToIndex(makerColumn)) {
-      errors.push(`component_sources: invalid maker column '${makerColumn}' for sheet '${row.sheet}'`);
-    }
-    for (const aliasCol of aliasColumns) {
-      if (isSheetBacked && !colToIndex(aliasCol)) {
-        errors.push(`component_sources: invalid aliases entry '${aliasCol}' for sheet '${row.sheet}'`);
-      }
-    }
-    for (const linkCol of linkColumns) {
-      if (isSheetBacked && !colToIndex(linkCol)) {
-        errors.push(`component_sources: invalid links entry '${linkCol}' for sheet '${row.sheet}'`);
-      }
-    }
-    for (const propCol of propertyColumns) {
-      if (isSheetBacked && !colToIndex(propCol)) {
-        errors.push(`component_sources: invalid property column '${propCol}' for sheet '${row.sheet}'`);
-      }
+      errors.push('component_sources: type is required');
     }
     const VALID_VARIANCE_POLICIES = ['authoritative', 'upper_bound', 'lower_bound', 'range', 'override_allowed'];
     for (const prop of propertyMappings) {
       if (!isObject(prop)) {
-        errors.push(`component_sources: invalid property mapping in sheet '${row.sheet}'`);
+        errors.push(`component_sources: invalid property mapping for type '${componentType || '?'}'`);
         continue;
       }
       if (!normalizeFieldKey(prop.field_key || prop.key || '')) {
-        errors.push(`component_sources: property mapping missing key for sheet '${row.sheet}'`);
-      }
-      if (isSheetBacked && !colToIndex(prop.column || '')) {
-        errors.push(`component_sources: invalid property mapping column '${prop.column}' for sheet '${row.sheet}'`);
+        errors.push(`component_sources: property mapping missing key for type '${componentType || '?'}'`);
       }
       if (prop.type && !['string', 'number', 'integer'].includes(normalizeToken(prop.type))) {
-        errors.push(`component_sources: invalid property mapping type '${prop.type}' for sheet '${row.sheet}'`);
+        errors.push(`component_sources: invalid property mapping type '${prop.type}' for type '${componentType || '?'}'`);
       }
       if (prop.variance_policy && !VALID_VARIANCE_POLICIES.includes(normalizeToken(prop.variance_policy))) {
-        errors.push(`component_sources: invalid variance_policy '${prop.variance_policy}' for property '${prop.field_key || prop.key || '?'}' in sheet '${row.sheet}'`);
+        errors.push(`component_sources: invalid variance_policy '${prop.variance_policy}' for property '${prop.field_key || prop.key || '?'}'`);
       }
       if (prop.constraints && !Array.isArray(prop.constraints)) {
-        errors.push(`component_sources: constraints must be an array for property '${prop.field_key || prop.key || '?'}' in sheet '${row.sheet}'`);
+        errors.push(`component_sources: constraints must be an array for property '${prop.field_key || prop.key || '?'}'`);
       }
     }
   }

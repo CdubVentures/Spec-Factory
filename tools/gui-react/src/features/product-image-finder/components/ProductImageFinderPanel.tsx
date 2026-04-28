@@ -8,7 +8,6 @@
 
 import { useMemo, useCallback, useState } from 'react';
 import './ProductImageFinderPanel.css';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
 import {
   IndexingPanelHeader,
   PromptPreviewTriggerButton,
@@ -26,6 +25,7 @@ import {
   PagerSizeSelector,
   PagerNavFooter,
   getIndexingPanelCollapsedDefault,
+  FinderContentLoadingSkeleton,
 } from '../../../shared/ui/finder/index.ts';
 import { HeaderActionButton, RowActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { usePromptPreviewQuery } from '../../indexing/api/promptPreviewQueries.ts';
@@ -598,7 +598,7 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
           </div>
         </div>
       ) : isLoading ? (
-        <div className="flex items-center justify-center py-12"><Spinner /></div>
+        <FinderContentLoadingSkeleton />
       ) : (
         <div className="px-6 pb-6 pt-4 space-y-5">
           {/* KPI Grid */}

@@ -1,10 +1,11 @@
 import type { Operation } from './operationsStore.ts';
 import { parseBackendMs } from '../../../utils/dateTime.ts';
+import { isOperationUiActiveStatus } from './operationStatusContract.ts';
 
 type OperationStatus = Operation['status'];
 
 export function isOperationElapsedTimerActive(status: OperationStatus): boolean {
-  return status === 'queued' || status === 'running';
+  return isOperationUiActiveStatus(status);
 }
 
 export function formatOperationElapsed(

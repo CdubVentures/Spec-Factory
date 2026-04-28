@@ -20,14 +20,14 @@ export const CATEGORY = 'mouse';
 
 export const FIELD_RULES_FIELDS = {
   weight: { required_level: 'required', contract: { type: 'number', unit: 'g', shape: 'scalar', range: { min: 20, max: 300 } } },
-  sensor: { required_level: 'required', contract: { type: 'string', shape: 'scalar' }, component: { type: 'sensor', source: 'component_db.sensor' }, enum: { policy: 'open_prefer_known' } },
-  switch_type: { required_level: 'expected', contract: { type: 'string', shape: 'scalar' }, component: { type: 'switch', source: 'component_db.switch' }, enum: { policy: 'open_prefer_known' } },
-  encoder: { required_level: 'optional', contract: { type: 'string', shape: 'scalar' }, component: { type: 'encoder', source: 'component_db.encoder' }, enum: { policy: 'open_prefer_known' } },
+  sensor: { required_level: 'required', contract: { type: 'string', shape: 'scalar' }, component: { type: 'sensor', source: 'component_db.sensor' }, enum: { policy: 'open_prefer_known', source: 'component_db.sensor' } },
+  switch_type: { required_level: 'expected', contract: { type: 'string', shape: 'scalar' }, component: { type: 'switch', source: 'component_db.switch' }, enum: { policy: 'open_prefer_known', source: 'component_db.switch' } },
+  encoder: { required_level: 'optional', contract: { type: 'string', shape: 'scalar' }, component: { type: 'encoder', source: 'component_db.encoder' }, enum: { policy: 'open_prefer_known', source: 'component_db.encoder' } },
   dpi: { required_level: 'required', contract: { type: 'integer', unit: 'dpi', shape: 'scalar', range: { min: 50, max: 100000 } } },
   connection: { required_level: 'required', contract: { type: 'string', shape: 'scalar' }, enum: { policy: 'closed' } },
   cable_type: { required_level: 'optional', contract: { type: 'string', shape: 'scalar' }, enum: { policy: 'open_prefer_known' } },
   coating: { required_level: 'optional', output_shape: 'list', contract: { type: 'string', shape: 'list' }, enum: { policy: 'open_prefer_known' } },
-  shell_material: { required_level: 'optional', contract: { type: 'string', shape: 'scalar' }, component: { type: 'material', source: 'component_db.material' }, enum: { policy: 'open_prefer_known' } },
+  shell_material: { required_level: 'optional', contract: { type: 'string', shape: 'scalar' }, component: { type: 'material', source: 'component_db.material' }, enum: { policy: 'open_prefer_known', source: 'component_db.material' } },
 };
 
 const SENSOR_ITEMS = [

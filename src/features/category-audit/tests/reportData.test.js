@@ -75,6 +75,16 @@ function fixtureLoadedRules() {
         ],
       },
     },
+    componentSources: [
+      {
+        component_type: 'sensor',
+        roles: {
+          properties: [
+            { field_key: 'dpi', type: 'number', unit: 'dpi', variance_policy: 'upper_bound' },
+          ],
+        },
+      },
+    ],
   };
 }
 
@@ -207,6 +217,14 @@ test('extractReportData builds component inventory with identity + subfields', (
   assert.equal(sensorComp.entityCount, 2);
   assert.deepEqual(sensorComp.identityFields, ['sensor']);
   assert.deepEqual(sensorComp.subfields.sort(), ['dpi']);
+});
+
+test('extractReportData carries Mapping Studio component source rows for per-key docs', () => {
+  const data = callExtract();
+  assert.equal(data.componentSources.length, 1);
+  assert.equal(data.componentSources[0].component_type, 'sensor');
+  assert.equal(data.componentSources[0].roles.properties[0].field_key, 'dpi');
+  assert.equal(data.componentSources[0].roles.properties[0].variance_policy, 'upper_bound');
 });
 
 test('extractReportData stats surface gap counters', () => {

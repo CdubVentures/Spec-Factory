@@ -101,10 +101,26 @@ export function createFinderSqlStore({ db, category, module: mod, globalDb }) {
     } : {}),
     _insertRun: db.prepare(
       `INSERT INTO ${runsTableName} (category, product_id, run_number, ran_at, started_at, duration_ms, model, fallback_used, effort_level, access_mode, thinking, web_search, selected_json, prompt_json, response_json)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(category, product_id, run_number) DO UPDATE SET
+         ran_at = excluded.ran_at,
+         started_at = excluded.started_at,
+         duration_ms = excluded.duration_ms,
+         model = excluded.model,
+         fallback_used = excluded.fallback_used,
+         effort_level = excluded.effort_level,
+         access_mode = excluded.access_mode,
+         thinking = excluded.thinking,
+         web_search = excluded.web_search,
+         selected_json = excluded.selected_json,
+         prompt_json = excluded.prompt_json,
+         response_json = excluded.response_json`
     ),
     _listRuns: db.prepare(
       `SELECT * FROM ${runsTableName} WHERE category = ? AND product_id = ? ORDER BY run_number ASC`
+    ),
+    _listRunsByCategory: db.prepare(
+      `SELECT * FROM ${runsTableName} WHERE category = ? ORDER BY product_id ASC, run_number ASC`
     ),
     _getLatestRun: db.prepare(
       `SELECT * FROM ${runsTableName} WHERE category = ? AND product_id = ? ORDER BY run_number DESC LIMIT 1`
@@ -241,6 +257,10 @@ export function createFinderSqlStore({ db, category, module: mod, globalDb }) {
     return stmts._listRuns.all(category, productId).map(hydrateRunRow);
   }
 
+  function listRunsByCategory(cat) {
+    return stmts._listRunsByCategory.all(cat || category).map(hydrateRunRow);
+  }
+
   function getLatestRun(productId) {
     return hydrateRunRow(stmts._getLatestRun.get(category, productId));
   }
@@ -337,7 +357,7 @@ export function createFinderSqlStore({ db, category, module: mod, globalDb }) {
   return {
     upsert, get, listByCategory, remove,
     getIfOnCooldown,
-    insertRun, listRuns, getLatestRun, removeRun, removeAllRuns, updateRunJson,
+    insertRun, listRuns, listRunsByCategory, getLatestRun, removeRun, removeAllRuns, updateRunJson,
     getSetting, setSetting, getAllSettings, deleteSetting,
     updateSummaryField, updateBookkeeping,
   };

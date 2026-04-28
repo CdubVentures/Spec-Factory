@@ -1,59 +1,7 @@
 {
   "category": "keyboard",
   "publish_gate": "required_complete",
-  "component_db_sources": {
-    "switch": {
-      "entity_count": 44,
-      "field_studio": {
-        "alias_columns": [],
-        "auto_derive_aliases": true,
-        "first_data_row": 2,
-        "header_row": 1,
-        "link_columns": [],
-        "maker_column": "SWITCH_BRAND",
-        "mode": "scratch",
-        "primary_identifier_column": "SWITCH_NAME",
-        "property_columns": [],
-        "property_mappings": [],
-        "sheet": "",
-        "stop_after_blank_names": 10,
-        "stop_after_blank_primary": 10
-      },
-      "name_column": "SWITCH_NAME",
-      "preview_stats": {
-        "entity_count": 44,
-        "first_20_all_numeric": false,
-        "first_20_names": [],
-        "non_blank_names": 44,
-        "numeric_only_names": 0,
-        "numeric_only_ratio": 0,
-        "scanned_rows": 0,
-        "stop_after_blank_names": 10,
-        "stop_after_blank_primary": 10
-      },
-      "roles": {
-        "aliases": [],
-        "links": [],
-        "maker": "SWITCH_BRAND",
-        "primary_identifier": "SWITCH_NAME",
-        "properties": []
-      },
-      "sample_entities": [
-        "Cherry MX Red",
-        "Cherry MX Blue",
-        "Cherry MX Brown",
-        "Cherry MX Black",
-        "Cherry MX Speed Silver",
-        "Cherry MX Silent Red",
-        "Cherry MX Clear",
-        "Cherry MX Green",
-        "Gateron G Pro Red",
-        "Gateron G Pro Brown"
-      ],
-      "sheet": "",
-      "type": "switch"
-    }
-  },
+  "component_db_sources": {},
   "enum_buckets": {},
   "field_count": 103,
   "fields": {
@@ -67,7 +15,6 @@
         "adjustment step"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -172,7 +119,6 @@
         "pre-travel"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -278,7 +224,6 @@
         "operating force"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -385,7 +330,6 @@
         "maximum trigger point"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -491,7 +435,6 @@
         "minimum trigger point"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -596,7 +539,6 @@
         "height adjustment feet"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -692,7 +634,6 @@
         "adjustable input granularity"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -788,7 +729,6 @@
         "controller input"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -885,7 +825,6 @@
         "ghosting protection"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -981,7 +920,6 @@
         "dedicated arrows"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -1078,7 +1016,6 @@
         "lighting"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -1174,7 +1111,6 @@
         "series"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -1269,7 +1205,6 @@
         "battery capacity"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -1374,7 +1309,6 @@
         "battery life off"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -1481,7 +1415,6 @@
         "battery life with backlight"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -1587,7 +1520,6 @@
         "bt version"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -1683,7 +1615,6 @@
         "bottom-out force"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -1789,7 +1720,6 @@
         "manufacturer"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -1892,7 +1822,6 @@
         "cord length"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -1997,7 +1926,6 @@
         "included cable"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2093,7 +2021,6 @@
         "chassis material"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2188,7 +2115,6 @@
         "product type"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2284,7 +2210,6 @@
         "charging method"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -2380,7 +2305,6 @@
         "colorway"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
@@ -2486,7 +2410,6 @@
         "colors"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
@@ -2608,7 +2531,6 @@
         "supported operating systems"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
@@ -2715,7 +2637,6 @@
         "connectivity mode"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
@@ -2823,7 +2744,6 @@
         "debounce time"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -2927,7 +2847,6 @@
         "front to back"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -3032,7 +2951,6 @@
         "removable cable"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3126,7 +3044,6 @@
         "end of life"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3222,7 +3139,6 @@
         "doubleshot"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3317,7 +3233,6 @@
         "editions"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "consumers": {
         "enum.match.format_hint": {
@@ -3420,7 +3335,6 @@
         "foam dampening"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3515,7 +3429,6 @@
         "size"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3612,7 +3525,6 @@
         "function row"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3709,7 +3621,6 @@
         "gasket mount"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3805,7 +3716,6 @@
         "upc"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3903,7 +3813,6 @@
         "height front"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -4010,7 +3919,6 @@
         "rear height"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -4117,7 +4025,6 @@
         "hot-swappable"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -4215,7 +4122,6 @@
         "included accessories"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
@@ -4322,7 +4228,6 @@
         "number of keys"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -4427,7 +4332,6 @@
         "nkro"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -4523,7 +4427,6 @@
         "keycap material"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -4619,7 +4522,6 @@
         "profile"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -4715,7 +4617,6 @@
         "wall thickness"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -4823,7 +4724,6 @@
         "rotary encoder"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -4922,7 +4822,6 @@
         "physical layout"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5021,7 +4920,6 @@
         "layout standard"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5121,7 +5019,6 @@
         "printing method"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5218,7 +5115,6 @@
         "programmable keys"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5315,7 +5211,6 @@
         "volume control"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5410,7 +5305,6 @@
         "model number"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5506,7 +5400,6 @@
         "mounting style"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5601,7 +5494,6 @@
         "mpn"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5698,7 +5590,6 @@
         "multi-device pairing"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -5796,7 +5687,6 @@
         "paired devices"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -5900,7 +5790,6 @@
         "multi-key latency"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -6005,7 +5894,6 @@
         "numpad"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6102,7 +5990,6 @@
         "profile memory"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6199,7 +6086,6 @@
         "saved profiles"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -6303,7 +6189,6 @@
         "system toggle"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6399,7 +6284,6 @@
         "per-key rgb"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6496,7 +6380,6 @@
         "switch plate"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6592,7 +6475,6 @@
         "wired polling rate"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -6698,7 +6580,6 @@
         "wireless polling rate"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -6803,7 +6684,6 @@
         "price range"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6901,7 +6781,6 @@
         "via"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -6999,7 +6878,6 @@
         "rapid trigger"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7094,7 +6972,6 @@
         "release date"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7198,7 +7075,6 @@
         "rgb zones"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7295,7 +7171,6 @@
         "scan rate"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -7401,7 +7276,6 @@
         "shine-through"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7499,7 +7373,6 @@
         "single-key latency"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -7604,7 +7477,6 @@
         "stock keeping unit"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7701,7 +7573,6 @@
         "socd cleaning"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7797,7 +7668,6 @@
         "software"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7893,7 +7763,6 @@
         "software required"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -7989,7 +7858,6 @@
         "sound dampening"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8085,7 +7953,6 @@
         "thocky"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8181,7 +8048,6 @@
         "south-facing leds"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8277,7 +8143,6 @@
         "stabilizer lubed"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8373,7 +8238,6 @@
         "stabilizer mounting"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8469,7 +8333,6 @@
         "stabs"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8564,7 +8427,6 @@
         "switch maker"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8661,7 +8523,6 @@
         "switch support"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8757,7 +8618,6 @@
         "switch feel"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8855,7 +8715,6 @@
         "switch lifespan"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -8964,29 +8823,6 @@
         "switch name"
       ],
       "availability": "sometimes",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium"
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.sensor",
-        "type": "sensor"
-      },
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9085,7 +8921,6 @@
         "switch output type"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9184,7 +9019,6 @@
         "switch pin support"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9280,38 +9114,6 @@
         "switch type"
       ],
       "availability": "always",
-      "component": {
-        "ai": {
-          "context_level": "properties",
-          "mode": "off",
-          "model_strategy": "auto",
-          "reasoning_note": ""
-        },
-        "allow_new_components": true,
-        "match": {
-          "auto_accept_score": 0.95,
-          "flag_review_score": 0.65,
-          "fuzzy_threshold": 0.75,
-          "name_weight": 0.4,
-          "property_keys": [
-            "switch_feel",
-            "switch_output_type",
-            "actuation_force",
-            "actuation_distance",
-            "bottom_out_force",
-            "total_travel",
-            "switch_lifespan",
-            "hot_swappable"
-          ],
-          "property_weight": 0.6
-        },
-        "priority": {
-          "difficulty": "medium"
-        },
-        "require_identity_evidence": true,
-        "source": "component_db.switch",
-        "type": "switch"
-      },
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9407,7 +9209,6 @@
         "travel distance"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -9513,7 +9314,6 @@
         "typing angle"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -9618,7 +9418,6 @@
         "typing noise"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9713,7 +9512,6 @@
         "usb passthrough"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9810,7 +9608,6 @@
         "variant"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -9906,7 +9703,6 @@
         "warranty"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -10000,7 +9796,6 @@
         "weight"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -10103,7 +9898,6 @@
         "width"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "range": {
@@ -10207,7 +10001,6 @@
         "wired interface"
       ],
       "availability": "always",
-      "component": null,
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -10303,7 +10096,6 @@
         "wireless technology"
       ],
       "availability": "sometimes",
-      "component": null,
       "constraints": [],
       "contract": {
         "list_rules": {
@@ -10402,7 +10194,7 @@
       }
     }
   },
-  "generated_at": "2026-04-26T08:51:46.204Z",
+  "generated_at": "2026-04-28T06:44:30.978Z",
   "key_range": "field_catalog!B2:B2000",
   "notes": [
     "Generated by Field Rules Studio compiler.",

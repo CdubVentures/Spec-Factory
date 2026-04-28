@@ -288,6 +288,7 @@ export function registerPublisherRoutes(ctx) {
             broadcastWs,
             event: 'publisher-reconcile',
             category,
+            meta: op ? { operationId: op.id, operationStatus: 'done' } : null,
           });
         }
 

@@ -59,8 +59,6 @@ test('assertFieldStudioMapValidationOrThrow allows legacy map-only failures duri
       valid: false,
       errors: [
         'key_list: sheet is required',
-        "component_sources: invalid property mapping column '' for sheet ''",
-        "component_sources: invalid property mapping column '' for sheet ''",
       ],
       warnings: [],
     },
@@ -82,7 +80,6 @@ test('assertFieldStudioMapValidationOrThrow does not bypass legacy errors for sa
         valid: false,
         errors: [
           'key_list: sheet is required',
-          "component_sources: invalid property mapping column '' for sheet ''",
         ],
       },
       actionLabel: 'save mapping',
@@ -99,8 +96,7 @@ test('assertFieldStudioMapValidationOrThrow does not bypass when non-legacy erro
         valid: false,
         errors: [
           'key_list: sheet is required',
-          "component_sources: invalid property mapping column '' for sheet ''",
-          'component_sources: type is required for sheet \'\'',
+          'component_sources: type is required',
         ],
       },
       actionLabel: 'compile',
@@ -109,4 +105,3 @@ test('assertFieldStudioMapValidationOrThrow does not bypass when non-legacy erro
     /Field Studio map validation failed before compile:/,
   );
 });
-

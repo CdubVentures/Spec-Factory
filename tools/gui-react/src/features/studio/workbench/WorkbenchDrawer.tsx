@@ -1,6 +1,7 @@
 import { usePersistedTab } from '../../../stores/tabStore.ts';
 import { humanizeField } from '../../../utils/fieldNormalize.ts';
 import { useStudioFieldRulesActions, useStudioFieldRulesState } from '../state/studioFieldRulesController.ts';
+import { isComponentIdentityProjectionLocked } from '../state/componentLockClient.ts';
 import { SystemBadges } from './SystemBadges.tsx';
 import { WorkbenchDrawerTabContent } from './WorkbenchDrawerTabContent.tsx';
 import { strN } from './workbenchHelpers.ts';
@@ -76,6 +77,7 @@ export function WorkbenchDrawer({
   const { updateField } = useStudioFieldRulesActions();
   const { egLockedKeys } = useStudioFieldRulesState();
   const isEgLocked = egLockedKeys.includes(fieldKey);
+  const isIdentityLocked = isComponentIdentityProjectionLocked(rule);
 
   const update = (path: string, value: unknown) => updateField(fieldKey, path, value);
 
@@ -97,7 +99,8 @@ export function WorkbenchDrawer({
     non_mandatory: 'sf-chip-neutral',
   };
 
-  const tabIsLocked = isEgLocked && !EG_EDITABLE_TABS.has(activeTab);
+  const tabIsLocked = (isEgLocked && !EG_EDITABLE_TABS.has(activeTab))
+    || (isIdentityLocked && activeTab === 'contract');
 
   return (
     <div className={DRAWER_SHELL_CLASS} style={{ maxHeight: 'calc(100vh - 340px)' }}>
@@ -178,6 +181,7 @@ export function WorkbenchDrawer({
           onUpdate={update}
           onNavigate={onNavigate}
           isEgLocked={isEgLocked}
+          isIdentityLocked={isIdentityLocked}
           disabled={tabIsLocked}
           B={B}
         />

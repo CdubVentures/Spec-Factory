@@ -189,6 +189,15 @@ export function resolveDeclaredComponentPropertyColumns({ fieldRules = null, com
   return [...keys].sort();
 }
 
+export function hasDeclaredComponentSource({ fieldRules = null, componentType = '' } = {}) {
+  const targetType = normalizeFieldKey(componentType);
+  if (!targetType || !isObject(fieldRules)) return false;
+  const componentSources = isObject(fieldRules?.component_db_sources)
+    ? fieldRules.component_db_sources
+    : (isObject(fieldRules?.rules?.component_db_sources) ? fieldRules.rules.component_db_sources : {});
+  return Object.keys(componentSources).some((sourceType) => normalizeFieldKey(sourceType) === targetType);
+}
+
 export function mergePropertyColumns(observedColumns = [], declaredColumns = []) {
   const keys = new Set();
   for (const raw of [...toArray(observedColumns), ...toArray(declaredColumns)]) {
@@ -197,6 +206,23 @@ export function mergePropertyColumns(observedColumns = [], declaredColumns = [])
     keys.add(key);
   }
   return [...keys].sort((a, b) => a.localeCompare(b));
+}
+
+export function resolveComponentReviewPropertyColumns({
+  observedColumns = [],
+  declaredColumns = [],
+  declaredComponentSource = false,
+} = {}) {
+  if (declaredComponentSource) {
+    const keys = new Set();
+    for (const raw of toArray(declaredColumns)) {
+      const key = normalizeFieldKey(raw);
+      if (!key || key.startsWith('__')) continue;
+      keys.add(key);
+    }
+    return [...keys].sort((a, b) => a.localeCompare(b));
+  }
+  return mergePropertyColumns(observedColumns, declaredColumns);
 }
 
 // ── Field Rules Metadata Resolution ──────────────────────────────────

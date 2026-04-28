@@ -158,6 +158,28 @@ describe('Overview bulk dispatch contracts', () => {
     assert.equal(useOperationsStore.getState().operations.size, 0);
   });
 
+  it('retains failed RDF Run optimistic stubs as terminal error operations', async () => {
+    const row = product('p1', [scalarVariant('red')]);
+
+    const result = await dispatchRdfRun(
+      'mouse',
+      [row],
+      async () => {
+        throw new Error('API 500: rejected');
+      },
+      { staggerMs: 0 },
+    );
+
+    const operations = [...useOperationsStore.getState().operations.values()];
+    assert.equal(result.failures, 1);
+    assert.equal(operations.length, 1);
+    assert.equal(operations[0].id.startsWith('_pending_'), true);
+    assert.equal(operations[0].status, 'error');
+    assert.equal(operations[0].error, 'API 500: rejected');
+    assert.equal(typeof operations[0].endedAt, 'string');
+    assert.equal(operations[0].variantKey, 'red');
+  });
+
   it('dispatchPifEval fires one carousel eval operation per variant with collected images', async () => {
     (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
       if (path === '/product-image-finder/mouse/p1') {

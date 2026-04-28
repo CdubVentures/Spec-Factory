@@ -469,7 +469,7 @@ export function ComponentSubTab({
       },
       {
         accessorKey: 'maker',
-        header: 'Maker',
+        header: 'Brand',
         size: 150,
         cell: ({ row }) => {
           const isSelected = isCellSelected(selectedCell, row.index, '__maker');
@@ -501,6 +501,29 @@ export function ComponentSubTab({
               sourceCount={row.original.maker_tracked?.candidate_count ?? 0}
               emptyWhenMissing={<span className="sf-text-muted">{row.original.maker || ''}</span>}
             />
+          );
+        },
+      },
+      {
+        id: 'links',
+        header: 'Link',
+        size: 180,
+        accessorFn: (row) => row.links.join(', '),
+        cell: ({ row }) => {
+          const links = row.original.links || [];
+          const firstLink = links[0] || '';
+          if (!firstLink) return null;
+          return (
+            <a
+              href={firstLink}
+              target="_blank"
+              rel="noreferrer"
+              onClick={(event) => event.stopPropagation()}
+              className="text-[11px] sf-link-accent hover:underline truncate block max-w-[180px]"
+              title={links.join(', ')}
+            >
+              {firstLink}
+            </a>
           );
         },
       },

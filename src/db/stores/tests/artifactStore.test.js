@@ -160,6 +160,27 @@ test('run source projection preserves duplicate content_hash provenance across r
   specDb.db.close();
 });
 
+test('run source pagination returns SQL page and total count', () => {
+  const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
+  for (let i = 0; i < 5; i += 1) {
+    specDb.insertRunSource({
+      run_id: 'run-page',
+      content_hash: `page-hash-${i}`,
+      product_id: 'p-page',
+      source_url: `https://example.com/page-${i}`,
+      crawled_at: `2026-03-2${i}T00:00:00Z`,
+    });
+  }
+
+  const page = specDb.getRunSourcesPageByRunId('run-page', { limit: 2, offset: 1 });
+  assert.deepEqual(page.map((row) => row.source_url), [
+    'https://example.com/page-3',
+    'https://example.com/page-2',
+  ]);
+  assert.equal(specDb.countRunSourcesByRunId('run-page'), 5);
+  specDb.db.close();
+});
+
 test('indexed URL history projects run-scoped source rows for seed planning', () => {
   const specDb = new SpecDb({ dbPath: ':memory:', category: 'mouse' });
   specDb.insertRunSource({

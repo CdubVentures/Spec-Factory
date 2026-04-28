@@ -24,7 +24,10 @@ import {
   loadGeneratedComponentDbForCompile,
   buildFallbackKeyRows,
 } from './compileFileIo.js';
-import { declaredComponentPropertyKeysFromMap } from './compileComponentHelpers.js';
+import {
+  declaredComponentIdentityProjectionKeysFromMap,
+  declaredComponentPropertyKeysFromMap,
+} from './compileComponentHelpers.js';
 import { EG_LOCKED_KEYS, getEgPresetForKey, preserveEgEditablePaths } from '../features/studio/index.js';
 
 export async function loadCompileContext({
@@ -178,8 +181,13 @@ export async function loadCompileContext({
   // WHY: Ensure EG-locked keys are always in the selected set for compile.
   for (const k of EG_LOCKED_KEYS) { selectedKeySet.add(k); }
   const componentPropertyKeySet = declaredComponentPropertyKeysFromMap(map);
+  const componentIdentityProjectionKeySet = declaredComponentIdentityProjectionKeysFromMap(map);
+  const componentDeclaredKeySet = new Set([
+    ...componentPropertyKeySet,
+    ...componentIdentityProjectionKeySet,
+  ]);
   const extractedKeySet = new Set(extractedKeyRows.map((row) => normalizeFieldKey(row.key)).filter(Boolean));
-  const declaredOnlyKeyRows = [...componentPropertyKeySet]
+  const declaredOnlyKeyRows = [...componentDeclaredKeySet]
     .filter((key) => !extractedKeySet.has(key))
     .sort((a, b) => a.localeCompare(b))
     .map((key) => ({
@@ -191,13 +199,13 @@ export async function loadCompileContext({
   // filter keeps them. Without this, they're in the selected set but absent
   // from candidates, so the filter drops them.
   const egKeyRows = EG_LOCKED_KEYS
-    .filter((k) => !extractedKeySet.has(k) && !componentPropertyKeySet.has(k))
+    .filter((k) => !extractedKeySet.has(k) && !componentDeclaredKeySet.has(k))
     .map((k) => ({ row: 0, label: titleFromKey(k), key: k }));
   const candidateKeyRows = [...extractedKeyRows, ...declaredOnlyKeyRows, ...egKeyRows];
   const keyRows = selectedKeySet.size > 0
     ? candidateKeyRows.filter((row) => (
       selectedKeySet.has(normalizeFieldKey(row.key))
-      || componentPropertyKeySet.has(normalizeFieldKey(row.key))
+      || componentDeclaredKeySet.has(normalizeFieldKey(row.key))
     ))
     : candidateKeyRows;
   if (!keyRows.length) {

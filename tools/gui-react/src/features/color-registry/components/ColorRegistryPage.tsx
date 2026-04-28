@@ -9,7 +9,7 @@ import { AddColorForm } from './AddColorForm.tsx';
 import { AddGroupForm } from './AddGroupForm.tsx';
 import { btnPrimary } from '../../../shared/ui/buttonClasses.ts';
 import { inputCls } from '../../../utils/studioConstants.ts';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { ColorRegistryPageSkeleton } from './ColorRegistryPageSkeleton.tsx';
 
 export function ColorRegistryPage() {
   const [search, setSearch] = useState('');
@@ -71,7 +71,7 @@ export function ColorRegistryPage() {
     setShowAddGroup(false);
   }, []);
 
-  if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
+  if (isLoading) return <ColorRegistryPageSkeleton />;
 
   return (
     <div className="p-6 max-w-7xl mx-auto">

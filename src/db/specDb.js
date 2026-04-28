@@ -236,6 +236,7 @@ export class SpecDb {
         _upsertVariant: this._upsertVariant,
         _getVariant: this._getVariant,
         _listVariantsByProduct: this._listVariantsByProduct,
+        _listVariantsByCategory: this._listVariantsByCategory,
         _listActiveVariantsByProduct: this._listActiveVariantsByProduct,
         _deleteVariant: this._deleteVariant,
         _deleteVariantsByProduct: this._deleteVariantsByProduct,
@@ -246,6 +247,7 @@ export class SpecDb {
       stmts: {
         _upsertPifVariantProgress: this._upsertPifVariantProgress,
         _listPifVariantProgressByProduct: this._listPifVariantProgressByProduct,
+        _listPifVariantProgressByCategory: this._listPifVariantProgressByCategory,
         _deletePifVariantProgressByProduct: this._deletePifVariantProgressByProduct,
         _deletePifVariantProgressByVariant: this._deletePifVariantProgressByVariant,
       },
@@ -258,6 +260,7 @@ export class SpecDb {
 
   upsertPifVariantProgress(row) { this._pifVariantProgressStore.upsert(row); }
   listPifVariantProgressByProduct(pid) { return this._pifVariantProgressStore.listByProduct(pid); }
+  listPifVariantProgressByCategory() { return this._pifVariantProgressStore.listByCategory(); }
   deletePifVariantProgressByProduct(pid) { this._pifVariantProgressStore.removeByProduct(pid); }
   deletePifVariantProgressByVariant(pid, vid) { this._pifVariantProgressStore.removeByVariant(pid, vid); }
 
@@ -556,6 +559,7 @@ export class SpecDb {
   // --- Color & Edition Finder Runs (backward-compat) ---
   insertColorEditionFinderRun(row) { this.getFinderStore('colorEditionFinder').insertRun(row); }
   listColorEditionFinderRuns(pid) { return this.getFinderStore('colorEditionFinder').listRuns(pid); }
+  listColorEditionFinderRunsByCategory(cat) { return this.getFinderStore('colorEditionFinder').listRunsByCategory(cat || this.category); }
   getLatestColorEditionFinderRun(pid) { return this.getFinderStore('colorEditionFinder').getLatestRun(pid); }
   deleteColorEditionFinderRunByNumber(pid, runNum) { return this.getFinderStore('colorEditionFinder').removeRun(pid, runNum); }
   deleteAllColorEditionFinderRuns(pid) { return this.getFinderStore('colorEditionFinder').removeAllRuns(pid); }
@@ -589,8 +593,14 @@ export class SpecDb {
   insertVideo(row) { return this._artifactStore.insertVideo(row); }
   getCrawlSourcesByProduct(pid) { return this._artifactStore.getCrawlSourcesByProduct(pid); }
   getCrawlSourcesByRunId(runId) { return this._artifactStore.getCrawlSourcesByRunId(runId); }
+  getCrawlSourcesPageByRunId(runId, page) { return this._artifactStore.getCrawlSourcesPageByRunId(runId, page); }
+  countCrawlSourcesByRunId(runId) { return this._artifactStore.countCrawlSourcesByRunId(runId); }
+  getCrawlSourceByRunIdAndHash(runId, hash) { return this._artifactStore.getCrawlSourceByRunIdAndHash(runId, hash); }
   getRunSourcesByProduct(pid) { return this._artifactStore.getRunSourcesByProduct(pid); }
   getRunSourcesByRunId(runId) { return this._artifactStore.getRunSourcesByRunId(runId); }
+  getRunSourcesPageByRunId(runId, page) { return this._artifactStore.getRunSourcesPageByRunId(runId, page); }
+  countRunSourcesByRunId(runId) { return this._artifactStore.countRunSourcesByRunId(runId); }
+  getRunSourceByRunIdAndHash(runId, hash) { return this._artifactStore.getRunSourceByRunIdAndHash(runId, hash); }
   getIndexedUrlHistoryByProduct(pid) { return this._artifactStore.getIndexedUrlHistoryByProduct(pid); }
   getScreenshotsByProduct(pid) { return this._artifactStore.getScreenshotsByProduct(pid); }
   getScreenshotsByRunId(runId) { return this._artifactStore.getScreenshotsByRunId(runId); }
@@ -669,6 +679,37 @@ export class SpecDb {
         .filter(Boolean)
         .map(n => Number(n)),
       value: r.value,
+    }));
+  }
+
+  listFieldBucketsByCategory() {
+    const rows = this._listFieldBucketsByCategory.all(this.category);
+    return rows.map(r => ({
+      product_id: r.product_id,
+      field_key: r.field_key,
+      variant_id_key: r.variant_id_key,
+      value_fingerprint: r.value_fingerprint,
+      top_confidence: Number(r.top_confidence || 0),
+      member_count: Number(r.member_count || 0),
+      member_ids: String(r.member_ids_csv || '')
+        .split(',')
+        .filter(Boolean)
+        .map(n => Number(n)),
+      value: r.value,
+    }));
+  }
+
+  listPooledQualifyingEvidenceCountsByCategory({ minConfidence }) {
+    const rows = this._listPooledQualifyingEvidenceCountsByCategory.all(
+      this.category,
+      Number(minConfidence ?? 0),
+    );
+    return rows.map(r => ({
+      product_id: r.product_id,
+      field_key: r.field_key,
+      variant_id_key: r.variant_id_key,
+      value_fingerprint: r.value_fingerprint,
+      total: Number(r.total || 0),
     }));
   }
 

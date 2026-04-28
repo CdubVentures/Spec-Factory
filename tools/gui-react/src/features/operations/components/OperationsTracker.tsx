@@ -14,6 +14,7 @@ import {
   cancelActiveOperations,
   formatStopAllActiveOperationsMessage,
 } from '../state/operationBulkCancel.ts';
+import { isOperationTerminalStatus } from '../state/operationStatusContract.ts';
 import {
   selectActiveOperationCount,
   selectOperationById,
@@ -201,7 +202,7 @@ const OpCard = memo(function OpCardInner({ op, onClick, onDismiss, onStop, confi
       tabIndex={0}
     >
       {/* Dismiss badge — only for terminal ops, top-right corner */}
-      {op.status !== 'running' && op.status !== 'queued' && (
+      {isOperationTerminalStatus(op.status) && (
         <button
           type="button"
           onClick={(e) => onDismiss(e, op)}

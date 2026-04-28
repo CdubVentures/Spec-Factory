@@ -5,7 +5,7 @@ In-memory registry for tracking ephemeral long-running operations (LLM calls, va
 ## Public API (The Contract)
 
 ```js
-import { initOperationsRegistry, registerOperation, updateStage, updateProgressText, completeOperation, failOperation, countRunningOperations, listOperationSummaries, getOperation, listOperations } from 'src/core/operations';
+import { initOperationsRegistry, registerOperation, updateStage, updateProgressText, completeOperation, failOperation, countRunningOperations, listOperationSummaries, getOperation, listOperations, OPERATION_STATUS_CONTRACT } from 'src/core/operations';
 ```
 
 | Function | Purpose |
@@ -21,6 +21,7 @@ import { initOperationsRegistry, registerOperation, updateStage, updateProgressT
 | `getOperation(id)` | Full operation detail for an explicitly selected operation |
 | `listOperations()` | Full tracked ops, newest-first; core/internal use only |
 | `fireAndForget({ res, jsonRes, op, ... })` | Return 202 immediately, then run async work under the active-operation gate |
+| `OPERATION_STATUS_CONTRACT` + status helpers | Canonical queued/running/terminal buckets for registry and UI-count semantics |
 
 ## Dependencies
 
@@ -29,7 +30,8 @@ None. `broadcastWs` is injected at init — no direct imports from other modules
 ## Domain Invariants
 
 - Operations are **ephemeral runtime state** — not persisted to JSON or DB
-- Status transitions are terminal: `queued → running → done | error | cancelled`
+- Status transitions are terminal: `queued -> running -> done | error | cancelled`
+- UI-active count is `queued + running`; resource-running count is `running` only
 - At most 100 top-level `fireAndForget` operations may run at once; overflow operations stay `queued` until a slot opens
 - The active-operation cap does not limit internal parallel work inside a single operation
 - IDs are UUIDs — globally unique
@@ -39,4 +41,4 @@ None. `broadcastWs` is injected at init — no direct imports from other modules
 - `progressText` defaults to `''` — free-form progress string, only settable on running ops
 - Active-operation list/API/WS surfaces stay summary-only; full `llmCalls` are fetched by explicit operation id
 - Completed/failed ops auto-evict from the Map after 60 seconds
-- The registry retains up to 250 operations for UI/history; running ops are never evicted by retention
+- The registry retains up to 250 operations for UI/history; queued/running ops are never evicted by retention

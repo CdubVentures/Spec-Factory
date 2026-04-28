@@ -244,3 +244,131 @@ test('cascade: priority.required_level → identity floors evidence refs', async
 
   assert.equal(rule.evidence.min_evidence_refs, 1, 'floored to 1');
 });
+
+test('cascade: enum.policy=open clears known-list enum source', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {
+    contract: { type: 'string', shape: 'scalar' },
+    enum: { policy: 'open_prefer_known', source: 'data_lists.colors' },
+    enum_policy: 'open_prefer_known',
+    enum_source: 'data_lists.colors',
+  };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'color',
+    command: createSetFieldValueCommand('enum.policy', 'open'),
+  });
+
+  assert.equal(rule.enum?.policy, 'open', 'open policy should remain authored');
+  assert.equal(rule.enum_policy, 'open', 'legacy policy alias synced');
+  assert.equal(rule.enum?.source, null, 'open policy clears known-list source');
+  assert.equal(rule.enum_source, null, 'legacy source alias synced');
+});
+
+test('cascade: enum.source cannot be added while policy is open', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {
+    contract: { type: 'string', shape: 'scalar' },
+    enum: { policy: 'open', source: '' },
+    enum_policy: 'open',
+    enum_source: '',
+  };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'color',
+    command: createSetFieldValueCommand('enum.source', 'data_lists.colors'),
+  });
+
+  assert.equal(rule.enum?.policy, 'open', 'policy stays open');
+  assert.equal(rule.enum?.source, null, 'open policy rejects known-list source');
+  assert.equal(rule.enum_source, null, 'legacy source alias synced');
+});
+
+test('cascade: enum.policy=open_prefer_known forces key-matched enum source', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {
+    contract: { type: 'string', shape: 'scalar' },
+    enum: { policy: 'open', source: null },
+    enum_policy: 'open',
+    enum_source: null,
+  };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'color',
+    command: createSetFieldValueCommand('enum.policy', 'open_prefer_known'),
+  });
+
+  assert.equal(rule.enum?.policy, 'open_prefer_known');
+  assert.equal(rule.enum?.source, 'data_lists.color');
+  assert.equal(rule.enum_source, 'data_lists.color');
+});
+
+test('cascade: enum.policy=closed replaces custom enum source with key-matched list', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {
+    contract: { type: 'string', shape: 'scalar' },
+    enum: { policy: 'open_prefer_known', source: 'data_lists.colors' },
+    enum_policy: 'open_prefer_known',
+    enum_source: 'data_lists.colors',
+  };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'color',
+    command: createSetFieldValueCommand('enum.policy', 'closed'),
+  });
+
+  assert.equal(rule.enum?.policy, 'closed');
+  assert.equal(rule.enum?.source, 'data_lists.color');
+  assert.equal(rule.enum_source, 'data_lists.color');
+});
+
+test('cascade: enum.source edits are ignored for key-matched known policies', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {
+    contract: { type: 'string', shape: 'scalar' },
+    enum: { policy: 'open_prefer_known', source: 'data_lists.color' },
+    enum_policy: 'open_prefer_known',
+    enum_source: 'data_lists.color',
+  };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'color',
+    command: createSetFieldValueCommand('enum.source', 'data_lists.colors'),
+  });
+
+  assert.equal(rule.enum?.policy, 'open_prefer_known');
+  assert.equal(rule.enum?.source, 'data_lists.color');
+  assert.equal(rule.enum_source, 'data_lists.color');
+});
+
+test('cascade: component_db enum source cannot use open policy', async () => {
+  const { applyStudioRuleCommand, createSetFieldValueCommand } =
+    await loadRuleCommands();
+  const rule = {
+    contract: { type: 'string', shape: 'scalar' },
+    enum: { policy: 'open_prefer_known', source: 'component_db.sensor' },
+    enum_policy: 'open_prefer_known',
+    enum_source: 'component_db.sensor',
+  };
+
+  applyStudioRuleCommand({
+    rule,
+    key: 'sensor',
+    command: createSetFieldValueCommand('enum.policy', 'open'),
+  });
+
+  assert.equal(rule.enum?.source, 'component_db.sensor', 'component source stays locked');
+  assert.equal(rule.enum_source, 'component_db.sensor', 'legacy source alias synced');
+  assert.equal(rule.enum?.policy, 'open_prefer_known', 'component key rejects open policy');
+  assert.equal(rule.enum_policy, 'open_prefer_known', 'legacy policy alias synced');
+});

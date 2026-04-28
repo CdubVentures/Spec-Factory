@@ -118,6 +118,37 @@ test('studio page persistence builds a rename-aware autosave payload from the fi
   ]);
 });
 
+test('studio page persistence identifies empty map payloads as unsafe to autosave', async () => {
+  const {
+    hasStudioMapPayload,
+    shouldPersistStudioMapPayload,
+  } = await loadStudioPagePersistence();
+
+  assert.equal(hasStudioMapPayload({}), false);
+  assert.equal(hasStudioMapPayload({ component_sources: [], data_lists: [], enum_lists: [] }), false);
+  assert.equal(hasStudioMapPayload({ component_sources: [{ component_type: 'sensor' }] }), true);
+  assert.equal(hasStudioMapPayload({ data_lists: [{ field: 'connection' }] }), true);
+
+  assert.equal(
+    shouldPersistStudioMapPayload({
+      payload: { selected_keys: ['dpi'], field_overrides: { dpi: {} } },
+      force: false,
+    }),
+    false,
+  );
+  assert.equal(
+    shouldPersistStudioMapPayload({
+      payload: {
+        selected_keys: ['dpi'],
+        data_lists: [{ field: 'connection' }],
+        field_overrides: { dpi: {} },
+      },
+      force: false,
+    }),
+    true,
+  );
+});
+
 test('studio page persistence propagates renames into expectations field-key arrays', async () => {
   const { buildStudioPersistMap } = await loadStudioPagePersistence();
 

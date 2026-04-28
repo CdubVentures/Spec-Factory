@@ -63,18 +63,18 @@ Returned JSON must be strict and importable:
     "data_lists": [
       {
         "field": "<field_key>",
-        "mode": "manual",
         "normalize": "lower_trim",
         "manual_values": []
       }
     ],
     "component_sources": [
       {
-        "component_type": "sensor",
+        "component_type": "<component_type>",
         "roles": {
           "properties": [
             {
               "field_key": "<field_key>",
+              "type": "string",
               "variance_policy": "authoritative"
             }
           ]
@@ -97,12 +97,13 @@ JSON rules:
 - \`patch\` may contain only \`field_overrides\`, \`data_lists\`, and \`component_sources\`.
 - \`field_overrides\` may patch only its own \`field_key\`.
 - \`data_lists\` rows must use the same \`field\` as \`field_key\`.
-- \`component_sources\` rows must either define the component type itself or include the field in \`roles.properties\`.
+- \`data_lists\` rows use \`field\`, \`normalize\`, and \`manual_values\`.
+- \`component_sources\` rows must declare \`component_type\` and may include the field in \`roles.properties\`.
 - Omit unchanged setting paths entirely. \`null\` clears a setting. Arrays replace arrays. Objects deep-merge.
 - Do not include comments, markdown, trailing commas, prose sentinels, or implementation notes inside JSON.
 
 Mapping Studio guidance:
-- Component Source Mapping belongs under \`patch.component_sources\`. Use it for component source/type, primary identifier role, maker role, aliases/name variants, reference URLs/links, component _link fields, and property variance. A component _link field should point to a manufacturer component page, datasheet/spec-sheet PDF, or authorized component distributor page; not eBay, forums, or pages that merely mention the component.
+- Component Source Mapping belongs under \`patch.component_sources\`. Use it for component type and component property variance. Component entity rows, aliases, makers, and source URLs are maintained through Component Review, not Field Studio patches.
 - Enum Data Lists belong under \`patch.data_lists\`. Return the final ordered canonical values when replacing a list; keep aliases/source phrases out of public chips.
 
 Key Navigator guidance:
@@ -167,7 +168,7 @@ After the JSON files, include the markdown report shape below.
 - **Aliases:** <additions, or "none">
 - **Search hints:** <domain_hints / query_terms to add, or "none">
 - **Cross-field constraints:** <additions or corrections, or "none">
-- **Component relation:** <confirm / correct \`component.type\` and the matching \`component_sources[X].roles.properties[]\` list in field_studio_map>
+- **Component relation:** <confirm / correct \`enum.source = component_db.<X>\` and the matching \`component_sources[X].roles.properties[]\` list in field_studio_map>
 - **Why:** <one sentence>
 
 (repeat per field, grouped by Part 6's group order)
@@ -475,12 +476,65 @@ Compiled rules may store constraints as \`constraints\` string-DSL entries or as
 `.trim();
 
 const COMPONENT_RELATIONS_BODY = `
-Two kinds of fields interact with components:
+**Three field states relative to components:**
 
-- **Component identity (parent)** â€” e.g. \`sensor\`, \`switch\`, \`encoder\`. The field's value IS the canonical component name. Its compiled rule has \`enum.source = component_db.<self>\` (the lock contract); the prompt gets a "This key IS the \`type\` component identity." pointer.
-- **Component subfield** â€” a product field can belong to a component entity. It appears as a property in \`field_studio_map.component_sources[X].roles.properties[]\`. When the parent identity is resolved on a product, the subfield values flow into the prompt as \`PRODUCT_COMPONENTS\` so the LLM doesn't re-extract them.
+- **Component identity (parent)** â€” e.g. \`sensor\`, \`switch\`, \`encoder\`, \`panel\`. The field's value IS the canonical component name. The compiled rule has \`enum.source = component_db.<self>\` (the lock contract). The prompt gets "This key IS the \`type\` component identity."
+- **Component property (subfield)** â€” a product field that belongs to a component entity. It appears in \`field_studio_map.component_sources[X].roles.properties[]\`. When the parent identity is resolved on a product, the property values flow into the prompt as \`PRODUCT_COMPONENTS\` so the LLM doesn't re-extract them.
+- **Standalone** â€” most fields. No component relation. Treat as a normal product field rule.
 
-The component inventory in Part 5 is context for whether the Field Studio mapping is configured correctly. Do not ask for concrete component entity row edits in the Field Studio change file; report missing/stale component data separately.
+**Lock contract on a parent identity key.** When \`enum.source = component_db.<self>\`, these auto-lock and cannot be edited:
+- \`contract.type\` â†' \`"string"\`
+- \`contract.shape\` â†' \`"scalar"\`
+- \`contract.unit\`, \`contract.range\`, \`contract.list_rules\`, \`contract.rounding\` â€” locked/hidden
+
+These stay editable on a parent: \`enum.policy\`, \`enum.pattern\`, plus standard non-component knobs (priority, ai_assist, evidence, ui, aliases, search_hints, constraints).
+
+**\`enum.policy\` on a parent identity controls new-component discovery:**
+- \`open\` or \`open_prefer_known\` â€” pipeline may suggest unknown components found in evidence; flagged for review.
+- \`closed\` â€” unmatched values rejected; no new-component suggestions.
+
+**Setup lives in two places.** A complete component requires:
+1. **The parent field rule** â€” set \`enum.source = component_db.<self>\` and pick \`enum.policy\`. Lock applies automatically.
+2. **The Mapping Studio \`component_sources[<self>]\` entry** â€” a row with \`component_type\` and \`roles.properties[]\`.
+
+**Roles block on a component_sources entry:**
+- \`properties\` â€” array of property entries, one per attribute the component carries.
+
+**Each property entry:**
+- \`field_key\` â€” the field rule key this property maps to. If \`component_only: true\`, no matching field rule is required.
+- \`type\` â€” \`"string"\`, \`"number"\`, or \`"integer"\`. Drives engine matching behavior.
+- \`unit\` â€” display unit (\`"dpi"\`, \`"ips"\`, \`"g"\`).
+- \`variance_policy\` â€” see Variance below.
+- \`constraints\` â€” cross-property constraints.
+- \`component_only\` â€” boolean. When \`true\`, the property is tracked in the component DB but does NOT publish as a product field. Use for depth content destined for the component's own future site page (e.g. \`switch_life_span\` on a switch entity â€” meaningful for the switch's site page, not for every mouse that uses it). **The "are we missing depth properties to track?" decision lives in Component Review, not the per-key product audit.**
+
+**Variance policy** tells the runtime LLM how the component DB value relates to the value on a particular product:
+- \`authoritative\` (default) â€” component value IS the product value. Product shouldn't override.
+- \`upper_bound\` â€” component gives the maximum possible value; product value may be at or below. Example: a sensor supports up to 25K DPI but firmware caps the mouse at 18K. Numeric only.
+- \`lower_bound\` â€” component gives the minimum; product value may be at or above. Numeric only.
+- \`range\` â€” component value is a reference; product value should fall within Â±tolerance. Numeric only. Tolerance is engine-fixed; if a property needs more flexibility, prefer splitting into multiple properties.
+- \`override_allowed\` â€” variance is permitted; product values may legitimately differ without flagging review. Use for properties that vary per implementation (e.g. firmware-imposed limits).
+
+**Numeric-only collapse.** \`upper_bound\`, \`lower_bound\`, \`range\` are meaningful only for numeric properties. For non-numeric properties (\`type: "string"\`), the engine auto-collapses to \`authoritative\` regardless of authored value.
+
+**No authored tolerance knob.** The engine uses an inline 10% fuzzy band for component identity matching only. Variance enforcement uses the policy alone â€” \`upper_bound\`/\`lower_bound\` ARE the boundary, \`range\` uses an engine-fixed tolerance, \`authoritative\` admits no variance, \`override_allowed\` admits all variance. Do not propose adding a tolerance knob.
+
+**PRODUCT_COMPONENTS prompt rendering.** When a parent identity is resolved on a product, the prompt block looks like:
+
+\`\`\`
+sensor: Hero 25K
+  dpi: 25000   (upper_bound â€” products can be lower)
+  ips: 650     (upper_bound)
+  sensor_type: optical   (authoritative)
+\`\`\`
+
+The variance suffix tells the runtime model whether each subfield value is a hard answer (\`authoritative\`) or a reference to compare against (\`bound\`/\`range\`).
+
+**What NOT to author.** The legacy \`component.*\` block on field rules has been retired. A defensive bridge folds legacy authored \`component.source\` / \`component.type\` into \`enum.source\` automatically, but auditors should never write a \`component\` block in a patch. Use \`enum.source = component_db.<X>\` only.
+
+Component source rows accept only \`component_type\`, \`roles.properties[]\`, \`priority\`, and \`ai_assist\`.
+
+The per-key brief (Part 7) flags identity / property / standalone for the audited key and lists same-group siblings so the auditor can decide whether a hidden parent component should be extracted. Do not ask for concrete component entity row edits in the Field Studio change file â€” report missing/stale component data separately or address it through Component Review.
 `.trim();
 
 const EVIDENCE_BODY = `

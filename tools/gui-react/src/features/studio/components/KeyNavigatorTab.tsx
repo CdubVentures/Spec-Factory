@@ -42,6 +42,7 @@ import {
 
 import type { StudioPageActivePanelKeyProps as KeyNavigatorTabProps } from "./studioPagePanelContracts.ts";
 import { getEgPresetForKey, EG_TOGGLEABLE_KEY_SET } from "../state/egPresetsClient.ts";
+import { isComponentIdentityProjectionLocked } from "../state/componentLockClient.ts";
 import {
   btnPrimary,
   btnSecondary,
@@ -488,6 +489,7 @@ export function KeyNavigatorTab({
         <div className="flex-1 overflow-y-auto max-h-[calc(100vh-350px)] pr-2">
           {selectedKey && currentRule ? (() => {
             const isSelectedEgLocked = egLockedKeys.includes(selectedKey);
+            const isSelectedIdentityLocked = isComponentIdentityProjectionLocked(currentRule as Record<string, unknown>);
             return (
             <div key={selectedKey} className="space-y-3">
               <KeyStickyHeader
@@ -509,6 +511,7 @@ export function KeyNavigatorTab({
                 saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
                 category={category}
                 isEgLocked={egLockedKeys.includes(selectedKey)}
+                isIdentityLocked={isSelectedIdentityLocked}
                 BadgeRenderer={B}
               />
 
@@ -600,7 +603,7 @@ export function KeyNavigatorTab({
                 category={category}
                 BadgeRenderer={B}
                 saveIfAutoSaveEnabled={saveIfAutoSaveEnabled}
-                disabled={isSelectedEgLocked}
+                disabled={isSelectedEgLocked || isSelectedIdentityLocked}
               />
 
               <KeyPrioritySection

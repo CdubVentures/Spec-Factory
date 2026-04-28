@@ -4,77 +4,10 @@
   "component_db_sources": {
     "encoder": {
       "entity_count": 40,
-      "field_studio": {
-        "alias_columns": [],
-        "auto_derive_aliases": true,
-        "first_data_row": 2,
-        "header_row": 1,
-        "link_columns": [
-          "G"
-        ],
-        "maker_column": "B",
-        "mode": "sheet",
-        "primary_identifier_column": "C",
-        "property_columns": [
-          "D",
-          "E",
-          "F"
-        ],
-        "property_mappings": [
-          {
-            "column": "D",
-            "constraints": [],
-            "field_key": "encoder_type",
-            "key": "encoder_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "field_key": "encoder_steps",
-            "key": "encoder_steps",
-            "type": "number",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "encoder_life_span",
-            "key": "encoder_life_span",
-            "type": "number",
-            "unit": "",
-            "variance_policy": "authoritative"
-          }
-        ],
-        "sheet": "encoder",
-        "stop_after_blank_names": 10,
-        "stop_after_blank_primary": 10
-      },
-      "name_column": "C",
-      "preview_stats": {
-        "entity_count": 40,
-        "first_20_all_numeric": false,
-        "first_20_names": [],
-        "non_blank_names": 40,
-        "numeric_only_names": 0,
-        "numeric_only_ratio": 0,
-        "scanned_rows": 0,
-        "stop_after_blank_names": 10,
-        "stop_after_blank_primary": 10
-      },
       "roles": {
-        "aliases": [],
-        "links": [
-          "G"
-        ],
-        "maker": "B",
-        "primary_identifier": "C",
         "properties": [
           {
-            "column": "D",
+            "component_only": true,
             "constraints": [],
             "field_key": "encoder_type",
             "key": "encoder_type",
@@ -83,7 +16,7 @@
             "variance_policy": "authoritative"
           },
           {
-            "column": "E",
+            "component_only": true,
             "constraints": [],
             "field_key": "encoder_steps",
             "key": "encoder_steps",
@@ -92,7 +25,7 @@
             "variance_policy": "authoritative"
           },
           {
-            "column": "F",
+            "component_only": true,
             "constraints": [],
             "field_key": "encoder_life_span",
             "key": "encoder_life_span",
@@ -114,92 +47,13 @@
         "Teal",
         "Encoder"
       ],
-      "sheet": "encoder",
       "type": "encoder"
     },
     "sensor": {
       "entity_count": 116,
-      "field_studio": {
-        "alias_columns": [],
-        "auto_derive_aliases": true,
-        "first_data_row": 2,
-        "header_row": 1,
-        "link_columns": [
-          "J"
-        ],
-        "maker_column": "B",
-        "mode": "sheet",
-        "primary_identifier_column": "C",
-        "property_columns": [
-          "E",
-          "F",
-          "G",
-          "H"
-        ],
-        "property_mappings": [
-          {
-            "column": "E",
-            "constraints": [],
-            "field_key": "sensor_type",
-            "key": "sensor_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "dpi",
-            "key": "dpi",
-            "type": "number",
-            "unit": "dpi",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "G",
-            "constraints": [],
-            "field_key": "ips",
-            "key": "ips",
-            "type": "number",
-            "unit": "ips",
-            "variance_policy": "upper_bound"
-          },
-          {
-            "column": "H",
-            "constraints": [],
-            "field_key": "acceleration",
-            "key": "acceleration",
-            "type": "number",
-            "unit": "g",
-            "variance_policy": "upper_bound"
-          }
-        ],
-        "sheet": "sensors",
-        "stop_after_blank_names": 10,
-        "stop_after_blank_primary": 10
-      },
-      "name_column": "C",
-      "preview_stats": {
-        "entity_count": 116,
-        "first_20_all_numeric": false,
-        "first_20_names": [],
-        "non_blank_names": 116,
-        "numeric_only_names": 0,
-        "numeric_only_ratio": 0,
-        "scanned_rows": 0,
-        "stop_after_blank_names": 10,
-        "stop_after_blank_primary": 10
-      },
       "roles": {
-        "aliases": [],
-        "links": [
-          "J"
-        ],
-        "maker": "B",
-        "primary_identifier": "C",
         "properties": [
           {
-            "column": "E",
             "constraints": [],
             "field_key": "sensor_type",
             "key": "sensor_type",
@@ -208,7 +62,6 @@
             "variance_policy": "authoritative"
           },
           {
-            "column": "F",
             "constraints": [],
             "field_key": "dpi",
             "key": "dpi",
@@ -217,7 +70,6 @@
             "variance_policy": "upper_bound"
           },
           {
-            "column": "G",
             "constraints": [],
             "field_key": "ips",
             "key": "ips",
@@ -226,7 +78,6 @@
             "variance_policy": "upper_bound"
           },
           {
-            "column": "H",
             "constraints": [],
             "field_key": "acceleration",
             "key": "acceleration",
@@ -248,92 +99,13 @@
         "XS-1",
         "BAMF 3.0"
       ],
-      "sheet": "sensors",
       "type": "sensor"
     },
     "switch": {
       "entity_count": 106,
-      "field_studio": {
-        "alias_columns": [],
-        "auto_derive_aliases": true,
-        "first_data_row": 2,
-        "header_row": 1,
-        "link_columns": [
-          "H"
-        ],
-        "maker_column": "B",
-        "mode": "sheet",
-        "primary_identifier_column": "C",
-        "property_columns": [
-          "D",
-          "E",
-          "F",
-          "G"
-        ],
-        "property_mappings": [
-          {
-            "column": "D",
-            "constraints": [],
-            "field_key": "switch_type",
-            "key": "switch_type",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "E",
-            "constraints": [],
-            "field_key": "switch_life_span",
-            "key": "switch_life_span",
-            "type": "string",
-            "unit": "",
-            "variance_policy": "authoritative"
-          },
-          {
-            "column": "F",
-            "constraints": [],
-            "field_key": "click_force",
-            "key": "click_force",
-            "type": "number",
-            "unit": "gf",
-            "variance_policy": "override_allowed"
-          },
-          {
-            "column": "G",
-            "constraints": [],
-            "field_key": "releasing_force",
-            "key": "releasing_force",
-            "type": "number",
-            "unit": "g",
-            "variance_policy": "authoritative"
-          }
-        ],
-        "sheet": "switches",
-        "stop_after_blank_names": 10,
-        "stop_after_blank_primary": 10
-      },
-      "name_column": "C",
-      "preview_stats": {
-        "entity_count": 106,
-        "first_20_all_numeric": false,
-        "first_20_names": [],
-        "non_blank_names": 106,
-        "numeric_only_names": 0,
-        "numeric_only_ratio": 0,
-        "scanned_rows": 0,
-        "stop_after_blank_names": 10,
-        "stop_after_blank_primary": 10
-      },
       "roles": {
-        "aliases": [],
-        "links": [
-          "H"
-        ],
-        "maker": "B",
-        "primary_identifier": "C",
         "properties": [
           {
-            "column": "D",
             "constraints": [],
             "field_key": "switch_type",
             "key": "switch_type",
@@ -342,7 +114,7 @@
             "variance_policy": "authoritative"
           },
           {
-            "column": "E",
+            "component_only": true,
             "constraints": [],
             "field_key": "switch_life_span",
             "key": "switch_life_span",
@@ -351,7 +123,6 @@
             "variance_policy": "authoritative"
           },
           {
-            "column": "F",
             "constraints": [],
             "field_key": "click_force",
             "key": "click_force",
@@ -360,7 +131,7 @@
             "variance_policy": "override_allowed"
           },
           {
-            "column": "G",
+            "component_only": true,
             "constraints": [],
             "field_key": "releasing_force",
             "key": "releasing_force",
@@ -382,7 +153,6 @@
         "Black Shell White Dot",
         "Mouse Switches"
       ],
-      "sheet": "switches",
       "type": "switch"
     }
   },
@@ -1700,7 +1470,7 @@
           "official product/spec page only when it literally states click/button latency for wired mode"
         ],
         "domain_hints": [
-          "replace/reorder with: rtings.com",
+          "rtings.com",
           "lttlabs.com",
           "techpowerup.com",
           "mousespecs.org",
@@ -2731,9 +2501,9 @@
           "zowie.benq.com",
           "help.fnatic.com",
           "lamzu.com",
-          "rtings.com. Keep mousecompare.com",
+          "rtings.com",
           "mousespecs.org",
-          "techpowerup.com as fallback/corroboration."
+          "techpowerup.com"
         ],
         "preferred_tiers": [
           "tier1",
@@ -3290,7 +3060,6 @@
       "field_key": "encoder",
       "field_studio_hints": {
         "component_db": "encoder",
-        "component_sheet": "encoder",
         "dataEntry": {
           "key_cell": "B73",
           "row": 73,
@@ -3398,6 +3167,10 @@
         "Zowie Optical Scroll Wheel"
       ],
       "availability": "sometimes",
+      "component_identity_projection": {
+        "component_type": "encoder",
+        "facet": "brand"
+      },
       "constraints": [
         "encoder_brand should be the maker/brand token for the exact encoder identity when encoder is known; do not include encoder model, color, height, step count, type, or lifespan."
       ],
@@ -3429,6 +3202,7 @@
       "field_studio_hints": {
         "component_db": "encoder",
         "component_field": "brand",
+        "component_identity_facet": "brand",
         "data_lists": {
           "header": "mouse_encoder_brands",
           "sheet": "data_lists"
@@ -3514,6 +3288,10 @@
       },
       "aliases": [],
       "availability": "sometimes",
+      "component_identity_projection": {
+        "component_type": "encoder",
+        "facet": "link"
+      },
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -3541,6 +3319,7 @@
       },
       "field_key": "encoder_link",
       "field_studio_hints": {
+        "component_identity_facet": "link",
         "dataEntry": {
           "key_cell": "B75",
           "row": 75,
@@ -4498,7 +4277,7 @@
           "steelseries.com",
           "corsair.com",
           "razer.com",
-          "keep mousespecs.org",
+          "mousespecs.org",
           "sensor.fyi",
           "techpowerup.com"
         ],
@@ -5852,7 +5631,6 @@
       "field_key": "material",
       "field_studio_hints": {
         "component_db": "material",
-        "component_sheet": "material",
         "dataEntry": {
           "key_cell": "B32",
           "row": 32,
@@ -7972,7 +7750,6 @@
       "field_key": "sensor",
       "field_studio_hints": {
         "component_db": "sensor",
-        "component_sheet": "sensors",
         "dataEntry": {
           "key_cell": "B45",
           "note": "sense MUST BE FILLED IN",
@@ -8018,7 +7795,7 @@
           "prosettings.net",
           "maxgaming.com",
           "keep brand-official pages as primary via the generic source strategy",
-          "demote sensor.fyi unless exact sensor rows are fetchable"
+          "sensor.fyi"
         ],
         "preferred_tiers": [
           "tier1",
@@ -8091,6 +7868,10 @@
         "TrueMove Pro"
       ],
       "availability": "always",
+      "component_identity_projection": {
+        "component_type": "sensor",
+        "facet": "brand"
+      },
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -8120,6 +7901,7 @@
       "field_studio_hints": {
         "component_db": "sensor",
         "component_field": "Brand",
+        "component_identity_facet": "brand",
         "dataEntry": {
           "key_cell": "B46",
           "row": 46,
@@ -8851,6 +8633,10 @@
       },
       "aliases": [],
       "availability": "sometimes",
+      "component_identity_projection": {
+        "component_type": "sensor",
+        "facet": "link"
+      },
       "constraints": [
         "exact sensor identity must be known before emitting sensor_link",
         "link target must name the exact sensor or exact branded sensor variant"
@@ -8881,6 +8667,7 @@
       },
       "field_key": "sensor_link",
       "field_studio_hints": {
+        "component_identity_facet": "link",
         "dataEntry": {
           "key_cell": "B48",
           "row": 48,
@@ -9041,7 +8828,7 @@
         ],
         "domain_hints": [
           "pixart.com",
-          "keep sensor.fyi",
+          "sensor.fyi",
           "eloshapes.com",
           "techpowerup.com"
         ],
@@ -9874,7 +9661,6 @@
       "field_key": "switch",
       "field_studio_hints": {
         "component_db": "switch",
-        "component_sheet": "switches",
         "dataEntry": {
           "key_cell": "B64",
           "note": "switch type",
@@ -9992,6 +9778,10 @@
         "Zippy DF3"
       ],
       "availability": "always",
+      "component_identity_projection": {
+        "component_type": "switch",
+        "facet": "brand"
+      },
       "constraints": [],
       "contract": {
         "shape": "scalar",
@@ -10023,6 +9813,7 @@
       "field_studio_hints": {
         "component_db": "switch",
         "component_field": "switch_brand",
+        "component_identity_facet": "brand",
         "dataEntry": {
           "key_cell": "B65",
           "row": 65,
@@ -10137,6 +9928,10 @@
         "switch_url"
       ],
       "availability": "sometimes",
+      "component_identity_projection": {
+        "component_type": "switch",
+        "facet": "link"
+      },
       "constraints": [
         "exact switch identity must be known before emitting switch_link",
         "link target must name the exact switch model, exact switch family variant, or exact branded switch generation/technology",
@@ -10155,7 +9950,7 @@
           "accept_if_evidence": true,
           "mark_needs_curation": true
         },
-        "policy": "open_prefer_known",
+        "policy": "open",
         "source": null
       },
       "evidence": {
@@ -10168,6 +9963,7 @@
       },
       "field_key": "switch_link",
       "field_studio_hints": {
+        "component_identity_facet": "link",
         "dataEntry": {
           "key_cell": "B67",
           "row": 67,
@@ -10175,7 +9971,8 @@
             "https://www.mouser.com/ProductDetail/Omron-Electronics/D2FC-F-7N20M?qs=17ckDYBRdek0%2FvhX1fLcuQ%3D%3D"
           ],
           "sheet": "dataEntry"
-        }
+        },
+        "related_to": "switch"
       },
       "group": "switch_identity",
       "key": "switch_link",
@@ -10579,7 +10376,7 @@
           "retailer/spec page only as fallback"
         ],
         "domain_hints": [
-          "revise to prioritize rtings.com",
+          "rtings.com",
           "lttlabs.com",
           "mousespecs.org",
           "support.logi.com",
@@ -10587,7 +10384,7 @@
           "razer.com",
           "keychron.com",
           "techpowerup.com",
-          "remove eloshapes.com for this key unless product identity confirmation is needed."
+          "eloshapes.com"
         ],
         "preferred_tiers": [
           "tier1",
@@ -11037,7 +10834,7 @@
       }
     }
   },
-  "generated_at": "2026-04-28T05:51:59.030Z",
+  "generated_at": "2026-04-28T08:24:38.470Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

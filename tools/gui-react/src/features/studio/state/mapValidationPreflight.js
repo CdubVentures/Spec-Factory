@@ -12,8 +12,7 @@ function toOptionalObject(value) {
 function isLegacyMapOnlyCompileError(errorText) {
   const text = String(errorText || '').trim();
   if (!text) return false;
-  if (text === 'key_list: sheet is required') return true;
-  return text === "component_sources: invalid property mapping column '' for sheet ''";
+  return text === 'key_list: sheet is required';
 }
 
 function canBypassLegacyCompileValidation(outcome) {

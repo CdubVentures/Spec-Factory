@@ -8,7 +8,8 @@ import { toArray } from './reviewNormalization.js';
 import {
   resolveReviewEnabledEnumFieldSet,
   resolveDeclaredComponentPropertyColumns,
-  mergePropertyColumns,
+  hasDeclaredComponentSource,
+  resolveComponentReviewPropertyColumns,
   resolvePropertyFieldMeta,
 } from './componentReviewHelpers.js';
 import { buildEnumReviewPayloadsSpecDb } from './enumReviewData.js';
@@ -40,9 +41,14 @@ export async function buildComponentReviewLayout({ config = {}, category, specDb
     });
     const declaredColumns = resolveDeclaredComponentPropertyColumns({ fieldRules, componentType });
     const observedColumns = specDb.getPropertyColumnsForType(componentType);
+    const declaredComponentSource = hasDeclaredComponentSource({ fieldRules, componentType });
     return {
       type: componentType,
-      property_columns: mergePropertyColumns(payload?.property_columns || observedColumns, declaredColumns),
+      property_columns: resolveComponentReviewPropertyColumns({
+        observedColumns: payload?.property_columns || observedColumns,
+        declaredColumns,
+        declaredComponentSource,
+      }),
       item_count: Array.isArray(payload?.items) ? payload.items.length : 0,
     };
   }));

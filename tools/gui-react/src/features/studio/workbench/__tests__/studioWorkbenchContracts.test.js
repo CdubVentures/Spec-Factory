@@ -13,6 +13,34 @@ function createJsxRuntimeStub() {
   `;
 }
 
+function renderNode(node) {
+  if (Array.isArray(node)) return node.map(renderNode);
+  if (node == null || typeof node !== 'object') return node;
+  if (node.type === Symbol.for('fragment')) return renderNode(node.props?.children);
+  if (typeof node.type === 'function') return renderNode(node.type(node.props || {}));
+  const children = Object.prototype.hasOwnProperty.call(node.props || {}, 'children')
+    ? renderNode(node.props.children)
+    : node.props?.children;
+  return {
+    ...node,
+    props: {
+      ...(node.props || {}),
+      children,
+    },
+  };
+}
+
+function collectNodes(node, predicate, results = []) {
+  if (Array.isArray(node)) {
+    for (const child of node) collectNodes(child, predicate, results);
+    return results;
+  }
+  if (node == null || typeof node !== 'object') return results;
+  if (predicate(node)) results.push(node);
+  collectNodes(node.props?.children, predicate, results);
+  return results;
+}
+
 async function loadWorkbenchHelpers() {
   return loadBundledModule('tools/gui-react/src/features/studio/workbench/workbenchHelpers.ts', {
     prefix: 'studio-workbench-helper-contracts-',
@@ -265,4 +293,174 @@ test('studio workbench rows display boolean fields as closed yes_no even from st
   assert.equal(rows[0].contractShape, 'scalar');
   assert.equal(rows[0].enumPolicy, 'closed');
   assert.equal(rows[0].enumSource, 'yes_no');
+});
+
+test('studio workbench rows hide enum source for open policy', async () => {
+  const { buildWorkbenchRows } = await loadWorkbenchHelpers();
+
+  const rows = buildWorkbenchRows(
+    ['color'],
+    {
+      color: {
+        ui: { label: 'Color', group: 'design' },
+        contract: { type: 'string', shape: 'scalar' },
+        enum: { policy: 'open', source: 'data_lists.colors' },
+      },
+    },
+    null,
+    {},
+  );
+
+  assert.equal(rows[0].enumPolicy, 'open');
+  assert.equal(rows[0].enumSource, '');
+});
+
+test('studio workbench rows force key-matched source for known enum policies', async () => {
+  const { buildWorkbenchRows } = await loadWorkbenchHelpers();
+
+  const rows = buildWorkbenchRows(
+    ['color'],
+    {
+      color: {
+        ui: { label: 'Color', group: 'design' },
+        contract: { type: 'string', shape: 'scalar' },
+        enum: { policy: 'open_prefer_known', source: 'data_lists.colors' },
+      },
+    },
+    null,
+    {},
+  );
+
+  assert.equal(rows[0].enumPolicy, 'open_prefer_known');
+  assert.equal(rows[0].enumSource, 'data_lists.color');
+});
+
+test('studio workbench rows normalize component-locked open policy to known-preferred', async () => {
+  const { buildWorkbenchRows } = await loadWorkbenchHelpers();
+
+  const rows = buildWorkbenchRows(
+    ['sensor'],
+    {
+      sensor: {
+        ui: { label: 'Sensor', group: 'components' },
+        contract: { type: 'string', shape: 'scalar' },
+        enum: { policy: 'open', source: 'component_db.sensor' },
+      },
+    },
+    null,
+    {},
+  );
+
+  assert.equal(rows[0].componentLocked, true);
+  assert.equal(rows[0].enumPolicy, 'open_prefer_known');
+  assert.equal(rows[0].enumSource, 'component_db.sensor');
+});
+
+test('studio workbench rows mark generated component identity projections as locked', async () => {
+  const { buildWorkbenchRows } = await loadWorkbenchHelpers();
+
+  const rows = buildWorkbenchRows(
+    ['sensor_brand', 'sensor_link'],
+    {
+      sensor_brand: {
+        ui: { label: 'Sensor Brand', group: 'sensor identity' },
+        component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+        variant_dependent: false,
+        product_image_dependent: false,
+        contract: { type: 'string', shape: 'scalar' },
+        enum: { policy: 'open_prefer_known', source: 'data_lists.mouse_sensor_brand' },
+      },
+      sensor_link: {
+        ui: { label: 'Sensor Link', group: 'sensor identity' },
+        component_identity_projection: { component_type: 'sensor', facet: 'link' },
+        variant_dependent: false,
+        product_image_dependent: false,
+        contract: { type: 'url', shape: 'scalar' },
+        enum: { policy: 'open', source: null },
+      },
+    },
+    null,
+    {},
+  );
+
+  const byKey = Object.fromEntries(rows.map((row) => [row.key, row]));
+
+  assert.equal(byKey.sensor_brand.componentLocked, true);
+  assert.equal(byKey.sensor_brand.componentLockKind, 'identity_projection');
+  assert.equal(byKey.sensor_brand.componentType, 'sensor');
+  assert.equal(byKey.sensor_brand.identityProjectionFacet, 'brand');
+  assert.equal(byKey.sensor_brand.contractLocked, true);
+  assert.equal(byKey.sensor_brand.enumPolicy, 'open_prefer_known');
+  assert.equal(byKey.sensor_brand.enumSource, 'data_lists.sensor_brand');
+
+  assert.equal(byKey.sensor_link.componentLocked, true);
+  assert.equal(byKey.sensor_link.componentLockKind, 'identity_projection');
+  assert.equal(byKey.sensor_link.componentType, 'sensor');
+  assert.equal(byKey.sensor_link.identityProjectionFacet, 'link');
+  assert.equal(byKey.sensor_link.contractLocked, true);
+  assert.equal(byKey.sensor_link.enumPolicy, 'open');
+  assert.equal(byKey.sensor_link.enumSource, '');
+});
+
+test('studio workbench enum policy editor excludes open for component-locked rows', async () => {
+  const { buildColumns } = await loadWorkbenchColumns();
+  const columns = buildColumns(
+    { key: 'sensor', column: 'enumPolicy' },
+    () => {},
+    () => {},
+    {},
+    () => {},
+    () => {},
+    false,
+  );
+  const enumPolicyColumn = columns.find((column) => column.accessorKey === 'enumPolicy');
+  assert.ok(enumPolicyColumn, 'enum policy column should exist');
+
+  const tree = renderNode(enumPolicyColumn.cell({
+    row: {
+      original: {
+        key: 'sensor',
+        enumPolicy: 'open_prefer_known',
+        componentLocked: true,
+      },
+    },
+  }));
+
+  const options = collectNodes(tree, (node) => node.type === 'option')
+    .map((node) => node.props.value);
+  assert.equal(options.includes('open'), false);
+  assert.equal(options.includes('open_prefer_known'), true);
+  assert.equal(options.includes('closed'), true);
+});
+
+test('studio workbench enum policy cell is read-only for generated identity projections', async () => {
+  const { buildColumns } = await loadWorkbenchColumns();
+  const startedEdits = [];
+  const columns = buildColumns(
+    { key: 'sensor_link', column: 'enumPolicy' },
+    (cell) => startedEdits.push(cell),
+    () => {},
+    {},
+    () => {},
+    () => {},
+    false,
+  );
+  const enumPolicyColumn = columns.find((column) => column.accessorKey === 'enumPolicy');
+  assert.ok(enumPolicyColumn, 'enum policy column should exist');
+
+  const tree = renderNode(enumPolicyColumn.cell({
+    row: {
+      original: {
+        key: 'sensor_link',
+        enumPolicy: 'open',
+        componentLocked: true,
+        componentLockKind: 'identity_projection',
+        identityProjectionFacet: 'link',
+      },
+    },
+  }));
+
+  assert.equal(collectNodes(tree, (node) => node.type === 'select').length, 0);
+  assert.equal(collectNodes(tree, (node) => node.type === 'button').length, 0);
+  assert.deepEqual(startedEdits, []);
 });

@@ -13,14 +13,6 @@ export interface DataListEntry {
   ai_assist?: AiAssistConfig;
 }
 
-export interface ComponentSourceRoles {
-  maker?: string;
-  aliases?: string[];
-  links?: string[];
-  properties?: Array<Record<string, unknown>>;
-  [k: string]: unknown;
-}
-
 export interface FieldStudioMapValidationResponse {
   valid?: boolean;
   ok?: boolean;
@@ -28,15 +20,6 @@ export interface FieldStudioMapValidationResponse {
   warnings?: string[];
   normalized?: StudioConfig | null;
 }
-
-export const ROLE_DEFS = [
-  { id: "aliases", label: "Name Variants (Aliases)" },
-  { id: "maker", label: "Maker (Brand)" },
-  { id: "links", label: "Reference URLs (Links)" },
-  { id: "properties", label: "Attributes (Properties)" },
-] as const;
-
-export type RoleId = (typeof ROLE_DEFS)[number]["id"];
 
 export {
   btnPrimary,

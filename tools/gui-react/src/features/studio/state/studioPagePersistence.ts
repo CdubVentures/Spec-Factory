@@ -23,6 +23,11 @@ export interface StudioPersistAttemptOptions {
   lastAttemptFingerprint: string;
 }
 
+export interface StudioMapPayloadAttemptOptions {
+  payload: Pick<StudioConfig, 'component_sources' | 'data_lists' | 'enum_lists'>;
+  force: boolean;
+}
+
 export function stripEditedFlagFromRules(
   ruleMap: Record<string, Record<string, unknown>>,
 ): Record<string, Record<string, unknown>> {
@@ -147,6 +152,22 @@ export function buildStudioPersistMap({
   }
 
   return applyStudioMapRenames(withStudioDocs, snapshot.renames);
+}
+
+export function hasStudioMapPayload(
+  payload: Pick<StudioConfig, 'component_sources' | 'data_lists' | 'enum_lists'>,
+): boolean {
+  return [
+    payload?.component_sources,
+    payload?.data_lists,
+    payload?.enum_lists,
+  ].some((entries) => Array.isArray(entries) && entries.length > 0);
+}
+
+export function shouldPersistStudioMapPayload({
+  payload,
+}: StudioMapPayloadAttemptOptions): boolean {
+  return hasStudioMapPayload(payload);
 }
 
 export function shouldPersistStudioDocsAttempt({

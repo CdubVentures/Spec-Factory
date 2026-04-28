@@ -6,9 +6,9 @@ import { api } from '../../api/client.ts';
 import { useUiCategoryStore } from '../../stores/uiCategoryStore.ts';
 import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
 import { Chip } from '../../shared/ui/feedback/Chip.tsx';
-import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { useFormatDateTime, useTimezoneLabel, parseBackendMs } from '../../utils/dateTime.ts';
 import { formatCellValue } from '../../utils/fieldNormalize.ts';
+import { PublisherTableSkeleton } from './PublisherTableSkeleton.tsx';
 import type {
   PublisherCandidatesResponse,
   PublisherCandidateRow,
@@ -800,7 +800,7 @@ export function PublisherPage() {
 
       {/* Table */}
       {isLoading ? (
-        <Spinner className="h-8 w-8 mx-auto mt-12" />
+        <PublisherTableSkeleton />
       ) : (
         <DataTable
           data={filteredRows}

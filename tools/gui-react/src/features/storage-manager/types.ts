@@ -80,6 +80,13 @@ export interface RunSourceEntry {
   total_size?: number;
 }
 
+export interface RunSourcesPage {
+  limit: number;
+  offset: number;
+  total: number;
+  has_more: boolean;
+}
+
 export interface StorageRunsResponse {
   runs: RunInventoryRow[];
 }
@@ -91,6 +98,7 @@ export interface StageTimestamp {
 
 export interface RunDetailResponse extends RunInventoryRow {
   sources?: RunSourceEntry[];
+  sources_page?: RunSourcesPage;
   out_root: string;
   run_base: string;
   latest_base: string;

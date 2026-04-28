@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useShallow } from 'zustand/react/shallow';
 import { TabNav } from './TabNav.tsx';
 import { Sidebar } from './Sidebar.tsx';
-import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
+import { AppShellLoadingSkeleton } from './AppShellLoadingSkeleton.tsx';
 import { wsManager, type WsConnectionSnapshot } from '../../api/ws.ts';
 import { useUiThemeStore, type UiThemeState } from '../../stores/uiThemeStore.ts';
 import { useUiSettingsStore, type UiSettingsState } from '../../stores/uiSettingsStore.ts';
@@ -368,7 +368,7 @@ export function AppShell() {
         <Sidebar />
         <main className="sf-shell-main flex-1 overflow-auto p-4">
           {blockUntilSettingsReady ? (
-            <Spinner className="h-8 w-8 mx-auto mt-12" />
+            <AppShellLoadingSkeleton />
           ) : (
             <>
               {settingsSnapshot.uiSettingsPersistState === 'saving' && (

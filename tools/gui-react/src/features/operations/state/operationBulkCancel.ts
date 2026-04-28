@@ -1,4 +1,5 @@
 import type { Operation } from './operationsStore.ts';
+import { isOperationUiActiveStatus } from './operationStatusContract.ts';
 
 export interface CancelActiveOperationsResult {
   readonly requestedIds: readonly string[];
@@ -8,7 +9,7 @@ export interface CancelActiveOperationsResult {
 type CancelOperation = (operationId: string) => Promise<unknown>;
 
 function isActiveOperation(op: Operation): boolean {
-  return op.status === 'queued' || op.status === 'running';
+  return isOperationUiActiveStatus(op.status);
 }
 
 export function selectActiveOperationIds(operations: readonly Operation[]): string[] {

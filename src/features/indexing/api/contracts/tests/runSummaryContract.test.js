@@ -11,6 +11,9 @@ import {
   RUN_SUMMARY_META_KEYS,
   RUN_SUMMARY_EVENT_SHAPE,
   RUN_SUMMARY_EVENT_KEYS,
+  RUN_SUMMARY_EVENTS_LIMIT,
+  RUN_SUMMARY_EVENT_LIMIT_SHAPE,
+  RUN_SUMMARY_EVENT_LIMIT_KEYS,
   RUN_SUMMARY_LLM_AGG_SHAPE,
   RUN_SUMMARY_LLM_AGG_KEYS,
   RUN_SUMMARY_OBSERVABILITY_SHAPE,
@@ -34,10 +37,10 @@ describe('runSummaryContract — top-level envelope', () => {
     deepStrictEqual(sorted(RUN_SUMMARY_TOP_KEYS), sorted(['schema_version', 'telemetry']));
   });
 
-  it('TELEMETRY_KEYS contains meta, events, llm_agg, observability', () => {
+  it('TELEMETRY_KEYS contains meta, events, event_limit, llm_agg, observability', () => {
     deepStrictEqual(
       sorted(RUN_SUMMARY_TELEMETRY_KEYS),
-      sorted(['meta', 'events', 'llm_agg', 'observability'])
+      sorted(['meta', 'events', 'event_limit', 'llm_agg', 'observability'])
     );
   });
 });
@@ -91,6 +94,30 @@ describe('runSummaryContract — event shape', () => {
     deepStrictEqual(
       sorted(RUN_SUMMARY_EVENT_KEYS),
       sorted(['run_id', 'category', 'product_id', 'ts', 'stage', 'event', 'payload'])
+    );
+  });
+});
+
+describe('runSummaryContract - event limit shape', () => {
+  it('declares a positive event capture limit', () => {
+    strictEqual(typeof RUN_SUMMARY_EVENTS_LIMIT, 'number');
+    ok(RUN_SUMMARY_EVENTS_LIMIT >= 6000, 'event capture limit must preserve current budget');
+    strictEqual(RUN_SUMMARY_EVENTS_LIMIT, Math.floor(RUN_SUMMARY_EVENTS_LIMIT), 'integer');
+  });
+
+  it('shape is frozen', () => {
+    ok(Object.isFrozen(RUN_SUMMARY_EVENT_LIMIT_SHAPE), 'EVENT_LIMIT_SHAPE must be frozen');
+    ok(Object.isFrozen(RUN_SUMMARY_EVENT_LIMIT_KEYS), 'EVENT_LIMIT_KEYS must be frozen');
+  });
+
+  it('keys array matches shape keys', () => {
+    deepStrictEqual(RUN_SUMMARY_EVENT_LIMIT_KEYS, RUN_SUMMARY_EVENT_LIMIT_SHAPE.map(s => s.key));
+  });
+
+  it('contains truncation visibility fields', () => {
+    deepStrictEqual(
+      sorted(RUN_SUMMARY_EVENT_LIMIT_KEYS),
+      sorted(['limit', 'captured', 'truncated'])
     );
   });
 });
@@ -153,6 +180,7 @@ describe('runSummaryContract — no duplicate keys', () => {
   for (const [name, shape] of [
     ['META', RUN_SUMMARY_META_SHAPE],
     ['EVENT', RUN_SUMMARY_EVENT_SHAPE],
+    ['EVENT_LIMIT', RUN_SUMMARY_EVENT_LIMIT_SHAPE],
     ['LLM_AGG', RUN_SUMMARY_LLM_AGG_SHAPE],
     ['OBSERVABILITY', RUN_SUMMARY_OBSERVABILITY_SHAPE],
   ]) {

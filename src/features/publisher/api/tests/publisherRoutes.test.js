@@ -500,7 +500,10 @@ describe('publisher routes', () => {
     ensureProductJson('rt-apply');
     seedCandidate(specDb, 'rt-apply', 'polling_rate', 1000, 90, 'candidate');
 
-    const { ctx, responses } = makeCtx(specDb);
+    const broadcasts = [];
+    const { ctx, responses } = makeCtx(specDb, {
+      broadcastWs: (channel, payload) => broadcasts.push({ channel, payload }),
+    });
     const handler = registerPublisherRoutes(ctx);
 
     const handled = await handler(
@@ -512,6 +515,11 @@ describe('publisher routes', () => {
     assert.equal(handled, true);
     assert.equal(responses[0].status, 200);
     assert.ok(responses[0].body.result);
+
+    const emitted = broadcasts.find((entry) => entry.channel === 'data-change');
+    assert.equal(emitted?.payload?.event, 'publisher-reconcile');
+    assert.equal(emitted?.payload?.meta?.operationId, responses[0].body.operation_id);
+    assert.equal(emitted?.payload?.meta?.operationStatus, 'done');
   });
 
   // --- Error cases ---

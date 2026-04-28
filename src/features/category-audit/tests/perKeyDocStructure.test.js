@@ -204,6 +204,76 @@ test('per-key LLM audit prompt requires a strict Field Studio JSON patch first',
   assert.doesNotMatch(allText, /Recommend closed when this key/i);
 });
 
+test('per-key LLM audit prompt omits mode for auditor-authored enum lists', () => {
+  const rule = makeRule({
+    enum: { policy: 'open_prefer_known', values: ['standard', 'limited edition'] },
+  });
+  const record = makeKeyRecord('design', rule);
+  const preview = composePerKeyPromptPreview(rule, 'design', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview });
+  const section = structure.sections.find((s) => s.id === 'llm-audit-prompt');
+  const allText = sectionPromptText(section);
+
+  assert.match(allText, /"manual_values"/);
+  assert.doesNotMatch(allText, /"mode"/);
+  assert.doesNotMatch(allText, /"mode": "manual"/);
+});
+
+test('component source examples are contextual and expose the full current source mapping', () => {
+  const rule = makeRule({
+    enum: { policy: 'open_prefer_known', source: 'component_db.switch', values: [] },
+    ui: { label: 'Switch' },
+  });
+  const record = makeKeyRecord('switch', rule, {
+    component: { type: 'switch', relation: 'parent', source: 'component_db.switch' },
+  });
+  const componentSources = [
+    {
+      component_type: 'switch',
+      roles: {
+        properties: [
+          {
+            field_key: 'click_force',
+            type: 'number',
+            unit: 'gf',
+            variance_policy: 'override_allowed',
+          },
+        ],
+      },
+    },
+  ];
+  const preview = composePerKeyPromptPreview(rule, 'switch', {
+    category: 'mouse',
+    componentRelation: record.component,
+  });
+  const structure = buildPerKeyDocStructure(record, {
+    ...BASE_OPTS,
+    preview,
+    componentSources,
+    componentInventory: [{
+      type: 'switch',
+      entityCount: 1,
+      entities: [{ name: 'Optical Gen 3', maker: 'Razer', aliases: [], properties: { click_force: 45 } }],
+      identityFields: ['switch'],
+      subfields: ['click_force'],
+    }],
+  });
+
+  const promptText = sectionPromptText(structure.sections.find((s) => s.id === 'llm-audit-prompt'));
+  assert.match(promptText, /"component_type": "switch"/);
+  assert.match(promptText, /"field_key": "click_force"/);
+  assert.doesNotMatch(promptText, /primary_identifier/);
+  assert.doesNotMatch(promptText, /"sheet"/);
+  assert.doesNotMatch(promptText, /"column"/);
+  assert.doesNotMatch(promptText, /"component_type": "sensor"/);
+
+  const componentSection = structure.sections.find((s) => s.id === 'component');
+  const componentText = JSON.stringify(componentSection);
+  assert.match(componentText, /Current component source mapping/i);
+  assert.match(componentText, /click_force/);
+  assert.match(componentText, /override_allowed/);
+});
+
 test('per-key LLM audit prompt uses navigator ordinal when available', () => {
   const rule = makeRule({
     enum: { policy: 'open_prefer_known', values: ['standard', 'limited edition'] },
@@ -217,7 +287,7 @@ test('per-key LLM audit prompt uses navigator ordinal when available', () => {
   assert.match(allText, /"navigator_ordinal": 7/);
 });
 
-test('per-key LLM audit prompt gives component link fields authoritative component-source guidance', () => {
+test('per-key LLM audit prompt keeps component entity rows out of Field Studio patches', () => {
   const rule = makeRule({
     contract: { type: 'url', shape: 'scalar' },
     component: { type: 'sensor', source: 'component_db.sensor' },
@@ -231,12 +301,9 @@ test('per-key LLM audit prompt gives component link fields authoritative compone
   const section = structure.sections.find((s) => s.id === 'llm-audit-prompt');
   assert.ok(section, 'llm-audit-prompt section present');
   const allText = sectionPromptText(section);
-  assert.match(allText, /component _link fields/i);
-  assert.match(allText, /manufacturer component page/i);
-  assert.match(allText, /datasheet\/spec-sheet PDF/i);
-  assert.match(allText, /authorized component distributor/i);
-  assert.match(allText, /not eBay/i);
-  assert.match(allText, /merely mention/i);
+  assert.match(allText, /component type and property variance only/i);
+  assert.match(allText, /Component Review/i);
+  assert.doesNotMatch(allText, /component _link fields/i);
 });
 
 test('contract-schema table has one row per non-dependency-toggle FIELD_RULE_SCHEMA entry', () => {

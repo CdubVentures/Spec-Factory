@@ -18,7 +18,7 @@ import { defaultSourceFormEntry, entryToFormEntry, formEntryToPayload, updateFor
 import { useRuntimeSettingsValueStore } from '../../../stores/runtimeSettingsValueStore.ts';
 import { useRuntimeSettingsAuthority, type RuntimeEditorSaveStatus } from '../state/runtimeSettingsAuthority.ts';
 import type { NumberBound } from '../../../shared/registryDerivedSettingsMaps.ts';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { SettingsPanelLoadingSkeleton } from '../../../shared/ui/feedback/SettingsPanelLoadingSkeleton.tsx';
 import { TypedConfirmModal } from '../../../shared/ui/feedback/TypedConfirmModal.tsx';
 import { parseBoundedNumber, toRuntimeDraft } from '../state/RuntimeFlowDraftNormalization.ts';
 import {
@@ -391,7 +391,7 @@ export function PipelineSettingsPage() {
 
         {/* Source Strategy */}
         {activeSection === 'source-strategy' && (
-          <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+          <Suspense fallback={<SettingsPanelLoadingSkeleton groups={2} rowsPerGroup={3} />}>
             <SourceStrategySection
               category={category}
               sourceStrategyHydrated={sourceStrategyHydrated}
@@ -422,7 +422,7 @@ export function PipelineSettingsPage() {
 
         {/* Deterministic Strategy */}
         {activeSection === 'deterministic-strategy' && (
-          <Suspense fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+          <Suspense fallback={<SettingsPanelLoadingSkeleton groups={2} rowsPerGroup={3} />}>
             <DeterministicStrategySection />
           </Suspense>
         )}
@@ -430,7 +430,7 @@ export function PipelineSettingsPage() {
         {/* Module Settings (auto-derived from generated sections) */}
         {MODULE_SETTINGS_SECTIONS.map(({ id, moduleId }) =>
           activeSection === id ? (
-            <Suspense key={id} fallback={<Spinner className="h-8 w-8 mx-auto mt-12" />}>
+            <Suspense key={id} fallback={<SettingsPanelLoadingSkeleton groups={2} rowsPerGroup={3} />}>
               <ModuleSettingsPanel moduleId={moduleId} />
             </Suspense>
           ) : null

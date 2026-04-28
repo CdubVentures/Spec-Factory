@@ -113,7 +113,7 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
             mark_needs_curation: true,
           },
           policy: 'open_prefer_known',
-          source: null,
+          source: 'data_lists.click_latency',
         },
         parse: {},
         priority: {
@@ -170,7 +170,7 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
             mark_needs_curation: true,
           },
           policy: 'open_prefer_known',
-          source: null,
+          source: 'data_lists.connection',
         },
         parse: { delimiters: [',', '/', '|', ';'] },
         priority: {
@@ -306,4 +306,42 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
       label,
     );
   }
+});
+
+test('buildStudioFieldRule derives known enum sources from the field key', () => {
+  const knownPreferred = buildStudioFieldRule({
+    category: 'mouse',
+    key: 'color',
+    rule: {
+      key: 'color',
+      contract: { type: 'string', shape: 'scalar' },
+      enum: { policy: 'open_prefer_known' },
+    },
+  });
+  assert.equal(knownPreferred.enum.policy, 'open_prefer_known');
+  assert.equal(knownPreferred.enum.source, 'data_lists.color');
+
+  const closed = buildStudioFieldRule({
+    category: 'mouse',
+    key: 'color',
+    rule: {
+      key: 'color',
+      contract: { type: 'string', shape: 'scalar' },
+      enum: { policy: 'closed', source: 'data_lists.colors' },
+    },
+  });
+  assert.equal(closed.enum.policy, 'closed');
+  assert.equal(closed.enum.source, 'data_lists.color');
+
+  const open = buildStudioFieldRule({
+    category: 'mouse',
+    key: 'color',
+    rule: {
+      key: 'color',
+      contract: { type: 'string', shape: 'scalar' },
+      enum: { policy: 'open', source: 'data_lists.color' },
+    },
+  });
+  assert.equal(open.enum.policy, 'open');
+  assert.equal(open.enum.source, null);
 });

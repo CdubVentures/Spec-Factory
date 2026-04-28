@@ -78,6 +78,23 @@ describe('variantStore', () => {
     assert.equal(rows[1].variant_type, 'edition');
   }));
 
+  it('listByCategory returns variants across products sorted by product then type/key', withDb((db) => {
+    db.variants.upsert({ ...VARIANT_EDITION, productId: 'mouse-002' });
+    db.variants.upsert(VARIANT_COLOR);
+    db.variants.upsert({ ...VARIANT_COLOR, productId: 'mouse-002', variantId: 'v_eeee5555', variantKey: 'color:white', variantLabel: 'White', colorAtoms: ['white'] });
+
+    const rows = db.variants.listByCategory();
+
+    assert.deepEqual(
+      rows.map((row) => `${row.product_id}:${row.variant_type}:${row.variant_key}`),
+      [
+        'mouse-001:color:color:black',
+        'mouse-002:color:color:white',
+        'mouse-002:edition:edition:special-ed',
+      ],
+    );
+  }));
+
   it('listActive returns same results as listByProduct (no retired filter)', withDb((db) => {
     db.variants.upsert(VARIANT_COLOR);
     db.variants.upsert(VARIANT_EDITION);

@@ -88,24 +88,6 @@ export function normalizeSourceMode(value = '') {
   return normalizeToken(value || 'sheet') === 'scratch' ? 'scratch' : 'sheet';
 }
 
-export function isSheetBackedMode(row = {}) {
-  return normalizeSourceMode(row?.mode) === 'sheet';
-}
-
-export function findComponentSourceRowByType(rows = [], componentType = '') {
-  const normalizedType = normalizeFieldKey(componentType);
-  if (!normalizedType) {
-    return null;
-  }
-  const matchingRows = toArray(rows).filter((row) => (
-    normalizeFieldKey(row?.component_type || row?.type || '') === normalizedType
-  ));
-  if (!matchingRows.length) {
-    return null;
-  }
-  return matchingRows.find((row) => isSheetBackedMode(row)) || matchingRows[0];
-}
-
 export const REVIEW_REQUIRED_LEVELS = new Set(['mandatory', 'non_mandatory']);
 export const REVIEW_AVAILABILITY_LEVELS = new Set(['always', 'sometimes', 'rare']);
 export const REVIEW_DIFFICULTY_LEVELS = new Set(['easy', 'medium', 'hard', 'very_hard']);

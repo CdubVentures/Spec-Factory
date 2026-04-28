@@ -3,7 +3,7 @@ import { IndexingPanelHeader, type IndexingPanelId } from '../../../shared/ui/fi
 import { HeaderActionButton, ACTION_BUTTON_WIDTH } from '../../../shared/ui/actionButton/index.ts';
 import { AmbiguityMeter } from '../../../shared/ui/data-display/AmbiguityMeter.tsx';
 import { DrillColumn } from '../../../shared/ui/forms/DrillColumn.tsx';
-import { Spinner } from '../../../shared/ui/feedback/Spinner.tsx';
+import { PickerLoadingSkeleton } from './PickerLoadingSkeleton.tsx';
 import { useSlashFocus } from './useSlashFocus.ts';
 import { deriveStaleSelection } from '../selectors/staleSelection.ts';
 import { deriveFilteredCatalog } from '../selectors/filteredCatalog.ts';
@@ -142,10 +142,7 @@ export function PickerPanel({
             hasProduct={Boolean(selectedCatalogProduct)}
           />
           {catalogLoading ? (
-            <div className="sf-picker-loading" role="status" aria-live="polite">
-              <Spinner />
-              <span>Loading catalog…</span>
-            </div>
+            <PickerLoadingSkeleton />
           ) : (
             <>
               <SearchBar
@@ -400,4 +397,3 @@ function RecentsRail({
     </div>
   );
 }
-

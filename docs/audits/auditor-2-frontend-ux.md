@@ -21,31 +21,92 @@ Verification refreshed on 2026-04-28:
 
 | Command | Result |
 |---|---|
-| `npm test` | RED: 12,531 tests, 12,511 passed, 20 failed. Frontend-owned failures are listed below. |
+| `npm test` | PASS: 12,613 tests, 12,613 passed, 0 failed. Log: `.tmp/npm-test-full-audit-all3-2026-04-28.log`. |
 | `npm run gui:check` | PASS. |
 
-H11, H12, and H15 are no longer active findings. H14 remains partial. The current critical frontend work is limited to red test clusters that block the full suite.
+H11, H12, H15, and the previous frontend red-suite blockers are no longer active findings. H14 remains the only high-priority frontend UX backlog item.
 
 ## Critical Priority
 
-| ID | Issue | Primary Area | Current Evidence | Work Shape |
-|---|---|---|---|---|
-| C1 | Two GUI page tests fail because the React test stub does not export `createContext` | GUI test harness / page contracts | `billingQueryRefreshContracts.test.js` and `overviewRdfDateFormatting.test.js` fail with missing `createContext` export from a generated stub. | Fix the shared page-test harness/stub contract without weakening the page assertions. |
-| C2 | Evidence kind color-class expectations drifted from token names | Evidence UI registry | `evidenceKindRegistry.test.ts`: tests expect `emerald`/`red-`, implementation now uses semantic classes like `sf-status-text-success`. | Decide whether semantic token classes are the new contract; update test or registry consistently. |
+No active critical Auditor 2 findings remain after this audit.
 
 ## High Priority
 
 | ID | Issue | Primary Area | Work Shape | Proof |
 |---|---|---|---|---|
-| H14 | Major pages lack consistent skeleton/loading structure | Page loading UX | PARTIAL 2026-04-28: Catalog ProductManager uses a full-shape loading skeleton matching header, actions, search, table columns/rows, and open drawer state. Remaining: apply the same pattern to other major pages and stale-refetch indicators. | Test: `ProductManagerSkeleton.test.js`. GUI proof: `.tmp/h14-catalog-full-shape-skeleton.png`. |
-| H15 | Review drawer can keep stale `activeCell` after deletion | Review focus state | DONE 2026-04-28: Review focus is pruned when the active product/field disappears from the products index; stale drawers close with an info notification. | Test: `reviewFocusPruning.test.js`. GUI proof: `.tmp/h15-review-focus-deletion-notice.png`. |
+| H14 | Major pages lack consistent skeleton/loading structure | Page loading UX | PARTIAL / VISUAL REWORK REQUIRED 2026-04-28: The current pass replaced centered page/panel spinners with skeleton components and structural tests, but the visual result is not accepted. User feedback: many skeletons read as thin slivers of the loaded UI rather than true same-shape placeholders. Treat the 28/28 tests as structural smoke coverage only, not visual approval. New team should redesign the skeletons against screenshots of loaded pages and loading pages side by side. Remaining scope: visual rework of all H14 skeletons, stale-refetch indicators, and non-sandbox GUI screenshot proof. | Structural tests: `ProductManagerSkeleton.test.js`, `OverviewPageSkeleton.test.js`, `UnitRegistryPageSkeleton.test.js`, `BrandManagerSkeleton.test.js`, `PublisherTableSkeleton.test.js`, `StorageLoadingSkeleton.test.js`, `StudioPageSkeleton.test.js`, `ComponentReviewPageSkeleton.test.js`, `ReviewPageSkeleton.test.js`, `ColorRegistryPageSkeleton.test.js`, `RuntimeOpsLoadingSkeleton.test.js`, `AppShellLoadingSkeleton.test.js`, `AppRouteFallbackSkeleton.test.js`, `SettingsPanelLoadingSkeleton.test.js`, `FinderContentLoadingSkeleton.test.js`, `ProductHistoryLoadingSkeleton.test.js`, `PickerLoadingSkeleton.test.js`, `FinderPanelSkeleton.test.js`, `PromptPreviewLoadingSkeleton.test.js` (combined H14 skeleton suite: 28/28 pass). GUI proof is inadequate for final acceptance: `.tmp/h14-catalog-full-shape-skeleton.png` exists, but the rest still need normal PowerShell/browser screenshots because Codex Windows sandbox Playwright capture is blocked by `spawn EPERM`. |
+
+## H14 Skeleton Handoff - Visual Rework Required
+
+This section is a handoff for a new frontend team. It documents every H14 skeleton surface added or wired during the current pass, what it was trying to mimic, why it is not visually accepted yet, and what should be reviewed next.
+
+### Current status
+
+- The implementation goal was correct: replace blank centered spinners with placeholders that preserve loaded-page layout.
+- The current visual result is not correct enough. User feedback is that many placeholders look like narrow shimmer slivers, not the same GUI shape that loads.
+- The tests prove that skeleton components render expected regions, rows, and columns. They do not prove visual fidelity, density, height, spacing, or side-by-side resemblance.
+- Do not mark H14 done until a developer captures loaded-state and loading-state screenshots for each surface and confirms they match in broad geometry.
+
+### Acceptance bar for the rework
+
+- Loading state must preserve the same outer layout as loaded state: sidebars, drawers, headers, toolbars, cards, tables, tabs, modals, and scroll containers.
+- Skeleton blocks must approximate the size of real controls, not just place small bars inside large empty containers.
+- Tables need realistic row height, column widths, sticky header shape, toolbar/search/filter shape, and pagination/footer shape where present.
+- Cards need realistic vertical mass: title area, value/body area, supporting rows, and action areas should occupy about the same footprint as loaded content.
+- Drawer and modal skeletons must preserve open-state width/height and internal section rhythm.
+- For every page below, produce a before/after screenshot pair: loaded data state and forced loading state in the same viewport.
+
+### H14 skeleton inventory
+
+| Surface | Skeleton file | Wired from | Structural test | Current concern / next action |
+|---|---|---|---|---|
+| Product Catalog manager | `tools/gui-react/src/features/catalog/components/ProductManagerSkeleton.tsx` | `ProductManager.tsx` | `ProductManagerSkeleton.test.js` | Best existing baseline, but still needs screenshot comparison for header/action/search/table/drawer density. |
+| Overview page | `tools/gui-react/src/pages/overview/OverviewPageSkeleton.tsx` | `OverviewPage.tsx` | `OverviewPageSkeleton.test.js` | Large areas may still be mostly empty except shimmer bars. Compare against metrics, command console, active row, filters, and wide table. |
+| Unit Registry | `tools/gui-react/src/pages/unit-registry/UnitRegistryPageSkeleton.tsx` | `UnitRegistryPage.tsx` | `UnitRegistryPageSkeleton.test.js` | Verify grouped table/footer mass; avoid thin rows floating inside large shell. |
+| Brand Manager | `tools/gui-react/src/features/studio/components/BrandManagerSkeleton.tsx` | `BrandManager.tsx` | `BrandManagerSkeleton.test.js` | Confirm category tabs, DataTable, and optional drawer look like real loaded panels, not sparse placeholders. |
+| Publisher candidates | `tools/gui-react/src/pages/publisher/PublisherTableSkeleton.tsx` | `PublisherPage.tsx` | `PublisherTableSkeleton.test.js` | Needs loaded DataTable and pagination screenshot parity. |
+| Storage overview and product table | `tools/gui-react/src/features/storage-manager/components/StorageLoadingSkeleton.tsx` | `StorageOverviewBar.tsx`, `ProductTable.tsx` | `StorageLoadingSkeleton.test.js` | KPI cards and breakdown/status panels need more realistic filled mass; product table should match filter/table row heights. |
+| Studio page | `tools/gui-react/src/features/studio/components/StudioPageSkeleton.tsx` | `StudioPage.tsx` | `StudioPageSkeleton.test.js` | Active-tab panels need per-tab visual parity, especially mapping, key navigator, contract workbench, and reports. |
+| Component Review | `tools/gui-react/src/pages/component-review/ComponentReviewPageSkeleton.tsx` | `ComponentReviewPage.tsx` | `ComponentReviewPageSkeleton.test.js` | Component table and enum review skeletons need real row/card density, not small shimmers in a large area. |
+| Review page | `tools/gui-react/src/features/review/components/ReviewPageSkeleton.tsx` | `ReviewPage.tsx` | `ReviewPageSkeleton.test.js` | Dashboard/toolbar/matrix/drawer shape exists structurally; verify loaded matrix cell sizing and drawer rhythm. |
+| Color Registry | `tools/gui-react/src/features/color-registry/components/ColorRegistryPageSkeleton.tsx` | `ColorRegistryPage.tsx` | `ColorRegistryPageSkeleton.test.js` | Matrix cells may be too sparse; compare each color cell/card against loaded color metadata. |
+| Runtime Ops | `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsLoadingSkeleton.tsx` | `RuntimeOpsPage.tsx` | `RuntimeOpsLoadingSkeleton.test.js` | KPI/flow/chart/cost/lower-card surfaces need stronger same-height skeleton content. |
+| AppShell startup | `tools/gui-react/src/pages/layout/AppShellLoadingSkeleton.tsx` | `AppShell.tsx` | `AppShellLoadingSkeleton.test.js` | Generic fallback may not match the first actual route. Consider route-aware fallback instead of one generic table page. |
+| Lazy route fallback | `tools/gui-react/src/pages/layout/AppShellLoadingSkeleton.tsx` | `App.tsx` | `AppRouteFallbackSkeleton.test.js` | Same concern as AppShell startup: generic fallback can feel wrong when the loaded route is not table-shaped. |
+| LLM and pipeline settings panels | `tools/gui-react/src/shared/ui/feedback/SettingsPanelLoadingSkeleton.tsx` | `LlmConfigPage.tsx`, `LlmGlobalSection.tsx`, `PipelineSettingsPage.tsx`, `CategoryPanel.tsx` | `SettingsPanelLoadingSkeleton.test.js` | Currently matches `SettingGroupBlock`/`SettingRow` structure, but real controls need more realistic input/toggle/dropdown mass. |
+| Finder content body | `tools/gui-react/src/shared/ui/finder/FinderContentLoadingSkeleton.tsx` | `GenericScalarFinderPanel.tsx`, `ProductImageFinderPanel.tsx`, `ColorEditionFinderPanel.tsx` | `FinderContentLoadingSkeleton.test.js` | Shared fallback is too generic for CEF/PIF/RDF/SKU differences. Likely needs per-finder variants or richer content blocks. |
+| Product History | `tools/gui-react/src/features/indexing/panels/ProductHistoryLoadingSkeleton.tsx` | `ProductHistoryPanel.tsx`, `ProductHistoryKpiRow.tsx` | `ProductHistoryLoadingSkeleton.test.js` | KPI strip and run-history body are structurally present; compare against real run pills, charts, tables, and summaries. |
+| Product Picker | `tools/gui-react/src/features/indexing/panels/PickerLoadingSkeleton.tsx` | `PickerPanel.tsx` | `PickerLoadingSkeleton.test.js` | Drill columns exist, but options may look like thin bars. Match actual brand/model/variant rows and search height. |
+| Lazy finder panel shell | `tools/gui-react/src/features/indexing/panels/FinderPanelSkeleton.tsx` | `IndexingPage.tsx` | `FinderPanelSkeleton.test.js` | Only a lightweight shell. Needs closer match to loaded `IndexingPanelHeader` plus first body block. |
+| Prompt Preview modal | `tools/gui-react/src/shared/ui/finder/PromptPreviewModal.tsx` (`PromptPreviewLoadingSkeleton`) | `PromptPreviewModal.tsx` | `PromptPreviewLoadingSkeleton.test.js` | Should match real prompt preview sections, code/text block heights, and modal scroll body. |
+
+### Wiring summary
+
+- Top-level route loading now uses `AppShellLoadingSkeleton` in `App.tsx`.
+- Shell settings hydration loading now uses `AppShellLoadingSkeleton` in `AppShell.tsx`.
+- Settings lazy panels now use `SettingsPanelLoadingSkeleton`.
+- Indexing finder body loaders now use `FinderContentLoadingSkeleton`, `ProductHistoryLoadingSkeleton`, `PickerLoadingSkeleton`, and `FinderPanelSkeleton`.
+- Prompt preview loading now uses `PromptPreviewLoadingSkeleton`.
+- Remaining `<Spinner>` usages are inline indicators for actions, row buttons, drawers, small progress indicators, and test-mode fetching. They are not currently classified as page/panel skeleton replacements.
+
+### Suggested rework plan
+
+1. Capture loaded-state screenshots for every surface in the inventory.
+2. Add a forced-loading dev path or fixture per surface so screenshots can be captured deterministically.
+3. For each skeleton, adjust dimensions first: container height, row height, card padding, tab/header height, drawer width, and modal body height.
+4. Replace tiny single shimmer bars with blocks that occupy the same footprint as the loaded control or content group.
+5. Keep the structural tests, but add screenshot proof to the audit row after manual visual acceptance.
+6. Do not close H14 on passing unit tests alone.
 
 ## Closed Since Last Audit
 
 | ID | Closed Finding | Proof |
 |---|---|---|
+| C1-old | GUI page test React `createContext` stub failure | Full suite now passes `billingQueryRefreshContracts.test.js` and `overviewRdfDateFormatting.test.js`. |
+| C2-old | Evidence kind semantic color-class drift | Full suite now passes `evidenceKindRegistry.test.ts`. |
 | H11-old | No global error toast/notification contract | Shared notification queue, root renderer, React Query error routing, focused tests, and GUI proof screenshots. |
 | H12-old | Mutation rollback is invisible to users | Product Catalog rollback notices with focused test and GUI proof screenshot. |
+| H15-old | Review drawer can keep stale `activeCell` after deletion | Review focus pruning test and GUI proof screenshot; full suite remains green. |
 
 ## Medium Priority
 

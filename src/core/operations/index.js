@@ -26,4 +26,13 @@ export {
 export { fireAndForget } from './fireAndForget.js';
 export { executeCommand } from './commandExecutor.js';
 export { COMMAND_REGISTRY, COMMAND_REGISTRY_MAP } from './commandRegistry.js';
+export {
+  OPERATION_STATUS_CONTRACT,
+  countOperationStatuses,
+  countResourceRunningOperations,
+  countUiActiveOperations,
+  isOperationResourceRunningStatus,
+  isOperationTerminalStatus,
+  isOperationUiActiveStatus,
+} from './operationStatusContract.js';
 export * as keyFinderRegistry from './keyFinderRegistry.js';

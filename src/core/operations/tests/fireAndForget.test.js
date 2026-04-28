@@ -182,6 +182,37 @@ describe('fireAndForget', () => {
     assert.equal(tracker.emitted[0].broadcastWs, broadcastWs);
   });
 
+  it('stamps terminal success data-change with operation correlation metadata', async () => {
+    const { jsonRes } = makeJsonCapture();
+    const tracker = makeTracker();
+    const op = { id: 'op-terminal-success' };
+    const broadcastWs = () => {};
+    const emitArgs = {
+      event: 'test-run',
+      category: 'cat',
+      meta: { productId: 'mouse-1' },
+    };
+
+    fireAndForget({
+      res: {},
+      jsonRes,
+      op,
+      broadcastWs,
+      emitArgs,
+      asyncWork: async () => ({ rejected: false }),
+      completeOperation: tracker.completeOperation,
+      failOperation: tracker.failOperation,
+      emitDataChange: tracker.emitDataChange,
+    });
+
+    await flush();
+    assert.deepEqual(tracker.emitted[0].meta, {
+      productId: 'mouse-1',
+      operationId: 'op-terminal-success',
+      operationStatus: 'done',
+    });
+  });
+
   it('emits data-change on rejected result (rejected runs are valid state)', async () => {
     const { jsonRes } = makeJsonCapture();
     const tracker = makeTracker();
@@ -207,6 +238,10 @@ describe('fireAndForget', () => {
     await flush();
     assert.equal(tracker.emitted.length, 1);
     assert.equal(tracker.emitted[0].event, 'test-run');
+    assert.deepEqual(tracker.emitted[0].meta, {
+      operationId: 'op-6',
+      operationStatus: 'error',
+    });
   });
 
   it('does NOT emit data-change on thrown error', async () => {
@@ -363,6 +398,10 @@ describe('fireAndForget', () => {
     await flush();
     assert.equal(tracker.emitted.length, 1);
     assert.equal(tracker.emitted[0].event, 'test-cancel');
+    assert.deepEqual(tracker.emitted[0].meta, {
+      operationId: 'op-cancel-3',
+      operationStatus: 'cancelled',
+    });
   });
 
   it('disposes batcher on cancel', async () => {

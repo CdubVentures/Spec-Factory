@@ -33,6 +33,10 @@ export function createPifVariantProgressStore({ category, stmts }) {
     return stmts._listPifVariantProgressByProduct.all(category, String(productId || ''));
   }
 
+  function listByCategory() {
+    return stmts._listPifVariantProgressByCategory.all(category);
+  }
+
   function removeByProduct(productId) {
     stmts._deletePifVariantProgressByProduct.run(category, String(productId || ''));
   }
@@ -45,5 +49,5 @@ export function createPifVariantProgressStore({ category, stmts }) {
     );
   }
 
-  return { upsert, listByProduct, removeByProduct, removeByVariant };
+  return { upsert, listByProduct, listByCategory, removeByProduct, removeByVariant };
 }

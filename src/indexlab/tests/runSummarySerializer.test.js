@@ -12,6 +12,7 @@ import {
   RUN_SUMMARY_TOP_KEYS,
   RUN_SUMMARY_TELEMETRY_KEYS,
   RUN_SUMMARY_META_KEYS,
+  RUN_SUMMARY_EVENTS_LIMIT,
   RUN_SUMMARY_LLM_AGG_KEYS,
   RUN_SUMMARY_OBSERVABILITY_KEYS,
 } from '../../features/indexing/api/contracts/runSummaryContract.js';
@@ -131,6 +132,31 @@ describe('serializeRunSummary — happy path', () => {
     const result = await serializeRunSummary(bridge);
     strictEqual(result.telemetry.events.length, 5);
     deepStrictEqual(result.telemetry.events, mockEvents);
+  });
+
+  it('event_limit marks untruncated event capture', async () => {
+    const mockEvents = makeMockEvents(5);
+    const bridge = makeMockBridge({ events: mockEvents });
+    const result = await serializeRunSummary(bridge);
+    deepStrictEqual(result.telemetry.event_limit, {
+      limit: RUN_SUMMARY_EVENTS_LIMIT,
+      captured: 5,
+      truncated: false,
+    });
+  });
+
+  it('event_limit marks truncation when SQL has more events than the summary limit', async () => {
+    const mockEvents = makeMockEvents(RUN_SUMMARY_EVENTS_LIMIT + 1);
+    const bridge = makeMockBridge({ events: mockEvents });
+    const result = await serializeRunSummary(bridge);
+    strictEqual(result.telemetry.events.length, RUN_SUMMARY_EVENTS_LIMIT);
+    strictEqual(result.telemetry.events[0].event, mockEvents[1].event);
+    strictEqual(result.telemetry.events.at(-1).event, mockEvents.at(-1).event);
+    deepStrictEqual(result.telemetry.event_limit, {
+      limit: RUN_SUMMARY_EVENTS_LIMIT,
+      captured: RUN_SUMMARY_EVENTS_LIMIT,
+      truncated: true,
+    });
   });
 
   it('llm_agg contains all contract keys', async () => {

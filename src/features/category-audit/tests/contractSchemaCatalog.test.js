@@ -161,7 +161,7 @@ test('FIELD_RULE_SCHEMA characterizes the full path/kind/options surface', () =>
       { path: 'contract.range.max', kind: 'number-nullable', appliesWhen: { 'contract.type': ['number', 'integer', 'float'] } },
       { path: 'enum.policy', kind: 'enum', options: ['closed', 'open_prefer_known', 'open'] },
       { path: 'enum.values', kind: 'string-list' },
-      { path: 'enum.source', kind: 'enum-or-freeform', options: ['(inline)', 'data_lists.<name>'] },
+      { path: 'enum.source', kind: 'enum-or-freeform', options: ['data_lists.<name>', 'component_db.<type>', 'yes_no'] },
       { path: 'enum.match.format_hint', kind: 'string' },
       { path: 'aliases', kind: 'string-list' },
       { path: 'variance_policy', kind: 'enum', options: ['authoritative', 'upper_bound', 'lower_bound', 'majority_vote'] },

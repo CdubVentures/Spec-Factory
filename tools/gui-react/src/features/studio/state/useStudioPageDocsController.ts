@@ -25,6 +25,7 @@ import {
 import { deriveStudioPageViewState } from './studioPageDerivedState.ts';
 import {
   buildStudioPersistMap as buildStudioPersistMapPayload,
+  shouldPersistStudioMapPayload,
   shouldPersistStudioDocsAttempt,
 } from './studioPagePersistence.ts';
 import { useStudioPersistenceAuthority } from './studioPersistenceAuthority.ts';
@@ -249,6 +250,9 @@ export function useStudioPageDocsController({
       const force = options?.force === true;
       const snap = getStudioFieldRulesSnapshot();
       const payload = buildStudioPersistMap(snap);
+      if (!shouldPersistStudioMapPayload({ payload, force })) {
+        return;
+      }
       const nextFingerprint = autoSaveFingerprint(payload);
       if (
         !shouldPersistStudioDocsAttempt({
@@ -288,9 +292,13 @@ export function useStudioPageDocsController({
   useEffect(() => {
     if (!fieldRulesState.initialized) return;
     const snap = getStudioFieldRulesSnapshot();
-    const hydratedFingerprint = autoSaveFingerprint(
-      buildStudioPersistMap(snap),
-    );
+    const hydratedPayload = buildStudioPersistMap(snap);
+    const hydratedFingerprint = shouldPersistStudioMapPayload({
+      payload: hydratedPayload,
+      force: false,
+    })
+      ? autoSaveFingerprint(hydratedPayload)
+      : '';
     lastStudioAutoSaveFingerprintRef.current = hydratedFingerprint;
     lastStudioAutoSaveAttemptFingerprintRef.current = hydratedFingerprint;
     hydrated.current = true;
@@ -312,7 +320,11 @@ export function useStudioPageDocsController({
       return;
     }
     const snap = getStudioFieldRulesSnapshot();
-    const nextFingerprint = autoSaveFingerprint(buildStudioPersistMap(snap));
+    const payload = buildStudioPersistMap(snap);
+    if (!shouldPersistStudioMapPayload({ payload, force: false })) {
+      return;
+    }
+    const nextFingerprint = autoSaveFingerprint(payload);
     if (
       !shouldPersistStudioDocsAttempt({
         force: false,
@@ -344,7 +356,9 @@ export function useStudioPageDocsController({
       isDirty: () => {
         if (!effectiveAutoSaveEnabled || !fieldRulesState.initialized || !hydrated.current) return false;
         const snap = getStudioFieldRulesSnapshot();
-        const fp = autoSaveFingerprint(buildStudioPersistMap(snap));
+        const payload = buildStudioPersistMap(snap);
+        if (!shouldPersistStudioMapPayload({ payload, force: false })) return false;
+        const fp = autoSaveFingerprint(payload);
         return Boolean(fp) && fp !== lastStudioAutoSaveFingerprintRef.current;
       },
       getPayload: () => {
@@ -358,7 +372,10 @@ export function useStudioPageDocsController({
       },
       markFlushed: () => {
         const snap = getStudioFieldRulesSnapshot();
-        const fp = autoSaveFingerprint(buildStudioPersistMap(snap));
+        const payload = buildStudioPersistMap(snap);
+        const fp = shouldPersistStudioMapPayload({ payload, force: false })
+          ? autoSaveFingerprint(payload)
+          : '';
         lastStudioAutoSaveAttemptFingerprintRef.current = fp;
       },
     });
@@ -368,7 +385,11 @@ export function useStudioPageDocsController({
     () => () => {
       if (isDomainFlushedByUnload('studioDocs')) return;
       const snap = getStudioFieldRulesSnapshot();
-      const nextFingerprint = autoSaveFingerprint(buildStudioPersistMap(snap));
+      const payload = buildStudioPersistMap(snap);
+      if (!shouldPersistStudioMapPayload({ payload, force: true })) {
+        return;
+      }
+      const nextFingerprint = autoSaveFingerprint(payload);
       if (
         !shouldFlushStudioDocsOnUnmount({
           autoSaveEnabled: effectiveAutoSaveEnabled,

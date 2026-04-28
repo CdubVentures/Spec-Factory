@@ -282,17 +282,6 @@ const EXPECTED_SOMETIMES_FIELDS = [
   'sound_dampening',
 ];
 
-const EXPECTED_SWITCH_COMPONENT_PROPERTIES = [
-  'switch_feel',
-  'switch_output_type',
-  'actuation_force',
-  'actuation_distance',
-  'bottom_out_force',
-  'total_travel',
-  'switch_lifespan',
-  'hot_swappable',
-];
-
 function sorted(values) {
   return [...values].sort();
 }
@@ -323,7 +312,7 @@ test('keyboard control-plane contract matches the curated field map', async () =
   }
 });
 
-test('keyboard field studio map mirrors the contract and seeds curated enums/components', async () => {
+test('keyboard field studio map mirrors the contract and seeds curated enums', async () => {
   const map = await harness.readCategoryJson('_control_plane', 'field_studio_map.json');
 
   assert.equal(map.version, 2);
@@ -345,16 +334,7 @@ test('keyboard field studio map mirrors the contract and seeds curated enums/com
     sorted(map.expectations?.expected_sometimes_fields || []),
     sorted(EXPECTED_SOMETIMES_FIELDS),
   );
-  assert.equal(Array.isArray(map.component_sources), true);
-  assert.equal(map.component_sources.length >= 1, true);
-  assert.equal(map.component_sources[0]?.component_type, 'switch');
-  assert.equal(map.component_sources[0]?.mode, 'scratch');
-  assert.equal(String(map.component_sources[0]?.roles?.primary_identifier || '').toLowerCase(), 'switch_name');
-  assert.equal(String(map.component_sources[0]?.roles?.maker || '').toLowerCase(), 'switch_brand');
-  assert.deepEqual(
-    (map.component_sources[0]?.roles?.properties || []).map((entry) => entry.field_key),
-    EXPECTED_SWITCH_COMPONENT_PROPERTIES,
-  );
+  assert.deepEqual(map.component_sources || [], []);
 
   // Verify manual enum values exist via data_lists[*].manual_values (sole surviving path)
   const mapDataLists = Array.isArray(map.data_lists) ? map.data_lists : [];
@@ -373,7 +353,7 @@ test('keyboard field studio map mirrors the contract and seeds curated enums/com
   }
 });
 
-test('keyboard field studio map passes Studio validation for scratch-backed component sources', async () => {
+test('keyboard field studio map passes Studio validation with data-list-backed switch fields', async () => {
   const map = await harness.readCategoryJson('_control_plane', 'field_studio_map.json');
 
   const checked = validateFieldStudioMap(map);

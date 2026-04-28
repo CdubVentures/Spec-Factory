@@ -294,7 +294,7 @@ test('source strategy event invalidates category-scoped source strategy query ke
   assert.equal(hasQueryKey(keys, ['source-strategy', 'mouse']), true);
 });
 
-test('process-completed event invalidates indexlab product-history and run-list queries', () => {
+test('process-completed event invalidates catalog, indexlab product-history, and run-list queries', () => {
   const keys = resolveDataChangeInvalidationQueryKeys({
     message: {
       type: 'data-change',
@@ -303,6 +303,11 @@ test('process-completed event invalidates indexlab product-history and run-list 
     categories: ['mouse'],
   });
 
+  assert.equal(hasQueryKey(keys, ['catalog', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['catalog-products', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['catalog-review', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['reviewProductsIndex', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['product', 'mouse']), true);
   assert.equal(hasQueryKey(keys, ['indexlab', 'runs']), true);
   assert.equal(hasQueryKey(keys, ['indexlab', 'product-history', 'mouse']), true);
   assert.equal(hasQueryKey(keys, ['data-authority', 'snapshot', 'mouse']), true);
@@ -370,6 +375,20 @@ test('field key order saves invalidate all order consumers from explicit domains
   assert.equal(hasQueryKey(keys, ['key-finder', 'mouse']), true);
   assert.equal(hasQueryKey(keys, ['reviewLayout', 'mouse']), true);
   assert.equal(hasQueryKey(keys, ['data-authority', 'snapshot', 'mouse']), true);
+});
+
+test('field studio saves invalidate field-rule-backed prompt preview families', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'field-studio-map-saved',
+      category: 'mouse',
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['prompt-preview', 'key', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['prompt-preview', 'pif', 'mouse']), true);
 });
 
 test('publisher reconcile invalidates candidate list, published fields, and preview', () => {

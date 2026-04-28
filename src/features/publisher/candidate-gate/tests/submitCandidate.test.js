@@ -381,6 +381,32 @@ describe('submitCandidate', async () => {
     assert.ok(lv, 'corsair should be persisted as discovered enum');
   });
 
+  it('validates open_prefer_known against knownValues.enums and records unknown review', async () => {
+    ensureProductJson('mouse-disc-enums-wrapper');
+
+    const result = await submitCandidate({
+      ...baseDeps(specDb),
+      knownValues: {
+        enums: {
+          sensor_brand: { policy: 'open_prefer_known', values: ['pixart'] },
+        },
+      },
+      productId: 'mouse-disc-enums-wrapper',
+      fieldKey: 'sensor_brand',
+      value: 'corsair',
+      confidence: 80,
+      sourceMeta: { run_id: 'run-1' },
+    });
+
+    assert.equal(result.status, 'accepted');
+    assert.ok(
+      result.validationResult.rejections.some((entry) => entry.reason_code === 'unknown_enum_prefer_known'),
+      'open_prefer_known unknown should be accepted but marked for review',
+    );
+    const lv = specDb.getListValueByFieldAndValue('sensor_brand', 'corsair');
+    assert.ok(lv, 'missing enum list should be created as the discovered value is persisted');
+  });
+
   // --- 10. Discovery enum: closed skips ---
   it('does NOT call persistDiscoveredValue for closed fields', async () => {
     ensureProductJson('mouse-closed');

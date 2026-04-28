@@ -5,7 +5,6 @@ import { useUiCategoryStore } from '../../stores/uiCategoryStore.ts';
 import { MetricCard } from '../../shared/ui/data-display/MetricCard.tsx';
 import { DataTable } from '../../shared/ui/data-display/DataTable.tsx';
 import { MiniGauge } from '../../shared/ui/data-display/MiniGauge.tsx';
-import { Spinner } from '../../shared/ui/feedback/Spinner.tsx';
 import { pct } from '../../utils/formatting.ts';
 import { useFormatDateYMD } from '../../utils/dateTime.ts';
 import type { CatalogRow } from '../../types/product.ts';
@@ -55,6 +54,7 @@ import { NumericRangeFilter } from './columnFilters/filters/NumericRangeFilter.t
 import { VariantMetricFilter } from './columnFilters/filters/VariantMetricFilter.tsx';
 import { ScalarVariantFilter } from './columnFilters/filters/ScalarVariantFilter.tsx';
 import { KeysFilter } from './columnFilters/filters/KeysFilter.tsx';
+import { OverviewPageSkeleton } from './OverviewPageSkeleton.tsx';
 
 // WHY: visibleIds changes on every search keystroke / filter / sort / live-ops
 // tick. Passing it as a prop on the select column would force the entire
@@ -588,7 +588,7 @@ export function OverviewPage() {
 
   // WHY: early return placed AFTER all hooks (rules of hooks). Conditional
   // hook count between renders triggers React error #310.
-  if (isLoading) return <Spinner className="h-8 w-8 mx-auto mt-12" />;
+  if (isLoading) return <OverviewPageSkeleton category={category} />;
 
   return (
     <div className="space-y-6 sf-text-primary">

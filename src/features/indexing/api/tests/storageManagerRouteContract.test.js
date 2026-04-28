@@ -157,6 +157,52 @@ describe('storageManagerRoutes', () => {
       strictEqual(result.body.sources[0].total_size, 175);
     });
 
+    it('passes source pagination to the SQL detail reader and returns page metadata', async () => {
+      let receivedArgs = null;
+      const ctx = buildMockCtx({
+        readRunDetailState: async (args) => {
+          receivedArgs = args;
+          return {
+            identity: {
+              product_id: args.meta.product_id,
+              category: args.meta.category,
+            },
+            sources: [
+              { url: 'https://example.com/page-3' },
+              { url: 'https://example.com/page-4' },
+            ],
+            sources_page: {
+              limit: 2,
+              offset: 2,
+              total: 5,
+              has_more: true,
+            },
+          };
+        },
+      });
+      const handler = createStorageManagerHandler(ctx);
+      const result = await handler(
+        ['storage', 'runs', 'run-001'],
+        new URLSearchParams('sourcesLimit=2&sourcesOffset=2'),
+        'GET',
+        {},
+        {},
+      );
+
+      strictEqual(result.status, 200);
+      deepStrictEqual(receivedArgs.sourcesPage, { limit: 2, offset: 2 });
+      deepStrictEqual(result.body.sources.map((source) => source.url), [
+        'https://example.com/page-3',
+        'https://example.com/page-4',
+      ]);
+      deepStrictEqual(result.body.sources_page, {
+        limit: 2,
+        offset: 2,
+        total: 5,
+        has_more: true,
+      });
+    });
+
     it('does not fall back to run.json when SQL detail projection is unavailable', async () => {
       let resolvedRunDirectory = false;
       const ctx = buildMockCtx({
@@ -182,6 +228,44 @@ describe('storageManagerRoutes', () => {
 
       strictEqual(result.status, 404);
       strictEqual(result.body.error, 'run_not_found');
+    });
+
+    it('serves a source HTML artifact for a known run and content hash', async () => {
+      const htmlBytes = Buffer.from('compressed-html');
+      const ctx = buildMockCtx({
+        readRunSourceHtmlArtifact: async ({ runId, contentHash }) => ({
+          run_id: runId,
+          content_hash: contentHash,
+          filename: 'abc123abc123.html.gz',
+          content: htmlBytes,
+        }),
+      });
+      const handler = createStorageManagerHandler(ctx);
+      const res = {
+        statusCode: 0,
+        headers: {},
+        writeHead(code, headers) {
+          this.statusCode = code;
+          this.headers = headers;
+        },
+        end(body) {
+          this.body = body;
+        },
+      };
+
+      const handled = await handler(
+        ['storage', 'runs', 'run-001', 'sources', 'abc123', 'html'],
+        new URLSearchParams(),
+        'GET',
+        {},
+        res,
+      );
+
+      strictEqual(handled, true);
+      strictEqual(res.statusCode, 200);
+      strictEqual(res.headers['Content-Type'], 'text/html; charset=utf-8');
+      strictEqual(res.headers['Content-Encoding'], 'gzip');
+      strictEqual(res.body, htmlBytes);
     });
   });
 

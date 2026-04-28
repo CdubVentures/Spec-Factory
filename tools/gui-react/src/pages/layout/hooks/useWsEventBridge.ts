@@ -25,6 +25,37 @@ import {
   resolveOperationsWsMessage,
   resolveProcessStatusWsMessage,
 } from './wsEventPayloadValidation.ts';
+import {
+  isOperationTerminalStatus,
+  isOperationUiActiveStatus,
+  type OperationStatus,
+} from '../../../features/operations/state/operationStatusContract.ts';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function readMetaString(meta: Record<string, unknown>, key: string): string {
+  const value = meta[key];
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function resolveTerminalDataChangeOperationId(message: unknown): string {
+  if (!isRecord(message) || !isRecord(message.meta)) return '';
+  const operationId = readMetaString(message.meta, 'operationId');
+  const operationStatus = readMetaString(message.meta, 'operationStatus');
+  if (!operationId || !isOperationTerminalStatus(operationStatus as OperationStatus)) return '';
+  return operationId;
+}
+
+function suppressActiveOperationFromTerminalDataChange(message: unknown) {
+  const operationId = resolveTerminalDataChangeOperationId(message);
+  if (!operationId) return;
+  const operationsStore = useOperationsStore.getState();
+  const operation = operationsStore.operations.get(operationId);
+  if (!operation || !isOperationUiActiveStatus(operation.status)) return;
+  operationsStore.remove(operationId);
+}
 
 export function useWsEventBridge({ category, queryClient }: { category: string; queryClient: QueryClient }) {
   const setProcessStatus = useRuntimeStore((s) => s.setProcessStatus);
@@ -173,6 +204,7 @@ export function useWsEventBridge({ category, queryClient }: { category: string; 
       if (eventName === 'runtime-settings-updated' || eventName === 'user-settings-updated') {
         useRuntimeSettingsValueStore.getState().confirmFlush();
       }
+      suppressActiveOperationFromTerminalDataChange(msg);
       const scopedCategories = resolveDataChangeScopedCategories(msg, category);
       void patchCatalogRowsFromDataChange({
         api,

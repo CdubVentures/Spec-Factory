@@ -163,7 +163,7 @@ export function deriveComponentSourcePriority(
   rules: Record<string, FieldRule>,
 ): Required<PriorityProfile> {
   const keys = new Set<string>();
-  const typeToken = String(source.type || source.component_type || "").trim();
+  const typeToken = String(source.component_type || "").trim();
   if (typeToken && rules[typeToken]) {
     keys.add(typeToken);
   }
@@ -172,7 +172,7 @@ export function deriveComponentSourcePriority(
     ? source.roles?.properties
     : [];
   for (const property of properties || []) {
-    const fieldKey = String(property?.field_key || property?.key || "").trim();
+    const fieldKey = String(property?.field_key || "").trim();
     if (fieldKey && rules[fieldKey]) {
       keys.add(fieldKey);
     }
