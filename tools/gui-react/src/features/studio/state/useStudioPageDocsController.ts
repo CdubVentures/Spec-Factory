@@ -107,7 +107,7 @@ export function useStudioPageDocsController({
     onStudioDocsSaved: () => {
       // WHY: Synchronous — no race conditions. The local Zustand store already
       // has the correct values. Just strip _edited flags. The WebSocket broadcast
-      // from the server + the 10s authority poll handle downstream reconciliation.
+      // from the server + the fallback authority poll handle downstream reconciliation.
       fieldRulesActions.clearRenames();
       fieldRulesActions.clearEdited();
       fieldRulesActions.clearGroupsDirty();

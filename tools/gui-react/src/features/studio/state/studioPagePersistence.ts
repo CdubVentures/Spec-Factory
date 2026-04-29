@@ -44,9 +44,8 @@ export function applyStudioMapRenames(
   inputMap: StudioConfig,
   renames: Record<string, string>,
 ): StudioConfig {
-  if (!renames || Object.keys(renames).length === 0) return inputMap;
-
-  const renameKey = (value: string) => renames[value] || value;
+  const renameMap = renames || {};
+  const renameKey = (value: string) => renameMap[value] || value;
   const nextMap: StudioConfig = { ...inputMap };
 
   if (Array.isArray(nextMap.selected_keys)) {
@@ -67,7 +66,8 @@ export function applyStudioMapRenames(
     nextMap.enum_lists = nextMap.enum_lists.map((entry) => {
       if (!entry || typeof entry !== 'object') return entry;
       const field = renameKey(String(entry.field || ''));
-      return { ...entry, field };
+      const { normalize: _normalize, ...rest } = entry as Record<string, unknown>;
+      return { ...rest, field };
     });
   }
 
@@ -76,7 +76,8 @@ export function applyStudioMapRenames(
       (entry: Record<string, unknown>) => {
         if (!entry || typeof entry !== 'object') return entry;
         const field = renameKey(String(entry.field || ''));
-        return { ...entry, field };
+        const { normalize: _normalize, ...rest } = entry;
+        return { ...rest, field };
       },
     );
   }

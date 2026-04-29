@@ -1,6 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  CATEGORY_TOKEN,
+  DOMAIN_QUERY_TEMPLATES,
+  EVENT_REGISTRY,
+} from '../../../../../../src/core/events/eventRegistry.js';
+import {
   KNOWN_DATA_CHANGE_DOMAINS,
   findUnmappedDataChangeDomains,
   resolveDataChangeInvalidationQueryKeys,
@@ -12,9 +17,70 @@ function hasQueryKey(keys, expected) {
   return keys.some((queryKey) => JSON.stringify(queryKey) === target);
 }
 
+function materializeExpectedTemplate(template, categories) {
+  if (!template.includes(CATEGORY_TOKEN)) return [template];
+  return categories.map((category) =>
+    template.map((token) => (token === CATEGORY_TOKEN ? category : token)));
+}
+
+function assertQueryKeysIncludeTemplates({ keys, templates, categories, label }) {
+  for (const template of templates) {
+    const expectedKeys = materializeExpectedTemplate(template, categories);
+    for (const expected of expectedKeys) {
+      assert.equal(
+        hasQueryKey(keys, expected),
+        true,
+        `${label} should materialize ${JSON.stringify(expected)}`,
+      );
+    }
+  }
+}
+
 test('all known data-change domains are mapped to invalidation templates', () => {
   const unmapped = findUnmappedDataChangeDomains(KNOWN_DATA_CHANGE_DOMAINS);
   assert.deepEqual(unmapped, []);
+});
+
+test('domain query-key scope contract materializes registry templates by category', () => {
+  const categories = ['mouse', 'keyboard'];
+
+  for (const [domain, templates] of Object.entries(DOMAIN_QUERY_TEMPLATES)) {
+    const keys = resolveDataChangeInvalidationQueryKeys({
+      message: {
+        type: 'data-change',
+        event: 'contract-scope-probe',
+        domains: [domain],
+      },
+      categories,
+    });
+
+    assertQueryKeysIncludeTemplates({
+      keys,
+      templates,
+      categories,
+      label: `domain ${domain}`,
+    });
+  }
+});
+
+test('event query-key scope contract falls back through registered event domains', () => {
+  const categories = ['mouse', 'keyboard'];
+
+  for (const [event, domains] of Object.entries(EVENT_REGISTRY)) {
+    const keys = resolveDataChangeInvalidationQueryKeys({
+      message: { type: 'data-change', event },
+      categories,
+    });
+    const templates = domains.flatMap((domain) => DOMAIN_QUERY_TEMPLATES[domain] || []);
+
+    assert.ok(templates.length > 0, `${event} should have at least one query-key template`);
+    assertQueryKeysIncludeTemplates({
+      keys,
+      templates,
+      categories,
+      label: `event ${event}`,
+    });
+  }
 });
 
 test('review drawer regression: review events invalidate candidates query family', () => {
@@ -49,6 +115,46 @@ test('entity-scoped review events invalidate the exact candidate field query', (
   assert.equal(hasQueryKey(keys, ['candidates', 'mouse']), true);
   assert.equal(hasQueryKey(keys, ['candidates', 'mouse', 'mouse-razer-viper', 'weight']), true);
   assert.equal(hasQueryKey(keys, ['product', 'mouse', 'mouse-razer-viper']), true);
+});
+
+test('enum delete events invalidate enum review plus publisher and product surfaces', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'enum-delete',
+      entities: {
+        productIds: ['mouse-razer-viper'],
+        fieldKeys: ['connection'],
+      },
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['enumReviewData', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['publisher', 'published', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['product', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['product', 'mouse', 'mouse-razer-viper']), true);
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse', 'mouse-razer-viper', 'connection']), true);
+});
+
+test('enum rename events invalidate enum review plus publisher and product surfaces', () => {
+  const keys = resolveDataChangeInvalidationQueryKeys({
+    message: {
+      type: 'data-change',
+      event: 'enum-rename',
+      entities: {
+        productIds: ['mouse-razer-viper'],
+        fieldKeys: ['connection'],
+      },
+    },
+    categories: ['mouse'],
+  });
+
+  assert.equal(hasQueryKey(keys, ['enumReviewData', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['publisher', 'published', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['product', 'mouse']), true);
+  assert.equal(hasQueryKey(keys, ['product', 'mouse', 'mouse-razer-viper']), true);
+  assert.equal(hasQueryKey(keys, ['candidates', 'mouse', 'mouse-razer-viper', 'connection']), true);
 });
 
 test('entity-scoped product events invalidate product-specific published fields and history', () => {

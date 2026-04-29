@@ -20,11 +20,12 @@ describe('characterization: closed policy — reject unknowns deterministically'
     assert.equal(r.needsReview, false);
   });
 
-  it('case mismatch → flag unknown', () => {
+  it('case mismatch → repairs to canonical', () => {
     const r = checkEnum('Black', 'closed', COLOR_KNOWN, 'exact');
-    assert.equal(r.pass, false);
-    assert.deepStrictEqual(r.unknown, ['Black']);
-    assert.equal(r.needsReview, true);
+    assert.equal(r.pass, true);
+    assert.deepStrictEqual(r.unknown, []);
+    assert.equal(r.needsReview, false);
+    assert.equal(r.repaired, 'black');
   });
 
   it('unknown value → flag unknown', () => {
@@ -51,6 +52,13 @@ describe('characterization: closed policy — reject unknowns deterministically'
     const r = checkEnum(null, 'closed', COLOR_KNOWN, 'exact');
     assert.equal(r.pass, true);
     assert.equal(r.needsReview, false);
+  });
+
+  it('ambiguous normalized match → reject without repair', () => {
+    const r = checkEnum('A_B', 'closed', ['A-B', 'A B'], 'exact');
+    assert.equal(r.pass, false);
+    assert.deepStrictEqual(r.unknown, ['A_B']);
+    assert.equal(r.repaired, undefined);
   });
 });
 

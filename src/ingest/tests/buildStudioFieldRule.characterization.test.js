@@ -196,7 +196,11 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
         key: 'sensor_type',
         rule: {
           contract: { type: 'string', shape: 'scalar' },
-          enum: { policy: 'closed', source: 'known_values.sensor_type' },
+          enum: {
+            policy: 'closed',
+            source: 'known_values.sensor_type',
+            match: { normalize: 'lower_trim', format_hint: '^(optical|laser)$' },
+          },
           vocab: { known_values: ['optical', 'laser'] },
         },
       },
@@ -210,7 +214,7 @@ test('buildStudioFieldRule characterizes representative field-rule shapes', () =
         aliases: [],
         contract: { shape: 'scalar', type: 'string' },
         enum: {
-          match: {},
+          match: { format_hint: '^(optical|laser)$' },
           policy: 'closed',
           source: 'data_lists.sensor_type',
         },

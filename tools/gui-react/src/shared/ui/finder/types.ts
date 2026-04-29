@@ -29,6 +29,7 @@ export interface DeleteTarget {
     | 'key-unpublish-all' | 'key-delete-all'
     | 'field-row-unpublish' | 'field-row-delete'
     | 'product-nonvariant-unpublish' | 'product-nonvariant-delete'
+    | 'component-row-delete' | 'component-type-delete'
     | 'field-variant-unpublish' | 'field-variant-delete'
     | 'field-all-variants-unpublish' | 'field-all-variants-delete';
   readonly runNumber?: number;

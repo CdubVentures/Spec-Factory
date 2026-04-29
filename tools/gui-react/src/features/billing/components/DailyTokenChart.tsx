@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
+import { DailyChartLoadingSkeleton } from './DailyChartLoadingSkeleton.tsx';
 import type { BillingDailyResponse } from '../billingTypes.ts';
 
 interface DailyTokenChartProps {
@@ -11,26 +11,22 @@ interface DailyTokenChartProps {
 // WHY: Recharts is ~200KB. Lazy-loaded so billing first paint is unblocked.
 const DailyTokenChartInner = lazy(() => import('./DailyTokenChartInner.tsx'));
 
-function DailyTokenChartFallback() {
+export function DailyTokenChart(props: DailyTokenChartProps) {
   return (
-    <div className="sf-surface-card sf-tok-themed rounded-lg overflow-hidden h-full flex flex-col sf-billing-min-chart">
-      <div className="px-5 py-3 flex items-center justify-between border-b sf-border-default gap-3">
-        <div>
-          <h3 className="text-sm font-bold">Daily Tokens</h3>
-          <div className="text-[11px] sf-text-subtle mt-0.5">Stacked by token class · 30-day window</div>
-        </div>
-      </div>
-      <div className="p-5 flex-1 min-h-0">
-        <SkeletonBlock className="sf-skel-chart" />
-      </div>
-    </div>
+    <Suspense fallback={<DailyTokenChartLoadingFallback />}>
+      <DailyTokenChartInner {...props} />
+    </Suspense>
   );
 }
 
-export function DailyTokenChart(props: DailyTokenChartProps) {
+// WHY: Token chart legend is fixed at 4 (Prompt / Usage / Output / Cached).
+function DailyTokenChartLoadingFallback() {
   return (
-    <Suspense fallback={<DailyTokenChartFallback />}>
-      <DailyTokenChartInner {...props} />
-    </Suspense>
+    <DailyChartLoadingSkeleton
+      title="Daily Tokens"
+      subtitle="Stacked by token class · 30-day window"
+      legendCount={4}
+      tokenStyle
+    />
   );
 }

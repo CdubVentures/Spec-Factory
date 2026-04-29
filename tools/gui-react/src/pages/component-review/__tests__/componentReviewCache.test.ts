@@ -3,13 +3,16 @@ import assert from 'node:assert/strict';
 import {
   buildComponentReviewGridLinkedProducts,
   clearLinkedReviewProductFields,
+  removeAllComponentReviewRowsFromCache,
+  removeComponentReviewRowFromCache,
   patchComponentReviewDocumentAction,
+  restoreComponentReviewPayload,
   restoreComponentReviewDocument,
   restoreLinkedReviewProductFields,
   resolveComponentReviewGridField,
   updateLinkedReviewProductFields,
 } from '../componentReviewCache.ts';
-import type { ComponentReviewDocument } from '../../../types/componentReview.ts';
+import type { ComponentReviewDocument, ComponentReviewItem, ComponentReviewPayload, ComponentPropertyState } from '../../../types/componentReview.ts';
 import type { ProductsIndexResponse } from '../../../types/review.ts';
 
 function productsIndex(): ProductsIndexResponse {
@@ -134,6 +137,61 @@ function componentReviewDocument(): ComponentReviewDocument {
   };
 }
 
+function propertyState(value: unknown): ComponentPropertyState {
+  return {
+    selected: {
+      value,
+      confidence: value == null ? 0 : 1,
+      status: 'ok',
+      color: value == null ? 'gray' : 'green',
+    },
+    needs_review: false,
+    reason_codes: [],
+    source: value == null ? 'unknown' : 'component_publisher',
+    source_timestamp: null,
+    variance_policy: null,
+    constraints: [],
+    overridden: false,
+    candidate_count: 0,
+    candidates: [],
+    accepted_candidate_id: null,
+  };
+}
+
+function componentReviewItem(id: number, name: string, maker: string): ComponentReviewItem {
+  return {
+    component_identity_id: id,
+    name,
+    maker,
+    aliases: [],
+    aliases_overridden: false,
+    links: [],
+    name_tracked: propertyState(name),
+    maker_tracked: propertyState(maker),
+    links_tracked: [],
+    links_state: propertyState(null),
+    properties: {
+      dpi: propertyState('30000'),
+    },
+    linked_products: [{ product_id: `product-${id}`, field_key: 'sensor' }],
+    review_status: 'pending',
+    metrics: { confidence: 1, flags: 0, property_count: 1 },
+  };
+}
+
+function componentReviewPayload(): ComponentReviewPayload {
+  return {
+    category: 'mouse',
+    componentType: 'sensor',
+    property_columns: ['dpi'],
+    items: [
+      componentReviewItem(5, 'PAW3950', 'PixArt'),
+      componentReviewItem(6, 'HERO 2', 'Logitech'),
+    ],
+    metrics: { total: 2, avg_confidence: 1, flags: 0 },
+  };
+}
+
 function createQueryClientHarness(entries: Array<[readonly unknown[], unknown]>) {
   const data = new Map(entries.map(([key, value]) => [JSON.stringify(key), value]));
   const calls: Array<readonly [string, unknown]> = [];
@@ -250,6 +308,57 @@ test('patchComponentReviewDocumentAction maps approve and dismiss actions', () =
   const patched = harness.get(['componentReview', 'mouse']) as ComponentReviewDocument;
   assert.equal(patched.items[0].status, 'approved_new');
   assert.equal(patched.items[1].status, 'dismissed');
+});
+
+test('removeComponentReviewRowFromCache removes one component identity row and restores snapshot', () => {
+  const harness = createQueryClientHarness([
+    [['componentReviewData', 'mouse', 'sensor'], componentReviewPayload()],
+  ]);
+
+  const snapshot = removeComponentReviewRowFromCache(
+    harness.queryClient as never,
+    {
+      category: 'mouse',
+      componentType: 'sensor',
+      componentIdentityId: 5,
+      name: 'PAW3950',
+      maker: 'PixArt',
+    },
+  );
+
+  const patched = harness.get(['componentReviewData', 'mouse', 'sensor']) as ComponentReviewPayload;
+  assert.deepEqual(patched.items.map((item) => item.component_identity_id), [6]);
+  assert.equal(patched.metrics.total, 1);
+
+  restoreComponentReviewPayload(harness.queryClient as never, snapshot);
+
+  const restored = harness.get(['componentReviewData', 'mouse', 'sensor']) as ComponentReviewPayload;
+  assert.deepEqual(restored.items.map((item) => item.component_identity_id), [5, 6]);
+  assert.equal(restored.metrics.total, 2);
+});
+
+test('removeAllComponentReviewRowsFromCache removes every row for the component type and restores snapshot', () => {
+  const harness = createQueryClientHarness([
+    [['componentReviewData', 'mouse', 'sensor'], componentReviewPayload()],
+  ]);
+
+  const snapshot = removeAllComponentReviewRowsFromCache(
+    harness.queryClient as never,
+    {
+      category: 'mouse',
+      componentType: 'sensor',
+    },
+  );
+
+  const patched = harness.get(['componentReviewData', 'mouse', 'sensor']) as ComponentReviewPayload;
+  assert.deepEqual(patched.items, []);
+  assert.equal(patched.metrics.total, 0);
+
+  restoreComponentReviewPayload(harness.queryClient as never, snapshot);
+
+  const restored = harness.get(['componentReviewData', 'mouse', 'sensor']) as ComponentReviewPayload;
+  assert.deepEqual(restored.items.map((item) => item.component_identity_id), [5, 6]);
+  assert.equal(restored.metrics.total, 2);
 });
 
 test('clearLinkedReviewProductFields clears linked review grid fields only', () => {

@@ -120,6 +120,92 @@ test('validateFieldStudioMap accepts trimmed component_sources and rejects only 
   });
   assert.equal(badVariancePolicy.valid, false);
   assert.ok(badVariancePolicy.errors.some((error) => error.includes('invalid variance_policy')));
+
+  const identityFacetProperty = validateFieldStudioMap({
+    component_sources: [
+      {
+        component_type: 'sensor',
+        roles: {
+          properties: [
+            { field_key: 'sensor_brand', type: 'string', variance_policy: 'authoritative' },
+            { field_key: 'sensor_link', type: 'url', variance_policy: 'authoritative' },
+          ],
+        },
+      },
+    ],
+  });
+  assert.equal(identityFacetProperty.valid, false);
+  assert.ok(
+    identityFacetProperty.errors.some((error) => error.includes('sensor_brand') && error.includes('identity facet')),
+    identityFacetProperty.errors.join('; '),
+  );
+  assert.ok(
+    identityFacetProperty.errors.some((error) => error.includes('sensor_link') && error.includes('identity facet')),
+    identityFacetProperty.errors.join('; '),
+  );
+});
+
+test('component_sources preserve semantic attribute types beyond string and number', () => {
+  const warnings = [];
+  const normalized = normalizeFieldStudioMap({
+    component_sources: [
+      {
+        component_type: 'sensor',
+        roles: {
+          properties: [
+            {
+              field_key: 'sensor_date',
+              type: 'date',
+              variance_policy: 'authoritative',
+              constraints: ['sensor_date <= release_date'],
+            },
+            {
+              field_key: 'flawless_sensor',
+              type: 'boolean',
+              variance_policy: 'upper_bound',
+            },
+            {
+              field_key: 'operating_range',
+              type: 'range',
+              unit: 'c',
+              variance_policy: 'range',
+              tolerance: 2,
+            },
+          ],
+        },
+      },
+    ],
+  }, { warnings });
+
+  assert.deepEqual(normalized.component_sources[0].roles.properties, [
+    {
+      field_key: 'sensor_date',
+      type: 'date',
+      unit: '',
+      variance_policy: 'authoritative',
+      constraints: ['sensor_date <= release_date'],
+    },
+    {
+      field_key: 'flawless_sensor',
+      type: 'boolean',
+      unit: '',
+      variance_policy: 'authoritative',
+    },
+    {
+      field_key: 'operating_range',
+      type: 'range',
+      unit: 'c',
+      variance_policy: 'range',
+      tolerance: 2,
+    },
+  ]);
+  assert.ok(
+    warnings.some((warning) => warning.includes('flawless_sensor') && warning.includes('coerced to')),
+    `expected boolean upper_bound coercion warning, got: ${JSON.stringify(warnings)}`,
+  );
+
+  const valid = validateFieldStudioMap(normalized);
+  assert.equal(valid.valid, true, valid.errors.join('; '));
 });
 
 test('buildComponentSourceSummary preserves component property metadata without columns', () => {

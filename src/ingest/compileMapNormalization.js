@@ -11,7 +11,8 @@ import {
   orderedUniqueStrings,
   colToIndex,
   parseRange,
-  isNumericContractType
+  isNumericContractType,
+  isComponentPropertyType
 } from './compileUtils.js';
 import { EG_LOCKED_KEYS as EG_LOCKED_KEYS_LIST } from '../features/studio/contracts/egPresets.js';
 import {
@@ -22,6 +23,14 @@ import {
 // WHY: Variant-generator keys must always promote to product fields even if
 // authors mistakenly mark them component_only.
 const EG_LOCKED_KEYS = new Set(EG_LOCKED_KEYS_LIST);
+const AUTO_COMPONENT_IDENTITY_FACETS = new Set(['brand', 'link']);
+
+function isAutoComponentIdentityFacetProperty(componentType = '', fieldKey = '') {
+  const type = normalizeFieldKey(componentType);
+  const key = normalizeFieldKey(fieldKey);
+  if (!type || !key) return false;
+  return [...AUTO_COMPONENT_IDENTITY_FACETS].some((facet) => key === `${type}_${facet}`);
+}
 
 // WHY: Walk normalized component_sources, return Set of keys flagged
 // component_only — except EG-locked keys which override the flag.
@@ -200,7 +209,6 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
     const rowSheet = normalizeText(row.sheet);
     const rowStart = asInt(row.row_start || row.start_row, 2);
     const rowEnd = asInt(row.row_end || row.end_row, 0);
-    const normalizeMode = normalizeToken(row.normalize || 'lower_trim');
     const delimiter = normalizeText(row.delimiter || '');
     const rowHeader = asInt(row.header_row, 0);
     const pushEnumRow = (bucket, columnRef) => {
@@ -220,7 +228,6 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         row_start: rowStart,
         row_end: rowEnd,
         delimiter,
-        normalize: normalizeMode,
         header_row: rowHeader
       });
     };
@@ -261,7 +268,6 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         header_row: asInt(row.header_row, 0),
         row_start: asInt(row.row_start || row.start_row, 2),
         row_end: asInt(row.row_end || row.end_row, 0),
-        normalize: normalizeToken(row.normalize || 'lower_trim') || 'lower_trim',
         delimiter: normalizeText(row.delimiter || ''),
         manual_values: rowManualValues
       };
@@ -281,7 +287,6 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         header_row: asInt(row.header_row, 0),
         row_start: asInt(row.row_start, 2),
         row_end: asInt(row.row_end, 0),
-        normalize: normalizeToken(row.normalize || 'lower_trim') || 'lower_trim',
         delimiter: normalizeText(row.delimiter || ''),
         manual_values: []
       };
@@ -301,7 +306,6 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
           header_row: 0,
           row_start: 2,
           row_end: 0,
-          normalize: normalizeToken(row.normalize || 'lower_trim') || 'lower_trim',
           delimiter: normalizeText(row.delimiter || ''),
           manual_values: orderedUniqueStrings(rowValues.map((val) => String(val).trim()).filter(Boolean))
         });
@@ -320,13 +324,14 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
       .map((entry) => {
         const fieldKey = normalizeFieldKey(entry.field_key || '');
         const legacyKey = normalizeFieldKey(entry.key || entry.property_key || '');
-        const propType = ['number', 'integer', 'string'].includes(normalizeToken(entry.type)) ? normalizeToken(entry.type) : 'string';
+        const propTypeToken = normalizeToken(entry.type);
+        const propType = isComponentPropertyType(propTypeToken) ? propTypeToken : 'string';
         const rawPolicy = normalizeToken(entry.variance_policy || 'authoritative');
         const NUMERIC_ONLY = ['upper_bound', 'lower_bound', 'range'];
         const coerced = !isNumericContractType(propType) && NUMERIC_ONLY.includes(rawPolicy);
         const effectivePolicy = coerced ? 'authoritative' : rawPolicy;
         if (coerced && warnings) {
-          warnings.push(`component_sources: variance_policy '${entry.variance_policy}' on string property '${fieldKey || legacyKey || '?'}' coerced to 'authoritative' (numeric policies require type 'number' or 'integer')`);
+          warnings.push(`component_sources: variance_policy '${entry.variance_policy}' on ${propType} property '${fieldKey || legacyKey || '?'}' coerced to 'authoritative' (numeric policies require type 'number', 'integer', 'range', or 'mixed_number_range')`);
         }
         const normalizedConstraints = Array.isArray(entry.constraints) ? entry.constraints.map((c) => normalizeText(c)) : [];
         const componentOnly = entry.component_only === true;
@@ -417,8 +422,7 @@ export function normalizeFieldStudioMap(map = {}, { warnings = null } = {}) {
         header_row: asInt(row.header_row, 0) || null,
         start_row: row.row_start,
         end_row: row.row_end > 0 ? row.row_end : null,
-        delimiter: row.delimiter || '',
-        normalize: row.normalize
+        delimiter: row.delimiter || ''
       })),
     component_sources: componentSheets
       .filter((row) => row.component_type)
@@ -596,10 +600,14 @@ export function validateFieldStudioMap(map = {}, options = {}) {
         errors.push(`component_sources: invalid property mapping for type '${componentType || '?'}'`);
         continue;
       }
-      if (!normalizeFieldKey(prop.field_key || prop.key || '')) {
+      const propertyKey = normalizeFieldKey(prop.field_key || prop.key || '');
+      if (!propertyKey) {
         errors.push(`component_sources: property mapping missing key for type '${componentType || '?'}'`);
       }
-      if (prop.type && !['string', 'number', 'integer'].includes(normalizeToken(prop.type))) {
+      if (isAutoComponentIdentityFacetProperty(componentType, propertyKey)) {
+        errors.push(`component_sources: property '${propertyKey}' for type '${componentType || '?'}' is an auto-generated identity facet; do not list it in roles.properties`);
+      }
+      if (prop.type && !isComponentPropertyType(prop.type)) {
         errors.push(`component_sources: invalid property mapping type '${prop.type}' for type '${componentType || '?'}'`);
       }
       if (prop.variance_policy && !VALID_VARIANCE_POLICIES.includes(normalizeToken(prop.variance_policy))) {

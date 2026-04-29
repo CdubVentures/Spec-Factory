@@ -155,7 +155,6 @@ export function MappingStudioTab({
       component_sources: normalizedCompSources,
       enum_lists: seededLists.map((dl) => ({
         field: dl.field,
-        normalize: dl.normalize,
         values: dl.manual_values,
       })),
     };
@@ -182,7 +181,6 @@ export function MappingStudioTab({
       component_sources: compSources,
       enum_lists: dataLists.map((dl) => ({
         field: dl.field,
-        normalize: dl.normalize,
         values: dl.manual_values,
       })),
     };
@@ -318,7 +316,7 @@ export function MappingStudioTab({
         <p className="text-xs sf-text-muted leading-relaxed max-w-[50%]">
           Configure how the compiler reads your Field Studio mapping. Define
           component types and their property slots, then set up enum / data
-          lists with normalization rules.
+          lists.
         </p>
         <div className="flex-1" />
         <button

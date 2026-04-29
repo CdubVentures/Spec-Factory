@@ -9,9 +9,6 @@
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { api } from '../../../api/client.ts';
-import { useDataChangeSubscription } from '../../../hooks/useDataChangeSubscription.js';
-import { invalidateDataChangeQueries } from '../../data-change/index.js';
-import type { DataChangeMessage } from '../../data-change/index.js';
 import { useRunningFieldKeys, useKeyFieldOpStates, usePassengerRides, useActivePassengers, awaitPassengersRegistered, awaitOperationTerminal } from '../../operations/hooks/useFinderOperations.ts';
 import { useFireAndForget } from '../../operations/hooks/useFireAndForget.ts';
 import {
@@ -56,12 +53,16 @@ import {
   buildRunAllDispatchKeys,
   buildRunGroupDispatchKeys,
 } from '../state/keyFinderBulkDispatch.ts';
+import {
+  isComponentIdentityChildKey,
+  isKeyRunBlocked,
+} from '../state/componentKeyRunGuards.ts';
 import { KeyFinderToolbar } from './KeyFinderToolbar.tsx';
 import { KeyGroupSection } from './KeyGroupSection.tsx';
 import { KeyModelStrip } from './KeyModelStrip.tsx';
 import { KeyBundlingStrip } from './KeyBundlingStrip.tsx';
 import { KeyRunHistorySection } from './KeyRunHistorySection.tsx';
-import { LIVE_MODES, DISABLED_REASONS, TOOLTIPS } from '../types.ts';
+import { LIVE_MODES, DISABLED_REASONS, TOOLTIPS, type KeyFinderSummaryRow } from '../types.ts';
 
 interface KeyFinderPanelProps {
   readonly productId: string;
@@ -129,24 +130,17 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
   // are skipped on their slot instead of wasting a Loop call.
   const groupedRef = useRef(grouped);
   useEffect(() => { groupedRef.current = grouped; }, [grouped]);
-
-  // ── Live updates (same WS chain Review Grid uses) ───────────────────
-  const onDataChange = useCallback((message: DataChangeMessage) => {
-    invalidateDataChangeQueries({
-      queryClient,
-      message,
-      fallbackCategory: category,
-    });
-  }, [queryClient, category]);
-
-  useDataChangeSubscription({
-    category,
-    // 'settings' ensures pipeline-settings saves (bundling knobs) refetch /summary
-    // so the Bundled column stays live. invalidationResolver also maps settings
-    // → ['key-finder', cat] at the template layer for unmounted-panel cases.
-    domains: ['review-layout', 'mapping', 'key-finder', 'review', 'publisher', 'settings'],
-    onDataChange,
-  });
+  const summaryQueryKey = useMemo(
+    () => ['key-finder', category, productId, 'summary'] as const,
+    [category, productId],
+  );
+  const fetchLatestSummary = useCallback(async (): Promise<readonly KeyFinderSummaryRow[]> => {
+    const rows = await api.get<readonly KeyFinderSummaryRow[]>(
+      `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}/summary`,
+    );
+    queryClient.setQueryData(summaryQueryKey, rows);
+    return rows;
+  }, [category, productId, queryClient, summaryQueryKey]);
 
   // ── Per-key Run + Loop (Phase 3b) ───────────────────────────────────
   const fire = useFireAndForget({ type: 'kf', category, productId });
@@ -360,8 +354,48 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
   // blocks until the server emits the passengersRegistered flag on that opId.
   // Execution itself stays overlapping — we only gate DISPATCH order.
   // Timeout fallback prevents a flaky server from deadlocking the chain.
+  const rowFromSummary = useCallback((
+    rows: readonly KeyFinderSummaryRow[],
+    fieldKey: string,
+  ): KeyFinderSummaryRow | null => rows.find((row) => row.field_key === fieldKey) ?? null, []);
+
+  const groupedKey = useCallback((fieldKey: string) => groupedRef.current.groups
+    .flatMap((group) => group.keys)
+    .find((key) => key.field_key === fieldKey) ?? null, []);
+
+  const isKeyResolved = useCallback((fieldKey: string, rows: readonly KeyFinderSummaryRow[] = summary ?? []) => {
+    const row = rowFromSummary(rows, fieldKey);
+    if (row) return row.last_status === 'resolved' || row.published === true;
+    const entry = groupedKey(fieldKey);
+    return Boolean(entry && (entry.last_status === 'resolved' || entry.published));
+  }, [groupedKey, rowFromSummary, summary]);
+
+  const isKeyBlocked = useCallback((fieldKey: string, rows: readonly KeyFinderSummaryRow[] = summary ?? []) => {
+    const row = rowFromSummary(rows, fieldKey);
+    if (row) return isKeyRunBlocked(row);
+    const entry = groupedKey(fieldKey);
+    return Boolean(entry && isKeyRunBlocked(entry));
+  }, [groupedKey, rowFromSummary, summary]);
+
+  const hasRemainingIdentityDependents = useCallback((
+    parentFieldKey: string,
+    remainingKeys: readonly string[],
+    rows: readonly KeyFinderSummaryRow[] = summary ?? [],
+  ) => {
+    const remaining = new Set(remainingKeys);
+    const sourceRows = rows.length > 0 ? rows : groupedRef.current.groups.flatMap((group) => group.keys);
+    return sourceRows.some((row) => (
+      remaining.has(row.field_key)
+      && isComponentIdentityChildKey(row)
+      && row.component_parent_key === parentFieldKey
+    ));
+  }, [summary]);
+
   const runKeysSequential = useCallback(async (keys: readonly string[]) => {
-    for (const fk of keys) {
+    let latestSummary = summary ?? [];
+    for (let index = 0; index < keys.length; index += 1) {
+      const fk = keys[index];
+      if (isKeyBlocked(fk, latestSummary)) continue;
       let resolveDispatched: ((id: string) => void) | null = null;
       const dispatched = new Promise<string>((resolve) => { resolveDispatched = resolve; });
       fire(
@@ -371,15 +405,13 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
       );
       const opId = await dispatched;
       await awaitPassengersRegistered(opId);
+      if (hasRemainingIdentityDependents(fk, keys.slice(index + 1), latestSummary)) {
+        const status = await awaitOperationTerminal(opId);
+        if (status === 'cancelled') break;
+        latestSummary = await fetchLatestSummary().catch(() => latestSummary);
+      }
     }
-  }, [fire, category, productId]);
-
-  const isKeyResolved = useCallback((fieldKey: string) => {
-    const entry = groupedRef.current.groups
-      .flatMap((group) => group.keys)
-      .find((key) => key.field_key === fieldKey);
-    return Boolean(entry && (entry.last_status === 'resolved' || entry.published));
-  }, []);
+  }, [fire, category, productId, summary, isKeyBlocked, hasRemainingIdentityDependents, fetchLatestSummary]);
 
   const fireLoopChain = useCallback(async (
     chainId: string,
@@ -388,12 +420,14 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
     if (keys.length === 0) return;
     // Pre-stamp chain so every key renders Queued on first paint
     setLoopChains((prev) => new Map(prev).set(chainId, { keys, currentIndex: -1 }));
+    let latestSummary = summary ?? [];
 
     await runLoopChain({
       keys,
       // Re-read through groupedRef so a key resolved mid-chain (e.g. via a
       // prior iteration's passenger) skips its slot instead of re-Looping.
-      isResolved: isKeyResolved,
+      isResolved: (fk) => isKeyResolved(fk, latestSummary),
+      isBlocked: (fk) => isKeyBlocked(fk, latestSummary),
       fireOne: (fk) => new Promise<string>((resolve) => {
         fire(
           `/key-finder/${encodeURIComponent(category)}/${encodeURIComponent(productId)}`,
@@ -401,7 +435,13 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
           { fieldKey: fk, subType: 'loop', onDispatched: (id) => resolve(id) },
         );
       }),
-      awaitTerminal: awaitOperationTerminal,
+      awaitTerminal: async (opId) => {
+        const status = await awaitOperationTerminal(opId);
+        if (status !== 'cancelled') {
+          latestSummary = await fetchLatestSummary().catch(() => latestSummary);
+        }
+        return status;
+      },
       onStep: ({ index }) => {
         setLoopChains((prev) => new Map(prev).set(chainId, { keys, currentIndex: index }));
       },
@@ -413,7 +453,7 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
       next.delete(chainId);
       return next;
     });
-  }, [fire, category, productId, isKeyResolved]);
+  }, [fire, category, productId, summary, isKeyResolved, isKeyBlocked, fetchLatestSummary]);
 
   const runGroup = useCallback((groupName: string) => {
     const keys = buildRunGroupDispatchKeys(grouped.groups, groupName, sortAxisOrder);
@@ -483,8 +523,8 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
               openWidthClass="w-[46rem]"
               drawerHeight="header"
               ariaLabel="History + destructive actions for every key"
-              closedTitle="Show Hist / Data for every key"
-              openedTitle="Hide Hist / Data for every key"
+              closedTitle="Show Hist / actions for every key"
+              openedTitle="Hide Hist / actions for every key"
               openTitle="Hist:"
               labelClass="sf-history-label"
               primaryCustom={
@@ -495,8 +535,6 @@ export const KeyFinderPanel = memo(function KeyFinderPanel({ productId, category
                   width={ACTION_BUTTON_WIDTH.keyHeader}
                 />
               }
-              secondaryTitle="Data:"
-              secondaryLabelClass="sf-delete-label"
               secondaryActions={[
                 {
                   label: 'Unpub all',

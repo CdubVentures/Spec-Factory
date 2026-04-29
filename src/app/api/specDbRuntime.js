@@ -53,8 +53,6 @@ export function createSpecDbRuntime({
 
   const specDbCache = new Map();
   const specDbSeedPromises = new Map();
-  const reviewLayoutByCategory = new Map();
-
   // WHY: Reseed phases are defined in seedRegistry.js for O(1) discoverability.
   // The factory receives feature-module functions via DI (src/db/ can't import
   // from src/features/ or src/pipeline/ directly). triggerReseedPhases below
@@ -282,7 +280,6 @@ export function createSpecDbRuntime({
 
   return {
     specDbCache,
-    reviewLayoutByCategory,
     getSpecDb,
     getSpecDbReady,
   };

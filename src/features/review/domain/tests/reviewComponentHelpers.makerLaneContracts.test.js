@@ -42,6 +42,13 @@ test('reviewItemMatchesMakerLane respects named, makerless, and allow-makerless 
   );
 });
 
+test('reviewItemMatchesMakerLane uses system-owned maker match keys', () => {
+  const makerItem = { product_attributes: { sensor_brand: 'Pix-Art' } };
+
+  assert.equal(reviewItemMatchesMakerLane(makerItem, { componentType: 'sensor', maker: 'Pix Art' }), true);
+  assert.equal(reviewItemMatchesMakerLane(makerItem, { componentType: 'sensor', maker: 'PixArt' }), false);
+});
+
 test('componentLaneSlug normalizes makerless lanes to the stable na suffix', () => {
   assert.equal(componentLaneSlug('PAW 3950', 'PixArt'), 'paw-3950_pixart');
   assert.equal(componentLaneSlug('TTC Gold', ''), 'ttc-gold_na');

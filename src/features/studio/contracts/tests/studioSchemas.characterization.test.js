@@ -153,6 +153,22 @@ test('FieldRuleSchema preserves the characterized explicit key surface', () => {
   ]);
 });
 
+test('ComponentSourceSchema accepts semantic component attribute types', () => {
+  const result = ComponentSourceSchema.safeParse({
+    component_type: 'sensor',
+    roles: {
+      properties: [
+        { field_key: 'sensor_date', type: 'date', variance_policy: 'authoritative' },
+        { field_key: 'flawless_sensor', type: 'boolean', variance_policy: 'authoritative' },
+        { field_key: 'operating_range', type: 'range', variance_policy: 'range' },
+        { field_key: 'capability_list', type: 'integer', variance_policy: 'upper_bound' },
+      ],
+    },
+  });
+
+  assert.equal(result.success, true, JSON.stringify(result.error?.issues || []));
+});
+
 test('AiAssistConfigSchema rejects direct booleans on toggle keys', () => {
   assert.equal(
     AiAssistConfigSchema.safeParse({

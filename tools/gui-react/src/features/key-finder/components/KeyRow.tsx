@@ -500,9 +500,9 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
           <PromptDrawerChevron
             storageKey={`key-finder:row-drawer:${entry.field_key}`}
             openWidthClass="w-[40rem]"
-            ariaLabel={`Prompt + history + data actions for ${entry.field_key}`}
-            closedTitle={`Show Prompt / Hist / Data for "${entry.field_key}"`}
-            openedTitle={`Hide Prompt / Hist / Data for "${entry.field_key}"`}
+            ariaLabel={`Prompt + history + actions for ${entry.field_key}`}
+            closedTitle={`Show Prompt / Hist / actions for "${entry.field_key}"`}
+            openedTitle={`Hide Prompt / Hist / actions for "${entry.field_key}"`}
             openTitle="Prompts:"
             actions={[
               {
@@ -526,8 +526,6 @@ export const KeyRow = memo(function KeyRow({ entry, productId, category, onRun, 
                 width={ACTION_BUTTON_WIDTH.keyRowHistory}
               />
             }
-            tertiaryTitle="Data:"
-            tertiaryLabelClass="sf-delete-label"
             tertiaryActions={[
               {
                 label: 'Unpub',

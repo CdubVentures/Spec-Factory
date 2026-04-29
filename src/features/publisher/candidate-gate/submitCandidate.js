@@ -12,7 +12,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { validateField } from '../validation/validateField.js';
-import { persistDiscoveredValue } from '../persistDiscoveredValues.js';
+import { appendDiscoveredEnumJson, persistDiscoveredValue } from '../persistDiscoveredValues.js';
 import { publishCandidate as autoPublish, normalizeConfidence } from '../publish/publishCandidate.js';
 import { syncPublishedComponentIdentity } from '../publish/componentPublisher.js';
 import { readMinEvidenceRefs } from '../publish/evidenceGate.js';
@@ -76,6 +76,25 @@ function resolveKnownValuesForField({ knownValues, fieldKey, fieldRule }) {
     return { policy, values: [] };
   }
   return null;
+}
+
+function collectPreferredEnumUnknowns(validationResult) {
+  const values = [];
+  const seen = new Set();
+  for (const rejection of validationResult?.rejections || []) {
+    if (rejection?.reason_code !== 'unknown_enum_prefer_known') continue;
+    const unknown = rejection?.detail?.unknown;
+    const entries = Array.isArray(unknown) ? unknown : [unknown];
+    for (const entry of entries) {
+      const value = String(entry ?? '').trim();
+      if (!value) continue;
+      const token = value.toLowerCase();
+      if (seen.has(token)) continue;
+      seen.add(token);
+      values.push(value);
+    }
+  }
+  return values;
 }
 
 /**
@@ -314,7 +333,15 @@ export async function submitCandidate({
 
   // --- Discovery enums ---
   if (fieldRule?.enum?.policy === 'open_prefer_known') {
-    persistDiscoveredValue({ specDb, fieldKey, value: repairedValue, fieldRule });
+    for (const discoveredValue of collectPreferredEnumUnknowns(validationResult)) {
+      persistDiscoveredValue({
+        specDb,
+        fieldKey,
+        value: discoveredValue,
+        fieldRule,
+        onValueDiscovered: (entry) => appendDiscoveredEnumJson({ category, config, ...entry }),
+      });
+    }
   }
 
   // --- Auto-publish ---

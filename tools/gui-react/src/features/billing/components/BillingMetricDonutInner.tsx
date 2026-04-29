@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
-import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { usd, compactNumber } from '../../../utils/formatting.ts';
 import { chartColor } from '../billingTransforms.ts';
 import { resolveBillingCallType, BILLING_CALL_TYPE_REGISTRY } from '../billingCallTypeRegistry.generated.ts';
+import { BillingMetricDonutLoadingSkeleton } from './BillingMetricDonutLoadingSkeleton.tsx';
 import type { BillingByReasonResponse, BillingGroupedItem } from '../billingTypes.ts';
 
 export type DonutMetric = 'cost' | 'tokens';
@@ -113,6 +113,10 @@ export default function BillingMetricDonutInner({ data, isLoading, isStale, metr
     : `Share of ${usd(totalValue, 2)} total`;
   const centerLabel = metric === 'tokens' ? 'Tokens' : 'Cost';
 
+  if (isLoading) {
+    return <BillingMetricDonutLoadingSkeleton title={title} subtitle={subtitle} tokenStyle={metric === 'tokens'} />;
+  }
+
   return (
     <div className={`sf-surface-card rounded-lg overflow-hidden h-full flex flex-col sf-billing-min-chart${metric === 'tokens' ? ' sf-tok-themed' : ''}`}>
       <div className="px-5 py-3 border-b sf-border-default">
@@ -120,17 +124,7 @@ export default function BillingMetricDonutInner({ data, isLoading, isStale, metr
         <div className="text-[11px] sf-text-subtle mt-0.5">{subtitle}</div>
       </div>
       <div className={`p-5 flex-1 flex flex-col items-center justify-center gap-3${staleClass}`}>
-        {isLoading && (
-          <>
-            <SkeletonBlock className="sf-skel-donut" />
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 w-full">
-              {Array.from({ length: 4 }, (_, i) => (
-                <SkeletonBlock key={i} className="sf-skel-bar-label" />
-              ))}
-            </div>
-          </>
-        )}
-        {!isLoading && slices.length === 0 && (
+        {slices.length === 0 && (
           <p className="sf-text-subtle text-sm text-center py-8">No data</p>
         )}
         {hasData && (

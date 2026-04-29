@@ -2,6 +2,7 @@ import { api } from "../../../api/client.ts";
 
 export const FIELD_STUDIO_PATCH_FILE_SUFFIX = ".field-studio-patch.v1.json";
 export const KEY_ORDER_PATCH_FILE_SUFFIX = ".key-order-patch.v1.json";
+const OS_DUPLICATE_SUFFIX_RE = /\s+\(\d+\)(?=\.json$)/i;
 
 export type AuditorJsonImportKind = "field_studio_patch" | "key_order_patch";
 
@@ -73,6 +74,10 @@ export interface FieldStudioPatchImportSummary {
   errorCount: number;
 }
 
+function normalizeDuplicatePatchFileName(fileName: string): string {
+  return fileName.replace(OS_DUPLICATE_SUFFIX_RE, "");
+}
+
 function detectImportKind(fileName: string, content: string): AuditorJsonImportKind {
   try {
     const parsed: unknown = JSON.parse(content);
@@ -84,7 +89,8 @@ function detectImportKind(fileName: string, content: string): AuditorJsonImportK
   } catch {
     // Fall back to filename suffix so backend can own the JSON parse error.
   }
-  if (fileName.endsWith(KEY_ORDER_PATCH_FILE_SUFFIX)) return "key_order_patch";
+  const normalizedFileName = normalizeDuplicatePatchFileName(fileName);
+  if (normalizedFileName.endsWith(KEY_ORDER_PATCH_FILE_SUFFIX)) return "key_order_patch";
   return "field_studio_patch";
 }
 

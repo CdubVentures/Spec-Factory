@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
+import { normalizeKnownValueMatchKey } from '../../../shared/primitives.js';
 
 async function safeReadJson(fp) {
   try { return JSON.parse(await fs.readFile(fp, 'utf8')); } catch { return null; }
@@ -49,6 +50,21 @@ async function readLatestNormalized(outputRoot, category, productId) {
   return null;
 }
 
+async function listProductIdsFromRoot(productRoot) {
+  const entries = await listDirs(productRoot);
+  return entries.filter((entry) => !entry.startsWith('_'));
+}
+
+function productJsonPath(productRoot, productId) {
+  return path.join(productRoot, productId, 'product.json');
+}
+
+async function readProductJson(productRoot, productId) {
+  const filePath = productJsonPath(productRoot, productId);
+  const productJson = await safeReadJson(filePath);
+  return productJson ? { filePath, productJson } : null;
+}
+
 function addAffectedRow(map, row = {}) {
   const productId = String(row.productId || row.product_id || '').trim();
   if (!productId) return;
@@ -72,6 +88,62 @@ function uniqueStrings(values = []) {
   return [...new Set(values.map((value) => String(value || '').trim()).filter(Boolean))];
 }
 
+function normalizeEnumComparable(value) {
+  return normalizeKnownValueMatchKey(value);
+}
+
+function extractPublishedValue(entry) {
+  if (entry && typeof entry === 'object' && !Array.isArray(entry) && Object.prototype.hasOwnProperty.call(entry, 'value')) {
+    return entry.value;
+  }
+  return entry;
+}
+
+function publishedValueContainsEnumValue(publishedValue, enumValue) {
+  const target = normalizeEnumComparable(enumValue);
+  if (!target) return false;
+  if (Array.isArray(publishedValue)) {
+    return publishedValue.some((item) => normalizeEnumComparable(item) === target);
+  }
+  return normalizeEnumComparable(publishedValue) === target;
+}
+
+function replaceEnumValueInPublishedValue(publishedValue, oldValue, newValue) {
+  const target = normalizeEnumComparable(oldValue);
+  const replacement = String(newValue || '').trim();
+  if (!target || !replacement) return { value: publishedValue, changed: false };
+  if (!Array.isArray(publishedValue)) {
+    if (normalizeEnumComparable(publishedValue) !== target) {
+      return { value: publishedValue, changed: false };
+    }
+    return { value: replacement, changed: true };
+  }
+
+  const seen = new Set();
+  let changed = false;
+  const next = [];
+  for (const item of publishedValue) {
+    const token = normalizeEnumComparable(item);
+    const nextItem = token === target ? replacement : item;
+    const nextToken = normalizeEnumComparable(nextItem);
+    if (token === target) changed = true;
+    if (!nextToken || seen.has(nextToken)) continue;
+    seen.add(nextToken);
+    next.push(nextItem);
+  }
+  return { value: next, changed };
+}
+
+function replacePublishedEntryValue(entry, oldValue, newValue) {
+  const currentValue = extractPublishedValue(entry);
+  const rewritten = replaceEnumValueInPublishedValue(currentValue, oldValue, newValue);
+  if (!rewritten.changed) return { entry, changed: false };
+  if (entry && typeof entry === 'object' && !Array.isArray(entry) && Object.prototype.hasOwnProperty.call(entry, 'value')) {
+    return { entry: { ...entry, value: rewritten.value }, changed: true };
+  }
+  return { entry: rewritten.value, changed: true };
+}
+
 function upsertNormalizedField(normalized, field, value) {
   if (!normalized || !field) return;
 
@@ -92,6 +164,199 @@ function upsertNormalizedField(normalized, field, value) {
       normalized.fields[field] = value;
     }
   }
+}
+
+function clearPublishResultMetadataPreservingEvidence(specDb, productId, fieldKey, variantId) {
+  const rows = specDb?.getFieldCandidatesByProductAndField?.(
+    productId,
+    fieldKey,
+    variantId === undefined ? undefined : variantId,
+  ) || [];
+  for (const row of rows) {
+    const metadata = row?.metadata_json && typeof row.metadata_json === 'object' ? row.metadata_json : {};
+    if (!Object.prototype.hasOwnProperty.call(metadata, 'publish_result')) continue;
+    specDb?.updateFieldCandidateMetadata?.(row.id, { ...metadata, publish_result: null });
+  }
+}
+
+function clearScalarPublishedEnum({ specDb, productId, field, productJson, enumValue }) {
+  const entry = productJson?.fields?.[field];
+  if (!publishedValueContainsEnumValue(extractPublishedValue(entry), enumValue)) {
+    return false;
+  }
+  delete productJson.fields[field];
+  specDb?.demoteResolvedCandidates?.(productId, field, null);
+  clearPublishResultMetadataPreservingEvidence(specDb, productId, field, null);
+  return true;
+}
+
+function clearVariantPublishedEnum({ specDb, productId, field, productJson, enumValue }) {
+  const variantFields = productJson?.variant_fields || {};
+  let changed = false;
+  for (const [variantId, entry] of Object.entries(variantFields)) {
+    if (!entry || typeof entry !== 'object') continue;
+    if (!publishedValueContainsEnumValue(extractPublishedValue(entry[field]), enumValue)) continue;
+    delete entry[field];
+    if (Object.keys(entry).length === 0) {
+      delete variantFields[variantId];
+    }
+    specDb?.demoteResolvedCandidates?.(productId, field, variantId);
+    clearPublishResultMetadataPreservingEvidence(specDb, productId, field, variantId);
+    changed = true;
+  }
+  return changed;
+}
+
+function renameScalarPublishedEnum({ productId, field, productJson, oldValue, newValue }) {
+  if (!productJson?.fields || !Object.prototype.hasOwnProperty.call(productJson.fields, field)) {
+    return false;
+  }
+  const rewritten = replacePublishedEntryValue(productJson.fields[field], oldValue, newValue);
+  if (!rewritten.changed) return false;
+  productJson.fields[field] = rewritten.entry;
+  return true;
+}
+
+function renameVariantPublishedEnum({ productJson, field, oldValue, newValue }) {
+  const variantFields = productJson?.variant_fields || {};
+  let changed = false;
+  for (const entry of Object.values(variantFields)) {
+    if (!entry || typeof entry !== 'object') continue;
+    if (!Object.prototype.hasOwnProperty.call(entry, field)) continue;
+    const rewritten = replacePublishedEntryValue(entry[field], oldValue, newValue);
+    if (!rewritten.changed) continue;
+    entry[field] = rewritten.entry;
+    changed = true;
+  }
+  return changed;
+}
+
+/**
+ * Remove a deleted enum value from published product mirrors without deleting
+ * candidate rows or evidence projections. Candidate status is demoted so the
+ * product is genuinely unpublished until a reviewer or run resolves a valid
+ * value again.
+ */
+export async function unpublishEnumValueFromProducts({
+  productRoot,
+  category,
+  field,
+  value,
+  productIds = [],
+  specDb = null,
+}) {
+  const fieldKey = String(field || '').trim();
+  const enumValue = String(value || '').trim();
+  if (!productRoot || !fieldKey || !enumValue) {
+    return { affected: [], unpublished: 0 };
+  }
+
+  const candidateProductIds = new Set(uniqueStrings(productIds));
+  const allProductIds = await listProductIdsFromRoot(productRoot);
+  for (const productId of allProductIds) {
+    candidateProductIds.add(productId);
+  }
+
+  const affected = [];
+  for (const productId of candidateProductIds) {
+    const productData = await readProductJson(productRoot, productId);
+    if (!productData?.productJson) continue;
+
+    const scalarChanged = clearScalarPublishedEnum({
+      specDb,
+      productId,
+      field: fieldKey,
+      productJson: productData.productJson,
+      enumValue,
+    });
+    const variantChanged = clearVariantPublishedEnum({
+      specDb,
+      productId,
+      field: fieldKey,
+      productJson: productData.productJson,
+      enumValue,
+    });
+
+    if (!scalarChanged && !variantChanged) continue;
+    productData.productJson.updated_at = new Date().toISOString();
+    specDb?.syncItemListLinkForFieldValue?.({
+      productId,
+      fieldKey,
+      value: undefined,
+    });
+    await fs.writeFile(productData.filePath, JSON.stringify(productData.productJson, null, 2));
+    affected.push({
+      productId,
+      field: fieldKey,
+      value: enumValue,
+      match_type: 'published_product_json',
+      match_score: 1.0,
+    });
+  }
+
+  return { affected, unpublished: affected.length };
+}
+
+export async function renameEnumValueInProducts({
+  productRoot,
+  category,
+  field,
+  oldValue,
+  newValue,
+  productIds = [],
+  specDb = null,
+}) {
+  const fieldKey = String(field || '').trim();
+  const priorValue = String(oldValue || '').trim();
+  const replacement = String(newValue || '').trim();
+  if (!productRoot || !fieldKey || !priorValue || !replacement) {
+    return { affected: [], renamed: 0 };
+  }
+
+  const candidateProductIds = new Set(uniqueStrings(productIds));
+  const allProductIds = await listProductIdsFromRoot(productRoot);
+  for (const productId of allProductIds) {
+    candidateProductIds.add(productId);
+  }
+
+  const affected = [];
+  for (const productId of candidateProductIds) {
+    const productData = await readProductJson(productRoot, productId);
+    if (!productData?.productJson) continue;
+
+    const scalarChanged = renameScalarPublishedEnum({
+      productId,
+      field: fieldKey,
+      productJson: productData.productJson,
+      oldValue: priorValue,
+      newValue: replacement,
+    });
+    const variantChanged = renameVariantPublishedEnum({
+      productJson: productData.productJson,
+      field: fieldKey,
+      oldValue: priorValue,
+      newValue: replacement,
+    });
+
+    if (!scalarChanged && !variantChanged) continue;
+    productData.productJson.updated_at = new Date().toISOString();
+    specDb?.syncItemListLinkForFieldValue?.({
+      productId,
+      fieldKey,
+      value: extractPublishedValue(productData.productJson.fields?.[fieldKey]),
+    });
+    await fs.writeFile(productData.filePath, JSON.stringify(productData.productJson, null, 2));
+    affected.push({
+      productId,
+      field: fieldKey,
+      value: priorValue,
+      newValue: replacement,
+      match_type: 'published_product_json',
+      match_score: 1.0,
+    });
+  }
+
+  return { affected, renamed: affected.length };
 }
 
 /**
@@ -353,7 +618,7 @@ export async function cascadeEnumChange({
 
   if (affectedMap.size === 0) {
     const productDirs = await listProductDirsFromOutput(outputRoot, category);
-    const normalizedValue = targetValue.toLowerCase();
+    const normalizedValue = normalizeEnumComparable(targetValue);
 
     for (const productId of productDirs) {
       if (productId.startsWith('_')) continue;
@@ -372,7 +637,7 @@ export async function cascadeEnumChange({
 
       for (const fieldValue of values) {
         if (!fieldValue) continue;
-        const fieldStr = String(fieldValue).trim().toLowerCase();
+        const fieldStr = normalizeEnumComparable(fieldValue);
         if (fieldStr === normalizedValue) {
           addAffectedRow(affectedMap, {
             productId,

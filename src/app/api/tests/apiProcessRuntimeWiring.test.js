@@ -47,7 +47,6 @@ function createHarness(options = {}) {
       invalidateSessionCache: () => {},
     },
     invalidateFieldRulesCache: () => {},
-    reviewLayoutByCategory: new Map(),
     syncSpecDbForCategory: async ({ category }) => ({ ok: true, category }),
     handleCompileProcessCompletion: async (payload) => {
       compileCalls.push(payload);

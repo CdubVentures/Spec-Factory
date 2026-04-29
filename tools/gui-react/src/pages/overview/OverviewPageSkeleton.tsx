@@ -30,13 +30,18 @@ const OVERVIEW_TABLE_COLUMNS: readonly OverviewSkeletonColumn[] = [
 const OVERVIEW_TABLE_ROWS = Array.from({ length: 8 }, (_value, index) => `row-${index}`);
 const OVERVIEW_METRICS = ['Products', 'Avg Confidence', 'Keys Resolved'] as const;
 const OVERVIEW_COMMAND_MODULES = ['cef', 'pif', 'rdf', 'sku', 'kf'] as const;
+const KEY_TIER_RINGS = ['t1', 't2', 't3', 't4', 't5'] as const;
+const VARIANT_CHIP_KEYS = ['a', 'b', 'c'] as const;
 
 function MetricSkeleton({ label }: { readonly label: string }) {
   return (
     <div className="sf-surface-card rounded-lg p-4 shadow-sm" data-region="overview-loading-metric">
       <p className="text-xs sf-status-text-muted uppercase tracking-wide">{label}</p>
       <div className="mt-1">
-        <SkeletonBlock className="sf-skel-title" />
+        <SkeletonBlock className="sf-skel-text-lg" />
+      </div>
+      <div className="mt-1.5">
+        <SkeletonBlock className="sf-skel-caption" />
       </div>
     </div>
   );
@@ -64,29 +69,17 @@ function CommandConsoleSkeleton() {
         </span>
         <span className="sf-cc-smart">
           <span className="sf-cc-eyebrow">Smart</span>
-          <button type="button" className="sf-cc-btn sf-cc-btn-secondary" disabled>
-            <SkeletonBlock className="sf-skel-bar" />
-          </button>
-          <button type="button" className="sf-cc-btn sf-cc-btn-secondary" disabled>
-            <SkeletonBlock className="sf-skel-bar" />
-          </button>
+          <span className="sf-shimmer inline-flex h-7 w-20 rounded-md" aria-hidden="true" />
+          <span className="sf-shimmer inline-flex h-7 w-20 rounded-md" aria-hidden="true" />
         </span>
       </div>
       <div className="sf-cc-chips-row">
         {OVERVIEW_COMMAND_MODULES.map((moduleKey) => (
-          <span key={moduleKey} className={`sf-cc-chip sf-cc-chip-${moduleKey}`}>
-            <span className="sf-cc-chip-head">
-              <SkeletonBlock className="sf-skel-icon-action" />
-              <span className="sf-cc-chip-label">
-                <SkeletonBlock className="sf-skel-caption" />
-              </span>
-            </span>
-            <span className="sf-cc-chip-actions">
-              <button type="button" className="sf-cc-btn sf-cc-btn-secondary" disabled>
-                <SkeletonBlock className="sf-skel-bar" />
-              </button>
-            </span>
-          </span>
+          <span
+            key={moduleKey}
+            className={`sf-shimmer sf-cc-chip sf-cc-chip-${moduleKey}`}
+            aria-hidden="true"
+          />
         ))}
       </div>
       <div className="sf-cc-models-row">
@@ -94,7 +87,11 @@ function CommandConsoleSkeleton() {
         <div className="sf-cc-models-track" role="group" aria-label="Loading configured models per finder">
           <span className="sf-cc-models-strip">
             {OVERVIEW_COMMAND_MODULES.map((moduleKey) => (
-              <SkeletonBlock key={moduleKey} className="sf-skel-caption" />
+              <span
+                key={moduleKey}
+                className="sf-shimmer inline-block h-5 w-24 rounded-sm"
+                aria-hidden="true"
+              />
             ))}
           </span>
         </div>
@@ -114,9 +111,7 @@ function CommandConsoleSkeleton() {
           </div>
         </div>
         <span className="sf-cc-pipeline-controls">
-          <button type="button" className="sf-cc-btn sf-cc-btn-primary" disabled>
-            <SkeletonBlock className="sf-skel-bar" />
-          </button>
+          <span className="sf-shimmer inline-flex h-8 w-24 rounded-md" aria-hidden="true" />
         </span>
       </div>
     </aside>
@@ -139,12 +134,7 @@ function ActiveRowSkeleton() {
           <span className="sf-aas-eyebrow-label">active</span>
         </div>
         <div className="sf-aas-track">
-          <span className="sf-aas-badge sf-aas-badge-active">
-            <span className="sf-aas-text">
-              <SkeletonBlock className="sf-skel-caption" />
-              <SkeletonBlock className="sf-skel-bar" />
-            </span>
-          </span>
+          <span className="sf-shimmer sf-aas-badge sf-aas-badge-active inline-block h-7 w-44 rounded-md" aria-hidden="true" />
         </div>
       </div>
       <div className="sf-aas-group sf-aas-group-idle">
@@ -155,12 +145,7 @@ function ActiveRowSkeleton() {
           <span className="sf-aas-eyebrow-label">selected</span>
         </div>
         <div className="sf-aas-track">
-          <span className="sf-aas-badge sf-aas-badge-idle">
-            <span className="sf-aas-text">
-              <SkeletonBlock className="sf-skel-caption" />
-              <SkeletonBlock className="sf-skel-bar" />
-            </span>
-          </span>
+          <span className="sf-shimmer sf-aas-badge sf-aas-badge-idle inline-block h-7 w-44 rounded-md" aria-hidden="true" />
         </div>
         <button type="button" className="sf-aas-clear" disabled>Clear</button>
       </div>
@@ -175,10 +160,7 @@ function FilterRowSkeleton() {
       data-region="overview-loading-filter-row"
     >
       <div className="relative inline-flex items-center flex-[0_1_340px] min-w-[200px]">
-        <span className="absolute left-2.5 w-3.5 h-3.5 sf-text-muted pointer-events-none" aria-hidden />
-        <div className="sf-input w-full pl-8 pr-8 py-1.5 text-[12.5px]">
-          <SkeletonBlock className="sf-skel-bar" />
-        </div>
+        <div className="sf-shimmer sf-input w-full h-9" aria-hidden="true" />
         <span
           aria-hidden
           className="absolute right-2 sf-surface-alt sf-text-muted font-mono text-[10.5px] font-semibold px-1.5 py-0.5 rounded border sf-border-soft leading-none"
@@ -197,6 +179,69 @@ function FilterRowSkeleton() {
       </div>
     </div>
   );
+}
+
+function CellSkeleton({ columnId }: { readonly columnId: string }) {
+  if (columnId === 'select') {
+    return <span className="sf-shimmer inline-block h-4 w-4 rounded-sm" aria-hidden="true" />;
+  }
+  if (columnId === 'brand') {
+    return <SkeletonBlock className="sf-skel-bar-label" />;
+  }
+  if (columnId === 'base_model' || columnId === 'variant') {
+    return <SkeletonBlock className="sf-skel-bar" />;
+  }
+  if (columnId === 'family') {
+    return <span className="sf-shimmer inline-block h-3.5 w-6 rounded-sm" aria-hidden="true" />;
+  }
+  if (columnId === 'cef') {
+    return <span className="sf-shimmer inline-block h-5 w-20 rounded-md" aria-hidden="true" />;
+  }
+  if (columnId === 'pif' || columnId === 'rdf' || columnId === 'sku') {
+    return (
+      <div className="flex items-center gap-1.5">
+        {VARIANT_CHIP_KEYS.map((chip) => (
+          <span
+            key={`${columnId}-${chip}`}
+            className="sf-shimmer inline-block h-5 w-16 rounded-md shrink-0"
+            aria-hidden="true"
+          />
+        ))}
+        <span className="sf-shimmer inline-block h-5 w-8 rounded-sm shrink-0" aria-hidden="true" />
+      </div>
+    );
+  }
+  if (columnId === 'key') {
+    return (
+      <div className="flex items-center gap-1.5">
+        {KEY_TIER_RINGS.map((ring) => (
+          <span
+            key={`key-${ring}`}
+            className="sf-shimmer inline-block h-5 w-5 rounded-full shrink-0"
+            aria-hidden="true"
+          />
+        ))}
+      </div>
+    );
+  }
+  if (columnId === 'score') {
+    return <span className="sf-shimmer inline-block h-5 w-10 rounded-sm" aria-hidden="true" />;
+  }
+  if (columnId === 'coverage' || columnId === 'confidence' || columnId === 'fields') {
+    return (
+      <div className="flex items-center gap-1.5">
+        <span className="sf-shimmer inline-block h-1.5 w-12 rounded-full" aria-hidden="true" />
+        <SkeletonBlock className="sf-skel-caption" />
+      </div>
+    );
+  }
+  if (columnId === 'live') {
+    return <span className="sf-shimmer inline-block h-5 w-14 rounded-md" aria-hidden="true" />;
+  }
+  if (columnId === 'lastRun') {
+    return <SkeletonBlock className="sf-skel-bar-label" />;
+  }
+  return <SkeletonBlock className="sf-skel-bar" />;
 }
 
 function TableSkeleton() {
@@ -220,7 +265,7 @@ function TableSkeleton() {
                 data-skeleton-column={column.id}
               >
                 <div className="flex items-center gap-1">
-                  <SkeletonBlock className="sf-skel-bar" />
+                  <SkeletonBlock className="sf-skel-bar-label" />
                 </div>
               </th>
             ))}
@@ -231,7 +276,7 @@ function TableSkeleton() {
             <tr key={row} className="sf-table-row" data-skeleton-row={row}>
               {OVERVIEW_TABLE_COLUMNS.map((column) => (
                 <td key={`${row}-${column.id}`} className="px-2 py-1.5" data-skeleton-cell={column.id}>
-                  <SkeletonBlock className="sf-skel-bar" />
+                  <CellSkeleton columnId={column.id} />
                 </td>
               ))}
             </tr>

@@ -1,4 +1,4 @@
-import { useMemo, useCallback, useRef } from 'react';
+import { useMemo, useCallback, useRef, useState } from 'react';
 import { useMutation, type QueryClient } from '@tanstack/react-query';
 import { type ColumnDef } from '@tanstack/react-table';
 import * as Tooltip from '@radix-ui/react-tooltip';
@@ -11,14 +11,24 @@ import { formatCellValue, humanizeField } from '../../utils/fieldNormalize.ts';
 import { useFieldLabels } from '../../hooks/useFieldLabels.ts';
 import { ComponentReviewDrawer } from './ComponentReviewDrawer.tsx';
 import {
+  ComponentReviewHeaderActionDrawer,
+  ComponentReviewRowActionDrawer,
+} from './ComponentReviewActionDrawers.tsx';
+import {
   buildComponentReviewGridLinkedProducts,
   cancelLinkedReviewProductFields,
+  removeAllComponentReviewRowsFromCache,
+  removeComponentReviewRowFromCache,
+  restoreComponentReviewPayload,
   restoreLinkedReviewProductFields,
   updateLinkedReviewProductFields,
+  type ComponentReviewPayloadSnapshot,
   type LinkedReviewProductFieldSnapshot,
 } from './componentReviewCache.ts';
 import { invalidateComponentImpactForCategory } from './componentImpactInvalidation.ts';
 import type { ComponentReviewPayload, ComponentReviewItem } from '../../types/componentReview.ts';
+import { FinderDeleteConfirmModal } from '../../shared/ui/finder/FinderDeleteConfirmModal.tsx';
+import type { DeleteTarget } from '../../shared/ui/finder/types.ts';
 
 interface ComponentSubTabProps {
   data: ComponentReviewPayload;
@@ -39,6 +49,18 @@ interface ComponentOverrideMutationBody {
 interface ComponentOverrideMutationContext {
   previousComponentReviewData?: ComponentReviewPayload;
   previousLinkedReviewProductFields?: LinkedReviewProductFieldSnapshot;
+}
+
+interface ComponentRowDeleteMutationBody {
+  item: ComponentReviewItem;
+}
+
+interface ComponentRowDeleteMutationContext {
+  previousComponentReviewData?: ComponentReviewPayloadSnapshot;
+}
+
+interface ComponentTypeDeleteMutationContext {
+  previousComponentReviewData?: ComponentReviewPayloadSnapshot;
 }
 
 interface PropertyColumnAggregate {
@@ -216,6 +238,8 @@ export function ComponentSubTab({
   const cancelComponentEdit = useComponentReviewStore((s) => s.cancelComponentEdit);
   const commitComponentEdit = useComponentReviewStore((s) => s.commitComponentEdit);
   const clearComponentCell = useComponentReviewStore((s) => s.clearComponentCell);
+  const [deleteTarget, setDeleteTarget] = useState<ComponentReviewItem | null>(null);
+  const [deleteAllTarget, setDeleteAllTarget] = useState<DeleteTarget | null>(null);
 
   const overrideMut = useMutation<unknown, Error, ComponentOverrideMutationBody, ComponentOverrideMutationContext>({
     mutationFn: (body) =>
@@ -284,6 +308,74 @@ export function ComponentSubTab({
 
   const overrideMutRef = useRef(overrideMut);
   overrideMutRef.current = overrideMut;
+
+  const rowDeleteMut = useMutation<unknown, Error, ComponentRowDeleteMutationBody, ComponentRowDeleteMutationContext>({
+    mutationFn: ({ item }) => {
+      const componentIdentityId = toPositiveId(item.component_identity_id);
+      if (!componentIdentityId) {
+        throw new Error('component identity id is required for row delete');
+      }
+      return api.del(`/review-components/${category}/components/${encodeURIComponent(data.componentType)}/identity/${componentIdentityId}`);
+    },
+    onMutate: async ({ item }) => {
+      const componentIdentityId = toPositiveId(item.component_identity_id);
+      if (!componentIdentityId) return {};
+      const queryKey = ['componentReviewData', category, data.componentType];
+      await queryClient.cancelQueries({ queryKey });
+      return {
+        previousComponentReviewData: removeComponentReviewRowFromCache(queryClient, {
+          category,
+          componentType: data.componentType,
+          componentIdentityId,
+          name: item.name,
+          maker: item.maker,
+        }),
+      };
+    },
+    onError: (_error, _body, context) => {
+      if (context?.previousComponentReviewData) {
+        restoreComponentReviewPayload(queryClient, context.previousComponentReviewData);
+      }
+    },
+    onSuccess: () => {
+      closeDrawer();
+      clearComponentCell();
+      queryClient.invalidateQueries({ queryKey: ['componentReviewData', category, data.componentType] });
+      queryClient.invalidateQueries({ queryKey: ['componentReviewLayout', category] });
+      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
+      queryClient.invalidateQueries({ queryKey: ['product', category] });
+      invalidateComponentImpactForCategory({ queryClient, category });
+    },
+  });
+
+  const componentTypeDeleteMut = useMutation<unknown, Error, void, ComponentTypeDeleteMutationContext>({
+    mutationFn: () =>
+      api.del(`/review-components/${category}/components/${encodeURIComponent(data.componentType)}/identities`),
+    onMutate: async () => {
+      const queryKey = ['componentReviewData', category, data.componentType];
+      await queryClient.cancelQueries({ queryKey });
+      return {
+        previousComponentReviewData: removeAllComponentReviewRowsFromCache(queryClient, {
+          category,
+          componentType: data.componentType,
+        }),
+      };
+    },
+    onError: (_error, _body, context) => {
+      if (context?.previousComponentReviewData) {
+        restoreComponentReviewPayload(queryClient, context.previousComponentReviewData);
+      }
+    },
+    onSuccess: () => {
+      closeDrawer();
+      clearComponentCell();
+      queryClient.invalidateQueries({ queryKey: ['componentReviewData', category, data.componentType] });
+      queryClient.invalidateQueries({ queryKey: ['componentReviewLayout', category] });
+      queryClient.invalidateQueries({ queryKey: ['reviewProductsIndex', category] });
+      queryClient.invalidateQueries({ queryKey: ['product', category] });
+      invalidateComponentImpactForCategory({ queryClient, category });
+    },
+  });
 
   const handleCellClick = useCallback((row: ComponentReviewItem, columnId: string, visualIndex: number) => {
     const originalIndex = items.indexOf(row);
@@ -485,14 +577,48 @@ export function ComponentSubTab({
       });
     }
 
+    cols.push({
+      id: 'row_actions',
+      header: () => (
+        <div className="ml-auto flex justify-end">
+          <ComponentReviewHeaderActionDrawer
+            componentType={data.componentType}
+            rowCount={items.length}
+            onRequestDeleteAll={() => setDeleteAllTarget({
+              kind: 'component-type-delete',
+              label: data.componentType,
+              count: items.length,
+            })}
+            deletePending={componentTypeDeleteMut.isPending}
+          />
+        </div>
+      ),
+      size: 170,
+      enableSorting: false,
+      cell: ({ row }) => (
+        <div className="flex justify-end">
+          <ComponentReviewRowActionDrawer
+            item={row.original}
+            componentType={data.componentType}
+            onRequestDelete={setDeleteTarget}
+            deletePending={rowDeleteMut.isPending}
+          />
+        </div>
+      ),
+    });
+
     return cols;
   }, [
     cancelComponentEdit,
     cellEditMode,
     data.property_columns,
+    data.componentType,
+    componentTypeDeleteMut.isPending,
     getLabel,
     handleCommitEdit,
+    items.length,
     propertyAggregates,
+    rowDeleteMut.isPending,
     selectedCell,
   ]);
 
@@ -509,19 +635,33 @@ export function ComponentSubTab({
     return items.find((item) => item.name === selectedEntity.name && item.maker === selectedEntity.maker) || null;
   }, [drawerOpen, selectedEntity, items]);
 
+  const componentDeleteModalTarget = useMemo<DeleteTarget | null>(() => {
+    if (deleteAllTarget) return deleteAllTarget;
+    if (!deleteTarget) return null;
+    return {
+      kind: 'component-row-delete',
+      label: `${deleteTarget.name}${deleteTarget.maker ? ` | ${deleteTarget.maker}` : ''}`,
+      count: deleteTarget.linked_products?.length ?? 0,
+    };
+  }, [deleteAllTarget, deleteTarget]);
+
+  const componentDrawerOpen = drawerOpen && selectedItem !== null;
+
   return (
     <Tooltip.Provider delayDuration={200}>
-      <div className={`grid ${drawerOpen && selectedItem ? 'grid-cols-[1fr,340px]' : 'grid-cols-1'} gap-3 min-w-0`}>
-        <DataTable
-          persistKey={`componentReview:table:${category}:${data.componentType}`}
-          data={items}
-          columns={columns}
-          searchable
-          maxHeight="max-h-[calc(100vh-320px)]"
-          onCellClick={handleCellClick}
-        />
+      <div className={`grid ${componentDrawerOpen ? 'grid-cols-[1fr,340px]' : 'grid-cols-1'} gap-3 min-w-0`}>
+        <div className="min-w-0">
+          <DataTable
+            persistKey={`componentReview:table:${category}:${data.componentType}`}
+            data={items}
+            columns={columns}
+            searchable
+            maxHeight="max-h-[calc(100vh-320px)]"
+            onCellClick={handleCellClick}
+          />
+        </div>
 
-        {drawerOpen && selectedItem && (
+        {componentDrawerOpen && selectedItem && (
           <ComponentReviewDrawer
             item={selectedItem}
             componentType={data.componentType}
@@ -537,6 +677,37 @@ export function ComponentSubTab({
             }
             rowIndex={selectedEntity?.rowIndex}
             propertyColumns={data.property_columns}
+          />
+        )}
+        {componentDeleteModalTarget && (
+          <FinderDeleteConfirmModal
+            target={componentDeleteModalTarget}
+            onConfirm={() => {
+              if (deleteAllTarget) {
+                void componentTypeDeleteMut.mutateAsync()
+                  .then(() => setDeleteAllTarget(null))
+                  .catch((err: unknown) => {
+                    const message = err instanceof Error ? err.message : String(err || 'Unknown error');
+                    window.alert(`Delete failed: ${message}`);
+                  });
+                return;
+              }
+              if (deleteTarget) {
+                void rowDeleteMut.mutateAsync({ item: deleteTarget })
+                  .then(() => setDeleteTarget(null))
+                  .catch((err: unknown) => {
+                    const message = err instanceof Error ? err.message : String(err || 'Unknown error');
+                    window.alert(`Delete failed: ${message}`);
+                  });
+              }
+            }}
+            onCancel={() => {
+              setDeleteTarget(null);
+              setDeleteAllTarget(null);
+            }}
+            isPending={rowDeleteMut.isPending || componentTypeDeleteMut.isPending}
+            moduleLabel="Component Review"
+            confirmLabel="Delete"
           />
         )}
       </div>

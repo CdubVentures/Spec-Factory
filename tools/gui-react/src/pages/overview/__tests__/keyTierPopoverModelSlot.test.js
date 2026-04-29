@@ -219,3 +219,31 @@ test('KeyTierPopover disables component link when dependency is unsatisfied even
   assert.ok(String(run.props.className).includes('sf-warning-button-solid'));
   assert.ok(String(loop.props.className).includes('sf-warning-button-solid'));
 });
+
+test('KeyTierPopover disables component attributes when dependency is unsatisfied even without a reason string', async () => {
+  const { KeyTierPopover } = await loadModule();
+  const tree = renderPopover(KeyTierPopover, 'mandatory', [
+    {
+      field_key: 'dpi',
+      group: 'sensor',
+      label: 'DPI',
+      difficulty: 'medium',
+      required_level: 'mandatory',
+      published: false,
+      last_status: null,
+      concrete_evidence: false,
+      belongs_to_component: 'sensor',
+      component_parent_key: 'sensor',
+      component_dependency_satisfied: false,
+      run_blocked_reason: '',
+    },
+  ]);
+  const buttons = collectByType(tree, 'button');
+  const run = buttons.find((button) => button.props.children === 'Run');
+  const loop = buttons.find((button) => button.props.children === 'Loop');
+
+  assert.equal(run.props.disabled, true);
+  assert.equal(loop.props.disabled, true);
+  assert.equal(String(run.props.className).includes('sf-warning-button-solid'), false);
+  assert.equal(String(loop.props.className).includes('sf-warning-button-solid'), false);
+});

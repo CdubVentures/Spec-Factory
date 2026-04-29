@@ -8,8 +8,12 @@ import {
   type PassengersRegisteredOutcome,
   type TerminalStatus,
 } from '../../features/operations/hooks/useFinderOperations.ts';
-import { parseAxisOrder, sortKeysByPriority } from '../../features/key-finder/state/keyFinderGroupedRows.ts';
-import { isKeyRunBlocked } from '../../features/key-finder/state/componentKeyRunGuards.ts';
+import { parseAxisOrder } from '../../features/key-finder/state/keyFinderGroupedRows.ts';
+import { buildDispatchKeyOrder } from '../../features/key-finder/state/keyFinderBulkDispatch.ts';
+import {
+  isComponentIdentityChildKey,
+  isKeyRunBlocked,
+} from '../../features/key-finder/state/componentKeyRunGuards.ts';
 import type { CatalogRow } from '../../types/product.ts';
 import type { PifVariantProgressGen, ScalarVariantProgressGen } from '../../types/product.generated.ts';
 import { classifyPipelineKfBucket, type PipelineKfBucket } from './pipelinePlan.ts';
@@ -498,6 +502,8 @@ interface KeyFinderSummaryLike {
   readonly published?: boolean;
   readonly run_blocked_reason?: string;
   readonly component_run_kind?: string;
+  readonly component_parent_key?: string;
+  readonly belongs_to_component?: string;
   readonly component_dependency_satisfied?: boolean;
 }
 
@@ -524,6 +530,23 @@ function isKfResolved(summary: readonly KeyFinderSummaryLike[], fieldKey: string
   return Boolean(row && (row.last_status === 'resolved' || row.published));
 }
 
+function kfSummaryRow(summary: readonly KeyFinderSummaryLike[], fieldKey: string): KeyFinderSummaryLike | null {
+  return summary.find((entry) => entry.field_key === fieldKey) ?? null;
+}
+
+function hasRemainingComponentIdentityDependents(
+  parentFieldKey: string,
+  remainingKeys: readonly string[],
+  summary: readonly KeyFinderSummaryLike[],
+): boolean {
+  const remaining = new Set(remainingKeys);
+  return summary.some((entry) => (
+    remaining.has(entry.field_key)
+    && isComponentIdentityChildKey(entry)
+    && entry.component_parent_key === parentFieldKey
+  ));
+}
+
 async function fetchKfSummary(category: string, productId: string): Promise<readonly KeyFinderSummaryLike[]> {
   return api.get<readonly KeyFinderSummaryLike[]>(kfSummaryUrl(category, productId));
 }
@@ -542,23 +565,15 @@ function filterAndSortKfKeys(
   pickedFilter?: ReadonlySet<string>,
   pipelineBucket?: Extract<PipelineKfBucket, 'early' | 'contextual'>,
 ): readonly string[] {
-  const eligible = summary.filter((entry) => {
+  const candidates = summary.filter((entry) => {
     if (!entry.field_key) return false;
     if (reservedKeys.has(entry.field_key)) return false;
     if (entry.variant_dependent === true) return false;
-    if (isKeyRunBlocked(entry)) return false;
     if (pipelineBucket && classifyPipelineKfBucket(entry, reservedKeys) !== pipelineBucket) return false;
-    if (mode === 'loop' && (entry.last_status === 'resolved' || entry.published)) return false;
     if (pickedFilter && !pickedFilter.has(entry.field_key)) return false;
     return true;
   });
-  const sortable = eligible.map((entry) => ({
-    ...entry,
-    difficulty: entry.difficulty ?? '',
-    required_level: entry.required_level ?? '',
-    availability: entry.availability ?? '',
-  }));
-  return sortKeysByPriority(sortable, axisOrder).map((entry) => entry.field_key);
+  return buildDispatchKeyOrder(candidates, { axisOrder, mode });
 }
 
 async function fetchKfPlanInputs(
@@ -634,7 +649,8 @@ async function runKfProductChain({
   const prepared = preinsertOptimisticBulkFireParams(category, kfBulkFireParams(category, plan, mode));
 
   try {
-    for (const params of prepared) {
+    for (let index = 0; index < prepared.length; index += 1) {
+      const params = prepared[index];
       const fieldKey = params.fieldKey ?? '';
       if (options.signal?.aborted) {
         skipped += 1;
@@ -642,6 +658,12 @@ async function runKfProductChain({
         continue;
       }
       if (mode === 'loop' && isKfResolved(latestSummary, fieldKey)) {
+        skipped += 1;
+        removeOptimisticBulkFireParam(params);
+        continue;
+      }
+      const latestRow = kfSummaryRow(latestSummary, fieldKey);
+      if (latestRow && isKeyRunBlocked(latestRow)) {
         skipped += 1;
         removeOptimisticBulkFireParam(params);
         continue;
@@ -654,6 +676,15 @@ async function runKfProductChain({
 
         if (mode === 'run') {
           await options.awaitPassengersRegistered(operationId);
+          if (hasRemainingComponentIdentityDependents(
+            fieldKey,
+            plan.keys.slice(index + 1),
+            latestSummary,
+          )) {
+            const status = await options.awaitOperationTerminal(operationId);
+            if (status === 'cancelled') break;
+            latestSummary = await fetchKfSummary(category, plan.row.productId).catch(() => latestSummary);
+          }
         } else {
           const status = await options.awaitOperationTerminal(operationId);
           if (status === 'cancelled') break;

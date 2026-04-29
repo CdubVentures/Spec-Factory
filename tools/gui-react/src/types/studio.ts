@@ -45,7 +45,7 @@ export interface AiAssistConfig {
 
 export interface ComponentSourceProperty {
   field_key?: string;
-  type?: 'string' | 'number' | 'integer';
+  type?: 'string' | 'number' | 'integer' | 'boolean' | 'date' | 'url' | 'range' | 'mixed_number_range';
   unit?: string;
   variance_policy?: 'authoritative' | 'upper_bound' | 'lower_bound' | 'range' | 'override_allowed';
   tolerance?: number | null;
@@ -65,16 +65,13 @@ export interface ComponentSource {
 
 export interface EnumEntry {
   field: string;
-  normalize?: string;
   values?: string[];
-  delimiter?: string;
   manual_values?: string[];
   [k: string]: unknown;
 }
 
 export interface DataListEntry {
   field: string;
-  normalize?: string;
   delimiter?: string;
   manual_values?: string[];
   mode?: string;

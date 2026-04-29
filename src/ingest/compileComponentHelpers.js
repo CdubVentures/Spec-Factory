@@ -5,6 +5,7 @@ import {
   normalizeToken,
   normalizeFieldKey,
   isNumericContractType,
+  isComponentPropertyType,
   titleFromKey,
 } from './compileUtils.js';
 import { EG_LOCKED_KEYS as EG_LOCKED_KEYS_LIST } from '../features/studio/contracts/egPresets.js';
@@ -34,7 +35,7 @@ export function resolveComponentPropertyMetaFromMap(map, fieldKey) {
         continue;
       }
       const entryTypeToken = normalizeToken(entry.type);
-      const type = ['number', 'integer', 'string'].includes(entryTypeToken)
+      const type = isComponentPropertyType(entryTypeToken)
         ? entryTypeToken
         : 'string';
       const rawPolicy = normalizeToken(entry.variance_policy || 'authoritative') || 'authoritative';
@@ -95,7 +96,7 @@ export function buildComponentSourceSummary({
         const mapConstraints = Array.isArray(entry.constraints) ? entry.constraints.map((c) => normalizeText(c)) : [];
         const out = {
           key: resolvedKey,
-          type: ['number', 'integer', 'string'].includes(normalizeToken(entry.type)) ? normalizeToken(entry.type) : 'string',
+          type: isComponentPropertyType(entry.type) ? normalizeToken(entry.type) : 'string',
           unit: normalizeText(entry.unit || ''),
           field_key: fieldKey || undefined,
           variance_policy: normalizeToken(entry.variance_policy || 'authoritative'),

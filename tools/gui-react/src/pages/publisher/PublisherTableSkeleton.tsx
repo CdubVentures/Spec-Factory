@@ -25,26 +25,40 @@ const PUBLISHER_TABLE_COLUMNS: readonly PublisherSkeletonColumn[] = [
 const PUBLISHER_TABLE_ROWS = Array.from({ length: 10 }, (_value, index) => `row-${index}`);
 const PUBLISHER_PAGE_BUTTONS = ['prev', '1', '2', '3', 'next'] as const;
 
+const CHIP_COLUMNS = new Set([
+  'status',
+  'unknown_stripped',
+  'published',
+  'source_type',
+]);
+const NUMERIC_CHIP_COLUMNS = new Set(['repairs', 'evidence_accepted', 'evidence_rejected']);
+
 function CellSkeleton({ columnId }: { readonly columnId: string }) {
-  if (['status', 'unknown_stripped', 'published', 'source_type', 'repairs', 'evidence_accepted', 'evidence_rejected'].includes(columnId)) {
-    return (
-      <span className="sf-chip-neutral">
-        <SkeletonBlock className="sf-skel-caption" />
-      </span>
-    );
-  }
   if (columnId === 'expand') {
-    return <span className="inline-flex items-center justify-center w-5 h-5 rounded-sm"><SkeletonBlock className="sf-skel-icon-action" /></span>;
+    return <span className="sf-shimmer inline-block h-5 w-5 rounded-sm" aria-hidden="true" />;
+  }
+  if (columnId === 'submitted_at') {
+    return <SkeletonBlock className="sf-skel-bar-label" />;
+  }
+  if (columnId === 'brand' || columnId === 'model' || columnId === 'product_id' || columnId === 'value') {
+    return <SkeletonBlock className="sf-skel-bar" />;
+  }
+  if (columnId === 'field_key') {
+    return <span className="sf-shimmer inline-block h-5 w-24 rounded-md" aria-hidden="true" />;
+  }
+  if (CHIP_COLUMNS.has(columnId)) {
+    return <span className="sf-shimmer inline-block h-5 w-16 rounded-md" aria-hidden="true" />;
   }
   if (columnId === 'confidence') {
     return (
       <div className="flex items-center gap-1.5">
-        <div className="rounded-full overflow-hidden sf-bg-surface-soft-strong w-[22px] h-[5px]">
-          <div className="h-full rounded-full sf-bg-accent w-1/2" />
-        </div>
+        <span className="sf-shimmer inline-block h-1.5 w-10 rounded-full" aria-hidden="true" />
         <SkeletonBlock className="sf-skel-caption" />
       </div>
     );
+  }
+  if (NUMERIC_CHIP_COLUMNS.has(columnId)) {
+    return <span className="sf-shimmer inline-block h-5 w-8 rounded-md" aria-hidden="true" />;
   }
   return <SkeletonBlock className="sf-skel-bar" />;
 }
@@ -61,7 +75,7 @@ function TableSkeleton() {
             {PUBLISHER_TABLE_COLUMNS.map((column) => (
               <th key={column.id} className="sf-table-head-cell cursor-pointer select-none" data-skeleton-column={column.id}>
                 <div className="flex items-center gap-1">
-                  <SkeletonBlock className="sf-skel-bar" />
+                  <SkeletonBlock className="sf-skel-bar-label" />
                 </div>
               </th>
             ))}
@@ -89,19 +103,15 @@ function PaginationSkeleton() {
       className="flex items-center justify-between sf-surface-panel rounded border sf-border-default px-4 py-2.5"
       data-region="publisher-loading-pagination"
     >
-      <span className="sf-text-subtle text-[11px]">
-        <SkeletonBlock className="sf-skel-caption" />
-      </span>
+      <SkeletonBlock className="sf-skel-bar-label" />
       <div className="flex items-center gap-1">
         {PUBLISHER_PAGE_BUTTONS.map((button) => (
-          <button
+          <span
             key={button}
-            type="button"
-            className="px-2.5 py-1 rounded-sm text-xs font-semibold border sf-border-default sf-surface-elevated sf-text-muted disabled:opacity-30 cursor-pointer"
-            disabled
-          >
-            <SkeletonBlock className="sf-skel-caption" />
-          </button>
+            className="sf-shimmer inline-block h-7 w-9 rounded-sm"
+            data-skeleton-page-button={button}
+            aria-hidden="true"
+          />
         ))}
       </div>
     </div>

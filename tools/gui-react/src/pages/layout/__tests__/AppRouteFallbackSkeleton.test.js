@@ -99,6 +99,11 @@ async function loadAppModule() {
           loader: async () => ({ OverviewPage: function OverviewPage() { return null; } }),
         }];
       `,
+      './registries/skeletonRegistry.tsx': `
+        export function getRouteFallbackSkeleton() {
+          return null;
+        }
+      `,
       './api/ws.ts': `
         export const wsManager = { onReconnect() {} };
       `,

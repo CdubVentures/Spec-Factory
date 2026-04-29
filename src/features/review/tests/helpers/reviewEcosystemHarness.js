@@ -432,7 +432,6 @@ export async function seedWorkbookMap(helperRoot, category, enumValues = {}) {
     header_row: 0,
     row_start: 2,
     row_end: 0,
-    normalize: 'lower_trim',
     delimiter: '',
     manual_values: Array.isArray(values) ? values : [],
   }));

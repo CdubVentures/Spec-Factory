@@ -5,6 +5,8 @@
 // Drives <FinderSettingsRenderer />. Each entry is a typed primitive (bool/int/float/string/enum),
 // optionally rendered via a named widget registered in the GUI widget registry.
 
+import type { SettingWidgetName } from '../components/widgets/widgetRegistryNames.ts';
+
 export type FinderSettingType = 'bool' | 'int' | 'float' | 'string' | 'enum' | 'intMap';
 
 export interface FinderSettingsEntry {
@@ -27,7 +29,7 @@ export interface FinderSettingsEntry {
   allowEmpty?: boolean;
   hidden?: boolean;
   scope?: 'global' | 'category';
-  widget?: string;
+  widget?: SettingWidgetName;
   widgetProps?: Record<string, unknown>;
 }
 
@@ -148,7 +150,7 @@ export const FINDER_SETTINGS_REGISTRY: Record<FinderIdWithSettings, readonly Fin
     { key: 'bundlingOverlapCapMedium', type: 'int', default: 4, min: 0, max: 32, uiLabel: 'Overlap cap — medium', uiTip: 'Max concurrent passenger rides for medium peers.', uiGroup: 'Bundling' },
     { key: 'bundlingOverlapCapHard', type: 'int', default: 6, min: 0, max: 32, uiLabel: 'Overlap cap — hard', uiTip: 'Max concurrent passenger rides for hard peers.', uiGroup: 'Bundling' },
     { key: 'bundlingOverlapCapVeryHard', type: 'int', default: 0, min: 0, max: 32, uiLabel: 'Overlap cap — very hard', uiTip: 'Max concurrent rides for very_hard peers. 0 = uncapped (distinct from easy/medium/hard where 0 means never pack). Very_hard peers are expensive; re-harvesting is always net-positive.', uiGroup: 'Bundling' },
-    { key: 'componentInjectionEnabled', type: 'bool', default: true, uiLabel: 'Component values', uiTip: 'Inject a per-key relation pointer ("this key belongs to the sensor component" / "this key IS the sensor component identity") for the primary + each passenger. The resolved component inventory itself is always on — this only toggles the per-key pointer.', uiGroup: 'Context Injection' },
+    { key: 'componentInjectionEnabled', type: 'bool', default: true, uiLabel: 'Component values', uiTip: 'Inject a per-key relation pointer ("this key belongs to the sensor component" / "this key IS the sensor component identity") for the primary + each passenger. The component candidate table/resolved row context itself is always on for component runs - this only toggles the short per-key pointer.', uiGroup: 'Context Injection' },
     { key: 'knownFieldsInjectionEnabled', type: 'bool', default: true, uiLabel: 'Known fields', uiTip: 'Inject already-published non-component field values on this product as a shared context block.', uiGroup: 'Context Injection' },
     { key: 'searchHintsInjectionEnabled', type: 'bool', default: true, uiLabel: 'Search hints', uiTip: 'Inject domain_hints + query_terms for the PRIMARY key only (passengers inherit the primary session).', uiGroup: 'Context Injection' },
     { key: 'urlHistoryEnabled', type: 'bool', default: true, uiLabel: 'URL history', uiTip: 'Inject prior-run URLs for the PRIMARY key so the LLM avoids re-crawling them. Per-key scope for keyFinder (different from RDF/SKU variant scope). Passengers inherit the primary’s search session and do not get their own URL history dumps.', uiGroup: 'Discovery History (primary key only)' },

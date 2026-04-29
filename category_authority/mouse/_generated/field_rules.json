@@ -1026,7 +1026,9 @@
       "difficulty": "hard",
       "display_name": "Click Force",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "numeric gf scalar; nominal force only"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -1298,7 +1300,9 @@
       "difficulty": "very_hard",
       "display_name": "Click Latency (Bluetooth)",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "numeric ms value only"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -1964,7 +1968,9 @@
       "difficulty": "medium",
       "display_name": "Computer-side Connector",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "standards-style connector label, e.g. USB-A, USB-C, PS/2; avoid marketing names and generic USB-only labels"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -2805,7 +2811,9 @@
       "difficulty": "medium",
       "display_name": "Max DPI",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "integer 100-60000"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -3037,7 +3045,9 @@
       "difficulty": "medium",
       "display_name": "Encoder",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "Canonical encoder identity; Title Case; include maker when needed to disambiguate generic color/model names."
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -4871,7 +4881,9 @@
       "difficulty": "easy",
       "display_name": "Max IPS",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "numeric IPS only"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -5300,7 +5312,9 @@
       "difficulty": "easy",
       "display_name": "Lighting",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "`none` or `<integer> zone (rgb|led)`"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -5751,7 +5765,9 @@
       "difficulty": "medium",
       "display_name": "MCU",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "<Maker> <part-number>; prefer exact public part number, but keep a source-stated series-level value such as Nuvoton M483 when no package-specific value is published."
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -5908,7 +5924,9 @@
       "difficulty": "medium",
       "display_name": "MCU Link",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "Component-level URL for exact MCU/SoC product page, datasheet PDF, official documentation page, or authorized distributor part page."
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6040,7 +6058,9 @@
       "difficulty": "easy",
       "display_name": "Middle Buttons",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "integer count 0-8"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -6690,7 +6710,9 @@
       "difficulty": "easy",
       "display_name": "Onboard Memory (Value)",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "integer 0-10"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -7599,7 +7621,9 @@
       "difficulty": "easy",
       "display_name": "RGB",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "X zone (rgb), X zone (led)"
+        },
         "policy": "closed",
         "source": "yes_no"
       },
@@ -7995,7 +8019,9 @@
       "difficulty": "medium",
       "display_name": "Sensor Date",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "ISO date `YYYY-MM-DD`"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -8524,7 +8550,9 @@
       "difficulty": "very_hard",
       "display_name": "Sensor Latency (Wireless)",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "numeric milliseconds, product-specific wireless motion/sensor latency only"
+        },
         "new_value_policy": {},
         "policy": "open_prefer_known",
         "source": "data_lists.sensor_latency_wireless"
@@ -9161,7 +9189,9 @@
       "difficulty": "easy",
       "display_name": "Side Buttons",
       "enum": {
-        "match": {},
+        "match": {
+          "format_hint": "integer 0-12"
+        },
         "new_value_policy": {
           "accept_if_evidence": true,
           "mark_needs_curation": true
@@ -10826,7 +10856,7 @@
       }
     }
   },
-  "generated_at": "2026-04-28T22:11:55.245Z",
+  "generated_at": "2026-04-29T04:41:27.116Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

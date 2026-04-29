@@ -79,9 +79,24 @@ export function isDateLikeFieldKey(fieldKey = '') {
   return /date|year|release|launch/i.test(normalizeFieldKey(fieldKey));
 }
 
+export const COMPONENT_PROPERTY_TYPES = new Set([
+  'string',
+  'number',
+  'integer',
+  'boolean',
+  'date',
+  'url',
+  'range',
+  'mixed_number_range',
+]);
+
+export function isComponentPropertyType(type) {
+  return COMPONENT_PROPERTY_TYPES.has(normalizeToken(type));
+}
+
 export function isNumericContractType(type) {
   const token = normalizeToken(type);
-  return token === 'number' || token === 'integer';
+  return token === 'number' || token === 'integer' || token === 'range' || token === 'mixed_number_range';
 }
 
 export function normalizeSourceMode(value = '') {

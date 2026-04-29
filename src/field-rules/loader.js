@@ -1,6 +1,11 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { isObject, toArray, normalizeFieldKey, normalizeToken } from '../shared/primitives.js';
+import {
+  isObject,
+  toArray,
+  normalizeFieldKey,
+  normalizeKnownValueMatchKey,
+} from '../shared/primitives.js';
 
 const cache = new Map();
 const signatureCache = new Map();
@@ -206,7 +211,7 @@ function componentEntryStorageKey(entry, fallbackKey, existingEntries) {
 }
 
 function appendIndexToken(index, indexAll, tokenRaw, entry) {
-  const token = normalizeToken(tokenRaw);
+  const token = normalizeKnownValueMatchKey(tokenRaw);
   if (!token) return;
   if (!index.has(token)) index.set(token, entry);
   if (!indexAll.has(token)) indexAll.set(token, []);
@@ -247,18 +252,16 @@ export function normalizeComponentDbPayload(rawPayload = {}, fallbackName = '') 
   const indexAll = new Map();
   // Build a lightweight lookup index so runtime component matching stays O(1).
   for (const entry of Object.values(entries)) {
-    const canonicalToken = normalizeToken(entry.canonical_name);
+    const canonicalToken = normalizeKnownValueMatchKey(entry.canonical_name);
     if (canonicalToken) {
       appendIndexToken(index, indexAll, canonicalToken, entry);
-      appendIndexToken(index, indexAll, canonicalToken.replace(/\s+/g, ''), entry);
     }
     for (const alias of entry.aliases || []) {
-      const aliasToken = normalizeToken(alias);
+      const aliasToken = normalizeKnownValueMatchKey(alias);
       if (!aliasToken) {
         continue;
       }
       appendIndexToken(index, indexAll, aliasToken, entry);
-      appendIndexToken(index, indexAll, aliasToken.replace(/\s+/g, ''), entry);
     }
   }
 
@@ -424,9 +427,9 @@ export async function loadFieldRules(category, options = {}) {
         const typeKey = normalizeFieldKey(ovr.componentType);
         const db = componentDBs[typeKey];
         if (!db?.entries) continue;
-        const nameToken = normalizeToken(ovr.name);
+        const nameToken = normalizeKnownValueMatchKey(ovr.name);
         // Find the matching entry via the index or by iterating entries
-        const matched = db.__index?.get(nameToken) || db.__index?.get(nameToken.replace(/\s+/g, ''));
+        const matched = db.__index?.get(nameToken) || null;
         if (matched && isObject(ovr.properties) && isObject(matched.properties)) {
           for (const [prop, val] of Object.entries(ovr.properties)) {
             if (val !== undefined && val !== null && val !== '') {
@@ -450,11 +453,7 @@ export async function loadFieldRules(category, options = {}) {
         // Update the index for any new aliases from identity overrides
         if (matched && Array.isArray(ovr.identity?.aliases) && db.__index) {
           for (const alias of ovr.identity.aliases) {
-            const aliasToken = normalizeToken(alias);
-            if (aliasToken) {
-              db.__index.set(aliasToken, matched);
-              db.__index.set(aliasToken.replace(/\s+/g, ''), matched);
-            }
+            appendIndexToken(db.__index, db.__indexAll, alias, matched);
           }
         }
     } catch { /* skip corrupt override entry */ }
@@ -525,11 +524,11 @@ export async function lookupComponent(category, dbName, query, options = {}) {
   if (!db) {
     return null;
   }
-  const token = normalizeToken(query);
+  const token = normalizeKnownValueMatchKey(query);
   if (!token) {
     return null;
   }
-  return db.__index.get(token) || db.__index.get(token.replace(/\s+/g, '')) || null;
+  return db.__index.get(token) || null;
 }
 
 export async function getParseTemplate(category, fieldKey, options = {}) {

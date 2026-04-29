@@ -32,6 +32,10 @@ export function normalizeTokenCollapsed(value) {
   return normalizeToken(value).replace(/\s+/g, ' ');
 }
 
+export function normalizeKnownValueMatchKey(value) {
+  return normalizeToken(value).replace(/[-_\s]+/g, ' ').trim();
+}
+
 export function normalizeFieldKey(value) {
   return String(value ?? '')
     .trim()

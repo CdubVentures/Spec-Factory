@@ -185,6 +185,14 @@ export function sampleValueFormFromInternal(valueForm = '', shape = 'scalar') {
   return 'mixed_values_and_ranges';
 }
 
+function stripRetiredEnumMatchKeys(match = {}) {
+  if (!isObject(match)) {
+    return {};
+  }
+  const { normalize: _normalize, ...rest } = match;
+  return rest;
+}
+
 export function buildSearchHints({
   key = '',
   requiredLevel = 'optional',
@@ -393,10 +401,10 @@ export function mergeFieldOverride(baseRule, overrideRaw = {}) {
       ...overrideEnum
     };
     if (isObject(baseEnum.match) || isObject(overrideEnum.match)) {
-      override.enum.match = {
+      override.enum.match = stripRetiredEnumMatchKeys({
         ...(isObject(baseEnum.match) ? baseEnum.match : {}),
         ...(isObject(overrideEnum.match) ? overrideEnum.match : {})
-      };
+      });
     }
   }
   if (!normalizeText(override.value_form)) {
@@ -721,11 +729,12 @@ export function buildStudioFieldRule({
     nestedParse.accepted_formats = ['YYYY-MM-DD', 'YYYY-MM', 'YYYY'];
   }
 
-  const enumMatch = isObject(enumBlock.match) ? enumBlock.match : {};
+  const enumMatch = stripRetiredEnumMatchKeys(enumBlock.match);
+  const formatHint = normalizeText(enumMatch.format_hint || '');
   const nestedEnum = {
     policy: policy || 'open_prefer_known',
     source: sourceRef,
-    match: {}
+    match: formatHint ? { format_hint: formatHint } : {}
   };
   if (nestedEnum.policy === 'open' || nestedEnum.policy === 'open_prefer_known') {
     nestedEnum.new_value_policy = isObject(rule.new_value_policy)

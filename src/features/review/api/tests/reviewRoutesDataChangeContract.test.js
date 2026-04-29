@@ -30,7 +30,6 @@ function makeReviewCtx(overrides = {}) {
       getSessionRules: async () => ({ draftFieldOrder: [], draftFields: {}, cleanFieldOrder: [] }),
       invalidateSessionCache: () => {},
     },
-    reviewLayoutByCategory: new Map(),
     broadcastWs: () => {},
     specDbCache: new Map(),
     findProductsReferencingComponent: async () => [],

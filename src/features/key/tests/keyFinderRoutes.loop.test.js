@@ -62,6 +62,11 @@ const COMPONENT_FIELD_RULES = {
       group: 'sensor_identity',
       component_identity_projection: { component_type: 'sensor', facet: 'link' },
     },
+    dpi: {
+      ...POLLING_RATE_RULE,
+      field_key: 'dpi',
+      group: 'sensor_performance',
+    },
   },
   known_values: {},
 };
@@ -265,6 +270,43 @@ describe('POST /key-finder/:cat/:pid — mode dispatch', () => {
     assert.ok(err409, 'expected component dependency conflict');
     assert.equal(err409.body.error, 'component_parent_unpublished');
     assert.equal(err409.body.field_key, 'sensor_brand');
+    assert.equal(err409.body.component_parent_key, 'sensor');
+    assert.equal(listOperations().length, 0, 'blocked run must not register an operation');
+  });
+
+  it('rejects component attribute runs until the parent component key is published', async () => {
+    const { ctx, responses } = makeCtx({
+      specDb: makeSpecDbStub({
+        getCompiledRules: () => COMPONENT_FIELD_RULES,
+        getResolvedFieldCandidate: () => null,
+        getFieldStudioMap: () => ({
+          component_sources: [
+            {
+              component_type: 'sensor',
+              roles: {
+                properties: [
+                  { field_key: 'dpi' },
+                ],
+              },
+            },
+          ],
+        }),
+      }),
+    });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(
+      ['key-finder', 'mouse', PRODUCT_ROW.product_id],
+      null,
+      'POST',
+      { body: { field_key: 'dpi', mode: 'run' } },
+      {},
+    );
+
+    const err409 = responses.find((r) => r.status === 409);
+    assert.ok(err409, 'expected component dependency conflict');
+    assert.equal(err409.body.error, 'component_parent_unpublished');
+    assert.equal(err409.body.field_key, 'dpi');
     assert.equal(err409.body.component_parent_key, 'sensor');
     assert.equal(listOperations().length, 0, 'blocked run must not register an operation');
   });

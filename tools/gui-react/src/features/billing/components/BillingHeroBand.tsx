@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { usd, compactNumber } from '../../../utils/formatting.ts';
 import { computeAvgPerCall, computePeriodDeltas, chartColor } from '../billingTransforms.ts';
 import { resolveBillingCallType } from '../billingCallTypeRegistry.generated.ts';
@@ -152,7 +151,7 @@ export function BillingHeroBand({
   const staleClass = isStale ? ' sf-stale-refetch' : '';
 
   if (isLoading) {
-    return <SkeletonBlock className="sf-hero-band-skel" />;
+    return <BillingHeroBandSkeleton />;
   }
 
   return (
@@ -270,5 +269,87 @@ function buildReasonSeries(
   _byReason: BillingByReasonResponse | undefined,
 ): number[] {
   return days.map((d) => d.cost_usd);
+}
+
+// WHY: Skeleton mirrors the real loaded shape — same chrome, same static
+// labels (eyebrow, h1, half-meta, per-kpi label/ico), shimmer only the
+// dynamic value/sub/sparkline at the real CSS font-size and slot dimensions.
+// No invented widths; value width = 100% of cell because text width is
+// unknowable until data arrives. Sparkline-presence and trend-vs-subline
+// per cell mirror the real BillingHeroBand call sites.
+function HeroKpiSkeleton({ ico, label, hasTrend, hasSubline, hasSparkline }: {
+  readonly ico: string;
+  readonly label: string;
+  readonly hasTrend?: boolean;
+  readonly hasSubline?: boolean;
+  readonly hasSparkline?: boolean;
+}) {
+  return (
+    <div className="sf-hero-kpi" aria-hidden="true">
+      <div className="sf-hero-kpi-label">
+        <span className="sf-hero-kpi-ico">{ico}</span>
+        {label}
+      </div>
+      <div className="sf-hero-kpi-value">
+        <span className="sf-shimmer block h-[21px] w-full rounded-sm" />
+      </div>
+      <div className="sf-hero-kpi-sub">
+        {hasTrend ? <span className="sf-hero-trend sf-hero-trend-flat sf-shimmer">&nbsp;</span> : null}
+        {hasSubline ? <span className="sf-shimmer inline-block h-[11px] w-24 rounded-sm" /> : null}
+      </div>
+      {hasSparkline ? <span className="sf-shimmer sf-hero-sparkline rounded-sm block" /> : null}
+    </div>
+  );
+}
+
+function BillingHeroBandSkeleton() {
+  return (
+    <section className="sf-hero-band" data-region="billing-hero-loading" aria-busy="true">
+      <span className="sr-only">Loading billing overview</span>
+      <div className="sf-hero-header">
+        <div className="sf-hero-title-block">
+          <div className="sf-hero-eyebrow">LLM Billing &amp; Usage</div>
+          <h1 className="sf-hero-title">Cost &amp; Token Overview</h1>
+          <p className="sf-hero-meta">
+            <span className="sf-shimmer inline-block h-[13px] w-72 rounded-sm align-middle" aria-hidden="true" />
+          </p>
+        </div>
+      </div>
+
+      <div className="sf-hero-split">
+
+        <div className="sf-hero-half sf-hero-cost">
+          <div className="sf-hero-half-header">
+            <span className="sf-hero-flame sf-hero-flame-cost" />
+            <h2>Cost Overview</h2>
+            <span className="sf-hero-half-meta">USD billed</span>
+          </div>
+          <div className="sf-hero-kpi-grid">
+            <HeroKpiSkeleton ico="$" label="Total" hasTrend hasSparkline />
+            <HeroKpiSkeleton ico="⚡" label="Calls" hasTrend hasSparkline />
+            <HeroKpiSkeleton ico="⊘" label="Avg / Call" hasSparkline />
+            <HeroKpiSkeleton ico="★" label="Top Type" hasSubline hasSparkline />
+          </div>
+        </div>
+
+        <div className="sf-hero-divider" aria-hidden="true" />
+
+        <div className="sf-hero-half sf-hero-tok">
+          <div className="sf-hero-half-header">
+            <span className="sf-hero-flame sf-hero-flame-tok" />
+            <h2>Token Overview</h2>
+            <span className="sf-hero-half-meta">billable units</span>
+          </div>
+          <div className="sf-hero-kpi-grid">
+            <HeroKpiSkeleton ico="◐" label="Prompt" hasSubline hasSparkline />
+            <HeroKpiSkeleton ico="◈" label="Usage" hasSubline />
+            <HeroKpiSkeleton ico="#" label="Input" hasTrend hasSparkline />
+            <HeroKpiSkeleton ico="◑" label="Output" hasTrend hasSparkline />
+          </div>
+        </div>
+
+      </div>
+    </section>
+  );
 }
 

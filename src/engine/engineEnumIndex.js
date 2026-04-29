@@ -3,7 +3,8 @@ import {
   toArray,
   normalizeText,
   normalizeToken,
-  normalizeFieldKey
+  normalizeFieldKey,
+  normalizeKnownValueMatchKey
 } from './engineTextHelpers.js';
 
 export function groupKey(rule = {}) {
@@ -30,23 +31,39 @@ export function buildUiGroupIndex(uiFieldCatalog = {}) {
 export function buildEnumIndex(knownValues = {}) {
   const out = new Map();
   const enums = isObject(knownValues.enums) ? knownValues.enums : {};
+  const addKnownValue = (fieldMap, ambiguous, token, canonical) => {
+    if (!token || !canonical || ambiguous.has(token)) {
+      return;
+    }
+    const existing = fieldMap.get(token);
+    if (!existing) {
+      fieldMap.set(token, canonical);
+      return;
+    }
+    if (existing === canonical) {
+      return;
+    }
+    fieldMap.delete(token);
+    ambiguous.add(token);
+  };
   for (const [rawField, row] of Object.entries(enums)) {
     const field = normalizeFieldKey(rawField);
     if (!field || !row) {
       continue;
     }
     const fieldMap = new Map();
+    const ambiguous = new Set();
     for (const entry of toArray(row.values)) {
       if (isObject(entry)) {
         const canonical = normalizeText(entry.canonical || entry.value || '');
         if (!canonical) {
           continue;
         }
-        fieldMap.set(normalizeToken(canonical), canonical);
+        addKnownValue(fieldMap, ambiguous, normalizeKnownValueMatchKey(canonical), canonical);
         for (const alias of toArray(entry.aliases)) {
-          const token = normalizeToken(alias);
+          const token = normalizeKnownValueMatchKey(alias);
           if (token) {
-            fieldMap.set(token, canonical);
+            addKnownValue(fieldMap, ambiguous, token, canonical);
           }
         }
       } else {
@@ -54,12 +71,13 @@ export function buildEnumIndex(knownValues = {}) {
         if (!canonical) {
           continue;
         }
-        fieldMap.set(normalizeToken(canonical), canonical);
+        addKnownValue(fieldMap, ambiguous, normalizeKnownValueMatchKey(canonical), canonical);
       }
     }
     out.set(field, {
       policy: normalizeToken(row.policy || 'open') || 'open',
-      index: fieldMap
+      index: fieldMap,
+      ambiguous
     });
   }
   return out;
@@ -67,6 +85,22 @@ export function buildEnumIndex(knownValues = {}) {
 
 export function buildRuleEnumSpec(rule = {}) {
   const out = new Map();
+  const ambiguous = new Set();
+  const addKnownValue = (token, canonical) => {
+    if (!token || !canonical || ambiguous.has(token)) {
+      return;
+    }
+    const existing = out.get(token);
+    if (!existing) {
+      out.set(token, canonical);
+      return;
+    }
+    if (existing === canonical) {
+      return;
+    }
+    out.delete(token);
+    ambiguous.add(token);
+  };
   const enumCandidates = [
     ...toArray(rule?.enum),
     ...toArray(rule?.contract?.enum),
@@ -79,11 +113,11 @@ export function buildRuleEnumSpec(rule = {}) {
       if (!canonical) {
         continue;
       }
-      out.set(normalizeToken(canonical), canonical);
+      addKnownValue(normalizeKnownValueMatchKey(canonical), canonical);
       for (const alias of toArray(entry.aliases)) {
-        const aliasToken = normalizeToken(alias);
+        const aliasToken = normalizeKnownValueMatchKey(alias);
         if (aliasToken) {
-          out.set(aliasToken, canonical);
+          addKnownValue(aliasToken, canonical);
         }
       }
       continue;
@@ -92,7 +126,7 @@ export function buildRuleEnumSpec(rule = {}) {
     if (!canonical) {
       continue;
     }
-    out.set(normalizeToken(canonical), canonical);
+    addKnownValue(normalizeKnownValueMatchKey(canonical), canonical);
   }
 
   const aliasCandidates = [rule?.aliases, rule?.enum?.aliases, rule?.contract?.aliases];
@@ -101,17 +135,18 @@ export function buildRuleEnumSpec(rule = {}) {
       continue;
     }
     for (const [alias, canonicalRaw] of Object.entries(aliasMap)) {
-      const aliasToken = normalizeToken(alias);
+      const aliasToken = normalizeKnownValueMatchKey(alias);
       const canonical = normalizeText(canonicalRaw);
       if (!aliasToken || !canonical) {
         continue;
       }
-      out.set(aliasToken, canonical);
+      addKnownValue(aliasToken, canonical);
     }
   }
 
   return {
     policy: normalizeToken(rule.enum_policy || rule?.enum?.policy || 'open') || 'open',
-    index: out
+    index: out,
+    ambiguous
   };
 }

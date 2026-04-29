@@ -81,6 +81,17 @@ test('validateKeyOrderPatchDocument accepts additive reorder patches', () => {
   assert.equal(doc.add_keys[0].field_key, 'lod_sync');
 });
 
+test('validateKeyOrderPatchDocument accepts OS duplicate suffixes on matching filenames', () => {
+  const doc = validateKeyOrderPatchDocument(validDoc(), {
+    category: 'mouse',
+    fileName: 'mouse-keys-order.key-order-patch.v1 (1).json',
+    currentOrder,
+    existingFieldKeys: ['sku', 'dpi', 'ips'],
+  });
+
+  assert.equal(doc.category, 'mouse');
+});
+
 test('validateKeyOrderPatchDocument rejects proposals that delete current keys', () => {
   assert.throws(
     () => validateKeyOrderPatchDocument(validDoc({
@@ -146,4 +157,19 @@ test('parseKeyOrderPatchPayloadFiles validates uploaded JSON payloads', () => {
 
   assert.equal(docs.length, 1);
   assert.equal(docs[0].source_file, 'mouse-keys-order.key-order-patch.v1.json');
+
+  const duplicateNamedDocs = parseKeyOrderPatchPayloadFiles({
+    category: 'mouse',
+    currentOrder,
+    existingFieldKeys: ['sku', 'dpi', 'ips'],
+    files: [
+      {
+        fileName: 'mouse-keys-order.key-order-patch.v1 (2).json',
+        content: JSON.stringify(validDoc()),
+      },
+    ],
+  });
+
+  assert.equal(duplicateNamedDocs.length, 1);
+  assert.equal(duplicateNamedDocs[0].source_file, 'mouse-keys-order.key-order-patch.v1 (2).json');
 });

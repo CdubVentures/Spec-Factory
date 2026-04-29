@@ -33,7 +33,12 @@ async function readJsonIfExists(filePath) {
   }
 }
 
-import { isObject, toArray, normalizeToken } from '../shared/primitives.js';
+import {
+  isObject,
+  toArray,
+  normalizeToken,
+  normalizeKnownValueMatchKey,
+} from '../shared/primitives.js';
 
 function isKnownToken(v) {
   const token = normalizeToken(v);
@@ -79,7 +84,7 @@ function dedupeComponentEntries(entries = []) {
   const seen = new Set();
   for (const entry of entries) {
     if (!isObject(entry)) continue;
-    const key = `${normalizeToken(entry.canonical_name)}::${normalizeToken(entry.maker)}`;
+    const key = `${normalizeKnownValueMatchKey(entry.canonical_name)}::${normalizeKnownValueMatchKey(entry.maker)}`;
     if (seen.has(key)) continue;
     seen.add(key);
     unique.push(entry);
@@ -88,23 +93,21 @@ function dedupeComponentEntries(entries = []) {
 }
 
 function resolveComponentEntryByNameAndMaker(compDb, rawValueText, makerHint = '') {
-  const token = normalizeToken(rawValueText);
+  const token = normalizeKnownValueMatchKey(rawValueText);
   if (!token) return { entry: null, ambiguous: false };
-  const compactToken = token.replace(/\s+/g, '');
   const allMatches = dedupeComponentEntries([
     ...(toArray(compDb?.__indexAll?.get(token))),
-    ...(toArray(compDb?.__indexAll?.get(compactToken))),
   ]);
   if (allMatches.length === 0) {
-    const fallback = compDb?.__index?.get(token) || compDb?.__index?.get(compactToken) || null;
+    const fallback = compDb?.__index?.get(token) || null;
     return { entry: fallback, ambiguous: false };
   }
   if (allMatches.length === 1) {
     return { entry: allMatches[0], ambiguous: false };
   }
-  const makerToken = normalizeToken(makerHint);
+  const makerToken = normalizeKnownValueMatchKey(makerHint);
   if (!makerToken) return { entry: null, ambiguous: true };
-  const makerMatches = allMatches.filter((entry) => normalizeToken(entry?.maker) === makerToken);
+  const makerMatches = allMatches.filter((entry) => normalizeKnownValueMatchKey(entry?.maker) === makerToken);
   if (makerMatches.length === 1) return { entry: makerMatches[0], ambiguous: false };
   if (makerMatches.length > 1) return { entry: null, ambiguous: true };
   return { entry: null, ambiguous: true };
@@ -348,7 +351,7 @@ async function collectListSeedRows(fieldRules, config, category) {
         rows.push({
           fieldKey,
           value: trimmed,
-          normalizedValue: normalizeToken(trimmed),
+          normalizedValue: normalizeKnownValueMatchKey(trimmed),
           source: 'known_values',
           enumPolicy: policy
         });
@@ -374,7 +377,7 @@ async function collectListSeedRows(fieldRules, config, category) {
       rows.push({
         fieldKey,
         value: trimmed,
-        normalizedValue: normalizeToken(trimmed),
+        normalizedValue: normalizeKnownValueMatchKey(trimmed),
         source: 'manual',
         enumPolicy: null,
         sourceTimestamp: null,
@@ -396,7 +399,7 @@ async function collectListSeedRows(fieldRules, config, category) {
       rows.push({
         fieldKey: fk,
         value: val,
-        normalizedValue: normalizeToken(val),
+        normalizedValue: normalizeKnownValueMatchKey(val),
         source: 'pipeline',
         enumPolicy: null,
         needsReview: true,
@@ -418,7 +421,7 @@ async function collectListSeedRows(fieldRules, config, category) {
         rows.push({
           fieldKey,
           value: val,
-          normalizedValue: normalizeToken(val),
+          normalizedValue: normalizeKnownValueMatchKey(val),
           source: 'pipeline',
           enumPolicy: null,
           needsReview: true,
@@ -443,7 +446,7 @@ async function reconcileListSeedRows(db, fieldRules, config, category) {
     .all(db.category)
     .filter((row) => {
       if (!pruneSources.has(String(row?.source || '').trim())) return false;
-      const normalizedValue = normalizeToken(row?.value);
+      const normalizedValue = normalizeKnownValueMatchKey(row?.value);
       return !expected.has(`${row.field_key}::${normalizedValue}::${String(row.source || '').trim()}`);
     });
 
@@ -868,10 +871,10 @@ function backfillComponentLinks(db, fieldMeta, fieldRules) {
           'SELECT id, canonical_name, maker FROM component_identity WHERE category = ? AND component_type = ?'
         ).all(db.category, compType);
         for (const id of identities) {
-          aliasMap.set(id.canonical_name.trim().toLowerCase(), { name: id.canonical_name, maker: id.maker || '' });
+          aliasMap.set(normalizeKnownValueMatchKey(id.canonical_name), { name: id.canonical_name, maker: id.maker || '' });
           const aliases = db.db.prepare('SELECT alias FROM component_aliases WHERE component_id = ?').all(id.id);
           for (const a of aliases) {
-            if (a.alias) aliasMap.set(a.alias.trim().toLowerCase(), { name: id.canonical_name, maker: id.maker || '' });
+            if (a.alias) aliasMap.set(normalizeKnownValueMatchKey(a.alias), { name: id.canonical_name, maker: id.maker || '' });
           }
         }
       } catch { continue; }
@@ -892,7 +895,7 @@ function backfillComponentLinks(db, fieldMeta, fieldRules) {
       } catch { /* field_candidates may not be populated yet */ }
 
       for (const row of fieldRows) {
-        const token = row.value.trim().toLowerCase();
+        const token = normalizeKnownValueMatchKey(row.value);
         const match = aliasMap.get(token);
         if (match) {
           db.upsertItemComponentLink({

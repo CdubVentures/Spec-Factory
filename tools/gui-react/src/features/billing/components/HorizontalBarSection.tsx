@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 import type { ReactNode } from 'react';
-import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { usd, compactNumber } from '../../../utils/formatting.ts';
 import { computeHorizontalBars, computeTokenSegments } from '../billingTransforms.ts';
 import type { BillingGroupedItem } from '../billingTypes.ts';
@@ -34,6 +33,46 @@ interface HorizontalBarSectionProps {
 
 function tokenTotal(item: BillingGroupedItem): number {
   return (item.prompt_tokens || 0) + (item.completion_tokens || 0);
+}
+
+// WHY: Loading-row skeleton mirrors the real loaded row shape:
+// - title row: optional sf-provider-tag pill + mono label + "· N calls" meta
+//   + right-aligned mono value
+// - meter track: sf-meter-track h-2 (single-fill or 4-segment composition)
+// Provider-tag presence and segmented mode mirror the parent's props so the
+// skeleton matches what will hydrate. Real label widths vary per row, so
+// the label area uses w-full shimmer (full cell width) — when real data
+// arrives, the truncate clamps it to actual width.
+function HorizontalBarRowSkeleton({ hasProviderTag, segmented }: {
+  readonly hasProviderTag: boolean;
+  readonly segmented: boolean;
+}) {
+  return (
+    <div aria-hidden="true">
+      <div className="flex justify-between text-xs mb-1 gap-2">
+        <span className="flex items-center gap-1.5 min-w-0 flex-1">
+          {hasProviderTag ? (
+            <span className="sf-provider-tag sf-provider-tag-generic sf-shimmer inline-block">&nbsp;</span>
+          ) : null}
+          <span className="sf-shimmer block h-[12px] flex-1 max-w-[40%] rounded-sm" />
+          <span className="sf-shimmer block h-[11px] w-16 rounded-sm shrink-0" />
+        </span>
+        <span className="sf-shimmer block h-[12px] w-16 rounded-sm whitespace-nowrap" />
+      </div>
+      <div className={`h-2 rounded sf-meter-track overflow-hidden${segmented ? ' flex' : ''}`}>
+        {segmented ? (
+          <>
+            <span className="h-full sf-shimmer block" style={{ width: '40%' }} />
+            <span className="h-full sf-shimmer block" style={{ width: '15%' }} />
+            <span className="h-full sf-shimmer block" style={{ width: '30%' }} />
+            <span className="h-full sf-shimmer block" style={{ width: '15%' }} />
+          </>
+        ) : (
+          <span className="h-full sf-shimmer block w-full" />
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function HorizontalBarSection({
@@ -73,13 +112,12 @@ export function HorizontalBarSection({
         </div>
       </div>
       <div className={`p-5 flex flex-col gap-2.5${staleClass}`}>
-        {isLoading && Array.from({ length: 4 }, (_, i) => (
-          <div key={i}>
-            <SkeletonBlock className="sf-skel-bar-label" />
-            <div className="mt-1">
-              <SkeletonBlock className="sf-skel-bar" />
-            </div>
-          </div>
+        {isLoading && Array.from({ length: 4 }, (_value, index) => (
+          <HorizontalBarRowSkeleton
+            key={`bar-skel-${index}`}
+            hasProviderTag={Boolean(getProviderTag)}
+            segmented={segmented}
+          />
         ))}
         {!isLoading && normalized.bars.length === 0 && (
           <p className="sf-text-subtle text-sm text-center py-4">No data</p>

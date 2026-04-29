@@ -25,6 +25,8 @@ export interface RunLoopChainArgs {
   /** Latest-state predicate — called once per slot, re-reads external state
    *  each call. Returning true skips the slot without firing. */
   readonly isResolved: (fk: string) => boolean;
+  /** Latest-state dependency predicate. Returning true skips the slot. */
+  readonly isBlocked?: (fk: string) => boolean;
   /** Dispatch one Loop; resolve with the server-assigned operationId. */
   readonly fireOne: (fk: string) => Promise<string>;
   /** Await an op's terminal status. Returning 'cancelled' halts the chain. */
@@ -36,13 +38,14 @@ export interface RunLoopChainArgs {
 export async function runLoopChain({
   keys,
   isResolved,
+  isBlocked = () => false,
   fireOne,
   awaitTerminal,
   onStep,
 }: RunLoopChainArgs): Promise<ChainOutcome> {
   for (let i = 0; i < keys.length; i += 1) {
     const fk = keys[i];
-    if (isResolved(fk)) {
+    if (isResolved(fk) || isBlocked(fk)) {
       onStep?.({ index: i, fk, action: 'skipped' });
       continue;
     }

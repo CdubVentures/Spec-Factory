@@ -313,8 +313,8 @@ test('studio page enum lists prefer specdb enum lists and fall back to known fie
       },
     }),
     [
-      { field: 'alpha', normalize: 'lower_trim', values: ['A', '7'] },
-      { field: 'zeta', normalize: 'identity', values: ['B'] },
+      { field: 'alpha', values: ['A', '7'] },
+      { field: 'zeta', values: ['B'] },
     ],
   );
 
@@ -326,8 +326,8 @@ test('studio page enum lists prefer specdb enum lists and fall back to known fie
       },
     }),
     [
-      { field: 'alpha', normalize: 'lower_trim', values: ['A', '7'] },
-      { field: 'zeta', normalize: 'lower_trim', values: ['B'] },
+      { field: 'alpha', values: ['A', '7'] },
+      { field: 'zeta', values: ['B'] },
     ],
   );
 

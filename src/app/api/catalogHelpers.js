@@ -125,6 +125,22 @@ function buildResolvedFieldKeysByProduct(candidatesByProduct) {
   return map;
 }
 
+function buildCandidatesByProductField(candidatesByProduct) {
+  if (!candidatesByProduct) return null;
+  const map = new Map();
+  for (const [productId, candidates] of candidatesByProduct.entries()) {
+    const byField = new Map();
+    for (const candidate of candidates || []) {
+      const fieldKey = String(candidate.field_key || '').trim();
+      if (!fieldKey) continue;
+      if (!byField.has(fieldKey)) byField.set(fieldKey, []);
+      byField.get(fieldKey).push(candidate);
+    }
+    map.set(productId, byField);
+  }
+  return map;
+}
+
 function evidenceBucketKey(row) {
   return [
     String(row?.product_id || ''),
@@ -190,6 +206,10 @@ function getFieldCandidatesForProduct(specDb, productId, fieldKey, variantId, co
   if (!context.candidatesByProduct) {
     return specDb.getFieldCandidatesByProductAndField?.(productId, fieldKey, variantId) || [];
   }
+  if (context.candidatesByProductField) {
+    return (context.candidatesByProductField.get(productId)?.get(String(fieldKey || '')) || [])
+      .filter((candidate) => variantId === undefined || variantMatches(candidate, variantId));
+  }
   return (context.candidatesByProduct.get(productId) || [])
     .filter((candidate) => String(candidate.field_key || '') === String(fieldKey || ''))
     .filter((candidate) => variantId === undefined || variantMatches(candidate, variantId));
@@ -240,10 +260,17 @@ function pickTopResolvedCandidate(candidates) {
   );
 }
 
+function buildProductImageDependencyFields(compiledFields) {
+  return Object.fromEntries(
+    Object.entries(compiledFields || {})
+      .filter(([, rule]) => rule?.product_image_dependent === true),
+  );
+}
+
 function createProjectionSpecDb(specDb, context) {
   if (!context.candidatesByProduct) return specDb;
   return {
-    getCompiledRules: () => ({ fields: context.compiledFields }),
+    getCompiledRules: () => ({ fields: context.productImageDependencyFields }),
     getFieldCandidatesByProductAndField: (productId, fieldKey, variantId) =>
       getFieldCandidatesForProduct(specDb, productId, fieldKey, variantId, context),
     getResolvedFieldCandidate: (productId, fieldKey) =>
@@ -337,6 +364,56 @@ function readPifTargets(specDb, category) {
 // them, so they shouldn't count toward keyFinder progress.
 const KEY_TIER_ORDER = Object.freeze(['easy', 'medium', 'hard', 'very_hard', 'mandatory']);
 
+function emptyKeyTierBuckets() {
+  return {
+    easy:      { tier: 'easy',      total: 0, resolved: 0, perfect: 0 },
+    medium:    { tier: 'medium',    total: 0, resolved: 0, perfect: 0 },
+    hard:      { tier: 'hard',      total: 0, resolved: 0, perfect: 0 },
+    very_hard: { tier: 'very_hard', total: 0, resolved: 0, perfect: 0 },
+    mandatory: { tier: 'mandatory', total: 0, resolved: 0, perfect: 0 },
+  };
+}
+
+function cloneKeyTierBuckets(baseTiers) {
+  return Object.fromEntries(
+    KEY_TIER_ORDER.map((tier) => [
+      tier,
+      {
+        tier,
+        total: Number(baseTiers?.[tier]?.total || 0),
+        resolved: 0,
+        perfect: 0,
+      },
+    ]),
+  );
+}
+
+function buildKeyTierFieldIndex(compiledFields) {
+  const baseTiers = emptyKeyTierBuckets();
+  const byFieldKey = new Map();
+
+  for (const [fk, rule] of Object.entries(compiledFields || {})) {
+    if (!rule || isReservedFieldKey(fk)) continue;
+    const difficulty = String(rule.difficulty || 'medium');
+    const bucket = baseTiers[difficulty];
+    if (!bucket) continue;
+    const isMandatory = String(rule.required_level || '') === 'mandatory';
+
+    bucket.total += 1;
+    if (isMandatory) baseTiers.mandatory.total += 1;
+    byFieldKey.set(fk, { tier: difficulty, mandatory: isMandatory });
+  }
+
+  return { baseTiers, byFieldKey };
+}
+
+function incrementKeyTierMetric(tiers, fieldIndex, fieldKey, metric) {
+  const entry = fieldIndex.get(fieldKey);
+  if (!entry) return;
+  tiers[entry.tier][metric] += 1;
+  if (entry.mandatory) tiers.mandatory[metric] += 1;
+}
+
 function hasResolvedField(specDb, productId, fieldKey, context) {
   if (context.resolvedFieldKeysByProduct) {
     return context.resolvedFieldKeysByProduct.get(productId)?.has(fieldKey) || false;
@@ -361,14 +438,29 @@ function hasConcreteField(specDb, productId, fieldKey, fieldRule, context) {
 }
 
 function buildKeyTierProgress(specDb, productId, context) {
+  const gateKnobs = context.keyGateKnobs;
+  const gateActive = gateKnobs.excludeConf > 0 && gateKnobs.excludeEvd > 0;
+  if (
+    context.keyTierFieldIndex
+    && context.resolvedFieldKeysByProduct
+    && (!gateActive || context.concreteFieldKeysByProduct)
+  ) {
+    const tiers = cloneKeyTierBuckets(context.keyTierFieldIndex.baseTiers);
+    const resolvedFields = context.resolvedFieldKeysByProduct.get(productId) || new Set();
+    for (const fieldKey of resolvedFields) {
+      incrementKeyTierMetric(tiers, context.keyTierFieldIndex.byFieldKey, fieldKey, 'resolved');
+    }
+    if (gateActive) {
+      const concreteFields = context.concreteFieldKeysByProduct.get(productId) || new Set();
+      for (const fieldKey of concreteFields) {
+        incrementKeyTierMetric(tiers, context.keyTierFieldIndex.byFieldKey, fieldKey, 'perfect');
+      }
+    }
+    return KEY_TIER_ORDER.map((t) => tiers[t]);
+  }
+
   const fields = context.compiledFields || {};
-  const tiers = {
-    easy:      { tier: 'easy',      total: 0, resolved: 0, perfect: 0 },
-    medium:    { tier: 'medium',    total: 0, resolved: 0, perfect: 0 },
-    hard:      { tier: 'hard',      total: 0, resolved: 0, perfect: 0 },
-    very_hard: { tier: 'very_hard', total: 0, resolved: 0, perfect: 0 },
-    mandatory: { tier: 'mandatory', total: 0, resolved: 0, perfect: 0 },
-  };
+  const tiers = emptyKeyTierBuckets();
 
   for (const [fk, rule] of Object.entries(fields)) {
     if (!rule || isReservedFieldKey(fk)) continue;
@@ -455,14 +547,18 @@ function buildLastRunMaps(specDb, category) {
 
 function buildCatalogProjectionContext(specDb, category, productRows = []) {
   const keyGateKnobs = readKeyFinderGateKnobs(specDb);
+  const compiledFields = readCompiledFields(specDb);
   const candidatesByProduct = buildCandidatesByProduct(specDb, productRows);
   const context = {
     totalFieldCount: readFieldKeyOrderCount(specDb, category),
     pifTargets: readPifTargets(specDb, category),
     keyGateKnobs,
-    compiledFields: readCompiledFields(specDb),
+    compiledFields,
+    productImageDependencyFields: buildProductImageDependencyFields(compiledFields),
+    keyTierFieldIndex: buildKeyTierFieldIndex(compiledFields),
     lastRunMaps: buildLastRunMaps(specDb, category),
     candidatesByProduct,
+    candidatesByProductField: buildCandidatesByProductField(candidatesByProduct),
     resolvedFieldKeysByProduct: buildResolvedFieldKeysByProduct(candidatesByProduct),
     concreteFieldKeysByProduct: buildConcreteFieldKeysByProduct(specDb, keyGateKnobs, productRows),
     variantsByProduct: buildVariantsByProduct(specDb, productRows),

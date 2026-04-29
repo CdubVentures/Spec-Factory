@@ -48,6 +48,8 @@ test('studio enum data lists are key-derived, value-preserving, and sorted', asy
       { field: 'shape', values: ['ergonomic'] },
     ],
   );
+  assert.equal(lists.some((entry) => Object.hasOwn(entry, 'normalize')), false);
+  assert.equal(lists.some((entry) => Object.hasOwn(entry, 'delimiter')), false);
 });
 
 test('studio enum data lists use rule labels for names and alphabetical sorting', async () => {

@@ -2,10 +2,8 @@ import { usePersistedToggle } from "../../../stores/collapseStore.ts";
 import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
 import { TagPicker } from "../../../shared/ui/forms/TagPicker.tsx";
 import {
-  selectCls,
   labelCls,
   STUDIO_TIPS,
-  NORMALIZE_MODES,
 } from "./studioConstants.ts";
 import { type DataListEntry } from "./studioSharedTypes.ts";
 import { displayLabel } from "../state/studioDisplayLabel.ts";
@@ -70,7 +68,7 @@ export function EditableDataList({
 
   return (
     <div className="border sf-border-default rounded p-3 space-y-3 sf-bg-surface-soft sf-dk-surface-750">
-      {/* Single header row: collapse + title + identity chips + normalize + counts */}
+      {/* Single header row: collapse + title + identity chips + counts */}
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -89,24 +87,6 @@ export function EditableDataList({
           Enum: data_lists.{entry.field}
         </span>
         <span className="flex-1" />
-        <label className="inline-flex items-center gap-1 text-[11px] sf-text-muted">
-          Normalize
-          <Tip
-            style={{ position: "relative", left: "-3px", top: "-1px" }}
-            text={STUDIO_TIPS.data_list_normalize}
-          />
-          <select
-            className={selectCls + " ml-1"}
-            value={entry.normalize}
-            onChange={(e) => onUpdate({ normalize: e.target.value })}
-          >
-            {NORMALIZE_MODES.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </label>
         {valueCount > 0 ? (
           <span className="text-xs sf-text-muted">{valueCount} values</span>
         ) : null}

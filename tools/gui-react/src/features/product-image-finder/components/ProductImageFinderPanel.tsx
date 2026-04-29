@@ -543,8 +543,8 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
               openWidthClass="w-[40rem]"
               drawerHeight="header"
               ariaLabel="Prompt + history + delete actions for PIF"
-              closedTitle="Show Prompt / Hist / Data for PIF"
-              openedTitle="Hide Prompt / Hist / Data for PIF"
+              closedTitle="Show Prompt / Hist / actions for PIF"
+              openedTitle="Hide Prompt / Hist / actions for PIF"
               openTitle="Prompts:"
               primaryCustom={
                 <PromptPreviewTriggerButton
@@ -563,8 +563,6 @@ export function ProductImageFinderPanel({ productId, category }: ProductImageFin
                   width={ACTION_BUTTON_WIDTH.standardHeader}
                 />
               }
-              tertiaryTitle="Data:"
-              tertiaryLabelClass="sf-delete-label"
               tertiaryActions={[
                 {
                   id: 'clear-all-carousels',

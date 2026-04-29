@@ -16,6 +16,16 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function findProductById(specDb, productId) {
+  const pid = String(productId ?? '').trim();
+  if (!specDb || !pid) return null;
+  if (typeof specDb.getProduct === 'function') {
+    return specDb.getProduct(pid) || null;
+  }
+  const rows = specDb.getAllProducts?.() || [];
+  return rows.find((row) => row.product_id === pid) || null;
+}
+
 // ── CRUD ──────────────────────────────────────────────────────────
 
 /**
@@ -245,8 +255,8 @@ export async function updateProduct({
   if (!cat) return { ok: false, error: 'category_required' };
   if (!productId) return { ok: false, error: 'product_id_required' };
 
-  // WHY: SQL is the sole SSOT — look up existing product from specDb.
-  const existingRow = specDb?.getAllProducts?.().find(r => r.product_id === productId) || null;
+  // WHY: SQL is the sole SSOT; use the indexed product lookup when available.
+  const existingRow = findProductById(specDb, productId);
   if (!existingRow) {
     return { ok: false, error: 'product_not_found', productId };
   }
@@ -298,8 +308,8 @@ export async function removeProduct({
   if (!cat) return { ok: false, error: 'category_required' };
   if (!productId) return { ok: false, error: 'product_id_required' };
 
-  // WHY: SQL is the sole SSOT — check existence from specDb.
-  const existingRow = specDb?.getAllProducts?.().find(r => r.product_id === productId) || null;
+  // WHY: SQL is the sole SSOT; use the indexed product lookup when available.
+  const existingRow = findProductById(specDb, productId);
   if (!existingRow) {
     return { ok: false, error: 'product_not_found', productId };
   }

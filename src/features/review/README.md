@@ -37,7 +37,7 @@ The review grid, LLM-assisted review, and component review surfaces are **active
 ### Route Layer (self-contained HTTP handling)
 - `api/reviewRoutes.js` — thin dispatcher delegating to extracted handler modules.
 - `api/fieldReviewHandlers.js`, `api/componentReviewHandlers.js` — query/read handlers.
-- `api/itemMutationRoutes.js`, `api/componentMutationRoutes.js`, `api/enumMutationRoutes.js` — mutation handlers. `itemMutationRoutes` hosts three POST actions: `/override`, `/manual-override`, and `/clear-published`. All three accept optional `variantId` for variant-dependent fields; clear-published also accepts `allVariants: true` for whole-field unresolve.
+- `api/itemMutationRoutes.js`, `api/componentMutationRoutes.js`, `api/enumMutationRoutes.js` — mutation handlers. `itemMutationRoutes` hosts three POST actions: `/override`, `/manual-override`, and `/clear-published`. All three accept optional `variantId` for variant-dependent fields; clear-published also accepts `allVariants: true` for whole-field unresolve. `componentMutationRoutes` also hosts `DELETE /review-components/:category/components/:componentType/identity/:componentIdentityId` for one Component Review row and `DELETE /review-components/:category/components/:componentType/identities` for every row in a component tab; both unpublish only component, brand, and link identity fields from linked products.
 - `api/candidateDeletionRoutes.js` — DELETE candidate endpoints (single + bulk).
 - `api/routeSharedHelpers.js` — shared mutation response/validation helpers.
 - `api/mutationResolvers.js` — SpecDb context resolution for mutations.

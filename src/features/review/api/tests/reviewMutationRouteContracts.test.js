@@ -262,6 +262,139 @@ test('enum rename rejects EG-locked color registry fields through the response c
   assert.equal(calls.responses[0]?.body?.field, 'colors');
 });
 
+test('enum rename updates affected product mirrors through the response contract', async () => {
+  const renameProductCalls = [];
+  const { calls, context } = makeEnumRouteHarness({
+    readJsonBody: async () => ({ newValue: 'cabled', listValueId: 11, field: 'connection' }),
+    getSpecDbReady: async () => makeSeededRuntimeSpecDb({
+      renameListValueById: () => ['mouse-a'],
+    }),
+    resolveEnumMutationContext: () => makeEnumMutationContext({
+      field: 'connection',
+      oldValue: 'wired',
+      value: 'wired',
+      listValueId: 11,
+    }),
+    renameEnumValueInProducts: async (args) => {
+      renameProductCalls.push(args);
+      return { affected: [{ productId: 'mouse-a', field: 'connection' }], renamed: 1 };
+    },
+  });
+
+  const handled = await handleReviewEnumMutationRoute({
+    parts: ['review-components', 'mouse', 'enum-rename'],
+    method: 'POST',
+    req: {},
+    res: {},
+    context,
+  });
+
+  assert.notEqual(handled, false);
+  assert.equal(calls.responses[0]?.status, 200);
+  assert.equal(calls.responses[0]?.body?.ok, true);
+  assert.equal(calls.responses[0]?.body?.renamed, 1);
+  assert.equal(renameProductCalls.length, 1);
+  assert.deepEqual(renameProductCalls[0]?.productIds, ['mouse-a']);
+});
+
+test('enum delete unpublishes affected products through the response contract', async () => {
+  const unpublishCalls = [];
+  const { calls, context } = makeEnumRouteHarness({
+    readJsonBody: async () => ({ field: 'connection', value: 'wired', listValueId: 11 }),
+    getSpecDbReady: async () => makeSeededRuntimeSpecDb({
+      getProductsByListValueId: () => [{ product_id: 'mouse-a', field_key: 'connection' }],
+      deleteListValueById: () => ({ id: 11, field_key: 'connection', value: 'wired' }),
+    }),
+    resolveEnumMutationContext: () => makeEnumMutationContext({
+      field: 'connection',
+      value: 'wired',
+      oldValue: 'wired',
+      listValueId: 11,
+    }),
+    unpublishEnumValueFromProducts: async (args) => {
+      unpublishCalls.push(args);
+      return { affected: [{ productId: 'mouse-a', field: 'connection' }], unpublished: 1 };
+    },
+  });
+
+  const handled = await handleReviewEnumMutationRoute({
+    parts: ['review-components', 'mouse', 'enum-delete'],
+    method: 'POST',
+    req: {},
+    res: {},
+    context,
+  });
+
+  assert.notEqual(handled, false);
+  assert.equal(calls.responses[0]?.status, 200);
+  assert.equal(calls.responses[0]?.body?.ok, true);
+  assert.equal(calls.responses[0]?.body?.event_type, 'enum-delete');
+  assert.equal(unpublishCalls.length, 1);
+  assert.deepEqual(unpublishCalls[0]?.productIds, ['mouse-a']);
+  assert.equal(unpublishCalls[0]?.field, 'connection');
+  assert.equal(unpublishCalls[0]?.value, 'wired');
+});
+
+test('enum delete rejects EG-locked color registry fields through the response contract', async () => {
+  const { calls, context } = makeEnumRouteHarness({
+    readJsonBody: async () => ({ field: 'colors', value: 'black', listValueId: 11 }),
+    resolveEnumMutationContext: () => makeEnumMutationContext({
+      field: 'colors',
+      value: 'black',
+      oldValue: 'black',
+      listValueId: 11,
+    }),
+  });
+
+  const handled = await handleReviewEnumMutationRoute({
+    parts: ['review-components', 'mouse', 'enum-delete'],
+    method: 'POST',
+    req: {},
+    res: {},
+    context,
+  });
+
+  assert.notEqual(handled, false);
+  assert.equal(calls.responses[0]?.status, 403);
+  assert.equal(calls.responses[0]?.body?.error, 'enum_field_locked');
+  assert.equal(calls.responses[0]?.body?.field, 'colors');
+});
+
+test('enum override remove uses the same evidence-preserving unpublish path', async () => {
+  const unpublishCalls = [];
+  const { calls, context } = makeEnumRouteHarness({
+    readJsonBody: async () => ({ action: 'remove', field: 'lighting', value: 'RGB LED', listValueId: 11 }),
+    getSpecDbReady: async () => makeSeededRuntimeSpecDb({
+      getProductsByListValueId: () => [{ product_id: 'mouse-a', field_key: 'lighting' }],
+      deleteListValueById: () => ({ id: 11, field_key: 'lighting', value: 'RGB LED' }),
+    }),
+    resolveEnumMutationContext: () => makeEnumMutationContext({
+      field: 'lighting',
+      value: 'RGB LED',
+      oldValue: 'RGB LED',
+      listValueId: 11,
+    }),
+    unpublishEnumValueFromProducts: async (args) => {
+      unpublishCalls.push(args);
+      return { affected: [{ productId: 'mouse-a', field: 'lighting' }], unpublished: 1 };
+    },
+  });
+
+  const handled = await handleReviewEnumMutationRoute({
+    parts: ['review-components', 'mouse', 'enum-override'],
+    method: 'POST',
+    req: {},
+    res: {},
+    context,
+  });
+
+  assert.notEqual(handled, false);
+  assert.equal(calls.responses[0]?.status, 200);
+  assert.equal(calls.responses[0]?.body?.ok, true);
+  assert.equal(unpublishCalls.length, 1);
+  assert.deepEqual(unpublishCalls[0]?.productIds, ['mouse-a']);
+});
+
 test('enum override failures surface enum_override_specdb_write_failed', async () => {
   const { calls, context } = makeEnumRouteHarness({
     readJsonBody: async () => ({ action: 'remove', field: 'lighting', value: 'RGB LED', listValueId: 11 }),

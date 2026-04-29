@@ -325,10 +325,20 @@ describe('Overview bulk dispatch contracts', () => {
     ]);
   });
 
-  it('skips component brand/link keys whose parent component is not published', async () => {
+  it('Run All waits for a component parent before running its brand/link dependents', async () => {
+    let summaryCalls = 0;
     (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
       if (path.endsWith('/bundling-config')) return { sortAxisOrder: '' } as never;
       if (path.endsWith('/summary')) {
+        summaryCalls += 1;
+        if (summaryCalls > 1) {
+          return [
+            { field_key: 'sensor', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component', published: true },
+            { field_key: 'sensor_brand', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component_brand', component_parent_key: 'sensor', component_dependency_satisfied: true },
+            { field_key: 'sensor_link', difficulty: 'medium', required_level: 'non_mandatory', availability: 'sometimes', dedicated_run: true, component_run_kind: 'component_link', component_parent_key: 'sensor', component_dependency_satisfied: true },
+            { field_key: 'dpi', difficulty: 'easy', required_level: 'mandatory', availability: 'always' },
+          ] as never;
+        }
         return [
           { field_key: 'sensor', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component' },
           { field_key: 'sensor_brand', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component_brand', component_parent_key: 'sensor', run_blocked_reason: 'component_parent_unpublished' },
@@ -340,30 +350,102 @@ describe('Overview bulk dispatch contracts', () => {
     };
 
     const calls: BulkFireParams[] = [];
+    const events: string[] = [];
     await dispatchKfAll(
       'mouse',
       [product('p1')],
       new Set(),
       'run',
-      fireRecorder(calls),
+      fireRecorder(calls, events),
       {
         staggerMs: 0,
-        awaitPassengersRegistered: async () => 'registered',
+        awaitPassengersRegistered: async (operationId) => {
+          events.push(`registered:${operationId}`);
+          return 'registered';
+        },
+        awaitOperationTerminal: async (operationId) => {
+          events.push(`terminal:${operationId}`);
+          return 'done';
+        },
       },
     );
 
-    assert.deepEqual(calls.map((call) => call.fieldKey), ['dpi', 'sensor']);
+    assert.deepEqual(calls.map((call) => call.fieldKey), ['dpi', 'sensor', 'sensor_brand', 'sensor_link']);
+    assert.deepEqual(events, [
+      'fire:p1:dpi',
+      'registered:kf:p1:run:dpi',
+      'fire:p1:sensor',
+      'registered:kf:p1:run:sensor',
+      'terminal:kf:p1:run:sensor',
+      'fire:p1:sensor_brand',
+      'registered:kf:p1:run:sensor_brand',
+      'fire:p1:sensor_link',
+      'registered:kf:p1:run:sensor_link',
+    ]);
   });
 
-  it('skips component brand/link keys with an unsatisfied dependency even when summary omits the reason string', async () => {
+  it('Loop All retries component brand/link after their parent component publishes', async () => {
+    let sensorDone = false;
     (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
       if (path.endsWith('/bundling-config')) return { sortAxisOrder: '' } as never;
       if (path.endsWith('/summary')) {
+        if (sensorDone) {
+          return [
+            { field_key: 'sensor', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component', published: true },
+            { field_key: 'sensor_brand', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component_brand', component_parent_key: 'sensor', component_dependency_satisfied: true },
+            { field_key: 'sensor_link', difficulty: 'medium', required_level: 'non_mandatory', availability: 'sometimes', dedicated_run: true, component_run_kind: 'component_link', component_parent_key: 'sensor', component_dependency_satisfied: true },
+            { field_key: 'dpi', difficulty: 'easy', required_level: 'mandatory', availability: 'always', last_status: 'resolved' },
+          ] as never;
+        }
         return [
           { field_key: 'sensor', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component' },
           { field_key: 'sensor_brand', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component_brand', component_parent_key: 'sensor', component_dependency_satisfied: false },
           { field_key: 'sensor_link', difficulty: 'medium', required_level: 'non_mandatory', availability: 'sometimes', dedicated_run: true, component_run_kind: 'component_link', component_parent_key: 'sensor', component_dependency_satisfied: false },
           { field_key: 'dpi', difficulty: 'easy', required_level: 'mandatory', availability: 'always' },
+        ] as never;
+      }
+      throw new Error(`unexpected GET ${path}`);
+    };
+
+    const calls: BulkFireParams[] = [];
+    const events: string[] = [];
+    await dispatchKfAll(
+      'mouse',
+      [product('p1')],
+      new Set(),
+      'loop',
+      fireRecorder(calls, events),
+      {
+        staggerMs: 0,
+        awaitOperationTerminal: async (operationId) => {
+          events.push(`terminal:${operationId}`);
+          if (operationId === 'kf:p1:loop:sensor') sensorDone = true;
+          return 'done';
+        },
+      },
+    );
+
+    assert.deepEqual(calls.map((call) => call.fieldKey), ['dpi', 'sensor', 'sensor_brand', 'sensor_link']);
+    assert.deepEqual(events, [
+      'fire:p1:dpi',
+      'terminal:kf:p1:loop:dpi',
+      'fire:p1:sensor',
+      'terminal:kf:p1:loop:sensor',
+      'fire:p1:sensor_brand',
+      'terminal:kf:p1:loop:sensor_brand',
+      'fire:p1:sensor_link',
+      'terminal:kf:p1:loop:sensor_link',
+    ]);
+  });
+
+  it('skips component attribute keys whose parent component is not published', async () => {
+    (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
+      if (path.endsWith('/bundling-config')) return { sortAxisOrder: '' } as never;
+      if (path.endsWith('/summary')) {
+        return [
+          { field_key: 'sensor', difficulty: 'medium', required_level: 'mandatory', availability: 'always', dedicated_run: true, component_run_kind: 'component' },
+          { field_key: 'dpi', difficulty: 'easy', required_level: 'mandatory', availability: 'always', belongs_to_component: 'sensor', component_parent_key: 'sensor', component_dependency_satisfied: false },
+          { field_key: 'weight', difficulty: 'easy', required_level: 'mandatory', availability: 'always' },
         ] as never;
       }
       throw new Error(`unexpected GET ${path}`);
@@ -382,7 +464,7 @@ describe('Overview bulk dispatch contracts', () => {
       },
     );
 
-    assert.deepEqual(calls.map((call) => call.fieldKey), ['dpi', 'sensor']);
+    assert.deepEqual(calls.map((call) => call.fieldKey), ['weight', 'sensor']);
   });
 
   it('dispatchKfPickedKeys ignores picked component brand/link keys while blocked', async () => {
@@ -410,6 +492,33 @@ describe('Overview bulk dispatch contracts', () => {
       },
     );
     assert.deepEqual(calls.map((call) => call.fieldKey), ['dpi']);
+  });
+
+  it('dispatchKfPickedKeys ignores picked component attribute keys while their parent component is blocked', async () => {
+    (api as unknown as { get: typeof originalGet }).get = async (path: string) => {
+      if (path.endsWith('/bundling-config')) return { sortAxisOrder: '' } as never;
+      if (path.endsWith('/summary')) {
+        return [
+          { field_key: 'dpi', difficulty: 'easy', required_level: 'mandatory', availability: 'always', belongs_to_component: 'sensor', component_parent_key: 'sensor', component_dependency_satisfied: false },
+          { field_key: 'weight', difficulty: 'easy', required_level: 'mandatory', availability: 'always' },
+        ] as never;
+      }
+      throw new Error(`unexpected GET ${path}`);
+    };
+    const calls: BulkFireParams[] = [];
+    await dispatchKfPickedKeys(
+      'mouse',
+      [product('p1')],
+      new Set(),
+      new Set(['dpi', 'weight']),
+      'run',
+      fireRecorder(calls),
+      {
+        staggerMs: 0,
+        awaitPassengersRegistered: async () => 'registered',
+      },
+    );
+    assert.deepEqual(calls.map((call) => call.fieldKey), ['weight']);
   });
 
   it('skips KeyFinder Loop for a product that already has an active Loop chain', async () => {

@@ -202,6 +202,20 @@ test('lookupComponent resolves by canonical and alias tokens', async () => {
     });
     assert.equal(byAlias?.canonical_name, 'PAW3395');
 
+    const byHyphenAlias = await lookupComponent('mouse', 'sensor', 'pixart-3395', {
+      config: {
+        categoryAuthorityRoot: helperRoot
+      }
+    });
+    assert.equal(byHyphenAlias?.canonical_name, 'PAW3395');
+
+    const byUnderscoreAlias = await lookupComponent('mouse', 'sensor', 'pixart_3395', {
+      config: {
+        categoryAuthorityRoot: helperRoot
+      }
+    });
+    assert.equal(byUnderscoreAlias?.canonical_name, 'PAW3395');
+
     const missing = await lookupComponent('mouse', 'sensor', 'not-a-sensor', {
       config: {
         categoryAuthorityRoot: helperRoot

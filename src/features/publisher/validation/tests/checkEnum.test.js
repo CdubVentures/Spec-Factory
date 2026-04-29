@@ -213,21 +213,46 @@ describe('checkEnum — open_prefer_known with list arrays', () => {
   });
 });
 
-// ── closed — exact match, no alias ──────────────────────────────────────────
+// ── closed — system-owned known-value matching ──────────────────────────────
 
-describe('checkEnum — closed policy (exact match, no alias)', () => {
+describe('checkEnum — closed policy (system-owned known-value matching)', () => {
   const known = ['black', 'white'];
 
-  it('case mismatch → reject', () => {
+  it('case mismatch → repairs to canonical', () => {
     const r = checkEnum('Black', 'closed', known);
-    assert.equal(r.pass, false);
-    assert.deepStrictEqual(r.unknown, ['Black']);
+    assert.equal(r.pass, true);
+    assert.deepStrictEqual(r.unknown, []);
+    assert.equal(r.repaired, 'black');
   });
 
   it('exact match → pass', () => {
     const r = checkEnum('black', 'closed', known);
     assert.equal(r.pass, true);
     assert.deepStrictEqual(r.unknown, []);
+  });
+
+  it('separator mismatch → repairs to canonical display value', () => {
+    const r = checkEnum('razer-focus-pro-35k', 'closed', ['Razer Focus Pro 35K']);
+    assert.equal(r.pass, true);
+    assert.deepStrictEqual(r.unknown, []);
+    assert.equal(r.repaired, 'Razer Focus Pro 35K');
+  });
+
+  it('ambiguous normalized matches do not repair closed values', () => {
+    const r = checkEnum('A_B', 'closed', ['A-B', 'A B']);
+    assert.equal(r.pass, false);
+    assert.deepStrictEqual(r.unknown, ['A_B']);
+    assert.equal(r.repaired, undefined);
+  });
+});
+
+describe('checkEnum — open_prefer_known ambiguity handling', () => {
+  it('ambiguous normalized matches remain publishable but flagged for review', () => {
+    const r = checkEnum('A_B', 'open_prefer_known', ['A-B', 'A B']);
+    assert.equal(r.pass, true);
+    assert.equal(r.needsReview, true);
+    assert.deepStrictEqual(r.unknown, ['A_B']);
+    assert.equal(r.repaired, undefined);
   });
 });
 

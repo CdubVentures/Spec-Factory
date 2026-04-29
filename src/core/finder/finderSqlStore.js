@@ -34,6 +34,20 @@ function hydrateRunRow(row) {
   };
 }
 
+function hydrateRunSummaryRow(row) {
+  if (!row) return null;
+  const { response_json, ...rest } = row;
+  return {
+    ...rest,
+    selected: {},
+    prompt: {},
+    response: safeJsonParse(response_json, {}),
+    fallback_used: Boolean(row.fallback_used),
+    thinking: Boolean(row.thinking),
+    web_search: Boolean(row.web_search),
+  };
+}
+
 /**
  * @param {object} opts
  * @param {object} opts.db — better-sqlite3 Database instance (per-category specDb)
@@ -118,6 +132,10 @@ export function createFinderSqlStore({ db, category, module: mod, globalDb }) {
     ),
     _listRuns: db.prepare(
       `SELECT * FROM ${runsTableName} WHERE category = ? AND product_id = ? ORDER BY run_number ASC`
+    ),
+    _listRunsForSummary: db.prepare(
+      `SELECT category, product_id, run_number, ran_at, started_at, duration_ms, model, fallback_used, effort_level, access_mode, thinking, web_search, response_json
+       FROM ${runsTableName} WHERE category = ? AND product_id = ? ORDER BY run_number ASC`
     ),
     _listRunsByCategory: db.prepare(
       `SELECT * FROM ${runsTableName} WHERE category = ? ORDER BY product_id ASC, run_number ASC`
@@ -257,6 +275,10 @@ export function createFinderSqlStore({ db, category, module: mod, globalDb }) {
     return stmts._listRuns.all(category, productId).map(hydrateRunRow);
   }
 
+  function listRunsForSummary(productId) {
+    return stmts._listRunsForSummary.all(category, productId).map(hydrateRunSummaryRow);
+  }
+
   function listRunsByCategory(cat) {
     return stmts._listRunsByCategory.all(cat || category).map(hydrateRunRow);
   }
@@ -357,7 +379,7 @@ export function createFinderSqlStore({ db, category, module: mod, globalDb }) {
   return {
     upsert, get, listByCategory, remove,
     getIfOnCooldown,
-    insertRun, listRuns, listRunsByCategory, getLatestRun, removeRun, removeAllRuns, updateRunJson,
+    insertRun, listRuns, listRunsForSummary, listRunsByCategory, getLatestRun, removeRun, removeAllRuns, updateRunJson,
     getSetting, setSetting, getAllSettings, deleteSetting,
     updateSummaryField, updateBookkeeping,
   };

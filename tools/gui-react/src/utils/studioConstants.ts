@@ -14,11 +14,6 @@ export const GROUPS = [
   'general', 'connectivity', 'construction', 'controls', 'dimensions',
   'electronics', 'encoder', 'ergonomics', 'sensor_performance', 'switches',
 ];
-export const NORMALIZE_MODES = [
-  { value: 'lower_trim', label: 'Lowercase + Trim' },
-  { value: 'raw', label: 'Raw (as-is)' },
-  { value: 'lower', label: 'Lowercase only' },
-];
 
 // ── Tag-picker suggestion arrays ────────────────────────────────────
 export const DOMAIN_HINT_SUGGESTIONS = [
@@ -61,7 +56,6 @@ const LOCAL_STUDIO_TIPS: Record<string, string> = {
 
   // Enums
   data_list_field: 'Enum bucket name (e.g. "form_factor"). Becomes the data_lists.{name} reference used by enum sources.',
-  data_list_normalize: 'How to normalize enum values. Lowercase + Trim is recommended.',
   data_list_manual_values: 'Enum values for this field. Used during extraction and validation.',
 
   // Tab 2: Key Navigator - Contract

@@ -12,7 +12,47 @@ import assert from 'node:assert/strict';
 import {
   buildSkuFinderPrompt,
   SKF_DEFAULT_TEMPLATE,
+  SKU_SOURCE_VARIANT_GUIDANCE_SLOTS,
+  SKU_VARIANT_DISAMBIGUATION_SLOTS,
 } from '../skuLlmAdapter.js';
+
+function normalizePromptFragment(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function assertPromptIncludesFragments(prompt, fragments, label) {
+  const normalizedPrompt = normalizePromptFragment(prompt);
+  for (const fragment of fragments) {
+    assert.ok(
+      normalizedPrompt.includes(normalizePromptFragment(fragment)),
+      `${label} fragment should be rendered`,
+    );
+  }
+}
+
+function assertPromptOmitsFragments(prompt, fragments, label) {
+  const normalizedPrompt = normalizePromptFragment(prompt);
+  for (const fragment of fragments) {
+    assert.equal(
+      normalizedPrompt.includes(normalizePromptFragment(fragment)),
+      false,
+      `${label} fragment should not be rendered`,
+    );
+  }
+}
+
+function returnJsonBlock(prompt) {
+  const index = prompt.indexOf('Return JSON:');
+  assert.ok(index >= 0, 'Return JSON block is present');
+  return prompt.slice(index);
+}
+
+function assertReturnJsonKeys(prompt, keys) {
+  const block = returnJsonBlock(prompt);
+  for (const key of keys) {
+    assert.match(block, new RegExp(`"${key}"`), `Return JSON includes ${key}`);
+  }
+}
 
 describe('buildSkuFinderPrompt', () => {
   const product = { brand: 'Logitech', model: 'G Pro X', base_model: 'G Pro X', variant: 'wireless' };
@@ -45,9 +85,10 @@ describe('buildSkuFinderPrompt', () => {
     const easy = buildSkuFinderPrompt({ product, variantLabel: 'Black', ambiguityLevel: 'easy' });
     const medium = buildSkuFinderPrompt({ product, variantLabel: 'Black', ambiguityLevel: 'medium', familyModelCount: 4 });
     const hard = buildSkuFinderPrompt({ product, variantLabel: 'Black', ambiguityLevel: 'hard', familyModelCount: 8 });
-    assert.ok(easy.includes('no known siblings'));
-    assert.ok(medium.includes('CAUTION'));
-    assert.ok(hard.includes('HIGH AMBIGUITY'));
+    assert.notEqual(easy, medium, 'easy and medium identity contexts differ');
+    assert.notEqual(medium, hard, 'medium and hard identity contexts differ');
+    assertPromptIncludesFragments(medium, ['4', product.brand, product.model], 'medium identity context');
+    assertPromptIncludesFragments(hard, ['8', product.brand, product.model], 'hard identity context');
   });
 
   it('includes previous discovery block when urls_checked present', () => {
@@ -65,7 +106,7 @@ describe('buildSkuFinderPrompt', () => {
       product, variantLabel: 'Black',
       previousDiscovery: { urlsChecked: [], queriesRun: [] },
     });
-    assert.ok(!prompt.includes('Previous searches'));
+    assertPromptOmitsFragments(prompt, ['https://example.com/a', 'logitech g pro x MPN'], 'previous discovery');
   });
 
   it('uses templateOverride when supplied', () => {
@@ -84,12 +125,15 @@ describe('buildSkuFinderPrompt', () => {
 
   it('default template contains the JSON output specification keyed by "sku"', () => {
     const prompt = buildSkuFinderPrompt({ product, variantLabel: 'Black' });
-    assert.ok(prompt.includes('"sku"'), 'uses "sku" key, not "sku_value"');
-    assert.ok(prompt.includes('"confidence"'));
-    assert.ok(prompt.includes('"evidence_refs"'));
-    assert.ok(prompt.includes('"discovery_log"'));
-    assert.ok(prompt.includes('"supporting_evidence"'));
-    assert.ok(prompt.includes('"evidence_kind"'));
+    assertReturnJsonKeys(prompt, [
+      'sku',
+      'confidence',
+      'evidence_refs',
+      'discovery_log',
+      'supporting_evidence',
+      'evidence_kind',
+    ]);
+    assert.equal(returnJsonBlock(prompt).includes('"sku_value"'), false, 'uses "sku" key, not "sku_value"');
   });
 
   it('default template injects the shared evidence fragment (tier taxonomy)', () => {
@@ -114,9 +158,8 @@ describe('buildSkuFinderPrompt', () => {
 
   it('compiled prompt includes the shared stripped-unk sentinel boundary', () => {
     const prompt = buildSkuFinderPrompt({ product, variantLabel: 'Black' });
-    assert.match(prompt, /protocol sentinel/i);
-    assert.match(prompt, /not (?:a )?product value/i);
-    assert.match(prompt, /strip/i);
+    assertReturnJsonKeys(prompt, ['sku', 'unknown_reason']);
+    assertPromptIncludesFragments(prompt, ['"unk"'], 'unknown sentinel');
   });
 
   // ── SKF-specific domain contract ──────────────────────────────────
@@ -140,22 +183,24 @@ describe('buildSkuFinderPrompt', () => {
     const prompt = buildSkuFinderPrompt({ product, variantLabel: 'Black' });
     assert.ok(/VARIANT DISAMBIGUATION/i.test(prompt),
       'must have a named VARIANT DISAMBIGUATION section');
-    assert.ok(/shared MPN across all variants|base MPN|same base MPN/i.test(prompt),
-      'must handle the shared-MPN case');
-    assert.ok(/variant[- ]specific MPN/i.test(prompt),
-      'must prefer variant-specific MPN when available');
+    assertPromptIncludesFragments(prompt, [
+      SKU_VARIANT_DISAMBIGUATION_SLOTS.RULE2_DISTINCT_SIGNAL,
+      SKU_VARIANT_DISAMBIGUATION_SLOTS.RULE3_SHARED_SIGNAL,
+    ], 'SKU variant-disambiguation rules');
   });
 
   it('compiled prompt tags source tiers explicitly', () => {
     // WHY compiled output: source guidance is composed from the shared
     // variantScalarSourceGuidance global + SKU_SOURCE_VARIANT_GUIDANCE_SLOTS.
     const prompt = buildSkuFinderPrompt({ product, variantLabel: 'Black' });
-    assert.ok(/tier1/i.test(prompt) && /manufacturer/i.test(prompt),
-      'manufacturer authority must be tagged as tier1');
-    assert.ok(/tier3/i.test(prompt) && /(Amazon|Best Buy|retailer)/i.test(prompt),
-      'retailer listings must reference tier3');
-    assert.ok(/tier2/i.test(prompt),
-      'independent corroboration must reference tier2');
+    assertPromptIncludesFragments(prompt, [
+      SKU_SOURCE_VARIANT_GUIDANCE_SLOTS.TIER1_CONTENT,
+      SKU_SOURCE_VARIANT_GUIDANCE_SLOTS.TIER2_CONTENT,
+      SKU_SOURCE_VARIANT_GUIDANCE_SLOTS.TIER3_CONTENT,
+    ], 'SKU source-tier guidance');
+    for (const tier of ['tier1', 'tier2', 'tier3']) {
+      assert.match(prompt, new RegExp(tier, 'i'), `${tier} source tag is present`);
+    }
   });
 
   it('default template does NOT contain RDF-specific date-precision ladder content', () => {

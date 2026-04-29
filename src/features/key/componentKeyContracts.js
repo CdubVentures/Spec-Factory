@@ -44,8 +44,10 @@ export function resolveComponentKeyRunContract({
   fieldRule,
   specDb = null,
   productId = '',
+  componentParentKey = '',
 } = {}) {
   const key = clean(fieldKey);
+  const attributeParentKey = clean(componentParentKey);
   if (!key || !fieldRule || typeof fieldRule !== 'object') {
     return {
       dedicated_run: false,
@@ -68,6 +70,20 @@ export function resolveComponentKeyRunContract({
 
   const projection = readProjection(fieldRule);
   if (!projection) {
+    if (attributeParentKey) {
+      const dependencySatisfied = isParentPublished({
+        specDb,
+        productId,
+        parentFieldKey: attributeParentKey,
+      });
+      return {
+        dedicated_run: false,
+        component_run_kind: 'component_attribute',
+        component_parent_key: attributeParentKey,
+        component_dependency_satisfied: dependencySatisfied,
+        run_blocked_reason: dependencySatisfied ? '' : 'component_parent_unpublished',
+      };
+    }
     return {
       dedicated_run: false,
       component_run_kind: '',

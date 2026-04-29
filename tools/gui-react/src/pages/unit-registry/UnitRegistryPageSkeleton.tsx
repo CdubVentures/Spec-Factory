@@ -28,11 +28,10 @@ function HeaderSkeleton() {
       </div>
       <div className="flex items-stretch gap-2">
         <div
-          className="sf-input rounded border px-3 py-2 text-sm sf-text-label w-64"
+          className="sf-input rounded border px-3 py-2 text-sm sf-text-label w-64 sf-shimmer"
           data-region="unit-registry-loading-search"
-        >
-          <SkeletonBlock className="sf-skel-bar" />
-        </div>
+          aria-hidden="true"
+        />
         <button
           type="button"
           className={`${btnPrimary} whitespace-nowrap`}
@@ -44,6 +43,44 @@ function HeaderSkeleton() {
       </div>
     </div>
   );
+}
+
+function CellSkeleton({ columnId }: { readonly columnId: string }) {
+  if (columnId === 'unit') {
+    return (
+      <span
+        className="sf-shimmer inline-block h-6 w-16 rounded-md"
+        aria-hidden="true"
+      />
+    );
+  }
+  if (columnId === 'label') {
+    return <SkeletonBlock className="sf-skel-bar-label" />;
+  }
+  if (columnId === 'synonyms') {
+    return (
+      <div className="flex flex-wrap gap-1">
+        <span className="sf-shimmer inline-block h-5 w-12 rounded" aria-hidden="true" />
+        <span className="sf-shimmer inline-block h-5 w-10 rounded" aria-hidden="true" />
+      </div>
+    );
+  }
+  if (columnId === 'formulas') {
+    return (
+      <span
+        className="sf-shimmer block h-3.5 w-full rounded-sm"
+        aria-hidden="true"
+      />
+    );
+  }
+  if (columnId === 'actions') {
+    return (
+      <span className="inline-flex justify-end w-full">
+        <span className="sf-shimmer inline-block h-7 w-7 rounded" aria-hidden="true" />
+      </span>
+    );
+  }
+  return <SkeletonBlock className="sf-skel-bar" />;
 }
 
 function GroupSkeleton({ group }: { readonly group: string }) {
@@ -64,34 +101,14 @@ function GroupSkeleton({ group }: { readonly group: string }) {
           className="sf-border-soft border-t hover:sf-surface-hover cursor-pointer transition-colors"
           data-skeleton-row={`${group}-${row}`}
         >
-          <td className="px-4 py-2.5">
-            <span className="inline-block font-mono text-xs font-bold sf-text-accent sf-surface-muted px-2.5 py-1 rounded-md">
-              <SkeletonBlock className="sf-skel-caption" />
-            </span>
-          </td>
-          <td className="px-4 py-2.5 sf-text-label font-medium text-sm">
-            <SkeletonBlock className="sf-skel-bar" />
-          </td>
-          <td className="px-4 py-2.5">
-            <div className="flex flex-wrap gap-1">
-              <span className="inline-block text-xs sf-text-muted sf-surface-muted px-1.5 py-0.5 rounded">
-                <SkeletonBlock className="sf-skel-caption" />
-              </span>
-              <span className="inline-block text-xs sf-text-muted sf-surface-muted px-1.5 py-0.5 rounded">
-                <SkeletonBlock className="sf-skel-caption" />
-              </span>
-            </div>
-          </td>
-          <td className="px-4 py-2.5">
-            <div className="space-y-0.5">
-              <div className="text-xs font-mono sf-text-label leading-relaxed">
-                <SkeletonBlock className="sf-skel-bar" />
-              </div>
-            </div>
-          </td>
-          <td className="px-4 py-2.5 text-right">
-            <SkeletonBlock className="sf-skel-caption" />
-          </td>
+          {UNIT_SKELETON_COLUMNS.map((column) => (
+            <td
+              key={`${group}-${row}-${column.id}`}
+              className={column.id === 'actions' ? 'px-4 py-2.5 text-right' : 'px-4 py-2.5'}
+            >
+              <CellSkeleton columnId={column.id} />
+            </td>
+          ))}
         </tr>
       ))}
     </>
@@ -106,7 +123,7 @@ function TableSkeleton() {
           <tr className="sf-surface-muted text-left">
             {UNIT_SKELETON_COLUMNS.map((column) => (
               <th key={column.id} className={column.className} data-skeleton-column={column.id}>
-                {column.id === 'actions' ? null : <SkeletonBlock className="sf-skel-caption" />}
+                {column.id === 'actions' ? null : <SkeletonBlock className="sf-skel-bar-label" />}
               </th>
             ))}
           </tr>

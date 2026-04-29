@@ -46,7 +46,6 @@ export function createBootstrapSessionLayer({
   // ── Lazy SpecDb Cache ──
   const {
     specDbCache,
-    reviewLayoutByCategory,
     getSpecDb,
     getSpecDbReady,
   } = createSpecDbRuntime({
@@ -82,7 +81,7 @@ export function createBootstrapSessionLayer({
 
   return {
     sessionCache, resolveCategoryAlias,
-    specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady,
+    specDbCache, getSpecDb, getSpecDbReady,
     appDb,
   };
 }

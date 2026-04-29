@@ -104,6 +104,12 @@ function readProductJson(productId) {
   } catch { return null; }
 }
 
+function readDiscoveredEnumJson(outputRoot) {
+  try {
+    return JSON.parse(fs.readFileSync(path.join(outputRoot, 'mouse', 'discovered_enums.json'), 'utf8'));
+  } catch { return null; }
+}
+
 function evidenceRefsFor(url) {
   return {
     evidence_refs: [
@@ -438,6 +444,84 @@ describe('submitCandidate', async () => {
     );
     const lv = specDb.getListValueByFieldAndValue('sensor_brand', 'corsair');
     assert.ok(lv, 'missing enum list should be created as the discovered value is persisted');
+  });
+
+  it('persists open_prefer_known unknowns to discovered enum JSON for rebuild', async () => {
+    ensureProductJson('mouse-disc-json');
+    const outputRoot = path.join(PRODUCT_ROOT, '_output-json');
+
+    const result = await submitCandidate({
+      ...baseDeps(specDb),
+      knownValues: {
+        enums: {
+          sensor_brand: { policy: 'open_prefer_known', values: ['pixart'] },
+        },
+      },
+      productId: 'mouse-disc-json',
+      fieldKey: 'sensor_brand',
+      value: 'endgame gear',
+      confidence: 80,
+      sourceMeta: { run_id: 'run-disc-json' },
+      config: { localOutputRoot: outputRoot, publishConfidenceThreshold: 2, evidenceVerificationEnabled: false },
+    });
+
+    assert.equal(result.status, 'accepted');
+    const lv = specDb.getListValueByFieldAndValue('sensor_brand', 'endgame gear');
+    assert.ok(lv, 'new preferred-open value should be persisted to list_values');
+    assert.equal(lv.value, 'endgame gear');
+
+    const doc = readDiscoveredEnumJson(outputRoot);
+    assert.ok(doc, 'discovered enum JSON should be written');
+    assert.deepEqual(
+      doc.values.sensor_brand.map((entry) => entry.value),
+      ['endgame gear'],
+    );
+    assert.ok(doc.values.sensor_brand[0].first_seen_at);
+  });
+
+  it('persists only unknown list items for open_prefer_known list fields', async () => {
+    ensureProductJson('mouse-disc-list-json');
+    const outputRoot = path.join(PRODUCT_ROOT, '_output-list-json');
+    const fieldRules = {
+      ...sampleFieldRules(),
+      finish_options: {
+        contract: {
+          shape: 'list', type: 'string',
+          list_rules: { dedupe: true, sort: 'none' },
+        },
+        parse: {},
+        enum: { policy: 'open_prefer_known', match: { strategy: 'alias' } },
+        priority: {},
+      },
+    };
+
+    const result = await submitCandidate({
+      ...baseDeps(specDb),
+      fieldRules,
+      knownValues: {
+        enums: {
+          finish_options: { policy: 'open_prefer_known', values: ['matte'] },
+        },
+      },
+      productId: 'mouse-disc-list-json',
+      fieldKey: 'finish_options',
+      value: ['matte', 'soft touch'],
+      confidence: 80,
+      sourceMeta: { run_id: 'run-disc-list-json' },
+      config: { localOutputRoot: outputRoot, publishConfidenceThreshold: 2, evidenceVerificationEnabled: false },
+    });
+
+    assert.equal(result.status, 'accepted');
+    assert.equal(specDb.getListValueByFieldAndValue('finish_options', 'matte'), null);
+    const softTouch = specDb.getListValueByFieldAndValue('finish_options', 'soft touch');
+    assert.ok(softTouch);
+    assert.equal(softTouch.value, 'soft touch');
+
+    const doc = readDiscoveredEnumJson(outputRoot);
+    assert.deepEqual(
+      doc.values.finish_options.map((entry) => entry.value),
+      ['soft touch'],
+    );
   });
 
   // --- 10. Discovery enum: closed skips ---

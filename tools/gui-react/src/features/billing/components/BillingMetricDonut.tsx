@@ -1,6 +1,6 @@
 import { lazy, Suspense } from 'react';
-import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { usd, compactNumber } from '../../../utils/formatting.ts';
+import { BillingMetricDonutLoadingSkeleton } from './BillingMetricDonutLoadingSkeleton.tsx';
 import type { BillingByReasonResponse } from '../billingTypes.ts';
 
 export type DonutMetric = 'cost' | 'tokens';
@@ -23,17 +23,7 @@ function BillingMetricDonutFallback({ metric, totalValue }: { metric: DonutMetri
   const subtitle = metric === 'tokens'
     ? `Share of ${compactNumber(totalValue)} total`
     : `Share of ${usd(totalValue, 2)} total`;
-  return (
-    <div className={`sf-surface-card rounded-lg overflow-hidden h-full flex flex-col sf-billing-min-chart${metric === 'tokens' ? ' sf-tok-themed' : ''}`}>
-      <div className="px-5 py-3 border-b sf-border-default">
-        <h3 className="text-sm font-bold">{title}</h3>
-        <div className="text-[11px] sf-text-subtle mt-0.5">{subtitle}</div>
-      </div>
-      <div className="p-5 flex-1 flex flex-col items-center justify-center gap-3">
-        <SkeletonBlock className="sf-skel-donut" />
-      </div>
-    </div>
-  );
+  return <BillingMetricDonutLoadingSkeleton title={title} subtitle={subtitle} tokenStyle={metric === 'tokens'} />;
 }
 
 export function BillingMetricDonut(props: BillingMetricDonutProps) {

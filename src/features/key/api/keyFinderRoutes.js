@@ -38,7 +38,7 @@ import { isUnknownSentinel } from '../../../shared/valueNormalizers.js';
 import { isReservedFieldKey, getReservedFieldKeys } from '../../../core/finder/finderExclusions.js';
 import { calcKeyBudget, readFloatKnob } from '../keyBudgetCalc.js';
 import * as keyFinderRegistry from '../../../core/operations/keyFinderRegistry.js';
-import { buildPassengers } from '../keyPassengerBuilder.js';
+import { createPassengerResolver } from '../keyPassengerBuilder.js';
 import { isConcreteEvidence } from '../keyConcreteEvidence.js';
 import { calcPassengerCost } from '../keyBundler.js';
 import { parseAxisOrder } from '../keyBundlerSortAxes.js';
@@ -54,6 +54,7 @@ import { readFieldRuleAiAssistToggleEnabled } from '../../../field-rules/fieldRu
 import {
   readKeyFinder,
   readKeyFinderRuntimeDoc,
+  readKeyFinderRuntimeSummaryDoc,
   listKeyFinderRuntimeSummaries,
   deleteKeyFinderRunSqlFirst,
   deleteKeyFinderAllSqlFirst,
@@ -254,6 +255,181 @@ function normalizeUnknownSelectedForOutput(selected) {
   return normalizeUnknownPerKeyForOutput(selected);
 }
 
+function cacheKey(parts) {
+  return parts
+    .map((part) => {
+      if (part === undefined) return '<undefined>';
+      if (part === null) return '<null>';
+      return String(part);
+    })
+    .join('\u0000');
+}
+
+function getCached(cache, key, read) {
+  if (cache.has(key)) return cache.get(key);
+  const value = read();
+  cache.set(key, value);
+  return value;
+}
+
+function variantScopeKey(variantId) {
+  if (variantId === undefined) return '<all>';
+  if (variantId === null) return '<null>';
+  return String(variantId);
+}
+
+function buildProductCandidateIndex(rows) {
+  const byField = new Map();
+  const byFieldVariant = new Map();
+  const resolvedByField = new Map();
+
+  for (const row of Array.isArray(rows) ? rows : []) {
+    const fieldKey = String(row?.field_key || '');
+    if (!fieldKey) continue;
+
+    const fieldRows = byField.get(fieldKey) || [];
+    fieldRows.push(row);
+    byField.set(fieldKey, fieldRows);
+
+    const variantKey = cacheKey([fieldKey, variantScopeKey(row?.variant_id ?? null)]);
+    const variantRows = byFieldVariant.get(variantKey) || [];
+    variantRows.push(row);
+    byFieldVariant.set(variantKey, variantRows);
+
+    if (row?.status !== 'resolved') continue;
+    const existing = resolvedByField.get(fieldKey);
+    const confidence = Number(row.confidence);
+    const existingConfidence = Number(existing?.confidence);
+    if (!existing || (Number.isFinite(confidence) ? confidence : 0) > (Number.isFinite(existingConfidence) ? existingConfidence : 0)) {
+      resolvedByField.set(fieldKey, row);
+    }
+  }
+
+  return { byField, byFieldVariant, resolvedByField };
+}
+
+// WHY: /summary computes row state and bundle previews. Bundle preview revisits
+// the same concrete/published gates for peer keys, so cache identical SQL reads
+// inside one HTTP request without changing the public response contract.
+function createSummaryProjectionSpecDb(specDb) {
+  if (!specDb || typeof specDb !== 'object') return specDb;
+
+  const projected = Object.create(specDb);
+  const productCandidateIndexes = new Map();
+  const fieldCandidates = new Map();
+  const resolvedCandidates = new Map();
+  const publishedValues = new Map();
+  const productTopCandidateIndexes = new Map();
+  const topCandidates = new Map();
+  const fieldBuckets = new Map();
+  const pooledEvidenceCounts = new Map();
+  const hasProductCandidateIndex = typeof specDb.getAllFieldCandidatesByProduct === 'function';
+
+  if (hasProductCandidateIndex) {
+    const readProductCandidateIndex = (productId) =>
+      getCached(
+        productCandidateIndexes,
+        cacheKey(['productCandidates', productId]),
+        () => buildProductCandidateIndex(specDb.getAllFieldCandidatesByProduct(productId) || []),
+      );
+
+    projected.getFieldCandidatesByProductAndField = (productId, fieldKey, variantId) => {
+      const index = readProductCandidateIndex(productId);
+      if (variantId === undefined) return index.byField.get(String(fieldKey || '')) || [];
+      return index.byFieldVariant.get(cacheKey([String(fieldKey || ''), variantScopeKey(variantId)])) || [];
+    };
+
+    projected.getResolvedFieldCandidate = (productId, fieldKey) => {
+      const index = readProductCandidateIndex(productId);
+      return index.resolvedByField.get(String(fieldKey || '')) || null;
+    };
+
+    projected.hasPublishedValue = (productId, fieldKey) => {
+      const index = readProductCandidateIndex(productId);
+      return index.resolvedByField.has(String(fieldKey || ''));
+    };
+  } else if (typeof specDb.getFieldCandidatesByProductAndField === 'function') {
+    projected.getFieldCandidatesByProductAndField = (productId, fieldKey, variantId) =>
+      getCached(
+        fieldCandidates,
+        cacheKey(['fieldCandidates', productId, fieldKey, variantId]),
+        () => specDb.getFieldCandidatesByProductAndField(productId, fieldKey, variantId) || [],
+      );
+  }
+
+  if (!hasProductCandidateIndex && typeof specDb.getResolvedFieldCandidate === 'function') {
+    projected.getResolvedFieldCandidate = (productId, fieldKey) =>
+      getCached(
+        resolvedCandidates,
+        cacheKey(['resolvedCandidate', productId, fieldKey]),
+        () => specDb.getResolvedFieldCandidate(productId, fieldKey) || null,
+      );
+  }
+
+  if (!hasProductCandidateIndex && typeof specDb.hasPublishedValue === 'function') {
+    projected.hasPublishedValue = (productId, fieldKey) =>
+      getCached(
+        publishedValues,
+        cacheKey(['publishedValue', productId, fieldKey]),
+        () => Boolean(specDb.hasPublishedValue(productId, fieldKey)),
+      );
+  }
+
+  if (typeof specDb.getTopFieldCandidatesByProduct === 'function') {
+    const readProductTopCandidateIndex = (productId) =>
+      getCached(
+        productTopCandidateIndexes,
+        cacheKey(['productTopCandidates', productId]),
+        () => new Map(
+          (specDb.getTopFieldCandidatesByProduct(productId) || [])
+            .map((row) => [String(row?.field_key || ''), row])
+            .filter(([fieldKey]) => fieldKey),
+        ),
+      );
+
+    projected.getTopFieldCandidate = (productId, fieldKey) =>
+      readProductTopCandidateIndex(productId).get(String(fieldKey || '')) || null;
+  } else if (typeof specDb.getTopFieldCandidate === 'function') {
+    projected.getTopFieldCandidate = (productId, fieldKey) =>
+      getCached(
+        topCandidates,
+        cacheKey(['topCandidate', productId, fieldKey]),
+        () => specDb.getTopFieldCandidate(productId, fieldKey) || null,
+      );
+  }
+
+  if (typeof specDb.listFieldBuckets === 'function') {
+    projected.listFieldBuckets = ({ productId, fieldKey, variantId }) =>
+      getCached(
+        fieldBuckets,
+        cacheKey(['fieldBuckets', productId, fieldKey, variantId]),
+        () => specDb.listFieldBuckets({ productId, fieldKey, variantId }) || [],
+      );
+  }
+
+  if (typeof specDb.countPooledQualifyingEvidenceByFingerprint === 'function') {
+    projected.countPooledQualifyingEvidenceByFingerprint = ({
+      productId,
+      fieldKey,
+      fingerprint,
+      variantId,
+      minConfidence,
+    }) => getCached(
+      pooledEvidenceCounts,
+      cacheKey(['pooledEvidence', productId, fieldKey, fingerprint, variantId, minConfidence]),
+      () => Number(specDb.countPooledQualifyingEvidenceByFingerprint({
+        productId,
+        fieldKey,
+        fingerprint,
+        variantId,
+        minConfidence,
+      }) || 0),
+    );
+  }
+
+  return projected;
+}
+
 // WHY: Rollup from JSON + compiled rules — one row per eligible key (not just
 // keys that have runs). Axes come from compiled rules so the panel can render
 // difficulty/availability/required tags without a second round-trip. Budget is
@@ -261,18 +437,19 @@ function normalizeUnknownSelectedForOutput(selected) {
 // null for keys that haven't run yet. Iterating JSON matches the Dual-State
 // mandate and avoids SQL json_extract portability concerns.
 function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidenceThreshold }) {
-  const compiled = specDb?.getCompiledRules?.() || null;
+  const summarySpecDb = createSummaryProjectionSpecDb(specDb);
+  const compiled = summarySpecDb?.getCompiledRules?.() || null;
   const fields = compiled?.fields || {};
   const runs = Array.isArray(doc?.runs) ? doc.runs : [];
-  const budgetSettings = readBudgetSettings(specDb);
-  const bundlingSettings = readBundlingSettings(specDb);
-  const familySize = resolveFamilySize(specDb, productId);
+  const budgetSettings = readBudgetSettings(summarySpecDb);
+  const bundlingSettings = readBundlingSettings(summarySpecDb);
+  const familySize = resolveFamilySize(summarySpecDb, productId);
   // WHY: surface belongs_to_component for component-attribute rows so the
   // KeyFinder column 1 icon strip can match the Navigator + Workbench +
   // Review Grid taxonomy. studioMap is the SSOT for sibling-attribute
   // declarations — empty Map when no studioMap is available.
   const propertyOwnership = buildComponentPropertyOwnership(
-    typeof specDb?.getFieldStudioMap === 'function' ? specDb.getFieldStudioMap() : null,
+    typeof summarySpecDb?.getFieldStudioMap === 'function' ? summarySpecDb.getFieldStudioMap() : null,
   );
 
   const newestByKey = new Map();
@@ -288,7 +465,13 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
   }
 
   const threshold = Number.isFinite(publishConfidenceThreshold) ? publishConfidenceThreshold : 0;
-  const hasResolvedHook = typeof specDb?.getResolvedFieldCandidate === 'function';
+  const hasResolvedHook = typeof summarySpecDb?.getResolvedFieldCandidate === 'function';
+  const resolvePassengers = createPassengerResolver({
+    engineRules: fields,
+    specDb: summarySpecDb,
+    productId,
+    settings: bundlingSettings,
+  });
 
   // Returns { preview, pool, totalCost }. `pool` is the primary's bundling
   // budget (bundlingPoolPerPrimary[difficulty]) — surfaced even when bundling
@@ -296,30 +479,28 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
   // `preview` is the packed passenger list with per-passenger cost; users can
   // eyeball-sum it against the pool via the Bundled cell's "{used}/{pool}" prefix.
   //
-  // Routes through buildPassengers (the live-run path) so the column reflects
+  // Routes through the same resolver as buildPassengers so the column reflects
   // cross-group scope, in-flight registry hard-block, per-tier overlap caps,
   // and passengerExclude* gates — not just same-group + resolved-peers.
   function computeBundlePreview(fk, rule) {
     const ruleDifficulty = rule?.difficulty || '';
     const pool = Number(bundlingSettings.bundlingPoolPerPrimary?.[ruleDifficulty]) || 0;
+    const componentParentKey = propertyOwnership.get(fk) || '';
     const componentContract = resolveComponentKeyRunContract({
       fieldKey: fk,
       fieldRule: rule,
-      specDb,
+      specDb: summarySpecDb,
       productId,
+      componentParentKey,
     });
-    if (componentContract.dedicated_run) {
+    if (componentContract.dedicated_run || componentContract.run_blocked_reason) {
       return { preview: [], pool, totalCost: 0 };
     }
     if (!bundlingSettings.bundlingEnabled || !rule) {
       return { preview: [], pool, totalCost: 0 };
     }
-    const passengers = buildPassengers({
+    const passengers = resolvePassengers({
       primary: { fieldKey: fk, fieldRule: rule },
-      engineRules: fields,
-      specDb,
-      productId,
-      settings: bundlingSettings,
       familySize,
     });
     const preview = passengers.map((p) => ({
@@ -344,7 +525,7 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
 
     let published = false;
     if (hasResolvedHook) {
-      published = Boolean(specDb.getResolvedFieldCandidate(productId, fk));
+      published = Boolean(summarySpecDb.getResolvedFieldCandidate(productId, fk));
     } else if (run) {
       published = !unknownReason && confidence !== null && confidence >= threshold && hasEvidence;
     }
@@ -364,17 +545,19 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       lastStatus = 'resolved';
     }
 
-    const candidateRows = specDb?.getFieldCandidatesByProductAndField?.(productId, fk) || [];
+    const candidateRows = summarySpecDb?.getFieldCandidatesByProductAndField?.(productId, fk) || [];
     const budgetResult = rule
       ? calcKeyBudget({ fieldRule: rule, familySize, settings: budgetSettings })
       : { attempts: null, rawBudget: null };
     const { attempts: budget, rawBudget: raw_budget } = budgetResult;
     const { preview, pool, totalCost } = computeBundlePreview(fk, rule);
+    const componentParentKey = propertyOwnership.get(fk) || '';
     const componentContract = resolveComponentKeyRunContract({
       fieldKey: fk,
       fieldRule: rule,
-      specDb,
+      specDb: summarySpecDb,
       productId,
+      componentParentKey,
     });
     const inFlight = keyFinderRegistry.count(productId, fk);
 
@@ -384,13 +567,13 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
     // the tooltip; they are NOT used for gating.
     const concrete_evidence = rule
       ? isConcreteEvidence({
-        specDb, productId, fieldKey: fk, fieldRule: rule,
+        specDb: summarySpecDb, productId, fieldKey: fk, fieldRule: rule,
         excludeConf: bundlingSettings.passengerExcludeAtConfidence,
         excludeEvd: bundlingSettings.passengerExcludeMinEvidence,
       })
       : false;
-    const topCandidate = typeof specDb?.getTopFieldCandidate === 'function'
-      ? specDb.getTopFieldCandidate(productId, fk)
+    const topCandidate = typeof summarySpecDb?.getTopFieldCandidate === 'function'
+      ? summarySpecDb.getTopFieldCandidate(productId, fk)
       : null;
     const top_confidence = topCandidate && Number.isFinite(Number(topCandidate.confidence))
       ? Number(topCandidate.confidence) : null;
@@ -428,7 +611,7 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
       bundle_total_cost: totalCost,
       bundle_preview: preview,
       ...componentContract,
-      belongs_to_component: propertyOwnership.get(fk) || '',
+      belongs_to_component: componentParentKey,
       last_run_number: run ? (run.run_number || null) : null,
       last_ran_at: run ? (run.ran_at || run.started_at || '') : null,
       last_status: lastStatus,
@@ -478,7 +661,7 @@ function buildSummaryFromDocAndRules({ doc, specDb, productId, publishConfidence
   // here) must see rows in the canonical user-set order. Reorder once at the
   // source so all downstream UIs stay in lockstep with the navigator. New
   // keys not yet in the saved order trail in compile-order.
-  const orderedKeys = applyFieldKeyOrder(fieldKeys, specDb);
+  const orderedKeys = applyFieldKeyOrder(fieldKeys, summarySpecDb);
   return orderedKeys.map((fk) => buildRow(fk, fields[fk]));
 }
 
@@ -577,7 +760,7 @@ export function registerKeyFinderRoutes(ctx) {
       const specDb = getSpecDb(category);
       if (!specDb) return jsonRes(res, 503, { error: 'specDb not ready' });
       const productRoot = resolveProductRoot(config);
-      const doc = readKeyFinderRuntimeDoc({ specDb, productId, productRoot, category });
+      const doc = readKeyFinderRuntimeSummaryDoc({ specDb, productId, productRoot, category });
       const rows = buildSummaryFromDocAndRules({
         doc,
         specDb,
@@ -819,11 +1002,15 @@ export function registerKeyFinderRoutes(ctx) {
           });
         }
 
+        const propertyOwnership = buildComponentPropertyOwnership(
+          typeof specDb.getFieldStudioMap === 'function' ? specDb.getFieldStudioMap() : null,
+        );
         const componentContract = resolveComponentKeyRunContract({
           fieldKey,
           fieldRule: compiled.fields[fieldKey],
           specDb,
           productId,
+          componentParentKey: propertyOwnership.get(fieldKey) || '',
         });
         if (componentContract.run_blocked_reason === 'component_parent_unpublished') {
           return jsonRes(res, 409, {

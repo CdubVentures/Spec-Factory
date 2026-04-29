@@ -266,6 +266,54 @@ test('EnumSubTab drawer only edits the selected value and warns about propagatio
   ]);
 });
 
+test('EnumSubTab drawer deletes the selected enum value after confirmation', async () => {
+  const originalConfirm = globalThis.confirm;
+  globalThis.__enumSubTabConfirms = [];
+  const { EnumSubTab } = await loadEnumSubTab();
+  globalThis.__enumSubTabStoreState.selectedEnumField = 'sensor';
+  globalThis.__enumSubTabStoreState.enumDrawerOpen = true;
+  globalThis.__enumSubTabStoreState.selectedEnumValue = 'Hero 2';
+  globalThis.confirm = (message) => {
+    globalThis.__enumSubTabConfirms.push(String(message || ''));
+    return true;
+  };
+
+  try {
+    const tree = renderElement(EnumSubTab({
+      data: makeEnumPayload(),
+      category: 'mouse',
+      queryClient: makeQueryClientDouble(),
+    }));
+
+    const drawer = firstByRegion(tree, 'enum-review-value-drawer');
+    assert.ok(drawer, 'value drawer should render');
+    const deleteButton = findAll(drawer, (node) => node.type === 'button' && /Delete value/i.test(textContent(node)))[0];
+    assert.ok(deleteButton, 'drawer should expose a delete value button');
+
+    await deleteButton.props.onClick();
+
+    assert.match(globalThis.__enumSubTabConfirms[0], /unpublish affected items/i);
+    assert.deepEqual(globalThis.__enumSubTabApiPosts, [
+      {
+        path: '/review-components/mouse/enum-delete',
+        body: {
+          field: 'sensor',
+          value: 'Hero 2',
+          listValueId: 101,
+          enumListId: 12,
+        },
+      },
+    ]);
+  } finally {
+    if (originalConfirm === undefined) {
+      delete globalThis.confirm;
+    } else {
+      globalThis.confirm = originalConfirm;
+    }
+    delete globalThis.__enumSubTabConfirms;
+  }
+});
+
 test('EnumSubTab keeps payload-locked color registry fields read-only without studio store hydration', async () => {
   globalThis.__enumSubTabStoreState = {
     selectedEnumField: 'colors',

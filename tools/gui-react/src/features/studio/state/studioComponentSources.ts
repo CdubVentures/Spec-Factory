@@ -1,8 +1,21 @@
 import type { ComponentSource, ComponentSourceProperty, FieldRule } from "../../../types/studio.ts";
 
+export const COMPONENT_PROPERTY_TYPES = [
+  "string",
+  "number",
+  "integer",
+  "boolean",
+  "date",
+  "url",
+  "range",
+  "mixed_number_range",
+] as const;
+
+export type ComponentPropertyType = (typeof COMPONENT_PROPERTY_TYPES)[number];
+
 export interface PropertyMapping {
   field_key: string;
-  type?: "string" | "number" | "integer";
+  type?: ComponentPropertyType;
   unit?: string;
   variance_policy:
     | "authoritative"
@@ -24,6 +37,18 @@ export const VARIANCE_POLICIES = [
   { value: "lower_bound", label: "Lower Bound" },
   { value: "range", label: "Range (Ãƒâ€šÃ‚Â±tolerance)" },
 ] as const;
+
+export function isComponentPropertyType(value: unknown): value is ComponentPropertyType {
+  return COMPONENT_PROPERTY_TYPES.includes(value as ComponentPropertyType);
+}
+
+export function toComponentPropertyType(value: unknown): ComponentPropertyType {
+  return isComponentPropertyType(value) ? value : "string";
+}
+
+export function isNumericComponentPropertyType(value: unknown): boolean {
+  return value === "number" || value === "integer" || value === "range" || value === "mixed_number_range";
+}
 
 const LEGACY_PROPERTY_MAP: Record<string, string> = {
   max_dpi: "dpi",
@@ -59,8 +84,8 @@ export function migrateProperty(
       : "authoritative") as PropertyMapping["variance_policy"],
     tolerance: property.tolerance != null ? Number(property.tolerance) : null,
   };
-  if (["string", "number", "integer"].includes(String(property.type || ""))) {
-    out.type = String(property.type) as PropertyMapping["type"];
+  if (isComponentPropertyType(property.type)) {
+    out.type = property.type;
   }
   if (typeof property.unit === "string") out.unit = property.unit;
   if (Array.isArray(property.constraints) && property.constraints.length > 0) {

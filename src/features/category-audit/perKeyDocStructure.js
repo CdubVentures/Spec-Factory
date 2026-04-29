@@ -111,7 +111,7 @@ function detectArchetypes(record) {
 
 const ARCHETYPE_REQUIRED_CONTENT = {
   component_identity: [
-    'Canonical-form rule — what shape a valid identity takes (maker part number, branded line, etc.) and the `enum.match.format_hint` regex pattern that enforces it.',
+    'Canonical-form anchor is the component_db, NOT a format_hint regex. Do not author `enum.match.format_hint` for component-identity fields — value shapes are too irregular (maker part numbers, branded lines, generation suffixes, distributor codes) to capture in one pattern. Discipline lives in component_db curation + `open_prefer_known` policy + reasoning_note rules below.',
     'Anti-pattern bank — 4–6 concrete strings the LLM must reject (slugified marketing, host-brand-prefixed phrases, parenthesized PCB markings, generic class words, marketing adjectives).',
     'Host-brand-leak rule — the audited product\'s brand never appears inside this component identity.',
     'Identity-layer choice — host-branded line vs OEM model. Pick one and apply it across every facet of this component (identity + brand + link + properties).',
@@ -119,7 +119,9 @@ const ARCHETYPE_REQUIRED_CONTENT = {
     'Confidence ladder — component-page/teardown ≥90; branded-line marketing ≈70; generic-class marketing ≤40 ⇒ unk; sibling-inferred ⇒ unk.',
     'PCB-marking strip rule — strip parenthesized grade/color/lot tokens before emit.',
     'Roster completeness scan — read the category key map in this brief and decide structurally for every name-prefixed or conceptually-adjacent key (latency, date, link, generation, sub-feature variants) whether it should join the property roster, become a facet, or stay standalone. Identity audits own the structural decision; no name-adjacent key should be left unconsidered.',
-    'Standard facet shape — if this is a NEW component identity for the category, also propose the standard facet field rules: `<key>_brand` (string scalar with `component_identity_projection.facet=brand`) and `<key>_link` (url scalar with `facet=link`). Optionally `<key>_type`. These facet rules are authored separately — they are not auto-generated when the identity is created.',
+    'Auto-generated facet shape — component identity fields automatically materialize `<key>_brand` and `<key>_link` as `component_identity_projection` facets. Do not list those facet keys in `component_sources.<key>.roles.properties[]`; record them as `identity_facet` in the roster audit. Optional non-standard facets such as `<key>_type` still require an explicit field rule decision.',
+    'enum.policy default — pick `open_prefer_known` when the entity set is expected to grow (most component families: sensors, switches, panels, GPU chips, RAM modules). Reserve `closed` for genuinely finite/static sets where every new entity must be a deliberate human-curation gate. Do NOT pick `closed` because the current entity list happens to be enumerable today.',
+    'Field-level aliases discipline — when `enum.source = component_db.<X>`, do not author `field_overrides.<component>.aliases`; leave it blank/absent. Component row aliases are component data, not Field Studio patch data.',
     'Component property invariance test — before promoting a candidate key into the property roster, ask: "does this value change across two different products that use the same component?" If yes → product field, leave standalone. If no → component property. Three universal failure modes: (1) lab/measurement results (`*_latency`, `*_response_time`, `measured_*`, `*_under_load`, `effective_*`, `*_at_<condition>`), (2) firmware/MCU-implemented feature toggles (motion-sync, software smoothing, vendor latency integrations, host-implemented signal processing), (3) product-exposed configuration / capability subsets (polling-rate ladders, exposed lift settings, exposed step lists, profile menus).',
   ],
   component_facet: [
@@ -152,12 +154,14 @@ const ARCHETYPE_REQUIRED_CONTENT = {
     'Granularity rule — emit the canonical the enum carries; sub-specs the enum doesn\'t carry stay out of the value.',
     'Synonym-to-canonical rule — when source uses a synonym, emit the canonical the data_list defines; aliases handle the mapping.',
     'Sibling-alias discipline — if this field has mode/variant-qualified siblings, exclude qualifier-bearing phrases from the parent\'s aliases.',
+    'format_hint when COMPOUND-pattern-bounded — if the value is a string combining counts/units/qualifiers/dimensions in one expression, AND the legitimate space falls into 1–4 consistent structural patterns, author `enum.match.format_hint` to enforce the shape. Goal is "a few patterns instead of chaos." Universal fits: `<N> zone (rgb|led)`, `<width>x<height>`, `CL<N>-<N>-<N>-<N>`, `<N>ms (<mode>)`, `<N>x <connector> <version>`. Do NOT use format_hint for plain number+unit values (`<N>g`, `<N>mm`, `<N> Hz`, `<N> GB`, `<N>-bit` — those are `type: number` + `contract.unit`), URLs, or component identities.',
   ],
   enum_list: [
     'List composition rule — product-wide union, per-variant union, or base/default-variant list.',
     'Item ordering rule — descending numeric, alphabetic, or source order.',
     'Pattern-conformant emission for pattern-bounded list enums.',
     'Sibling-alias discipline — see enum_scalar archetype.',
+    'format_hint when COMPOUND-pattern-bounded — see enum_scalar archetype. Strong fit when list items follow compound patterns like `<N> zone (rgb|led)` or `<width>x<height>`. Skip when items reduce to one number + a unit (use `type: number` + `contract.unit`, list shape).',
   ],
   visual_judgment: [
     'Tier classification (A direct, B subtle, C non-visual) and the matching guidance shape.',
@@ -216,11 +220,17 @@ function buildBenchmarkDiffSection(record, benchmark) {
   };
 }
 
-function buildSuccessBarSection(record) {
+function stripAliasRequirements(items, aliasOutOfScope) {
+  if (!aliasOutOfScope) return items;
+  return items.filter((item) => !/\balias/i.test(item));
+}
+
+function buildSuccessBarSection(record, context = {}) {
   const archetypes = detectArchetypes(record);
+  const aliasOutOfScope = isAliasOutOfScope(record, context);
   const archetypeBlocks = archetypes.length > 0
     ? archetypes.flatMap((archetype) => {
-      const items = ARCHETYPE_REQUIRED_CONTENT[archetype] || [];
+      const items = stripAliasRequirements(ARCHETYPE_REQUIRED_CONTENT[archetype] || [], aliasOutOfScope);
       if (items.length === 0) return [];
       return [
         { kind: 'subheading', level: 4, text: `${archetype.replace(/_/g, ' ')} archetype` },
@@ -241,14 +251,18 @@ function buildSuccessBarSection(record) {
       {
         kind: 'bulletList',
         items: [
-          '**Enum vocabulary** — the values the runtime LLM is locked to. Wrong vocabulary, wrong granularity, missing aliases, or unexpanded abbreviations cap the key below 95%.',
-          '**Format pattern** (`enum.match.format_hint`) — when the value has a structural shape, the format hint rejects slugified marketing and noise extractions before they\'re stored.',
+          aliasOutOfScope
+            ? '**Enum vocabulary** — the values the runtime LLM is locked to. Wrong vocabulary, wrong granularity, or unexpanded abbreviations cap the key below 95%.'
+            : '**Enum vocabulary** — the values the runtime LLM is locked to. Wrong vocabulary, wrong granularity, missing aliases, or unexpanded abbreviations cap the key below 95%.',
+          '**Format pattern** (`enum.match.format_hint`) — for STRING values whose shape is compound (counts + units + qualifiers + dimensions in one expression) and falls into 1–4 consistent patterns. Skip for plain number+unit values (use `type: number` + `contract.unit`), URLs (use `type: url`), and component identities (use `component_db`).',
           '**Extraction guidance** (`ai_assist.reasoning_note`) — the only prose the runtime LLM literally reads on every extraction. Carries the anti-pattern bank, confidence ladder, and "when to return unk" rules the structured contract cannot express. This is the biggest of the three.',
         ],
       },
       {
         kind: 'paragraph',
-        text: 'When a benchmark exists for this category (`.workspace/reports/<category>/key-finder-benchmark/scorecard.json`), your enum canonicals MUST be the benchmark\'s exact strings (or carry explicit aliases mapping to them); your format_hint MUST accept every benchmark expected value; your guidance MUST defeat any prior-run wrong values.',
+        text: aliasOutOfScope
+          ? 'When a benchmark exists for this category (`.workspace/reports/<category>/key-finder-benchmark/scorecard.json`), your enum canonicals MUST be the benchmark\'s exact strings; your format_hint MUST accept every benchmark expected value; your guidance MUST defeat any prior-run wrong values.'
+          : 'When a benchmark exists for this category (`.workspace/reports/<category>/key-finder-benchmark/scorecard.json`), your enum canonicals MUST be the benchmark\'s exact strings (or carry explicit aliases mapping to them); your format_hint MUST accept every benchmark expected value; your guidance MUST defeat any prior-run wrong values.',
       },
       { kind: 'subheading', level: 3, text: 'Required content per archetype detected for this key' },
       ...archetypeBlocks,
@@ -273,6 +287,39 @@ function componentSourceType(row) {
 
 function findComponentSource(componentSources, type) {
   return (componentSources || []).find((row) => componentSourceType(row) === type) || null;
+}
+
+function isComponentIdentityRecord(record) {
+  const source = String(record?.enum?.source || record?.rawRule?.enum?.source || '');
+  return record?.component?.relation === 'parent'
+    || (record?.fieldKey && source === `component_db.${record.fieldKey}`);
+}
+
+function componentIdentityProjection(record) {
+  const projection = record?.component_identity_projection || record?.rawRule?.component_identity_projection;
+  return projection && typeof projection === 'object' && !Array.isArray(projection) ? projection : null;
+}
+
+function autoFacetInfo(record, { componentSources = [], allKeyRecords = [] } = {}) {
+  const projection = componentIdentityProjection(record);
+  if (projection?.component_type && ['brand', 'link'].includes(String(projection.facet || ''))) {
+    return {
+      componentType: String(projection.component_type),
+      facet: String(projection.facet),
+    };
+  }
+
+  const match = String(record?.fieldKey || '').match(/^(.+)_(brand|link)$/);
+  if (!match) return null;
+  const [, componentType, facet] = match;
+  const sourceHasParent = (componentSources || []).some((row) => componentSourceType(row) === componentType);
+  const recordsHaveParent = (allKeyRecords || []).some((entry) => entry?.fieldKey === componentType && isComponentIdentityRecord(entry));
+  if (!sourceHasParent && !recordsHaveParent) return null;
+  return { componentType, facet };
+}
+
+function isAliasOutOfScope(record, context = {}) {
+  return isComponentIdentityRecord(record) || Boolean(autoFacetInfo(record, context));
 }
 
 function buildContractPatchExample(record) {
@@ -321,14 +368,15 @@ function buildDataListPatchExample(record, enumPatch) {
   const field = enumPatch.source.slice('data_lists.'.length) || record.fieldKey;
   return [{
     field,
-    normalize: 'lower_trim',
     manual_values: Array.isArray(record.enum?.values) ? record.enum.values : [],
   }];
 }
 
 function componentPropertyTypeForContract(contract) {
   const type = String(contract?.type || 'string');
-  return ['string', 'number', 'integer'].includes(type) ? type : 'string';
+  return ['string', 'number', 'integer', 'boolean', 'date', 'url', 'range', 'mixed_number_range'].includes(type)
+    ? type
+    : 'string';
 }
 
 function buildSuggestedComponentProperty(record) {
@@ -419,6 +467,8 @@ function buildPatchExample(record, category, ordinalNumber, componentSources) {
       sources_checked: [],
       products_checked: [],
       conclusion: '',
+      adjacent_key_roster_decisions: [],
+      schema_blocked_component_attributes: [],
       open_questions: [],
     },
   };
@@ -509,24 +559,25 @@ function buildSearchRoutingSection(record, preview, category) {
     blocks: [
       {
         kind: 'paragraph',
-        text: `Audit \`required_level\`, \`availability\`, and \`difficulty\` as extraction/search strategy, not admin labels. Requiredness decides whether the site should try to publish the field for most products because it is distinguishable from public/spec/visual/identity evidence and belongs in benchmark-depth coverage; it is not restricted to lab-only measurements. Difficulty decides model/search strength after variant inventory, PIF images, aliases, and source hints are available.`,
+        text: `Audit \`required_level\`, \`availability\`, and \`difficulty\` as a search/routing contract using a "human Googler" yardstick. **Grade for the typical product in this category, not the best-documented flagship** — if only one or two brands publish the value but the rest of the category doesn't, the field is harder, less available, and likely non_mandatory even when the flagship's page hands you the answer.`,
       },
       {
         kind: 'table',
         headers: ['Knob', 'Current value', 'Audit question'],
         rows: [
-          ['`priority.required_level`', displayValue(record.priority.required_level), 'Should this field be mandatory for a publish-grade, depth-tech product page? Mandatory should mean the value is buyer/site/benchmark useful and usually distinguishable from public/spec/visual/identity evidence: visible, identifiable from variant identity, listed in specs/docs, or generally exposed by credible sources. Missing proof still becomes unknown status with no submitted value.'],
-          ['`priority.availability`', displayValue(record.priority.availability), 'How often should credible public sources expose this value: always, sometimes, or rare? Wrong availability wastes search budget or delays fields that should be searched early.'],
-          ['`priority.difficulty`', displayValue(record.priority.difficulty), 'Can the configured context make this direct? Easy should cover direct spec/photo/PIF/variant lookup or straightforward canonical mapping; medium should cover normalization or light source comparison; hard should cover technical component reasoning, meaningful conflicts, aliases that change meaning, or source credibility calls. Very_hard is reserved for hidden/lab-grade fields such as proprietary internal component identities, instrumented latency/accuracy measurements, unresolved datasheet links, or lab-only metrics.'],
-          ['Resolved tier bundle', formatTierBundle(preview), 'Does the resolved model/search strength match the remaining extraction effort after variant inventory, PIF images, aliases, and source hints?'],
-          ['Benchmark-depth target', benchmarkText, 'Use benchmark data to calibrate the rule and guidance, not as prompt answers. The contract should explain how keyFinder can reproduce those values from public evidence.'],
+          ['`priority.required_level`', displayValue(record.priority.required_level), '`mandatory` if a normal buyer can find this in public evidence (spec sheet, manufacturer page, credible review, canonical product render, or stated component identity) for the typical product in this category. `non_mandatory` if the value typically requires lab measurement, product disassembly, or proprietary internal-component identity work that public sources rarely expose. Mandatory + unk blocks publish; non_mandatory + unk resolves quietly.'],
+          ['`priority.availability`', displayValue(record.priority.availability), '`always` = credible public sources expose this for nearly every product in the category (spec sheet, manufacturer page, or canonical render carries it as a matter of course). `sometimes` = uneven coverage; flagships usually publish it, budget/older/boutique brands often don\'t. `rare` = only specialist sources (lab benchmark sites, teardown reports, niche reviews) publish this, and only for a small fraction of the category.'],
+          ['`priority.difficulty`', displayValue(record.priority.difficulty), '`easy` = answer is in the first SERP for the obvious query, OR visible in any product render / canonical photo (one query, one source). `medium` = page 2 of the same query, a refined query, OR a specific product angle / spec-table section is needed (still single-session). `hard` = multiple queries, multiple sites, light cross-analysis to confirm; the answer still exists in public text once found. `very_hard` = same multi-query effort PLUS deduction across signals (component lineage, indirect inference) OR lab-only / instrumented measurements OR proprietary internal-component identities behind unmarked silicon.'],
+          ['Resolved tier bundle', formatTierBundle(preview), 'Does the resolved model/search strength match the difficulty grade for the typical product? A field graded `very_hard` needs the strongest model + reasoning + web search; an `easy` field should not burn that budget.'],
+          ['Benchmark-depth target', benchmarkText, 'Use benchmark data to calibrate the difficulty grade and guidance, not as prompt answers. The contract should explain how keyFinder can reproduce those values from public evidence for the median product, not just the flagship.'],
         ],
       },
     ],
   };
 }
 
-function buildAuthoringChecklistSection(record) {
+function buildAuthoringChecklistSection(record, context = {}) {
+  const aliasOutOfScope = isAliasOutOfScope(record, context);
   const priorityCurrent = [
     `priority.required_level=${displayValue(record.priority.required_level)}`,
     `priority.availability=${displayValue(record.priority.availability)}`,
@@ -579,7 +630,9 @@ function buildAuthoringChecklistSection(record) {
     blocks: [
       {
         kind: 'paragraph',
-        text: 'Validate the whole field contract before editing guidance. A strong audit can say "no contract change" when shape, enum policy, requiredness, evidence, and consumer behavior are already correct; still leave guidance/examples/aliases/enum cleanup when those are the real improvement. Guidance last: only write `ai_assist.reasoning_note` after scheduling, value shape, enum/filter behavior, consumer-surface intent, unknown/not-applicable states, evidence/source rules, and example coverage are correct.',
+        text: aliasOutOfScope
+          ? 'Validate the whole field contract before editing guidance. A strong audit can say "no contract change" when shape, enum policy, requiredness, evidence, and consumer behavior are already correct; still leave guidance/examples/enum cleanup when those are the real improvement. Guidance last: only write `ai_assist.reasoning_note` after scheduling, value shape, enum/filter behavior, consumer-surface intent, unknown/not-applicable states, evidence/source rules, and example coverage are correct.'
+          : 'Validate the whole field contract before editing guidance. A strong audit can say "no contract change" when shape, enum policy, requiredness, evidence, and consumer behavior are already correct; still leave guidance/examples/aliases/enum cleanup when those are the real improvement. Guidance last: only write `ai_assist.reasoning_note` after scheduling, value shape, enum/filter behavior, consumer-surface intent, unknown/not-applicable states, evidence/source rules, and example coverage are correct.',
       },
       {
         kind: 'table',
@@ -587,7 +640,9 @@ function buildAuthoringChecklistSection(record) {
         rows: [
           ['1', 'Scheduling priority', priorityCurrent, 'Does requiredness match publish expectations, does availability match real product coverage, and does difficulty route to the right LLM tier?'],
           ['2', 'Value contract', contractCurrent, 'Does the emitted JSON primitive/list shape match how the value is stored, validated, compared, and filtered?'],
-          ['3', 'Enum and filter surface', enumCurrent, 'Is the enum closed when finite, patterned when open, ordered consistently, and small enough for the consumer filter surface? Keep aliases/source phrases out of public enum chips unless intentionally public.'],
+          ['3', 'Enum and filter surface', enumCurrent, aliasOutOfScope
+            ? 'Is the enum closed when finite, patterned when open, ordered consistently, and small enough for the consumer filter surface? Keep source phrases out of public enum chips unless intentionally public.'
+            : 'Is the enum closed when finite, patterned when open, ordered consistently, and small enough for the consumer filter surface? Keep aliases/source phrases out of public enum chips unless intentionally public.'],
           ['4', 'Consumer-surface impact', consumerCurrent, 'Which surfaces should use this key: filter, list column, snapshot/spec row, comparison row, metric/card, search/SEO, or none? Does the shape support each intended surface without forcing the site to guess?'],
           ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is false/no different from not-applicable and missing evidence? Use boolean only for true two-state facts. Never add `unk` to enum values or data lists; it is an LLM sentinel that should become status/unknown_reason with no submitted value. Use `n/a` only when not-applicable is intentionally stored or public; otherwise prefer blank/omitted as no submitted value. For measured conditional fields like battery_hours, keep the value numeric when hours are proven and leave no submitted value when not applicable or unproven.'],
           ['6', 'Evidence and sources', evidenceCurrent, 'Can the configured source tiers and evidence count actually prove this value without guessing?'],
@@ -601,7 +656,8 @@ function buildAuthoringChecklistSection(record) {
   };
 }
 
-function buildConsumerSurfaceSection(record) {
+function buildConsumerSurfaceSection(record, context = {}) {
+  const aliasOutOfScope = isAliasOutOfScope(record, context);
   return {
     id: 'consumer-surface',
     title: 'Consumer-surface impact',
@@ -615,12 +671,16 @@ function buildConsumerSurfaceSection(record) {
         kind: 'table',
         headers: ['Surface', 'Audit question'],
         rows: [
-          ['Filter', 'Should this be a public filter? If enum-backed, are the canonical values public chips, and are aliases/source phrases kept out of the chip list?'],
+          ['Filter', aliasOutOfScope
+            ? 'Should this be a public filter? If enum-backed, are the canonical values public chips, and are source phrases kept out of the chip list?'
+            : 'Should this be a public filter? If enum-backed, are the canonical values public chips, and are aliases/source phrases kept out of the chip list?'],
           ['List / hub table', 'Should the value appear in product cards or listing tables? If yes, confirm label, unit, sorting, truncation, and list-vs-scalar display.'],
           ['Snapshot / spec row', 'Should the value appear as a product detail spec? If yes, confirm grouping, display label, units, and display-only/derived status.'],
           ['Comparison', 'Should users compare this value across products? If yes, confirm numeric/date/list semantics and whether higher/lower is better.'],
           ['Metric / card', 'Should the value feed a score, badge, gauge, or summary card? If yes, confirm the source field remains machine-clean and the card derives presentation.'],
-          ['Search / SEO', 'Should the value become searchable or appear in page text? If yes, confirm canonical terms and aliases so source wording does not pollute stored values.'],
+          ['Search / SEO', aliasOutOfScope
+            ? 'Should the value become searchable or appear in page text? If yes, confirm canonical terms so source wording does not pollute stored values.'
+            : 'Should the value become searchable or appear in page text? If yes, confirm canonical terms and aliases so source wording does not pollute stored values.'],
           ['None', 'If no consumer surface should use this key, say so explicitly; the key can still exist for publisher gates, prompt context, or future derivation.'],
         ],
       },
@@ -628,13 +688,18 @@ function buildConsumerSurfaceSection(record) {
   };
 }
 
-function buildContractSchemaSection(record, schemaCatalog) {
+function buildContractSchemaSection(record, schemaCatalog, context = {}) {
   const rule = record.rawRule || {};
   const headers = ['Parameter', 'Current value', 'Possible values', 'Why it matters'];
+  const aliasOutOfScope = isAliasOutOfScope(record, context);
   // WHY: dependency-toggle entries (variant_dependent, product_image_dependent)
   // are category-summary concerns, not per-key field knobs — exclude them so the
   // per-key brief stays focused on the field's own contract.
-  const filteredCatalog = schemaCatalog.filter((entry) => entry.studioWidget !== 'dependency_toggle');
+  const filteredCatalog = schemaCatalog.filter((entry) => {
+    if (entry.studioWidget === 'dependency_toggle') return false;
+    if (aliasOutOfScope && entry.path === 'aliases') return false;
+    return true;
+  });
   const rows = filteredCatalog.map((entry) => {
     const applies = appliesTo(entry, rule);
     const current = applies ? describeCurrent(entry, rule) : '(n/a)';
@@ -736,9 +801,68 @@ function buildExampleBankSection(record, category) {
   };
 }
 
-function buildPerKeyLlmAuditPromptSection(record, category, navigatorOrdinal = '', componentSources = []) {
+function componentSourceRowsMayIncludeLine(record, facet) {
+  if (facet) {
+    return `- component_sources rows must not include "${record.fieldKey}" because it is an auto-generated identity facet of "${facet.componentType}".`;
+  }
+  return `- component_sources rows may include "${record.fieldKey}" in roles.properties.`;
+}
+
+function buildMappingStudioPatchGuidance(record, { identity, facet, aliasOutOfScope }) {
+  const lines = [
+    '- Component Source Mapping belongs under patch.component_sources. Use it for component type and property variance only. Component entity names, makers, and source URLs are outside this Field Studio patch.',
+  ];
+  if (aliasOutOfScope) {
+    lines.push(`- Do not author \`field_overrides.${record.fieldKey}.aliases\`; leave aliases blank/absent for component identity and auto facet keys.`);
+  }
+  if (facet) {
+    lines.push(`- \`${record.fieldKey}\` is an auto-generated identity facet of \`${facet.componentType}\`; do not add it to \`component_sources.${facet.componentType}.roles.properties[]\` and do not author aliases for it.`);
+  }
+  lines.push(
+    `- For every key, decide from scratch whether it is a component identity, component attribute, or standalone. Do not wait for an existing component DB property before proposing a component attribute. If this field should inherit from a resolved component, patch component_sources by adding "${record.fieldKey}" to roles.properties[] for the chosen component type. If no, leave component_sources unchanged and explain why it stays standalone.`,
+    '- A component identity patch may also define the component\'s normal product-backed attributes and strictly component-only attributes in the same component_sources row. Product-backed attributes have component_only omitted or false and publish as product fields. Strictly component-only attributes set "component_only": true and stay scoped to the component DB only.',
+    '- Patch ownership: when component_type equals the audited field_key, the importer treats roles.properties[] as the complete replacement roster for that component and removes omitted stale attributes. When component_type belongs to another parent, the importer only upserts the audited property row so sibling attributes stay intact.',
+    '- Component source parameters: component_type is the parent component key and must match a self-locked parent field_overrides.<component_type>.enum.source = "component_db.<component_type>"; roles.properties is the attribute list. Source-level priority is retired; keep priority under field_overrides.<field_key>.priority.',
+    '- Component identity keys cannot be open enum keys. They must self-lock with enum.source = "component_db.<same_key>" and the matching component_sources[].component_type.',
+    '- For component identity keys, the component DB is already the lookup/lock path. Use `open_prefer_known` by default with `enum.source = "component_db.<same_key>"` so known rows are preferred and evidence-backed new entities can be marked for curation. Use `closed` only for genuinely finite/static component sets where every new entity must be pre-curated before extraction.',
+  );
+  if (identity) {
+    lines.push(`- \`${record.fieldKey}_brand\` and \`${record.fieldKey}_link\` are auto-generated identity facets when "${record.fieldKey}" is the component identity; do not list \`${record.fieldKey}_brand\` or \`${record.fieldKey}_link\` under \`component_sources.${record.fieldKey}.roles.properties[]\`. Keep them out of the property roster and record them as \`identity_facet\` in audit.adjacent_key_roster_decisions[].`);
+  }
+  lines.push(
+    '- Decide component membership by semantic ownership and invariance first, not by the current primitive type. Boolean, date, url, range, mixed_number_range, and list-shaped fields can be component attributes when the value is invariant for the component. If the semantic ownership is component-backed but the patch schema cannot encode the needed shape or type, leave the unsupported edit out of patch.component_sources and record it under audit.schema_blocked_component_attributes[] with field_key, component_type, expected_type, expected_shape, variance_policy, and reason.',
+    '- Component attribute parameters: field_key is the product field or component-only attribute key; type is string, number, integer, boolean, date, url, range, or mixed_number_range; unit is the display/storage unit for numeric values; variance_policy controls how component values relate to product values; tolerance is an optional numeric margin for upper_bound, lower_bound, or range checks; constraints are cross-property rules; component_only true means the attribute is component-scoped and should not become a product field. Component-only attributes do not require matching field_overrides entries.',
+  );
+  if (identity) {
+    lines.push('- For a component identity audit, scan name-prefixed and adjacent keys (brand, link, type, date, latency, settings, boolean feature flags, mode-specific siblings) and record every decision in audit.adjacent_key_roster_decisions[] as component_property, component_only_property, identity_facet, standalone, or schema_blocked. Identity audits own the full roster; do not leave adjacent keys unclassified.');
+  }
+  lines.push(
+    '- UI control mapping: Variance = Authoritative -> "variance_policy": "authoritative"; Variance = Upper Bound -> "variance_policy": "upper_bound"; Variance = Lower Bound -> "variance_policy": "lower_bound"; Variance = Range -> "variance_policy": "range"; Allow Product Override -> "variance_policy": "override_allowed"; Tolerance -> "tolerance": 5; Component only / scoped -> "component_only": true.',
+    `- Enum Data Lists belong under patch.data_lists. Use only field and manual_values; return the final ordered canonical values when replacing a list; keep source phrases out of public chips${aliasOutOfScope ? '' : ' and keep aliases out of public chips'}. List-level priority, normalize settings, and AI guidance are retired; key priority and extraction guidance stay under patch.field_overrides.${record.fieldKey}.`,
+  );
+  return lines.join('\n');
+}
+
+function keyNavigatorPrimaryLine(record, aliasOutOfScope) {
+  if (aliasOutOfScope) {
+    return `- Field contract, priority, evidence, enum policy, constraints, search_hints, and ai_assist belong under patch.field_overrides.${record.fieldKey}.`;
+  }
+  return `- Field contract, priority, evidence, enum policy, constraints, field-name aliases for standalone/product fields, search_hints, and ai_assist belong under patch.field_overrides.${record.fieldKey}.`;
+}
+
+function buildComponentDataGapRule(aliasOutOfScope) {
+  return aliasOutOfScope
+    ? '- This audit is for Field Studio setup only. If live research exposes missing/stale component entities, rows, properties, or source URLs, mention them after the JSON as a separate component-data gap. Do not put those row edits into the Field Studio patch.'
+    : '- This audit is for Field Studio setup only. If live research exposes missing/stale component entities, rows, properties, or source URLs, mention them after the JSON as a separate component-data gap. Do not put those row edits into the Field Studio patch.';
+}
+
+function buildPerKeyLlmAuditPromptSection(record, category, navigatorOrdinal = '', componentSources = [], allKeyRecords = []) {
   const ordinalNumber = navigatorOrdinal ? Number(navigatorOrdinal) : null;
   const fieldToken = navigatorOrdinal ? `${navigatorOrdinal}-${record.fieldKey}` : record.fieldKey;
+  const context = { componentSources, allKeyRecords };
+  const identity = isComponentIdentityRecord(record);
+  const facet = autoFacetInfo(record, context);
+  const aliasOutOfScope = isAliasOutOfScope(record, context);
   const fileName = expectedFieldStudioPatchFileName({
     category,
     fieldKey: record.fieldKey,
@@ -746,6 +870,10 @@ function buildPerKeyLlmAuditPromptSection(record, category, navigatorOrdinal = '
   });
   const ordinalJson = ordinalNumber == null ? 'null' : String(ordinalNumber);
   const exampleJson = JSON.stringify(buildPatchExample(record, category, ordinalNumber, componentSources), null, 2);
+  const componentRowsLine = componentSourceRowsMayIncludeLine(record, facet);
+  const mappingStudioPatchGuidance = buildMappingStudioPatchGuidance(record, { identity, facet, aliasOutOfScope });
+  const keyNavigatorPatchGuidance = keyNavigatorPrimaryLine(record, aliasOutOfScope);
+  const componentDataGapRule = buildComponentDataGapRule(aliasOutOfScope);
 
   return {
     id: 'llm-audit-prompt',
@@ -776,11 +904,12 @@ The JSON must be strict and importable:
 - null means clear this setting. Arrays replace arrays. Objects deep-merge.
 - field_overrides may patch only "${record.fieldKey}".
 - data_lists rows must use field "${record.fieldKey}".
-- data_lists rows use only field, normalize, and manual_values.
+- data_lists rows use only field and manual_values.
 - component_sources rows use only component_type and roles.properties[].
 - component_sources[].roles may contain only properties.
 - component_sources[].roles.properties[] rows may contain only field_key, type, unit, variance_policy, tolerance, constraints, and component_only.
-- component_sources rows may include "${record.fieldKey}" in roles.properties.
+${componentRowsLine}
+- audit may include adjacent_key_roster_decisions[] and schema_blocked_component_attributes[] for structural handoff notes that are not direct Field Studio edits.
 - Enum policy/source shape: open has no enum source; closed and open_prefer_known use the key-matched list data_lists.${record.fieldKey}. Do not invent custom list names.
 
 Expected file: ${fileName}
@@ -795,18 +924,10 @@ ${exampleJson}
 For a keep verdict, return the same envelope with "patch": {}.
 
 Mapping Studio patch guidance:
-- Component Source Mapping belongs under patch.component_sources. Use it for component type and property variance only. Component entity names, makers, aliases, and source URLs are maintained through Component Review, not Field Studio patches.
-- For every key, decide from scratch whether it is a component identity, component attribute, or standalone. Do not wait for an existing component DB property before proposing a component attribute. If this field should inherit from a resolved component, patch component_sources by adding "${record.fieldKey}" to roles.properties[] for the chosen component type. If no, leave component_sources unchanged and explain why it stays standalone.
-- A component identity patch may also define the component's normal product-backed attributes and strictly component-only attributes in the same component_sources row. Product-backed attributes have component_only omitted or false and publish as product fields. Strictly component-only attributes set "component_only": true and stay scoped to the component DB only.
-- Patch ownership: when component_type equals the audited field_key, the importer treats roles.properties[] as the complete replacement roster for that component and removes omitted stale attributes. When component_type belongs to another parent, the importer only upserts the audited property row so sibling attributes stay intact.
-- Component source parameters: component_type is the parent component key and must match a self-locked parent field_overrides.<component_type>.enum.source = "component_db.<component_type>"; roles.properties is the attribute list. Source-level priority is retired; keep priority under field_overrides.<field_key>.priority.
-- Component identity keys cannot be open enum keys. They must self-lock with enum.source = "component_db.<same_key>" and the matching component_sources[].component_type.
-- Component attribute parameters: field_key is the product field or component-only attribute key; type is string, number, or integer; unit is the display/storage unit for numeric values; variance_policy controls how component values relate to product values; tolerance is an optional numeric margin for upper_bound, lower_bound, or range checks; constraints are cross-property rules; component_only true means the attribute is component-scoped and should not become a product field.
-- UI control mapping: Variance = Authoritative -> "variance_policy": "authoritative"; Variance = Upper Bound -> "variance_policy": "upper_bound"; Variance = Lower Bound -> "variance_policy": "lower_bound"; Variance = Range -> "variance_policy": "range"; Allow Product Override -> "variance_policy": "override_allowed"; Tolerance -> "tolerance": 5; Component only / scoped -> "component_only": true.
-- Enum Data Lists belong under patch.data_lists. Use only field, normalize, and manual_values; return the final ordered canonical values when replacing a list; keep aliases/source phrases out of public chips. List-level priority and AI guidance are retired; key priority and extraction guidance stay under patch.field_overrides.${record.fieldKey}.
+${mappingStudioPatchGuidance}
 
 Key Navigator patch guidance:
-- Field contract, priority, evidence, enum policy, constraints, aliases, search_hints, and ai_assist belong under patch.field_overrides.${record.fieldKey}.
+${keyNavigatorPatchGuidance}
 - Use ai_assist.color_edition_context only when color/edition identity helps reject wrong-variant evidence without ambiguity.
 - Use ai_assist.pif_priority_images only when default/base priority-view images add visual evidence value.
 - Put final paste-ready prompt guidance in ai_assist.reasoning_note.
@@ -820,7 +941,7 @@ Live validation:
 After the JSON file, include a short prose audit with: verdict, key risks, References spot-checked, example bank, and open questions.
 
 Rules:
-- This audit is for Field Studio setup only. If live research exposes missing/stale component entities, rows, aliases, properties, or source URLs, mention them after the JSON as a separate component-data gap. Do not put those row edits into the Field Studio patch.
+${componentDataGapRule}
 - Keep the JSON compact enough to review in one editor pane.`,
       },
     ],
@@ -882,7 +1003,7 @@ function buildComponentSourceMappingBlocks(record, componentSources) {
     { kind: 'subheading', level: 4, text: `Current component source mapping: ${c.type}` },
     {
       kind: 'paragraph',
-      text: 'This is the Mapping Studio row that declares the component type and property mappings. Component entity names, makers, aliases, and URLs are maintained in Component Review.',
+      text: 'This is the Mapping Studio row that declares the component type and property mappings. Component entity names, makers, aliases, and URLs are outside this Field Studio patch.',
     },
     {
       kind: 'table',
@@ -926,7 +1047,7 @@ function buildFromScratchComponentDecisionBlocks(record) {
     { kind: 'subheading', level: 4, text: 'From-scratch component setup decision' },
     {
       kind: 'paragraph',
-      text: `Decide this key from scratch, even when current Mapping Studio rows are empty: Component identity, Component attribute, or Standalone. Component identity means the field value is the canonical component name and should use \`enum.source = component_db.<component_type>\`. Component attribute means this field belongs under a parent component and should be listed in \`component_sources.<component_type>.roles.properties[]\` with \`field_key\`, \`type\`, \`unit\`, \`variance_policy\`, and constraints as needed. Standalone means normal Field Navigator/Data List setup with no component_sources row.`,
+      text: `Decide this key from scratch, even when current Mapping Studio rows are empty: Component identity, Component attribute, or Standalone. Component identity means the field value is the canonical component name and should use \`enum.source = component_db.<component_type>\`. Component attribute means this field belongs under a parent component and should be listed in \`component_sources.<component_type>.roles.properties[]\` with \`field_key\`, \`type\`, \`unit\`, \`variance_policy\`, and constraints as needed. Standalone means normal Field Navigator/Data List setup with no component_sources row. Make the membership decision from semantic ownership and invariance first; boolean, date, range, url, and list-shaped fields can still be component attributes when the value belongs to the component.`,
     },
     {
       kind: 'paragraph',
@@ -947,7 +1068,7 @@ function buildComponentSection(record, componentInventory, componentSources = []
     blocks.push({
       kind: 'note',
       tone: 'info',
-      text: `Existing component DB hint: \`${record.fieldKey}\` appears as a property in \`component_db/${componentGap.type}.json\`, but it is not currently mapped in \`component_sources.${componentGap.type}.roles.properties[]\`. Treat that as evidence to consider, not proof that this key must be component-backed. Concrete component entity values stay in Component Review.`,
+      text: `Existing component DB hint: \`${record.fieldKey}\` appears as a property in \`component_db/${componentGap.type}.json\`, but it is not currently mapped in \`component_sources.${componentGap.type}.roles.properties[]\`. Treat that as evidence to consider, not proof that this key must be component-backed. Concrete component entity values stay outside this Field Studio patch.`,
     });
   } else if (!c) {
     blocks.push({ kind: 'paragraph', text: 'Standalone \u2014 no component relation. This key is not an identity for any `component_db/<type>.json` and does not appear as a subfield on any component entity.' });
@@ -977,12 +1098,13 @@ function buildComponentSection(record, componentInventory, componentSources = []
   } else {
     blocks.push({
       kind: 'table',
-      headers: ['Component', 'Entities', 'Identity fields', 'Subfields', 'Field-backed DB properties not currently mapped', 'DB-only properties', 'Relevant to this key?'],
+      headers: ['Component', 'Entities', 'Identity fields', 'Subfields', 'Component-only properties', 'Field-backed DB properties not currently mapped', 'DB-only properties', 'Relevant to this key?'],
       rows: inventory.map((entry) => [
         `\`${entry.type}\``,
         String(entry.entityCount),
         formatList(entry.identityFields),
         formatList(entry.subfields),
+        formatList(entry.componentOnlyProperties),
         formatList(entry.unmappedFieldProperties),
         formatList(entry.dbOnlyProperties),
         relevantType === entry.type ? 'yes' : '-',
@@ -1100,8 +1222,25 @@ function buildSiblingsSection(record, siblingsInGroup) {
   };
 }
 
-function buildFullPromptSection(preview) {
+function redactAliasPreviewText(text, aliasOutOfScope) {
+  const value = String(text || '');
+  if (!aliasOutOfScope) return value;
+  return value
+    .split(/\r?\n/)
+    .filter((line) => !/\balias/i.test(line))
+    .join('\n')
+    .trim();
+}
+
+function slotDescription(desc, aliasOutOfScope) {
+  if (!aliasOutOfScope || desc.slot !== 'PRIMARY_FIELD_CONTRACT') return desc.note;
+  return 'Type, shape, unit, rounding, list rules, enum values + policy, variance policy. Everything the LLM needs to emit a well-typed value.';
+}
+
+function buildFullPromptSection(preview, context = {}, record = null) {
   if (!preview || preview.reserved || !preview.systemPrompt) return null;
+  const aliasOutOfScope = record ? isAliasOutOfScope(record, context) : false;
+  const promptText = redactAliasPreviewText(preview.systemPrompt, aliasOutOfScope);
   return {
     id: 'full-prompt',
     title: 'Full compiled preview prompt',
@@ -1111,13 +1250,14 @@ function buildFullPromptSection(preview) {
         kind: 'paragraph',
         text: 'The exact text keyFinder would send for this key. Product identity is a placeholder (`<BRAND>` / `<MODEL>`) so the shape is visible without a real product. Runtime slots like `PRODUCT_COMPONENTS`, `PRODUCT_SCOPED_FACTS`, and `VARIANT_INVENTORY` render empty when the placeholder has no resolved context.',
       },
-      { kind: 'codeBlock', lang: 'text', text: preview.systemPrompt },
+      { kind: 'codeBlock', lang: 'text', text: promptText },
     ],
   };
 }
 
-function buildPerSlotSection(preview) {
+function buildPerSlotSection(preview, context = {}, record = null) {
   if (!preview || preview.reserved || !preview.slotRendering) return null;
+  const aliasOutOfScope = record ? isAliasOutOfScope(record, context) : false;
   const slot = preview.slotRendering;
   const blocks = [
     {
@@ -1126,9 +1266,9 @@ function buildPerSlotSection(preview) {
     },
   ];
   for (const desc of SLOT_DESCRIPTIONS) {
-    const text = String(slot[desc.previewKey] || '').trim();
+    const text = redactAliasPreviewText(slot[desc.previewKey], aliasOutOfScope);
     blocks.push({ kind: 'subheading', level: 4, text: `\`{{${desc.slot}}}\`` });
-    blocks.push({ kind: 'paragraph', text: desc.note });
+    blocks.push({ kind: 'paragraph', text: slotDescription(desc, aliasOutOfScope) });
     if (text) {
       blocks.push({ kind: 'codeBlock', lang: 'text', text });
     } else {
@@ -1184,24 +1324,25 @@ export function buildPerKeyDocStructure(keyRecord, {
   navigatorOrdinal = '',
   benchmark = null,
 }) {
+  const context = { componentSources, allKeyRecords };
   const sections = [
     buildHeaderSection(keyRecord, category, generatedAt, preview),
     buildPurposeSection(keyRecord, preview, category),
-    buildSuccessBarSection(keyRecord),
+    buildSuccessBarSection(keyRecord, context),
     buildBenchmarkDiffSection(keyRecord, benchmark),
     buildSearchRoutingSection(keyRecord, preview, category),
-    buildAuthoringChecklistSection(keyRecord),
+    buildAuthoringChecklistSection(keyRecord, context),
     buildCategoryKeyMapSection(keyRecord, allKeyRecords, groups),
-    buildContractSchemaSection(keyRecord, schemaCatalog),
-    buildConsumerSurfaceSection(keyRecord),
+    buildContractSchemaSection(keyRecord, schemaCatalog, context),
+    buildConsumerSurfaceSection(keyRecord, context),
     buildEnumSection(keyRecord),
     buildComponentSection(keyRecord, componentInventory, componentSources),
     buildCrossFieldSection(keyRecord, allKeyRecords),
     buildSiblingsSection(keyRecord, siblingsInGroup),
     buildExampleBankSection(keyRecord, category),
-    buildPerKeyLlmAuditPromptSection(keyRecord, category, navigatorOrdinal, componentSources),
-    buildFullPromptSection(preview),
-    buildPerSlotSection(preview),
+    buildPerKeyLlmAuditPromptSection(keyRecord, category, navigatorOrdinal, componentSources, allKeyRecords),
+    buildFullPromptSection(preview, context, keyRecord),
+    buildPerSlotSection(preview, context, keyRecord),
     buildReservedOwnerSection(preview),
   ].filter(Boolean);
 

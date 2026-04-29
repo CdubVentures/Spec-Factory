@@ -97,13 +97,22 @@ test('renderMarkdown places auditor-task section before summary and includes ret
   assert.match(md, /component type and component property variance/i);
   assert.match(md, /component identity, component attribute, or standalone/i);
   assert.match(md, /do not wait for an existing component DB property/i);
+  assert.match(md, /semantic ownership/i);
+  assert.match(md, /boolean, date, url, range/i);
+  assert.match(md, /schema_blocked_component_attributes/i);
+  assert.match(md, /auto-generated identity facets/i);
+  assert.match(md, /must not be listed under `component_sources\.\<component_type\>\.roles\.properties\[\]`/i);
+  assert.match(md, /record them as `identity_facet`/i);
+  assert.match(md, /component DB is already the lookup\/lock path/i);
+  assert.match(md, /use `open_prefer_known` by default/i);
+  assert.match(md, /Use `closed` only/i);
   assert.match(md, /Tolerance/i);
   assert.match(md, /Component only \/ scoped/i);
   assert.match(md, /component_type/i);
   assert.match(md, /roles\.properties/i);
   assert.match(md, /variance_policy/i);
   assert.match(md, /component_only/i);
-  assert.match(md, /Component Review/i);
+  assert.doesNotMatch(md, /Component Review/i);
   assert.match(md, /Enum Data Lists/i);
   assert.match(md, /Key Navigator guidance:/);
   assert.match(md, /"priority"/);
@@ -157,12 +166,13 @@ test('renderMarkdown tells auditors to validate the full field contract before w
   assert.match(md, /category benchmark\/example set/i);
   assert.doesNotMatch(md, /mouseData\.xlsm/i);
   assert.doesNotMatch(md, /C2:BT83/i);
-  assert.match(md, /public\/spec\/visual\/identity evidence/i);
-  assert.match(md, /not restricted to lab-only measurements/i);
-  assert.match(md, /after variant inventory, PIF images, aliases, and source hints/i);
-  assert.match(md, /Very_hard is reserved/i);
-  assert.match(md, /proprietary internal component identities/i);
-  assert.match(md, /lab-only metrics/i);
+  // Behavior: priority axes use "human Googler" / "typical product not flagship" calibration
+  assert.match(md, /typical product/i);
+  assert.match(md, /flagship/i);
+  // Behavior: very_hard tier is bounded by lab/instrumented/internal-component cases
+  assert.match(md, /very_hard/i);
+  assert.match(md, /lab/i);
+  assert.match(md, /internal-component|internal component/i);
   assert.ok(md.includes('contract.type'));
   assert.ok(md.includes('contract.shape'));
   assert.match(md, /no contract change/i);

@@ -1,30 +1,39 @@
 import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 
-const HISTORY_KPI_CARDS = ['runs', 'cost', 'success', 'duration', 'queries', 'hosts'] as const;
+const HISTORY_KPI_CARDS = [
+  { id: 'runs', label: 'Total Runs' },
+  { id: 'cost', label: 'Total Cost' },
+  { id: 'success', label: 'Crawl Success' },
+  { id: 'duration', label: 'Avg Duration' },
+  { id: 'queries', label: 'Total Queries' },
+  { id: 'hosts', label: 'Unique Hosts' },
+] as const;
 const HISTORY_RUNS = ['current', 'previous', 'older', 'oldest'] as const;
-const HISTORY_ANALYSIS_CARDS = ['funnel', 'domains', 'queries'] as const;
+const HISTORY_ANALYSIS_CARDS = [
+  { id: 'funnel', label: 'Funnel' },
+  { id: 'domains', label: 'Top Domains' },
+  { id: 'queries', label: 'Top Queries' },
+] as const;
 
-function KpiCardSkeleton({ card }: { readonly card: string }) {
+function KpiCardSkeleton({ card, label }: { readonly card: string; readonly label: string }) {
   return (
     <div
       className="sf-surface-elevated rounded-lg p-5 flex flex-col gap-1"
       data-region="product-history-loading-kpi-card"
       data-skeleton-card={card}
     >
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
           <div className="text-[32px] font-bold leading-none tracking-tight">
-            <SkeletonBlock className="sf-skel-title" />
+            <SkeletonBlock className="sf-skel-text-xl" />
           </div>
           <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.06em] sf-text-muted">
-            <SkeletonBlock className="sf-skel-caption" />
+            {label}
           </div>
         </div>
-        <SkeletonBlock className="sf-skel-caption" />
+        <SkeletonBlock className="sf-skel-sparkline" />
       </div>
-      <span className="inline-flex items-center self-start gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full mt-1 sf-text-muted">
-        <SkeletonBlock className="sf-skel-caption" />
-      </span>
+      <SkeletonBlock className="sf-skel-pill" />
     </div>
   );
 }
@@ -38,7 +47,7 @@ export function ProductHistoryKpiLoadingSkeleton() {
       aria-busy="true"
     >
       {HISTORY_KPI_CARDS.map((card) => (
-        <KpiCardSkeleton key={card} card={card} />
+        <KpiCardSkeleton key={card.id} card={card.id} label={card.label} />
       ))}
     </div>
   );
@@ -46,22 +55,16 @@ export function ProductHistoryKpiLoadingSkeleton() {
 
 function RunPillSkeleton({ run }: { readonly run: string }) {
   return (
-    <button
-      type="button"
-      className="flex items-center gap-2 px-4 py-2.5 rounded-lg sf-text-label whitespace-nowrap transition-all sf-surface-elevated border sf-border-soft"
+    <span
+      className="sf-shimmer flex items-center gap-2 px-4 py-2.5 rounded-lg whitespace-nowrap sf-surface-elevated border sf-border-soft min-w-[180px] h-[44px]"
       data-region="product-history-loading-run-pill"
       data-skeleton-run={run}
-      disabled
-    >
-      <span className="h-2.5 w-2.5 rounded-full sf-bg-surface-soft-strong" />
-      <SkeletonBlock className="sf-skel-bar" />
-      <SkeletonBlock className="sf-skel-caption" />
-      <SkeletonBlock className="sf-skel-caption" />
-    </button>
+      aria-hidden="true"
+    />
   );
 }
 
-function AnalysisCardSkeleton({ card }: { readonly card: string }) {
+function AnalysisCardSkeleton({ card, label }: { readonly card: string; readonly label: string }) {
   return (
     <div
       className="sf-surface-elevated rounded-lg p-4 text-center"
@@ -69,10 +72,10 @@ function AnalysisCardSkeleton({ card }: { readonly card: string }) {
       data-skeleton-card={card}
     >
       <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted mb-3">
-        <SkeletonBlock className="sf-skel-caption" />
+        {label}
       </div>
       <div className="h-[140px] flex items-center justify-center">
-        <SkeletonBlock className="sf-skel-bar" />
+        <SkeletonBlock className="sf-skel-block" />
       </div>
     </div>
   );
@@ -100,7 +103,7 @@ export function ProductHistoryPanelLoadingSkeleton() {
       <ProductHistoryKpiLoadingSkeleton />
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {HISTORY_ANALYSIS_CARDS.map((card) => (
-          <AnalysisCardSkeleton key={card} card={card} />
+          <AnalysisCardSkeleton key={card.id} card={card.id} label={card.label} />
         ))}
       </div>
     </div>

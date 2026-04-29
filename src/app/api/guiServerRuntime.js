@@ -112,7 +112,7 @@ export function createGuiServerRuntime({
     const {
       env: { config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD },
       storage: { storage, getIndexLabRoot },
-      session: { sessionCache, resolveCategoryAlias, specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady, appDb },
+      session: { sessionCache, resolveCategoryAlias, specDbCache, getSpecDb, getSpecDbReady, appDb },
       realtime: { broadcastWs, setupWatchers, attachWebSocketUpgrade, getLastScreencastFrame },
       process: { processStatus, startProcess, stopProcess, isProcessRunning, waitForProcessExit, getSearxngStatus, startSearxngStack },
       http: { jsonRes, corsHeaders, readJsonBody },
@@ -205,7 +205,7 @@ export function createGuiServerRuntime({
         jsonRes, readJsonBody, config, HELPER_ROOT, OUTPUT_ROOT, safeReadJson, safeStat,
         listFiles, fs, path, sessionCache, invalidateFieldRulesCache,
         getSpecDb, getSpecDbReady, storage, startProcess, broadcastWs,
-        reviewLayoutByCategory, appDb,
+        appDb,
       }),
       categoryAuditRouteContext: {
         jsonRes, readJsonBody, config,
@@ -228,7 +228,7 @@ export function createGuiServerRuntime({
       reviewRouteContext: createReviewRouteContext({
         jsonRes, readJsonBody, toInt, hasKnownValue, config, storage, OUTPUT_ROOT,
         HELPER_ROOT, path, fs, getSpecDb, getSpecDbReady,
-        sessionCache, reviewLayoutByCategory,
+        sessionCache,
         broadcastWs, specDbCache, invalidateFieldRulesCache, safeReadJson,
         isMeaningfulValue, normalizeLower,
         patchCompiledComponentDb,

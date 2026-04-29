@@ -7,7 +7,7 @@ import {
   buildPipelineEnumCandidateId,
   buildReferenceEnumCandidateId,
 } from '../../../utils/candidateIdentifier.js';
-import { normalizeFieldKey, slugify } from './reviewNormalization.js';
+import { normalizeFieldKey, normalizeKnownValueMatchKey } from './reviewNormalization.js';
 import {
   hasKnownValue,
   hasActionableCandidate,
@@ -30,7 +30,7 @@ export async function buildEnumReviewPayloadsSpecDb({ config = {}, category, spe
     const valueMap = new Map();
 
     for (const row of listRows) {
-      const normalized = String(row.value).trim().toLowerCase();
+      const normalized = normalizeKnownValueMatchKey(row.value);
       if (!normalized) continue;
 
       const basePending = Boolean(row.needs_review);

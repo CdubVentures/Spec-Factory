@@ -1,4 +1,4 @@
-import { useMemo, Fragment } from 'react';
+import { useMemo, Fragment, useState } from 'react';
 import { Chip } from '@/shared/ui/feedback/Chip';
 import { Spinner } from '@/shared/ui/feedback/Spinner';
 import { AlertBanner } from '@/shared/ui/feedback/AlertBanner';
@@ -16,6 +16,8 @@ const STATUS_CLS: Record<string, string> = {
   failed: 'sf-chip-danger',
   running: 'sf-chip-warning',
 };
+
+const RUN_SOURCE_PAGE_SIZE = 100;
 
 /* ── Artifact rows ────────────────────────────────────────────── */
 
@@ -58,8 +60,18 @@ interface SourceRowsProps {
 }
 
 function SourceRows({ runId, productId, category, onDeleteUrl, isDeletingUrl }: SourceRowsProps) {
-  const { data: detail, isLoading, error } = useRunDetail(runId);
+  const [sourcesLimit, setSourcesLimit] = useState(RUN_SOURCE_PAGE_SIZE);
+  const { data: detail, isLoading, isFetching, error } = useRunDetail(runId, {
+    sourcesLimit,
+    sourcesOffset: 0,
+  });
   const sources: RunSourceEntry[] = detail?.sources ?? [];
+  const sourcesPage = detail?.sources_page ?? null;
+  const totalSources = Number(sourcesPage?.total ?? sources.length);
+  const loadedSourceCount = Number(sourcesPage?.offset ?? 0) + sources.length;
+  const remainingSources = Math.max(0, totalSources - loadedSourceCount);
+  const hasMoreSources = Boolean(sourcesPage?.has_more) || remainingSources > 0;
+  const nextSourceCount = Math.max(1, Math.min(RUN_SOURCE_PAGE_SIZE, remainingSources || RUN_SOURCE_PAGE_SIZE));
   const [expandedUrls, toggleUrl] = usePersistedExpandMap(`storage:urls:${runId}`);
 
   if (isLoading) {
@@ -118,6 +130,26 @@ function SourceRows({ runId, productId, category, onDeleteUrl, isDeletingUrl }: 
           </Fragment>
         );
       })}
+      {hasMoreSources && (
+        <tr>
+          <td />
+          <td colSpan={4} className="px-2 py-2">
+            <div className="flex items-center justify-between gap-3 pl-8 text-[11px]">
+              <span className="sf-text-muted">
+                Showing {Math.min(loadedSourceCount, totalSources)} of {totalSources} sources
+              </span>
+              <button
+                type="button"
+                onClick={() => setSourcesLimit((current) => current + RUN_SOURCE_PAGE_SIZE)}
+                disabled={isFetching}
+                className="sf-secondary-button px-2 py-1 text-[11px] font-semibold disabled:opacity-50"
+              >
+                Load {nextSourceCount} more source{nextSourceCount === 1 ? '' : 's'}
+              </button>
+            </div>
+          </td>
+        </tr>
+      )}
     </>
   );
 }

@@ -95,7 +95,6 @@ export function createProcessRuntime({
   invalidateEventCache,
   sessionCache,
   invalidateFieldRulesCache,
-  reviewLayoutByCategory,
   syncSpecDbForCategory,
   handleCompileProcessCompletion,
   handleIndexLabProcessCompletion,
@@ -119,7 +118,6 @@ export function createProcessRuntime({
   assertFunction('broadcastWs', broadcastWs);
   assertObject('sessionCache', sessionCache);
   assertFunction('invalidateFieldRulesCache', invalidateFieldRulesCache);
-  assertObject('reviewLayoutByCategory', reviewLayoutByCategory);
   assertFunction('syncSpecDbForCategory', syncSpecDbForCategory);
   assertFunction('handleCompileProcessCompletion', handleCompileProcessCompletion);
   assertFunction('handleIndexLabProcessCompletion', handleIndexLabProcessCompletion);
@@ -298,7 +296,6 @@ export function createProcessRuntime({
               cliArgs,
               sessionCache,
               invalidateFieldRulesCache,
-              reviewLayoutByCategory,
               syncSpecDbForCategory,
               getSpecDb,
               broadcastWs,

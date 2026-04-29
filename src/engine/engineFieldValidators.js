@@ -1,4 +1,9 @@
-import { isObject, normalizeFieldKey, normalizeToken } from './engineTextHelpers.js';
+import {
+  isObject,
+  normalizeFieldKey,
+  normalizeToken,
+  normalizeKnownValueMatchKey,
+} from './engineTextHelpers.js';
 import { buildRuleEnumSpec } from './engineEnumIndex.js';
 import { asNumber } from './normalizationFunctions.js';
 import {
@@ -85,7 +90,9 @@ export function enforceEnumPolicy(fieldKey, normalized, { rules, enumIndex }) {
   const enumSpec = enumIndex.get(key) || buildRuleEnumSpec(rule);
   const policy = fromRule || normalizeToken(enumSpec?.policy || 'open') || 'open';
   const isClosedPolicy = policy === 'closed' || policy === 'closed_with_curation';
-  if (!enumSpec || enumSpec.index.size === 0) {
+  const hasKnownMatches = enumSpec
+    && (enumSpec.index.size > 0 || enumSpec.ambiguous?.size > 0);
+  if (!hasKnownMatches) {
     if (isClosedPolicy) {
       return {
         ok: false,
@@ -107,11 +114,23 @@ export function enforceEnumPolicy(fieldKey, normalized, { rules, enumIndex }) {
   let needsCuration = false;
 
   for (const rawValue of values) {
-    const token = normalizeToken(rawValue);
+    const token = normalizeKnownValueMatchKey(rawValue);
+    if (enumSpec?.ambiguous?.has(token)) {
+      if (isClosedPolicy) {
+        return {
+          ok: false,
+          reason_code: 'enum_value_not_allowed',
+          needs_curation: false
+        };
+      }
+      canonicalized.push(rawValue);
+      needsCuration = true;
+      continue;
+    }
     if (enumSpec.index.has(token)) {
       const canonical = enumSpec.index.get(token);
       canonicalized.push(canonical);
-      wasAliased = wasAliased || normalizeToken(canonical) !== token;
+      wasAliased = wasAliased || String(canonical ?? '').trim() !== String(rawValue ?? '').trim();
       continue;
     }
     if (isClosedPolicy) {

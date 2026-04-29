@@ -56,6 +56,18 @@ describe('field studio patch import client helpers', () => {
     });
   });
 
+  it('detects duplicate-suffixed key-order patch filenames when JSON parse is deferred to the backend', async () => {
+    const request = await buildFieldStudioPatchImportRequest([
+      {
+        name: 'mouse-keys-order.key-order-patch.v1 (1).json',
+        text: async () => '{',
+      },
+    ]);
+
+    assert.equal(request.kind, 'key_order_patch');
+    assert.equal(request.files[0].fileName, 'mouse-keys-order.key-order-patch.v1 (1).json');
+  });
+
   it('rejects mixed auditor JSON schema uploads before preview', async () => {
     await assert.rejects(
       () => buildFieldStudioPatchImportRequest([

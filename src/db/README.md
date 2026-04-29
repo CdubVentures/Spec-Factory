@@ -13,10 +13,11 @@ SQLite-backed persistence layer for review state, component identity, and queue 
 ## Public API (The Contract)
 
 - `specDb.js` → `class SpecDb({ dbPath, category })` — main facade; instantiated via `serverBootstrap.js` DI
-  - Component identity: `getComponentIdentity`, `upsertComponentIdentity`
+  - Component identity: `getComponentIdentity`, `upsertComponentIdentity`, `deleteComponentIdentityCascade`
   - Item state: `getItemState`, `setItemState`
   - Enum policy: `getEnumPolicy`, `setEnumPolicy`
   - Key review: `getKeyReviewState`, `setKeyReviewState`
+  - Field candidates: `getTopFieldCandidate`, `getTopFieldCandidatesByProduct`
   - Source intel / product / telemetry stores
   - Source strategy and spec seed runtime projections
   - `close()` — cleanup

@@ -114,8 +114,10 @@ function makeSpecDbStub({
   compiledRules = COMPILED_RULES_MOUSE,
   finderSettings = {},
   sqlRunsByProduct = {},
+  sqlSummaryRunsByProduct = null,
   sqlSummariesByProduct = {},
   topCandidatesByFieldKey = {},
+  topCandidatesByProduct = null,
   bucketsByFieldKey = {},
   activeVariants = [],
   productRows = [],
@@ -127,6 +129,9 @@ function makeSpecDbStub({
     get: (pid) => sqlSummariesByProduct[pid] || null,
     listByCategory: (cat) => Object.values(sqlSummariesByProduct).filter((row) => row.category === cat),
     listRuns: (pid) => sqlRunsByProduct[pid] || [],
+    ...(sqlSummaryRunsByProduct ? {
+      listRunsForSummary: (pid) => sqlSummaryRunsByProduct[pid] || [],
+    } : {}),
   };
   return {
     category: 'mouse',
@@ -148,6 +153,9 @@ function makeSpecDbStub({
     getFinderStore: (id) => (id === 'keyFinder' ? finderStore : null),
     // getTopFieldCandidate — display-only tooltip data (top_confidence + top_evidence_count
     // columns on each row). Distinct from the bucket-evaluator path used for gating.
+    ...(topCandidatesByProduct ? {
+      getTopFieldCandidatesByProduct: (pid) => topCandidatesByProduct[pid] || [],
+    } : {}),
     getTopFieldCandidate: (_pid, fk) => topCandidatesByFieldKey[fk] || null,
     // Bucket evaluator contract — drives isConcreteEvidence.
     listFieldBuckets: ({ fieldKey }) => {
@@ -388,12 +396,72 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     const byKey = Object.fromEntries(responses[0].body.map((row) => [row.field_key, row]));
     // Property field declared under component_sources → owning component
     assert.equal(byKey.dpi.belongs_to_component, 'sensor');
+    assert.equal(byKey.dpi.component_parent_key, 'sensor');
+    assert.equal(byKey.dpi.component_dependency_satisfied, false);
+    assert.equal(byKey.dpi.run_blocked_reason, 'component_parent_unpublished');
     // Component-self row is NOT one of its own properties
     assert.equal(byKey.sensor.belongs_to_component, '');
     // Identity projection row is NOT a sibling property either
     assert.equal(byKey.sensor_brand.belongs_to_component, '');
     // Unrelated field
     assert.equal(byKey.polling_rate.belongs_to_component, '');
+  });
+
+  it('unblocks component-attribute summary rows after the parent component publishes', async (t) => {
+    t.after(cleanupTmp);
+    fs.mkdirSync(path.join(PRODUCT_ROOT, 'attribute-published-prod'), { recursive: true });
+    const compiledRules = {
+      fields: {
+        sensor: {
+          field_key: 'sensor',
+          difficulty: 'medium',
+          availability: 'always',
+          required_level: 'mandatory',
+          enum: { source: 'component_db.sensor' },
+          ui: { label: 'Sensor', group: 'sensor_identity' },
+        },
+        dpi: {
+          field_key: 'dpi',
+          difficulty: 'easy',
+          availability: 'always',
+          required_level: 'mandatory',
+          ui: { label: 'DPI', group: 'sensor_performance' },
+        },
+      },
+    };
+    const fieldStudioMap = {
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: {
+            properties: [
+              { field_key: 'dpi' },
+            ],
+          },
+        },
+      ],
+    };
+    const specDb = makeSpecDbStub({
+      compiledRules,
+      fieldStudioMap,
+      publishedKeys: new Set(['sensor']),
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(
+      ['key-finder', 'mouse', 'attribute-published-prod', 'summary'],
+      null,
+      'GET',
+      {},
+      {},
+    );
+
+    const byKey = Object.fromEntries(responses[0].body.map((row) => [row.field_key, row]));
+    assert.equal(byKey.dpi.belongs_to_component, 'sensor');
+    assert.equal(byKey.dpi.component_parent_key, 'sensor');
+    assert.equal(byKey.dpi.component_dependency_satisfied, true);
+    assert.equal(byKey.dpi.run_blocked_reason, '');
   });
 
   it('emits belongs_to_component as empty string when studioMap is omitted', async (t) => {
@@ -491,6 +559,34 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.equal(pollingRate.last_model, 'gpt-5.4-mini');
   });
 
+  it('uses lean SQL summary runs when full run history is not needed', async (t) => {
+    t.after(cleanupTmp);
+    const productId = 'sql-summary-prod';
+    fs.mkdirSync(path.join(PRODUCT_ROOT, productId), { recursive: true });
+
+    const specDb = makeSpecDbStub({
+      sqlSummariesByProduct: {
+        [productId]: { category: 'mouse', product_id: productId, latest_ran_at: '2026-04-20T10:00:00Z', run_count: 1 },
+      },
+      sqlRunsByProduct: {
+        [productId]: [],
+      },
+      sqlSummaryRunsByProduct: {
+        [productId]: [makeSqlRun({ runNumber: 9, fieldKey: 'sensor_model', value: 'PixArt PAW3395', confidence: 93 })],
+      },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', productId, 'summary'], null, 'GET', {}, {});
+
+    assert.equal(responses[0].status, 200);
+    const sensorModel = responses[0].body.find((row) => row.field_key === 'sensor_model');
+    assert.equal(sensorModel.last_run_number, 9);
+    assert.equal(sensorModel.last_value, 'PixArt PAW3395');
+    assert.equal(sensorModel.last_confidence, 93);
+  });
+
   it('surfaces prompt dependency flags for dependency-driven overview scheduling', async (t) => {
     t.after(cleanupTmp);
     fs.mkdirSync(path.join(PRODUCT_ROOT, 'prompt-deps-prod'), { recursive: true });
@@ -545,6 +641,30 @@ describe('GET /key-finder/:category/:productId/summary', () => {
     assert.equal(byKey.explicitly_static.uses_variant_inventory, false);
     assert.equal(byKey.visual_context.uses_pif_priority_images, true);
     assert.equal(byKey.image_dependency.product_image_dependent, true);
+  });
+
+  it('uses batched top candidates for summary tooltip confidence fields', async (t) => {
+    t.after(cleanupTmp);
+    const productId = 'batch-top-prod';
+    fs.mkdirSync(path.join(PRODUCT_ROOT, productId), { recursive: true });
+    const specDb = makeSpecDbStub({
+      topCandidatesByFieldKey: {
+        acceleration: { confidence: 1, evidence_count: 0 },
+      },
+      topCandidatesByProduct: {
+        [productId]: [
+          { field_key: 'acceleration', confidence: 97, evidence_count: 5 },
+        ],
+      },
+    });
+    const { ctx, responses } = makeCtx({ specDb, productRoot: PRODUCT_ROOT });
+    const handler = registerKeyFinderRoutes(ctx);
+
+    await handler(['key-finder', 'mouse', productId, 'summary'], null, 'GET', {}, {});
+
+    const byKey = Object.fromEntries(responses[0].body.map((row) => [row.field_key, row]));
+    assert.equal(byKey.acceleration.top_confidence, 97);
+    assert.equal(byKey.acceleration.top_evidence_count, 5);
   });
 
   it('computes per-key budget via calcKeyBudget using finder settings + variantCount', async (t) => {

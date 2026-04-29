@@ -222,7 +222,7 @@ export function KeyTypeIconStrip({
       </Tooltip.Trigger>
       <Tooltip.Portal>
         <Tooltip.Content
-          className="sf-tooltip-content z-50 max-w-sm px-3 py-2.5 text-xs leading-snug rounded shadow-lg"
+          className="sf-tooltip-content z-[300] max-w-sm px-3 py-2.5 text-xs leading-snug rounded shadow-lg"
           sideOffset={6}
           side="top"
         >

@@ -1,5 +1,6 @@
 import { LIST_VALUE_BOOLEAN_KEYS } from '../specDbSchema.js';
 import { hydrateRow, hydrateRows } from '../specDbHelpers.js';
+import { normalizeKnownValueMatchKey } from '../../shared/primitives.js';
 
 /**
  * Enum/List store — extracted from SpecDb.
@@ -51,7 +52,7 @@ export function createEnumListStore({ db, category, stmts }) {
       list_id: listId,
       field_key: fieldKey,
       value,
-      normalized_value: normalizedValue ?? null,
+      normalized_value: normalizedValue ?? normalizeKnownValueMatchKey(value),
       source: source || 'known_values',
       accepted_candidate_id: acceptedCandidateId ?? null,
       enum_policy: enumPolicy ?? null,
@@ -73,7 +74,16 @@ export function createEnumListStore({ db, category, stmts }) {
       .get(category, fieldKey, value));
     if (exact) return exact;
     if (value == null) return null;
+    const normalizedValue = normalizeKnownValueMatchKey(value);
     return hydrateRow(LIST_VALUE_BOOLEAN_KEYS, db
+      .prepare(`
+        SELECT *
+        FROM list_values
+        WHERE category = ? AND field_key = ? AND normalized_value = ?
+        ORDER BY id
+        LIMIT 1
+      `)
+      .get(category, fieldKey, normalizedValue)) || hydrateRow(LIST_VALUE_BOOLEAN_KEYS, db
       .prepare(`
         SELECT *
         FROM list_values
@@ -262,7 +272,7 @@ export function createEnumListStore({ db, category, stmts }) {
         }
       }
 
-      const normalizedNew = String(newValue).trim().toLowerCase();
+      const normalizedNew = normalizeKnownValueMatchKey(newValue);
       const enumListId = ensureEnumList(fieldKey, 'manual');
       stmts._upsertListValue.run({
         category,

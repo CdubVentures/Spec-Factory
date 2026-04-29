@@ -12,7 +12,7 @@ export function createStudioRouteContext(options = {}) {
     jsonRes, readJsonBody, config, HELPER_ROOT, OUTPUT_ROOT, safeReadJson, safeStat,
     listFiles, fs, path, sessionCache, invalidateFieldRulesCache,
     getSpecDb, getSpecDbReady, storage, startProcess, broadcastWs,
-    reviewLayoutByCategory, appDb,
+    appDb,
   } = options;
 
   return {
@@ -20,7 +20,7 @@ export function createStudioRouteContext(options = {}) {
     listFiles, fs, path, sessionCache, saveFieldStudioMap,
     validateFieldStudioMap, invalidateFieldRulesCache, buildFieldLabelsMap,
     getSpecDb, getSpecDbReady, storage, startProcess, broadcastWs,
-    reviewLayoutByCategory, cleanVariant,
+    cleanVariant,
     appDb, generateCategoryAuditReportPack,
   };
 }

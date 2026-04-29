@@ -201,7 +201,7 @@ test('POST /category-audit/:category/generate-all-reports writes category and pe
         },
       },
       data_lists: [
-        { field: 'sensor', normalize: 'lower_trim', manual_values: ['HERO 2'] },
+        { field: 'sensor', manual_values: ['HERO 2'] },
       ],
     }));
     const { ctx, captured } = mockCtx({ reportsRoot, categoryAuthorityRoot });

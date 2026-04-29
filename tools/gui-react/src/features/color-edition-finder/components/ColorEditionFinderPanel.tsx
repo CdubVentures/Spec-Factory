@@ -298,8 +298,8 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
               openWidthClass="w-[40rem]"
               drawerHeight="header"
               ariaLabel="Prompt + history + delete actions for CEF"
-              closedTitle="Show Prompt / Hist / Data for CEF"
-              openedTitle="Hide Prompt / Hist / Data for CEF"
+              closedTitle="Show Prompt / Hist / actions for CEF"
+              openedTitle="Hide Prompt / Hist / actions for CEF"
               openTitle="Prompts:"
               primaryCustom={
                 <PromptPreviewTriggerButton
@@ -318,8 +318,6 @@ export function ColorEditionFinderPanel({ productId, category }: ColorEditionFin
                   width={ACTION_BUTTON_WIDTH.standardHeader}
                 />
               }
-              tertiaryTitle="Data:"
-              tertiaryLabelClass="sf-delete-label"
               tertiaryActions={[
                 {
                   id: 'del-all',

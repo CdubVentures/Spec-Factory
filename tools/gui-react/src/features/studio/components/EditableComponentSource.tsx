@@ -4,7 +4,9 @@ import { Tip } from "../../../shared/ui/feedback/Tip.tsx";
 import { StaticBadges } from "./StaticBadges.tsx";
 import {
   VARIANCE_POLICIES,
+  isNumericComponentPropertyType,
   migrateProperty,
+  toComponentPropertyType,
   type PropertyMapping,
 } from "../state/studioComponentSources.ts";
 import { displayLabel } from "../state/studioDisplayLabel.ts";
@@ -176,9 +178,7 @@ export function EditableComponentSource({
 
   function selectFieldKey(pidx: number, fieldKey: string) {
     const info = fieldKey ? getInheritedInfo(fieldKey) : null;
-    const propertyType = ["string", "number", "integer"].includes(info?.type || "")
-      ? (info!.type as PropertyMapping["type"])
-      : "string";
+    const propertyType = toComponentPropertyType(info?.type);
     updatePropertyField(pidx, {
       field_key: fieldKey,
       type: propertyType,
@@ -190,9 +190,7 @@ export function EditableComponentSource({
   function addPropertyFromFieldKey(fieldKey: string) {
     if (propertyRows.some((r) => r.field_key === fieldKey)) return;
     const info = getInheritedInfo(fieldKey);
-    const propertyType = ["string", "number", "integer"].includes(info.type)
-      ? (info.type as PropertyMapping["type"])
-      : "string";
+    const propertyType = toComponentPropertyType(info.type);
     const newRow: PropertyMapping = {
       field_key: fieldKey,
       type: propertyType,
@@ -447,7 +445,7 @@ export function EditableComponentSource({
                       const isExternalEnum =
                         hasEnumSource && !isComponentDbEnum;
                       const varianceLocked = inherited
-                        ? inherited.type !== "number" ||
+                        ? !isNumericComponentPropertyType(inherited.type) ||
                           inherited.isBool ||
                           hasEnumSource
                         : false;
@@ -458,11 +456,11 @@ export function EditableComponentSource({
                             ? `enum.db (${inherited.enumSource.replace(/^component_db\./, "")}) \u2014 variance locked to authoritative`
                             : isExternalEnum
                               ? `Enum (${inherited.enumSource.replace(/^(known_values|data_lists)\./, "")}) \u2014 variance locked to authoritative`
-                              : inherited.type !== "number" &&
+                              : !isNumericComponentPropertyType(inherited.type) &&
                                   inherited.fieldValues.length > 0
                                 ? `Manual values (${inherited.fieldValues.length}) \u2014 variance locked to authoritative`
-                                : inherited.type !== "number"
-                                  ? 'String property \u2014 variance locked to authoritative (only number fields without enums support variance)'
+                                : !isNumericComponentPropertyType(inherited.type)
+                                  ? `${inherited.type || "Non-numeric"} property \u2014 variance locked to authoritative (only numeric fields without enums support variance)`
                                   : ""
                         : "";
                       return (
@@ -492,7 +490,7 @@ export function EditableComponentSource({
                                   if (newKey) {
                                     const info = getInheritedInfo(newKey);
                                     const shouldLock =
-                                      info.type !== "number" ||
+                                      !isNumericComponentPropertyType(info.type) ||
                                       info.isBool ||
                                       !!info.enumSource;
                                     if (shouldLock) {
@@ -688,9 +686,9 @@ export function EditableComponentSource({
                                 {!inherited.isBool &&
                                 !hasEnumSource &&
                                 inherited.fieldValues.length === 0 &&
-                                inherited.type !== "number" ? (
+                                !isNumericComponentPropertyType(inherited.type) ? (
                                   <span className="text-[10px] sf-text-subtle italic">
-                                    string type
+                                    {inherited.type} type
                                   </span>
                                 ) : null}
                               </div>

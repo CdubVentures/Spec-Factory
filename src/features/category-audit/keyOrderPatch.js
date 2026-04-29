@@ -3,6 +3,7 @@ import path from 'node:path';
 export const KEY_ORDER_PATCH_SCHEMA_VERSION = 'key-order-patch.v1';
 
 const PATCH_FILE_NAME = (category) => `${category}-keys-order.${KEY_ORDER_PATCH_SCHEMA_VERSION}.json`;
+const OS_DUPLICATE_SUFFIX_RE = /\s+\(\d+\)(?=\.json$)/i;
 const GROUP_SEPARATOR_PREFIX = '__grp::';
 const VALID_VERDICTS = new Set(['keep', 'reorder', 'add_keys', 'rename_keys', 'reorganize']);
 const TOP_LEVEL_KEYS = new Set([
@@ -105,6 +106,10 @@ function safeSourceFileName(fileName) {
     throw new Error('fileName is required');
   }
   return base;
+}
+
+function normalizeDuplicatePatchFileName(fileName) {
+  return safeSourceFileName(fileName).replace(OS_DUPLICATE_SUFFIX_RE, '');
 }
 
 function stripPatchMetadata(doc) {
@@ -238,7 +243,7 @@ export function validateKeyOrderPatchDocument(doc, {
   if (category && normalizedDoc.category !== category) {
     throw new Error(`patch category "${normalizedDoc.category}" does not match requested category "${category}"`);
   }
-  if (fileName && safeSourceFileName(fileName) !== expectedKeyOrderPatchFileName({ category: normalizedDoc.category })) {
+  if (fileName && normalizeDuplicatePatchFileName(fileName) !== expectedKeyOrderPatchFileName({ category: normalizedDoc.category })) {
     throw new Error(`filename must be "${expectedKeyOrderPatchFileName({ category: normalizedDoc.category })}"`);
   }
   if (!VALID_VERDICTS.has(normalizedDoc.verdict)) {

@@ -1,4 +1,5 @@
 import { COMPONENT_IDENTITY_PROPERTY_KEYS } from '../contracts/componentReviewShapes.js';
+import { normalizeKnownValueMatchKey } from '../../../shared/primitives.js';
 
 export function validateComponentPropertyCandidate({
   candidateRow,
@@ -20,7 +21,7 @@ export function validateComponentPropertyCandidate({
   if (
     isMeaningfulValue(candidateValueToken)
     && isMeaningfulValue(resolvedValueToken)
-    && normalizeLower(candidateValueToken) !== normalizeLower(resolvedValueToken)
+    && normalizeKnownValueMatchKey(candidateValueToken) !== normalizeKnownValueMatchKey(resolvedValueToken)
   ) {
     return {
       error: 'candidate_value_mismatch',

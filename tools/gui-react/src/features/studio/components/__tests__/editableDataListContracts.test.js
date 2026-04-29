@@ -87,12 +87,9 @@ test('EditableDataList renders enum identity as label, key, and source metadata 
           export const STUDIO_NUMERIC_KNOB_BOUNDS = {};
         `,
         './studioConstants.ts': `
-          export const selectCls = 'select';
           export const labelCls = 'label';
-          export const NORMALIZE_MODES = [{ value: 'lower_trim', label: 'lower_trim' }];
           export const STUDIO_TIPS = {
             data_list_field: 'field',
-            data_list_normalize: 'normalize',
             data_list_manual_values: 'values',
           };
         `,
@@ -108,7 +105,6 @@ test('EditableDataList renders enum identity as label, key, and source metadata 
       entry: {
         field: 'form_factor',
         label: 'Form Factor',
-        normalize: 'lower_trim',
         delimiter: '',
         manual_values: ['ambidextrous'],
       },
@@ -142,10 +138,15 @@ test('EditableDataList renders enum identity as label, key, and source metadata 
     tree,
     (node) => textOf(node).includes('Key') && textOf(node).includes('form_factor'),
   );
+  const normalizeControls = collectNodes(
+    tree,
+    (node) => node.type === 'select' || textOf(node).includes('Normalize'),
+  );
 
   assert.equal(fieldInputs.length, 0);
   assert.equal(inputLikeFieldDisplays.length, 0);
   assert.equal(removeButtons.length, 0);
+  assert.equal(normalizeControls.length, 0);
   assert.equal(textOf(tree).includes('Field Name'), false);
   assert.equal(textOf(tree).includes('Extraction Guidance'), false);
   assert.equal(textOf(tree).includes('sent to LLM'), false);

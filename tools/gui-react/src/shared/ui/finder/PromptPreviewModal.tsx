@@ -8,7 +8,6 @@
 
 import { useEffect, type ReactNode } from 'react';
 import type { UseQueryResult } from '@tanstack/react-query';
-import { SkeletonBlock } from '../feedback/SkeletonBlock.tsx';
 import { PromptPreviewView } from './PromptPreviewView.tsx';
 import { PromptPreviewList } from './PromptPreviewList.tsx';
 import type { PromptPreviewResponse } from '../../../features/indexing/api/promptPreviewTypes.ts';
@@ -26,7 +25,11 @@ interface PromptPreviewModalProps {
   readonly headerSlot?: ReactNode;
 }
 
-const PROMPT_PREVIEW_SECTIONS = ['system', 'user', 'response'] as const;
+const PROMPT_PREVIEW_SECTIONS = [
+  { id: 'system', label: 'SYSTEM' },
+  { id: 'user', label: 'USER' },
+  { id: 'response', label: 'RESPONSE' },
+] as const;
 const PROMPT_PREVIEW_LINES = ['primary', 'secondary', 'tertiary'] as const;
 
 export function PromptPreviewLoadingSkeleton() {
@@ -40,17 +43,23 @@ export function PromptPreviewLoadingSkeleton() {
       <span className="sr-only">Loading prompt preview</span>
       {PROMPT_PREVIEW_SECTIONS.map((section) => (
         <section
-          key={section}
+          key={section.id}
           className="rounded border sf-border-soft sf-surface-elevated p-3 space-y-2"
           data-region="prompt-preview-loading-section"
-          data-skeleton-section={section}
+          data-skeleton-section={section.id}
         >
-          <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted">
-            <SkeletonBlock className="sf-skel-caption" />
+          <div className="flex items-center justify-between">
+            <div className="text-[10px] font-bold uppercase tracking-[0.08em] sf-text-muted">
+              {section.label}
+            </div>
+            <span className="sf-shimmer inline-block h-5 w-12 rounded sf-icon-button" aria-hidden="true" />
           </div>
           {PROMPT_PREVIEW_LINES.map((line) => (
-            <div key={`${section}-${line}`} data-region="prompt-preview-loading-line">
-              <SkeletonBlock className="sf-skel-bar" />
+            <div key={`${section.id}-${line}`} data-region="prompt-preview-loading-line">
+              <span
+                className="sf-shimmer block h-3.5 w-full rounded-sm font-mono"
+                aria-hidden="true"
+              />
             </div>
           ))}
         </section>

@@ -281,10 +281,16 @@ test('FRC-05-F - component property type and variance_policy propagate to genera
       },
       {
         field_key: 'sensor_date',
-        type: 'string',
+        type: 'date',
         unit: '',
         variance_policy: 'authoritative',
         constraints: ['sensor_date <= release_date'],
+      },
+      {
+        field_key: 'flawless_sensor',
+        type: 'boolean',
+        unit: '',
+        variance_policy: 'authoritative',
       },
     ]),
   ];
@@ -306,8 +312,11 @@ test('FRC-05-F - component property type and variance_policy propagate to genera
     const fieldRules = JSON.parse(await fs.readFile(path.join(generatedRoot, 'field_rules.json'), 'utf8'));
     assert.equal(fieldRules?.fields?.dpi?.variance_policy, 'upper_bound');
     assert.equal(fieldRules?.fields?.sensor_date?.variance_policy, 'authoritative');
-    assert.equal(fieldRules?.fields?.sensor_date?.data_type, 'string');
-    assert.equal(fieldRules?.fields?.sensor_date?.contract?.type, 'string');
+    assert.equal(fieldRules?.fields?.sensor_date?.data_type, 'date');
+    assert.equal(fieldRules?.fields?.sensor_date?.contract?.type, 'date');
+    assert.equal(fieldRules?.fields?.flawless_sensor?.data_type, 'boolean');
+    assert.equal(fieldRules?.fields?.flawless_sensor?.contract?.type, 'boolean');
+    assert.equal(fieldRules?.fields?.flawless_sensor?.enum?.source, 'yes_no');
   } finally {
     await cleanup();
   }
@@ -381,7 +390,6 @@ test('FRC-05-H - numeric component properties with known values compile as close
       header_row: 0,
       row_start: 2,
       row_end: 0,
-      normalize: 'lower_trim',
       delimiter: '',
       manual_values: ['16', '20', '24'],
     },

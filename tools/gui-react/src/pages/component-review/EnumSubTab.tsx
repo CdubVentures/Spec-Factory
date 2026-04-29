@@ -76,6 +76,17 @@ function sortValues(values: readonly EnumValueReviewItem[]): EnumValueReviewItem
   return [...values].sort((left, right) => String(left.value || '').localeCompare(String(right.value || '')));
 }
 
+function confirmEnumValueDelete(value: string): boolean {
+  const message = `Delete "${value}"? This will unpublish affected items using this enum value while preserving candidates and evidence.`;
+  if (typeof window !== 'undefined' && typeof window.confirm === 'function') {
+    return window.confirm(message);
+  }
+  if (typeof globalThis.confirm === 'function') {
+    return globalThis.confirm(message);
+  }
+  return true;
+}
+
 function FieldListItem({ field, isSelected, label, onClick }: EnumFieldListItemProps) {
   return (
     <button
@@ -154,10 +165,12 @@ function EnumValueDrawer({
   onRenamed,
 }: EnumValueDrawerProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [error, setError] = useState('');
   const listValueId = toPositiveId(valueItem.list_value_id);
   const enumListId = toPositiveId(valueItem.enum_list_id) ?? toPositiveId(field.enum_list_id);
   const canRename = Boolean(listValueId);
+  const isBusy = isSaving || isDeleting;
 
   const handleSubmit = useCallback(async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -216,6 +229,57 @@ function EnumValueDrawer({
     valueItem.value,
   ]);
 
+  const handleDelete = useCallback(async () => {
+    if (!canRename || isBusy) return;
+    const value = String(valueItem.value ?? '').trim();
+    if (!value || !confirmEnumValueDelete(value)) return;
+
+    setError('');
+    setIsDeleting(true);
+    try {
+      await api.post(`/review-components/${category}/enum-delete`, {
+        field: field.field,
+        value,
+        listValueId: listValueId ?? undefined,
+        enumListId: enumListId ?? undefined,
+      });
+
+      setEnumReviewQueryData(queryClient, category, (old: EnumReviewPayload | undefined) => {
+        if (!old) return old;
+        return {
+          ...old,
+          fields: old.fields.map((enumField) => {
+            if (enumField.field !== field.field) return enumField;
+            return {
+              ...enumField,
+              values: enumField.values.filter((enumValue) => (
+                toPositiveId(enumValue.list_value_id) !== listValueId
+              )),
+            };
+          }),
+        };
+      });
+      invalidateEnumAuthorityQueries(queryClient, category);
+      invalidateEnumReviewDataQuery(queryClient, category);
+      onClose();
+    } catch (caught: unknown) {
+      setError(caught instanceof Error ? caught.message : 'Failed to delete enum value.');
+      invalidateEnumReviewDataQuery(queryClient, category);
+    } finally {
+      setIsDeleting(false);
+    }
+  }, [
+    canRename,
+    category,
+    enumListId,
+    field.field,
+    isBusy,
+    listValueId,
+    onClose,
+    queryClient,
+    valueItem.value,
+  ]);
+
   return (
     <aside
       className="border sf-border-default rounded-lg sf-surface-elevated min-w-0"
@@ -243,7 +307,7 @@ function EnumValueDrawer({
             name="enumValue"
             defaultValue={valueItem.value}
             className="sf-drawer-input w-full text-sm"
-            disabled={!canRename || isSaving}
+            disabled={!canRename || isBusy}
             data-region="enum-review-value-input"
           />
         </label>
@@ -258,10 +322,19 @@ function EnumValueDrawer({
 
         <button
           type="submit"
-          disabled={!canRename || isSaving}
+          disabled={!canRename || isBusy}
           className="w-full px-3 py-1.5 text-sm sf-primary-button rounded disabled:opacity-50"
         >
           {isSaving ? 'Saving...' : 'Update Value'}
+        </button>
+
+        <button
+          type="button"
+          onClick={handleDelete}
+          disabled={!canRename || isBusy}
+          className="w-full px-3 py-1.5 text-sm sf-danger-button rounded disabled:opacity-50"
+        >
+          {isDeleting ? 'Deleting...' : 'Delete value'}
         </button>
       </form>
     </aside>

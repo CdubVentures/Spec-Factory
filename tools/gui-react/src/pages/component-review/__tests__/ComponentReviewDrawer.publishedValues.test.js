@@ -183,4 +183,5 @@ describe('ComponentReviewDrawer published value lanes', () => {
     assert.doesNotMatch(text, /Published Product Values/);
     assert.match(text, /No component review candidates found for this component attribute yet/);
   });
+
 });

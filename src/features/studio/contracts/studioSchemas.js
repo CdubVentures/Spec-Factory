@@ -107,15 +107,22 @@ export const FieldRuleSchema = z.object({
 
 export const EnumEntrySchema = z.object({
   field: z.string(),
-  normalize: z.string().optional(),
   values: z.array(z.string()).optional(),
-  delimiter: z.string().optional(),
   manual_values: z.array(z.string()).optional(),
 }).passthrough();
 
 export const ComponentSourcePropertySchema = z.object({
   field_key: z.string().optional(),
-  type: z.enum(['string', 'number', 'integer']).optional(),
+  type: z.enum([
+    'string',
+    'number',
+    'integer',
+    'boolean',
+    'date',
+    'url',
+    'range',
+    'mixed_number_range',
+  ]).optional(),
   unit: z.string().optional(),
   variance_policy: z.enum([
     'authoritative', 'upper_bound', 'lower_bound', 'range', 'override_allowed',
@@ -138,7 +145,6 @@ export const ComponentSourceSchema = z.object({
 
 export const DataListEntrySchema = z.object({
   field: z.string(),
-  normalize: z.string().optional(),
   delimiter: z.string().optional(),
   manual_values: z.array(z.string()).optional(),
   mode: z.string().optional(),

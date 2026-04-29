@@ -14,7 +14,6 @@ const borderPanelCls = 'sf-border-default';
 const sectionCls = `sf-surface-card rounded border ${borderPanelCls} p-4`;
 const textSubtleCls = 'sf-text-subtle';
 const textMutedCls = 'sf-text-subtle';
-const chipCls = 'inline-block px-2 py-0.5 text-xs rounded-full sf-chip-info mr-1 mb-1';
 
 const BRAND_TABLE_COLUMNS: readonly BrandSkeletonColumn[] = [
   { id: 'canonical_name' },
@@ -26,6 +25,27 @@ const BRAND_TABLE_COLUMNS: readonly BrandSkeletonColumn[] = [
 const BRAND_TABLE_ROWS = Array.from({ length: 8 }, (_value, index) => `row-${index}`);
 const BRAND_TAB_ROWS = ['all', 'mouse', 'keyboard', 'monitor'] as const;
 const DRAWER_FIELDS = ['name', 'aliases', 'categories', 'website'] as const;
+
+function CellSkeleton({ columnId }: { readonly columnId: string }) {
+  if (columnId === 'canonical_name') {
+    return <SkeletonBlock className="sf-skel-bar-label" />;
+  }
+  if (columnId === 'identifier') {
+    return <span className="sf-shimmer inline-block h-3.5 w-16 rounded-sm" aria-hidden="true" />;
+  }
+  if (columnId === 'aliases' || columnId === 'categories') {
+    return (
+      <div className="flex flex-wrap gap-1">
+        <span className="sf-shimmer inline-block h-5 w-14 rounded-full" aria-hidden="true" />
+        <span className="sf-shimmer inline-block h-5 w-12 rounded-full" aria-hidden="true" />
+      </div>
+    );
+  }
+  if (columnId === 'website') {
+    return <SkeletonBlock className="sf-skel-bar" />;
+  }
+  return <SkeletonBlock className="sf-skel-bar" />;
+}
 
 function HeaderSkeleton() {
   return (
@@ -52,14 +72,12 @@ function CategoryTabsSkeleton() {
   return (
     <nav className="flex flex-wrap gap-1 px-1 py-1 sf-tab-strip rounded" data-region="brand-manager-loading-tabs">
       {BRAND_TAB_ROWS.map((tab, index) => (
-        <button
+        <span
           key={tab}
-          type="button"
-          className={`px-3 h-[28px] inline-flex items-center text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer sf-tab-item${index === 0 ? ' sf-tab-item-active' : ''}`}
-          disabled
-        >
-          <SkeletonBlock className="sf-skel-caption" />
-        </button>
+          className={`sf-shimmer inline-block px-3 h-[28px] w-20 rounded${index === 0 ? ' sf-tab-item-active' : ''}`}
+          aria-hidden="true"
+          data-skeleton-tab={tab}
+        />
       ))}
     </nav>
   );
@@ -72,7 +90,7 @@ function TableSkeleton() {
         type="text"
         placeholder="Search..."
         disabled
-        className="sf-input sf-primitive-input sf-table-search-input mb-2 w-full max-w-xs"
+        className="sf-shimmer sf-input sf-primitive-input sf-table-search-input mb-2 w-full max-w-xs"
         data-region="brand-manager-loading-search"
       />
       <div
@@ -85,7 +103,7 @@ function TableSkeleton() {
               {BRAND_TABLE_COLUMNS.map((column) => (
                 <th key={column.id} className="sf-table-head-cell cursor-pointer select-none" data-skeleton-column={column.id}>
                   <div className="flex items-center gap-1">
-                    <SkeletonBlock className="sf-skel-bar" />
+                    <SkeletonBlock className="sf-skel-bar-label" />
                   </div>
                 </th>
               ))}
@@ -96,14 +114,7 @@ function TableSkeleton() {
               <tr key={row} className="sf-table-row cursor-pointer" data-skeleton-row={row}>
                 {BRAND_TABLE_COLUMNS.map((column) => (
                   <td key={`${row}-${column.id}`} className="px-2 py-1.5 whitespace-nowrap overflow-hidden" data-skeleton-cell={column.id}>
-                    {column.id === 'aliases' || column.id === 'categories' ? (
-                      <div className="flex flex-wrap">
-                        <span className={chipCls}><SkeletonBlock className="sf-skel-caption" /></span>
-                        <span className={chipCls}><SkeletonBlock className="sf-skel-caption" /></span>
-                      </div>
-                    ) : (
-                      <SkeletonBlock className="sf-skel-bar" />
-                    )}
+                    <CellSkeleton columnId={column.id} />
                   </td>
                 ))}
               </tr>
@@ -121,15 +132,13 @@ function DrawerFieldSkeleton({ field }: { readonly field: string }) {
       <div data-region="brand-manager-loading-drawer-field">
         <label className={labelCls}>Categories *</label>
         <div className="flex flex-wrap gap-1 mt-1">
-          {BRAND_TAB_ROWS.slice(1).map((tab, index) => (
-            <button
+          {BRAND_TAB_ROWS.slice(1).map((tab) => (
+            <span
               key={tab}
-              type="button"
-              className={`px-3 h-[28px] inline-flex items-center text-[13px] font-medium whitespace-nowrap transition-colors cursor-pointer sf-tab-item${index === 0 ? ' sf-tab-item-active' : ''}`}
-              disabled
-            >
-              <SkeletonBlock className="sf-skel-caption" />
-            </button>
+              className="sf-shimmer inline-block px-3 h-[28px] w-20 rounded"
+              aria-hidden="true"
+              data-skeleton-tab={tab}
+            />
           ))}
         </div>
       </div>
@@ -141,9 +150,7 @@ function DrawerFieldSkeleton({ field }: { readonly field: string }) {
   return (
     <div data-region="brand-manager-loading-drawer-field">
       <label className={labelCls}>{label}</label>
-      <div className={`${inputCls} w-full`}>
-        <SkeletonBlock className="sf-skel-bar" />
-      </div>
+      <div className={`${inputCls} sf-shimmer w-full h-9`} aria-hidden="true" />
       {field === 'name' && (
         <div className="mt-1 space-y-0.5">
           <p className={`text-xs ${textMutedCls}`}><SkeletonBlock className="sf-skel-caption" /></p>

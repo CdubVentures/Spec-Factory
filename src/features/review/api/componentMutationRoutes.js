@@ -1,5 +1,9 @@
+import fs from 'node:fs';
+import path from 'node:path';
+
 import {
   createRouteResponder,
+  ensureSeededSpecDb,
   firstFiniteNumber,
   prepareMutationContextRequest,
   respondIfError,
@@ -7,6 +11,9 @@ import {
   runHandledRouteChain,
   sendDataChangeResponse,
 } from './routeSharedHelpers.js';
+import { clearPublishedField } from '../../publisher/publish/clearPublishedField.js';
+import { wipePublisherStateForUnpub } from '../../publisher/publish/wipePublisherStateForUnpub.js';
+import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
 
 import {
   validateComponentPropertyCandidate,
@@ -42,6 +49,273 @@ export {
   updateComponentReviewStatus,
   updateComponentValueNeedsReview,
 };
+
+function toPositiveId(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  const id = Math.trunc(n);
+  return id > 0 ? id : null;
+}
+
+function safeReadJson(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+function writeJson(filePath, data) {
+  fs.writeFileSync(filePath, JSON.stringify(data, null, 2));
+}
+
+function productJsonPath(productRoot, productId) {
+  return path.join(productRoot, productId, 'product.json');
+}
+
+function addIdentityFields(fields, baseField) {
+  const key = String(baseField || '').trim();
+  if (!key) return;
+  fields.add(key);
+  fields.add(`${key}_brand`);
+  fields.add(`${key}_link`);
+}
+
+function groupIdentityFieldsByProduct({ componentType, linkedProducts }) {
+  const byProduct = new Map();
+  for (const linkedProduct of linkedProducts || []) {
+    const productId = String(linkedProduct?.product_id || '').trim();
+    if (!productId) continue;
+    const fields = byProduct.get(productId) || new Set();
+    addIdentityFields(fields, linkedProduct?.field_key || componentType);
+    byProduct.set(productId, fields);
+  }
+  return byProduct;
+}
+
+function unpublishIdentityField({ runtimeSpecDb, productId, fieldKey, productJson }) {
+  if (!productJson) {
+    runtimeSpecDb.demoteResolvedCandidates?.(productId, fieldKey, null);
+    wipePublisherStateForUnpub({ specDb: runtimeSpecDb, productId, fieldKey });
+    return { status: 'cleared_without_json' };
+  }
+  const result = clearPublishedField({
+    specDb: runtimeSpecDb,
+    productId,
+    fieldKey,
+    productJson,
+  });
+  if (result.status !== 'cleared') {
+    runtimeSpecDb.demoteResolvedCandidates?.(productId, fieldKey, null);
+    wipePublisherStateForUnpub({ specDb: runtimeSpecDb, productId, fieldKey });
+  }
+  return result;
+}
+
+function unpublishComponentIdentityFields({ runtimeSpecDb, productRoot, componentType, linkedProducts }) {
+  const byProduct = groupIdentityFieldsByProduct({ componentType, linkedProducts });
+  const results = [];
+  for (const [productId, fields] of byProduct.entries()) {
+    const filePath = productJsonPath(productRoot, productId);
+    const productJson = safeReadJson(filePath);
+    let changed = false;
+    for (const fieldKey of fields) {
+      const result = unpublishIdentityField({ runtimeSpecDb, productId, fieldKey, productJson });
+      if (result.status === 'cleared') changed = true;
+      results.push({ productId, fieldKey, status: result.status });
+    }
+    if (changed && productJson) {
+      writeJson(filePath, productJson);
+    }
+  }
+  return results;
+}
+
+async function handleComponentIdentityDeleteEndpoint({
+  parts,
+  method,
+  res,
+  context,
+}) {
+  if (
+    !Array.isArray(parts)
+    || parts[0] !== 'review-components'
+    || !parts[1]
+    || parts[2] !== 'components'
+    || !parts[3]
+    || parts[4] !== 'identity'
+    || !parts[5]
+    || method !== 'DELETE'
+  ) {
+    return false;
+  }
+
+  const {
+    jsonRes,
+    getSpecDbReady,
+    storage,
+    specDbCache,
+    broadcastWs,
+  } = context || {};
+  const respond = createRouteResponder(jsonRes, res);
+  const category = parts[1];
+  const componentType = String(parts[3] || '').trim();
+  const componentIdentityId = toPositiveId(parts[5]);
+  if (!componentIdentityId) {
+    return respond(400, {
+      error: 'component_identity_id_required',
+      message: 'component identity id is required for component row delete.',
+    });
+  }
+
+  const readySpecDb = await ensureSeededSpecDb({ category, getSpecDbReady });
+  if (respondIfError(respond, readySpecDb.error)) {
+    return true;
+  }
+  const runtimeSpecDb = readySpecDb.runtimeSpecDb;
+  const identity = runtimeSpecDb.getComponentIdentityById(componentIdentityId);
+  if (!identity || String(identity.component_type || '').trim() !== componentType) {
+    return respond(404, {
+      error: 'component_identity_id_not_found',
+      message: `component identity '${componentIdentityId}' does not resolve for '${componentType}'.`,
+    });
+  }
+
+  try {
+    const deleted = runtimeSpecDb.deleteComponentIdentityCascade(componentIdentityId);
+    const linkedProducts = deleted.linkedProducts || [];
+    const productRoot = storage?.productRoot || defaultProductRoot();
+    const unpublishResults = unpublishComponentIdentityFields({
+      runtimeSpecDb,
+      productRoot,
+      componentType,
+      linkedProducts,
+    });
+    specDbCache?.delete?.(category);
+    const productIds = Array.from(new Set(linkedProducts.map((row) => String(row?.product_id || '').trim()).filter(Boolean)));
+    const fieldKeys = Array.from(new Set(unpublishResults.map((row) => String(row?.fieldKey || '').trim()).filter(Boolean)));
+    return sendDataChangeResponse({
+      jsonRes,
+      res,
+      broadcastWs,
+      eventType: 'component-row-deleted',
+      category,
+      domains: ['component', 'review', 'product', 'publisher', 'key-finder'],
+      entities: { productIds, fieldKeys },
+      meta: {
+        componentIdentityId,
+        componentType,
+        productIds,
+        fieldKeys,
+      },
+      payload: {
+        status: 'deleted',
+        component_identity_id: componentIdentityId,
+        component_type: componentType,
+        unlinked_products: productIds.length,
+        cleared_fields: unpublishResults,
+        deleted_aliases: deleted.aliases,
+        deleted_values: deleted.values,
+        deleted_links: deleted.links,
+      },
+    });
+  } catch (err) {
+    return respond(500, {
+      error: 'component_row_delete_failed',
+      message: err?.message || 'Component row delete failed.',
+    });
+  }
+}
+
+async function handleComponentTypeIdentitiesDeleteEndpoint({
+  parts,
+  method,
+  res,
+  context,
+}) {
+  if (
+    !Array.isArray(parts)
+    || parts[0] !== 'review-components'
+    || !parts[1]
+    || parts[2] !== 'components'
+    || !parts[3]
+    || parts[4] !== 'identities'
+    || method !== 'DELETE'
+  ) {
+    return false;
+  }
+
+  const {
+    jsonRes,
+    getSpecDbReady,
+    storage,
+    specDbCache,
+    broadcastWs,
+  } = context || {};
+  const respond = createRouteResponder(jsonRes, res);
+  const category = parts[1];
+  const componentType = String(parts[3] || '').trim();
+  if (!componentType) {
+    return respond(400, {
+      error: 'component_type_required',
+      message: 'component type is required for component type delete.',
+    });
+  }
+
+  const readySpecDb = await ensureSeededSpecDb({ category, getSpecDbReady });
+  if (respondIfError(respond, readySpecDb.error)) {
+    return true;
+  }
+  const runtimeSpecDb = readySpecDb.runtimeSpecDb;
+
+  try {
+    const identities = runtimeSpecDb.getAllComponentIdentities(componentType) || [];
+    const deletedRows = identities
+      .map((identity) => runtimeSpecDb.deleteComponentIdentityCascade(identity.id))
+      .filter((deleted) => deleted?.deleted);
+    const linkedProducts = deletedRows.flatMap((deleted) => deleted.linkedProducts || []);
+    const productRoot = storage?.productRoot || defaultProductRoot();
+    const unpublishResults = unpublishComponentIdentityFields({
+      runtimeSpecDb,
+      productRoot,
+      componentType,
+      linkedProducts,
+    });
+    specDbCache?.delete?.(category);
+    const productIds = Array.from(new Set(linkedProducts.map((row) => String(row?.product_id || '').trim()).filter(Boolean)));
+    const fieldKeys = Array.from(new Set(unpublishResults.map((row) => String(row?.fieldKey || '').trim()).filter(Boolean)));
+    return sendDataChangeResponse({
+      jsonRes,
+      res,
+      broadcastWs,
+      eventType: 'component-rows-deleted',
+      category,
+      domains: ['component', 'review', 'product', 'publisher', 'key-finder'],
+      entities: { productIds, fieldKeys },
+      meta: {
+        componentType,
+        deletedIdentityIds: deletedRows.map((deleted) => deleted.identity?.id).filter(Boolean),
+        productIds,
+        fieldKeys,
+      },
+      payload: {
+        status: 'deleted',
+        component_type: componentType,
+        deleted_identities: deletedRows.length,
+        unlinked_products: productIds.length,
+        cleared_fields: unpublishResults,
+        deleted_aliases: deletedRows.reduce((sum, deleted) => sum + (deleted.aliases || 0), 0),
+        deleted_values: deletedRows.reduce((sum, deleted) => sum + (deleted.values || 0), 0),
+        deleted_links: deletedRows.reduce((sum, deleted) => sum + (deleted.links || 0), 0),
+      },
+    });
+  } catch (err) {
+    return respond(500, {
+      error: 'component_type_delete_failed',
+      message: err?.message || 'Component type delete failed.',
+    });
+  }
+}
 
 async function handleComponentOverrideEndpoint({
   parts,
@@ -402,6 +676,8 @@ export async function handleReviewComponentMutationRoute({
   }
   return runHandledRouteChain({
     handlers: [
+      handleComponentTypeIdentitiesDeleteEndpoint,
+      handleComponentIdentityDeleteEndpoint,
       handleComponentOverrideEndpoint,
       handleComponentKeyReviewConfirmEndpoint,
     ],

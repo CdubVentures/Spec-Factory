@@ -34,7 +34,6 @@ test('STUDIO_TIPS characterizes the current field-rule tooltip key surface', asy
     'contract_unit',
     'data_list_field',
     'data_list_manual_values',
-    'data_list_normalize',
     'data_type',
     'difficulty',
     'display_decimals',

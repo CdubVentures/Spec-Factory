@@ -113,6 +113,14 @@ test('normalizeCandidate validates url fields and resolves component_ref aliases
     const sensor = engine.normalizeCandidate('sensor', 'pixart 3395');
     assert.equal(sensor.ok, true);
     assert.equal(sensor.normalized, 'PAW3395');
+
+    const hyphenatedSensor = engine.normalizeCandidate('sensor', 'pixart-3395');
+    assert.equal(hyphenatedSensor.ok, true);
+    assert.equal(hyphenatedSensor.normalized, 'PAW3395');
+
+    const underscoredSensor = engine.normalizeCandidate('sensor', 'pixart_3395');
+    assert.equal(underscoredSensor.ok, true);
+    assert.equal(underscoredSensor.normalized, 'PAW3395');
   } finally {
     await fs.rm(fixture.root, { recursive: true, force: true });
   }

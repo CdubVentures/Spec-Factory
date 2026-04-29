@@ -7,7 +7,6 @@ test('compile completion invalidates caches, syncs SpecDb, and emits completion 
   const rulesInvalidations = [];
   const syncCalls = [];
   const emitted = [];
-  const reviewLayoutByCategory = new Map([['mouse', { stale: true }]]);
 
   const result = await handleCompileProcessCompletion({
     exitCode: 0,
@@ -16,7 +15,6 @@ test('compile completion invalidates caches, syncs SpecDb, and emits completion 
       invalidateSessionCache: (category) => sessionInvalidations.push(category),
     },
     invalidateFieldRulesCache: (category) => rulesInvalidations.push(category),
-    reviewLayoutByCategory,
     syncSpecDbForCategory: async ({ category }) => {
       syncCalls.push(category);
       return {
@@ -33,7 +31,6 @@ test('compile completion invalidates caches, syncs SpecDb, and emits completion 
   assert.equal(result.category, 'mouse');
   assert.deepEqual(sessionInvalidations, ['mouse']);
   assert.deepEqual(rulesInvalidations, ['mouse']);
-  assert.equal(reviewLayoutByCategory.has('mouse'), false);
   assert.deepEqual(syncCalls, ['mouse']);
   assert.equal(emitted.length, 1);
   assert.equal(emitted[0].channel, 'data-change');
@@ -52,7 +49,6 @@ test('compile completion still emits completion event when SpecDb sync fails', a
     cliArgs: ['category-compile', '--category', 'mouse', '--local'],
     sessionCache: { invalidateSessionCache: () => {} },
     invalidateFieldRulesCache: () => {},
-    reviewLayoutByCategory: new Map(),
     syncSpecDbForCategory: async () => {
       throw new Error('seed_failed');
     },
@@ -78,7 +74,6 @@ test('compile completion treats compile-rules as compile command for SpecDb sync
     cliArgs: ['compile-rules', '--category', 'mouse', '--local'],
     sessionCache: { invalidateSessionCache: () => {} },
     invalidateFieldRulesCache: () => {},
-    reviewLayoutByCategory: new Map(),
     syncSpecDbForCategory: async ({ category }) => {
       syncCalls.push(category);
       return { specdb_sync_version: 1 };

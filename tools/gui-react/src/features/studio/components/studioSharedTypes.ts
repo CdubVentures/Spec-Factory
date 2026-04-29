@@ -3,8 +3,6 @@ import type { StudioConfig } from "../../../types/studio.ts";
 export interface DataListEntry {
   field: string;
   label?: string;
-  normalize: string;
-  delimiter: string;
   manual_values: string[];
 }
 

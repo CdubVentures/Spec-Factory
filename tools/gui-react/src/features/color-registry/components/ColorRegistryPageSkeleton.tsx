@@ -14,15 +14,20 @@ function ColorCardSkeleton({ column }: { readonly column: string }) {
     >
       <div className="w-6 h-6 rounded-md flex-shrink-0 border sf-border-soft shadow-sm sf-shimmer" />
       <span className="font-mono text-[11px] sf-text-primary font-medium truncate flex-1 leading-tight">
-        <SkeletonBlock className="sf-skel-caption" />
+        <span
+          className="sf-shimmer block h-3.5 w-full rounded-sm"
+          aria-hidden="true"
+        />
       </span>
-      <span className="font-mono text-[10px] sf-text-muted flex-shrink-0 tabular-nums">
-        <SkeletonBlock className="sf-skel-caption" />
-      </span>
+      <span
+        className="sf-shimmer inline-block h-3.5 w-14 rounded-sm flex-shrink-0 tabular-nums"
+        aria-hidden="true"
+      />
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 ml-1">
-        <button type="button" className="p-1 rounded sf-icon-button" disabled>
-          <SkeletonBlock className="sf-skel-caption" />
-        </button>
+        <span
+          className="sf-shimmer inline-block h-6 w-6 rounded sf-icon-button"
+          aria-hidden="true"
+        />
       </div>
     </div>
   );
@@ -41,10 +46,13 @@ function MatrixSkeleton() {
                   className="text-left px-4 py-3 text-[12px] font-bold font-mono uppercase tracking-[0.06em] sf-text-primary whitespace-nowrap"
                   data-skeleton-column={column}
                 >
-                  <SkeletonBlock className="sf-skel-caption" />
-                  <span className="ml-2 text-[10px] font-normal sf-text-subtle">
-                    <SkeletonBlock className="sf-skel-caption" />
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <SkeletonBlock className="sf-skel-bar-label" />
+                    <span
+                      className="sf-shimmer inline-block h-3 w-12 rounded-sm"
+                      aria-hidden="true"
+                    />
+                  </div>
                 </th>
               ))}
             </tr>
@@ -77,7 +85,7 @@ export function ColorRegistryPageSkeleton() {
         <div className="flex-1" />
         <input
           type="text"
-          className={`${inputCls} max-w-xs text-sm`}
+          className={`${inputCls} max-w-xs text-sm sf-shimmer`}
           placeholder="Search colors..."
           data-region="color-registry-loading-search"
           disabled

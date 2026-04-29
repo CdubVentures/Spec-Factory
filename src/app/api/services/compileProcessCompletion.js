@@ -20,7 +20,6 @@ export async function handleCompileProcessCompletion({
   cliArgs,
   sessionCache,
   invalidateFieldRulesCache,
-  reviewLayoutByCategory,
   syncSpecDbForCategory,
   getSpecDb,
   broadcastWs,
@@ -33,7 +32,6 @@ export async function handleCompileProcessCompletion({
 
   sessionCache?.invalidateSessionCache?.(category);
   invalidateFieldRulesCache?.(category);
-  reviewLayoutByCategory?.delete?.(category);
 
   // WHY: Compile normalizes the map and writes it back to JSON.
   // Re-sync SQL so runtime reads get the compile-normalized version.
@@ -121,7 +119,6 @@ export async function handleCompilePostComplete({ category, deps }) {
   const {
     sessionCache,
     invalidateFieldRulesCache,
-    reviewLayoutByCategory,
     syncSpecDbForCategory,
     getSpecDb,
     broadcastWs,
@@ -134,7 +131,6 @@ export async function handleCompilePostComplete({ category, deps }) {
     cliArgs: ['compile-rules', '--category', category],
     sessionCache,
     invalidateFieldRulesCache,
-    reviewLayoutByCategory,
     syncSpecDbForCategory,
     getSpecDb,
     broadcastWs,

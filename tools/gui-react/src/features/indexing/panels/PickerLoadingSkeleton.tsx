@@ -11,20 +11,18 @@ function DrillColumnSkeleton({ column }: { readonly column: string }) {
       data-skeleton-column={column}
     >
       <div className="mb-3 flex items-center justify-between gap-2">
-        <SkeletonBlock className="sf-skel-caption" />
+        <SkeletonBlock className="sf-skel-bar-label" />
         <SkeletonBlock className="sf-skel-caption" />
       </div>
       <div className="space-y-2">
         {PICKER_OPTIONS.map((option) => (
-          <button
+          <span
             key={`${column}-${option}`}
-            type="button"
-            className="w-full rounded px-3 py-2 text-left sf-surface-elevated border sf-border-soft"
+            className="sf-shimmer block w-full h-9 rounded sf-surface-elevated border sf-border-soft"
             data-region="picker-loading-option"
-            disabled
-          >
-            <SkeletonBlock className="sf-skel-bar" />
-          </button>
+            data-skeleton-option={option}
+            aria-hidden="true"
+          />
         ))}
       </div>
     </section>
@@ -38,9 +36,7 @@ export function PickerLoadingSkeleton() {
       <div className="sf-picker-search" data-region="picker-loading-search">
         <div className="sf-picker-search-row">
           <span className="sf-picker-search-icon" aria-hidden="true" />
-          <div className="sf-picker-search-input">
-            <SkeletonBlock className="sf-skel-bar" />
-          </div>
+          <div className="sf-picker-search-input sf-shimmer h-9 w-full" aria-hidden="true" />
           <kbd className="sf-picker-search-kbd" aria-hidden="true">/</kbd>
         </div>
       </div>

@@ -7,10 +7,12 @@
   display: inline-flex;
   align-items: center;
   cursor: pointer;
-  outline: none;
   -webkit-tap-highlight-color: transparent;
   border-radius: var(--sf-token-radius-md);
   background: transparent;
+  outline: 1px solid transparent;
+  outline-offset: -1px;
+  transition: outline-color 120ms ease, background 120ms ease;
 }
 /* Force pointer across every descendant — finder cells (rings-cluster,
    diamond-strip, etc.) set `cursor: default` for their own legacy reasons;
@@ -20,16 +22,13 @@
   cursor: pointer;
 }
 /* Unified hover affordance for every Popover-wrapped SVG cell on Overview
-   (CEF diamonds, PIF rings, SKU/RDF diamonds, Keys rings). Snap background
-   wash only — no outline, no transition — so it reads instantly without a
-   black/blue ring or fade. Keyboard focus still gets an outline for a11y. */
-.sf-popover-trigger:hover {
-  background: color-mix(in srgb, var(--sf-token-accent) 8%, transparent);
-}
+   (CEF diamonds, PIF color swatch, SKU/RDF diamonds, Keys rings). Accent
+   inset outline + soft background tint — same visual as the PIF carousel
+   trigger button so every Overview cell hover reads identically. */
+.sf-popover-trigger:hover,
 .sf-popover-trigger:focus-visible {
-  outline: 2px solid var(--sf-token-accent);
-  outline-offset: 3px;
-  background: color-mix(in srgb, var(--sf-token-accent) 8%, transparent);
+  outline-color: color-mix(in srgb, var(--sf-token-accent) 45%, transparent);
+  background: color-mix(in srgb, var(--sf-token-accent) 5%, transparent);
 }
 
 /* ── Pulse indicator ─────────────────────────────────────────────────────

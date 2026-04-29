@@ -9,6 +9,8 @@ import {
   resolveAuthoritySnapshotInvalidationQueryKeys,
 } from './authoritySnapshotHelpers.js';
 
+const AUTHORITY_SNAPSHOT_FALLBACK_REFETCH_MS = 60000;
+
 function isEnabledCategory(category) {
   const token = String(category || '').trim();
   return Boolean(token) && token !== 'all';
@@ -17,7 +19,7 @@ function isEnabledCategory(category) {
 export function useAuthoritySnapshot({
   category,
   enabled = true,
-  refetchIntervalMs = 10000,
+  refetchIntervalMs = AUTHORITY_SNAPSHOT_FALLBACK_REFETCH_MS,
 } = {}) {
   const queryClient = useQueryClient();
   const active = Boolean(enabled) && isEnabledCategory(category);

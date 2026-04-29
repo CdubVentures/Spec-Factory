@@ -32,6 +32,7 @@ import {
   normalizeText,
   normalizeToken,
   normalizeFieldKey,
+  normalizeKnownValueMatchKey,
   isUnknownToken,
   safeJsonParse
 } from './engineTextHelpers.js';
@@ -271,12 +272,12 @@ export class FieldRulesEngine {
     if (!dbKey) {
       return null;
     }
-    const token = normalizeToken(query);
+    const token = normalizeKnownValueMatchKey(query);
     if (!token) {
       return null;
     }
     const db = this.componentDBs[dbKey];
-    return db.__index?.get(token) || db.__index?.get(token.replace(/\s+/g, '')) || null;
+    return db.__index?.get(token) || null;
   }
 
   fuzzyMatchComponent(dbName, query, threshold = 0.75) {

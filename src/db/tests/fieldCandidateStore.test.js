@@ -741,4 +741,38 @@ describe('fieldCandidateStore', () => {
     const top = db.getTopFieldCandidate('mouse-topev-legacy', 'weight');
     assert.equal(top.evidence_count, 1);
   });
+
+  it('getTopFieldCandidatesByProduct returns one highest-confidence row per field with evidence_count', () => {
+    db.insertFieldCandidate({
+      productId: 'mouse-top-batch', fieldKey: 'weight', sourceId: 'top-batch-weight-low', sourceType: 'cef',
+      value: '58', confidence: 70, model: '', validationJson: {}, metadataJson: {},
+    });
+    db.insertFieldCandidate({
+      productId: 'mouse-top-batch', fieldKey: 'weight', sourceId: 'top-batch-weight-high', sourceType: 'cef',
+      value: '55', confidence: 94, model: '', validationJson: {}, metadataJson: {},
+    });
+    db.insertFieldCandidate({
+      productId: 'mouse-top-batch', fieldKey: 'sensor', sourceId: 'top-batch-sensor', sourceType: 'kf',
+      value: 'PAW3395', confidence: 91, model: '', validationJson: {}, metadataJson: {},
+    });
+    db.insertFieldCandidate({
+      productId: 'mouse-other-batch', fieldKey: 'weight', sourceId: 'top-batch-other', sourceType: 'cef',
+      value: '66', confidence: 99, model: '', validationJson: {}, metadataJson: {},
+    });
+    const inserted = db.getFieldCandidateBySourceId('mouse-top-batch', 'weight', 'top-batch-weight-high');
+    db.insertFieldCandidateEvidenceMany(inserted.id, [
+      { url: 'https://example.com/spec', tier: 'tier1', confidence: 90, evidence_kind: 'direct_quote' },
+      { url: 'https://example.com/id', tier: 'tier3', confidence: 80, evidence_kind: 'identity_only' },
+    ]);
+
+    const rows = db.getTopFieldCandidatesByProduct('mouse-top-batch');
+    const byField = Object.fromEntries(rows.map((row) => [row.field_key, row]));
+
+    assert.deepEqual(Object.keys(byField).sort(), ['sensor', 'weight']);
+    assert.equal(byField.weight.source_id, 'top-batch-weight-high');
+    assert.equal(byField.weight.confidence, 94);
+    assert.equal(byField.weight.evidence_count, 1);
+    assert.equal(byField.sensor.source_id, 'top-batch-sensor');
+    assert.equal(byField.sensor.evidence_count, 0);
+  });
 });

@@ -43,6 +43,24 @@ describe('runLoopChain', () => {
     assert.deepEqual(fired, ['a', 'c'], 'b should be skipped');
   });
 
+  it('skips a key that is still dependency-blocked before its slot fires', async () => {
+    const fired: string[] = [];
+    const blocked = new Set<string>(['sensor_brand']);
+    const result = await runLoopChain({
+      keys: ['sensor', 'sensor_brand', 'sensor_link'],
+      isResolved: () => false,
+      isBlocked: (fk) => blocked.has(fk),
+      fireOne: async (fk) => {
+        fired.push(fk);
+        if (fk === 'sensor') blocked.delete('sensor_link');
+        return `op-${fk}`;
+      },
+      awaitTerminal: async () => 'done',
+    });
+    assert.equal(result, 'complete');
+    assert.deepEqual(fired, ['sensor', 'sensor_link'], 'blocked brand should not fire before the dependency unlocks');
+  });
+
   it('re-reads isResolved each iteration (latest-state contract)', async () => {
     const checks: string[] = [];
     let isResolvedSnapshot: Record<string, boolean> = { a: false, b: false, c: false };

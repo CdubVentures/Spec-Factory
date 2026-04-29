@@ -6,6 +6,12 @@ import {
 
 export const CATEGORY_TOKEN = ':category';
 
+// Query-key scope contract:
+// - Templates are React Query prefixes; broad keys intentionally refresh all descendants.
+// - CATEGORY_TOKEN materializes once per scoped category from the payload/categories.
+// - Templates without CATEGORY_TOKEN are global and materialize once per event.
+// - Explicit domains on a payload override EVENT_REGISTRY fallback domains, so callers
+//   that pass domains must include every affected domain themselves.
 const authoritySnapshotTemplate = Object.freeze([
   ['data-authority', 'snapshot', CATEGORY_TOKEN],
 ]);
@@ -222,9 +228,12 @@ export const EVENT_REGISTRY = Object.freeze({
   'key-review-confirm': ['review', 'product'],
   'key-review-accept': ['review', 'product'],
   'component-override': ['component', 'review'],
+  'component-row-deleted': ['component', 'review', 'product', 'publisher', 'key-finder'],
+  'component-rows-deleted': ['component', 'review', 'product', 'publisher', 'key-finder'],
   'component-key-review-confirm': ['component', 'review'],
   'enum-override': ['enum', 'review'],
-  'enum-rename': ['enum', 'review'],
+  'enum-rename': ['enum', 'review', 'product', 'publisher'],
+  'enum-delete': ['enum', 'review', 'product', 'publisher'],
   'publisher-reconcile': ['publisher', 'review'],
   'storage-runs-deleted': ['storage'],
   'storage-runs-bulk-deleted': ['storage'],

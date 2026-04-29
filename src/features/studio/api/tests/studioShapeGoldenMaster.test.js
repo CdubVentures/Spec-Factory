@@ -240,7 +240,7 @@ test('studio known-values response has KnownValuesResponse keys', async () => {
   assert.ok(result.body.enum_lists.length >= 1);
   const entry = result.body.enum_lists[0];
   assert.equal(typeof entry.field, 'string');
-  assert.equal(typeof entry.normalize, 'string');
+  assert.equal(Object.hasOwn(entry, 'normalize'), false);
   assert.ok(Array.isArray(entry.values));
   KnownValuesResponseSchema.parse(result.body);
 });

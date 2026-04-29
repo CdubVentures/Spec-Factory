@@ -257,6 +257,51 @@ test('extractReportData carries component DB property hints independently of liv
   assert.deepEqual(sensorComp.dbOnlyProperties, ['ips']);
 });
 
+test('extractReportData treats matching component source rows as parent identities and surfaces component-only properties', () => {
+  const loadedRules = cloneJson(fixtureLoadedRules());
+  loadedRules.rules.fields.switch = {
+    field_key: 'switch',
+    display_name: 'Switch',
+    priority: { required_level: 'non_mandatory', availability: 'sometimes', difficulty: 'medium' },
+    contract: { type: 'string', shape: 'scalar' },
+    enum: { policy: 'open_prefer_known', source: 'data_lists.switch', values: [] },
+    aliases: [],
+    search_hints: { domain_hints: [], query_terms: [], content_types: [], preferred_tiers: [] },
+    constraints: [],
+    ai_assist: { reasoning_note: 'Find the main switch identity.' },
+    evidence: { min_evidence_refs: 1 },
+    group: 'general',
+    ui: { label: 'Switch', group: 'General' },
+  };
+  loadedRules.componentDBs.switch = {
+    component_type: 'switch',
+    items: [
+      { name: 'Huano Blue Shell Pink Dot', maker: 'Huano', aliases: [], properties: {} },
+    ],
+  };
+  loadedRules.componentSources.push({
+    component_type: 'switch',
+    roles: {
+      properties: [
+        { field_key: 'switch_type', type: 'string', variance_policy: 'authoritative' },
+        { field_key: 'switch_life_span', type: 'string', variance_policy: 'authoritative', component_only: true },
+        { field_key: 'releasing_force', type: 'number', unit: 'g', variance_policy: 'authoritative', component_only: true },
+      ],
+    },
+  });
+
+  const data = callExtract({ loadedRules });
+  const switchKey = data.keys.find((k) => k.fieldKey === 'switch');
+  assert.deepEqual(switchKey.component, {
+    type: 'switch',
+    relation: 'parent',
+    source: 'component_db.switch',
+  });
+
+  const switchComp = data.components.find((c) => c.type === 'switch');
+  assert.deepEqual(switchComp.componentOnlyProperties, ['releasing_force', 'switch_life_span']);
+});
+
 test('extractReportData carries Mapping Studio component source rows for per-key docs', () => {
   const data = callExtract();
   assert.equal(data.componentSources.length, 1);

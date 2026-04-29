@@ -34,6 +34,7 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   const enumValues = knownValues?.values;
   // WHY: consistencyMode treats open enums as reviewable unknowns instead of silent accepts.
   if (consistencyMode && enumPolicy === 'open' && enumValues?.length > 0) enumPolicy = 'open_prefer_known';
+  const shouldPreserveEnumDisplay = shouldUseKnownEnumDisplay(enumPolicy, enumValues);
   const formatHint = fieldRule?.enum?.match?.format_hint || null;
   const blockPublishWhenUnk = shouldBlockUnkPublish(fieldRule);
 
@@ -118,16 +119,18 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   // self-healing works (e.g. ['Black','White'] → ['black','white']).
   if (shape === 'list' && Array.isArray(current)) {
     const normalized = current.map(el =>
-      typeof el === 'string' ? normalizeValue(el, fieldRule) : el
+      typeof el === 'string'
+        ? normalizeStringForPolicy(el, fieldRule, shouldPreserveEnumDisplay)
+        : el
     );
     if (JSON.stringify(normalized) !== JSON.stringify(current)) {
-      repairs.push({ step: 'normalize', before: current, after: normalized, rule: 'normalize_chain' });
+      repairs.push({ step: 'normalize', before: current, after: normalized, rule: shouldPreserveEnumDisplay ? 'trim_display' : 'normalize_chain' });
       current = normalized;
     }
   } else if (typeof current === 'string') {
-    const normalized = normalizeValue(current, fieldRule);
+    const normalized = normalizeStringForPolicy(current, fieldRule, shouldPreserveEnumDisplay);
     if (normalized !== current) {
-      repairs.push({ step: 'normalize', before: current, after: normalized, rule: 'normalize_chain' });
+      repairs.push({ step: 'normalize', before: current, after: normalized, rule: shouldPreserveEnumDisplay ? 'trim_display' : 'normalize_chain' });
       current = normalized;
     }
   }
@@ -196,4 +199,15 @@ function result(value, unit, repairs, rejections) {
     repairs,
     rejections,
   };
+}
+
+function shouldUseKnownEnumDisplay(enumPolicy, enumValues) {
+  return Boolean(enumPolicy && enumPolicy !== 'open' && Array.isArray(enumValues) && enumValues.length > 0);
+}
+
+function normalizeStringForPolicy(value, fieldRule, shouldPreserveEnumDisplay) {
+  if (!shouldPreserveEnumDisplay) {
+    return normalizeValue(value, fieldRule);
+  }
+  return value.trim();
 }

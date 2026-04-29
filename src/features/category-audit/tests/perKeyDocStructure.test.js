@@ -114,12 +114,12 @@ test('search routing section explains requiredness availability difficulty and b
   assert.match(allText, /category benchmark\/example set/i);
   assert.doesNotMatch(allText, /mouseData\.xlsm/i);
   assert.doesNotMatch(allText, /C2:BT83/i);
-  assert.match(allText, /public\/spec\/visual\/identity evidence/i);
-  assert.match(allText, /not restricted to lab-only measurements/i);
-  assert.match(allText, /after variant inventory, PIF images, aliases, and source hints/i);
-  assert.match(allText, /Very_hard is reserved/i);
-  assert.match(allText, /proprietary internal component identities/i);
-  assert.match(allText, /lab-only metrics/i);
+  // Behavior: priority axes use "human Googler" / "typical product not flagship" calibration
+  assert.match(allText, /typical product/i);
+  assert.match(allText, /flagship/i);
+  // Behavior: very_hard tier is bounded by lab/instrumented/internal-component cases
+  assert.match(allText, /lab/i);
+  assert.match(allText, /internal-component|internal component/i);
 });
 
 test('authoring checklist makes full priority and contract validation explicit', () => {
@@ -270,6 +270,52 @@ test('per-key LLM audit prompt teaches component identity attributes, component-
   assert.match(promptText, /\bconstraints\b/i);
   assert.match(promptText, /component_only/i);
   assert.match(promptText, /Source-level priority is retired/i);
+  assert.match(promptText, /Do not author `field_overrides\.sensor\.aliases`; leave aliases blank\/absent/i);
+  assert.doesNotMatch(promptText, /Component Review/i);
+  assert.match(promptText, /auto-generated identity facets/i);
+  assert.match(promptText, /do not list `sensor_brand` or `sensor_link` under `component_sources\.sensor\.roles\.properties\[\]`/i);
+  assert.match(promptText, /record them as `identity_facet`/i);
+  assert.match(promptText, /component DB is already the lookup\/lock path/i);
+  assert.match(promptText, /use `open_prefer_known` by default/i);
+  assert.match(promptText, /Use `closed` only/i);
+});
+
+test('auto component brand/link facet docs keep aliases out of Field Studio patch guidance', () => {
+  const rule = makeRule({
+    enum: { policy: 'open_prefer_known', source: 'data_lists.sensor_brand', values: [] },
+    aliases: ['PixArt', 'PAW'],
+    ui: { label: 'Sensor Brand' },
+    component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+  });
+  const record = makeKeyRecord('sensor_brand', rule, {
+    component_identity_projection: rule.component_identity_projection,
+  });
+  const preview = composePerKeyPromptPreview(rule, 'sensor_brand', { category: 'mouse' });
+  const sensorRule = makeRule({
+    enum: { policy: 'open_prefer_known', source: 'component_db.sensor', values: [] },
+    ui: { label: 'Sensor' },
+  });
+  const sensorRecord = makeKeyRecord('sensor', sensorRule, {
+    component: { type: 'sensor', relation: 'parent', source: 'component_db.sensor' },
+  });
+  const structure = buildPerKeyDocStructure(record, {
+    ...BASE_OPTS,
+    preview,
+    allKeyRecords: [sensorRecord, record],
+    componentSources: [{ component_type: 'sensor', roles: { properties: [] } }],
+  });
+  const promptText = sectionPromptText(structure.sections.find((s) => s.id === 'llm-audit-prompt'));
+  const contractText = JSON.stringify(structure.sections.find((s) => s.id === 'contract-schema'));
+  const successText = JSON.stringify(structure.sections.find((s) => s.id === 'success-bar'));
+
+  assert.match(promptText, /auto-generated identity facet of `sensor`/i);
+  assert.match(promptText, /Do not author `field_overrides\.sensor_brand\.aliases`; leave aliases blank\/absent/i);
+  assert.doesNotMatch(promptText, /field-name aliases/i);
+  assert.doesNotMatch(promptText, /sensor_brand_brand/);
+  assert.doesNotMatch(promptText, /sensor_brand_link/);
+  assert.doesNotMatch(promptText, /Component Review/i);
+  assert.doesNotMatch(contractText, /`aliases` · Aliases/);
+  assert.doesNotMatch(successText, /aliases/i);
 });
 
 test('per-key LLM audit prompt omits mode for auditor-authored enum lists', () => {
@@ -340,6 +386,58 @@ test('component source examples are contextual and expose the full current sourc
   assert.match(componentText, /Current component source mapping/i);
   assert.match(componentText, /click_force/);
   assert.match(componentText, /override_allowed/);
+});
+
+test('component section renders existing component-only roster rows for identity audits', () => {
+  const rule = makeRule({
+    enum: { policy: 'open_prefer_known', source: 'component_db.switch', values: [] },
+    ui: { label: 'Switch' },
+  });
+  const record = makeKeyRecord('switch', rule, {
+    component: { type: 'switch', relation: 'parent', source: 'component_db.switch' },
+  });
+  const componentSources = [
+    {
+      component_type: 'switch',
+      roles: {
+        properties: [
+          { field_key: 'switch_type', type: 'string', variance_policy: 'authoritative' },
+          { field_key: 'switch_life_span', type: 'string', variance_policy: 'authoritative', component_only: true },
+          { field_key: 'releasing_force', type: 'number', unit: 'g', variance_policy: 'authoritative', component_only: true },
+        ],
+      },
+    },
+  ];
+  const preview = composePerKeyPromptPreview(rule, 'switch', {
+    category: 'mouse',
+    componentRelation: record.component,
+  });
+  const structure = buildPerKeyDocStructure(record, {
+    ...BASE_OPTS,
+    preview,
+    componentSources,
+    componentInventory: [{
+      type: 'switch',
+      entityCount: 1,
+      entities: [],
+      identityFields: ['switch'],
+      subfields: ['switch_type'],
+      componentOnlyProperties: ['releasing_force', 'switch_life_span'],
+      unmappedFieldProperties: [],
+      dbOnlyProperties: [],
+    }],
+  });
+
+  const componentText = JSON.stringify(structure.sections.find((s) => s.id === 'component'));
+  const promptText = sectionPromptText(structure.sections.find((s) => s.id === 'llm-audit-prompt'));
+
+  assert.match(componentText, /Component-only properties/i);
+  assert.match(componentText, /switch_life_span/);
+  assert.match(componentText, /releasing_force/);
+  assert.match(promptText, /"field_key": "switch_life_span"/);
+  assert.match(promptText, /"field_key": "releasing_force"/);
+  assert.match(promptText, /"component_only": true/);
+  assert.match(promptText, /component-only attributes do not require matching field_overrides/i);
 });
 
 test('standalone keys still get from-scratch component setup decision guidance', () => {
@@ -425,8 +523,11 @@ test('component DB property hints are shown as setup evidence, not setup-gated g
   assert.match(promptText, /component identity, component attribute, or standalone/i);
   assert.match(promptText, /"component_type": "sensor"/);
   assert.match(promptText, /"field_key": "sensor_date"/);
-  assert.match(promptText, /"type": "string"/);
+  assert.match(promptText, /"type": "date"/);
   assert.match(promptText, /"variance_policy": "authoritative"/);
+  assert.match(promptText, /semantic ownership/i);
+  assert.match(promptText, /boolean, date, url, range/i);
+  assert.match(promptText, /schema_blocked_component_attributes/i);
 });
 
 test('component DB property hint detail can reference large inventories without a mapped component relation', () => {
@@ -497,7 +598,8 @@ test('per-key LLM audit prompt keeps component entity rows out of Field Studio p
   assert.ok(section, 'llm-audit-prompt section present');
   const allText = sectionPromptText(section);
   assert.match(allText, /component type and property variance only/i);
-  assert.match(allText, /Component Review/i);
+  assert.match(allText, /outside this Field Studio patch/i);
+  assert.doesNotMatch(allText, /Component Review/i);
   assert.doesNotMatch(allText, /component _link fields/i);
 });
 

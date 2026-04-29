@@ -62,7 +62,7 @@ Lock enforcement: only paths listed in `EG_EDITABLE_PATHS` (aliases, search hint
 
 - Writes `category_authority/{category}/_control_plane/field_studio_map.json`.
 - Writes the `studio` section inside `.workspace/global/user-settings.json` through settings-authority.
-- Invalidates `sessionCache` and `reviewLayoutByCategory`.
+- Invalidates `sessionCache` and emits data-change events for review-layout/mapping consumers.
 - Compile actions refresh generated rule files under `category_authority/{category}/_generated/`.
 - Studio payload GET may trigger write-on-read migration for missing EG default keys (persists to SQL + JSON).
 

@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
+import { DailyChartLoadingSkeleton } from './DailyChartLoadingSkeleton.tsx';
 import type { BillingDailyResponse } from '../billingTypes.ts';
 
 interface DailyCostChartProps {
@@ -13,23 +13,17 @@ interface DailyCostChartProps {
 // via the fallback so the layout doesn't shift on hydration.
 const DailyCostChartInner = lazy(() => import('./DailyCostChartInner.tsx'));
 
-function DailyCostChartFallback() {
-  return (
-    <div className="sf-surface-card rounded-lg overflow-hidden h-full flex flex-col sf-billing-min-chart">
-      <div className="px-5 py-3 flex items-center justify-between border-b sf-border-default">
-        <h3 className="text-sm font-bold">Daily Cost</h3>
-      </div>
-      <div className="p-5 flex-1 min-h-0">
-        <SkeletonBlock className="sf-skel-chart" />
-      </div>
-    </div>
-  );
-}
-
 export function DailyCostChart(props: DailyCostChartProps) {
   return (
-    <Suspense fallback={<DailyCostChartFallback />}>
+    <Suspense fallback={<DailyCostChartLoadingFallback />}>
       <DailyCostChartInner {...props} />
     </Suspense>
   );
+}
+
+// WHY: Cost chart legend count = number of distinct call-type reasons
+// present in the response (variable, typically 4–8). 6 is a representative
+// budget for the loading shimmer.
+function DailyCostChartLoadingFallback() {
+  return <DailyChartLoadingSkeleton title="Daily Cost" legendCount={6} />;
 }

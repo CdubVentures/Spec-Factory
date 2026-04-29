@@ -42,7 +42,6 @@ export function makeCtx(overrides = {}) {
     }),
     getSpecDbReady: async () => null,
     broadcastWs: () => {},
-    reviewLayoutByCategory: new Map(),
     cleanVariant: (value) => String(value || '').trim(),
     generateCategoryAuditReportPack: async ({ category }) => ({
       category,

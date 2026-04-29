@@ -14,6 +14,7 @@ import {
   FINDER_IDS_WITH_SETTINGS,
   type FinderSettingsEntry,
 } from '../finderSettingsRegistry.generated.ts';
+import { SETTING_WIDGET_NAMES } from '../../components/widgets/widgetRegistryNames.ts';
 
 const ALLOWED_TYPES: ReadonlySet<string> = new Set(['bool', 'int', 'float', 'string', 'enum', 'intMap']);
 
@@ -111,11 +112,15 @@ describe('finder settings registry contract', () => {
     }
   });
 
-  it('widget entries reference non-empty widget names', () => {
+  it('widget entries reference registered renderer controls', () => {
+    const widgetNames = new Set<string>(SETTING_WIDGET_NAMES);
     for (const moduleId of FINDER_IDS_WITH_SETTINGS) {
       for (const entry of FINDER_SETTINGS_REGISTRY[moduleId]) {
         if (entry.widget !== undefined) {
-          ok(entry.widget.length > 0, `widget name must be non-empty (${moduleId}.${entry.key})`);
+          ok(
+            widgetNames.has(entry.widget),
+            `widget "${entry.widget}" must be registered as a renderer control (${moduleId}.${entry.key})`,
+          );
         }
       }
     }

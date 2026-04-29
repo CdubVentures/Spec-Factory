@@ -1,6 +1,7 @@
 import type { QueryClient, QueryKey } from '@tanstack/react-query';
 import type {
   ComponentReviewDocument,
+  ComponentReviewPayload,
   ComponentReviewStatus,
   LinkedProduct,
 } from '../../types/componentReview.ts';
@@ -43,12 +44,29 @@ export interface ComponentReviewDocumentSnapshot {
   readonly data: ComponentReviewDocument | undefined;
 }
 
+export interface ComponentReviewPayloadRowTarget {
+  readonly category: string;
+  readonly componentType: string;
+  readonly componentIdentityId?: number | null;
+  readonly name: string;
+  readonly maker: string;
+}
+
+export interface ComponentReviewPayloadSnapshot {
+  readonly queryKey: QueryKey;
+  readonly data: ComponentReviewPayload | undefined;
+}
+
 function buildReviewProductsIndexQueryKey(category: string) {
   return ['reviewProductsIndex', category] as const;
 }
 
 function buildComponentReviewDocumentQueryKey(category: string) {
   return ['componentReview', category] as const;
+}
+
+function buildComponentReviewDataQueryKey(category: string, componentType: string) {
+  return ['componentReviewData', category, componentType] as const;
 }
 
 function restoreQueryData<TData>(
@@ -241,6 +259,17 @@ function readComponentReviewDocumentSnapshot(
   };
 }
 
+function readComponentReviewPayloadSnapshot(
+  queryClient: QueryClient,
+  target: Pick<ComponentReviewPayloadRowTarget, 'category' | 'componentType'>,
+): ComponentReviewPayloadSnapshot {
+  const queryKey = buildComponentReviewDataQueryKey(target.category, target.componentType);
+  return {
+    queryKey,
+    data: queryClient.getQueryData<ComponentReviewPayload>(queryKey),
+  };
+}
+
 function resolveComponentReviewActionStatus(action: string): ComponentReviewStatus | null {
   const token = String(action || '').trim();
   if (token === 'approve_new') return 'approved_new';
@@ -295,6 +324,13 @@ export function restoreComponentReviewDocument(
   restoreQueryData(queryClient, snapshot.queryKey, snapshot.data);
 }
 
+export function restoreComponentReviewPayload(
+  queryClient: QueryClient,
+  snapshot: ComponentReviewPayloadSnapshot,
+): void {
+  restoreQueryData(queryClient, snapshot.queryKey, snapshot.data);
+}
+
 export function patchComponentReviewDocumentAction(
   queryClient: QueryClient,
   target: ComponentReviewDocumentActionTarget,
@@ -303,6 +339,56 @@ export function patchComponentReviewDocumentAction(
   queryClient.setQueryData<ComponentReviewDocument | undefined>(
     buildComponentReviewDocumentQueryKey(target.category),
     (current) => patchComponentReviewDocument(current, target),
+  );
+  return snapshot;
+}
+
+export function removeComponentReviewRowFromCache(
+  queryClient: QueryClient,
+  target: ComponentReviewPayloadRowTarget,
+): ComponentReviewPayloadSnapshot {
+  const snapshot = readComponentReviewPayloadSnapshot(queryClient, target);
+  const identityId = Number(target.componentIdentityId);
+  const hasIdentityId = Number.isFinite(identityId) && identityId > 0;
+  queryClient.setQueryData<ComponentReviewPayload | undefined>(
+    buildComponentReviewDataQueryKey(target.category, target.componentType),
+    (current) => {
+      if (!current) return current;
+      const nextItems = current.items.filter((item) => {
+        if (hasIdentityId) return Number(item.component_identity_id) !== identityId;
+        return item.name !== target.name || item.maker !== target.maker;
+      });
+      return {
+        ...current,
+        items: nextItems,
+        metrics: {
+          ...current.metrics,
+          total: nextItems.length,
+        },
+      };
+    },
+  );
+  return snapshot;
+}
+
+export function removeAllComponentReviewRowsFromCache(
+  queryClient: QueryClient,
+  target: Pick<ComponentReviewPayloadRowTarget, 'category' | 'componentType'>,
+): ComponentReviewPayloadSnapshot {
+  const snapshot = readComponentReviewPayloadSnapshot(queryClient, target);
+  queryClient.setQueryData<ComponentReviewPayload | undefined>(
+    buildComponentReviewDataQueryKey(target.category, target.componentType),
+    (current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        items: [],
+        metrics: {
+          ...current.metrics,
+          total: 0,
+        },
+      };
+    },
   );
   return snapshot;
 }

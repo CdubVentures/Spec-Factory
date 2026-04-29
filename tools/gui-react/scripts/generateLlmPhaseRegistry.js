@@ -604,6 +604,7 @@ function generateFinderSettingsRegistry() {
   lines.push('// WHY: Derived from src/core/finder/finderModuleRegistry.js');
   lines.push('// Drives <FinderSettingsRenderer />. Each entry is a typed primitive (bool/int/float/string/enum),');
   lines.push('// optionally rendered via a named widget registered in the GUI widget registry.\n');
+  lines.push("import type { SettingWidgetName } from '../components/widgets/widgetRegistryNames.ts';\n");
 
   lines.push(`export type FinderSettingType = 'bool' | 'int' | 'float' | 'string' | 'enum' | 'intMap';\n`);
 
@@ -627,7 +628,7 @@ function generateFinderSettingsRegistry() {
   lines.push('  allowEmpty?: boolean;');
   lines.push('  hidden?: boolean;');
   lines.push("  scope?: 'global' | 'category';");
-  lines.push('  widget?: string;');
+  lines.push('  widget?: SettingWidgetName;');
   lines.push('  widgetProps?: Record<string, unknown>;');
   lines.push('}\n');
 

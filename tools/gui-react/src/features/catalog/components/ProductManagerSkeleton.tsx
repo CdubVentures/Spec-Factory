@@ -14,6 +14,7 @@ interface SkeletonColumn {
 const PRODUCT_SKELETON_ROWS = Array.from({ length: 10 }, (_value, index) => `row-${index}`);
 const DRAWER_FIELD_ROWS = ['brand', 'base-model', 'variant', 'status'] as const;
 const DRAWER_ACTIONS = ['primary', 'secondary'] as const;
+const EVIDENCE_LINES = ['line-1', 'line-2', 'line-3'] as const;
 
 function resolveColumnId(column: (typeof PRODUCT_TABLE_COLUMNS)[number], index: number): string {
   if ('accessorKey' in column && typeof column.accessorKey === 'string') {
@@ -25,6 +26,28 @@ function resolveColumnId(column: (typeof PRODUCT_TABLE_COLUMNS)[number], index: 
 const PRODUCT_SKELETON_COLUMNS: readonly SkeletonColumn[] = PRODUCT_TABLE_COLUMNS.map((column, index) => ({
   id: resolveColumnId(column, index),
 }));
+
+function CellSkeleton({ columnId }: { readonly columnId: string }) {
+  if (columnId === 'brand') {
+    return <SkeletonBlock className="sf-skel-bar-label" />;
+  }
+  if (columnId === 'model') {
+    return <SkeletonBlock className="sf-skel-bar" />;
+  }
+  if (columnId === 'base_model' || columnId === 'variant') {
+    return <SkeletonBlock className="sf-skel-bar-label" />;
+  }
+  if (columnId === 'id') {
+    return <span className="sf-shimmer inline-block h-3.5 w-7 rounded-sm" aria-hidden="true" />;
+  }
+  if (columnId === 'identifier') {
+    return <span className="sf-shimmer inline-block h-3.5 w-14 rounded-sm" aria-hidden="true" />;
+  }
+  if (columnId === 'status') {
+    return <span className="sf-shimmer inline-block h-5 w-14 rounded-full" aria-hidden="true" />;
+  }
+  return <SkeletonBlock className="sf-skel-bar" />;
+}
 
 function HeaderSkeleton({ category }: { readonly category: string }) {
   return (
@@ -58,7 +81,7 @@ function TableSkeleton() {
             <tr>
               {PRODUCT_SKELETON_COLUMNS.map((column) => (
                 <th key={column.id} className="sf-table-head-cell" data-skeleton-column={column.id}>
-                  <SkeletonBlock className="sf-skel-bar" />
+                  <SkeletonBlock className="sf-skel-bar-label" />
                 </th>
               ))}
             </tr>
@@ -68,7 +91,7 @@ function TableSkeleton() {
               <tr key={row} className="sf-table-row" data-skeleton-row={row}>
                 {PRODUCT_SKELETON_COLUMNS.map((column) => (
                   <td key={`${row}-${column.id}`} className="px-2 py-1.5" data-skeleton-cell={column.id}>
-                    <SkeletonBlock className="sf-skel-bar" />
+                    <CellSkeleton columnId={column.id} />
                   </td>
                 ))}
               </tr>
@@ -94,10 +117,14 @@ function DrawerSkeleton() {
         </div>
       ))}
       <div className="sf-bg-surface-soft rounded p-2.5 border sf-border-default space-y-1.5">
-        <SkeletonBlock className="sf-skel-caption" />
-        <SkeletonBlock className="sf-skel-bar" />
-        <SkeletonBlock className="sf-skel-bar" />
-        <SkeletonBlock className="sf-skel-bar" />
+        <SkeletonBlock className="sf-skel-bar-label" />
+        {EVIDENCE_LINES.map((line) => (
+          <span
+            key={`evidence-${line}`}
+            className="sf-shimmer block h-3.5 w-full rounded-sm"
+            aria-hidden="true"
+          />
+        ))}
       </div>
       <div className="flex gap-2 pt-2 border-t sf-border-default">
         {DRAWER_ACTIONS.map((action) => (

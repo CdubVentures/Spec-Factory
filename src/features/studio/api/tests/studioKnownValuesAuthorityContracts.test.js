@@ -39,8 +39,8 @@ test('studio known-values reads authoritative enum values from SpecDb when avail
     lighting: ['1 zone (RGB)', '7 zone (LED)'],
   });
   assert.deepEqual(result.body.enum_lists, [
-    { field: 'connection', normalize: 'lower_trim', values: ['2.4GHz', 'Wireless'] },
-    { field: 'lighting', normalize: 'lower_trim', values: ['1 zone (RGB)', '7 zone (LED)'] },
+    { field: 'connection', values: ['2.4GHz', 'Wireless'] },
+    { field: 'lighting', values: ['1 zone (RGB)', '7 zone (LED)'] },
   ]);
 });
 

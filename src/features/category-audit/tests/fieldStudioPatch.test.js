@@ -103,6 +103,67 @@ test('validateFieldStudioPatchDocument accepts the strict import envelope and ma
   assert.equal(parsed.navigator_ordinal, 7);
 });
 
+test('validateFieldStudioPatchDocument accepts structured audit roster decisions', () => {
+  const parsed = validateFieldStudioPatchDocument(validPatch({
+    audit: {
+      sources_checked: ['https://example.test/source'],
+      products_checked: ['Example Mouse'],
+      conclusion: 'Sensor setup needs semantic roster decisions.',
+      adjacent_key_roster_decisions: [
+        {
+          field_key: 'sensor_date',
+          decision: 'component_property',
+          component_type: 'sensor',
+          expected_type: 'date',
+          reason: 'Invariant date of the sensor component.',
+        },
+      ],
+      schema_blocked_component_attributes: [
+        {
+          field_key: 'native_profiles',
+          component_type: 'sensor',
+          expected_type: 'string',
+          expected_shape: 'list',
+          reason: 'Semantic component-owned list, but patch schema has no property shape key.',
+        },
+      ],
+      open_questions: [],
+    },
+  }), {
+    category: 'mouse',
+    fileName: 'mouse-07-design.field-studio-patch.v1.json',
+  });
+
+  assert.equal(parsed.audit.adjacent_key_roster_decisions[0].field_key, 'sensor_date');
+  assert.equal(parsed.audit.schema_blocked_component_attributes[0].expected_shape, 'list');
+});
+
+test('validateFieldStudioPatchDocument accepts OS duplicate suffixes on matching filenames', () => {
+  const parsed = validateFieldStudioPatchDocument(validPatch({
+    field_key: 'sensor',
+    navigator_ordinal: 35,
+    patch: {
+      field_overrides: {
+        sensor: {
+          enum: { policy: 'open_prefer_known', source: 'component_db.sensor' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: { properties: [] },
+        },
+      ],
+    },
+  }), {
+    category: 'mouse',
+    fileName: 'mouse-35-sensor.field-studio-patch.v1 (1).json',
+  });
+
+  assert.equal(parsed.field_key, 'sensor');
+  assert.equal(parsed.navigator_ordinal, 35);
+});
+
 test('validateFieldStudioPatchDocument rejects prose sentinels and filename/body mismatches', () => {
   assert.throws(
     () => validateFieldStudioPatchDocument(validPatch({
@@ -128,6 +189,21 @@ test('validateFieldStudioPatchDocument rejects prose sentinels and filename/body
 });
 
 test('validateFieldStudioPatchDocument rejects retired data-list mode', () => {
+  assert.throws(
+    () => validateFieldStudioPatchDocument(validPatch({
+      patch: {
+        data_lists: [
+          {
+            field: 'design',
+            normalize: 'lower_trim',
+            manual_values: ['standard'],
+          },
+        ],
+      },
+    }), { category: 'mouse', fileName: 'mouse-07-design.field-studio-patch.v1.json' }),
+    /data_lists\[0\]\.normalize is retired/i,
+  );
+
   assert.throws(
     () => validateFieldStudioPatchDocument(validPatch({
       patch: {
@@ -184,7 +260,7 @@ test('applyFieldStudioPatchDocument deep-merges one key and data list without to
     'multiple',
   ]);
   assert.equal(next.data_lists[0].mode, 'scratch', 'existing data list metadata is preserved');
-  assert.equal(next.data_lists[0].normalize, 'lower_trim');
+  assert.equal(Object.hasOwn(next.data_lists[0], 'normalize'), false);
   assert.equal(next.field_overrides.design.enum.policy, 'closed');
   assert.equal(next.field_overrides.design.ai_assist.reasoning_note, 'Classify public edition taxonomy only.');
   assert.deepEqual(next.field_overrides.design.ai_assist.pif_priority_images, { enabled: true });
@@ -245,6 +321,179 @@ test('previewFieldStudioPatchDocuments rejects component_db links without a matc
   assert.equal(preview.valid, false);
   assert.match(preview.errors.join('\n'), /component_db\.sensor/i);
   assert.match(preview.errors.join('\n'), /self-lock/i);
+});
+
+test('previewFieldStudioPatchDocuments rejects component identity aliases under field_overrides', () => {
+  const sensorPatch = validPatch({
+    field_key: 'sensor',
+    navigator_ordinal: 35,
+    verdict: 'schema_decision',
+    patch: {
+      field_overrides: {
+        sensor: {
+          enum: { policy: 'closed', source: 'component_db.sensor' },
+          aliases: ['Razer Focus Pro 35K Optical Sensor Gen-2'],
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: { properties: [] },
+        },
+      ],
+    },
+  });
+
+  const preview = previewFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: {
+      ...baseMap(),
+      selected_keys: ['design', 'weight', 'sensor'],
+      field_overrides: {
+        ...baseMap().field_overrides,
+        sensor: {
+          field_key: 'sensor',
+          enum: { policy: 'open_prefer_known', source: 'component_db.sensor' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: { properties: [] },
+        },
+      ],
+    },
+    patchDocs: [sensorPatch],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: map,
+    }),
+  });
+
+  assert.equal(preview.valid, false);
+  assert.match(preview.errors.join('\n'), /field_overrides\.sensor\.aliases/i);
+  assert.match(preview.errors.join('\n'), /blank\/absent/i);
+  assert.doesNotMatch(preview.errors.join('\n'), /Component Review/i);
+});
+
+test('previewFieldStudioPatchDocuments rejects auto component facet aliases under field_overrides', () => {
+  const sensorBrandPatch = validPatch({
+    field_key: 'sensor_brand',
+    navigator_ordinal: 36,
+    verdict: 'schema_decision',
+    patch: {
+      field_overrides: {
+        sensor_brand: {
+          aliases: ['PixArt', 'PAW'],
+        },
+      },
+    },
+  });
+
+  const preview = previewFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: {
+      ...baseMap(),
+      selected_keys: ['design', 'weight', 'sensor', 'sensor_brand'],
+      field_overrides: {
+        ...baseMap().field_overrides,
+        sensor: {
+          field_key: 'sensor',
+          enum: { policy: 'open_prefer_known', source: 'component_db.sensor' },
+        },
+        sensor_brand: {
+          field_key: 'sensor_brand',
+          component_identity_projection: { component_type: 'sensor', facet: 'brand' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: { properties: [] },
+        },
+      ],
+    },
+    patchDocs: [sensorBrandPatch],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: map,
+    }),
+  });
+
+  assert.equal(preview.valid, false);
+  assert.match(preview.errors.join('\n'), /field_overrides\.sensor_brand\.aliases/i);
+  assert.match(preview.errors.join('\n'), /blank\/absent/i);
+  assert.doesNotMatch(preview.errors.join('\n'), /Component Review/i);
+});
+
+test('previewFieldStudioPatchDocuments allows clearing component identity field aliases', () => {
+  const sensorPatch = validPatch({
+    field_key: 'sensor',
+    navigator_ordinal: 35,
+    verdict: 'schema_decision',
+    patch: {
+      field_overrides: {
+        sensor: {
+          enum: { policy: 'closed', source: 'component_db.sensor' },
+          aliases: null,
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: {
+            properties: [
+              {
+                field_key: 'sensor_type',
+                type: 'string',
+                variance_policy: 'authoritative',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  const preview = previewFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: {
+      ...baseMap(),
+      selected_keys: ['design', 'weight', 'sensor', 'sensor_type'],
+      field_overrides: {
+        ...baseMap().field_overrides,
+        sensor: {
+          field_key: 'sensor',
+          aliases: ['optical sensor'],
+          enum: { policy: 'open_prefer_known', source: 'component_db.sensor' },
+        },
+        sensor_type: {
+          field_key: 'sensor_type',
+          contract: { type: 'string', shape: 'scalar' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: { properties: [] },
+        },
+      ],
+    },
+    patchDocs: [sensorPatch],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: map,
+    }),
+  });
+
+  assert.equal(preview.valid, true);
+  assert.equal(preview.fieldStudioMap.field_overrides.sensor.aliases, null);
 });
 
 test('previewFieldStudioPatchDocuments rejects component source rows without parent self-lock', () => {
@@ -593,6 +842,72 @@ test('importFieldStudioPatchDocuments lets parent component patches replace the 
   assert.equal(result.fieldStudioMap.field_overrides.sensor.enum.source, 'component_db.sensor');
 });
 
+test('previewFieldStudioPatchDocuments rejects auto component identity facets as component properties', () => {
+  const parentPatch = validPatch({
+    field_key: 'sensor',
+    navigator_ordinal: 40,
+    patch: {
+      field_overrides: {
+        sensor: {
+          contract: { type: 'string', shape: 'scalar' },
+          enum: { policy: 'open_prefer_known', source: 'component_db.sensor' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: {
+            properties: [
+              {
+                field_key: 'sensor_brand',
+                type: 'string',
+                variance_policy: 'authoritative',
+              },
+              {
+                field_key: 'sensor_link',
+                type: 'url',
+                variance_policy: 'authoritative',
+              },
+            ],
+          },
+        },
+      ],
+    },
+  });
+
+  const preview = previewFieldStudioPatchDocuments({
+    category: 'mouse',
+    fieldStudioMap: {
+      ...baseMap(),
+      selected_keys: ['design', 'weight', 'sensor'],
+      field_overrides: {
+        ...baseMap().field_overrides,
+        sensor: {
+          field_key: 'sensor',
+          enum: { policy: 'open_prefer_known', source: 'component_db.sensor' },
+        },
+      },
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: { properties: [] },
+        },
+      ],
+    },
+    patchDocs: [parentPatch],
+    validateFieldStudioMap: (map) => ({
+      valid: true,
+      errors: [],
+      warnings: [],
+      normalized: map,
+    }),
+  });
+
+  assert.equal(preview.valid, false);
+  assert.match(preview.errors.join('\n'), /sensor_brand.*identity facet/i);
+  assert.match(preview.errors.join('\n'), /sensor_link.*identity facet/i);
+});
+
 test('validateFieldStudioPatchDocument rejects retired component source workbook fields', () => {
   assert.throws(
     () => validateFieldStudioPatchDocument(validPatch({
@@ -773,6 +1088,15 @@ test('loadFieldStudioPatchDocuments loads valid patch files from a folder in fil
       'utf8',
     );
     await fs.writeFile(
+      path.join(dir, 'mouse-10-weight.field-studio-patch.v1 (1).json'),
+      JSON.stringify(validPatch({
+        field_key: 'weight',
+        navigator_ordinal: 10,
+        patch: { field_overrides: { weight: { evidence: { min_evidence_refs: 2 } } } },
+      })),
+      'utf8',
+    );
+    await fs.writeFile(
       path.join(dir, 'mouse-07-design.field-studio-patch.v1.json'),
       JSON.stringify(validPatch()),
       'utf8',
@@ -780,7 +1104,8 @@ test('loadFieldStudioPatchDocuments loads valid patch files from a folder in fil
     await fs.writeFile(path.join(dir, 'notes.txt'), 'ignored', 'utf8');
 
     const docs = await loadFieldStudioPatchDocuments({ category: 'mouse', inputDir: dir });
-    assert.deepEqual(docs.map((doc) => doc.field_key), ['design', 'rgb']);
+    assert.deepEqual(docs.map((doc) => doc.field_key), ['design', 'rgb', 'weight']);
+    assert.equal(docs[2].source_file, 'mouse-10-weight.field-studio-patch.v1 (1).json');
   } finally {
     await fs.rm(dir, { recursive: true, force: true });
   }
@@ -849,6 +1174,36 @@ test('parseFieldStudioPatchPayloadFiles validates uploaded JSON files against ca
   assert.equal(docs.length, 1);
   assert.equal(docs[0].source_file, 'mouse-07-design.field-studio-patch.v1.json');
   assert.equal(docs[0].field_key, 'design');
+
+  const duplicateNamedDocs = parseFieldStudioPatchPayloadFiles({
+    category: 'mouse',
+    files: [
+      {
+        fileName: 'mouse-07-design.field-studio-patch.v1 (1).json',
+        content: JSON.stringify(validPatch()),
+      },
+      {
+        fileName: 'mouse-09-weight.field-studio-patch.v1 (2).json',
+        content: JSON.stringify(validPatch({
+          field_key: 'weight',
+          navigator_ordinal: 9,
+          patch: {
+            field_overrides: {
+              weight: { evidence: { min_evidence_refs: 2 } },
+            },
+          },
+        })),
+      },
+    ],
+  });
+  assert.deepEqual(
+    duplicateNamedDocs.map((doc) => doc.source_file),
+    [
+      'mouse-07-design.field-studio-patch.v1 (1).json',
+      'mouse-09-weight.field-studio-patch.v1 (2).json',
+    ],
+  );
+  assert.deepEqual(duplicateNamedDocs.map((doc) => doc.field_key), ['design', 'weight']);
 
   assert.throws(
     () => parseFieldStudioPatchPayloadFiles({

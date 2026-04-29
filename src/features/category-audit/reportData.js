@@ -107,6 +107,8 @@ function normalizeComponent(rule, componentRelations) {
   if (fieldKey && enumSource === `component_db.${fieldKey}`) {
     return { type: String(fieldKey), relation: 'parent', source: enumSource };
   }
+  const identityOf = componentRelations.identityOf[fieldKey];
+  if (identityOf) return { type: identityOf, relation: 'parent', source: `component_db.${identityOf}` };
   const subfieldOf = componentRelations.subfieldOf[fieldKey];
   if (subfieldOf) return { type: subfieldOf, relation: 'subfield_of', source: `component_db.${subfieldOf}` };
   return null;
@@ -131,16 +133,22 @@ function buildComponentRelations(componentDBs, componentSources = []) {
   const identityOf = {};
   const dbPropertySets = {};
   const mappedPropertySetsByType = {};
+  const componentOnlyPropertySetsByType = {};
   for (const row of componentSources || []) {
     const type = String(row?.component_type || '').trim();
     if (!type) continue;
+    identityOf[type] = type;
     if (!mappedPropertySetsByType[type]) mappedPropertySetsByType[type] = new Set();
+    if (!componentOnlyPropertySetsByType[type]) componentOnlyPropertySetsByType[type] = new Set();
     const properties = Array.isArray(row?.roles?.properties) ? row.roles.properties : [];
     for (const property of properties) {
       const fieldKey = String(property?.field_key || '').trim();
       if (!fieldKey) continue;
       mappedPropertySetsByType[type].add(fieldKey);
-      if (property?.component_only === true) continue;
+      if (property?.component_only === true) {
+        componentOnlyPropertySetsByType[type].add(fieldKey);
+        continue;
+      }
       subfieldOf[fieldKey] = type;
     }
   }
@@ -167,7 +175,16 @@ function buildComponentRelations(componentDBs, componentSources = []) {
   const mappedPropertiesByType = Object.fromEntries(
     Object.entries(mappedPropertySetsByType).map(([type, propertySet]) => [type, [...propertySet].sort()]),
   );
-  return { subfieldOf, identityOf, dbPropertyOf, mappedPropertiesByType };
+  const componentOnlyPropertiesByType = Object.fromEntries(
+    Object.entries(componentOnlyPropertySetsByType).map(([type, propertySet]) => [type, [...propertySet].sort()]),
+  );
+  return {
+    subfieldOf,
+    identityOf,
+    dbPropertyOf,
+    mappedPropertiesByType,
+    componentOnlyPropertiesByType,
+  };
 }
 
 function cloneJson(value) {
@@ -211,6 +228,7 @@ function buildKeyRecord(fieldKey, rule, enumsIndex, componentRelations) {
     search_hints: normalizeSearchHints(rule),
     constraints: normalizeConstraints(rule),
     component,
+    component_identity_projection: rule?.component_identity_projection || null,
     componentDbProperty: normalizeComponentDbProperty(fieldKey, component, componentRelations),
     ai_assist: normalizeAiAssist(rule),
     evidence: normalizeEvidence(rule),
@@ -309,6 +327,7 @@ function buildComponentInventory(componentDBs, keysByField, componentRelations) 
       })) : [],
       identityFields,
       subfields,
+      componentOnlyProperties: componentRelations.componentOnlyPropertiesByType?.[type] || [],
       unmappedFieldProperties: propertyKeys.filter((key) => knownFieldKeys.has(key) && !mappedProperties.has(key)),
       dbOnlyProperties: propertyKeys.filter((key) => !knownFieldKeys.has(key) && !mappedProperties.has(key)),
     });

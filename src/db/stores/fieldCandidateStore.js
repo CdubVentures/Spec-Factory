@@ -193,6 +193,28 @@ export function createFieldCandidateStore({ db, category, stmts }) {
     return { ...hydrateRow(row), evidence_count: Number(row.evidence_count || 0) };
   }
 
+  function getTopCandidatesByProduct(productId) {
+    return db.prepare(
+      `SELECT c.*, (
+         SELECT COUNT(*) FROM field_candidate_evidence
+         WHERE candidate_id = c.id
+           AND (evidence_kind IS NULL OR evidence_kind != 'identity_only')
+       ) AS evidence_count
+       FROM field_candidates c
+       WHERE c.category = ? AND c.product_id = ?
+         AND c.id = (
+           SELECT c2.id FROM field_candidates c2
+           WHERE c2.category = c.category
+             AND c2.product_id = c.product_id
+             AND c2.field_key = c.field_key
+           ORDER BY c2.confidence DESC LIMIT 1
+         )
+       ORDER BY c.field_key ASC`
+    )
+      .all(category, String(productId || ''))
+      .map((row) => ({ ...hydrateRow(row), evidence_count: Number(row.evidence_count || 0) }));
+  }
+
   function getDistinctProducts() {
     return db.prepare(
       'SELECT DISTINCT product_id FROM field_candidates WHERE category = ?'
@@ -333,7 +355,7 @@ export function createFieldCandidateStore({ db, category, stmts }) {
   }
 
   return {
-    upsert, get, getByProductAndField, getAllByProduct, getAllByCategory, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getTopCandidate, getDistinctProducts,
+    upsert, get, getByProductAndField, getAllByProduct, getAllByCategory, deleteByProduct, deleteByProductAndField, deleteByProductFieldValue, getPaginated, count, stats, markResolved, demoteResolved, getResolved, getTopCandidate, getTopCandidatesByProduct, getDistinctProducts,
     insert, getBySourceId, getBySourceIdAndVariant, deleteBySourceId, deleteBySourceType, getByValue, markResolvedByValue, countBySourceId, updateValue, deleteByVariantId, deleteByProductFieldVariant, resetConfidence, updateMetadata,
   };
 }

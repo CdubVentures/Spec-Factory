@@ -7,8 +7,6 @@ import type {
 export interface StudioEnumDataListEntry {
   field: string;
   label?: string;
-  normalize: string;
-  delimiter: string;
   manual_values: string[];
 }
 
@@ -95,8 +93,6 @@ function normalizeEntry(
   return {
     field,
     label: labelOfField(field, rules),
-    normalize: normalizeToken(entry.normalize) || 'lower_trim',
-    delimiter: normalizeToken(entry.delimiter),
     manual_values: valuesOf(entry),
   };
 }
@@ -134,8 +130,6 @@ export function deriveStudioEnumDataLists({
     entries.set(field, {
       field,
       label: labelOfField(field, rules),
-      normalize: 'lower_trim',
-      delimiter: '',
       manual_values: [],
     });
   }
@@ -148,8 +142,6 @@ export function deriveStudioEnumDataLists({
     entries.set(field, {
       field,
       label: labelOfField(field, rules),
-      normalize: 'lower_trim',
-      delimiter: '',
       manual_values: egValues.map(String),
     });
   }
@@ -166,8 +158,6 @@ export function buildStudioEnumDataListSeedVersion({
   const rawTokens = rawEnumLists
     .map((entry) => [
       normalizeToken(entry.field),
-      normalizeToken(entry.normalize),
-      normalizeToken(entry.delimiter),
       valuesOf(entry).join('\u001f'),
     ].join(':'))
     .sort();

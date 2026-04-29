@@ -36,7 +36,7 @@ import { assertNativeModulesHealthy } from '../../core/nativeModuleGuard.js';
 export const BOOTSTRAP_RETURN_GROUPS = {
   env: ['config', 'configGate', 'PORT', 'HELPER_ROOT', 'OUTPUT_ROOT', 'INDEXLAB_ROOT', 'LAUNCH_CWD'],
   storage: ['storage', 'getIndexLabRoot'],
-  session: ['sessionCache', 'resolveCategoryAlias', 'specDbCache', 'reviewLayoutByCategory', 'getSpecDb', 'getSpecDbReady', 'appDb'],
+  session: ['sessionCache', 'resolveCategoryAlias', 'specDbCache', 'getSpecDb', 'getSpecDbReady', 'appDb'],
   realtime: ['broadcastWs', 'setupWatchers', 'attachWebSocketUpgrade', 'getLastScreencastFrame'],
   process: ['processStatus', 'startProcess', 'stopProcess', 'isProcessRunning', 'waitForProcessExit', 'getSearxngStatus', 'startSearxngStack'],
   http: ['jsonRes', 'corsHeaders', 'readJsonBody'],
@@ -70,7 +70,7 @@ export function bootstrapServer({ projectRoot }) {
   // ── Phase 2: Session + DB ──
   const {
     sessionCache, resolveCategoryAlias,
-    specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady,
+    specDbCache, getSpecDb, getSpecDbReady,
     appDb,
   } = createBootstrapSessionLayer({ config, HELPER_ROOT, storage, INDEXLAB_ROOT });
 
@@ -100,7 +100,7 @@ export function bootstrapServer({ projectRoot }) {
     waitForProcessExit, forwardScreencastControl,
   } = createProcessRuntime({
     resolveProjectPath, path, fsSync, config, spawn, execCb,
-    broadcastWs, invalidateEventCache, sessionCache, invalidateFieldRulesCache, reviewLayoutByCategory,
+    broadcastWs, invalidateEventCache, sessionCache, invalidateFieldRulesCache,
     syncSpecDbForCategory: ({ category }) =>
       syncSpecDbForCategoryService({ category, config, resolveCategoryAlias, getSpecDbReady }),
     handleCompileProcessCompletion, handleIndexLabProcessCompletion,
@@ -147,7 +147,7 @@ export function bootstrapServer({ projectRoot }) {
   return {
     env: { config, configGate, PORT, HELPER_ROOT, OUTPUT_ROOT, INDEXLAB_ROOT, LAUNCH_CWD },
     storage: { storage, getIndexLabRoot },
-    session: { sessionCache, resolveCategoryAlias, specDbCache, reviewLayoutByCategory, getSpecDb, getSpecDbReady, appDb },
+    session: { sessionCache, resolveCategoryAlias, specDbCache, getSpecDb, getSpecDbReady, appDb },
     realtime: { broadcastWs, setupWatchers, attachWebSocketUpgrade, getLastScreencastFrame },
     process: { processStatus, startProcess, stopProcess, isProcessRunning, waitForProcessExit, getSearxngStatus, startSearxngStack },
     http: { jsonRes, corsHeaders, readJsonBody },

@@ -180,7 +180,6 @@ test('studio page shell controller preserves ready-state shell wiring and active
   assert.deepEqual(result.activePanelProps.keyNavigatorTabProps.enumLists, [
     {
       field: 'dpi',
-      normalize: 'lower_trim',
       values: ['8000'],
     },
   ]);

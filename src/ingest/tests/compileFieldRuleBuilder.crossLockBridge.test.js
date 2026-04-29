@@ -75,7 +75,7 @@ describe('mergeFieldOverride — Phase 4 cross-lock bridge fix', () => {
       enum: {
         policy: 'open_prefer_known',
         source: 'data_lists.sensor_latency_wired',
-        match: { normalize: 'lower_trim' },
+        match: { normalize: 'lower_trim', format_hint: '^\\d+ms$' },
       },
     };
     const override = {
@@ -88,7 +88,7 @@ describe('mergeFieldOverride — Phase 4 cross-lock bridge fix', () => {
     assert.deepEqual(result.enum, {
       policy: 'open_prefer_known',
       source: 'data_lists.sensor_latency_wired',
-      match: { normalize: 'lower_trim' },
+      match: { format_hint: '^\\d+ms$' },
       new_value_policy: {},
     });
   });

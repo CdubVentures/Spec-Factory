@@ -127,9 +127,9 @@ export const KeyGroupSection = memo(function KeyGroupSection({
           <PromptDrawerChevron
             storageKey={`key-finder:group-drawer:${group.name}`}
             openWidthClass="w-[40rem]"
-            ariaLabel={`History + data actions for group ${group.name}`}
-            closedTitle={`Show Hist / Data for "${group.name}"`}
-            openedTitle={`Hide Hist / Data for "${group.name}"`}
+            ariaLabel={`History + actions for group ${group.name}`}
+            closedTitle={`Show Hist / actions for "${group.name}"`}
+            openedTitle={`Hide Hist / actions for "${group.name}"`}
             openTitle="Hist:"
             labelClass="sf-history-label"
             primaryCustom={
@@ -142,8 +142,6 @@ export const KeyGroupSection = memo(function KeyGroupSection({
                 width={ACTION_BUTTON_WIDTH.keyGroup}
               />
             }
-            secondaryTitle="Data:"
-            secondaryLabelClass="sf-delete-label"
             secondaryActions={[
               {
                 label: 'Unpub group',

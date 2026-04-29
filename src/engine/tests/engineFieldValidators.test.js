@@ -151,6 +151,46 @@ test('enforceEnumPolicy marks open-policy unknown values for curation', () => {
   assert.equal(result.needs_curation, true);
 });
 
+test('enforceEnumPolicy rejects ambiguous hidden match-key repair for closed enums', () => {
+  const enumIndex = buildEnumIndex({
+    enums: {
+      sensor: {
+        policy: 'closed',
+        values: ['Razer Focus-Pro', 'Razer-Focus Pro'],
+      },
+    },
+  });
+  const rules = {
+    sensor: { enum: { policy: 'closed' } },
+  };
+
+  const result = enforceEnumPolicy('sensor', 'Razer_Focus Pro', { rules, enumIndex });
+
+  assert.equal(result.ok, false);
+  assert.equal(result.reason_code, 'enum_value_not_allowed');
+});
+
+test('enforceEnumPolicy leaves ambiguous hidden match-key values un-repaired for open_prefer_known enums', () => {
+  const enumIndex = buildEnumIndex({
+    enums: {
+      sensor: {
+        policy: 'open_prefer_known',
+        values: ['Razer Focus-Pro', 'Razer-Focus Pro'],
+      },
+    },
+  });
+  const rules = {
+    sensor: { enum: { policy: 'open_prefer_known' } },
+  };
+
+  const result = enforceEnumPolicy('sensor', 'Razer_Focus Pro', { rules, enumIndex });
+
+  assert.equal(result.ok, true);
+  assert.equal(result.canonical_value, 'Razer_Focus Pro');
+  assert.equal(result.was_aliased, false);
+  assert.equal(result.needs_curation, true);
+});
+
 test('enforceEnumPolicy falls back to buildRuleEnumSpec when field not in enumIndex', () => {
   const enumIndex = new Map();
   const rules = {

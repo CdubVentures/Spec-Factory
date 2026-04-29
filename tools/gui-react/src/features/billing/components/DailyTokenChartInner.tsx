@@ -1,8 +1,8 @@
 import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { compactNumber } from '../../../utils/formatting.ts';
 import { useFormatDateYMD } from '../../../utils/dateTime.ts';
+import { DailyChartLoadingSkeleton } from './DailyChartLoadingSkeleton.tsx';
 import type { BillingDailyResponse } from '../billingTypes.ts';
 
 interface DailyTokenChartProps {
@@ -94,6 +94,17 @@ export default function DailyTokenChartInner({ data, isLoading, isStale }: Daily
   const hasData = !isLoading && rows.length > 0;
   const staleClass = isStale ? ' sf-stale-refetch' : '';
 
+  if (isLoading) {
+    return (
+      <DailyChartLoadingSkeleton
+        title="Daily Tokens"
+        subtitle="Stacked by token class · 30-day window"
+        legendCount={4}
+        tokenStyle
+      />
+    );
+  }
+
   return (
     <div className="sf-surface-card sf-tok-themed rounded-lg overflow-hidden h-full flex flex-col sf-billing-min-chart">
       <div className="px-5 py-3 flex items-center justify-between border-b sf-border-default gap-3">
@@ -113,8 +124,7 @@ export default function DailyTokenChartInner({ data, isLoading, isStale }: Daily
         )}
       </div>
       <div className={`p-5 flex-1 min-h-0${staleClass}`}>
-        {isLoading && <SkeletonBlock className="sf-skel-chart" />}
-        {!isLoading && rows.length === 0 && (
+        {rows.length === 0 && (
           <p className="sf-text-subtle text-sm text-center py-8">No daily token data</p>
         )}
         {hasData && (

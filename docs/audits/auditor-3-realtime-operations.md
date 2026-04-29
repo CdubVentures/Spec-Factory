@@ -40,28 +40,29 @@ Full read-only audit completed on 2026-04-28 after the realtime pass. Scope wide
 | ID | Issue | Primary Area | Work Shape |
 |---|---|---|---|
 | P1 | Overview/catalog SQL builder performed product-scoped reads inside the per-product render loop | `src/app/api/catalogHelpers.js` | DONE: full catalog builds now batch category projections once for candidates, variants, PIF progress, CEF run counts, resolved key fields, and concrete-evidence bucket counts. Single-row catalog reads still use product-scoped reads. |
+| P2 | Key Finder duplicates global data-change invalidation when mounted | `tools/gui-react/src/features/key-finder/components/KeyFinderPanel.tsx` | DONE: removed the panel-level data-change subscription; the AppShell/global WS bridge remains the single broad cache invalidation owner. |
+| P4 | Storage run detail pagination is backend-wired but UI does not request or reveal pages | storage manager UI | DONE: expanded run detail now requests bounded source pages and shows a load-more control from `sources_page` metadata. |
+| P5 | Product update/delete still scan `getAllProducts().find(...)` | `src/features/catalog/products/productCatalog.js` | DONE: update/remove existence checks now use `specDb.getProduct(productId)` with a fallback only for older mocks. |
+| P6 | Authority snapshot has both 10s polling and data-change invalidation | `tools/gui-react/src/hooks/useAuthoritySnapshot.js` | DONE: data-change remains the freshness path; background polling is now a 60s fallback with an explicit override hook option. |
+| P7 | `reviewLayoutByCategory` appears to be delete-only production state | review/studio API context | DONE: production source no longer creates, passes, or deletes this dead cache handle. |
 
 Evidence:
 
 - `buildCatalogFromSql` previously iterated all products, then `buildCatalogRowFromSql` called product-scoped readers for candidates, CEF runs, PIF variants, SKU/RDF variants, and key-tier progress.
 - `buildKeyTierProgress` previously looped compiled fields per product and used product-field point lookups for resolved/concrete evidence.
 - Overview table rendering already uses virtualization, so the strongest confirmed bottleneck is backend projection, not DOM row count.
+- Key Finder summary projection was also tightened during follow-up work: summary reads use lean run rows and batch top-candidate lookups per product instead of per-field point lookups.
+- Focused proof after this pass: 88 GUI realtime/data-change/Authority/Key Finder tests, GUI `tsc -b`, 76 catalog/process/Studio/Review tests, 183 Key Finder/backend tests, 29 Catalog/Overview tests, and 66 Storage/UI/data-change route tests all passed.
 
 ### Medium Priority Optimization
 
 | ID | Issue | Primary Area | Work Shape |
 |---|---|---|---|
-| P2 | Key Finder duplicates global data-change invalidation when mounted | `tools/gui-react/src/features/key-finder/components/KeyFinderPanel.tsx` | Remove or narrow the panel-level `useDataChangeSubscription`; rely on AppShell's coalesced scheduler unless a local-only state patch is required. |
-| P3 | Runtime Ops mixes push invalidation with short polling intervals | `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx` | First verify event payload/category/run filtering, then narrow invalidation keys and reduce polling where push is reliable. |
-| P4 | Storage run detail pagination is backend-wired but UI does not request or reveal pages | storage manager UI | Add page params/load-more UI for run sources; backend already supports `sourcesLimit`/`sourcesOffset`. |
+| P3 | Runtime Ops mixes push invalidation with short polling intervals | `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx` | Deferred per user priority; runtime is not actively used much. |
 
 ### Low Priority Optimization / Cleanup
 
-| ID | Issue | Primary Area | Work Shape |
-|---|---|---|---|
-| P5 | Product update/delete still scan `getAllProducts().find(...)` | `src/features/catalog/products/productCatalog.js` | Use existing indexed `specDb.getProduct(productId)` for update/remove existence checks. |
-| P6 | Authority snapshot has both 10s polling and data-change invalidation | `tools/gui-react/src/hooks/useAuthoritySnapshot.js` | Lengthen or scope polling after data-change coverage is trusted. |
-| P7 | `reviewLayoutByCategory` appears to be delete-only production state | review/studio API context | Characterize and remove if no active reader/setter exists. This is cleanup, not a hot performance win. |
+No active non-deferred low-priority optimization items remain from the performance pass.
 
 ### Explicit Non-Targets
 

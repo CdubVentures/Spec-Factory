@@ -19,7 +19,7 @@ import type { KeyEntry, KeyGroup } from '../../types.ts';
 
 function key(
   fieldKey: string,
-  overrides: Partial<Pick<KeyEntry, 'difficulty' | 'required_level' | 'availability' | 'last_status' | 'published' | 'run_blocked_reason' | 'component_run_kind' | 'component_parent_key' | 'component_dependency_satisfied' | 'dedicated_run'>> = {},
+  overrides: Partial<Pick<KeyEntry, 'difficulty' | 'required_level' | 'availability' | 'last_status' | 'published' | 'run_blocked_reason' | 'component_run_kind' | 'component_parent_key' | 'component_dependency_satisfied' | 'dedicated_run' | 'belongs_to_component'>> = {},
 ): KeyEntry {
   return {
     field_key: fieldKey,
@@ -52,6 +52,7 @@ function key(
     component_parent_key: overrides.component_parent_key ?? '',
     component_dependency_satisfied: overrides.component_dependency_satisfied ?? true,
     run_blocked_reason: overrides.run_blocked_reason ?? '',
+    belongs_to_component: overrides.belongs_to_component ?? '',
     concrete_evidence: false,
     top_confidence: null,
     top_evidence_count: null,
@@ -122,21 +123,33 @@ describe('Key Finder bulk dispatch planning', () => {
     assert.deepEqual(buildLoopGroupDispatchKeys(localGroups, 'sensor'), ['ips', 'sensor_latency']);
   });
 
-  it('Run and Loop dispatch planning skip component brand/link keys blocked by an unpublished parent', () => {
+  it('Run and Loop dispatch planning carry blocked component brand/link after the parent component', () => {
     const localGroups = [
       group('sensor', [
         key('sensor', { difficulty: 'medium' }),
-        key('sensor_brand', { difficulty: 'medium', run_blocked_reason: 'component_parent_unpublished' }),
-        key('sensor_link', { difficulty: 'medium', run_blocked_reason: 'component_parent_unpublished' }),
+        key('sensor_brand', {
+          difficulty: 'medium',
+          dedicated_run: true,
+          component_run_kind: 'component_brand',
+          component_parent_key: 'sensor',
+          run_blocked_reason: 'component_parent_unpublished',
+        }),
+        key('sensor_link', {
+          difficulty: 'medium',
+          dedicated_run: true,
+          component_run_kind: 'component_link',
+          component_parent_key: 'sensor',
+          run_blocked_reason: 'component_parent_unpublished',
+        }),
         key('dpi', { difficulty: 'easy' }),
       ]),
     ];
 
-    assert.deepEqual(buildRunGroupDispatchKeys(localGroups, 'sensor'), ['dpi', 'sensor']);
-    assert.deepEqual(buildLoopGroupDispatchKeys(localGroups, 'sensor'), ['dpi', 'sensor']);
+    assert.deepEqual(buildRunGroupDispatchKeys(localGroups, 'sensor'), ['dpi', 'sensor', 'sensor_brand', 'sensor_link']);
+    assert.deepEqual(buildLoopGroupDispatchKeys(localGroups, 'sensor'), ['dpi', 'sensor', 'sensor_brand', 'sensor_link']);
   });
 
-  it('Run and Loop dispatch planning treat unsatisfied component brand/link dependencies as locked even without a reason string', () => {
+  it('Run and Loop dispatch planning carry unsatisfied component brand/link dependencies even without a reason string', () => {
     const localGroups = [
       group('sensor', [
         key('sensor', { difficulty: 'medium' }),
@@ -158,8 +171,51 @@ describe('Key Finder bulk dispatch planning', () => {
       ]),
     ];
 
-    assert.deepEqual(buildRunGroupDispatchKeys(localGroups, 'sensor'), ['dpi', 'sensor']);
-    assert.deepEqual(buildLoopGroupDispatchKeys(localGroups, 'sensor'), ['dpi', 'sensor']);
+    assert.deepEqual(buildRunGroupDispatchKeys(localGroups, 'sensor'), ['dpi', 'sensor', 'sensor_brand', 'sensor_link']);
+    assert.deepEqual(buildLoopGroupDispatchKeys(localGroups, 'sensor'), ['dpi', 'sensor', 'sensor_brand', 'sensor_link']);
+  });
+
+  it('Run and Loop dispatch planning still skip blocked component brand/link when the parent is not in the plan', () => {
+    const localGroups = [
+      group('sensor', [
+        key('sensor_brand', {
+          difficulty: 'medium',
+          dedicated_run: true,
+          component_run_kind: 'component_brand',
+          component_parent_key: 'sensor',
+          component_dependency_satisfied: false,
+        }),
+        key('sensor_link', {
+          difficulty: 'medium',
+          dedicated_run: true,
+          component_run_kind: 'component_link',
+          component_parent_key: 'sensor',
+          component_dependency_satisfied: false,
+        }),
+        key('dpi', { difficulty: 'easy' }),
+      ]),
+    ];
+
+    assert.deepEqual(buildRunGroupDispatchKeys(localGroups, 'sensor'), ['dpi']);
+    assert.deepEqual(buildLoopGroupDispatchKeys(localGroups, 'sensor'), ['dpi']);
+  });
+
+  it('Run and Loop dispatch planning treat component attributes as locked until their parent component publishes', () => {
+    const localGroups = [
+      group('sensor', [
+        key('sensor', { difficulty: 'medium' }),
+        key('dpi', {
+          difficulty: 'easy',
+          belongs_to_component: 'sensor',
+          component_parent_key: 'sensor',
+          component_dependency_satisfied: false,
+        }),
+        key('weight', { difficulty: 'easy' }),
+      ]),
+    ];
+
+    assert.deepEqual(buildRunGroupDispatchKeys(localGroups, 'sensor'), ['weight', 'sensor']);
+    assert.deepEqual(buildLoopGroupDispatchKeys(localGroups, 'sensor'), ['weight', 'sensor']);
   });
 
   it('Loop All Groups returns one global sorted line across all unresolved keys', () => {

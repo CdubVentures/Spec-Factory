@@ -96,7 +96,6 @@ export interface StudioKnownValuesSource {
 
 export interface StudioEnumListEntry extends EnumEntry {
   field: string;
-  normalize: string;
   values: string[];
 }
 
@@ -272,7 +271,6 @@ export function deriveStudioEnumListsWithValues(
     return specDbLists
       .map((entry) => ({
         field: String(entry.field || ''),
-        normalize: String(entry.normalize || 'lower_trim'),
         values: Array.isArray(entry.values) ? entry.values.map(String) : [],
       }))
       .filter((entry) => entry.field)
@@ -287,7 +285,6 @@ export function deriveStudioEnumListsWithValues(
     return knownFields
       .map(([field, values]) => ({
         field: String(field || ''),
-        normalize: 'lower_trim',
         values: Array.isArray(values) ? values.map(String) : [],
       }))
       .filter((entry) => entry.field)

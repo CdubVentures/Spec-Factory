@@ -57,6 +57,12 @@ No active high-priority Auditor 1 findings remain after this audit.
 | M21 | Storage HTML artifact serve route | `GET /storage/runs/:runId/sources/:contentHash/html` now serves SQL-indexed gzipped HTML artifacts with path validation under the run HTML artifact directory. Focused storage route proof passed. |
 | M22 | Crawl4AI extraction artifact API | Runtime Ops now serves persisted Crawl4AI JSON extraction artifacts through `GET /indexlab/run/:runId/runtime/extractions/crawl4ai/:filename`, matching the existing GUI panel contract. Focused Runtime Ops route proof passed. |
 | M23 | Storage run detail freshness contract | Documented that storage mutation events invalidate broad `['storage']`, which includes run-detail queries `['storage', 'runs', runId]`; the 60s stale window is not the post-mutation freshness boundary. Focused invalidation proof passed. |
+| M24 | Query-key scope contract is incomplete | `DOMAIN_QUERY_TEMPLATES` now documents category/global query-key scope semantics next to the source registry; focused data-change tests prove every domain template and every registered event fallback materializes the expected scoped query keys. |
+| M26 | Catalog sortable finder columns are hardcoded in tests | Overview sort contract proof now derives the ordered finder-backed sortable columns from the generated finder panel registry, which is generated from `FINDER_MODULES`, instead of a hardcoded CEF/PIF/RDF/SKU/KF list. Focused Overview sort proof passed. |
+| M27 | Finder-specific knob schemas are not tied to rendered controls | Finder settings schemas now type `widget` against the shared widget-name contract, widget registration derives from that same contract, and the focused registry test proves every schema widget points at a registered renderer control. |
+| M28 | Cross-finder cascade data-state invariants are thin | Added a cross-finder delete-variant regression that seeds PIF progress, RDF, SKU, product candidates, and variant fields; fixed PIF progress cleanup so CEF variant delete removes stale `pif_variant_progress` rows. Focused lifecycle/PIF proof passed. |
+| M29 | Prompt wording assertions are brittle | RDF/SKU scalar prompt tests now assert rendered slot bags, output JSON keys, and injected identity/discovery data instead of hardcoded guidance prose. Focused prompt proof passed. |
+| L10/L11 | `reviewLayoutByCategory` cache cleanup | The delete-only runtime map was retired from bootstrap, process, Studio, and Review API contexts. Source search confirms no production references remain; focused process/review/studio tests passed. |
 | H2-old | PIF runtime JSON read/modify paths | SQL-first runtime reader table and focused PIF suite: 184 passed, 0 failed. |
 | H3-old | Storage Run Detail B2 durable projection/finalizer coverage | `run_sources` schema/finalizer/rebuild confirmed; focused storage/indexing suite: 44 passed, 0 failed. |
 | H4-old | Deleted-DB rebuild coverage for `field_key_order` | `fieldKeyOrderReseed` proof: 7 passed, 0 failed. |
@@ -70,11 +76,6 @@ No active high-priority Auditor 1 findings remain after this audit.
 
 | ID | Issue | Primary Area | Work Shape |
 |---|---|---|---|
-| M24 | Query-key scope contract is incomplete | Event registry/tests | Document event scope expectations next to source registry and add focused tests. |
-| M26 | Catalog sortable finder columns are hardcoded in tests | Overview/finder registry tests | Derive expected lists from `FINDER_MODULES`. |
-| M27 | Finder-specific knob schemas are not tied to rendered controls | Finder settings tests | Add schema-to-rendered-control contract test. |
-| M28 | Cross-finder cascade data-state invariants are thin | CEF/PIF/RDF/SKU cascade | Populate affected projections, delete CEF variant, assert cascade cleanup. |
-| M29 | Prompt wording assertions are brittle | Prompt tests | Replace wording assertions with structural prompt assertions. |
 | M30 | No root regenerate-all codegen entry point | Codegen workflow | Add approved root codegen script only with explicit package-script approval. |
 | M31 | LLM phase generator is a super-generator | Codegen architecture | Document or split only when it becomes hard to maintain. |
 | M32 | Finder typegen has opt-in coverage | Finder generated types | Decide universal typegen vs documented opt-in criteria. |
@@ -86,8 +87,6 @@ No active high-priority Auditor 1 findings remain after this audit.
 |---|---|---|---|
 | L3 | PIF `image-processed` does not update `pif_variant_progress` unless ring semantics change | PIF progress projection | Keep watch item unless rings move to raw image counts. |
 | L7 | Data-change domain mapping is not easy to audit from source | Event registry/generated resolver | Improve source registry/generated resolver documentation. |
-| L10 | Direct field-key-order PUT may miss `reviewLayoutByCategory` invalidation | Server cache invalidation | Wire invalidation only if that cache is active. |
-| L11 | `reviewLayoutByCategory` may be unused | Server cache cleanup | Confirm and delete if dead. |
 | L12 | Component/enum cache invalidation plumbing may be dead | Server route cleanup | Remove dead plumbing or add WHY comment. |
 | L16 | No cross-system evidence enum-sync test | Evidence enum tests | Add parity test if evidence kinds change again. |
 | L17 | Orphaned billing-event counters are not surfaced | Billing observability | Show telemetry warning counters when non-zero. Coordinate UI display with Auditor 2 if needed. |
@@ -106,6 +105,132 @@ No active high-priority Auditor 1 findings remain after this audit.
 | L39 | Negative invalidation-scope tests are sparse | Invalidation tests | Add small negative invariants for broad templates. |
 
 ## Work Log
+
+### 2026-04-28 - M29 Structural Prompt Assertions
+
+Closed M29 by replacing brittle scalar prompt wording checks with structure-oriented contracts in RDF and SKU prompt adapter tests.
+
+| Area | Contract |
+|---|---|
+| Output shape | Prompt tests assert `Return JSON` keys for RDF/SKU scalar payloads, including evidence/discovery fields and `unknown_reason`. |
+| Source guidance | Compiled prompts must render the exported source-guidance slot bags for each finder instead of matching specific guidance sentences. |
+| Variant disambiguation | Compiled prompts must render the exported variant-disambiguation slot bags for shared/base/variant cases. |
+| Identity/discovery | Tests verify ambiguity levels change injected identity context and empty previous-discovery input omits prior URL/query data. |
+
+Proof:
+
+```text
+node src\features\release-date\tests\releaseDateLlmAdapter.test.js
+node src\features\sku\tests\skuLlmAdapter.test.js
+```
+
+Result: 44 focused prompt tests passed, 0 failed.
+
+### 2026-04-28 - M28 Cross-Finder Variant Delete Cascade
+
+Closed M28 by adding a focused CEF variant-delete regression across downstream finder projections and fixing the stale PIF progress gap.
+
+| Area | Contract |
+|---|---|
+| PIF progress | Deleting a CEF variant removes the matching `pif_variant_progress` SQL row, even though PIF image JSON cleanup is handled separately. |
+| RDF/SKU candidates | Variant-anchored field candidates for `release_date` and `sku` are deleted from SQL and product JSON mirrors. |
+| RDF/SKU history | Registry-driven `variantFieldProducer` cleanup removes deleted-variant run shells and summary candidates for both RDF and SKU. |
+| Product mirror | `product.json.variant_fields[variantId]` and deleted-variant candidate entries are removed while surviving variants remain. |
+
+Proof:
+
+```text
+node src\features\color-edition\tests\variantLifecycle.crossFinderCascade.test.js
+node src\features\color-edition\tests\variantLifecycle.test.js
+node src\features\product-image\tests\variantPropagation.test.js
+node --check src\features\product-image\variantPropagation.js
+```
+
+Result: 61 focused tests passed, 0 failed. `node --check` passed. The new regression failed before the production patch on stale `pif_variant_progress` for the deleted variant and passed after the cleanup fix.
+
+### 2026-04-28 - M27 Finder Settings Widget Contract
+
+Closed M27 by tying finder settings schema widgets to the rendered control registry:
+
+| Area | Contract |
+|---|---|
+| Widget names | `SETTING_WIDGET_NAMES` is the shared contract for supported finder settings widgets. |
+| Runtime registration | The widget registration module derives from `SETTING_WIDGET_NAMES`, with TypeScript requiring one component per supported widget name. |
+| Generated schema | `FinderSettingsEntry.widget` is generated as `SettingWidgetName`, so unknown widget names fail the GUI typecheck. |
+| Focused test | The finder settings registry test asserts every schema widget references a supported renderer control. |
+
+Proof:
+
+```text
+node tools\gui-react\src\features\pipeline-settings\state\__tests__\finderSettingsRegistryContract.test.ts
+node --check tools\gui-react\scripts\generateLlmPhaseRegistry.js
+cd tools\gui-react && npm exec -- tsc -b
+git diff --check -- tools/gui-react/scripts/generateLlmPhaseRegistry.js tools/gui-react/src/features/pipeline-settings/components/widgets/index.ts tools/gui-react/src/features/pipeline-settings/components/widgets/widgetRegistryNames.ts tools/gui-react/src/features/pipeline-settings/state/finderSettingsRegistry.generated.ts tools/gui-react/src/features/pipeline-settings/state/__tests__/finderSettingsRegistryContract.test.ts
+```
+
+Result: 9 focused tests passed, 0 failed. Generator syntax check, GUI typecheck, and diff whitespace check passed.
+
+### 2026-04-28 - M26 Overview Sort Finder Registry Contract
+
+Closed M26 by replacing the hardcoded finder column expectations in the Overview sort test with a registry-derived ordered contract.
+
+| Area | Contract |
+|---|---|
+| Finder columns | Expected Overview finder sort columns are derived from `FINDER_PANELS`, the generated GUI registry sourced from core `FINDER_MODULES`. |
+| Static columns | Non-finder Overview columns remain explicit prefix/suffix contract entries. |
+| Sortable list | `OVERVIEW_SORTABLE_COLUMN_IDS` must equal static prefix + registry-derived finder columns + static suffix. |
+
+Proof:
+
+```text
+node tools\gui-react\src\pages\overview\__tests__\overviewSort.test.ts
+```
+
+Result: 31 tests passed, 0 failed.
+
+### 2026-04-28 - Catalog Projection Performance Follow-up
+
+Improved the SQL catalog projection path that feeds Overview by indexing category candidate rows once per catalog refresh:
+
+| Area | Change |
+|---|---|
+| Scalar variant cells | Reuse a per-product/per-field candidate index for SKU/RDF variant projection instead of filtering each product candidate list for every scalar variant cell. |
+| Key tier progress | Reuse a compiled field-to-tier index and category resolved/concrete field sets for full-catalog key progress instead of recomputing tier totals for every product. |
+
+Proof:
+
+```text
+node src\app\api\tests\catalogHelpersSqlPath.test.js
+node src\app\api\tests\apiCatalogHelpersWiring.test.js
+node --check src\app\api\catalogHelpers.js
+git diff --check -- src/app/api/catalogHelpers.js src/app/api/tests/catalogHelpersSqlPath.test.js
+```
+
+Result: 23 tests passed, 0 failed. `node --check` and `git diff --check` passed.
+
+### 2026-04-28 - M24 Query-Key Scope Contract
+
+Closed M24 by making the query-key scope contract explicit next to the source registry:
+
+| Scope | Contract |
+|---|---|
+| Query templates | `DOMAIN_QUERY_TEMPLATES` entries are React Query prefixes; broad keys intentionally refresh all descendants. |
+| Category scope | `CATEGORY_TOKEN` materializes once per scoped category from the payload/categories. |
+| Global scope | Templates without `CATEGORY_TOKEN` materialize once per event. |
+| Explicit domains | Payload `domains` override `EVENT_REGISTRY` fallback domains, so emitters that pass explicit domains must include every affected domain. |
+
+Added focused contract tests proving every registered domain template materializes for scoped categories and every registered event fallback expands through the shared registry into the expected query-key prefixes.
+
+Proof:
+
+```text
+node tools\gui-react\src\features\data-change\__tests__\dataChangeInvalidationMap.test.js
+node src\core\events\tests\eventRegistryCoverage.test.js
+node src\core\events\tests\dataChangeContract.test.js
+node src\core\events\tests\dataChangeDomainParity.test.js
+```
+
+Result: 42 tests passed, 0 failed. The normal `node --test --test-force-exit ...` invocation hit sandbox `spawn EPERM` before executing the file, so the focused proof was run in-process.
 
 ### 2026-04-28 - M23 Storage Run Detail Freshness Contract
 

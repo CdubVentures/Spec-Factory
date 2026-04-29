@@ -105,7 +105,6 @@
         "ultraweave"
       ],
       "mode": "scratch",
-      "normalize": "lowercase_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -117,7 +116,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -135,7 +133,6 @@
         "smooth-touch"
       ],
       "mode": "scratch",
-      "normalize": "lowercase canonical phrase; trim/collapse whitespace; preserve meaningful hyphens such as smooth-touch",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -225,7 +222,6 @@
         "yellow"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -241,7 +237,6 @@
         "PS/2"
       ],
       "mode": "scratch",
-      "normalize": "trim/casefold; canonicalize usb type a/usb-a/type-a/full-size usb to usb-a, usb type c/usb-c/type-c to usb-c, ps2/ps/2/mini-din-6 to ps/2",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -257,7 +252,6 @@
         "wireless"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -273,7 +267,6 @@
         "Bluetooth"
       ],
       "mode": "scratch",
-      "normalize": "trim; case-insensitive; collapse whitespace; normalize 2.4g/2.4 ghz/2.4ghz and bt/ble/bluetooth le source phrases through aliases",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -290,7 +283,6 @@
         "multiple"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -302,7 +294,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -314,7 +305,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -336,7 +326,6 @@
         "59"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -357,7 +346,6 @@
         "UHMWPE"
       ],
       "mode": "scratch",
-      "normalize": "canonical material class plus ptfe grade normalization",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -373,7 +361,6 @@
         "left"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -389,7 +376,6 @@
         "outward"
       ],
       "mode": "scratch",
-      "normalize": "casefold + trim + map degree-qualified direction phrases to canonical direction",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -401,7 +387,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -417,7 +402,6 @@
         "fingertip"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -434,7 +418,6 @@
         "extra large"
       ],
       "mode": "scratch",
-      "normalize": "casefold + trim + collapse spaces + normalize hyphen/slash ranges",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -452,7 +435,6 @@
         "back - aggressive"
       ],
       "mode": "scratch",
-      "normalize": "casefold + trim + normalize hyphen/dash spacing",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -464,7 +446,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -481,7 +462,6 @@
         "fixed high"
       ],
       "mode": "scratch",
-      "normalize": "lowercase; trim; collapse whitespace and hyphen variants for matching only",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -515,7 +495,6 @@
         "none"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -539,7 +518,6 @@
         "composite"
       ],
       "mode": "scratch",
-      "normalize": "lowercase; trim; collapse punctuation/hyphen variants; singular canonical material names",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -567,7 +545,6 @@
         "Telink 8273"
       ],
       "mode": "scratch",
-      "normalize": "trim, collapse spaces, case-insensitive maker/part matching, preserve canonical maker + part casing",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -588,7 +565,6 @@
         "Zowie"
       ],
       "mode": "scratch",
-      "normalize": "casefold, trim, collapse punctuation, alias-to-brand",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -609,7 +585,6 @@
         "Broadcom"
       ],
       "mode": "scratch",
-      "normalize": "trim, collapse whitespace, canonical brand capitalization, strip sensor model/spec suffixes",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -634,7 +609,6 @@
         "Raesha"
       ],
       "mode": "scratch",
-      "normalize": "trim; preserve canonical brand capitalization; map unambiguous switch model prefixes/names to maker; keep model/lifetime/type terms out of brand chips",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -651,7 +625,6 @@
         "n/a"
       ],
       "mode": "scratch",
-      "normalize": "casefold, trim, hyphen/space-insensitive normalization for usb connector phrases",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -663,7 +636,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -675,7 +647,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -687,7 +658,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -699,7 +669,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -711,7 +680,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -726,7 +694,6 @@
         "optical"
       ],
       "mode": "scratch",
-      "normalize": "lowercase, trim, exact semantic alias mapping only",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -738,7 +705,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -754,7 +720,6 @@
         "symmetrical"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -766,7 +731,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -778,7 +742,6 @@
       "header_row": 0,
       "manual_values": [],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -795,7 +758,6 @@
         "optical / mechanical"
       ],
       "mode": "scratch",
-      "normalize": "lowercase, trim, normalize slash spacing around `optical / mechanical`",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -4269,27 +4231,6 @@
         },
         "reasoning_note": "Extract the scroll-wheel encoder component, not the middle-click switch, main-button switches, sensor, or marketing-only scroll-wheel feature. Prefer exact product spec wording such as \"Wheel Encoder\" or \"Scroll Wheel Encoder\" from manufacturer pages, then component-maker documentation, then reputable mouse component databases. Normalize source wording to the canonical component identity with maker/variant when needed: TTC Gold, TTC Silver, Pulsar Blue Encoder, Razer Optical Scroll Wheel, Zowie Optical (24 steps), Kailh Dustproof, Alps Encoder. Map phrases like \"TTC silver (wide)\", \"TTC Dust-Proof Silver\", or \"TTC Silver Wheel Mouse Encoder\" to TTC Silver unless the component DB has a separate size/width variant. If only type/steps are proven, emit a generic Mechanical Encoder or Optical Encoder only when the source directly proves that; do not guess a maker. Do not infer from scroll feel, wheel reviews, replacement-part compatibility, or sibling/generation values. If only aggregator/community evidence is available, prefer two corroborating sources or return unk."
       },
-      "aliases": [
-        "scroll wheel encoder",
-        "wheel encoder",
-        "rotary encoder",
-        "mouse wheel encoder",
-        "wheel encoder model",
-        "scroll sensor",
-        "optical scroll wheel",
-        "mechanical scroll wheel",
-        "Wheel Encoder",
-        "TTC silver (wide)",
-        "TTC Dust-Proof Silver",
-        "TTC Silver Wheel Mouse Encoder",
-        "TTC Golden Wheel Mouse Encoder",
-        "Kailh Dustproof",
-        "Razer Optical Scroll Wheel",
-        "24-step scroll wheel",
-        "16-step scroll wheel",
-        "middle mouse button switch (negative cue)",
-        "scroll switch (negative cue)"
-      ],
       "availability": "sometimes",
       "canonical_key": "encoder",
       "component": null,
@@ -9908,16 +9849,6 @@
         },
         "reasoning_note": "Extract the exact tracking sensor identity used by the exact mouse model/edition. Return a component/model name, not generic technology such as \"optical\", \"laser\", DPI/IPS specs, or marketing claims. Prefer brand-official sensor names, then normalize maker prefixes and suffixes only through exact component aliases (for example, \"Logitech HERO 2\" -> \"HERO 2\" and \"Razer Focus Pro 35K Optical Sensor Gen-2\" -> \"Focus Pro 35K\"). Use variant identity aggressively: Pro/HyperSpeed/SE/DW/CW/wired changes can change the sensor, while colorways usually do not. For bare official numbers such as \"3370 sensor\" or \"3360 sensor\", corroborate before expanding to a PixArt PAW/PMW canonical name; otherwise keep the bare official model or return unk if it is not a defensible model identity. If sources only say \"optical sensor\", \"precision tracking\", DPI, or tracking technology with no exact model/name, return unk for sensor and leave technology classification to sensor_type."
       },
-      "aliases": [
-        "Razer Focus Pro 35K Optical Sensor Gen-2",
-        "Razer Focus Pro 45K Optical Sensor Gen-2",
-        "Razer Focus Pro 50K Optical Sensor Gen-3",
-        "Logitech HERO 2",
-        "TrueMove Core optical sensor",
-        "XS-1 Flagship Sensor",
-        "3370 sensor",
-        "3360 sensor"
-      ],
       "availability": "sometimes",
       "canonical_key": "sensor",
       "component": {
@@ -12078,19 +12009,6 @@
         },
         "reasoning_note": "Extract the stock primary left/right click switch identity, not the scroll-wheel encoder, side-button switches, hot-swap capability, switch_type, or click lifespan. Prefer exact manufacturer/model or branded technology names (for example, Razer Optical Mouse Switches Gen-3, LIGHTFORCE Hybrid, Kailh GX SPDT, Huano Transparent Blue Shell Pink Dot, ROG Micro Switch II). Treat brand-only names such as Huano, Omron, Kailh, TTC, or generic phrases such as optical/mechanical switches as insufficient for this field unless the product source presents that wording as the switch's marketed component name; those broad facts belong to switch_brand or switch_type. For hot-swappable mice, record the factory-installed main switches; spare/included switch packs are corroboration only, not a union. When sources disagree by edition, revision, colorway, or sibling model, use only evidence tied to the exact product and otherwise return unk."
       },
-      "aliases": [
-        "main button switch",
-        "primary mouse button switches",
-        "left/right click switches",
-        "M1/M2 switches",
-        "click switches",
-        "key switch",
-        "microswitch",
-        "micro switch",
-        "switch model",
-        "switch type",
-        "button switches"
-      ],
       "availability": "sometimes",
       "canonical_key": "switch",
       "component": null,

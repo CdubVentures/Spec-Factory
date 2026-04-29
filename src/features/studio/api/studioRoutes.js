@@ -242,7 +242,6 @@ export function registerStudioRoutes(ctx) {
     storage,
     startProcess,
     broadcastWs,
-    reviewLayoutByCategory,
     cleanVariant,
     appDb,
     syncSpecDbForCategory,
@@ -378,7 +377,7 @@ export function registerStudioRoutes(ctx) {
         type: 'compile',
         category,
         config,
-        deps: { sessionCache, invalidateFieldRulesCache, reviewLayoutByCategory, syncSpecDbForCategory, getSpecDb, broadcastWs },
+        deps: { sessionCache, invalidateFieldRulesCache, syncSpecDbForCategory, getSpecDb, broadcastWs },
       });
       if (error === 'category_busy') return jsonRes(res, 409, { error: 'category_busy' });
       return jsonRes(res, 200, { operationId, type: 'compile', category, running: true });
@@ -534,7 +533,6 @@ export function registerStudioRoutes(ctx) {
         });
 
         sessionCache.invalidateSessionCache(category);
-        reviewLayoutByCategory.delete(category);
 
         emitDataChange({
           broadcastWs,
@@ -615,7 +613,6 @@ export function registerStudioRoutes(ctx) {
         }
         await saveFieldStudioMap({ category, fieldStudioMap: saveReadyFieldStudioMap, config });
         sessionCache.invalidateSessionCache(category);
-        reviewLayoutByCategory.delete(category);
         const refreshedReports = await refreshCategoryAuditReportsAfterImport({
           generateCategoryAuditReportPack,
           category,
@@ -745,7 +742,6 @@ export function registerStudioRoutes(ctx) {
           path,
         });
         sessionCache.invalidateSessionCache(category);
-        reviewLayoutByCategory.delete(category);
         const refreshedReports = await refreshCategoryAuditReportsAfterImport({
           generateCategoryAuditReportPack,
           category,
@@ -873,7 +869,6 @@ export function registerStudioRoutes(ctx) {
       const category = parts[1];
       sessionCache.invalidateSessionCache(category);
       invalidateFieldRulesCache(category);
-      reviewLayoutByCategory.delete(category);
       return jsonRes(res, 200, { ok: true });
     }
 

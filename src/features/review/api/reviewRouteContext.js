@@ -21,7 +21,7 @@ export function createReviewRouteContext(options = {}) {
   const {
     jsonRes, readJsonBody, toInt, hasKnownValue, config, storage, OUTPUT_ROOT,
     HELPER_ROOT, path, fs, getSpecDb, getSpecDbReady,
-    sessionCache, reviewLayoutByCategory,
+    sessionCache,
     broadcastWs, specDbCache, invalidateFieldRulesCache, safeReadJson, spawn,
     isMeaningfulValue,
     normalizeLower,
@@ -33,7 +33,7 @@ export function createReviewRouteContext(options = {}) {
     HELPER_ROOT, path, fs, getSpecDb, getSpecDbReady, buildReviewLayout,
     buildProductReviewPayload, buildComponentReviewLayout,
     buildComponentReviewPayloads, buildEnumReviewPayloads,
-    sessionCache, reviewLayoutByCategory,
+    sessionCache,
     broadcastWs, specDbCache, findProductsReferencingComponent,
     invalidateFieldRulesCache,
     safeReadJson, slugify, spawn, resolveGridFieldStateForMutation,

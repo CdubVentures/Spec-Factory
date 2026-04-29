@@ -24,6 +24,7 @@ function createMockSpecDb({
   concreteByPidField = {},
   candidateReads = null,
   projectionReads = null,
+  candidateRowsByCategory = null,
 } = {}) {
   const pif = pifSettings || {};
   const kfs = keyFinderSettings || {};
@@ -47,7 +48,7 @@ function createMockSpecDb({
     },
     getAllFieldCandidatesByCategory: () => {
       countRead('allCandidatesByCategory');
-      return fieldCandidateRowsByCategory();
+      return candidateRowsByCategory || fieldCandidateRowsByCategory();
     },
     getFieldCandidatesByProductAndField: (pid, fk, variantId) => {
       countRead('fieldCandidatesByProductAndField');
@@ -517,8 +518,19 @@ test('SQL catalog builder: full catalog uses category projections instead of per
         ],
         'mouse-b': [
           { field_key: 'dpi_max', status: 'resolved', confidence: 80 },
+          { field_key: 'weight_g', status: 'resolved', confidence: 95 },
           { field_key: 'release_date', variant_id: 'v_white', value: '2026-01-01', status: 'resolved', confidence: 92 },
         ],
+      },
+      compiledFields: {
+        dpi_max: { difficulty: 'easy', required_level: 'mandatory' },
+        weight_g: { difficulty: 'medium', required_level: 'mandatory' },
+        sku: { difficulty: 'hard', required_level: 'mandatory' },
+        release_date: { difficulty: 'hard', required_level: 'mandatory' },
+      },
+      concreteByPidField: {
+        'mouse-a': { dpi_max: { confidence: 96, evidenceCount: 3 } },
+        'mouse-b': { weight_g: { confidence: 98, evidenceCount: 4 } },
       },
       fieldOrderJson: JSON.stringify(['dpi_max', 'sku', 'release_date']),
       cefRunsByPid: {
@@ -542,22 +554,91 @@ test('SQL catalog builder: full catalog uses category projections instead of per
   const byPid = Object.fromEntries(rows.map((row) => [row.productId, row]));
 
   assert.equal(byPid['mouse-a'].fieldsFilled, 2);
-  assert.equal(byPid['mouse-b'].fieldsFilled, 2);
+  assert.equal(byPid['mouse-b'].fieldsFilled, 3);
   assert.equal(byPid['mouse-a'].cefRunCount, 1);
   assert.equal(byPid['mouse-b'].cefRunCount, 2);
   assert.equal(byPid['mouse-a'].pifVariants[0].image_count, 3);
   assert.equal(byPid['mouse-b'].rdfVariants[0].value, '2026-01-01');
+  assert.deepEqual(byPid['mouse-a'].keyTierProgress, [
+    { tier: 'easy', total: 1, resolved: 1, perfect: 1 },
+    { tier: 'medium', total: 1, resolved: 0, perfect: 0 },
+    { tier: 'hard', total: 0, resolved: 0, perfect: 0 },
+    { tier: 'very_hard', total: 0, resolved: 0, perfect: 0 },
+    { tier: 'mandatory', total: 2, resolved: 1, perfect: 1 },
+  ]);
+  assert.deepEqual(byPid['mouse-b'].keyTierProgress, [
+    { tier: 'easy', total: 1, resolved: 1, perfect: 0 },
+    { tier: 'medium', total: 1, resolved: 1, perfect: 1 },
+    { tier: 'hard', total: 0, resolved: 0, perfect: 0 },
+    { tier: 'very_hard', total: 0, resolved: 0, perfect: 0 },
+    { tier: 'mandatory', total: 2, resolved: 2, perfect: 1 },
+  ]);
 
   assert.equal(projectionReads.allCandidatesByCategory, 1);
   assert.equal(projectionReads.variantsByCategory, 1);
   assert.equal(projectionReads.pifProgressByCategory, 1);
   assert.equal(projectionReads.cefRunsByCategory, 1);
+  assert.equal(projectionReads.fieldBucketsByCategory, 1);
+  assert.equal(projectionReads.pooledEvidenceCountsByCategory, 1);
   assert.equal(projectionReads.allCandidatesByProduct || 0, 0);
   assert.equal(projectionReads.fieldCandidatesByProductAndField || 0, 0);
   assert.equal(projectionReads.variantsByProduct || 0, 0);
   assert.equal(projectionReads.pifProgressByProduct || 0, 0);
   assert.equal(projectionReads.cefRunsByProduct || 0, 0);
   assert.equal(projectionReads.resolvedFieldCandidate || 0, 0);
+});
+
+test('SQL catalog builder: full catalog indexes category candidates for scalar variant cells', async () => {
+  let fieldKeyReads = 0;
+  const candidateRowsByCategory = [
+    { product_id: 'mouse-a', fieldKey: 'sku', variant_id: 'v_black', value: 'A-BLK', status: 'resolved', confidence: 91 },
+    { product_id: 'mouse-a', fieldKey: 'sku', variant_id: 'v_white', value: 'A-WHT', status: 'resolved', confidence: 92 },
+    { product_id: 'mouse-a', fieldKey: 'release_date', variant_id: 'v_black', value: '2026-01-01', status: 'resolved', confidence: 93 },
+    { product_id: 'mouse-a', fieldKey: 'release_date', variant_id: 'v_white', value: '2026-02-01', status: 'resolved', confidence: 94 },
+    { product_id: 'mouse-a', fieldKey: 'dpi_max', value: '26000', status: 'resolved', confidence: 90 },
+    { product_id: 'mouse-b', fieldKey: 'sku', variant_id: 'v_black', value: 'B-BLK', status: 'resolved', confidence: 91 },
+    { product_id: 'mouse-b', fieldKey: 'sku', variant_id: 'v_white', value: 'B-WHT', status: 'resolved', confidence: 92 },
+    { product_id: 'mouse-b', fieldKey: 'release_date', variant_id: 'v_black', value: '2026-03-01', status: 'resolved', confidence: 93 },
+    { product_id: 'mouse-b', fieldKey: 'release_date', variant_id: 'v_white', value: '2026-04-01', status: 'resolved', confidence: 94 },
+    { product_id: 'mouse-b', fieldKey: 'dpi_max', value: '30000', status: 'resolved', confidence: 90 },
+  ].map(({ fieldKey, ...row }) => ({
+    ...row,
+    get field_key() {
+      fieldKeyReads += 1;
+      return fieldKey;
+    },
+  }));
+  const buildCatalog = createCatalogBuilder({
+    getSpecDb: () => createMockSpecDb({
+      products: [
+        { id: 1, product_id: 'mouse-a', brand: 'Acme', model: 'A', base_model: 'A', variant: '', identifier: '', status: 'active' },
+        { id: 2, product_id: 'mouse-b', brand: 'Beta', model: 'B', base_model: 'B', variant: '', identifier: '', status: 'active' },
+      ],
+      fieldOrderJson: JSON.stringify(['dpi_max', 'sku', 'release_date']),
+      candidateRowsByCategory,
+      variantsByPid: {
+        'mouse-a': [
+          { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', color_atoms: ['black'] },
+          { variant_id: 'v_white', variant_key: 'color:white', variant_label: 'White', color_atoms: ['white'] },
+        ],
+        'mouse-b': [
+          { variant_id: 'v_black', variant_key: 'color:black', variant_label: 'Black', color_atoms: ['black'] },
+          { variant_id: 'v_white', variant_key: 'color:white', variant_label: 'White', color_atoms: ['white'] },
+        ],
+      },
+    }),
+    cleanVariant,
+  });
+
+  const rows = await buildCatalog('mouse');
+  const byPid = Object.fromEntries(rows.map((row) => [row.productId, row]));
+
+  assert.equal(byPid['mouse-a'].skuVariants.find((row) => row.variant_id === 'v_white').value, 'A-WHT');
+  assert.equal(byPid['mouse-b'].rdfVariants.find((row) => row.variant_id === 'v_black').value, '2026-03-01');
+  assert.ok(
+    fieldKeyReads <= candidateRowsByCategory.length * 4,
+    `expected candidate field keys to be read from indexed rows, got ${fieldKeyReads}`,
+  );
 });
 
 test('SQL catalog builder: keyTierProgress buckets fields by difficulty and counts resolved', async () => {

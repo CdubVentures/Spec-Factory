@@ -54,7 +54,7 @@ Generic infrastructure for LLM-driven finder modules. Any module that discovers 
 ### `finderSqlStore.js` — generic SQL store (summary + runs tables)
 - `createFinderSqlStore({ db, category, module })` — factory returning:
   - `upsert(row)`, `get(productId)`, `listByCategory(category)`, `remove(productId)`
-  - `insertRun(row)`, `listRuns(productId)`, `getLatestRun(productId)`
+  - `insertRun(row)`, `listRuns(productId)`, `listRunsForSummary(productId)`, `getLatestRun(productId)`
   - `removeRun(productId, runNumber)`, `removeAllRuns(productId)`
   - `updateRunJson(productId, runNumber, { selected, response })` — targeted blob update on an existing run row (preserves metadata columns). Used by the variant cascade.
   - `updateSummaryField(productId, field, value)` — single-column summary update.

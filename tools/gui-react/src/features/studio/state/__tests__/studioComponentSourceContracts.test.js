@@ -80,6 +80,53 @@ test('studio component sources preserve component_only flag through migratePrope
   assert.equal(withFalse.component_only, undefined);
 });
 
+test('studio component sources preserve semantic component attribute types', async () => {
+  const { migrateProperty } = await loadStudioComponentSources();
+
+  assert.deepEqual(
+    migrateProperty({
+      field_key: 'sensor_date',
+      type: 'date',
+      variance_policy: 'authoritative',
+      tolerance: null,
+    }),
+    {
+      field_key: 'sensor_date',
+      type: 'date',
+      variance_policy: 'authoritative',
+      tolerance: null,
+    },
+  );
+  assert.deepEqual(
+    migrateProperty({
+      field_key: 'flawless_sensor',
+      type: 'boolean',
+      variance_policy: 'authoritative',
+      tolerance: null,
+    }),
+    {
+      field_key: 'flawless_sensor',
+      type: 'boolean',
+      variance_policy: 'authoritative',
+      tolerance: null,
+    },
+  );
+  assert.deepEqual(
+    migrateProperty({
+      field_key: 'operating_range',
+      type: 'range',
+      variance_policy: 'range',
+      tolerance: 2,
+    }),
+    {
+      field_key: 'operating_range',
+      type: 'range',
+      variance_policy: 'range',
+      tolerance: 2,
+    },
+  );
+});
+
 test('studio component sources create empty component rows without retired source priority', async () => {
   const { createEmptyComponentSource } = await loadStudioComponentSources();
 

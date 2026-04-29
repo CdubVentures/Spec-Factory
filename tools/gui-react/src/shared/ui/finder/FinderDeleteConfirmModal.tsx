@@ -40,6 +40,8 @@ function resolveTitle(target: DeleteTarget, moduleLabel: string): string {
     case 'field-row-delete': return `Delete all "${target.fieldKey ?? ''}" row data?`;
     case 'product-nonvariant-unpublish': return `Unpublish ${target.count ?? 0} key(s) for "${target.label ?? target.productId ?? ''}"?`;
     case 'product-nonvariant-delete': return `Delete all non-variant key data for "${target.label ?? target.productId ?? ''}"?`;
+    case 'component-row-delete': return `Delete component "${target.label ?? ''}"?`;
+    case 'component-type-delete': return `Delete all ${target.count ?? 0} "${target.label ?? ''}" component row(s)?`;
     case 'field-variant-unpublish': return `Unpublish ${target.fieldKey ?? ''} for "${target.label ?? target.variantId ?? ''}"?`;
     case 'field-variant-delete': return `Delete all ${target.fieldKey ?? ''} data for "${target.label ?? target.variantId ?? ''}"?`;
     case 'field-all-variants-unpublish': return `Unpublish ${target.fieldKey ?? ''} for all ${target.count ?? 0} variant(s)?`;
@@ -95,6 +97,10 @@ function resolveDefaultDescription(target: DeleteTarget, moduleLabel: string): s
       return `Demote every non-variant published key for "${target.label ?? target.productId ?? 'this product'}" back to candidates. Candidates, runs, URL history, and query history are preserved. Reversible.`;
     case 'product-nonvariant-delete':
       return `Permanently wipe every trace of ${target.count ?? 0} non-variant key(s) for "${target.label ?? target.productId ?? 'this product'}": published values, all candidates, evidence, URL/query history, and every primary run. Fresh slate. This cannot be undone.`;
+    case 'component-row-delete':
+      return `Remove this component identity row and unpublish its component, brand, and link fields from ${target.count ?? 0} linked product(s). Other component attributes stay published.`;
+    case 'component-type-delete':
+      return `Remove every component identity row for "${target.label ?? 'this component type'}" and unpublish linked component, brand, and link fields. Other component attributes stay published.`;
     case 'field-variant-unpublish':
       return `Demote the published ${target.fieldKey ?? 'field'} value for "${target.label ?? target.variantId ?? ''}" back to a candidate. Candidates and run history are preserved — a future Run can re-resolve. Reversible.`;
     case 'field-variant-delete':

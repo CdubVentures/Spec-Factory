@@ -2,7 +2,6 @@ import { useEffect, useMemo } from 'react';
 import { usePersistedNumber } from '../../../stores/tabStore.ts';
 import type { ColumnDef } from '@tanstack/react-table';
 import { DataTable } from '../../../shared/ui/data-display/DataTable.tsx';
-import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { usd, compactNumber } from '../../../utils/formatting.ts';
 import { useFormatDateTime } from '../../../utils/dateTime.ts';
 import { resolveBillingCallType } from '../billingCallTypeRegistry.generated.ts';
@@ -279,11 +278,7 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
 
       {/* Content zone — skeleton or real table */}
       {initialLoad ? (
-        <div className="p-5 flex flex-col gap-2">
-          {Array.from({ length: 6 }, (_, i) => (
-            <SkeletonBlock key={i} className="sf-skel-row" />
-          ))}
-        </div>
+        <BillingEntryTableSkeleton pageSize={pageSize} />
       ) : (
         <div className={staleClass || 'sf-fade-in'}>
           <DataTable
@@ -332,6 +327,100 @@ export function BillingEntryTable({ filters, page, onPageChange }: BillingEntryT
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+// WHY: Skeleton mirrors the real DataTable shape — same column count, same
+// per-column widths from the live `columns` ColumnDef sizes, same per-cell
+// chrome (status dot, sf-billing-tag pill, sf-access-tag pill,
+// sf-tok-composition meter), same default 20-row page size. No invented
+// widths — text cells shimmer at 100% of cell width because real value width
+// is unknowable until data loads. Chrome elements (pills, dots, meter) reuse
+// their real CSS classes so dimensions are byte-identical to loaded state.
+interface SkeletonColumn {
+  readonly id: string;
+  readonly header: string;
+  readonly size: number;
+  readonly kind: 'dot' | 'text' | 'tag' | 'access' | 'composition';
+}
+
+const SKELETON_COLUMNS: ReadonlyArray<SkeletonColumn> = [
+  { id: 'status',                header: '',          size: 24,  kind: 'dot' },
+  { id: 'ts',                    header: 'Timestamp', size: 150, kind: 'text' },
+  { id: 'product_id',            header: 'Product',   size: 170, kind: 'text' },
+  { id: 'reason',                header: 'Call Type', size: 120, kind: 'tag' },
+  { id: 'model',                 header: 'Model',     size: 150, kind: 'text' },
+  { id: 'access',                header: 'Access',    size: 65,  kind: 'access' },
+  { id: 'sent_tokens',           header: 'Prompt',    size: 75,  kind: 'text' },
+  { id: 'usage_tokens',          header: 'Usage',     size: 75,  kind: 'text' },
+  { id: 'prompt_tokens',         header: 'Input',     size: 75,  kind: 'text' },
+  { id: 'completion_tokens',     header: 'Output',    size: 90,  kind: 'text' },
+  { id: 'cached_prompt_tokens',  header: 'Cached',    size: 75,  kind: 'text' },
+  { id: 'tokmix',                header: 'Mix',       size: 80,  kind: 'composition' },
+  { id: 'duration',              header: 'Time',      size: 65,  kind: 'text' },
+  { id: 'cost_usd',              header: 'Cost',      size: 80,  kind: 'text' },
+];
+
+function CellSkeleton({ kind }: { readonly kind: SkeletonColumn['kind'] }) {
+  if (kind === 'dot') {
+    return <span className="sf-shimmer inline-block w-2 h-2 rounded-full" aria-hidden="true" />;
+  }
+  if (kind === 'tag') {
+    return <span className="sf-billing-tag sf-shimmer inline-block" aria-hidden="true">&nbsp;</span>;
+  }
+  if (kind === 'access') {
+    return <span className="sf-access-tag sf-access-tag-api sf-shimmer inline-block" aria-hidden="true">&nbsp;</span>;
+  }
+  if (kind === 'composition') {
+    return <span className="sf-tok-composition sf-shimmer" aria-hidden="true" />;
+  }
+  return <span className="sf-shimmer block h-[11px] w-full rounded-sm" aria-hidden="true" />;
+}
+
+function BillingEntryTableSkeleton({ pageSize }: { readonly pageSize: number }) {
+  const rowKeys = useMemo(
+    () => Array.from({ length: pageSize }, (_value, index) => `billing-skel-row-${index}`),
+    [pageSize],
+  );
+  return (
+    <div
+      className="sf-table-shell sf-primitive-table-shell overflow-auto max-h-[calc(100vh-280px)]"
+      data-region="billing-entry-loading"
+      aria-busy="true"
+    >
+      <span className="sr-only">Loading billing call log</span>
+      <table className="min-w-full text-sm" style={{ tableLayout: 'fixed' }}>
+        <colgroup>
+          {SKELETON_COLUMNS.map((col) => (
+            <col key={col.id} style={{ width: col.size }} />
+          ))}
+        </colgroup>
+        <thead className="sf-table-head sticky top-0">
+          <tr>
+            {SKELETON_COLUMNS.map((col) => (
+              <th
+                key={col.id}
+                className="sf-table-head-cell"
+                style={{ width: col.size, minWidth: col.size }}
+              >
+                <div className="flex items-center gap-1">{col.header}</div>
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-sf-border-default">
+          {rowKeys.map((rowKey) => (
+            <tr key={rowKey} className="sf-table-row">
+              {SKELETON_COLUMNS.map((col) => (
+                <td key={col.id} className="px-2 py-1.5 whitespace-nowrap overflow-hidden">
+                  <CellSkeleton kind={col.kind} />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }

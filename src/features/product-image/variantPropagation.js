@@ -291,6 +291,15 @@ function unlinkOrphanedImages(productRoot, productId, variantFilenames, doc) {
   }
 }
 
+function removePifVariantProgressProjection({ specDb, productId, variantId }) {
+  if (!variantId || typeof specDb?.deletePifVariantProgressByVariant !== 'function') return false;
+  const hadRow = typeof specDb.listPifVariantProgressByProduct === 'function'
+    ? specDb.listPifVariantProgressByProduct(productId).some((row) => row.variant_id === variantId)
+    : false;
+  specDb.deletePifVariantProgressByVariant(productId, variantId);
+  return hadRow;
+}
+
 /**
  * Propagate variant deletion across all PIF data for a product.
  *
@@ -307,9 +316,10 @@ function unlinkOrphanedImages(productRoot, productId, variantFilenames, doc) {
  */
 export function propagateVariantDelete({ productId, variantId, variantKey, productRoot, specDb }) {
   productRoot = productRoot || defaultProductRoot();
+  const progressDeleted = removePifVariantProgressProjection({ specDb, productId, variantId });
   const doc = readPifJson(productId, productRoot);
 
-  if (!doc) return { updated: false, counts: { images: 0, runs: 0, evalRecords: 0, carouselSlots: 0 } };
+  if (!doc) return { updated: progressDeleted, counts: { images: 0, runs: 0, evalRecords: 0, carouselSlots: 0 } };
 
   const counts = { images: 0, runs: 0, evalRecords: 0, carouselSlots: 0 };
 

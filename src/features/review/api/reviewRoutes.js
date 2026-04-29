@@ -62,7 +62,6 @@ export function registerReviewRoutes(ctx) {
     buildComponentReviewPayloads,
     buildEnumReviewPayloads,
     sessionCache,
-    reviewLayoutByCategory,
     broadcastWs,
     specDbCache,
     findProductsReferencingComponent,
@@ -190,6 +189,7 @@ export function registerReviewRoutes(ctx) {
       context: {
         readJsonBody,
         jsonRes,
+        config,
         getSpecDbReady,
         resolveEnumMutationContext,
         isMeaningfulValue,

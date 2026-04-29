@@ -99,13 +99,18 @@ const WORKBENCH_PRESETS = [
   'all',
 ] as const;
 const REPORT_SECTIONS = ['artifacts', 'guardrails'] as const;
+const REPORT_LINES = ['report-line-0', 'report-line-1', 'report-line-2'] as const;
 
 function MetricSkeleton({ label, category }: { readonly label: string; readonly category: string }) {
   return (
     <div className={sectionCls} data-region="studio-loading-metric-card">
       <div className={labelCls}>{label}</div>
       <div className="text-lg font-semibold">
-        {label === 'Category' ? category : <SkeletonBlock className="sf-skel-caption" />}
+        {label === 'Category' ? (
+          category
+        ) : (
+          <span className="sf-shimmer inline-block h-5 w-20 rounded-sm" aria-hidden="true" />
+        )}
       </div>
     </div>
   );
@@ -161,11 +166,9 @@ function StudioShellSkeleton({
 function MappingHeaderSkeleton() {
   return (
     <div className="flex items-start justify-between gap-3" data-region="studio-loading-mapping-header">
-      <div>
+      <div className="space-y-1.5">
         <h3 className="text-sm font-semibold">Mapping Studio</h3>
-        <p className="text-xs sf-text-subtle mt-1 max-w-2xl">
-          <SkeletonBlock className="sf-skel-bar" />
-        </p>
+        <SkeletonBlock className="sf-skel-bar-label" />
       </div>
       <button
         type="button"
@@ -209,16 +212,16 @@ function ComponentSourceRowSkeleton({ row }: { readonly row: string }) {
           disabled
         >
           <span className="absolute left-0 top-1/2 -translate-y-1/2 inline-flex items-center justify-center w-5 h-5 border sf-border-soft rounded text-xs font-medium sf-text-muted">-</span>
-          <span className="w-full text-left px-6 truncate"><SkeletonBlock className="sf-skel-bar" /></span>
+          <span className="w-full text-left px-6 truncate"><SkeletonBlock className="sf-skel-bar-label" /></span>
         </button>
         <button type="button" className="px-2 py-1 text-[11px] rounded sf-danger-action-soft" disabled>
           Remove
         </button>
       </div>
       <div className="grid grid-cols-3 gap-3 mt-3" data-skeleton-row={row}>
-        <div className={`${inputCls} w-full`}><SkeletonBlock className="sf-skel-bar" /></div>
-        <div className={`${inputCls} w-full`}><SkeletonBlock className="sf-skel-bar" /></div>
-        <div className={`${inputCls} w-full`}><SkeletonBlock className="sf-skel-bar" /></div>
+        <div className={`${inputCls} w-full h-9 sf-shimmer`} aria-hidden="true" />
+        <div className={`${inputCls} w-full h-9 sf-shimmer`} aria-hidden="true" />
+        <div className={`${inputCls} w-full h-9 sf-shimmer`} aria-hidden="true" />
       </div>
     </div>
   );
@@ -228,9 +231,9 @@ function EnumRowSkeleton({ row }: { readonly row: string }) {
   return (
     <div className="border sf-border-default rounded p-3 sf-bg-surface-soft" data-region="studio-loading-enum-row" data-skeleton-row={row}>
       <div className="grid grid-cols-3 gap-3 items-end">
-        <div className={`${inputCls} w-full`}><SkeletonBlock className="sf-skel-bar" /></div>
-        <div className={`${inputCls} w-full`}><SkeletonBlock className="sf-skel-bar" /></div>
-        <div className={`${inputCls} w-full`}><SkeletonBlock className="sf-skel-bar" /></div>
+        <div className={`${inputCls} w-full h-9 sf-shimmer`} aria-hidden="true" />
+        <div className={`${inputCls} w-full h-9 sf-shimmer`} aria-hidden="true" />
+        <div className={`${inputCls} w-full h-9 sf-shimmer`} aria-hidden="true" />
       </div>
     </div>
   );
@@ -247,15 +250,15 @@ function MappingPanelSkeleton() {
           <div className="grid grid-cols-4 gap-3">
             <div className="col-span-2">
               <div className={labelCls}>Tooltip Bank File (JS/JSON/MD)</div>
-              <div className={`${inputCls} w-full`}><SkeletonBlock className="sf-skel-bar" /></div>
+              <div className={`${inputCls} w-full h-9 sf-shimmer`} aria-hidden="true" />
             </div>
             <div>
               <div className={labelCls}>Tooltips</div>
-              <span className="text-lg font-semibold"><SkeletonBlock className="sf-skel-caption" /></span>
+              <span className="sf-shimmer inline-block h-5 w-16 rounded-sm" aria-hidden="true" />
             </div>
             <div>
               <div className={labelCls}>Coverage</div>
-              <span className="text-lg font-semibold"><SkeletonBlock className="sf-skel-caption" /></span>
+              <span className="sf-shimmer inline-block h-5 w-16 rounded-sm" aria-hidden="true" />
             </div>
           </div>
         </div>
@@ -284,15 +287,16 @@ function MappingPanelSkeleton() {
 
 function KeyListRowSkeleton({ row }: { readonly row: string }) {
   return (
-    <button
-      type="button"
-      className="w-full px-2 py-1.5 text-left rounded border sf-border-default sf-bg-surface-soft text-xs"
+    <div
+      className="w-full px-2 py-1.5 text-left rounded border sf-border-default sf-bg-surface-soft text-xs flex items-center"
       data-region="studio-loading-key-list-row"
       data-skeleton-row={row}
-      disabled
     >
-      <SkeletonBlock className="sf-skel-caption" />
-    </button>
+      <span
+        className="sf-shimmer block h-4 w-full rounded-sm"
+        aria-hidden="true"
+      />
+    </div>
   );
 }
 
@@ -300,12 +304,12 @@ function KeyDetailSectionSkeleton({ section }: { readonly section: string }) {
   return (
     <div className={`${sectionCls} space-y-2`} data-region="studio-loading-key-detail-section" data-skeleton-section={section}>
       <div className="flex items-center justify-between gap-3">
-        <h4 className="text-xs font-semibold sf-text-muted"><SkeletonBlock className="sf-skel-caption" /></h4>
+        <h4 className="text-xs font-semibold sf-text-muted"><SkeletonBlock className="sf-skel-bar-label" /></h4>
         <SkeletonBlock className="sf-skel-caption" />
       </div>
       <div className="grid grid-cols-2 gap-3">
-        <div className={`${inputCls} w-full`}><SkeletonBlock className="sf-skel-bar" /></div>
-        <div className={`${inputCls} w-full`}><SkeletonBlock className="sf-skel-bar" /></div>
+        <div className={`${inputCls} w-full h-9 sf-shimmer`} aria-hidden="true" />
+        <div className={`${inputCls} w-full h-9 sf-shimmer`} aria-hidden="true" />
       </div>
     </div>
   );
@@ -319,7 +323,7 @@ function KeysPanelSkeleton() {
           <button type="button" className={btnSecondary} disabled>+ Add Key</button>
           <button type="button" className={btnSecondary} disabled>Bulk Paste</button>
         </div>
-        <div className={`${inputCls} w-full`}><SkeletonBlock className="sf-skel-bar" /></div>
+        <div className={`${inputCls} w-full h-9 sf-shimmer`} aria-hidden="true" />
         <div className="space-y-1.5">
           {KEY_LIST_ROWS.map((row) => (
             <KeyListRowSkeleton key={row} row={row} />
@@ -335,6 +339,22 @@ function KeysPanelSkeleton() {
   );
 }
 
+function ContractCellSkeleton({ columnId }: { readonly columnId: string }) {
+  if (columnId === 'key') {
+    return <span className="sf-shimmer inline-block h-5 w-24 rounded-md" aria-hidden="true" />;
+  }
+  if (columnId === 'label') {
+    return <SkeletonBlock className="sf-skel-bar-label" />;
+  }
+  if (columnId === 'group' || columnId === 'type' || columnId === 'source' || columnId === 'priority') {
+    return <span className="sf-shimmer inline-block h-5 w-14 rounded-md" aria-hidden="true" />;
+  }
+  if (columnId === 'evidence' || columnId === 'tooltip') {
+    return <span className="sf-shimmer inline-block h-3.5 w-7 rounded-sm" aria-hidden="true" />;
+  }
+  return <SkeletonBlock className="sf-skel-bar" />;
+}
+
 function ContractTableSkeleton() {
   return (
     <div className="sf-table-shell sf-primitive-table-shell overflow-auto max-h-[calc(100vh-360px)]">
@@ -343,7 +363,7 @@ function ContractTableSkeleton() {
           <tr>
             {CONTRACT_COLUMNS.map((column) => (
               <th key={column.id} className="sf-table-head-cell cursor-pointer select-none" data-skeleton-column={column.id}>
-                <SkeletonBlock className="sf-skel-caption" />
+                <SkeletonBlock className="sf-skel-bar-label" />
               </th>
             ))}
           </tr>
@@ -353,7 +373,7 @@ function ContractTableSkeleton() {
             <tr key={row} className="sf-table-row cursor-pointer" data-skeleton-row={row}>
               {CONTRACT_COLUMNS.map((column) => (
                 <td key={`${row}-${column.id}`} className="px-2 py-1.5 whitespace-nowrap overflow-hidden">
-                  <SkeletonBlock className="sf-skel-bar" />
+                  <ContractCellSkeleton columnId={column.id} />
                 </td>
               ))}
             </tr>
@@ -371,18 +391,16 @@ function ContractPanelSkeleton() {
         <div className="p-3 border-b sf-border-default space-y-3">
           <div className="flex flex-wrap items-center gap-2">
             {WORKBENCH_PRESETS.map((preset, index) => (
-              <button
+              <span
                 key={preset}
-                type="button"
-                className={`px-3 py-1.5 text-xs rounded sf-tab-item${index === 0 ? ' sf-tab-item-active' : ''}`}
+                className={`sf-shimmer inline-block px-3 py-1.5 h-7 w-20 text-xs rounded sf-tab-item${index === 0 ? ' sf-tab-item-active' : ''}`}
                 data-region="studio-loading-contract-preset"
-                disabled
-              >
-                <SkeletonBlock className="sf-skel-caption" />
-              </button>
+                data-skeleton-preset={preset}
+                aria-hidden="true"
+              />
             ))}
           </div>
-          <div className={`${inputCls} w-full`}><SkeletonBlock className="sf-skel-bar" /></div>
+          <div className={`${inputCls} w-full h-9 sf-shimmer`} aria-hidden="true" />
         </div>
         <ContractTableSkeleton />
       </div>
@@ -403,18 +421,16 @@ function ReportsPanelSkeleton() {
         <button type="button" className={`${btnPrimary} h-10 min-h-10 w-56 inline-flex items-center justify-center whitespace-nowrap shrink-0`} data-region="studio-loading-report-action" disabled>
           Generate Key Finder Audit Reports
         </button>
-        <span className="h-10 min-h-10 w-52 inline-flex items-center justify-center rounded border px-3 text-sm font-medium truncate shrink-0 sf-border-default sf-bg-surface-soft" data-region="studio-loading-report-action">
-          <SkeletonBlock className="sf-skel-caption" />
-        </span>
-        <span className="h-10 min-h-10 w-52 inline-flex items-center justify-center rounded border px-3 text-sm font-medium truncate shrink-0 sf-border-default sf-bg-surface-soft" data-region="studio-loading-report-action">
-          <SkeletonBlock className="sf-skel-caption" />
-        </span>
-        <div className="h-10 min-h-10 w-80 inline-flex items-center gap-2 rounded border px-3 shrink-0 sf-border-default sf-bg-surface-soft dark:sf-border-default sf-dk-surface-900a30" data-region="studio-loading-report-action">
-          <div className="h-2 flex-1 rounded sf-progress-track-soft sf-dk-surface-700 overflow-hidden">
-            <div className="h-full transition-all duration-300 sf-progress-fill-idle sf-dk-surface-500 w-1/3" />
-          </div>
-          <span className="w-28 text-xs sf-text-muted sf-dk-fg-200 truncate"><SkeletonBlock className="sf-skel-caption" /></span>
-          <span className="w-10 text-right text-xs font-semibold sf-text-muted sf-dk-fg-200">0%</span>
+        <span className="sf-shimmer h-10 min-h-10 w-52 inline-flex rounded border shrink-0 sf-border-default sf-bg-surface-soft" data-region="studio-loading-report-action" aria-hidden="true" />
+        <span className="sf-shimmer h-10 min-h-10 w-52 inline-flex rounded border shrink-0 sf-border-default sf-bg-surface-soft" data-region="studio-loading-report-action" aria-hidden="true" />
+        <div className="h-10 min-h-10 w-80 inline-flex items-center gap-2 rounded border px-3 shrink-0 sf-border-default sf-bg-surface-soft" data-region="studio-loading-report-action">
+          <span className="sf-shimmer flex-1 h-2 rounded" aria-hidden="true" />
+          <span className="w-28">
+            <SkeletonBlock className="sf-skel-caption" />
+          </span>
+          <span className="w-10 text-right">
+            <SkeletonBlock className="sf-skel-caption" />
+          </span>
         </div>
       </div>
 
@@ -424,9 +440,13 @@ function ReportsPanelSkeleton() {
             {section === 'artifacts' ? 'Generated Artifacts' : 'Guardrails Report'}
           </h4>
           <div className="space-y-2">
-            <SkeletonBlock className="sf-skel-bar" />
-            <SkeletonBlock className="sf-skel-bar" />
-            <SkeletonBlock className="sf-skel-bar" />
+            {REPORT_LINES.map((line) => (
+              <span
+                key={`${section}-${line}`}
+                className="sf-shimmer block h-3.5 w-full rounded-sm"
+                aria-hidden="true"
+              />
+            ))}
           </div>
         </div>
       ))}

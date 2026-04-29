@@ -6,6 +6,7 @@ import { AppShellLoadingSkeleton } from './pages/layout/AppShellLoadingSkeleton.
 import { ErrorBoundary } from './shared/ui/feedback/ErrorBoundary.tsx';
 import { GlobalNotifications } from './shared/ui/feedback/GlobalNotifications.tsx';
 import { ROUTE_ENTRIES } from './registries/pageRegistry.ts';
+import { getRouteFallbackSkeleton } from './registries/skeletonRegistry.tsx';
 import { wsManager } from './api/ws.ts';
 import { api } from './api/client.ts';
 import { queryClient } from './api/queryClient.ts';
@@ -44,10 +45,11 @@ wsManager.onReconnect(() => {
     .catch(() => { /* best effort — WS broadcasts will repopulate as ops progress */ });
 });
 
-function wrap(Component: ComponentType) {
+function wrap(Component: ComponentType, path: string) {
+  const fallback = getRouteFallbackSkeleton(path) ?? <AppShellLoadingSkeleton />;
   return (
     <ErrorBoundary>
-      <Suspense fallback={<AppShellLoadingSkeleton />}>
+      <Suspense fallback={fallback}>
         <Component />
       </Suspense>
     </ErrorBoundary>
@@ -62,10 +64,10 @@ export default function App() {
           <Route element={<AppShell />}>
             {LAZY_ROUTES.map((entry) =>
               entry.isIndex
-                ? <Route key={entry.path} index element={wrap(entry.Component)} />
-                : <Route key={entry.path} path={entry.path.slice(1)} element={wrap(entry.Component)} />,
+                ? <Route key={entry.path} index element={wrap(entry.Component, entry.path)} />
+                : <Route key={entry.path} path={entry.path.slice(1)} element={wrap(entry.Component, entry.path)} />,
             )}
-            <Route path="test-mode" element={wrap(TestModePage)} />
+            <Route path="test-mode" element={wrap(TestModePage, '/test-mode')} />
           </Route>
         </Routes>
       </HashRouter>

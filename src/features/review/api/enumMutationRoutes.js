@@ -13,8 +13,16 @@ import {
   upsertEnumListValueAndFetch,
   resolveEnumPreAffectedProductIds,
   resolveEnumRequiredCandidate,
+  removeEnumValueFromDurableSources as defaultRemoveEnumValueFromDurableSources,
+  renameEnumValueInDurableSources as defaultRenameEnumValueInDurableSources,
 } from '../services/enumMutationService.js';
 import { normalizeFieldKey } from '../domain/reviewNormalization.js';
+import {
+  renameEnumValueInProducts as defaultRenameEnumValueInProducts,
+  unpublishEnumValueFromProducts as defaultUnpublishEnumValueFromProducts,
+} from '../domain/componentImpact.js';
+import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
+import { normalizeKnownValueMatchKey } from '../../../shared/primitives.js';
 
 import { isEgLockedField } from '../../studio/index.js';
 
@@ -36,14 +44,18 @@ async function handleEnumOverrideEndpoint({
   const {
     readJsonBody,
     jsonRes,
+    config,
     getSpecDbReady,
     resolveEnumMutationContext,
     isMeaningfulValue,
     normalizeLower,
     specDbCache,
     storage,
+    productRoot,
     outputRoot,
     cascadeEnumChange,
+    unpublishEnumValueFromProducts = defaultUnpublishEnumValueFromProducts,
+    removeEnumValueFromDurableSources = defaultRemoveEnumValueFromDurableSources,
     isReviewFieldPathEnabled,
     broadcastWs,
   } = context || {};
@@ -99,7 +111,7 @@ async function handleEnumOverrideEndpoint({
 
     // SQL-first runtime path (known_values writes removed from write path)
     try {
-      const normalized = String(value).trim().toLowerCase();
+      const normalized = normalizeKnownValueMatchKey(value);
       const nowIso = new Date().toISOString();
       const requestedCandidateId = String(candidateId || '').trim() || null;
       let requestedCandidateRow = null;
@@ -114,15 +126,23 @@ async function handleEnumOverrideEndpoint({
       let acceptedCandidateId = requestedCandidateRow ? requestedCandidateId : null;
       const sourceToken = String(candidateSource || '').trim().toLowerCase();
       const priorValue = String(enumCtx?.oldValue || '').trim();
-      const normalizedPrior = priorValue.toLowerCase();
+      const normalizedPrior = normalizeKnownValueMatchKey(priorValue);
       let cascadeAction = null;
       let cascadeValue = value;
       let cascadeNewValue = null;
       let cascadePreAffectedProductIds = [];
+      let unpublishResult = null;
+      let durableSourceResult = null;
 
       if (action === 'remove') {
         cascadePreAffectedProductIds = resolveEnumPreAffectedProductIds(runtimeSpecDb, listValueId);
         runtimeSpecDb.deleteListValueById(listValueId);
+        durableSourceResult = removeEnumValueFromDurableSources({
+          category,
+          field,
+          value,
+          config,
+        });
         cascadeAction = 'remove';
         cascadeValue = value;
       } else if (action === 'accept') {
@@ -133,7 +153,7 @@ async function handleEnumOverrideEndpoint({
             message: 'Cannot accept unknown/empty enum values.',
           });
         }
-        const normalizedResolved = resolvedValue.toLowerCase();
+        const normalizedResolved = normalizeKnownValueMatchKey(resolvedValue);
         const isRenameAccept = Boolean(priorValue) && normalizedPrior !== normalizedResolved;
         if (acceptedCandidateId && requestedCandidateRow) {
           const candidateValidationError = validateEnumCandidate({
@@ -272,6 +292,18 @@ async function handleEnumOverrideEndpoint({
 
       specDbCache.delete(category);
 
+      if (cascadeAction === 'remove') {
+        const resolvedProductRoot = productRoot || storage?.productRoot || defaultProductRoot();
+        unpublishResult = await unpublishEnumValueFromProducts({
+          productRoot: resolvedProductRoot,
+          category,
+          field,
+          value: cascadeValue,
+          productIds: cascadePreAffectedProductIds,
+          specDb: runtimeSpecDb,
+        });
+      }
+
       if (cascadeAction) {
         await cascadeEnumChange({
           storage,
@@ -285,14 +317,32 @@ async function handleEnumOverrideEndpoint({
           specDb: runtimeSpecDb,
         });
       }
+      const affectedProductIds = [
+        ...new Set([
+          ...cascadePreAffectedProductIds,
+          ...((unpublishResult?.affected || [])
+            .map((row) => String(row?.productId || row?.product_id || '').trim())
+            .filter(Boolean)),
+        ]),
+      ];
       return sendDataChangeResponse({
         jsonRes,
         res,
         broadcastWs,
         eventType: 'enum-override',
         category,
-        payload: { field, action: action || 'add', persisted: 'specdb' },
+        payload: {
+          field,
+          action: action || 'add',
+          persisted: 'specdb',
+          ...(unpublishResult ? { unpublished: unpublishResult.unpublished ?? 0 } : {}),
+          ...(durableSourceResult ? { durable_sources: durableSourceResult.sources || [] } : {}),
+        },
         broadcastExtra: { field, action: action || 'add' },
+        domains: cascadeAction === 'remove' ? ['enum', 'review', 'product', 'publisher'] : null,
+        entities: cascadeAction === 'remove'
+          ? { productIds: affectedProductIds, fieldKeys: [field] }
+          : null,
       });
     } catch (sqlErr) {
       return respond(500, {
@@ -301,6 +351,158 @@ async function handleEnumOverrideEndpoint({
       });
     }
 
+  }
+
+  return false;
+}
+
+async function handleEnumDeleteEndpoint({
+  parts,
+  method,
+  req,
+  res,
+  context,
+}) {
+  const {
+    readJsonBody,
+    jsonRes,
+    config,
+    getSpecDbReady,
+    resolveEnumMutationContext,
+    specDbCache,
+    storage,
+    productRoot,
+    outputRoot,
+    cascadeEnumChange,
+    unpublishEnumValueFromProducts = defaultUnpublishEnumValueFromProducts,
+    removeEnumValueFromDurableSources = defaultRemoveEnumValueFromDurableSources,
+    isReviewFieldPathEnabled,
+    broadcastWs,
+  } = context || {};
+  const respond = createRouteResponder(jsonRes, res);
+
+  if (routeMatches({ parts, method, scope: 'review-components', action: 'enum-delete' })) {
+    const preparedMutation = await prepareMutationContextRequest({
+      parts,
+      req,
+      readJsonBody,
+      getSpecDbReady,
+      resolveContext: resolveEnumMutationContext,
+      resolveContextArgs: ({ runtimeSpecDb, category, body }) => ([
+        runtimeSpecDb,
+        category,
+        body,
+        { requireListValueId: true },
+      ]),
+    });
+    if (respondIfError(respond, preparedMutation.error)) {
+      return true;
+    }
+
+    const {
+      category,
+      runtimeSpecDb,
+      context: enumCtx,
+    } = preparedMutation;
+    const field = String(enumCtx?.field || '').trim();
+    const value = String(enumCtx?.value || enumCtx?.oldValue || '').trim();
+    const listValueId = enumCtx?.listValueId ?? null;
+    if (!field) return respond(400, { error: 'field required' });
+    if (!value) return respond(400, { error: 'value required' });
+    if (isEgLockedField(normalizeFieldKey(field))) {
+      return respond(403, {
+        error: 'enum_field_locked',
+        message: `Enum values for '${field}' are managed by the registry and cannot be deleted here.`,
+        field,
+      });
+    }
+    if (typeof isReviewFieldPathEnabled === 'function') {
+      const enabled = await isReviewFieldPathEnabled({
+        category,
+        fieldKey: field,
+        fieldPath: 'enum.source',
+      });
+      if (!enabled) {
+        return respond(403, {
+          error: 'review_consumer_disabled',
+          message: `Review consumer disabled for enum.source on field '${field}'.`,
+          field,
+          field_path: 'enum.source',
+        });
+      }
+    }
+
+    try {
+      const preAffectedProductIds = resolveEnumPreAffectedProductIds(runtimeSpecDb, listValueId);
+      const deletedRow = runtimeSpecDb.deleteListValueById(listValueId);
+      if (!deletedRow) {
+        return respond(404, {
+          error: 'enum_value_not_found',
+          message: `Enum value '${value}' was not found.`,
+        });
+      }
+      const durableSourceResult = removeEnumValueFromDurableSources({
+        category,
+        field,
+        value,
+        config,
+      });
+      specDbCache.delete(category);
+
+      const resolvedProductRoot = productRoot || storage?.productRoot || defaultProductRoot();
+      const unpublishResult = await unpublishEnumValueFromProducts({
+        productRoot: resolvedProductRoot,
+        category,
+        field,
+        value,
+        productIds: preAffectedProductIds,
+        specDb: runtimeSpecDb,
+      });
+
+      await cascadeEnumChange({
+        storage,
+        outputRoot: outputRoot,
+        category,
+        field,
+        action: 'remove',
+        value,
+        preAffectedProductIds,
+        specDb: runtimeSpecDb,
+      });
+      const affectedProductIds = [
+        ...new Set([
+          ...preAffectedProductIds,
+          ...((unpublishResult?.affected || [])
+            .map((row) => String(row?.productId || row?.product_id || '').trim())
+            .filter(Boolean)),
+        ]),
+      ];
+
+      return sendDataChangeResponse({
+        jsonRes,
+        res,
+        broadcastWs,
+        eventType: 'enum-delete',
+        category,
+        payload: {
+          event_type: 'enum-delete',
+          field,
+          value,
+          deleted: true,
+          persisted: 'specdb',
+          unpublished: unpublishResult?.unpublished ?? 0,
+          durable_sources: durableSourceResult.sources || [],
+        },
+        broadcastExtra: { field, action: 'delete' },
+        domains: ['enum', 'review', 'product', 'publisher'],
+        entities: { productIds: affectedProductIds, fieldKeys: [field] },
+      });
+    } catch (sqlErr) {
+      return respond(500, {
+        error: 'enum_delete_specdb_write_failed',
+        message: sqlErr?.message || 'SpecDb write failed',
+      });
+    }
   }
 
   return false;
@@ -316,12 +518,16 @@ async function handleEnumRenameEndpoint({
   const {
     readJsonBody,
     jsonRes,
+    config,
     getSpecDbReady,
     resolveEnumMutationContext,
     specDbCache,
     storage,
+    productRoot,
     outputRoot,
     cascadeEnumChange,
+    renameEnumValueInDurableSources = defaultRenameEnumValueInDurableSources,
+    renameEnumValueInProducts = defaultRenameEnumValueInProducts,
     isReviewFieldPathEnabled,
     broadcastWs,
   } = context || {};
@@ -384,7 +590,7 @@ async function handleEnumRenameEndpoint({
         });
       }
     }
-    if (oldValue.toLowerCase() === trimmedNew.toLowerCase()) {
+    if (normalizeKnownValueMatchKey(oldValue) === normalizeKnownValueMatchKey(trimmedNew)) {
       return respond(200, { ok: true, field, changed: false });
     }
 
@@ -395,6 +601,23 @@ async function handleEnumRenameEndpoint({
         trimmedNew,
         new Date().toISOString()
       ) || [];
+      const durableSourceResult = renameEnumValueInDurableSources({
+        category,
+        field,
+        oldValue,
+        newValue: trimmedNew,
+        config,
+      });
+      const resolvedProductRoot = productRoot || storage?.productRoot || defaultProductRoot();
+      const renameProductResult = await renameEnumValueInProducts({
+        productRoot: resolvedProductRoot,
+        category,
+        field,
+        oldValue,
+        newValue: trimmedNew,
+        productIds: affectedProductIds,
+        specDb: runtimeSpecDb,
+      });
       specDbCache.delete(category);
 
       await cascadeEnumChange({
@@ -415,8 +638,28 @@ async function handleEnumRenameEndpoint({
         broadcastWs,
         eventType: 'enum-rename',
         category,
-        payload: { field, oldValue, newValue: trimmedNew, changed: true, persisted: 'specdb' },
+        payload: {
+          field,
+          oldValue,
+          newValue: trimmedNew,
+          changed: true,
+          persisted: 'specdb',
+          durable_sources: durableSourceResult.sources || [],
+          renamed: renameProductResult?.renamed ?? 0,
+        },
         broadcastExtra: { field },
+        domains: ['enum', 'review', 'product', 'publisher'],
+        entities: {
+          productIds: [
+            ...new Set([
+              ...affectedProductIds,
+              ...((renameProductResult?.affected || [])
+                .map((row) => String(row?.productId || row?.product_id || '').trim())
+                .filter(Boolean)),
+            ]),
+          ],
+          fieldKeys: [field],
+        },
       });
     } catch (sqlErr) {
       return respond(500, {
@@ -445,6 +688,7 @@ export async function handleReviewEnumMutationRoute({
   return runHandledRouteChain({
     handlers: [
       handleEnumOverrideEndpoint,
+      handleEnumDeleteEndpoint,
       handleEnumRenameEndpoint,
     ],
     args: { parts, method, req, res, context },

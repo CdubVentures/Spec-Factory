@@ -2,9 +2,14 @@
 //
 // Shared normalizers used across the review subsystem.
 // Primitives imported from shared SSOT; review-specific helpers defined locally.
-import { isObject, toArray, normalizeToken } from '../../../shared/primitives.js';
+import {
+  isObject,
+  toArray,
+  normalizeToken,
+  normalizeKnownValueMatchKey,
+} from '../../../shared/primitives.js';
 
-export { isObject, toArray, normalizeToken };
+export { isObject, toArray, normalizeToken, normalizeKnownValueMatchKey };
 
 export function normalizeFieldKey(value) {
   return String(value || '')

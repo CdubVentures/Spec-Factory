@@ -10,7 +10,7 @@ import { isConsumerEnabled } from '../../../field-rules/consumerGate.js';
 import {
   isObject,
   toArray,
-  normalizeToken,
+  normalizeKnownValueMatchKey,
   normalizeFieldKey,
   slugify,
   splitCandidateParts,
@@ -81,13 +81,13 @@ export function makerTokensFromReviewItem(reviewItem, componentType) {
   const tokens = [];
   for (const key of keys) {
     for (const value of splitCandidateParts(attrs[key])) {
-      const token = normalizeToken(value);
+      const token = normalizeKnownValueMatchKey(value);
       if (!hasKnownValue(token)) continue;
       tokens.push(token);
     }
   }
   for (const value of splitCandidateParts(reviewItem?.ai_suggested_maker)) {
-    const token = normalizeToken(value);
+    const token = normalizeKnownValueMatchKey(value);
     if (!hasKnownValue(token)) continue;
     tokens.push(token);
   }
@@ -100,7 +100,7 @@ export function reviewItemMatchesMakerLane(reviewItem, {
   allowMakerlessForNamedLane = false,
 }) {
   const makerTokens = makerTokensFromReviewItem(reviewItem, componentType);
-  const laneMakerToken = normalizeToken(maker);
+  const laneMakerToken = normalizeKnownValueMatchKey(maker);
   if (!laneMakerToken) {
     return makerTokens.length === 0;
   }

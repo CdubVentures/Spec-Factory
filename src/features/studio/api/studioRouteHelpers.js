@@ -1,5 +1,7 @@
+import { normalizeKnownValueMatchKey } from '../../../shared/primitives.js';
+
 export function normalizeEnumToken(value) {
-  return String(value ?? '').trim().toLowerCase();
+  return normalizeKnownValueMatchKey(value);
 }
 
 export function hasMeaningfulEnumValue(value) {
@@ -75,7 +77,6 @@ export function buildStudioKnownValuesPayload({
   const enumLists = Object.entries(normalizedFields)
     .map(([field, values]) => ({
       field,
-      normalize: 'lower_trim',
       values,
     }))
     .sort((a, b) => a.field.localeCompare(b.field));
@@ -144,4 +145,3 @@ export function summarizeStudioMapPayload(map) {
     has_mapping_payload: componentSources > 0 || dataLists > 0 || enumLists > 0,
   };
 }
-

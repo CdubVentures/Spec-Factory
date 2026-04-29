@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { usd } from '../../../utils/formatting.ts';
 import { useFormatDateYMD } from '../../../utils/dateTime.ts';
 import { BILLING_CALL_TYPE_REGISTRY, resolveBillingCallType } from '../billingCallTypeRegistry.generated.ts';
 import { pivotDailyByReason, chartColor } from '../billingTransforms.ts';
+import { DailyChartLoadingSkeleton } from './DailyChartLoadingSkeleton.tsx';
 import type { BillingDailyResponse } from '../billingTypes.ts';
 
 interface DailyCostChartProps {
@@ -74,6 +74,10 @@ export default function DailyCostChartInner({ data, isLoading, isStale }: DailyC
   const hasData = !isLoading && pivotedRows.length > 0;
   const staleClass = isStale ? ' sf-stale-refetch' : '';
 
+  if (isLoading) {
+    return <DailyChartLoadingSkeleton title="Daily Cost" legendCount={6} />;
+  }
+
   return (
     <div className="sf-surface-card rounded-lg overflow-hidden h-full flex flex-col sf-billing-min-chart">
       <div className="px-5 py-3 flex items-center justify-between border-b sf-border-default">
@@ -94,8 +98,7 @@ export default function DailyCostChartInner({ data, isLoading, isStale }: DailyC
         )}
       </div>
       <div className={`p-5 flex-1 min-h-0${staleClass}`}>
-        {isLoading && <SkeletonBlock className="sf-skel-chart" />}
-        {!isLoading && pivotedRows.length === 0 && (
+        {pivotedRows.length === 0 && (
           <p className="sf-text-subtle text-sm text-center py-8">No daily data</p>
         )}
         {hasData && (

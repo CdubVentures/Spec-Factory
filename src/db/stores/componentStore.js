@@ -329,6 +329,54 @@ export function createComponentStore({ db, category, stmts }) {
     `).run(needsReview ? 1 : 0, category, componentValueId);
   }
 
+  function deleteComponentIdentityCascade(identityId) {
+    const id = Number(identityId);
+    if (!Number.isFinite(id) || id <= 0) {
+      return { deleted: false, identity: null, aliases: 0, values: 0, links: 0, linkedProducts: [] };
+    }
+    const identity = getComponentIdentityById(id);
+    if (!identity) {
+      return { deleted: false, identity: null, aliases: 0, values: 0, links: 0, linkedProducts: [] };
+    }
+    const linkedProducts = db.prepare(`
+      SELECT DISTINCT product_id, field_key, match_type, match_score
+      FROM item_component_links
+      WHERE category = ? AND component_type = ? AND component_name = ? AND component_maker = ?
+      ORDER BY product_id, field_key
+    `).all(category, identity.component_type, identity.canonical_name, identity.maker || '');
+
+    const tx = db.transaction(() => {
+      const aliases = db.prepare('DELETE FROM component_aliases WHERE component_id = ?').run(id).changes;
+      const values = db.prepare(`
+        DELETE FROM component_values
+        WHERE category = ?
+          AND (
+            component_identity_id = ?
+            OR (
+              component_type = ?
+              AND component_name = ?
+              AND component_maker = ?
+            )
+          )
+      `).run(category, id, identity.component_type, identity.canonical_name, identity.maker || '').changes;
+      const links = db.prepare(`
+        DELETE FROM item_component_links
+        WHERE category = ? AND component_type = ? AND component_name = ? AND component_maker = ?
+      `).run(category, identity.component_type, identity.canonical_name, identity.maker || '').changes;
+      const removedIdentity = db.prepare('DELETE FROM component_identity WHERE category = ? AND id = ?').run(category, id).changes;
+      return { aliases, values, links, removedIdentity };
+    });
+    const result = tx();
+    return {
+      deleted: result.removedIdentity > 0,
+      identity,
+      aliases: result.aliases,
+      values: result.values,
+      links: result.links,
+      linkedProducts,
+    };
+  }
+
   return {
     upsertComponentIdentity,
     insertAlias,
@@ -356,5 +404,6 @@ export function createComponentStore({ db, category, stmts }) {
     updateComponentLinks,
     updateComponentReviewStatusById,
     updateComponentValueNeedsReview,
+    deleteComponentIdentityCascade,
   };
 }

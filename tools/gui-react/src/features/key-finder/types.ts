@@ -15,7 +15,8 @@ export type ComponentRunKind =
   | ''
   | 'component'
   | 'component_brand'
-  | 'component_link';
+  | 'component_link'
+  | 'component_attribute';
 
 export type KeyRunBlockedReason =
   | ''

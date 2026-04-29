@@ -1,37 +1,67 @@
-// WHY: Collapse hyphens, underscores, and spaces for alias matching.
-// "3-zone-(rgb)" should match "3 Zone (RGB)" after normalization.
-function normForCompare(s) {
-  return String(s || '').toLowerCase().replace(/[-_\s]+/g, ' ').trim();
+import { normalizeKnownValueMatchKey } from '../../../../shared/primitives.js';
+
+function canonicalKnownValues(knownValues = []) {
+  const seen = new Set();
+  const canonical = [];
+  for (const rawValue of knownValues || []) {
+    const value = String(rawValue ?? '').trim();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    canonical.push(value);
+  }
+  return canonical;
 }
 
-/**
- * Attempt alias resolution: exact → case-insensitive → normalized.
- * Returns the canonical known value if matched, or null.
- * @param {string} v - incoming value
- * @param {string[]} knownValues - canonical values
- * @param {Map<string, string>} lowerMap - lowercase → canonical
- * @param {Map<string, string>} normMap - normalized → canonical
- * @returns {string|null}
- */
-function aliasResolve(v, knownValues, lowerMap, normMap) {
-  // 1. Case-insensitive
-  const lower = v.toLowerCase();
-  if (lowerMap.has(lower)) return lowerMap.get(lower);
-  // 2. Normalized (collapse hyphens/underscores/spaces)
-  const norm = normForCompare(v);
-  if (normMap.has(norm)) return normMap.get(norm);
-  return null;
+function buildKnownValueResolver(knownValues = []) {
+  const canonical = canonicalKnownValues(knownValues);
+  const exactSet = new Set(canonical);
+  const byMatchKey = new Map();
+
+  for (const value of canonical) {
+    const key = normalizeKnownValueMatchKey(value);
+    if (!key) continue;
+    const matches = byMatchKey.get(key) || [];
+    matches.push(value);
+    byMatchKey.set(key, matches);
+  }
+
+  return {
+    resolve(value) {
+      const input = String(value ?? '').trim();
+      if (exactSet.has(input)) {
+        return {
+          matched: true,
+          value: input,
+          repaired: input !== value,
+        };
+      }
+
+      const matches = byMatchKey.get(normalizeKnownValueMatchKey(value)) || [];
+      if (matches.length !== 1) {
+        return {
+          matched: false,
+          value: input || String(value ?? ''),
+        };
+      }
+
+      return {
+        matched: true,
+        value: matches[0],
+        repaired: matches[0] !== value,
+      };
+    },
+  };
 }
 
 /**
  * Enum policy enforcement (Step 9).
  * Three policies: closed (reject unknown), open_prefer_known (flag unknown), open (all pass).
- * Policy determines matching: closed = exact, open_prefer_known = alias resolution.
+ * Non-open policies use a system-owned hidden match key and repair to canonical display values.
  *
  * @param {*} value - Normalized field value (string, string[], or non-string)
- * @param {'closed'|'open_prefer_known'|'open'|null} policy
+ * @param {'closed'|'closed_with_curation'|'open_prefer_known'|'open'|null} policy
  * @param {string[]|null} knownValues - from known_values.enums[fieldKey].values
- * @returns {{ pass: boolean, known: string[], unknown: string[], needsReview: boolean, repaired?: *,  reason?: string }}
+ * @returns {{ pass: boolean, known: string[], unknown: string[], needsReview: boolean, repaired?: *, reason?: string }}
  */
 export function checkEnum(value, policy, knownValues) {
   if (!policy || !knownValues) {
@@ -46,25 +76,14 @@ export function checkEnum(value, policy, knownValues) {
     return { pass: true, known: [], unknown: [], needsReview: false };
   }
 
-  const useAlias = policy === 'open_prefer_known';
-  const knownSet = new Set(knownValues);
-
-  // WHY: Pre-build lookup maps once for alias strategy (O(n) build, O(1) per lookup).
-  let lowerMap, normMap;
-  if (useAlias) {
-    lowerMap = new Map();
-    normMap = new Map();
-    for (const kv of knownValues) {
-      const l = kv.toLowerCase();
-      if (!lowerMap.has(l)) lowerMap.set(l, kv);
-      const n = normForCompare(kv);
-      if (!normMap.has(n)) normMap.set(n, kv);
-    }
-  }
-
   const values = Array.isArray(value) ? value : [value];
   const isArray = Array.isArray(value);
 
+  if (policy === 'open') {
+    return { pass: true, known: values, unknown: [], needsReview: false };
+  }
+
+  const resolver = buildKnownValueResolver(knownValues);
   const known = [];
   const unknown = [];
   const repairedValues = [];
@@ -83,23 +102,17 @@ export function checkEnum(value, policy, knownValues) {
       const unknownAtoms = [];
       let atomRepaired = false;
 
-      for (const a of atoms) {
-        if (knownSet.has(a)) {
-          resolvedAtoms.push(a);
-        } else if (useAlias) {
-          const canonical = aliasResolve(a, knownValues, lowerMap, normMap);
-          if (canonical) {
-            resolvedAtoms.push(canonical);
-            atomRepaired = true;
-          } else {
-            unknownAtoms.push(a);
-          }
-        } else {
-          unknownAtoms.push(a);
+      for (const atom of atoms) {
+        const resolved = resolver.resolve(atom);
+        if (resolved.matched) {
+          resolvedAtoms.push(resolved.value);
+          if (resolved.repaired) atomRepaired = true;
+          continue;
         }
+        unknownAtoms.push(String(atom ?? '').trim() || atom);
       }
 
-      if (unknownAtoms.length > 0 && policy !== 'open') {
+      if (unknownAtoms.length > 0) {
         unknown.push(...unknownAtoms);
         repairedValues.push(v);
       } else {
@@ -111,27 +124,22 @@ export function checkEnum(value, policy, knownValues) {
       continue;
     }
 
-    if (knownSet.has(v) || policy === 'open') {
-      known.push(v);
-      repairedValues.push(v);
-    } else if (useAlias) {
-      const canonical = aliasResolve(v, knownValues, lowerMap, normMap);
-      if (canonical) {
-        known.push(canonical);
-        repairedValues.push(canonical);
-        anyRepaired = true;
-      } else {
-        unknown.push(v);
-        repairedValues.push(v);
-      }
-    } else {
-      unknown.push(v);
-      repairedValues.push(v);
+    const resolved = resolver.resolve(v);
+    if (resolved.matched) {
+      known.push(resolved.value);
+      repairedValues.push(resolved.value);
+      if (resolved.repaired) anyRepaired = true;
+      continue;
     }
+
+    unknown.push(resolved.value);
+    repairedValues.push(v);
   }
 
   const needsReview = unknown.length > 0 && policy !== 'open';
-  const pass = policy === 'closed' ? unknown.length === 0 : true;
+  const pass = policy === 'closed' || policy === 'closed_with_curation'
+    ? unknown.length === 0
+    : true;
 
   const result = {
     pass,
@@ -141,7 +149,6 @@ export function checkEnum(value, policy, knownValues) {
     ...(unknown.length > 0 && !pass ? { reason: `enum_value_not_allowed: ${unknown.join(', ')}` } : {}),
   };
 
-  // WHY: Only set repaired when alias matching actually changed a value.
   if (anyRepaired) {
     result.repaired = isArray ? repairedValues : repairedValues[0];
   }

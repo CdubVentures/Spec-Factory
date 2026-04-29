@@ -32,6 +32,10 @@ function canReadSqlRuns(store) {
   return typeof store?.listRuns === 'function';
 }
 
+function canReadSqlSummaryRuns(store) {
+  return typeof store?.listRunsForSummary === 'function';
+}
+
 function canWriteSqlRuns(store) {
   return canReadSqlRuns(store)
     && typeof store.insertRun === 'function'
@@ -142,6 +146,30 @@ export function readKeyFinderRuntimeDoc({ specDb, productId, productRoot, catego
     }
   }
   return readKeyFinder({ productId, productRoot });
+}
+
+export function readKeyFinderRuntimeSummaryDoc({ specDb, productId, productRoot, category }) {
+  const store = keyFinderSqlStore(specDb);
+  if (canReadSqlSummaryRuns(store)) {
+    const runs = sortRuns(store.listRunsForSummary(productId));
+    const summary = typeof store.get === 'function' ? store.get(productId) : null;
+    if (runs.length > 0 || summary) {
+      const latest = latestRun(runs);
+      const runCount = Number.isFinite(Number(summary?.run_count))
+        ? Number(summary.run_count)
+        : runs.length;
+      return {
+        product_id: productId,
+        category: summary?.category || category || specDb?.category || latest?.category || '',
+        selected: { keys: {} },
+        last_ran_at: summary?.latest_ran_at || latest?.ran_at || '',
+        run_count: runCount,
+        next_run_number: maxRunNumber(runs) + 1,
+        runs,
+      };
+    }
+  }
+  return readKeyFinderRuntimeDoc({ specDb, productId, productRoot, category });
 }
 
 export function listKeyFinderRuntimeSummaries({ specDb, category, productRoot }) {

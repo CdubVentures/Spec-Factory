@@ -79,6 +79,21 @@ test('buildEnumIndex creates per-field Maps with canonical values and aliases', 
   assert.equal(conn.index.get('bluetooth'), 'bluetooth');
 });
 
+test('buildEnumIndex marks hidden match-key collisions as ambiguous instead of overwriting', () => {
+  const index = buildEnumIndex({
+    enums: {
+      sensor: {
+        policy: 'closed',
+        values: ['Razer Focus-Pro', 'Razer-Focus Pro'],
+      },
+    },
+  });
+
+  const spec = index.get('sensor');
+  assert.equal(spec.index.has('razer focus pro'), false);
+  assert.equal(spec.ambiguous.has('razer focus pro'), true);
+});
+
 test('buildEnumIndex defaults policy to open', () => {
   const index = buildEnumIndex({
     enums: {

@@ -459,6 +459,7 @@ export class SpecDb {
   updateComponentLinks(id, links) { this._componentStore.updateComponentLinks(id, links); }
   updateComponentReviewStatusById(id, s) { this._componentStore.updateComponentReviewStatusById(id, s); }
   updateComponentValueNeedsReview(id, nr) { this._componentStore.updateComponentValueNeedsReview(id, nr); }
+  deleteComponentIdentityCascade(id) { return this._componentStore.deleteComponentIdentityCascade(id); }
 
   purgeCategoryState(category) { return this._purgeStore.purgeCategoryState(category); }
   purgeProductReviewState(category, productId) { return this._purgeStore.purgeProductReviewState(category, productId); }
@@ -642,6 +643,7 @@ export class SpecDb {
   demoteResolvedCandidates(pid, fk, variantId) { this._fieldCandidateStore.demoteResolved(pid, fk, variantId); }
   getResolvedFieldCandidate(pid, fk) { return this._fieldCandidateStore.getResolved(pid, fk); }
   getTopFieldCandidate(pid, fk) { return this._fieldCandidateStore.getTopCandidate(pid, fk); }
+  getTopFieldCandidatesByProduct(pid) { return this._fieldCandidateStore.getTopCandidatesByProduct(pid); }
   getDistinctCandidateProducts() { return this._fieldCandidateStore.getDistinctProducts(); }
   backfillValueFingerprints() { return backfillValueFingerprints(this.db); }
 

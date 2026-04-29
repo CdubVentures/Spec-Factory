@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { LlmProviderIcon } from '../../../shared/ui/icons/LlmProviderIcon.tsx';
-import { SkeletonBlock } from '../../../shared/ui/feedback/SkeletonBlock.tsx';
 import { CloseIcon } from '../../../shared/ui/filterBar/icons.tsx';
 import { compactNumber, usd } from '../../../utils/formatting.ts';
 import { useFormatDateYMD } from '../../../utils/dateTime.ts';
@@ -59,6 +58,89 @@ function SourcePill({ label, href }: { label: string; href: string }) {
     <a className="sf-model-cost-source-pill" href={href} target="_blank" rel="noreferrer">
       {label}
     </a>
+  );
+}
+
+// WHY: Mirrors the loaded model-cost dialog body layout — provider grid +
+// toolbar + chart panel + sortable table. Each section uses the real CSS
+// chrome (sf-model-cost-provider-card, sf-model-cost-toolbar, etc.) with
+// shimmer backing so dimensions match what hydrates. Replaces the previous
+// 3-card placeholder that referenced an undefined `sf-skel-card` class
+// (rendered as bare 12px shimmer slivers).
+function ModelCostDialogLoadingSkeleton() {
+  return (
+    <div className="sf-model-cost-loading" aria-busy="true">
+      <div className="sf-model-cost-provider-grid">
+        {Array.from({ length: 6 }, (_value, index) => (
+          <span
+            key={`provider-skel-${index}`}
+            className="sf-model-cost-provider-card sf-shimmer"
+            aria-hidden="true"
+          >&nbsp;</span>
+        ))}
+      </div>
+      <div className="sf-model-cost-toolbar">
+        <div className="sf-model-cost-toolbar-left">
+          <span
+            className="sf-model-cost-tabs sf-shimmer"
+            style={{ height: '30px', width: '180px' }}
+            aria-hidden="true"
+          />
+        </div>
+        <span
+          className="sf-model-cost-tabs sf-model-cost-metric-tabs sf-shimmer"
+          style={{ height: '30px', width: '320px' }}
+          aria-hidden="true"
+        />
+      </div>
+      <span
+        className="sf-shimmer block rounded-lg"
+        style={{ height: '220px', width: '100%' }}
+        aria-hidden="true"
+      />
+      <div className="sf-model-cost-table-wrap">
+        <table className="sf-model-cost-table">
+          <colgroup>
+            <col className="sf-model-cost-col-model" />
+            <col className="sf-model-cost-col-rate" />
+            <col className="sf-model-cost-col-rate" />
+            <col className="sf-model-cost-col-rate" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Input / 1M</th>
+              <th>Output / 1M</th>
+              <th>Cached / 1M</th>
+            </tr>
+          </thead>
+          <tbody>
+            {Array.from({ length: 10 }, (_value, index) => (
+              <tr key={`row-skel-${index}`} className="sf-model-cost-row">
+                <td>
+                  <div className="sf-model-cost-model-cell">
+                    <span className="sf-model-cost-provider-logo is-small sf-shimmer" aria-hidden="true">&nbsp;</span>
+                    <div className="sf-model-cost-model-name flex-1 min-w-0 space-y-1">
+                      <span className="sf-shimmer block h-[12px] w-full rounded-sm" aria-hidden="true" />
+                      <span className="sf-shimmer block h-[10px] w-3/4 rounded-sm" aria-hidden="true" />
+                    </div>
+                  </div>
+                </td>
+                <td className="sf-model-cost-rate">
+                  <span className="sf-shimmer inline-block h-[11px] w-12 rounded-sm" aria-hidden="true" />
+                </td>
+                <td className="sf-model-cost-rate is-output">
+                  <span className="sf-shimmer inline-block h-[11px] w-12 rounded-sm" aria-hidden="true" />
+                </td>
+                <td className="sf-model-cost-rate is-cache">
+                  <span className="sf-shimmer inline-block h-[11px] w-12 rounded-sm" aria-hidden="true" />
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
   );
 }
 
@@ -363,11 +445,7 @@ export function BillingModelCostDialog({
             </div>
 
             {isLoading ? (
-              <div className="sf-model-cost-loading">
-                <SkeletonBlock className="sf-skel-card" />
-                <SkeletonBlock className="sf-skel-card" />
-                <SkeletonBlock className="sf-skel-card" />
-              </div>
+              <ModelCostDialogLoadingSkeleton />
             ) : (
               <>
                 <div className="sf-model-cost-provider-grid">

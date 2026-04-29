@@ -1,8 +1,22 @@
 // WHY: Text/token utility functions for the engine subsystem.
 // Primitives imported from shared SSOT; engine-specific helpers defined locally.
-import { isObject, toArray, normalizeText, normalizeToken, normalizeFieldKey } from '../shared/primitives.js';
+import {
+  isObject,
+  toArray,
+  normalizeText,
+  normalizeToken,
+  normalizeFieldKey,
+  normalizeKnownValueMatchKey,
+} from '../shared/primitives.js';
 
-export { isObject, toArray, normalizeText, normalizeToken, normalizeFieldKey };
+export {
+  isObject,
+  toArray,
+  normalizeText,
+  normalizeToken,
+  normalizeFieldKey,
+  normalizeKnownValueMatchKey,
+};
 
 export function isUnknownToken(value) {
   if (isObject(value) && Object.prototype.hasOwnProperty.call(value, 'value')) {

@@ -50,6 +50,7 @@ test('studio page persistence builds a rename-aware autosave payload from the fi
         {
           field: 'legacy_key',
           normalize: 'csv',
+          manual_values: ['Legacy'],
         },
       ],
       component_sources: [
@@ -95,7 +96,7 @@ test('studio page persistence builds a rename-aware autosave payload from the fi
   assert.deepEqual(payload.data_lists, [
     {
       field: 'modern_key',
-      normalize: 'csv',
+      manual_values: ['Legacy'],
     },
   ]);
   assert.deepEqual(payload.enum_lists, [
@@ -324,7 +325,7 @@ test('studio page persistence preserves data_lists and enum_lists through the ba
       selected_keys: ['field_a'],
       field_overrides: {},
       data_lists: [
-        { field: 'field_a', normalize: 'csv' },
+        { field: 'field_a', normalize: 'csv', manual_values: ['ValueA'] },
       ],
       enum_lists: [
         { field: 'field_a', values: ['ValueA'] },
@@ -340,9 +341,9 @@ test('studio page persistence preserves data_lists and enum_lists through the ba
   });
 
   // WHY: buildStudioPersistMap saves selected_keys + field_overrides on
-  // top of the full base map. data_lists are live data — only assembleMap
-  // (MappingStudioTab) migrates them to enum_lists.
+  // top of the full base map. data_lists are live data, but normalize is a
+  // retired user-facing knob and must not survive save/persist paths.
   assert.ok(Array.isArray(payload.data_lists), 'data_lists must be preserved');
-  assert.deepEqual(payload.data_lists, [{ field: 'field_a', normalize: 'csv' }]);
+  assert.deepEqual(payload.data_lists, [{ field: 'field_a', manual_values: ['ValueA'] }]);
   assert.ok(Array.isArray(payload.enum_lists), 'enum_lists must be preserved');
 });

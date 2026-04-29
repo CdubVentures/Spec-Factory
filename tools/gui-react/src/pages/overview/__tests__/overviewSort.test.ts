@@ -10,12 +10,51 @@ import {
   toggleOverviewSortStack,
   writeOverviewSortSessionState,
 } from '../overviewSort.ts';
+import { FINDER_PANELS } from '../../../features/indexing/state/finderPanelRegistry.generated.ts';
 import type { CatalogRow } from '../../../types/product.ts';
 import type {
   KeyTierProgressGen,
   PifVariantProgressGen,
   ScalarVariantProgressGen,
 } from '../../../types/product.generated.ts';
+
+const OVERVIEW_STATIC_PREFIX_SORTABLE_COLUMN_IDS = [
+  'brand',
+  'base_model',
+  'variant',
+] as const;
+
+const OVERVIEW_STATIC_SUFFIX_SORTABLE_COLUMN_IDS = [
+  'scoreCard',
+  'coverage',
+  'confidence',
+  'fieldsFilled',
+  'live',
+  'lastRun',
+] as const;
+
+type OverviewFinderPanel = typeof FINDER_PANELS[number];
+
+function overviewFinderSortColumnId(panel: OverviewFinderPanel): string | null {
+  if (panel.moduleClass === 'variantGenerator') return `${panel.catalogKey}RunCount`;
+  if (panel.moduleClass === 'variantArtifactProducer' || panel.moduleClass === 'variantFieldProducer') {
+    return `${panel.catalogKey}Variants`;
+  }
+  if (panel.moduleClass === 'productFieldProducer') return 'key';
+  return null;
+}
+
+function isSortColumnId(value: string | null): value is string {
+  return value !== null;
+}
+
+function buildExpectedOverviewSortableColumnIds(): readonly string[] {
+  return [
+    ...OVERVIEW_STATIC_PREFIX_SORTABLE_COLUMN_IDS,
+    ...FINDER_PANELS.map(overviewFinderSortColumnId).filter(isSortColumnId),
+    ...OVERVIEW_STATIC_SUFFIX_SORTABLE_COLUMN_IDS,
+  ];
+}
 
 function pifVariant(overrides: Partial<PifVariantProgressGen> = {}): PifVariantProgressGen {
   return {
@@ -323,26 +362,8 @@ describe('sortOverviewRows', () => {
     assert.equal(overviewSortingUsesLive([{ id: 'brand', desc: false }, { id: 'live', desc: true }]), true);
   });
 
-  const requestedColumns = [
-    'brand',
-    'base_model',
-    'cefRunCount',
-    'pifVariants',
-    'rdfVariants',
-    'skuVariants',
-    'key',
-    'scoreCard',
-    'coverage',
-    'confidence',
-    'fieldsFilled',
-    'live',
-    'lastRun',
-  ] as const;
-
-  it('declares every requested Overview catalog column sortable', () => {
-    for (const columnId of requestedColumns) {
-      assert.ok(OVERVIEW_SORTABLE_COLUMN_IDS.includes(columnId), `${columnId} should be sortable`);
-    }
+  it('derives the ordered Overview sortable column contract from the finder panel registry', () => {
+    assert.deepEqual(OVERVIEW_SORTABLE_COLUMN_IDS, buildExpectedOverviewSortableColumnIds());
   });
 
   const low = makeRow({

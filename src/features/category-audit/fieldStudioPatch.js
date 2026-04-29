@@ -4,6 +4,7 @@ import path from 'node:path';
 export const FIELD_STUDIO_PATCH_SCHEMA_VERSION = 'field-studio-patch.v1';
 
 const PATCH_FILE_SUFFIX = `.${FIELD_STUDIO_PATCH_SCHEMA_VERSION}.json`;
+const OS_DUPLICATE_SUFFIX_RE = /\s+\(\d+\)(?=\.json$)/i;
 const VALID_VERDICTS = new Set(['keep', 'minor_revise', 'major_revise', 'schema_decision']);
 const TOP_LEVEL_KEYS = new Set([
   'schema_version',
@@ -15,8 +16,15 @@ const TOP_LEVEL_KEYS = new Set([
   'audit',
 ]);
 const PATCH_KEYS = new Set(['data_lists', 'field_overrides', 'component_sources']);
-const AUDIT_KEYS = new Set(['sources_checked', 'products_checked', 'conclusion', 'open_questions']);
-const DATA_LIST_PATCH_KEYS = new Set(['field', 'normalize', 'manual_values']);
+const AUDIT_KEYS = new Set([
+  'sources_checked',
+  'products_checked',
+  'conclusion',
+  'adjacent_key_roster_decisions',
+  'schema_blocked_component_attributes',
+  'open_questions',
+]);
+const DATA_LIST_PATCH_KEYS = new Set(['field', 'manual_values']);
 const COMPONENT_SOURCE_PATCH_KEYS = new Set(['component_type', 'roles']);
 const COMPONENT_ROLE_PATCH_KEYS = new Set(['properties']);
 const COMPONENT_PROPERTY_PATCH_KEYS = new Set([
@@ -30,6 +38,7 @@ const COMPONENT_PROPERTY_PATCH_KEYS = new Set([
 ]);
 const RETIRED_DATA_LIST_KEYS = new Set([
   'mode',
+  'normalize',
   'sheet',
   'value_column',
   'column',
@@ -66,6 +75,7 @@ const RETIRED_COMPONENT_SOURCE_KEYS = new Set([
 ]);
 const RETIRED_COMPONENT_ROLE_KEYS = new Set(['primary_identifier', 'maker', 'aliases', 'links']);
 const RETIRED_COMPONENT_PROPERTY_KEYS = new Set(['key', 'property_key', 'column', 'col']);
+const AUTO_COMPONENT_IDENTITY_FACETS = new Set(['brand', 'link']);
 
 function isObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value);
@@ -79,12 +89,23 @@ function sortedKeys(value) {
   return Object.keys(value || {}).sort((a, b) => a.localeCompare(b));
 }
 
+function hasOwn(value, key) {
+  return Object.prototype.hasOwnProperty.call(value || {}, key);
+}
+
 function normalizeFieldKey(value) {
   return String(value || '')
     .trim()
     .toLowerCase()
     .replace(/[^a-z0-9_]+/g, '_')
     .replace(/^_+|_+$/g, '');
+}
+
+function isAutoComponentIdentityFacetProperty(componentType = '', fieldKey = '') {
+  const type = normalizeFieldKey(componentType);
+  const key = normalizeFieldKey(fieldKey);
+  if (!type || !key) return false;
+  return [...AUTO_COMPONENT_IDENTITY_FACETS].some((facet) => key === `${type}_${facet}`);
 }
 
 function assertStrictKeys(value, allowed, label) {
@@ -124,21 +145,22 @@ export function expectedFieldStudioPatchFileName({ category, fieldKey, navigator
 }
 
 export function parseFieldStudioPatchFileName(fileName) {
-  const base = path.basename(String(fileName || ''));
+  const originalBase = safeSourceFileName(fileName);
+  const base = normalizeDuplicatePatchFileName(originalBase);
   if (!base.endsWith(PATCH_FILE_SUFFIX)) {
-    throw new Error(`invalid field studio patch filename "${base}"`);
+    throw new Error(`invalid field studio patch filename "${originalBase}"`);
   }
   const stem = base.slice(0, -PATCH_FILE_SUFFIX.length);
   const parts = stem.split('-').filter(Boolean);
   if (parts.length < 2) {
-    throw new Error(`invalid field studio patch filename "${base}"`);
+    throw new Error(`invalid field studio patch filename "${originalBase}"`);
   }
   const fieldKey = parts.pop();
   const maybeOrdinal = parts.at(-1);
   const navigatorOrdinal = /^\d+$/.test(maybeOrdinal || '') ? Number(parts.pop()) : null;
   const category = parts.join('-');
   if (!category || !/^[a-z0-9_-]+$/i.test(category) || !/^[a-z0-9_]+$/i.test(fieldKey)) {
-    throw new Error(`invalid field studio patch filename "${base}"`);
+    throw new Error(`invalid field studio patch filename "${originalBase}"`);
   }
   return {
     category,
@@ -153,7 +175,13 @@ function validateAuditBlock(audit) {
     throw new Error('audit must be an object when provided');
   }
   assertStrictKeys(audit, AUDIT_KEYS, 'audit');
-  for (const key of ['sources_checked', 'products_checked', 'open_questions']) {
+  for (const key of [
+    'sources_checked',
+    'products_checked',
+    'adjacent_key_roster_decisions',
+    'schema_blocked_component_attributes',
+    'open_questions',
+  ]) {
     if (audit[key] != null && !Array.isArray(audit[key])) {
       throw new Error(`audit.${key} must be an array when provided`);
     }
@@ -193,10 +221,10 @@ function validatePatchBlock(patch, fieldKey) {
       }
       for (const key of Object.keys(row)) {
         if (RETIRED_DATA_LIST_KEYS.has(key)) {
-          throw new Error(`patch.data_lists[${index}].${key} is retired; use field, normalize, and manual_values only`);
+          throw new Error(`patch.data_lists[${index}].${key} is retired; use field and manual_values only`);
         }
         if (!DATA_LIST_PATCH_KEYS.has(key)) {
-          throw new Error(`patch.data_lists[${index}].${key} is not allowed; use field, normalize, and manual_values only`);
+          throw new Error(`patch.data_lists[${index}].${key} is not allowed; use field and manual_values only`);
         }
       }
     });
@@ -268,6 +296,10 @@ function safeSourceFileName(fileName) {
   return base;
 }
 
+function normalizeDuplicatePatchFileName(fileName) {
+  return safeSourceFileName(fileName).replace(OS_DUPLICATE_SUFFIX_RE, '');
+}
+
 export function validateFieldStudioPatchDocument(doc, { category = null, fileName = null } = {}) {
   if (!isObject(doc)) {
     throw new Error('Field Studio patch must be a JSON object');
@@ -321,6 +353,12 @@ function mergeJson(base, patch) {
     out[key] = mergeJson(out[key], value);
   }
   return out;
+}
+
+function stripRetiredDataListKeys(row) {
+  if (!isObject(row)) return row;
+  const { normalize: _normalize, ...rest } = row;
+  return rest;
 }
 
 function componentKey(row) {
@@ -465,9 +503,13 @@ function validateLinkedPatchReferences(map) {
     }
     const properties = Array.isArray(row?.roles?.properties) ? row.roles.properties : [];
     for (const property of properties) {
-      if (property?.component_only === true) continue;
       const key = normalizeFieldKey(propertyKey(property));
       if (!key) continue;
+      if (isAutoComponentIdentityFacetProperty(type, key)) {
+        errors.push(`component_sources[${type}].roles.properties.${key}: ${key} is an auto-generated identity facet; do not list it in roles.properties`);
+        continue;
+      }
+      if (property?.component_only === true) continue;
       if (shouldValidatePropertyFields && !knownFieldKeys.has(key)) {
         errors.push(`component_sources[${type}].roles.properties.${key}: no selected key or field_overrides entry exists after import`);
       }
@@ -477,19 +519,82 @@ function validateLinkedPatchReferences(map) {
   return { errors, warnings: [] };
 }
 
-function validatePatchedFieldStudioMap({ category, patched, validateFieldStudioMap }) {
+function fieldOverrideByNormalizedKey(map, fieldKey) {
+  const normalized = normalizeFieldKey(fieldKey);
+  const fieldOverrides = isObject(map?.field_overrides) ? map.field_overrides : {};
+  return Object.entries(fieldOverrides).find(([key]) => normalizeFieldKey(key) === normalized)?.[1] || null;
+}
+
+function componentTypeSet(map) {
+  return new Set((Array.isArray(map?.component_sources) ? map.component_sources : [])
+    .map((row) => normalizeFieldKey(componentKey(row)))
+    .filter(Boolean));
+}
+
+function isComponentIdentityField(map, fieldKey) {
+  const normalized = normalizeFieldKey(fieldKey);
+  if (!normalized) return false;
+  const source = enumSourceForRule(fieldOverrideByNormalizedKey(map, normalized), normalized);
+  return source === `component_db.${normalized}` || componentTypeSet(map).has(normalized);
+}
+
+function componentIdentityProjectionForRule(rule) {
+  const projection = rule?.component_identity_projection;
+  return isObject(projection) ? projection : null;
+}
+
+function isAutoComponentIdentityFacetField(map, fieldKey) {
+  const normalized = normalizeFieldKey(fieldKey);
+  if (!normalized) return false;
+  const rule = fieldOverrideByNormalizedKey(map, normalized);
+  const projection = componentIdentityProjectionForRule(rule);
+  const projectedType = normalizeFieldKey(projection?.component_type);
+  const projectedFacet = normalizeFieldKey(projection?.facet);
+  if (projectedType && AUTO_COMPONENT_IDENTITY_FACETS.has(projectedFacet)) return true;
+  const match = normalized.match(/^(.+)_(brand|link)$/);
+  return Boolean(match && isComponentIdentityField(map, match[1]));
+}
+
+function isAliasOutOfScopeField(map, fieldKey) {
+  return isComponentIdentityField(map, fieldKey) || isAutoComponentIdentityFacetField(map, fieldKey);
+}
+
+function hasNonEmptyAliases(value) {
+  if (value == null) return false;
+  if (Array.isArray(value)) return value.some((entry) => String(entry || '').trim());
+  return String(value || '').trim() !== '';
+}
+
+function validateComponentIdentityAliasPatches({ patched, patchDocs }) {
+  const errors = [];
+  for (const rawDoc of patchDocs || []) {
+    const doc = validateFieldStudioPatchDocument(stripPatchMetadata(rawDoc), { category: rawDoc?.category });
+    const override = doc.patch.field_overrides?.[doc.field_key];
+    if (!isObject(override) || !hasOwn(override, 'aliases')) continue;
+    if (!hasNonEmptyAliases(override.aliases)) continue;
+    const fieldKey = normalizeFieldKey(doc.field_key);
+    if (!isAliasOutOfScopeField(patched, fieldKey)) continue;
+    errors.push(`field_overrides.${fieldKey}.aliases must be blank/absent for component identity and auto identity-facet fields.`);
+  }
+  return { errors, warnings: [] };
+}
+
+function validatePatchedFieldStudioMap({ category, patched, validateFieldStudioMap, patchDocs = [] }) {
   const validation = typeof validateFieldStudioMap === 'function'
     ? validateFieldStudioMap(patched, { category })
     : { valid: true, errors: [], warnings: [], normalized: patched };
   const normalized = isObject(validation?.normalized) ? validation.normalized : patched;
   const linkedValidation = validateLinkedPatchReferences(normalized);
+  const componentAliasValidation = validateComponentIdentityAliasPatches({ patched: normalized, patchDocs });
   const errors = [
     ...(Array.isArray(validation?.errors) ? validation.errors : []),
     ...linkedValidation.errors,
+    ...componentAliasValidation.errors,
   ];
   const warnings = [
     ...(Array.isArray(validation?.warnings) ? validation.warnings : []),
     ...linkedValidation.warnings,
+    ...componentAliasValidation.warnings,
   ];
   const valid = validation?.valid !== false && errors.length === 0;
 
@@ -632,14 +737,17 @@ export function applyFieldStudioPatchDocument(fieldStudioMap, patchDoc) {
   const next = cloneJson(fieldStudioMap || {});
 
   if (Array.isArray(doc.patch.data_lists)) {
-    const rows = Array.isArray(next.data_lists) ? cloneJson(next.data_lists) : [];
+    const rows = Array.isArray(next.data_lists)
+      ? cloneJson(next.data_lists).map((row) => stripRetiredDataListKeys(row))
+      : [];
     for (const incoming of doc.patch.data_lists) {
+      const cleanIncoming = stripRetiredDataListKeys(incoming);
       const index = rows.findIndex((row) => row?.field === incoming.field);
       if (index === -1) {
-        rows.push(cloneJson(incoming));
+        rows.push(cloneJson(cleanIncoming));
         continue;
       }
-      rows[index] = mergeJson(rows[index], incoming);
+      rows[index] = mergeJson(rows[index], cleanIncoming);
     }
     next.data_lists = rows;
   }
@@ -726,7 +834,12 @@ export function previewFieldStudioPatchDocuments({
 
   const before = cloneJson(fieldStudioMap || {});
   const patched = applyFieldStudioPatchDocuments(before, docs);
-  const validationResult = validatePatchedFieldStudioMap({ category, patched, validateFieldStudioMap });
+  const validationResult = validatePatchedFieldStudioMap({
+    category,
+    patched,
+    validateFieldStudioMap,
+    patchDocs: docs,
+  });
   const normalized = validationResult.normalized;
 
   return {
@@ -773,7 +886,7 @@ export async function loadFieldStudioPatchDocuments({ category, inputDir }) {
   if (!inputDir) throw new Error('inputDir is required');
   const entries = await fs.readdir(inputDir, { withFileTypes: true });
   const files = entries
-    .filter((entry) => entry.isFile() && entry.name.endsWith(PATCH_FILE_SUFFIX))
+    .filter((entry) => entry.isFile() && normalizeDuplicatePatchFileName(entry.name).endsWith(PATCH_FILE_SUFFIX))
     .map((entry) => entry.name)
     .sort((a, b) => a.localeCompare(b));
 
@@ -801,7 +914,12 @@ export async function importFieldStudioPatchDirectory({
 }) {
   const docs = await loadFieldStudioPatchDocuments({ category, inputDir });
   const patched = applyFieldStudioPatchDocuments(fieldStudioMap, docs);
-  const validationResult = validatePatchedFieldStudioMap({ category, patched, validateFieldStudioMap });
+  const validationResult = validatePatchedFieldStudioMap({
+    category,
+    patched,
+    validateFieldStudioMap,
+    patchDocs: docs,
+  });
   if (!validationResult.valid) {
     const details = validationResult.errors.length > 0 ? validationResult.errors.join('; ') : 'unknown validation error';
     throw new Error(`patched field_studio_map failed validation: ${details}`);

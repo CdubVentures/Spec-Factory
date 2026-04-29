@@ -1,6 +1,15 @@
 import { describe, it } from 'node:test';
 import { strictEqual, deepStrictEqual, ok } from 'node:assert';
-import { isObject, toArray, normalizeText, normalizeToken, normalizeTokenCollapsed, normalizeFieldKey, clamp01 } from '../primitives.js';
+import {
+  isObject,
+  toArray,
+  normalizeText,
+  normalizeToken,
+  normalizeTokenCollapsed,
+  normalizeFieldKey,
+  normalizeKnownValueMatchKey,
+  clamp01,
+} from '../primitives.js';
 
 describe('isObject', () => {
   const trueCases = [
@@ -169,6 +178,23 @@ describe('normalizeTokenCollapsed', () => {
   for (const [input, expected, label] of cases) {
     it(label, () => {
       strictEqual(normalizeTokenCollapsed(input), expected);
+    });
+  }
+});
+
+describe('normalizeKnownValueMatchKey', () => {
+  const cases = [
+    ['  Razer-Focus_Pro   35K  ', 'razer focus pro 35k', 'collapses case, whitespace, hyphens, and underscores'],
+    ['3-zone-(rgb)', '3 zone (rgb)', 'preserves display punctuation while normalizing separators'],
+    ['A--B__C', 'a b c', 'collapses repeated separators'],
+    ['X-ray', 'x ray', 'does not require slug storage for hyphenated display values'],
+    [null, '', 'null -> empty string'],
+    [undefined, '', 'undefined -> empty string'],
+  ];
+
+  for (const [input, expected, label] of cases) {
+    it(label, () => {
+      strictEqual(normalizeKnownValueMatchKey(input), expected);
     });
   }
 });

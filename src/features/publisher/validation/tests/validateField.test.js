@@ -221,7 +221,7 @@ describe('validateField — open_prefer_known (alias resolution)', () => {
     assert.ok(r.repairs.some(rep => rep.step === 'enum_alias'));
   });
 
-  it('canonical input still resolves (normalize lowercases, alias restores)', () => {
+  it('canonical input still resolves to display value', () => {
     const r = validateField({
       fieldKey: 'lighting',
       value: '3 Zone (RGB)',
@@ -232,17 +232,22 @@ describe('validateField — open_prefer_known (alias resolution)', () => {
     assert.equal(r.value, '3 Zone (RGB)');
   });
 
-  it('no match → accept + flag unknown', () => {
+  it('no match → preserve display value + flag unknown', () => {
     const r = validateField({
       fieldKey: 'lighting',
-      value: '5 Zone (RGB)',
+      value: 'New Display Value',
       fieldRule: opkRule(),
       knownValues: { policy: 'open_prefer_known', values: ['3 Zone (RGB)', '4 Zone (RGB)'] },
     });
+    assert.equal(r.value, 'New Display Value');
     assert.ok(r.rejections.some(rej => rej.reason_code === 'unknown_enum_prefer_known'));
+    assert.deepEqual(
+      r.rejections.find(rej => rej.reason_code === 'unknown_enum_prefer_known')?.detail?.unknown,
+      ['New Display Value']
+    );
   });
 
-  it('closed policy — case mismatch rejects', () => {
+  it('closed policy — case mismatch repairs to canonical display value', () => {
     const closedRule = {
       contract: { shape: 'scalar', type: 'string' },
       parse: {},
@@ -254,7 +259,9 @@ describe('validateField — open_prefer_known (alias resolution)', () => {
       fieldRule: closedRule,
       knownValues: { policy: 'closed', values: ['3 Zone (RGB)'] },
     });
-    assert.equal(r.valid, false);
+    assert.equal(r.valid, true);
+    assert.equal(r.value, '3 Zone (RGB)');
+    assert.ok(r.repairs.some(rep => rep.step === 'enum_alias'));
   });
 });
 
