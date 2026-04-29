@@ -15,6 +15,13 @@ export interface LinkedProduct {
   field_key?: string;
   match_type?: string;
   match_score?: number | null;
+  field_counts?: Record<string, LinkedProductSupportCounts>;
+}
+
+export interface LinkedProductSupportCounts {
+  published_count: number;
+  candidate_count: number;
+  evidence_count: number;
 }
 
 export interface ComponentPropertyState {

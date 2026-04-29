@@ -71,15 +71,6 @@ function getCellClassName<T>(cell: { readonly column: { readonly columnDef: Colu
   return meta?.cellClassName ?? '';
 }
 
-function getLocalStorage(): Storage | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
-
 function getSessionStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -122,31 +113,19 @@ function parseDataTableSessionState(raw: string | null): PersistedDataTableState
 
 function readDataTableSessionState(persistKey?: string): PersistedDataTableState {
   if (!persistKey) return { sorting: [], globalFilter: '' };
-  const local = getLocalStorage();
-  if (local) {
-    try {
-      const raw = local.getItem(persistKey);
-      if (raw) return parseDataTableSessionState(raw);
-    } catch { /* fall through */ }
+  const storage = getSessionStorage();
+  if (!storage) return { sorting: [], globalFilter: '' };
+  try {
+    const raw = storage.getItem(persistKey);
+    return parseDataTableSessionState(raw);
+  } catch {
+    return { sorting: [], globalFilter: '' };
   }
-  // WHY: Migrate legacy sessionStorage entries to localStorage.
-  const session = getSessionStorage();
-  if (session) {
-    try {
-      const legacy = session.getItem(persistKey);
-      if (legacy) {
-        local?.setItem(persistKey, legacy);
-        session.removeItem(persistKey);
-        return parseDataTableSessionState(legacy);
-      }
-    } catch { /* noop */ }
-  }
-  return { sorting: [], globalFilter: '' };
 }
 
 function writeDataTableSessionState(persistKey: string | undefined, state: PersistedDataTableState): void {
   if (!persistKey) return;
-  const storage = getLocalStorage();
+  const storage = getSessionStorage();
   if (!storage) return;
   try {
     storage.setItem(persistKey, JSON.stringify({

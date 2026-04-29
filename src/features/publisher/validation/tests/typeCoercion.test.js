@@ -160,12 +160,10 @@ describe('coerceByType — boolean', () => {
     assert.equal(r.repaired ?? r.value, null);
   });
 
-  it('absence token (pre-normalized by Step 0) → null', () => {
-    // WHY: in real pipeline, absence normalizer converts 'n/a' → null before coercion.
-    // coerceBoolean receives null, not the raw token.
-    const r = coerceByType(null, 'boolean');
+  it('"n/a" → "n/a"', () => {
+    const r = coerceByType('n/a', 'boolean');
     assert.equal(r.pass, true);
-    assert.equal(r.value, null);
+    assert.equal(r.repaired ?? r.value, 'n/a');
   });
 
   it('unrecognized string → reject', () => {

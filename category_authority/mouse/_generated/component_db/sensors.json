@@ -1,105 +1,8 @@
 {
   "category": "mouse",
   "component_type": "sensor",
-  "generated_at": "2026-04-29T04:41:27.116Z",
+  "generated_at": "2026-04-29T08:00:49.709Z",
   "items": [
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "FocusPro45K"
-      ],
-      "maker": "razer",
-      "name": "Focus Pro 45K",
-      "properties": {
-        "acceleration": 85,
-        "dpi": 45000,
-        "ips": 900,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "HERO2"
-      ],
-      "links": [
-        "https://www.logitechg.com/en-us/software/guides/hero-2-sensor"
-      ],
-      "maker": "logitech",
-      "name": "HERO 2",
-      "properties": {
-        "acceleration": 88,
-        "dpi": 44000,
-        "flawless_sensor": true,
-        "ips": 888,
-        "sensor_date": "2024-09-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "PAW3950Ti"
-      ],
-      "maker": "PixArt",
-      "name": "PAW3950 Ti",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 42000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "PAW3950Max"
-      ],
-      "maker": "PixArt",
-      "name": "PAW3950 Max",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 42000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
     {
       "__constraints": {
         "sensor_date": [
@@ -136,12 +39,68 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
-      "maker": "pwnage",
-      "name": "XERO",
+      "maker": "avago",
+      "name": "A3050",
       "properties": {
-        "acceleration": 50,
-        "dpi": 36000,
-        "ips": 750,
+        "acceleration": 20,
+        "dpi": 2000,
+        "ips": 60,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "avago",
+      "name": "A3055",
+      "properties": {
+        "dpi": 2500,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "avago",
+      "name": "A3305",
+      "properties": {
+        "dpi": 3200,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "avago",
+      "name": "A3325",
+      "properties": {
+        "acceleration": 20,
+        "dpi": 10000,
+        "ips": 60,
         "sensor_type": "optical"
       }
     },
@@ -157,15 +116,238 @@
         "ips": "upper_bound"
       },
       "aliases": [
-        "Focus Pro Gen 2",
-        "FocusProGen2"
+        "ADNS 3080",
+        "ADNS3080"
       ],
-      "maker": "razer",
-      "name": "Focus Pro Gen-2",
+      "maker": "avago",
+      "name": "ADNS-3080",
       "properties": {
-        "acceleration": 70,
-        "dpi": 35000,
-        "ips": 750,
+        "acceleration": 15,
+        "dpi": 1600,
+        "ips": 40,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "ADNS 3090",
+        "ADNS3090"
+      ],
+      "maker": "avago",
+      "name": "ADNS-3090",
+      "properties": {
+        "acceleration": 20,
+        "dpi": 3600,
+        "ips": 60,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "ADNS 3095",
+        "ADNS3095"
+      ],
+      "maker": "avago",
+      "name": "ADNS-3095",
+      "properties": {
+        "acceleration": 20,
+        "dpi": 3600,
+        "ips": 60,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "ADNS 3310",
+        "ADNS3310"
+      ],
+      "maker": "avago",
+      "name": "ADNS-3310",
+      "properties": {
+        "dpi": 7000,
+        "ips": 215,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "ADNS A9800",
+        "ADNSA9800"
+      ],
+      "links": [
+        "https://datasheet.octopart.com/ADNS-9800-Avago-datasheet-10666463.pdf"
+      ],
+      "maker": "avago",
+      "name": "ADNS-A9800",
+      "properties": {
+        "acceleration": 30,
+        "dpi": 8200,
+        "ips": 150,
+        "sensor_date": "2012-01-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "avago",
+      "name": "AM010",
+      "properties": {
+        "acceleration": 20,
+        "dpi": 4000,
+        "ips": 120,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "DeltaZero"
+      ],
+      "maker": "avago",
+      "name": "Delta Zero",
+      "properties": {
+        "acceleration": 20,
+        "dpi": 2500,
+        "ips": 80,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "avago",
+      "name": "S6006",
+      "properties": {
+        "acceleration": 20,
+        "dpi": 2000,
+        "ips": 65,
+        "sensor_type": "laser"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "avago",
+      "name": "S9808",
+      "properties": {
+        "acceleration": 30,
+        "dpi": 8200,
+        "sensor_type": "laser"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "avago",
+      "name": "SDNS3988",
+      "properties": {
+        "dpi": 12000,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "MARKSMAN26K"
+      ],
+      "maker": "corsair",
+      "name": "MARKSMAN 26K",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 26000,
+        "ips": 650,
+        "sensor_date": "2021-09-01",
         "sensor_type": "optical"
       }
     },
@@ -208,14 +390,15 @@
         "ips": "upper_bound"
       },
       "aliases": [
-        "XS 1"
+        "AIM WL",
+        "AIMWL"
       ],
-      "maker": "pulsar",
-      "name": "XS-1",
+      "maker": "dareu",
+      "name": "AIM-WL",
       "properties": {
-        "acceleration": 50,
-        "dpi": 32000,
-        "ips": 750,
+        "acceleration": 35,
+        "dpi": 12000,
+        "ips": 300,
         "sensor_type": "optical"
       }
     },
@@ -230,405 +413,12 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
-      "aliases": [
-        "BAMF 3 0",
-        "BAMF30"
-      ],
       "maker": "glorious",
-      "name": "BAMF 3.0",
+      "name": "BAMF",
       "properties": {
         "acceleration": 50,
-        "dpi": 30000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__overridden": {
-        "acceleration": true
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "Owl Eye 30K",
-        "OwlEye30K"
-      ],
-      "maker": "turtle-beach",
-      "name": "Owl-Eye 30K",
-      "properties": {
-        "acceleration": 30,
-        "dpi": 30000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "inzone",
-      "name": "3950IZ",
-      "properties": {
-        "acceleration": 70,
-        "dpi": 30000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "ninjutso",
-      "name": "AimNinja",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 30000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "G3950",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 30000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "FocusPro30K"
-      ],
-      "maker": "razer",
-      "name": "Focus Pro 30K",
-      "properties": {
-        "acceleration": 70,
-        "dpi": 30000,
-        "ips": 750,
-        "sensor_date": "2022-05-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "PAW3950HS"
-      ],
-      "maker": "PixArt",
-      "name": "PAW3950 HS",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 30000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "PAW3950Pro"
-      ],
-      "maker": "PixArt",
-      "name": "PAW3950 Pro",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 30000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "PAW3950Ultra"
-      ],
-      "maker": "PixArt",
-      "name": "PAW3950 Ultra",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 30000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PAW3950",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 30000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "PAW3950APEX"
-      ],
-      "maker": "PixArt",
-      "name": "PAW3950 APEX",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 30000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "PAW3950ES KING",
-        "PAW3950ESKING"
-      ],
-      "maker": "PixArt",
-      "name": "PAW3950ES-KING",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 30000,
-        "ips": 750,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "PAW3395Pro"
-      ],
-      "maker": "PixArt",
-      "name": "PAW3395 Pro",
-      "properties": {
-        "acceleration": 60,
-        "dpi": 40000,
-        "ips": 700,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "AimPoint PixArt PAW3395",
-        "AimPointPixArtPAW3395"
-      ],
-      "links": [
-        "https://www.pixart.com/products-detail/129/PAW3395DM-T6QU"
-      ],
-      "maker": "PixArt",
-      "name": "AimPoint (PixArt PAW3395)",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 36000,
-        "flawless_sensor": true,
-        "ips": 650,
-        "sensor_date": "2022-01-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "PAW3395Ultra"
-      ],
-      "maker": "PixArt",
-      "name": "PAW3395 Ultra",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 26000,
-        "ips": 650,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PAW3998",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 26000,
-        "ips": 650,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "Focus"
-      ],
-      "maker": "razer",
-      "name": "Focus+",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 26000,
-        "ips": 650,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "Owl Eye",
-        "OwlEye"
-      ],
-      "maker": "roccat",
-      "name": "Owl-Eye",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 26000,
-        "ips": 650,
+        "dpi": 19000,
+        "ips": 400,
         "sensor_type": "optical"
       }
     },
@@ -691,6 +481,30 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
+      "aliases": [
+        "BAMF 3 0",
+        "BAMF30"
+      ],
+      "maker": "glorious",
+      "name": "BAMF 3.0",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 30000,
+        "ips": 750,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
       "maker": "hyperx",
       "name": "26K",
       "properties": {
@@ -711,16 +525,764 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
+      "maker": "hyperx",
+      "name": "Core",
+      "properties": {
+        "acceleration": 35,
+        "dpi": 12000,
+        "ips": 300,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "instant",
+      "name": "S205",
+      "properties": {
+        "acceleration": 25,
+        "dpi": 12000,
+        "ips": 120,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "inzone",
+      "name": "3950IZ",
+      "properties": {
+        "acceleration": 70,
+        "dpi": 30000,
+        "ips": 750,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
       "aliases": [
-        "MARKSMAN26K"
+        "AdvancedOpticalTracking"
       ],
-      "maker": "corsair",
-      "name": "MARKSMAN 26K",
+      "maker": "logitech",
+      "name": "Advanced Optical Tracking",
+      "properties": {
+        "dpi": 4000,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "logitech",
+      "name": "Darkfield",
+      "properties": {
+        "sensor_type": "laser"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "HERO12K"
+      ],
+      "maker": "logitech",
+      "name": "HERO 12K",
+      "properties": {
+        "acceleration": 40,
+        "dpi": 12000,
+        "ips": 400,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "HERO2"
+      ],
+      "links": [
+        "https://www.logitechg.com/en-us/software/guides/hero-2-sensor"
+      ],
+      "maker": "logitech",
+      "name": "HERO 2",
+      "properties": {
+        "acceleration": 88,
+        "dpi": 44000,
+        "flawless_sensor": true,
+        "ips": 888,
+        "sensor_date": "2024-09-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "HERO25K"
+      ],
+      "maker": "logitech",
+      "name": "HERO 25K",
+      "properties": {
+        "acceleration": 40,
+        "dpi": 25600,
+        "ips": 400,
+        "sensor_date": "2020-09-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "logitech",
+      "name": "VB010411",
+      "properties": {
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "microsoft",
+      "name": "BlueTrack",
+      "properties": {
+        "acceleration": 75,
+        "dpi": 4000,
+        "ips": 120,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "ninjutso",
+      "name": "AimNinja",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 30000,
+        "ips": 750,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "pixart",
+      "name": "PAW3104",
+      "properties": {
+        "acceleration": 15,
+        "dpi": 4000,
+        "ips": 45,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "links": [
+        "https://www.pixart.com/products-detail/131/PAW3311DB-T2MU"
+      ],
+      "maker": "pixart",
+      "name": "PAW3311",
+      "properties": {
+        "acceleration": 35,
+        "dpi": 12000,
+        "flawless_sensor": true,
+        "ips": 300,
+        "sensor_date": "2022-11-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "pixart",
+      "name": "PAW3371",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 19000,
+        "ips": 400,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "pixart",
+      "name": "PAW3399",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 20000,
+        "ips": 650,
+        "sensor_date": "2019-10-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "links": [
+        "https://www.epsglobal.com/Media-Library/EPSGlobal/Products/files/pixart/PMW3320DB-TYDU.pdf?ext=.pdf"
+      ],
+      "maker": "pixart",
+      "name": "PMW3320",
+      "properties": {
+        "acceleration": 20,
+        "dpi": 3500,
+        "ips": 80,
+        "sensor_date": "2016-09-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "1855",
+      "properties": {
+        "dpi": 8000,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "ADNS 3888",
+        "ADNS3888"
+      ],
+      "maker": "PixArt",
+      "name": "ADNS-3888",
+      "properties": {
+        "acceleration": 15,
+        "dpi": 3500,
+        "ips": 120,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "AimPoint PixArt PAW3395",
+        "AimPointPixArtPAW3395"
+      ],
+      "links": [
+        "https://www.pixart.com/products-detail/129/PAW3395DM-T6QU"
+      ],
+      "maker": "PixArt",
+      "name": "AimPoint (PixArt PAW3395)",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 36000,
+        "flawless_sensor": true,
+        "ips": 650,
+        "sensor_date": "2022-01-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "G3950",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 30000,
+        "ips": 750,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PAW3305DK",
+      "properties": {
+        "acceleration": 30,
+        "dpi": 3200,
+        "ips": 65,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PAW3318",
+      "properties": {
+        "acceleration": 30,
+        "dpi": 8000,
+        "ips": 200,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "links": [
+        "https://www.pixart.com/products-detail/12/PAW3327DB-TWQU"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3327",
+      "properties": {
+        "acceleration": 30,
+        "dpi": 6200,
+        "ips": 220,
+        "sensor_date": "2018-10-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PAW3328",
+      "properties": {
+        "acceleration": 30,
+        "dpi": 6400,
+        "ips": 220,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PAW3333",
+      "properties": {
+        "acceleration": 35,
+        "dpi": 16000,
+        "ips": 300,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "links": [
+        "https://edit.wpgdadawant.com/uploads/news_file/blog/2021/3481/tech_files/sv-1619399703.pdf"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3335",
+      "properties": {
+        "acceleration": 40,
+        "dpi": 16000,
+        "flawless_sensor": true,
+        "ips": 400,
+        "sensor_date": "2018-10-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PAW3338",
+      "properties": {
+        "acceleration": 40,
+        "dpi": 16000,
+        "ips": 400,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PAW3349",
+      "properties": {
+        "acceleration": 35,
+        "dpi": 8500,
+        "ips": 300,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "links": [
+        "https://www.pixart.com/products-detail/4/PAW3370DM-T4QU"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3370",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 19000,
+        "flawless_sensor": true,
+        "ips": 400,
+        "sensor_date": "2020-08-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PAW3392",
+      "properties": {
+        "acceleration": 40,
+        "dpi": 18000,
+        "ips": 400,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PAW3392",
+      "properties": {
+        "sensor_date": "2020-04-01"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PAW3393",
+      "properties": {
+        "sensor_date": "2021-09-01"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "links": [
+        "https://www.pixart.com/products-detail/129/PAW3395DM-T6QU"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3395",
       "properties": {
         "acceleration": 50,
         "dpi": 26000,
         "ips": 650,
-        "sensor_date": "2021-09-01",
+        "sensor_date": "2022-04-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "PAW3395Pro"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3395 Pro",
+      "properties": {
+        "acceleration": 60,
+        "dpi": 40000,
+        "ips": 700,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "PAW3395SE"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3395 SE",
+      "properties": {
+        "acceleration": 40,
+        "dpi": 18000,
+        "ips": 400,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "PAW3395Ultra"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3395 Ultra",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 26000,
+        "ips": 650,
         "sensor_type": "optical"
       }
     },
@@ -780,238 +1342,15 @@
         "ips": "upper_bound"
       },
       "links": [
-        "https://www.pixart.com/products-detail/129/PAW3395DM-T6QU"
+        "https://www.pixart.com/products-detail/22/PAW3519DL-TKST"
       ],
       "maker": "PixArt",
-      "name": "PAW3395",
+      "name": "PAW3519",
       "properties": {
-        "acceleration": 50,
-        "dpi": 26000,
-        "ips": 650,
-        "sensor_date": "2022-04-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "Owl Eye 26K",
-        "OwlEye26K"
-      ],
-      "maker": "roccat",
-      "name": "Owl-Eye 26K",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 26000,
-        "ips": 650,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "pixart",
-      "name": "PAW3399",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 20000,
-        "ips": 650,
-        "sensor_date": "2019-10-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "FocusX26K"
-      ],
-      "maker": "razer",
-      "name": "Focus X 26K",
-      "properties": {
-        "acceleration": 40,
-        "dpi": 26000,
-        "ips": 500,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "TrueMove Pro",
-        "TrueMovePro"
-      ],
-      "maker": "steelseries",
-      "name": "TrueMove Pro+",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 18000,
-        "ips": 450,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "razer",
-      "name": "5G",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 18000,
-        "ips": 450,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "TrueMovePro"
-      ],
-      "maker": "steelseries",
-      "name": "TrueMove Pro",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 18000,
-        "ips": 450,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "HERO25K"
-      ],
-      "maker": "logitech",
-      "name": "HERO 25K",
-      "properties": {
-        "acceleration": 40,
-        "dpi": 25600,
-        "ips": 400,
-        "sensor_date": "2020-09-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "pixart",
-      "name": "PAW3371",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 19000,
-        "ips": 400,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "Owl Eye 19K",
-        "OwlEye19K"
-      ],
-      "maker": "roccat",
-      "name": "Owl-Eye 19K",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 19000,
-        "ips": 400,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "glorious",
-      "name": "BAMF",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 19000,
-        "ips": 400,
+        "acceleration": 10,
+        "dpi": 4200,
+        "ips": 48,
+        "sensor_date": "2017-08-01",
         "sensor_type": "optical"
       }
     },
@@ -1027,16 +1366,214 @@
         "ips": "upper_bound"
       },
       "links": [
-        "https://www.pixart.com/products-detail/4/PAW3370DM-T4QU"
+        "https://www.pixart.com/products-detail/22/PAW3519DL-TKST"
       ],
       "maker": "PixArt",
-      "name": "PAW3370",
+      "name": "PAW3519",
+      "properties": {
+        "sensor_date": "2017-08-01"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PAW3805",
+      "properties": {
+        "acceleration": 10,
+        "dpi": 3000,
+        "ips": 40,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "PAW3808 EK",
+        "PAW3808EK"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3808(EK)",
+      "properties": {
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "PAW3950APEX"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3950 APEX",
       "properties": {
         "acceleration": 50,
-        "dpi": 19000,
-        "flawless_sensor": true,
-        "ips": 400,
-        "sensor_date": "2020-08-01",
+        "dpi": 30000,
+        "ips": 750,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "PAW3950HS"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3950 HS",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 30000,
+        "ips": 750,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "PAW3950Max"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3950 Max",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 42000,
+        "ips": 750,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "PAW3950Pro"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3950 Pro",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 30000,
+        "ips": 750,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "PAW3950Ti"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3950 Ti",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 42000,
+        "ips": 750,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "PAW3950Ultra"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3950 Ultra",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 30000,
+        "ips": 750,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "PAW3950ES KING",
+        "PAW3950ESKING"
+      ],
+      "maker": "PixArt",
+      "name": "PAW3950ES-KING",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 30000,
+        "ips": 750,
         "sensor_type": "optical"
       }
     },
@@ -1052,10 +1589,132 @@
         "ips": "upper_bound"
       },
       "maker": "PixArt",
-      "name": "PMW3391",
+      "name": "PAW3998",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 26000,
+        "ips": 650,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PMW3310",
+      "properties": {
+        "acceleration": 30,
+        "dpi": 5000,
+        "ips": 130,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PMW3325",
+      "properties": {
+        "acceleration": 20,
+        "dpi": 5000,
+        "ips": 100,
+        "sensor_date": "2018-03-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PMW3327",
+      "properties": {
+        "acceleration": 30,
+        "dpi": 6200,
+        "ips": 220,
+        "sensor_date": "2019-01-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PMW3330",
+      "properties": {
+        "acceleration": 30,
+        "dpi": 7200,
+        "ips": 150,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PMW3331",
+      "properties": {
+        "acceleration": 35,
+        "dpi": 8500,
+        "ips": 300,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PMW3335",
       "properties": {
         "acceleration": 40,
-        "dpi": 18000,
+        "dpi": 16000,
         "ips": 400,
         "sensor_date": "2019-01-01",
         "sensor_type": "optical"
@@ -1073,11 +1732,11 @@
         "ips": "upper_bound"
       },
       "maker": "PixArt",
-      "name": "PAW3392",
+      "name": "PMW3359",
       "properties": {
-        "acceleration": 40,
-        "dpi": 18000,
-        "ips": 400,
+        "acceleration": 35,
+        "dpi": 8500,
+        "ips": 300,
         "sensor_type": "optical"
       }
     },
@@ -1092,15 +1751,12 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
-      "aliases": [
-        "PAW3395SE"
-      ],
       "maker": "PixArt",
-      "name": "PAW3395 SE",
+      "name": "PMW3360",
       "properties": {
-        "acceleration": 40,
-        "dpi": 18000,
-        "ips": 400,
+        "acceleration": 50,
+        "dpi": 12000,
+        "ips": 250,
         "sensor_type": "optical"
       }
     },
@@ -1115,14 +1771,11 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
-      "aliases": [
-        "TrueMoveAir"
-      ],
-      "maker": "steelseries",
-      "name": "TrueMove Air",
+      "maker": "PixArt",
+      "name": "PMW3366",
       "properties": {
         "acceleration": 40,
-        "dpi": 18000,
+        "dpi": 12000,
         "ips": 400,
         "sensor_type": "optical"
       }
@@ -1139,11 +1792,49 @@
         "ips": "upper_bound"
       },
       "maker": "PixArt",
-      "name": "PAW3338",
+      "name": "PMW3367",
       "properties": {
-        "acceleration": 40,
+        "acceleration": 50,
         "dpi": 16000,
+        "ips": 250,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PMW3367",
+      "properties": {
+        "sensor_date": "2017-01-01"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "PMW3370",
+      "properties": {
+        "acceleration": 40,
+        "dpi": 19000,
         "ips": 400,
+        "sensor_date": "2020-10-01",
         "sensor_type": "optical"
       }
     },
@@ -1202,15 +1893,13 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
-      "aliases": [
-        "HERO12K"
-      ],
-      "maker": "logitech",
-      "name": "HERO 12K",
+      "maker": "PixArt",
+      "name": "PMW3391",
       "properties": {
         "acceleration": 40,
-        "dpi": 12000,
+        "dpi": 18000,
         "ips": 400,
+        "sensor_date": "2019-01-01",
         "sensor_type": "optical"
       }
     },
@@ -1225,12 +1914,230 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
+      "links": [
+        "https://www.pixart.com/products-detail/4/PAW3395DM-T6QU"
+      ],
       "maker": "PixArt",
-      "name": "PMW3366",
+      "name": "PMW3395",
       "properties": {
-        "acceleration": 40,
-        "dpi": 12000,
-        "ips": 400,
+        "sensor_date": "2022-04-01"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "PixArt",
+      "name": "SDNS3988",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 6400,
+        "ips": 200,
+        "sensor_date": "2014-01-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "XS 1"
+      ],
+      "maker": "pulsar",
+      "name": "XS-1",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 32000,
+        "ips": 750,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "pwnage",
+      "name": "XERO",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 36000,
+        "ips": 750,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "razer",
+      "name": "3G",
+      "properties": {
+        "acceleration": 15,
+        "dpi": 1800,
+        "ips": 120,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "3GLaser"
+      ],
+      "maker": "razer",
+      "name": "3G Laser",
+      "properties": {
+        "acceleration": 25,
+        "dpi": 4000,
+        "ips": 100,
+        "sensor_type": "laser"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "razer",
+      "name": "4G",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 6400,
+        "ips": 200,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "razer",
+      "name": "5G",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 18000,
+        "ips": 450,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "FocusPro30K"
+      ],
+      "maker": "razer",
+      "name": "Focus Pro 30K",
+      "properties": {
+        "acceleration": 70,
+        "dpi": 30000,
+        "ips": 750,
+        "sensor_date": "2022-05-01",
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "FocusPro45K"
+      ],
+      "maker": "razer",
+      "name": "Focus Pro 45K",
+      "properties": {
+        "acceleration": 85,
+        "dpi": 45000,
+        "ips": 900,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "Focus Pro Gen 2",
+        "FocusProGen2"
+      ],
+      "maker": "razer",
+      "name": "Focus Pro Gen-2",
+      "properties": {
+        "acceleration": 70,
+        "dpi": 35000,
+        "ips": 750,
         "sensor_type": "optical"
       }
     },
@@ -1269,616 +2176,14 @@
         "ips": "upper_bound"
       },
       "aliases": [
-        "TrueMove3"
-      ],
-      "maker": "steelseries",
-      "name": "TrueMove 3",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 12000,
-        "ips": 350,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "sg",
-      "name": "8960",
-      "properties": {
-        "acceleration": 80,
-        "dpi": 24000,
-        "ips": 300,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PAW3333",
-      "properties": {
-        "acceleration": 35,
-        "dpi": 16000,
-        "ips": 300,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "AIM WL",
-        "AIMWL"
-      ],
-      "maker": "dareu",
-      "name": "AIM-WL",
-      "properties": {
-        "acceleration": 35,
-        "dpi": 12000,
-        "ips": 300,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "links": [
-        "https://www.pixart.com/products-detail/131/PAW3311DB-T2MU"
-      ],
-      "maker": "pixart",
-      "name": "PAW3311",
-      "properties": {
-        "acceleration": 35,
-        "dpi": 12000,
-        "flawless_sensor": true,
-        "ips": 300,
-        "sensor_date": "2022-11-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "hyperx",
-      "name": "Core",
-      "properties": {
-        "acceleration": 35,
-        "dpi": 12000,
-        "ips": 300,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "TrueMoveCore"
-      ],
-      "maker": "steelseries",
-      "name": "TrueMove Core",
-      "properties": {
-        "acceleration": 35,
-        "dpi": 8500,
-        "ips": 300,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PAW3349",
-      "properties": {
-        "acceleration": 35,
-        "dpi": 8500,
-        "ips": 300,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PMW3331",
-      "properties": {
-        "acceleration": 35,
-        "dpi": 8500,
-        "ips": 300,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PMW3359",
-      "properties": {
-        "acceleration": 35,
-        "dpi": 8500,
-        "ips": 300,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PMW3367",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 16000,
-        "ips": 250,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PMW3360",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 12000,
-        "ips": 250,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "TrueMove1"
-      ],
-      "maker": "steelseries",
-      "name": "TrueMove 1",
-      "properties": {
-        "acceleration": 30,
-        "dpi": 7200,
-        "ips": 240,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PAW3328",
-      "properties": {
-        "acceleration": 30,
-        "dpi": 6400,
-        "ips": 220,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "links": [
-        "https://www.pixart.com/products-detail/12/PAW3327DB-TWQU"
-      ],
-      "maker": "PixArt",
-      "name": "PAW3327",
-      "properties": {
-        "acceleration": 30,
-        "dpi": 6200,
-        "ips": 220,
-        "sensor_date": "2018-10-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "ADNS 3310",
-        "ADNS3310"
-      ],
-      "maker": "avago",
-      "name": "ADNS-3310",
-      "properties": {
-        "dpi": 7000,
-        "ips": 215,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PAW3318",
-      "properties": {
-        "acceleration": 30,
-        "dpi": 8000,
-        "ips": 200,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "razer",
-      "name": "4G",
-      "properties": {
-        "acceleration": 50,
-        "dpi": 6400,
-        "ips": 200,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "ADNS A9800",
-        "ADNSA9800"
-      ],
-      "links": [
-        "https://datasheet.octopart.com/ADNS-9800-Avago-datasheet-10666463.pdf"
-      ],
-      "maker": "avago",
-      "name": "ADNS-A9800",
-      "properties": {
-        "acceleration": 30,
-        "dpi": 8200,
-        "ips": 150,
-        "sensor_date": "2012-01-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PMW3330",
-      "properties": {
-        "acceleration": 30,
-        "dpi": 7200,
-        "ips": 150,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PMW3310",
-      "properties": {
-        "acceleration": 30,
-        "dpi": 5000,
-        "ips": 130,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "instant",
-      "name": "S205",
-      "properties": {
-        "acceleration": 25,
-        "dpi": 12000,
-        "ips": 120,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "avago",
-      "name": "AM010",
-      "properties": {
-        "acceleration": 20,
-        "dpi": 4000,
-        "ips": 120,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "microsoft",
-      "name": "BlueTrack",
-      "properties": {
-        "acceleration": 75,
-        "dpi": 4000,
-        "ips": 120,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "ADNS 3888",
-        "ADNS3888"
-      ],
-      "maker": "PixArt",
-      "name": "ADNS-3888",
-      "properties": {
-        "acceleration": 15,
-        "dpi": 3500,
-        "ips": 120,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "razer",
-      "name": "3G",
-      "properties": {
-        "acceleration": 15,
-        "dpi": 1800,
-        "ips": 120,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PMW3325",
-      "properties": {
-        "acceleration": 20,
-        "dpi": 5000,
-        "ips": 100,
-        "sensor_date": "2018-03-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "3GLaser"
+        "FocusX26K"
       ],
       "maker": "razer",
-      "name": "3G Laser",
+      "name": "Focus X 26K",
       "properties": {
-        "acceleration": 25,
-        "dpi": 4000,
-        "ips": 100,
-        "sensor_type": "laser"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "links": [
-        "https://www.epsglobal.com/Media-Library/EPSGlobal/Products/files/pixart/PMW3320DB-TYDU.pdf?ext=.pdf"
-      ],
-      "maker": "pixart",
-      "name": "PMW3320",
-      "properties": {
-        "acceleration": 20,
-        "dpi": 3500,
-        "ips": 80,
-        "sensor_date": "2016-09-01",
+        "acceleration": 40,
+        "dpi": 26000,
+        "ips": 500,
         "sensor_type": "optical"
       }
     },
@@ -1894,162 +2199,14 @@
         "ips": "upper_bound"
       },
       "aliases": [
-        "DeltaZero"
+        "Focus"
       ],
-      "maker": "avago",
-      "name": "Delta Zero",
+      "maker": "razer",
+      "name": "Focus+",
       "properties": {
-        "acceleration": 20,
-        "dpi": 2500,
-        "ips": 80,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PAW3305DK",
-      "properties": {
-        "acceleration": 30,
-        "dpi": 3200,
-        "ips": 65,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "avago",
-      "name": "S6006",
-      "properties": {
-        "acceleration": 20,
-        "dpi": 2000,
-        "ips": 65,
-        "sensor_type": "laser"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "avago",
-      "name": "A3325",
-      "properties": {
-        "acceleration": 20,
-        "dpi": 10000,
-        "ips": 60,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "ADNS 3095",
-        "ADNS3095"
-      ],
-      "maker": "avago",
-      "name": "ADNS-3095",
-      "properties": {
-        "acceleration": 20,
-        "dpi": 3600,
-        "ips": 60,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "ADNS 3090",
-        "ADNS3090"
-      ],
-      "maker": "avago",
-      "name": "ADNS-3090",
-      "properties": {
-        "acceleration": 20,
-        "dpi": 3600,
-        "ips": 60,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "avago",
-      "name": "A3050",
-      "properties": {
-        "acceleration": 20,
-        "dpi": 2000,
-        "ips": 60,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "pixart",
-      "name": "PAW3104",
-      "properties": {
-        "acceleration": 15,
-        "dpi": 4000,
-        "ips": 45,
+        "acceleration": 50,
+        "dpi": 26000,
+        "ips": 650,
         "sensor_type": "optical"
       }
     },
@@ -2087,12 +2244,16 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
-      "maker": "PixArt",
-      "name": "PAW3805",
+      "aliases": [
+        "Owl Eye",
+        "OwlEye"
+      ],
+      "maker": "roccat",
+      "name": "Owl-Eye",
       "properties": {
-        "acceleration": 10,
-        "dpi": 3000,
-        "ips": 40,
+        "acceleration": 50,
+        "dpi": 26000,
+        "ips": 650,
         "sensor_type": "optical"
       }
     },
@@ -2108,15 +2269,59 @@
         "ips": "upper_bound"
       },
       "aliases": [
-        "ADNS 3080",
-        "ADNS3080"
+        "Owl Eye 19K",
+        "OwlEye19K"
       ],
-      "maker": "avago",
-      "name": "ADNS-3080",
+      "maker": "roccat",
+      "name": "Owl-Eye 19K",
       "properties": {
-        "acceleration": 15,
-        "dpi": 1600,
-        "ips": 40,
+        "acceleration": 50,
+        "dpi": 19000,
+        "ips": 400,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "Owl Eye 26K",
+        "OwlEye26K"
+      ],
+      "maker": "roccat",
+      "name": "Owl-Eye 26K",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 26000,
+        "ips": 650,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "maker": "sg",
+      "name": "8960",
+      "properties": {
+        "acceleration": 80,
+        "dpi": 24000,
+        "ips": 300,
         "sensor_type": "optical"
       }
     },
@@ -2151,47 +2356,15 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
-      "maker": "avago",
-      "name": "SDNS3988",
-      "properties": {
-        "dpi": 12000,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "avago",
-      "name": "S9808",
+      "aliases": [
+        "TrueMove1"
+      ],
+      "maker": "steelseries",
+      "name": "TrueMove 1",
       "properties": {
         "acceleration": 30,
-        "dpi": 8200,
-        "sensor_type": "laser"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "1855",
-      "properties": {
-        "dpi": 8000,
+        "dpi": 7200,
+        "ips": 240,
         "sensor_type": "optical"
       }
     },
@@ -2207,211 +2380,14 @@
         "ips": "upper_bound"
       },
       "aliases": [
-        "AdvancedOpticalTracking"
+        "TrueMove3"
       ],
-      "maker": "logitech",
-      "name": "Advanced Optical Tracking",
-      "properties": {
-        "dpi": 4000,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "avago",
-      "name": "A3305",
-      "properties": {
-        "dpi": 3200,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "avago",
-      "name": "A3055",
-      "properties": {
-        "dpi": 2500,
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "logitech",
-      "name": "Darkfield",
-      "properties": {
-        "sensor_type": "laser"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "logitech",
-      "name": "VB010411",
-      "properties": {
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "aliases": [
-        "PAW3808 EK",
-        "PAW3808EK"
-      ],
-      "maker": "PixArt",
-      "name": "PAW3808(EK)",
-      "properties": {
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "links": [
-        "https://www.pixart.com/products-detail/22/PAW3519DL-TKST"
-      ],
-      "maker": "PixArt",
-      "name": "PAW3519",
-      "properties": {
-        "acceleration": 10,
-        "dpi": 4200,
-        "ips": 48,
-        "sensor_date": "2017-08-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PMW3335",
-      "properties": {
-        "acceleration": 40,
-        "dpi": 16000,
-        "ips": 400,
-        "sensor_date": "2019-01-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PMW3370",
-      "properties": {
-        "acceleration": 40,
-        "dpi": 19000,
-        "ips": 400,
-        "sensor_date": "2020-10-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PMW3327",
-      "properties": {
-        "acceleration": 30,
-        "dpi": 6200,
-        "ips": 220,
-        "sensor_date": "2019-01-01",
-        "sensor_type": "optical"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "SDNS3988",
+      "maker": "steelseries",
+      "name": "TrueMove 3",
       "properties": {
         "acceleration": 50,
-        "dpi": 6400,
-        "ips": 200,
-        "sensor_date": "2014-01-01",
+        "dpi": 12000,
+        "ips": 350,
         "sensor_type": "optical"
       }
     },
@@ -2426,68 +2402,15 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
-      "maker": "PixArt",
-      "name": "PAW3392",
-      "properties": {
-        "sensor_date": "2020-04-01"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PMW3367",
-      "properties": {
-        "sensor_date": "2017-01-01"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "maker": "PixArt",
-      "name": "PAW3393",
-      "properties": {
-        "sensor_date": "2021-09-01"
-      }
-    },
-    {
-      "__constraints": {
-        "sensor_date": [
-          "sensor_date <= release_date"
-        ]
-      },
-      "__variance_policies": {
-        "acceleration": "upper_bound",
-        "dpi": "upper_bound",
-        "ips": "upper_bound"
-      },
-      "links": [
-        "https://edit.wpgdadawant.com/uploads/news_file/blog/2021/3481/tech_files/sv-1619399703.pdf"
+      "aliases": [
+        "TrueMoveAir"
       ],
-      "maker": "PixArt",
-      "name": "PAW3335",
+      "maker": "steelseries",
+      "name": "TrueMove Air",
       "properties": {
         "acceleration": 40,
-        "dpi": 16000,
-        "flawless_sensor": true,
+        "dpi": 18000,
         "ips": 400,
-        "sensor_date": "2018-10-01",
         "sensor_type": "optical"
       }
     },
@@ -2502,13 +2425,16 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
-      "links": [
-        "https://www.pixart.com/products-detail/22/PAW3519DL-TKST"
+      "aliases": [
+        "TrueMoveCore"
       ],
-      "maker": "PixArt",
-      "name": "PAW3519",
+      "maker": "steelseries",
+      "name": "TrueMove Core",
       "properties": {
-        "sensor_date": "2017-08-01"
+        "acceleration": 35,
+        "dpi": 8500,
+        "ips": 300,
+        "sensor_type": "optical"
       }
     },
     {
@@ -2522,13 +2448,67 @@
         "dpi": "upper_bound",
         "ips": "upper_bound"
       },
-      "links": [
-        "https://www.pixart.com/products-detail/4/PAW3395DM-T6QU"
+      "aliases": [
+        "TrueMovePro"
       ],
-      "maker": "PixArt",
-      "name": "PMW3395",
+      "maker": "steelseries",
+      "name": "TrueMove Pro",
       "properties": {
-        "sensor_date": "2022-04-01"
+        "acceleration": 50,
+        "dpi": 18000,
+        "ips": 450,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "TrueMove Pro",
+        "TrueMovePro"
+      ],
+      "maker": "steelseries",
+      "name": "TrueMove Pro+",
+      "properties": {
+        "acceleration": 50,
+        "dpi": 18000,
+        "ips": 450,
+        "sensor_type": "optical"
+      }
+    },
+    {
+      "__constraints": {
+        "sensor_date": [
+          "sensor_date <= release_date"
+        ]
+      },
+      "__overridden": {
+        "acceleration": true
+      },
+      "__variance_policies": {
+        "acceleration": "upper_bound",
+        "dpi": "upper_bound",
+        "ips": "upper_bound"
+      },
+      "aliases": [
+        "Owl Eye 30K",
+        "OwlEye30K"
+      ],
+      "maker": "turtle-beach",
+      "name": "Owl-Eye 30K",
+      "properties": {
+        "acceleration": 30,
+        "dpi": 30000,
+        "ips": 750,
+        "sensor_type": "optical"
       }
     }
   ],

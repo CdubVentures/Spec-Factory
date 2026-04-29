@@ -418,8 +418,8 @@ describe('sortOverviewRows', () => {
 
 describe('Overview sort session state', () => {
   it('persists the Overview sort stack per category', () => {
-    const local = new MemoryStorage();
-    withBrowserStorage(local, new MemoryStorage(), () => {
+    const session = new MemoryStorage();
+    withBrowserStorage(new MemoryStorage(), session, () => {
       writeOverviewSortSessionState('mouse', [
         { id: 'pifVariants', desc: true },
         { id: 'brand', desc: false },
@@ -433,7 +433,7 @@ describe('Overview sort session state', () => {
         { id: 'brand', desc: false },
       ]);
       assert.equal(
-        local.getItem(buildOverviewSortStorageKey('mouse')),
+        session.getItem(buildOverviewSortStorageKey('mouse')),
         JSON.stringify({
           version: 2,
           sorting: [
@@ -449,8 +449,8 @@ describe('Overview sort session state', () => {
   });
 
   it('drops stale or malformed sort entries before restoring', () => {
-    const local = new MemoryStorage();
-    local.setItem(buildOverviewSortStorageKey('mouse'), JSON.stringify({
+    const session = new MemoryStorage();
+    session.setItem(buildOverviewSortStorageKey('mouse'), JSON.stringify({
       sorting: [
         { id: 'select', desc: true },
         { id: 'brand', desc: false },
@@ -458,7 +458,7 @@ describe('Overview sort session state', () => {
       ],
     }));
 
-    withBrowserStorage(local, new MemoryStorage(), () => {
+    withBrowserStorage(new MemoryStorage(), session, () => {
       assert.deepEqual(readOverviewSortSessionState('mouse'), [
         { id: 'brand', desc: false },
       ]);
@@ -466,15 +466,15 @@ describe('Overview sort session state', () => {
   });
 
   it('drops unversioned Live sort entries because older UI could persist a hidden Live sort', () => {
-    const local = new MemoryStorage();
-    local.setItem(buildOverviewSortStorageKey('mouse'), JSON.stringify({
+    const session = new MemoryStorage();
+    session.setItem(buildOverviewSortStorageKey('mouse'), JSON.stringify({
       sorting: [
         { id: 'live', desc: true },
         { id: 'brand', desc: false },
       ],
     }));
 
-    withBrowserStorage(local, new MemoryStorage(), () => {
+    withBrowserStorage(new MemoryStorage(), session, () => {
       assert.deepEqual(readOverviewSortSessionState('mouse'), [
         { id: 'brand', desc: false },
       ]);
@@ -482,8 +482,8 @@ describe('Overview sort session state', () => {
   });
 
   it('preserves versioned Live sort entries created after the Live header became clickable', () => {
-    const local = new MemoryStorage();
-    local.setItem(buildOverviewSortStorageKey('mouse'), JSON.stringify({
+    const session = new MemoryStorage();
+    session.setItem(buildOverviewSortStorageKey('mouse'), JSON.stringify({
       version: 2,
       sorting: [
         { id: 'live', desc: true },
@@ -491,34 +491,11 @@ describe('Overview sort session state', () => {
       ],
     }));
 
-    withBrowserStorage(local, new MemoryStorage(), () => {
+    withBrowserStorage(new MemoryStorage(), session, () => {
       assert.deepEqual(readOverviewSortSessionState('mouse'), [
         { id: 'live', desc: true },
         { id: 'brand', desc: false },
       ]);
-    });
-  });
-
-  it('migrates legacy sessionStorage sort state to localStorage', () => {
-    const local = new MemoryStorage();
-    const session = new MemoryStorage();
-    const key = buildOverviewSortStorageKey('mouse');
-    session.setItem(key, JSON.stringify({
-      sorting: [
-        { id: 'live', desc: true },
-        { id: 'brand', desc: false },
-      ],
-    }));
-
-    withBrowserStorage(local, session, () => {
-      assert.deepEqual(readOverviewSortSessionState('mouse'), [
-        { id: 'brand', desc: false },
-      ]);
-      assert.equal(session.getItem(key), null);
-      assert.equal(local.getItem(key), JSON.stringify({
-        version: 2,
-        sorting: [{ id: 'brand', desc: false }],
-      }));
     });
   });
 });

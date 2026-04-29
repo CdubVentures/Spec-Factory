@@ -75,15 +75,36 @@ test('sections appear in the expected order', () => {
   const preview = composePerKeyPromptPreview(rule, 'dpi', { category: 'mouse' });
   const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview });
   const ids = structure.sections.map((s) => s.id);
-  // Header is always first. After that: purpose, search routing, category key map, contract schema,
-  // consumer surface, enum, component, cross-field map, siblings, full-prompt, per-slot.
+  // Header is always first. After that: orient (purpose) → calibrate (search-routing,
+  // authoring-checklist) → author (contract-schema, consumer-surface, enum, component,
+  // cross-field, siblings) → wider context (category-key-map) → validate (example-bank)
+  // → deliver (llm-audit-prompt, full-prompt, per-slot).
+  // Category key map sits with the other neighbor-context sections so the wide 80-row
+  // table doesn't interrupt the calibrate→author flow.
   assert.equal(ids[0], 'header');
   const after = ids.slice(1);
   assert.deepEqual(after.filter((x) => ['purpose', 'search-routing', 'authoring-checklist', 'category-key-map', 'contract-schema', 'consumer-surface', 'enum', 'component', 'cross-field', 'siblings', 'example-bank', 'llm-audit-prompt', 'full-prompt', 'per-slot'].includes(x)),
-    ['purpose', 'search-routing', 'authoring-checklist', 'category-key-map', 'contract-schema', 'consumer-surface', 'enum', 'component', 'cross-field', 'siblings', 'example-bank', 'llm-audit-prompt', 'full-prompt', 'per-slot']);
+    ['purpose', 'search-routing', 'authoring-checklist', 'contract-schema', 'consumer-surface', 'enum', 'component', 'cross-field', 'siblings', 'category-key-map', 'example-bank', 'llm-audit-prompt', 'full-prompt', 'per-slot']);
 });
 
-test('search routing section explains requiredness availability difficulty and benchmark depth', () => {
+test('category-key-map sits between siblings and example-bank, not between authoring-checklist and contract-schema', () => {
+  const rule = makeRule();
+  const record = makeKeyRecord('dpi', rule);
+  const preview = composePerKeyPromptPreview(rule, 'dpi', { category: 'mouse' });
+  const allKeyRecords = [
+    record,
+    makeKeyRecord('ips', makeRule({ ui: { label: 'IPS' } })),
+  ];
+  const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview, allKeyRecords });
+  const ids = structure.sections.map((s) => s.id);
+  const idx = (id) => ids.indexOf(id);
+  assert.ok(idx('siblings') < idx('category-key-map'), 'category-key-map after siblings');
+  assert.ok(idx('category-key-map') < idx('example-bank'), 'category-key-map before example-bank');
+  assert.ok(idx('authoring-checklist') < idx('contract-schema'), 'authoring-checklist before contract-schema');
+  assert.ok(idx('contract-schema') < idx('category-key-map'), 'contract-schema before category-key-map (no longer interrupts authoring flow)');
+});
+
+test('search routing section explains requiredness availability difficulty without benchmark framing', () => {
   const rule = makeRule({
     priority: { required_level: 'mandatory', availability: 'sometimes', difficulty: 'very_hard' },
   });
@@ -110,8 +131,8 @@ test('search routing section explains requiredness availability difficulty and b
   assert.match(allText, /mandatory/);
   assert.match(allText, /very_hard/);
   assert.match(allText, /model\/search strength/i);
-  assert.match(allText, /benchmark/i);
-  assert.match(allText, /category benchmark\/example set/i);
+  assert.match(allText, /publish-grade/i);
+  assert.doesNotMatch(allText, /benchmark/i);
   assert.doesNotMatch(allText, /mouseData\.xlsm/i);
   assert.doesNotMatch(allText, /C2:BT83/i);
   // Behavior: priority axes use "human Googler" / "typical product not flagship" calibration
@@ -142,12 +163,39 @@ test('authoring checklist makes full priority and contract validation explicit',
   assert.match(allText, /no contract change/i);
   assert.match(allText, /Consumer-surface impact/i);
   assert.match(allText, /Unknown \/ not-applicable/i);
-  assert.match(allText, /Use boolean only for true two-state facts/i);
+  assert.match(allText, /Boolean keys use the closed yes\/no\/n\/a list/i);
   assert.match(allText, /Never add `unk` to enum values/i);
   assert.match(allText, /no submitted value/i);
   assert.match(allText, /battery_hours/i);
+  assert.match(allText, /Examples: apparel `collection_type`/i);
+  assert.match(allText, /watch `edition_type`/i);
+  assert.match(allText, /phone `regional_variant`/i);
+  assert.match(allText, /mouse `design`/i);
+  assert.doesNotMatch(allText, /Examples: mouse `design`/i);
+  assert.doesNotMatch(allText, /Fortnite Edition/i);
   assert.doesNotMatch(allText, /yes\/no\/n\/a\/unk are real stored states/i);
   assert.match(allText, /guidance last/i);
+});
+
+test('boolean archetype guidance follows publisher yes no n/a tokens', () => {
+  const rule = makeRule({
+    contract: { type: 'boolean', shape: 'scalar' },
+    enum: { policy: 'closed', source: 'yes_no', values: ['yes', 'no', 'n/a'] },
+  });
+  const record = makeKeyRecord('has_bluetooth', rule);
+  const preview = composePerKeyPromptPreview(rule, 'has_bluetooth', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview });
+  const section = structure.sections.find((s) => s.id === 'success-bar');
+  assert.ok(section, 'success-bar section present');
+  const allText = JSON.stringify(section);
+  assert.match(allText, /closed `yes` \/ `no` \/ `n\/a`/i);
+  assert.match(allText, /what evidence proves `yes`/i);
+  assert.match(allText, /what evidence proves `no`/i);
+  assert.match(allText, /when `n\/a` is valid/i);
+  assert.match(allText, /ambiguous or absent evidence/i);
+  assert.match(allText, /no submitted value/i);
+  assert.doesNotMatch(allText, /affirmation rule for `true`/i);
+  assert.doesNotMatch(allText, /Ambiguous evidence.*`no`/i);
 });
 
 test('example-bank recipe is category agnostic and asks for 5-10 examples', () => {
@@ -164,14 +212,45 @@ test('example-bank recipe is category agnostic and asks for 5-10 examples', () =
   assert.match(allText, /unknown/i);
   assert.match(allText, /conflict/i);
   assert.match(allText, /filter-risk/i);
-  assert.match(allText, /benchmark/i);
+  assert.doesNotMatch(allText, /benchmark/i);
   assert.match(allText, /brand-new categor/i);
   assert.match(allText, /Live validation rule for this key/i);
   assert.match(allText, /do not finalize this key/i);
   assert.match(allText, /memory alone/i);
   assert.match(allText, /3-5 representative products/i);
   assert.match(allText, /References spot-checked/i);
-  assert.match(allText, /Use benchmark data only to understand the target answer shape/i);
+  assert.doesNotMatch(allText, /Use benchmark data/i);
+});
+
+test('per-key docs do not expose benchmark sections when benchmark data is supplied', () => {
+  const rule = makeRule({
+    enum: { policy: 'closed', values: ['standard'] },
+  });
+  const record = makeKeyRecord('design', rule);
+  const preview = composePerKeyPromptPreview(rule, 'design', { category: 'mouse' });
+  const structure = buildPerKeyDocStructure(record, {
+    ...BASE_OPTS,
+    preview,
+    benchmark: {
+      generatedAt: '2026-04-28T03:59:26.188Z',
+      fieldSummary: { correct: 0, wrong: 1, missing: 2, scored: 3, accuracy: 0 },
+      rows: [
+        {
+          productLabel: 'Example Product',
+          status: 'wrong',
+          benchmark: 'standard',
+          app: 'limited',
+          appConfidence: 90,
+          reason: 'normalized scalar mismatch',
+        },
+      ],
+    },
+  });
+  const allText = JSON.stringify(structure);
+  assert.ok(!structure.sections.some((section) => section.id === 'benchmark-diff'));
+  assert.doesNotMatch(allText, /Benchmark diff/i);
+  assert.doesNotMatch(allText, /Example Product/i);
+  assert.doesNotMatch(allText, /normalized scalar mismatch/i);
 });
 
 test('per-key LLM audit prompt requires a strict Field Studio JSON patch first', () => {
@@ -183,8 +262,9 @@ test('per-key LLM audit prompt requires a strict Field Studio JSON patch first',
   const structure = buildPerKeyDocStructure(record, { ...BASE_OPTS, preview });
   const section = structure.sections.find((s) => s.id === 'llm-audit-prompt');
   assert.ok(section, 'llm-audit-prompt section present');
+  assert.equal(section.title, 'Return Contract');
   const allText = sectionPromptText(section);
-  assert.match(allText, /strict JSON patch first/i);
+  assert.match(allText, /Return one strict JSON patch file first/i);
   assert.match(allText, /mouse-design\.field-studio-patch\.v1\.json/);
   assert.match(allText, /"schema_version": "field-studio-patch\.v1"/);
   assert.match(allText, /"field_key": "design"/);
@@ -196,6 +276,9 @@ test('per-key LLM audit prompt requires a strict Field Studio JSON patch first',
   assert.match(allText, /color_edition_context/);
   assert.match(allText, /pif_priority_images/);
   assert.match(allText, /reasoning_note/);
+  assert.doesNotMatch(allText, /Paste this per-key doc into an LLM/i);
+  assert.doesNotMatch(allText, /downloadable JSON file/i);
+  assert.doesNotMatch(allText, /benchmark/i);
   assert.doesNotMatch(allText, /No change/);
   assert.doesNotMatch(allText, /Tooltip \/ Guidance/);
   assert.doesNotMatch(allText, /tooltip/i);
@@ -270,8 +353,10 @@ test('per-key LLM audit prompt teaches component identity attributes, component-
   assert.match(promptText, /\bconstraints\b/i);
   assert.match(promptText, /component_only/i);
   assert.match(promptText, /Source-level priority is retired/i);
-  assert.match(promptText, /Do not author `field_overrides\.sensor\.aliases`; leave aliases blank\/absent/i);
-  assert.doesNotMatch(promptText, /Component Review/i);
+  assert.match(promptText, /field_overrides\.<component>\.aliases/i);
+  assert.match(promptText, /field_overrides\.<component>_brand\.aliases/i);
+  assert.match(promptText, /field_overrides\.<component>_link\.aliases/i);
+  assert.match(promptText, /Normal non-component fields still use field-level aliases/i);
   assert.match(promptText, /auto-generated identity facets/i);
   assert.match(promptText, /do not list `sensor_brand` or `sensor_link` under `component_sources\.sensor\.roles\.properties\[\]`/i);
   assert.match(promptText, /record them as `identity_facet`/i);
@@ -309,13 +394,14 @@ test('auto component brand/link facet docs keep aliases out of Field Studio patc
   const successText = JSON.stringify(structure.sections.find((s) => s.id === 'success-bar'));
 
   assert.match(promptText, /auto-generated identity facet of `sensor`/i);
-  assert.match(promptText, /Do not author `field_overrides\.sensor_brand\.aliases`; leave aliases blank\/absent/i);
-  assert.doesNotMatch(promptText, /field-name aliases/i);
+  assert.match(promptText, /field_overrides\.<component>\.aliases/i);
+  assert.match(promptText, /field_overrides\.<component>_brand\.aliases/i);
+  assert.match(promptText, /field_overrides\.<component>_link\.aliases/i);
+  assert.match(promptText, /Normal non-component fields still use field-level aliases/i);
   assert.doesNotMatch(promptText, /sensor_brand_brand/);
   assert.doesNotMatch(promptText, /sensor_brand_link/);
-  assert.doesNotMatch(promptText, /Component Review/i);
-  assert.doesNotMatch(contractText, /`aliases` · Aliases/);
-  assert.doesNotMatch(successText, /aliases/i);
+  assert.match(contractText, /`aliases`/i);
+  assert.match(successText, /aliases/i);
 });
 
 test('per-key LLM audit prompt omits mode for auditor-authored enum lists', () => {
@@ -598,8 +684,7 @@ test('per-key LLM audit prompt keeps component entity rows out of Field Studio p
   assert.ok(section, 'llm-audit-prompt section present');
   const allText = sectionPromptText(section);
   assert.match(allText, /component type and property variance only/i);
-  assert.match(allText, /outside this Field Studio patch/i);
-  assert.doesNotMatch(allText, /Component Review/i);
+  assert.match(allText, /Component Review/i);
   assert.doesNotMatch(allText, /component _link fields/i);
 });
 

@@ -30,13 +30,11 @@ describe('characterization: closed policy through full pipeline', () => {
     assert.equal(r.value, 'black');
   });
 
-  it('uppercase known → normalize fixes it before enum check', () => {
-    // WHY: Step 4 lowercases 'Black' → 'black' before checkEnum.
-    // Exact match succeeds because normalize already did the work.
+  it('uppercase known → enum hidden-key repair fixes display value', () => {
     const r = validateField({ fieldKey: 'color', value: 'Black', fieldRule: rule, knownValues: known });
     assert.equal(r.valid, true);
     assert.equal(r.value, 'black');
-    assert.ok(r.repairs.some(rep => rep.step === 'normalize'));
+    assert.ok(r.repairs.some(rep => rep.step === 'enum_alias'));
   });
 
   it('unknown value → invalid with deterministic rejection', () => {
@@ -59,12 +57,11 @@ describe('characterization: open_prefer_known policy through full pipeline', () 
   const lightingKnown = { policy: 'open_prefer_known', values: ['3 Zone (RGB)', '4 Zone (RGB)', 'None'] };
   const rule = makeRule({ policy: 'open_prefer_known', strategy: 'alias' });
 
-  it('canonical value → normalize + alias repair back to canonical', () => {
-    // WHY: 'Cherry MX Red' normalizes to 'cherry-mx-red', then alias resolves back.
+  it('canonical value → valid without display-changing repair', () => {
     const r = validateField({ fieldKey: 'switch_type', value: 'Cherry MX Red', fieldRule: rule, knownValues: switchKnown });
     assert.equal(r.valid, true);
     assert.equal(r.value, 'Cherry MX Red');
-    assert.ok(r.repairs.some(rep => rep.step === 'enum_alias'));
+    assert.equal(r.repairs.some(rep => rep.step === 'enum_alias'), false);
   });
 
   it('normalized format mismatch → alias resolves', () => {

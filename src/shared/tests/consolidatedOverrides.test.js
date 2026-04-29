@@ -85,6 +85,7 @@ describe('readConsolidatedOverrides', () => {
     assert.equal(result.version, 2);
     assert.equal(result.category, 'mouse');
     assert.deepEqual(result.products, {});
+    assert.deepEqual(result.components, {});
     assert.ok(result.updated_at);
   });
 
@@ -98,6 +99,15 @@ describe('readConsolidatedOverrides', () => {
       products: {
         'mouse-abc': sampleProductEntry({ weight: sampleOverrideField() }),
       },
+      components: {
+        sensor: {
+          'paw3950::pixart': {
+            component_type: 'sensor',
+            previous: { canonical_name: 'PAW3950', maker: 'PixArt' },
+            current: { canonical_name: 'AimPoint Pro', maker: 'Asus' },
+          },
+        },
+      },
     };
     await writeRawFile(filePath, JSON.stringify(envelope, null, 2));
 
@@ -106,6 +116,7 @@ describe('readConsolidatedOverrides', () => {
     assert.equal(result.category, 'mouse');
     assert.ok(result.products['mouse-abc']);
     assert.equal(result.products['mouse-abc'].overrides.weight.override_value, '63g');
+    assert.equal(result.components.sensor['paw3950::pixart'].current.canonical_name, 'AimPoint Pro');
   });
 
   test('returns empty envelope for invalid JSON (no throw)', async () => {
@@ -117,6 +128,7 @@ describe('readConsolidatedOverrides', () => {
     assert.equal(result.version, 2);
     assert.equal(result.category, 'mouse');
     assert.deepEqual(result.products, {});
+    assert.deepEqual(result.components, {});
   });
 });
 

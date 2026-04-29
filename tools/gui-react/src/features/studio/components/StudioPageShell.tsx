@@ -16,6 +16,7 @@ const subTabs: Array<{ id: StudioTabId; label: string }> = [
   { id: "keys", label: "2) Key Navigator" },
   { id: "contract", label: "3) Field Contract" },
   { id: "reports", label: "4) Compile & Reports" },
+  { id: "docs", label: "5) Per-Key Docs" },
 ];
 
 import { btnPrimary, btnSecondary, sectionCls, actionBtnWidth } from '../../../shared/ui/buttonClasses.ts';

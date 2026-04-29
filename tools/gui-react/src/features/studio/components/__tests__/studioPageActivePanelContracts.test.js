@@ -93,6 +93,11 @@ async function loadStudioPageActivePanelModule() {
             return { type: 'CompileReportsTab', props };
           }
         `,
+        './PerKeyDocsTab.tsx': `
+          export function PerKeyDocsTab(props) {
+            return { type: 'PerKeyDocsTab', props };
+          }
+        `,
       },
     },
   );
@@ -166,6 +171,14 @@ function createActivePanelProps(activeTab) {
       processStatus: { running: false },
       onRunCompile() {},
       onRunValidate() {},
+    },
+    docsTabProps: {
+      category: 'mouse',
+      selectedKey: '',
+      onSelectKey() {},
+      rules: { dpi: { label: 'DPI' } },
+      fieldOrder: ['dpi'],
+      componentSources: [],
     },
   };
 }
@@ -354,8 +367,9 @@ test('StudioPageActivePanel routes each tab to exactly its supported panel contr
     { activeTab: 'keys', expected: 'KeyNavigatorTab' },
     { activeTab: 'contract', expected: 'FieldRulesWorkbench' },
     { activeTab: 'reports', expected: 'CompileReportsTab' },
+    { activeTab: 'docs', expected: 'PerKeyDocsTab' },
   ];
-  const panelTypes = ['MappingStudioTab', 'KeyNavigatorTab', 'FieldRulesWorkbench', 'CompileReportsTab'];
+  const panelTypes = ['MappingStudioTab', 'KeyNavigatorTab', 'FieldRulesWorkbench', 'CompileReportsTab', 'PerKeyDocsTab'];
 
   for (const { activeTab, expected } of cases) {
     const tree = renderNode(StudioPageActivePanel(createActivePanelProps(activeTab)));

@@ -70,15 +70,6 @@ function isOverviewSortableColumnId(columnId: string): boolean {
   return OVERVIEW_SORTABLE_COLUMN_IDS.includes(columnId);
 }
 
-function getLocalStorage(): Storage | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
-
 function getSessionStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -129,33 +120,19 @@ export function buildOverviewSortStorageKey(category: string): string {
 }
 
 export function readOverviewSortSessionState(category: string): SortingState {
-  const key = buildOverviewSortStorageKey(category);
-  const local = getLocalStorage();
-  if (local) {
-    try {
-      const raw = local.getItem(key);
-      if (raw) return parseOverviewSortSessionState(raw);
-    } catch {
-      return [];
-    }
-  }
-
-  const session = getSessionStorage();
-  if (!session) return [];
+  const storage = getSessionStorage();
+  if (!storage) return [];
   try {
-    const legacy = session.getItem(key);
-    if (!legacy) return [];
-    const sorting = parseOverviewSortSessionState(legacy);
-    local?.setItem(key, JSON.stringify({ version: OVERVIEW_SORT_STORAGE_VERSION, sorting }));
-    session.removeItem(key);
-    return sorting;
+    const raw = storage.getItem(buildOverviewSortStorageKey(category));
+    if (!raw) return [];
+    return parseOverviewSortSessionState(raw);
   } catch {
     return [];
   }
 }
 
 export function writeOverviewSortSessionState(category: string, sorting: SortingState): void {
-  const storage = getLocalStorage();
+  const storage = getSessionStorage();
   if (!storage) return;
   try {
     storage.setItem(

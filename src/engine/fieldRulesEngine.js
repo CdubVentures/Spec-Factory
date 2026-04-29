@@ -79,6 +79,13 @@ function parseRuleNormalizationFn(rule = {}) {
   );
 }
 
+function isBooleanNotApplicable(value, type, shape) {
+  if (type !== 'boolean' || shape !== 'scalar' || typeof value !== 'string') {
+    return false;
+  }
+  return ['n/a', 'na', 'not applicable'].includes(value.trim().toLowerCase());
+}
+
 export class FieldRulesEngine {
   constructor({
     category,
@@ -358,7 +365,13 @@ export class FieldRulesEngine {
       };
     }
     const attempts = [];
-    if (rawCandidate === null || rawCandidate === undefined || isUnknownToken(rawCandidate)) {
+    const type = parseRuleType(rule);
+    const shape = parseRuleShape(rule);
+    if (
+      rawCandidate === null
+      || rawCandidate === undefined
+      || (isUnknownToken(rawCandidate) && !isBooleanNotApplicable(rawCandidate, type, shape))
+    ) {
       return {
         ok: false,
         reason_code: 'empty_value',
@@ -367,8 +380,6 @@ export class FieldRulesEngine {
       };
     }
 
-    const type = parseRuleType(rule);
-    const shape = parseRuleShape(rule);
     const unit = parseRuleUnit(rule);
     const normalizationFnName = parseRuleNormalizationFn(rule);
     let value = rawCandidate;

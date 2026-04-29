@@ -60,6 +60,15 @@ export interface StudioPageActivePanelContractProps {
   autoSaveLockReason: string;
 }
 
+export interface StudioPageActivePanelDocsProps {
+  category: string;
+  selectedKey: string;
+  onSelectKey: (nextKey: string) => void;
+  rules: Record<string, FieldRule>;
+  fieldOrder: string[];
+  componentSources: ComponentSource[];
+}
+
 export interface StudioPageActivePanelReportsProps {
   category: string;
   artifacts: ArtifactEntry[];
@@ -88,4 +97,5 @@ export interface StudioPageActivePanelProps {
   keyNavigatorTabProps: StudioPageActivePanelKeyProps;
   contractTabProps: StudioPageActivePanelContractProps;
   reportsTabProps: StudioPageActivePanelReportsProps;
+  docsTabProps: StudioPageActivePanelDocsProps;
 }

@@ -59,6 +59,7 @@ function isObject(value) {
 function enumSourceFieldKey(fieldRule) {
   const source = fieldRule?.enum?.source;
   if (typeof source !== 'string') return '';
+  if (source === 'yes_no') return 'yes_no';
   if (!source.startsWith('data_lists.')) return '';
   return source.slice('data_lists.'.length).trim();
 }

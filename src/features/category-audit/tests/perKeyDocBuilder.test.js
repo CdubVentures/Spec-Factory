@@ -361,7 +361,7 @@ test('generated file contains the full contract schema table and placeholder pro
     assert.match(dpiMd, /no contract change/i);
     assert.match(dpiMd, /Consumer-surface impact/i);
     assert.match(dpiMd, /n\/a/i);
-    assert.match(dpiMd, /Use boolean only for true two-state facts/i);
+    assert.match(dpiMd, /Boolean keys use the closed yes\/no\/n\/a list/i);
     assert.match(dpiMd, /Never add/i);
     assert.match(dpiMd, /enum values/i);
   } finally {

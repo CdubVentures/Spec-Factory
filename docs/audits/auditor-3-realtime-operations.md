@@ -1,6 +1,6 @@
 # Auditor 3 - Realtime, WebSocket, Operations, Runtime Transport
 
-Date: 2026-04-28
+Date: 2026-04-29
 
 ## Ownership
 
@@ -17,23 +17,28 @@ Do not edit persistence/rebuild contracts owned by Auditor 1 or broad frontend p
 
 ## Current Audit Snapshot
 
-Verification refreshed again on 2026-04-28 during the performance audit:
+Verification refreshed again on 2026-04-29 during the Auditor 3 self-audit:
 
 | Command | Result |
 |---|---|
-| `node --test --test-force-exit --experimental-test-module-mocks tools/gui-react/src/pages/layout/hooks/__tests__/wsEventPayloadValidation.test.js tools/gui-react/src/pages/layout/hooks/__tests__/useWsEventBridgeContracts.test.js tools/gui-react/src/api/__tests__/wsIdleWatchdog.test.ts tools/gui-react/src/pages/layout/__tests__/wsConnectionStatus.test.ts tools/gui-react/src/pages/overview/__tests__/bulkDispatch.test.ts tools/gui-react/src/pages/overview/__tests__/pipelineController.test.ts src/app/api/tests/apiRealtimeBridgeWiring.test.js src/app/api/tests/apiRealtimeBridgeHeartbeat.test.js` | PASS: 70 tests, 0 failed. |
-| `node --test --test-isolation=none src/app/api/tests/catalogHelpersSqlPath.test.js src/app/api/tests/catalogHelpersLastRun.test.js src/core/finder/tests/finderSqlStore.test.js src/db/tests/variantStore.test.js src/db/stores/tests/pifVariantProgressStore.test.js src/db/tests/pooledEvidenceStatements.test.js` | PASS: 80 tests, 0 failed. |
-| `npm test` | CURRENTLY RED: 12,699 tests, 12,691 passed, 8 failed. Current unrelated failures are keyboard/monitor runtime contract assertions, category-audit contract schema catalog, and Studio docs controller contracts. |
-| `npm run gui:check` | PASS. |
-| M9 focused direct-import proof | PASS: operation status contract tests, operations registry queued-retention regression, frontend operations selectors/store/hooks, and `npm run gui:check`. Normal `npm test -- <files>` was blocked by sandbox `spawn EPERM` before module load. |
-| M10 focused direct-import proof | PASS: fire-and-forget terminal data-change correlation, manual publisher/PIF terminal emitters, and WS bridge suppression tests; broader WS validation/status-contract direct imports pass; `npm run gui:check` passes. Normal `node --test <files>` remains blocked by sandbox `spawn EPERM` before module load. |
-| L8 focused direct-import proof | PASS: `useFireAndForget` POST rejection keeps a terminal error stub; Overview bulk dispatch retains failed optimistic stubs; adjacent operations store/hook/pipeline checks pass; targeted TypeScript check for changed files passes. |
+| `node --test --test-force-exit --experimental-test-module-mocks tools/gui-react/src/pages/layout/hooks/__tests__/wsEventPayloadValidation.test.js tools/gui-react/src/pages/layout/hooks/__tests__/useWsEventBridgeContracts.test.js tools/gui-react/src/api/__tests__/wsIdleWatchdog.test.ts tools/gui-react/src/pages/layout/__tests__/wsConnectionStatus.test.ts tools/gui-react/src/pages/overview/__tests__/bulkDispatch.test.ts tools/gui-react/src/pages/overview/__tests__/pipelineController.test.ts src/app/api/tests/apiRealtimeBridgeWiring.test.js src/app/api/tests/apiRealtimeBridgeHeartbeat.test.js` | BLOCKED in Codex Windows sandbox: `spawn EPERM` occurred before test code loaded. Treat as sandbox process-spawn limitation, not product regression. |
+| `node --test --test-isolation=none tools/gui-react/src/features/storage-manager/state/__tests__/useRunDetailPagination.test.js tools/gui-react/src/features/storage-manager/components/tables/__tests__/ProductTablePagination.test.js tools/gui-react/src/features/storage-manager/state/__tests__/useStorageActions.test.js tools/gui-react/src/features/storage-manager/components/__tests__/StorageLoadingSkeleton.test.js src/features/indexing/api/tests/storageManagerRouteContract.test.js tools/gui-react/src/features/data-change/__tests__/dataChangeInvalidationMap.test.js` | PASS: 66 tests, 0 failed. |
+| `node --test --test-isolation=none tools/gui-react/src/features/runtime-ops/state/__tests__/runtimeOpsInvalidationScheduler.test.ts src/app/api/tests/apiProcessRuntimeWiring.test.js src/app/api/routes/tests/operationsRoutes.test.js` | PASS: 12 tests, 0 failed. |
+| `node --test --test-isolation=none tools/gui-react/src/features/runtime-ops/components/__tests__/runtimeOpsPageContracts.test.js tools/gui-react/src/features/runtime-ops/components/__tests__/runtimeOpsRunPickerContract.test.js tools/gui-react/src/features/runtime-ops/components/__tests__/RuntimeOpsLoadingSkeleton.test.js tools/gui-react/src/features/runtime-ops/panels/overview/__tests__/runtimeOpsBrowserContracts.test.js` | PASS: 13 tests, 0 failed. |
+| `cd tools/gui-react && npm exec -- tsc -b` | PASS. |
 
-The earlier high-priority realtime findings are code/test closed. Remaining Auditor 3 work is now low cleanup and proof polish; do not redo H7/H8/H9/H10/H13/H17/M9/M10/M36/M37/L8 unless new regressions appear.
+The earlier high-priority realtime findings are code/test closed. Performance items P1/P2/P4/P5/P6/P7 are closed. The only active non-low Auditor 3 performance issue is P3: Runtime Ops still mixes push invalidation with short fallback polling, and its `indexlab-event` invalidation is not scoped to the event payload's actual run/category.
+
+### 2026-04-29 Self-Audit Notes
+
+- Storage P4 remains closed: run details now request bounded source pages and reveal `sources_page` load-more state in the UI.
+- Runtime Ops has a valid additive WS message hook because `WsManager` supports one app-level channel subscription plus many listeners, but the current handler schedules invalidation for the selected/effective run on every `indexlab-event` instead of deriving the affected run/category from the event payload.
+- Runtime Ops still polls aggressively while the page is active: process status at 1.5s, the run list at 3s while running and 15s idle, and runtime panels at 2s active / 10s idle. This is acceptable only as fallback behavior until push invalidation is scoped and proven complete.
+- Low-priority cleanup remains L9, L40, L42, and L44.
 
 ## Performance Optimization Audit
 
-Full read-only audit completed on 2026-04-28 after the realtime pass. Scope widened from pure realtime transport to real runtime/UI scaling risks because the next work request is optimization-focused.
+Full read-only audit completed on 2026-04-28 after the realtime pass and refreshed on 2026-04-29 after the storage pagination closeout. Scope widened from pure realtime transport to real runtime/UI scaling risks because the optimization work request covered every non-runtime tab first, then storage.
 
 ### Closed Optimization
 
@@ -52,13 +57,13 @@ Evidence:
 - `buildKeyTierProgress` previously looped compiled fields per product and used product-field point lookups for resolved/concrete evidence.
 - Overview table rendering already uses virtualization, so the strongest confirmed bottleneck is backend projection, not DOM row count.
 - Key Finder summary projection was also tightened during follow-up work: summary reads use lean run rows and batch top-candidate lookups per product instead of per-field point lookups.
-- Focused proof after this pass: 88 GUI realtime/data-change/Authority/Key Finder tests, GUI `tsc -b`, 76 catalog/process/Studio/Review tests, 183 Key Finder/backend tests, 29 Catalog/Overview tests, and 66 Storage/UI/data-change route tests all passed.
+- Focused proof after the 2026-04-29 refresh: 66 Storage/UI/data-change route tests, 12 runtime/process/operations tests, 13 Runtime Ops component/browser contract tests, and GUI `tsc -b` all passed. The broader realtime aggregate command was blocked by sandbox `spawn EPERM` before module load.
 
 ### Medium Priority Optimization
 
 | ID | Issue | Primary Area | Work Shape |
 |---|---|---|---|
-| P3 | Runtime Ops mixes push invalidation with short polling intervals | `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx` | Deferred per user priority; runtime is not actively used much. |
+| P3 | Runtime Ops mixes push invalidation with short polling intervals | `tools/gui-react/src/features/runtime-ops/components/RuntimeOpsPage.tsx` | ACTIVE/DEFERRED: scope `indexlab-event` invalidation by event run/category, then lengthen or disable fallback polling where push coverage is proven. Current page still polls process status at 1.5s and runtime panels at 2s/10s while invalidating the selected run for every `indexlab-event`. |
 
 ### Low Priority Optimization / Cleanup
 
@@ -97,7 +102,7 @@ No active high-priority realtime/operations transport findings remain after this
 
 ## Medium Priority
 
-No active medium-priority realtime/operations transport findings remain after this audit.
+No active medium-priority realtime/operations transport findings remain outside the performance P3 item above.
 
 ## Low Priority
 

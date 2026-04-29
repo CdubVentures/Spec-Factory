@@ -33,7 +33,6 @@ import { buildPerKeyDocStructure } from './perKeyDocStructure.js';
 import { FIELD_RULE_SCHEMA } from './contractSchemaCatalog.js';
 import { renderMarkdownFromStructure } from './reportMarkdown.js';
 import { archiveExistingReportTree, ensureAuditorResponsesDir } from './reportArchive.js';
-import { loadBenchmarkScorecard, extractFieldBenchmarkRows } from './benchmarkScorecard.js';
 
 function groupRecordsByGroup(records) {
   const out = new Map();
@@ -197,7 +196,6 @@ export async function generatePerKeyDocs({
   });
 
   const generatedAt = reportData.generatedAt;
-  const benchmarkScorecard = await loadBenchmarkScorecard({ outputRoot, category });
   const basePath = resolvePerKeyCategoryPath(outputRoot, category);
   await archiveExistingReportTree({ outputRoot, category, treeName: 'per-key', now });
   await ensureAuditorResponsesDir({ outputRoot, category });
@@ -266,7 +264,6 @@ export async function generatePerKeyDocs({
       componentSources: reportData.componentSources || [],
       preview,
       navigatorOrdinal: navigatorOrdinals.get(fieldKey) || ordinal,
-      benchmark: extractFieldBenchmarkRows(benchmarkScorecard, fieldKey),
     });
 
     const subtitleLine = `_Per-key brief | category: \`${category}\` | group: \`${group}\` | generated ${generatedAt}_`;

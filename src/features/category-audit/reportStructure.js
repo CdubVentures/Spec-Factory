@@ -503,7 +503,6 @@ function formatTierBundleAuditValue(adapterPreview) {
 }
 
 function buildSearchRoutingBlocks(key, adapterPreview) {
-  const benchmarkText = 'the category benchmark/example set when available';
   return [
     { kind: 'subheading', level: 4, text: 'Search + routing contract' },
     {
@@ -515,10 +514,10 @@ function buildSearchRoutingBlocks(key, adapterPreview) {
       headers: ['Knob', 'Current value', 'Audit question'],
       rows: [
         ['`priority.required_level`', formatAuditValue(key.priority.required_level), '`mandatory` if a normal buyer can find this in public evidence (spec sheet, manufacturer page, credible review, canonical product render, or stated component identity) for the typical product in this category. `non_mandatory` if the value typically requires lab measurement, product disassembly, or proprietary internal-component identity work that public sources rarely expose. Mandatory + unk blocks publish; non_mandatory + unk resolves quietly.'],
-        ['`priority.availability`', formatAuditValue(key.priority.availability), '`always` = credible public sources expose this for nearly every product in the category (spec sheet, manufacturer page, or canonical render carries it as a matter of course). `sometimes` = uneven coverage; flagships usually publish it, budget/older/boutique brands often don\'t. `rare` = only specialist sources (lab benchmark sites, teardown reports, niche reviews) publish this, and only for a small fraction of the category.'],
+        ['`priority.availability`', formatAuditValue(key.priority.availability), '`always` = credible public sources expose this for nearly every product in the category (spec sheet, manufacturer page, or canonical render carries it as a matter of course). `sometimes` = uneven coverage; flagships usually publish it, budget/older/boutique brands often don\'t. `rare` = only specialist sources (instrumented labs, teardown reports, niche reviews) publish this, and only for a small fraction of the category.'],
         ['`priority.difficulty`', formatAuditValue(key.priority.difficulty), '`easy` = answer is in the first SERP for the obvious query, OR visible in any product render / canonical photo (one query, one source). `medium` = page 2 of the same query, a refined query, OR a specific product angle / spec-table section is needed (still single-session). `hard` = multiple queries, multiple sites, light cross-analysis to confirm; the answer still exists in public text once found. `very_hard` = same multi-query effort PLUS deduction across signals (component lineage, indirect inference) OR lab-only / instrumented measurements OR proprietary internal-component identities behind unmarked silicon.'],
         ['Resolved tier bundle', formatTierBundleAuditValue(adapterPreview), 'Does the resolved model/search strength match the difficulty grade for the typical product? A field graded `very_hard` needs the strongest model + reasoning + web search; an `easy` field should not burn that budget.'],
-        ['Benchmark-depth target', benchmarkText, 'Use benchmark data to calibrate the difficulty grade and guidance, not as prompt answers. The contract should explain how keyFinder can reproduce those values from public evidence for the median product, not just the flagship.'],
+        ['Publish-grade target', 'source-grounded category coverage', 'The contract should explain how keyFinder can reproduce publish-grade values from public evidence for the median product, not just the flagship.'],
       ],
     },
   ];
@@ -556,7 +555,7 @@ function buildAuthoringChecklistBlocks(key) {
     'search/SEO',
   ].join(' | ');
   const unknownCurrent = [
-    '`false`/`no`',
+    '`yes` / `no` / `n/a`',
     '`n/a` as intentional data',
     'unknown status / no submitted value',
     'blank/omitted',
@@ -584,11 +583,11 @@ function buildAuthoringChecklistBlocks(key) {
         ['2', 'Value contract', contractCurrent, 'Does the emitted JSON primitive/list shape match how the value is stored, validated, compared, and filtered?'],
         ['3', 'Enum and filter surface', enumCurrent, 'Is the enum closed when finite, patterned when open, ordered consistently, and small enough for the consumer filter surface? Keep aliases/source phrases out of public enum chips unless intentionally public.'],
         ['4', 'Consumer-surface impact', consumerCurrent, 'Which surfaces should use this key: filter, list column, snapshot/spec row, comparison row, metric/card, search/SEO, or none? Does the shape support each intended surface without forcing the site to guess?'],
-        ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is false/no different from not-applicable and missing evidence? Use boolean only for true two-state facts. Never add `unk` to enum values or data lists; it is an LLM sentinel that should become status/unknown_reason with no submitted value. Use `n/a` only when not-applicable is intentionally stored or public; otherwise prefer blank/omitted as no submitted value. For measured conditional fields like battery_hours, keep the value numeric when hours are proven and leave no submitted value when not applicable or unproven.'],
+        ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is `no` different from not-applicable and missing evidence? Boolean keys use the closed yes/no/n/a list. Never add `unk` to enum values or data lists; it is an LLM sentinel that should become status/unknown_reason with no submitted value. Use `n/a` only when not-applicable is intentionally stored or public; otherwise prefer blank/omitted as no submitted value. For measured conditional fields like battery_hours, keep the value numeric when hours are proven and leave no submitted value when not applicable or unproven.'],
         ['6', 'Evidence and sources', evidenceCurrent, 'Can the configured source tiers and evidence count actually prove this value without guessing?'],
         ['7', 'Example bank', '5-10 category-local examples', 'Do examples cover happy path, edge, unknown, not-applicable, conflict, and filter-risk cases before the prompt text is trusted?'],
         ['8', 'Color & Edition Context', colorEditionContextCurrent, 'Enable only when edition/SKU/release/colorway/PIF identity helps reject wrong-variant evidence without ambiguity. Most invariant model-level keys should not need it. List or variant-varying keys need a union vs exact/base/default rule in reasoning_note.'],
-        ['9', 'PIF Priority Images', pifPriorityImagesCurrent, 'Enable only when default/base priority-view images help a visual key. Missing/unattachable images are not negative evidence. Edition-specific yes/no or list behavior belongs in reasoning_note.'],
+        ['9', 'PIF Priority Images', pifPriorityImagesCurrent, 'Enable only when default/base priority-view images help a visual key. Missing/unattachable images are not negative evidence. Edition-specific boolean or list behavior belongs in reasoning_note.'],
         ['10', 'Guidance last', formatAuditValue(key.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap, or write "(empty - keep)" when no guidance is needed.'],
       ],
     },
@@ -600,7 +599,7 @@ function buildExampleBankRecipeBlocks(key) {
     { kind: 'subheading', level: 4, text: 'Example bank recipe' },
     {
       kind: 'paragraph',
-      text: `Build a 5-10 product example bank for \`${key.fieldKey}\` before finalizing the rule. Prefer hand-entered benchmark data when available, then product JSON/candidates, seed products, component DB rows, and source research. For brand-new categories, use representative market products to create the first calibration set. Use examples to author the contract and guidance; do not paste benchmark answers into the live prompt.`,
+      text: `Build a 5-10 product example bank for \`${key.fieldKey}\` before finalizing the rule. Prefer product JSON/candidates, seed products, component DB rows, and source research. For brand-new categories, use representative market products to create the first calibration set. Use examples to author the reusable contract and guidance.`,
     },
     {
       kind: 'table',
@@ -611,7 +610,6 @@ function buildExampleBankRecipeBlocks(key) {
         ['Unknown / absent evidence', '1', 'A product where honest `unk` is the correct outcome because sources do not prove the field.'],
         ['Conflict / ambiguity', '1', 'Two credible sources disagree, labels are reused, or the field is often confused with a sibling key.'],
         ['Filter-risk', '1-2', 'Values that would create new enum chips, range extremes, pattern outliers, or consumer-facing clutter.'],
-        ['Benchmark carry-forward', 'as available', 'Use benchmark cells as calibration for this key, then apply the same recipe to every category.'],
       ],
     },
   ];

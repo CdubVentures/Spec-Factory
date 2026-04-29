@@ -13,15 +13,6 @@ export interface WorkbenchSessionState {
 function getStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
   try {
-    return window.localStorage;
-  } catch {
-    return null;
-  }
-}
-
-function getSessionStorage(): Storage | null {
-  if (typeof window === 'undefined') return null;
-  try {
     return window.sessionStorage;
   } catch {
     return null;
@@ -106,18 +97,8 @@ export function parseWorkbenchSessionState(raw: string | null | undefined): Work
 export function readWorkbenchSessionState(category: string): WorkbenchSessionState {
   const storage = getStorage();
   if (!storage) return parseStateObject({});
-  const key = buildWorkbenchSessionStorageKey(category);
   try {
-    let raw = storage.getItem(key);
-    if (!raw) {
-      const session = getSessionStorage();
-      const legacy = session?.getItem(key) ?? null;
-      if (legacy) {
-        storage.setItem(key, legacy);
-        session?.removeItem(key);
-        raw = legacy;
-      }
-    }
+    const raw = storage.getItem(buildWorkbenchSessionStorageKey(category));
     return parseWorkbenchSessionState(raw);
   } catch {
     return parseStateObject({});

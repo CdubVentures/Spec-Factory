@@ -15,5 +15,5 @@ async function loadStudioPageTabsModule() {
 test('studio page tab ids keep the stable workflow ordering', async () => {
   const { STUDIO_TAB_IDS } = await loadStudioPageTabsModule();
 
-  assert.deepEqual(STUDIO_TAB_IDS, ['mapping', 'keys', 'contract', 'reports']);
+  assert.deepEqual(STUDIO_TAB_IDS, ['mapping', 'keys', 'contract', 'reports', 'docs']);
 });

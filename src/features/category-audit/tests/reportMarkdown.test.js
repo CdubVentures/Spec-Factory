@@ -83,7 +83,8 @@ test('renderMarkdown places auditor-task section before summary and includes ret
   const summaryIdx = md.indexOf('## Summary');
   assert.ok(auditorIdx >= 0 && summaryIdx > auditorIdx, 'auditor-task appears before summary');
   assert.ok(md.includes('Return format (markdown'), 'return-format spec included');
-  assert.match(md, /Downloadable JSON patch files/i);
+  assert.match(md, /Patch files come first/i);
+  assert.doesNotMatch(md, /Downloadable JSON patch files/i);
   assert.match(md, /<category>-<sort_order>-<field_key>\.field-studio-patch\.v1\.json/);
   assert.match(md, /"schema_version": "field-studio-patch\.v1"/);
   assert.match(md, /"field_overrides"/);
@@ -112,7 +113,7 @@ test('renderMarkdown places auditor-task section before summary and includes ret
   assert.match(md, /roles\.properties/i);
   assert.match(md, /variance_policy/i);
   assert.match(md, /component_only/i);
-  assert.doesNotMatch(md, /Component Review/i);
+  assert.match(md, /Component Review/i);
   assert.match(md, /Enum Data Lists/i);
   assert.match(md, /Key Navigator guidance:/);
   assert.match(md, /"priority"/);
@@ -162,8 +163,10 @@ test('renderMarkdown tells auditors to validate the full field contract before w
   assert.ok(md.includes('priority.difficulty'));
   assert.match(md, /Search \/ routing/i);
   assert.match(md, /model\/search strength/i);
-  assert.match(md, /benchmark-depth/i);
-  assert.match(md, /category benchmark\/example set/i);
+  assert.match(md, /publish-grade/i);
+  assert.doesNotMatch(md, /benchmark/i);
+  assert.doesNotMatch(md, /benchmark-depth/i);
+  assert.doesNotMatch(md, /category benchmark\/example set/i);
   assert.doesNotMatch(md, /mouseData\.xlsm/i);
   assert.doesNotMatch(md, /C2:BT83/i);
   // Behavior: priority axes use "human Googler" / "typical product not flagship" calibration
@@ -178,7 +181,7 @@ test('renderMarkdown tells auditors to validate the full field contract before w
   assert.match(md, /no contract change/i);
   assert.match(md, /Consumer-surface impact/i);
   assert.match(md, /Unknown \/ not-applicable/i);
-  assert.match(md, /Boolean is not automatically enough/i);
+  assert.match(md, /Boolean keys use `yes`, `no`, and `n\/a`/i);
   assert.match(md, /Never add `unk` to enum values/i);
   assert.match(md, /blank\/omitted as no submitted value/i);
   assert.match(md, /battery_hours/i);
@@ -188,6 +191,20 @@ test('renderMarkdown tells auditors to validate the full field contract before w
   assert.ok(md.includes('Example bank recipe'));
   assert.ok(md.includes('5-10'));
   assert.ok(md.includes('filter-risk'));
+  assert.match(md, /Boolean evidence bar/i);
+  assert.match(md, /closed `yes` \/ `no` \/ `n\/a` value space/i);
+  assert.match(md, /what evidence proves `yes`/i);
+  assert.match(md, /what evidence proves `no`/i);
+  assert.match(md, /when `n\/a` is valid/i);
+  assert.doesNotMatch(md, /affirmation rule for `true`/i);
+  assert.doesNotMatch(md, /Ambiguous evidence.*`no`/i);
+  assert.match(md, /panel: Example Panel/i);
+  assert.match(md, /gpu_chip: Example GPU Chip/i);
+  assert.match(md, /switch: Example Switch/i);
+  assert.doesNotMatch(md, /sensor: Hero 25K/i);
+  assert.doesNotMatch(md, /scroll-click/i);
+  assert.doesNotMatch(md, /Razer Optical/i);
+  assert.doesNotMatch(md, /Example for `design`/i);
 });
 
 test('renderMarkdown resolves non-camelized global prompt fragment slots', () => {

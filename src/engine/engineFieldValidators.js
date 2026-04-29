@@ -87,7 +87,8 @@ export function enforceEnumPolicy(fieldKey, normalized, { rules, enumIndex }) {
   const key = normalizeFieldKey(fieldKey);
   const rule = rules[key] || {};
   const fromRule = normalizeToken(rule.enum_policy || rule?.enum?.policy || '');
-  const enumSpec = enumIndex.get(key) || buildRuleEnumSpec(rule);
+  const sourceKey = enumSourceKey(rule);
+  const enumSpec = enumIndex.get(key) || (sourceKey ? enumIndex.get(sourceKey) : null) || buildRuleEnumSpec(rule);
   const policy = fromRule || normalizeToken(enumSpec?.policy || 'open') || 'open';
   const isClosedPolicy = policy === 'closed' || policy === 'closed_with_curation';
   const hasKnownMatches = enumSpec
@@ -150,4 +151,12 @@ export function enforceEnumPolicy(fieldKey, normalized, { rules, enumIndex }) {
     was_aliased: wasAliased,
     needs_curation: needsCuration
   };
+}
+
+function enumSourceKey(rule = {}) {
+  const source = String(rule?.enum?.source || rule?.enum_source || '').trim();
+  if (!source) return '';
+  if (source === 'yes_no') return 'yes_no';
+  if (source.startsWith('data_lists.')) return normalizeFieldKey(source.slice('data_lists.'.length));
+  return '';
 }

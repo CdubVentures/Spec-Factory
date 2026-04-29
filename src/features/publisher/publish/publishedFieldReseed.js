@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
+import { normalizeKnownValueMatchKey } from '../../../shared/primitives.js';
 
 function safeReadJson(filePath) {
   try { return JSON.parse(fs.readFileSync(filePath, 'utf8')); }
@@ -23,13 +24,98 @@ function serializeValue(value) {
   return String(value);
 }
 
+function isObject(value) {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function readPublishedFieldText(fields, fieldKey) {
+  const entry = fields?.[fieldKey];
+  if (!isObject(entry) || entry.value === undefined || entry.value === null) return '';
+  return serializeValue(entry.value).trim();
+}
+
+function collectPublishedComponentTypes({ specDb, fields }) {
+  const types = new Set();
+  if (typeof specDb.getComponentTypeList === 'function') {
+    for (const row of specDb.getComponentTypeList() || []) {
+      const componentType = String(row?.component_type || '').trim();
+      if (componentType) types.add(componentType);
+    }
+  }
+  for (const fieldKey of Object.keys(fields || {})) {
+    if (!fieldKey.endsWith('_brand')) continue;
+    const componentType = fieldKey.slice(0, -'_brand'.length).trim();
+    if (!componentType || !fields[componentType]) continue;
+    types.add(componentType);
+  }
+  return [...types].sort();
+}
+
+function findComponentIdentityByNameAndMaker({ specDb, componentType, componentName, componentMaker }) {
+  const nameToken = normalizeKnownValueMatchKey(componentName);
+  const makerToken = normalizeKnownValueMatchKey(componentMaker);
+  if (!nameToken || !makerToken || !specDb?.db) return null;
+
+  const identities = specDb.db.prepare(
+    'SELECT id, canonical_name, maker FROM component_identity WHERE category = ? AND component_type = ?'
+  ).all(specDb.category, componentType);
+
+  for (const identity of identities) {
+    if (normalizeKnownValueMatchKey(identity.maker) !== makerToken) continue;
+    if (normalizeKnownValueMatchKey(identity.canonical_name) === nameToken) return identity;
+    const aliases = specDb.db.prepare('SELECT alias FROM component_aliases WHERE component_id = ?').all(identity.id);
+    const hasAlias = aliases.some((row) => normalizeKnownValueMatchKey(row.alias) === nameToken);
+    if (hasAlias) return identity;
+  }
+
+  return null;
+}
+
+function syncPublishedComponentLinksFromFields({ specDb, productId, fields }) {
+  let linked = 0;
+  for (const componentType of collectPublishedComponentTypes({ specDb, fields })) {
+    const componentName = readPublishedFieldText(fields, componentType);
+    const componentMaker = readPublishedFieldText(fields, `${componentType}_brand`);
+    if (!componentName || !componentMaker) continue;
+
+    const matched = findComponentIdentityByNameAndMaker({
+      specDb,
+      componentType,
+      componentName,
+      componentMaker,
+    });
+    const identity = matched || specDb.upsertComponentIdentity?.({
+      componentType,
+      canonicalName: componentName,
+      maker: componentMaker,
+      links: [],
+      source: 'published_fields',
+    });
+    const canonicalName = String(identity?.canonical_name || componentName).trim();
+    const maker = String(identity?.maker || componentMaker).trim();
+    if (!canonicalName || !maker || typeof specDb.upsertItemComponentLink !== 'function') continue;
+
+    specDb.upsertItemComponentLink({
+      productId,
+      fieldKey: componentType,
+      componentType,
+      componentName: canonicalName,
+      componentMaker: maker,
+      matchType: matched ? 'published_pair' : 'published_pair_new',
+      matchScore: 1,
+    });
+    linked++;
+  }
+  return linked;
+}
+
 /**
  * @param {{ specDb: object, productRoot?: string }} opts
  * @returns {{ found: number, seeded: number, skipped: number, fields_seeded: number }}
  */
 export function rebuildPublishedFieldsFromJson({ specDb, productRoot }) {
   const root = productRoot || defaultProductRoot();
-  const stats = { found: 0, seeded: 0, skipped: 0, fields_seeded: 0 };
+  const stats = { found: 0, seeded: 0, skipped: 0, fields_seeded: 0, component_links_seeded: 0 };
 
   let entries;
   try {
@@ -58,6 +144,11 @@ export function rebuildPublishedFieldsFromJson({ specDb, productRoot }) {
 
     const productId = data.product_id || entry.name;
     let productFieldCount = 0;
+    stats.component_links_seeded += syncPublishedComponentLinksFromFields({
+      specDb,
+      productId,
+      fields,
+    });
 
     for (const [fieldKey, fieldEntry] of Object.entries(fields)) {
       if (!fieldEntry || fieldEntry.value === undefined) continue;

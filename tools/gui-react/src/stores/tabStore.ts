@@ -56,32 +56,17 @@ const noopStorage: StateStorage = {
   removeItem: (_name) => {},
 };
 
-function getLocalStorage() {
-  if (typeof window === 'undefined' || !window.localStorage) {
+function getSessionStorage() {
+  if (typeof window === 'undefined' || !window.sessionStorage) {
     return noopStorage;
   }
-  return window.localStorage;
-}
-
-function readStorageItem(name: string) {
-  if (typeof window === 'undefined') return null;
-  try {
-    const local = window.localStorage?.getItem(name) ?? null;
-    if (local) return local;
-    const session = window.sessionStorage?.getItem(name) ?? null;
-    if (session) {
-      window.localStorage?.setItem(name, session);
-      window.sessionStorage?.removeItem(name);
-    }
-    return session;
-  } catch {
-    return null;
-  }
+  return window.sessionStorage;
 }
 
 function loadInitialTabValues(): Record<string, string | null> {
+  if (typeof window === 'undefined') return {};
   try {
-    const raw = readStorageItem(TAB_STORAGE_KEY);
+    const raw = window.sessionStorage?.getItem(TAB_STORAGE_KEY) ?? null;
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     if (parsed?.state?.values && typeof parsed.state.values === 'object') {
@@ -92,7 +77,7 @@ function loadInitialTabValues(): Record<string, string | null> {
 }
 
 const initialTabValues = loadInitialTabValues();
-const storage = createJSONStorage(() => getLocalStorage());
+const storage = createJSONStorage(() => getSessionStorage());
 
 export const useTabStore = create<TabStoreState>()(
   persist(

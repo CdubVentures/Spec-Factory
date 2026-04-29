@@ -162,4 +162,84 @@ describe('rebuildPublishedFieldsFromJson', () => {
     assert.equal(rows[0].source_type, 'manual_override');
     assert.equal(rows[0].status, 'resolved');
   });
+
+  it('rebuilds component links from published component and brand fields', () => {
+    specDb.upsertComponentIdentity({
+      componentType: 'sensor',
+      canonicalName: 'PAW3950',
+      maker: 'PixArt',
+      links: [],
+      source: 'component_db',
+    });
+
+    writeProduct('rs-component-link', {
+      category: 'mouse',
+      product_id: 'rs-component-link',
+      fields: {
+        sensor: { value: 'PAW3950', confidence: 95, source: 'pipeline', sources: [] },
+        sensor_brand: { value: 'PixArt', confidence: 95, source: 'pipeline', sources: [] },
+      },
+      candidates: {},
+    });
+
+    rebuildPublishedFieldsFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const links = specDb.getItemComponentLinks('rs-component-link');
+    assert.equal(links.length, 1);
+    assert.equal(links[0].field_key, 'sensor');
+    assert.equal(links[0].component_type, 'sensor');
+    assert.equal(links[0].component_name, 'PAW3950');
+    assert.equal(links[0].component_maker, 'PixArt');
+  });
+
+  it('does not rebuild a component link without the paired brand field', () => {
+    specDb.upsertComponentIdentity({
+      componentType: 'sensor',
+      canonicalName: 'PMW3360',
+      maker: 'PixArt',
+      links: [],
+      source: 'component_db',
+    });
+
+    writeProduct('rs-component-link-missing-brand', {
+      category: 'mouse',
+      product_id: 'rs-component-link-missing-brand',
+      fields: {
+        sensor: { value: 'PMW3360', confidence: 95, source: 'pipeline', sources: [] },
+      },
+      candidates: {},
+    });
+
+    rebuildPublishedFieldsFromJson({ specDb, productRoot: PRODUCT_ROOT });
+
+    const links = specDb.getItemComponentLinks('rs-component-link-missing-brand');
+    assert.equal(links.length, 0);
+  });
+
+  it('creates missing component identities from product.json without writing generated component DB JSON', () => {
+    const helperRoot = path.join('.tmp', '_test_published_field_reseed_authority');
+    fs.rmSync(helperRoot, { recursive: true, force: true });
+    writeProduct('rs-new-component-link', {
+      category: 'mouse',
+      product_id: 'rs-new-component-link',
+      fields: {
+        sensor: { value: 'ROG AimPoint', confidence: 95, source: 'pipeline', sources: [] },
+        sensor_brand: { value: 'Asus', confidence: 95, source: 'pipeline', sources: [] },
+      },
+      candidates: {},
+    });
+
+    rebuildPublishedFieldsFromJson({ specDb, productRoot: PRODUCT_ROOT, helperRoot });
+
+    const links = specDb.getItemComponentLinks('rs-new-component-link');
+    assert.equal(links.length, 1);
+    assert.equal(links[0].component_name, 'ROG AimPoint');
+    assert.equal(links[0].component_maker, 'Asus');
+    assert.ok(specDb.getComponentIdentity('sensor', 'ROG AimPoint', 'Asus')?.id);
+    assert.equal(
+      fs.existsSync(path.join(helperRoot, 'mouse', '_generated', 'component_db', 'sensors.json')),
+      false,
+    );
+    fs.rmSync(helperRoot, { recursive: true, force: true });
+  });
 });

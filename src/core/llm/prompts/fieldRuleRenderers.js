@@ -146,7 +146,7 @@ export function buildFieldContractBlock(fieldRule) {
     if (ruleParts.length) lines.push(`- List rules: ${ruleParts.join(', ')}`);
   }
   if (type === 'boolean' || type === 'bool') {
-    // Boolean fields are already constrained by type; yes/no enum lists add noise.
+    lines.push('- Boolean values: yes | no | n/a');
   } else if (enumValues.length > 0) {
     const values = enumValues.slice(0, 24).join(' | ');
     if (enumPolicy === 'open_prefer_known') {

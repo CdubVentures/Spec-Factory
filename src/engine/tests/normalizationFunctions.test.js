@@ -44,8 +44,9 @@ test('parseDateSerial converts serial dates and keeps string passthrough', () =>
 });
 
 test('normalizeBoolean follows canonical boolean coercion semantics', () => {
-  assert.equal(normalizeBoolean('yes'), true);
-  assert.equal(normalizeBoolean('NO'), false);
+  assert.equal(normalizeBoolean('yes'), 'yes');
+  assert.equal(normalizeBoolean('NO'), 'no');
+  assert.equal(normalizeBoolean('n/a'), 'n/a');
   assert.equal(normalizeBoolean('unknown'), null);
 });
 

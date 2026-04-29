@@ -2,7 +2,7 @@
 // Only types with genuinely strict structural formats get regexes.
 // Generic types (string, number) rely on type coercion and normalization.
 export const FORMAT_REGISTRY = {
-  boolean: /^(yes|no)$/,
+  boolean: /^(yes|no|n\/a)$/,
   date:    /^\d{4}-\d{2}-\d{2}$/,
   url:     /^https?:\/\/.+/,
 };

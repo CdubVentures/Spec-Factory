@@ -3,9 +3,12 @@
 // Mirrors reviewGridData.js patterns for component tables and enum lists.
 // Three exported functions supply the review-components API endpoints.
 
+import path from 'node:path';
+
 import { projectFieldRulesForConsumer } from '../../../field-rules/consumerGate.js';
 import { toArray } from './reviewNormalization.js';
 import {
+  safeReadJson,
   resolveReviewEnabledEnumFieldSet,
   resolveDeclaredComponentPropertyColumns,
   resolveDeclaredComponentTypeOrder,
@@ -22,6 +25,35 @@ export { resolvePropertyFieldMeta };
 
 // ── Layout ──────────────────────────────────────────────────────────
 
+function normalizeComponentType(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+}
+
+async function resolveComponentTypesFromControlMap({ config = {}, category } = {}) {
+  const categoryAuthorityRoot = config.categoryAuthorityRoot || 'category_authority';
+  const mapPath = path.join(categoryAuthorityRoot, String(category || '').trim(), '_control_plane', 'field_studio_map.json');
+  const map = await safeReadJson(mapPath);
+  return toArray(map?.component_sources)
+    .map((row) => normalizeComponentType(row?.component_type || row?.type || ''))
+    .filter(Boolean);
+}
+
+function uniqueOrdered(values = []) {
+  const seen = new Set();
+  const ordered = [];
+  for (const value of values) {
+    const key = normalizeComponentType(value);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    ordered.push(key);
+  }
+  return ordered;
+}
+
 export async function buildComponentReviewLayout({ config = {}, category, specDb = null, fieldRules = null }) {
   if (!specDb) {
     return { category, types: [] };
@@ -32,10 +64,13 @@ export async function buildComponentReviewLayout({ config = {}, category, specDb
       .map((row) => String(row?.component_type || '').trim())
       .filter(Boolean)
   )];
-  const declaredTypeOrder = resolveDeclaredComponentTypeOrder({ fieldRules, specDb });
+  const declaredTypeOrder = uniqueOrdered([
+    ...resolveDeclaredComponentTypeOrder({ fieldRules, specDb }),
+    ...await resolveComponentTypesFromControlMap({ config, category }),
+  ]);
   const declaredOrderSet = new Set(declaredTypeOrder);
   const orderedComponentTypes = [
-    ...declaredTypeOrder.filter((componentType) => componentTypes.includes(componentType)),
+    ...declaredTypeOrder,
     ...componentTypes.filter((componentType) => !declaredOrderSet.has(componentType)),
   ];
   const payloads = await Promise.all(orderedComponentTypes.map(async (componentType) => {
@@ -69,7 +104,7 @@ export async function buildComponentReviewLayout({ config = {}, category, specDb
 export async function buildComponentReviewPayloads({ config = {}, category, componentType, specDb = null, fieldRules = null, fieldOrderOverride = null }) {
   const reviewFieldRules = projectFieldRulesForConsumer(fieldRules, 'review');
   if (!specDb) {
-    return { category, componentType, items: [], metrics: { total: 0, avg_confidence: 0, flags: 0 } };
+    return { category, componentType, property_columns: [], items: [], metrics: { total: 0, avg_confidence: 0, flags: 0 } };
   }
   let result = await buildComponentReviewPayloadsSpecDb({
     config,

@@ -71,7 +71,7 @@ describe('mergeDiscoveredEnums — discovered only (no compiled entry)', () => {
     assert.deepStrictEqual(result.enums.grip.values, ['claw', 'palm']);
   });
 
-  it('forces boolean fields to closed yes/no and ignores discovered drift', () => {
+  it('forces boolean fields to closed yes/no/n/a and ignores discovered drift', () => {
     const compiled = makeCompiled({});
     const discovered = { discontinued: ['no', 'maybe'] };
     const result = mergeDiscoveredEnums(compiled, discovered, makeFieldRules({
@@ -83,7 +83,7 @@ describe('mergeDiscoveredEnums — discovered only (no compiled entry)', () => {
 
     assert.deepStrictEqual(result.enums.discontinued, {
       policy: 'closed',
-      values: ['yes', 'no'],
+      values: ['yes', 'no', 'n/a'],
     });
   });
 });

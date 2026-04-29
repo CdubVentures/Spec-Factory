@@ -54,7 +54,7 @@ test('parseWorkbenchSessionState sanitizes malformed structures', async () => {
   });
 });
 
-test('read/write workbench session state round-trips through localStorage', async () => {
+test('read/write workbench session state round-trips through sessionStorage', async () => {
   const localStorage = createStorage({}, { trackCalls: false });
   const sessionStorage = createStorage({}, { trackCalls: false });
 
@@ -72,8 +72,8 @@ test('read/write workbench session state round-trips through localStorage', asyn
     });
   });
 
-  const raw = localStorage.getItem(key);
-  assert.ok(typeof raw === 'string' && raw.length > 0, 'localStorage should contain persisted workbench state');
+  const raw = sessionStorage.getItem(key);
+  assert.ok(typeof raw === 'string' && raw.length > 0, 'sessionStorage should contain persisted workbench state');
 
   const loaded = withWindowStub({ localStorage, sessionStorage }, () => readWorkbenchSessionState('mouse'));
   assert.deepEqual(loaded, {

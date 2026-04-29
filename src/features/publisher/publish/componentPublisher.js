@@ -208,6 +208,7 @@ export function syncPublishedComponentIdentity({
     return { status: 'waiting_for_pair', componentType: target.componentType, missing };
   }
 
+  const aliasMetadata = resolvePairAliasMetadata({ specDb, productId, target, metadata });
   const identity = specDb.upsertComponentIdentity({
     componentType: target.componentType,
     canonicalName: componentName,
@@ -218,7 +219,7 @@ export function syncPublishedComponentIdentity({
   persistAliases({
     specDb,
     componentIdentityId: identity?.id,
-    aliasMetadata: resolvePairAliasMetadata({ specDb, productId, target, metadata }),
+    aliasMetadata,
     componentName,
     componentMaker,
   });

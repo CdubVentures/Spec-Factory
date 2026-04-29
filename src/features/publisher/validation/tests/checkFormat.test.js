@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { checkFormat } from '../checks/checkFormat.js';
 
 describe('checkFormat — boolean', () => {
-  const pass = ['yes', 'no'];
+  const pass = ['yes', 'no', 'n/a'];
   for (const v of pass) {
     it(`pass: "${v}"`, () => {
       assert.equal(checkFormat(v, 'boolean').pass, true);

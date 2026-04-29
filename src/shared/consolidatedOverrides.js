@@ -39,7 +39,12 @@ function emptyEnvelope(category) {
     category,
     updated_at: nowIso(),
     products: {},
+    components: {},
   };
+}
+
+function objectOrEmpty(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
 export async function readConsolidatedOverrides({ config = {}, category }) {
@@ -52,9 +57,8 @@ export async function readConsolidatedOverrides({ config = {}, category }) {
         version: parsed.version ?? 2,
         category: parsed.category ?? category,
         updated_at: parsed.updated_at ?? nowIso(),
-        products: (parsed.products && typeof parsed.products === 'object' && !Array.isArray(parsed.products))
-          ? parsed.products
-          : {},
+        products: objectOrEmpty(parsed.products),
+        components: objectOrEmpty(parsed.components),
       };
     }
   } catch (error) {

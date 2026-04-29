@@ -455,7 +455,7 @@ function describeValueShape(fieldRule) {
   const enumValues = Array.isArray(fieldRule?.enum?.values) ? fieldRule.enum.values.slice(0, 24) : [];
   let element;
   if ((type === 'boolean' || type === 'bool')) {
-    element = 'boolean';
+    element = 'one of [yes | no | n/a]';
   } else if (enumValues.length > 0 && enumPolicy === 'open_prefer_known') {
     element = `string (prefer one of [${enumValues.join(' | ')}]; unlisted only when direct evidence proves no listed value fits)`;
   } else if (enumValues.length > 0 && enumPolicy !== 'open') {

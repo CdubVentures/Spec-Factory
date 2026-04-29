@@ -146,6 +146,17 @@ describe('validateField — boolean', () => {
     assert.equal(r.value, 'no');
   });
 
+  it('"n/a" is a first-class boolean value', () => {
+    const r = validateField({
+      fieldKey: 'wireless',
+      value: 'n/a',
+      fieldRule: boolRule,
+      knownValues: { policy: 'closed', values: ['yes', 'no', 'n/a'] },
+    });
+    assert.equal(r.valid, true);
+    assert.equal(r.value, 'n/a');
+  });
+
   it('"unk" → null (absence normalized)', () => {
     const r = validateField({ fieldKey: 'wireless', value: 'unk', fieldRule: boolRule });
     assert.equal(r.valid, true);

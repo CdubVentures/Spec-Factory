@@ -55,6 +55,47 @@ function buildPublishedProductCandidates({ specDb, productIds = [], fieldKey = '
   return fanOutCandidates(rows).filter((candidate) => candidate.status === 'resolved');
 }
 
+function countCandidateEvidence({ specDb, row }) {
+  if (!row) return 0;
+  const candidateId = Number(row.id);
+  if (Number.isFinite(candidateId) && candidateId > 0 && typeof specDb?.countFieldCandidateEvidenceByCandidateId === 'function') {
+    const projectedCount = specDb.countFieldCandidateEvidenceByCandidateId(candidateId);
+    if (projectedCount > 0) return projectedCount;
+  }
+  const metadata = row.metadata_json && typeof row.metadata_json === 'object' ? row.metadata_json : {};
+  if (Array.isArray(metadata.evidence_refs)) {
+    return metadata.evidence_refs.filter((ref) => String(ref?.url || '').trim()).length;
+  }
+  const evidence = metadata.evidence && typeof metadata.evidence === 'object' ? metadata.evidence : null;
+  if (evidence && (String(evidence.url || '').trim() || String(evidence.quote || '').trim())) return 1;
+  return 0;
+}
+
+function buildFieldSupportCounts({ specDb, productId, fieldKeys = [] } = {}) {
+  const counts = {};
+  if (!specDb || typeof specDb.getFieldCandidatesByProductAndField !== 'function') return counts;
+
+  const uniqueFieldKeys = [...new Set(fieldKeys.map((key) => String(key || '').trim()).filter(Boolean))];
+  for (const fieldKey of uniqueFieldKeys) {
+    const rows = specDb.getFieldCandidatesByProductAndField(productId, fieldKey) || [];
+    const summary = {
+      published_count: 0,
+      candidate_count: 0,
+      evidence_count: 0,
+    };
+    for (const row of rows) {
+      if (String(row?.status || '').trim() === 'resolved') {
+        summary.published_count += 1;
+      } else {
+        summary.candidate_count += 1;
+      }
+      summary.evidence_count += countCandidateEvidence({ specDb, row });
+    }
+    counts[fieldKey] = summary;
+  }
+  return counts;
+}
+
 export async function buildComponentReviewPayloadsSpecDb({ config = {}, category, componentType, specDb, fieldRules = null }) {
   const helperRoot = path.resolve(config.categoryAuthorityRoot || 'category_authority');
 
@@ -130,7 +171,7 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
     allComponents = specDb.getAllComponentsForType(componentType);
   }
   if (!allComponents.length) {
-    return { category, componentType, items: [], metrics: { total: 0, avg_confidence: 0, flags: 0 } };
+    return { category, componentType, property_columns: propertyColumns, items: [], metrics: { total: 0, avg_confidence: 0, flags: 0 } };
   }
 
   const propertyTemplateByKey = new Map();
@@ -216,6 +257,12 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
     const nameKeyState = null;
     const makerKeyState = null;
     const componentKeyStateByProperty = new Map();
+    const supportFieldKeys = [
+      componentType,
+      `${componentType}_brand`,
+      `${componentType}_link`,
+      ...propertyColumns,
+    ];
     let linkedProducts = [];
     let linkedProductIds = [];
     try {
@@ -226,6 +273,11 @@ export async function buildComponentReviewPayloadsSpecDb({ config = {}, category
         field_key: r.field_key,
         match_type: r.match_type || 'exact',
         match_score: r.match_score ?? null,
+        field_counts: buildFieldSupportCounts({
+          specDb,
+          productId: r.product_id,
+          fieldKeys: supportFieldKeys,
+        }),
       }));
     } catch {
       linkedProducts = [];

@@ -65,7 +65,7 @@ test('generateCategoryAuditReport writes compact HTML + MD summary inside the ca
     assert.ok(md.includes('Category-level corrections'));
     assert.ok(md.includes('Keys requiring re-audit'));
     assert.ok(md.includes('Priority = `M/N / availability / difficulty`'));
-    assert.ok(md.includes('Unknown / false / n/a'));
+    assert.ok(md.includes('Unknown / no / n/a'));
     assert.ok(md.includes('component `_link` fields'));
     assert.ok(md.includes('| Key | Group | Priority | Contract | Enum | Component | Evidence | Dependencies | Readiness |'));
     assert.ok(md.includes('Product Image Dependent'));

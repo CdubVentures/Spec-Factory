@@ -121,7 +121,7 @@ const ARCHETYPE_REQUIRED_CONTENT = {
     'Roster completeness scan — read the category key map in this brief and decide structurally for every name-prefixed or conceptually-adjacent key (latency, date, link, generation, sub-feature variants) whether it should join the property roster, become a facet, or stay standalone. Identity audits own the structural decision; no name-adjacent key should be left unconsidered.',
     'Auto-generated facet shape — component identity fields automatically materialize `<key>_brand` and `<key>_link` as `component_identity_projection` facets. Do not list those facet keys in `component_sources.<key>.roles.properties[]`; record them as `identity_facet` in the roster audit. Optional non-standard facets such as `<key>_type` still require an explicit field rule decision.',
     'enum.policy default — pick `open_prefer_known` when the entity set is expected to grow (most component families: sensors, switches, panels, GPU chips, RAM modules). Reserve `closed` for genuinely finite/static sets where every new entity must be a deliberate human-curation gate. Do NOT pick `closed` because the current entity list happens to be enumerable today.',
-    'Field-level aliases discipline — when `enum.source = component_db.<X>`, do not author `field_overrides.<component>.aliases`; leave it blank/absent. Component row aliases are component data, not Field Studio patch data.',
+    'Component identity alias carveout — do not author `field_overrides.<component>.aliases`, `field_overrides.<component>_brand.aliases`, or `field_overrides.<component>_link.aliases`; leave those field-level alias settings blank/absent. Normal non-component fields still use field-level aliases.',
     'Component property invariance test — before promoting a candidate key into the property roster, ask: "does this value change across two different products that use the same component?" If yes → product field, leave standalone. If no → component property. Three universal failure modes: (1) lab/measurement results (`*_latency`, `*_response_time`, `measured_*`, `*_under_load`, `effective_*`, `*_at_<condition>`), (2) firmware/MCU-implemented feature toggles (motion-sync, software smoothing, vendor latency integrations, host-implemented signal processing), (3) product-exposed configuration / capability subsets (polling-rate ladders, exposed lift settings, exposed step lists, profile menus).',
   ],
   component_facet: [
@@ -131,9 +131,11 @@ const ARCHETYPE_REQUIRED_CONTENT = {
     'For link facets — which kinds of pages are valid (maker component pages, datasheets, distributor part pages) vs invalid (host product pages, reviews, marketplace listings).',
   ],
   boolean: [
-    'Explicit affirmation rule for `true` — what evidence in what form proves the affirmative state.',
-    'Default-on-absence rule — ambiguous or absent evidence ⇒ `no`, never `yes`.',
-    'Distinguish from not-applicable when the field is conditional.',
+    'Boolean value space — closed `yes` / `no` / `n/a`; publisher coerces raw booleans into these tokens, so guidance should speak in tokens.',
+    'Explicit `yes` rule — what evidence proves `yes`.',
+    'Explicit `no` rule — what evidence proves `no`; absence alone is not proof unless the category intentionally treats silence as negative evidence.',
+    '`n/a` rule — when `n/a` is valid as intentional not-applicable data.',
+    'Unknown rule — ambiguous or absent evidence becomes no submitted value plus status/unknown_reason, not `no` or `n/a`.',
   ],
   numeric_scalar: [
     'Unit/symbol-strip rule — currency or unit symbols belong in `contract.unit`, never inside the value.',
@@ -166,71 +168,15 @@ const ARCHETYPE_REQUIRED_CONTENT = {
   visual_judgment: [
     'Tier classification (A direct, B subtle, C non-visual) and the matching guidance shape.',
     'For Tier B — name the view, define the visible feature precisely, give threshold or relative-measurement rules, name when to return unk.',
-    'Product-scoped variant interpretation — for yes/no fields, when one official edition with the visible trait makes the answer yes; for list-like visual fields, how to represent variant/design forms found.',
+    'Product-scoped variant interpretation — for boolean fields, when one official edition with the visible trait makes the product-level answer `yes`; for list-like visual fields, how to represent variant/design forms found.',
   ],
 };
 
-function shortenForCell(value, limit = 80) {
-  const text = value === null || value === undefined ? '' : String(value);
-  if (text.length <= limit) return text;
-  return `${text.slice(0, limit - 3)}...`;
-}
-
-function buildBenchmarkDiffSection(record, benchmark) {
-  if (!benchmark || !Array.isArray(benchmark.rows) || benchmark.rows.length === 0) return null;
-  const summary = benchmark.fieldSummary || {};
-  const summaryParts = [];
-  if (typeof summary.correct === 'number') summaryParts.push(`correct ${summary.correct}`);
-  if (typeof summary.wrong === 'number') summaryParts.push(`wrong ${summary.wrong}`);
-  if (typeof summary.extra === 'number') summaryParts.push(`extra ${summary.extra}`);
-  if (typeof summary.missing === 'number') summaryParts.push(`missing ${summary.missing}`);
-  if (typeof summary.needs_review === 'number') summaryParts.push(`needs_review ${summary.needs_review}`);
-  if (typeof summary.scored === 'number') summaryParts.push(`scored ${summary.scored}`);
-  if (typeof summary.accuracy === 'number') summaryParts.push(`accuracy ${summary.accuracy}%`);
-
-  const blocks = [
-    {
-      kind: 'paragraph',
-      text: `Most recent benchmark for \`${record.fieldKey}\` (generated ${benchmark.generatedAt || 'unknown'}). Each row is one test product. Highest-leverage rows first (wrong, extra, missing, needs_review, then correct). Your enum + format_hint + reasoning_note must defeat every wrong/extra row and accept every benchmark expected value.`,
-    },
-  ];
-  if (summaryParts.length > 0) {
-    blocks.push({
-      kind: 'paragraph',
-      text: `Field-level scoreboard: ${summaryParts.join(' / ')}.`,
-    });
-  }
-
-  const headers = ['Product', 'Status', 'Benchmark expects', 'App produced', 'Confidence', 'Reason'];
-  const rows = benchmark.rows.map((row) => [
-    row.productLabel || '-',
-    row.status || '-',
-    shortenForCell(row.benchmark, 80),
-    shortenForCell(row.app, 80),
-    row.appConfidence == null ? '-' : String(row.appConfidence),
-    shortenForCell(row.reason, 60),
-  ]);
-  blocks.push({ kind: 'table', headers, rows });
-
-  return {
-    id: 'benchmark-diff',
-    title: 'Benchmark diff for this key (per-product expected vs extracted)',
-    level: 2,
-    blocks,
-  };
-}
-
-function stripAliasRequirements(items, aliasOutOfScope) {
-  if (!aliasOutOfScope) return items;
-  return items.filter((item) => !/\balias/i.test(item));
-}
-
-function buildSuccessBarSection(record, context = {}) {
+function buildSuccessBarSection(record) {
   const archetypes = detectArchetypes(record);
-  const aliasOutOfScope = isAliasOutOfScope(record, context);
   const archetypeBlocks = archetypes.length > 0
     ? archetypes.flatMap((archetype) => {
-      const items = stripAliasRequirements(ARCHETYPE_REQUIRED_CONTENT[archetype] || [], aliasOutOfScope);
+      const items = ARCHETYPE_REQUIRED_CONTENT[archetype] || [];
       if (items.length === 0) return [];
       return [
         { kind: 'subheading', level: 4, text: `${archetype.replace(/_/g, ' ')} archetype` },
@@ -241,28 +187,20 @@ function buildSuccessBarSection(record, context = {}) {
 
   return {
     id: 'success-bar',
-    title: 'The 95% bar — what determines benchmark success for this key',
+    title: 'Reusable extraction contract',
     level: 2,
     blocks: [
       {
         kind: 'paragraph',
-        text: `Your enum, format pattern, and \`reasoning_note\` for \`${record.fieldKey}\` will be applied as-is to a re-run of this key against every test product in the category benchmark. Success bar is **≥95% match** across all test products. The other settings are infrastructure; the three knobs below determine whether you clear the bar.`,
+        text: `Author \`${record.fieldKey}\` so it works from a cold start across the category using only public evidence and the field parameters below. The other settings are supporting infrastructure; the three knobs below determine whether the runtime extractor stays consistent across products.`,
       },
       {
         kind: 'bulletList',
         items: [
-          aliasOutOfScope
-            ? '**Enum vocabulary** — the values the runtime LLM is locked to. Wrong vocabulary, wrong granularity, or unexpanded abbreviations cap the key below 95%.'
-            : '**Enum vocabulary** — the values the runtime LLM is locked to. Wrong vocabulary, wrong granularity, missing aliases, or unexpanded abbreviations cap the key below 95%.',
+          '**Enum vocabulary** — canonical stored values only. Wrong vocabulary, wrong granularity, missing aliases, or unexpanded abbreviations make the key inconsistent across products.',
           '**Format pattern** (`enum.match.format_hint`) — for STRING values whose shape is compound (counts + units + qualifiers + dimensions in one expression) and falls into 1–4 consistent patterns. Skip for plain number+unit values (use `type: number` + `contract.unit`), URLs (use `type: url`), and component identities (use `component_db`).',
           '**Extraction guidance** (`ai_assist.reasoning_note`) — the only prose the runtime LLM literally reads on every extraction. Carries the anti-pattern bank, confidence ladder, and "when to return unk" rules the structured contract cannot express. This is the biggest of the three.',
         ],
-      },
-      {
-        kind: 'paragraph',
-        text: aliasOutOfScope
-          ? 'When a benchmark exists for this category (`.workspace/reports/<category>/key-finder-benchmark/scorecard.json`), your enum canonicals MUST be the benchmark\'s exact strings; your format_hint MUST accept every benchmark expected value; your guidance MUST defeat any prior-run wrong values.'
-          : 'When a benchmark exists for this category (`.workspace/reports/<category>/key-finder-benchmark/scorecard.json`), your enum canonicals MUST be the benchmark\'s exact strings (or carry explicit aliases mapping to them); your format_hint MUST accept every benchmark expected value; your guidance MUST defeat any prior-run wrong values.',
       },
       { kind: 'subheading', level: 3, text: 'Required content per archetype detected for this key' },
       ...archetypeBlocks,
@@ -551,7 +489,6 @@ function buildCategoryKeyMapSection(record, allKeyRecords, groups) {
 }
 
 function buildSearchRoutingSection(record, preview, category) {
-  const benchmarkText = 'the category benchmark/example set when available';
   return {
     id: 'search-routing',
     title: 'Search + routing contract',
@@ -566,18 +503,17 @@ function buildSearchRoutingSection(record, preview, category) {
         headers: ['Knob', 'Current value', 'Audit question'],
         rows: [
           ['`priority.required_level`', displayValue(record.priority.required_level), '`mandatory` if a normal buyer can find this in public evidence (spec sheet, manufacturer page, credible review, canonical product render, or stated component identity) for the typical product in this category. `non_mandatory` if the value typically requires lab measurement, product disassembly, or proprietary internal-component identity work that public sources rarely expose. Mandatory + unk blocks publish; non_mandatory + unk resolves quietly.'],
-          ['`priority.availability`', displayValue(record.priority.availability), '`always` = credible public sources expose this for nearly every product in the category (spec sheet, manufacturer page, or canonical render carries it as a matter of course). `sometimes` = uneven coverage; flagships usually publish it, budget/older/boutique brands often don\'t. `rare` = only specialist sources (lab benchmark sites, teardown reports, niche reviews) publish this, and only for a small fraction of the category.'],
+          ['`priority.availability`', displayValue(record.priority.availability), '`always` = credible public sources expose this for nearly every product in the category (spec sheet, manufacturer page, or canonical render carries it as a matter of course). `sometimes` = uneven coverage; flagships usually publish it, budget/older/boutique brands often don\'t. `rare` = only specialist sources (instrumented labs, teardown reports, niche reviews) publish this, and only for a small fraction of the category.'],
           ['`priority.difficulty`', displayValue(record.priority.difficulty), '`easy` = answer is in the first SERP for the obvious query, OR visible in any product render / canonical photo (one query, one source). `medium` = page 2 of the same query, a refined query, OR a specific product angle / spec-table section is needed (still single-session). `hard` = multiple queries, multiple sites, light cross-analysis to confirm; the answer still exists in public text once found. `very_hard` = same multi-query effort PLUS deduction across signals (component lineage, indirect inference) OR lab-only / instrumented measurements OR proprietary internal-component identities behind unmarked silicon.'],
           ['Resolved tier bundle', formatTierBundle(preview), 'Does the resolved model/search strength match the difficulty grade for the typical product? A field graded `very_hard` needs the strongest model + reasoning + web search; an `easy` field should not burn that budget.'],
-          ['Benchmark-depth target', benchmarkText, 'Use benchmark data to calibrate the difficulty grade and guidance, not as prompt answers. The contract should explain how keyFinder can reproduce those values from public evidence for the median product, not just the flagship.'],
+          ['Publish-grade target', 'source-grounded category coverage', 'The contract should explain how keyFinder can reproduce publish-grade values from public evidence for the median product, not just the flagship.'],
         ],
       },
     ],
   };
 }
 
-function buildAuthoringChecklistSection(record, context = {}) {
-  const aliasOutOfScope = isAliasOutOfScope(record, context);
+function buildAuthoringChecklistSection(record) {
   const priorityCurrent = [
     `priority.required_level=${displayValue(record.priority.required_level)}`,
     `priority.availability=${displayValue(record.priority.availability)}`,
@@ -609,7 +545,7 @@ function buildAuthoringChecklistSection(record, context = {}) {
     'search/SEO',
   ].join(' | ');
   const unknownCurrent = [
-    '`false`/`no`',
+    '`yes` / `no` / `n/a`',
     '`n/a` as intentional data',
     'unknown status / no submitted value',
     'blank/omitted',
@@ -630,9 +566,7 @@ function buildAuthoringChecklistSection(record, context = {}) {
     blocks: [
       {
         kind: 'paragraph',
-        text: aliasOutOfScope
-          ? 'Validate the whole field contract before editing guidance. A strong audit can say "no contract change" when shape, enum policy, requiredness, evidence, and consumer behavior are already correct; still leave guidance/examples/enum cleanup when those are the real improvement. Guidance last: only write `ai_assist.reasoning_note` after scheduling, value shape, enum/filter behavior, consumer-surface intent, unknown/not-applicable states, evidence/source rules, and example coverage are correct.'
-          : 'Validate the whole field contract before editing guidance. A strong audit can say "no contract change" when shape, enum policy, requiredness, evidence, and consumer behavior are already correct; still leave guidance/examples/aliases/enum cleanup when those are the real improvement. Guidance last: only write `ai_assist.reasoning_note` after scheduling, value shape, enum/filter behavior, consumer-surface intent, unknown/not-applicable states, evidence/source rules, and example coverage are correct.',
+        text: 'Validate the whole field contract before editing guidance. A strong audit can say "no contract change" when shape, enum policy, requiredness, evidence, and consumer behavior are already correct; still leave guidance/examples/aliases/enum cleanup when those are the real improvement. Guidance last: only write `ai_assist.reasoning_note` after scheduling, value shape, enum/filter behavior, consumer-surface intent, unknown/not-applicable states, evidence/source rules, and example coverage are correct.',
       },
       {
         kind: 'table',
@@ -640,15 +574,13 @@ function buildAuthoringChecklistSection(record, context = {}) {
         rows: [
           ['1', 'Scheduling priority', priorityCurrent, 'Does requiredness match publish expectations, does availability match real product coverage, and does difficulty route to the right LLM tier?'],
           ['2', 'Value contract', contractCurrent, 'Does the emitted JSON primitive/list shape match how the value is stored, validated, compared, and filtered?'],
-          ['3', 'Enum and filter surface', enumCurrent, aliasOutOfScope
-            ? 'Is the enum closed when finite, patterned when open, ordered consistently, and small enough for the consumer filter surface? Keep source phrases out of public enum chips unless intentionally public.'
-            : 'Is the enum closed when finite, patterned when open, ordered consistently, and small enough for the consumer filter surface? Keep aliases/source phrases out of public enum chips unless intentionally public.'],
+          ['3', 'Enum and filter surface', enumCurrent, 'Is the enum closed when finite, patterned when open, ordered consistently, and small enough for the consumer filter surface? Keep aliases/source phrases out of public enum chips unless intentionally public.'],
           ['4', 'Consumer-surface impact', consumerCurrent, 'Which surfaces should use this key: filter, list column, snapshot/spec row, comparison row, metric/card, search/SEO, or none? Does the shape support each intended surface without forcing the site to guess?'],
-          ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is false/no different from not-applicable and missing evidence? Use boolean only for true two-state facts. Never add `unk` to enum values or data lists; it is an LLM sentinel that should become status/unknown_reason with no submitted value. Use `n/a` only when not-applicable is intentionally stored or public; otherwise prefer blank/omitted as no submitted value. For measured conditional fields like battery_hours, keep the value numeric when hours are proven and leave no submitted value when not applicable or unproven.'],
+          ['5', 'Unknown / not-applicable states', unknownCurrent, 'Is `no` different from not-applicable and missing evidence? Boolean keys use the closed yes/no/n/a list. Never add `unk` to enum values or data lists; it is an LLM sentinel that should become status/unknown_reason with no submitted value. Use `n/a` only when not-applicable is intentionally stored or public; otherwise prefer blank/omitted as no submitted value. For measured conditional fields like battery_hours, keep the value numeric when hours are proven and leave no submitted value when not applicable or unproven.'],
           ['6', 'Evidence and sources', evidenceCurrent, 'Can the configured source tiers and evidence count actually prove this value without guessing?'],
           ['7', 'Example bank', '5-10 category-local examples', 'Do examples cover happy path, edge, unknown, not-applicable, conflict, and filter-risk cases before the prompt text is trusted?'],
-          ['8', 'Color & Edition Context', colorEditionContextCurrent, 'Decision test: does the color × edition × SKU × release_date table help the model decide this field\'s value? If yes, ON. If no, OFF. Two patterns where ON is correct: (A) scalar with variant table as classification context — the field has one value for the whole product, but variant names help the model classify it. Examples: mouse `design` classified by edition names like "Fortnite Edition" → `collaboration`; apparel `collection_type` (Limited / Anniversary / Standard) inferred from variant labels; watch `edition_type`. Contract stays scalar. (B) list of values across variants — the field holds all variant values together, set `contract.shape = list`. Examples: mouse `coating ["matte", "glossy"]` because Black ships matte and White ships glossy; apparel `material ["cotton", "poly_blend"]` (Solid is cotton, Heather is poly); watch `case_material ["steel", "gold"]`; phone `included_charger ["10w", "20w"]` per region. Leave OFF when neither applies: spec invariants where variant data adds nothing — components or measurements that don\'t change with colorway/edition. Examples: mouse `sensor_model` (same PCB across colors), watch `movement_caliber` (same caliber across colorways), phone `processor` (same chip across colors), car `engine_displacement` (same engine across paint), apparel `country_of_origin` (same factory across colorways). Reserved keys (color, edition, SKU, release_date, price, discontinued) are owned by their own finders and never authored here. When ON, paste a one-sentence mechanism note into reasoning_note so the runtime model knows how to use the variant table — as classification context (A) or as per-list-member attribution (B).'],
-          ['9', 'PIF Priority Images', pifPriorityImagesCurrent, 'Decision test: can inspecting the default/base product photo (a) provide the answer directly, (b) corroborate text-source claims, or (c) disprove documentation when the photo contradicts what a source says? If any of those — ON. If none — OFF. Best for externally visible features a buyer could read off the canonical product shot — shapes, layouts, counts, port positions, body styles. Examples: mouse `shape` (ergonomic vs ambidextrous), `button_layout`, `side_button_count`; phone `port_count`, `camera_count`, `notch_style`; watch `case_shape`, `crown_position`, `lug_design`; apparel `collar_style`, `pocket_count`, `closure_type`; car `body_style`, `door_count`, `headlight_design`; TV `stand_type`, `port_layout`. OFF for spec/internal values no camera can reveal — measurements, ratings, components, internal identifiers. Examples: mouse `dpi`, `weight_g`, `polling_rate`, `sensor_model`; phone `processor`, `ram_gb`, `battery_capacity_mah`; watch `water_resistance_rating`, `movement_caliber`; apparel `fabric_weight_gsm`, `country_of_origin`; car `horsepower`, `fuel_economy_mpg`; TV `panel_type`, `refresh_rate_hz`. Two important rules: (1) "Priority" refers to PIF\'s ranked default-view photo set, not field importance — never enable just because a field feels important. (2) Only the default/base set is attached; edition-specific images (Fortnite Edition box art, regional packaging variants) are NOT routed by this toggle — if the field needs edition-specific visual interpretation, write that handling into reasoning_note. Missing or unparseable priority images are not negative evidence — absence does not flip the answer to false/no/empty; it just means the model falls back to text evidence alone.'],
+          ['8', 'Color & Edition Context', colorEditionContextCurrent, 'Decision test: does the color × edition × SKU × release_date table help the model decide this field\'s value? If yes, ON. If no, OFF. Two patterns where ON is correct: (A) scalar with variant table as classification context — the field has one value for the whole product, but variant names help the model classify it. Examples: apparel `collection_type` (Limited / Anniversary / Standard) inferred from variant labels; watch `edition_type`; phone `regional_variant`; mouse `design` classified by collaboration or limited-edition labels. Contract stays scalar. (B) list of values across variants — the field holds all variant values together, set `contract.shape = list`. Examples: apparel `material ["cotton", "poly_blend"]`; watch `case_material ["steel", "gold"]`; phone `included_charger ["10w", "20w"]` per region; mouse `coating ["matte", "glossy"]` when finishes differ by variant. Leave OFF when neither applies: spec invariants where variant data adds nothing — components or measurements that don\'t change with colorway/edition. Examples: phone `processor`; watch `movement_caliber`; car `engine_displacement`; apparel `country_of_origin`; mouse `sensor_model`. Reserved keys (color, edition, SKU, release_date, price, discontinued) are owned by their own finders and never authored here. When ON, paste a one-sentence mechanism note into reasoning_note so the runtime model knows how to use the variant table — as classification context (A) or as per-list-member attribution (B).'],
+          ['9', 'PIF Priority Images', pifPriorityImagesCurrent, 'Decision test: can inspecting the default/base product photo (a) provide the answer directly, (b) corroborate text-source claims, or (c) disprove documentation when the photo contradicts what a source says? If any of those — ON. If none — OFF. Best for externally visible features a buyer could read off the canonical product shot — shapes, layouts, counts, port positions, body styles. Examples: phone `camera_count`, `notch_style`, `port_count`; watch `case_shape`, `crown_position`, `lug_design`; apparel `collar_style`, `pocket_count`, `closure_type`; car `body_style`, `door_count`, `headlight_design`; TV `stand_type`, `port_layout`; mouse `button_layout`, `side_button_count`, `shape`. OFF for spec/internal values no camera can reveal — measurements, ratings, components, internal identifiers. Examples: phone `processor`, `ram_gb`, `battery_capacity_mah`; watch `water_resistance_rating`, `movement_caliber`; apparel `fabric_weight_gsm`, `country_of_origin`; car `horsepower`, `fuel_economy_mpg`; TV `panel_type`, `refresh_rate_hz`; mouse `dpi`, `weight_g`, `polling_rate`, `sensor_model`. Two important rules: (1) "Priority" refers to PIF\'s ranked default-view photo set, not field importance — never enable just because a field feels important. (2) Only the default/base set is attached; edition-specific images are NOT routed by this toggle — if the field needs edition-specific visual interpretation, write that handling into reasoning_note. Missing or unparseable priority images are not negative evidence — absence does not flip the answer to `no`, `n/a`, or empty; it just means the model falls back to text evidence alone.'],
           ['10', 'Guidance last', displayValue(record.ai_assist?.reasoning_note), 'Now write paste-ready guidance that fills only the remaining extraction judgment gap, or write "(empty - keep)" when no guidance is needed.'],
         ],
       },
@@ -656,8 +588,7 @@ function buildAuthoringChecklistSection(record, context = {}) {
   };
 }
 
-function buildConsumerSurfaceSection(record, context = {}) {
-  const aliasOutOfScope = isAliasOutOfScope(record, context);
+function buildConsumerSurfaceSection(record) {
   return {
     id: 'consumer-surface',
     title: 'Consumer-surface impact',
@@ -671,16 +602,12 @@ function buildConsumerSurfaceSection(record, context = {}) {
         kind: 'table',
         headers: ['Surface', 'Audit question'],
         rows: [
-          ['Filter', aliasOutOfScope
-            ? 'Should this be a public filter? If enum-backed, are the canonical values public chips, and are source phrases kept out of the chip list?'
-            : 'Should this be a public filter? If enum-backed, are the canonical values public chips, and are aliases/source phrases kept out of the chip list?'],
+          ['Filter', 'Should this be a public filter? If enum-backed, are the canonical values public chips, and are aliases/source phrases kept out of the chip list?'],
           ['List / hub table', 'Should the value appear in product cards or listing tables? If yes, confirm label, unit, sorting, truncation, and list-vs-scalar display.'],
           ['Snapshot / spec row', 'Should the value appear as a product detail spec? If yes, confirm grouping, display label, units, and display-only/derived status.'],
           ['Comparison', 'Should users compare this value across products? If yes, confirm numeric/date/list semantics and whether higher/lower is better.'],
           ['Metric / card', 'Should the value feed a score, badge, gauge, or summary card? If yes, confirm the source field remains machine-clean and the card derives presentation.'],
-          ['Search / SEO', aliasOutOfScope
-            ? 'Should the value become searchable or appear in page text? If yes, confirm canonical terms so source wording does not pollute stored values.'
-            : 'Should the value become searchable or appear in page text? If yes, confirm canonical terms and aliases so source wording does not pollute stored values.'],
+          ['Search / SEO', 'Should the value become searchable or appear in page text? If yes, confirm canonical terms and aliases so source wording does not pollute stored values.'],
           ['None', 'If no consumer surface should use this key, say so explicitly; the key can still exist for publisher gates, prompt context, or future derivation.'],
         ],
       },
@@ -688,18 +615,13 @@ function buildConsumerSurfaceSection(record, context = {}) {
   };
 }
 
-function buildContractSchemaSection(record, schemaCatalog, context = {}) {
+function buildContractSchemaSection(record, schemaCatalog) {
   const rule = record.rawRule || {};
   const headers = ['Parameter', 'Current value', 'Possible values', 'Why it matters'];
-  const aliasOutOfScope = isAliasOutOfScope(record, context);
   // WHY: dependency-toggle entries (variant_dependent, product_image_dependent)
   // are category-summary concerns, not per-key field knobs — exclude them so the
   // per-key brief stays focused on the field's own contract.
-  const filteredCatalog = schemaCatalog.filter((entry) => {
-    if (entry.studioWidget === 'dependency_toggle') return false;
-    if (aliasOutOfScope && entry.path === 'aliases') return false;
-    return true;
-  });
+  const filteredCatalog = schemaCatalog.filter((entry) => entry.studioWidget !== 'dependency_toggle');
   const rows = filteredCatalog.map((entry) => {
     const applies = appliesTo(entry, rule);
     const current = applies ? describeCurrent(entry, rule) : '(n/a)';
@@ -778,12 +700,12 @@ function buildExampleBankSection(record, category) {
     blocks: [
       {
         kind: 'paragraph',
-        text: `For \`${record.fieldKey}\`, build a 5-10 product example bank before finalizing the rule. Use this category's benchmark data when available, then published candidates/product JSON, seed products, current component-source context, and source research. For brand-new categories, use representative products from the market to create the first calibration set. Do not paste benchmark answers into the live prompt; use them to author the contract and guidance.`,
+        text: `For \`${record.fieldKey}\`, build a 5-10 product example bank before finalizing the rule. Use published candidates/product JSON, seed products, current component-source context, and source research. For brand-new categories, use representative products from the market to create the first calibration set. Use examples to author a reusable contract and guidance.`,
       },
       {
         kind: 'note',
         tone: 'info',
-        text: `Live validation rule for this key: use model knowledge to form hypotheses, but do not finalize this key's enum values, example bank, technical guidance, component claims, search hints, evidence expectations, or difficulty rating from memory alone. Validate this key against live public sources before proposing changes: check 3-5 representative products for ordinary cases, add 1-2 edge or rare products when the key has special values or filter-risk values, prefer manufacturer pages, official docs, datasheets, standards bodies, and instrumented review labs, and use retailer/spec database/community sources only as fallback or corroboration. Cite the sources checked under "References spot-checked". Use benchmark data only to understand the target answer shape and quality bar; do not copy benchmark answers into the live prompt or treat benchmark data as a substitute for public evidence.`,
+        text: `Live validation rule for this key: use model knowledge to form hypotheses, but do not finalize this key's enum values, example bank, technical guidance, component claims, search hints, evidence expectations, or difficulty rating from memory alone. Validate this key against live public sources before proposing changes: check 3-5 representative products for ordinary cases, add 1-2 edge or rare products when the key has special values or filter-risk values, prefer manufacturer pages, official docs, datasheets, standards bodies, and instrumented review labs, and use retailer/spec database/community sources only as fallback or corroboration. Cite the sources checked under "References spot-checked".`,
       },
       {
         kind: 'table',
@@ -794,7 +716,6 @@ function buildExampleBankSection(record, category) {
           ['Unknown / absent evidence', '1', 'A product where honest `unk` is the correct outcome because sources do not prove the field.'],
           ['Conflict / ambiguity', '1', 'Two credible sources disagree, labels are reused, or the field is often confused with a sibling key.'],
           ['Filter-risk', '1-2', 'Values that would create new enum chips, range extremes, pattern outliers, or consumer-facing clutter.'],
-          ['Benchmark carry-forward', 'as available', 'Use hand-entered benchmark cells as calibration for the rule, then generalize the same recipe to every category.'],
         ],
       },
     ],
@@ -810,13 +731,13 @@ function componentSourceRowsMayIncludeLine(record, facet) {
 
 function buildMappingStudioPatchGuidance(record, { identity, facet, aliasOutOfScope }) {
   const lines = [
-    '- Component Source Mapping belongs under patch.component_sources. Use it for component type and property variance only. Component entity names, makers, and source URLs are outside this Field Studio patch.',
+    '- Component Source Mapping belongs under patch.component_sources. Use it for component type and property variance only. Component entity names, makers, aliases, and source URLs are maintained through Component Review, not Field Studio patches.',
   ];
   if (aliasOutOfScope) {
-    lines.push(`- Do not author \`field_overrides.${record.fieldKey}.aliases\`; leave aliases blank/absent for component identity and auto facet keys.`);
+    lines.push('- Do not author field-level aliases for component identity or auto identity facet keys: leave `field_overrides.<component>.aliases`, `field_overrides.<component>_brand.aliases`, and `field_overrides.<component>_link.aliases` blank/absent. Normal non-component fields still use field-level aliases.');
   }
   if (facet) {
-    lines.push(`- \`${record.fieldKey}\` is an auto-generated identity facet of \`${facet.componentType}\`; do not add it to \`component_sources.${facet.componentType}.roles.properties[]\` and do not author aliases for it.`);
+    lines.push(`- \`${record.fieldKey}\` is an auto-generated identity facet of \`${facet.componentType}\`; do not add it to \`component_sources.${facet.componentType}.roles.properties[]\`.`);
   }
   lines.push(
     `- For every key, decide from scratch whether it is a component identity, component attribute, or standalone. Do not wait for an existing component DB property before proposing a component attribute. If this field should inherit from a resolved component, patch component_sources by adding "${record.fieldKey}" to roles.properties[] for the chosen component type. If no, leave component_sources unchanged and explain why it stays standalone.`,
@@ -838,22 +759,17 @@ function buildMappingStudioPatchGuidance(record, { identity, facet, aliasOutOfSc
   }
   lines.push(
     '- UI control mapping: Variance = Authoritative -> "variance_policy": "authoritative"; Variance = Upper Bound -> "variance_policy": "upper_bound"; Variance = Lower Bound -> "variance_policy": "lower_bound"; Variance = Range -> "variance_policy": "range"; Allow Product Override -> "variance_policy": "override_allowed"; Tolerance -> "tolerance": 5; Component only / scoped -> "component_only": true.',
-    `- Enum Data Lists belong under patch.data_lists. Use only field and manual_values; return the final ordered canonical values when replacing a list; keep source phrases out of public chips${aliasOutOfScope ? '' : ' and keep aliases out of public chips'}. List-level priority, normalize settings, and AI guidance are retired; key priority and extraction guidance stay under patch.field_overrides.${record.fieldKey}.`,
+    `- Enum Data Lists belong under patch.data_lists. Use only field and manual_values; return the final ordered canonical values when replacing a list; keep aliases/source phrases out of public chips. List-level priority, normalize settings, and AI guidance are retired; key priority and extraction guidance stay under patch.field_overrides.${record.fieldKey}.`,
   );
   return lines.join('\n');
 }
 
-function keyNavigatorPrimaryLine(record, aliasOutOfScope) {
-  if (aliasOutOfScope) {
-    return `- Field contract, priority, evidence, enum policy, constraints, search_hints, and ai_assist belong under patch.field_overrides.${record.fieldKey}.`;
-  }
+function keyNavigatorPrimaryLine(record) {
   return `- Field contract, priority, evidence, enum policy, constraints, field-name aliases for standalone/product fields, search_hints, and ai_assist belong under patch.field_overrides.${record.fieldKey}.`;
 }
 
-function buildComponentDataGapRule(aliasOutOfScope) {
-  return aliasOutOfScope
-    ? '- This audit is for Field Studio setup only. If live research exposes missing/stale component entities, rows, properties, or source URLs, mention them after the JSON as a separate component-data gap. Do not put those row edits into the Field Studio patch.'
-    : '- This audit is for Field Studio setup only. If live research exposes missing/stale component entities, rows, properties, or source URLs, mention them after the JSON as a separate component-data gap. Do not put those row edits into the Field Studio patch.';
+function buildComponentDataGapRule() {
+  return '- This audit is for Field Studio setup only. If live research exposes missing/stale component entities, rows, aliases, properties, or source URLs, mention them after the JSON as a separate component-data gap. Do not put those row edits into the Field Studio patch.';
 }
 
 function buildPerKeyLlmAuditPromptSection(record, category, navigatorOrdinal = '', componentSources = [], allKeyRecords = []) {
@@ -872,17 +788,17 @@ function buildPerKeyLlmAuditPromptSection(record, category, navigatorOrdinal = '
   const exampleJson = JSON.stringify(buildPatchExample(record, category, ordinalNumber, componentSources), null, 2);
   const componentRowsLine = componentSourceRowsMayIncludeLine(record, facet);
   const mappingStudioPatchGuidance = buildMappingStudioPatchGuidance(record, { identity, facet, aliasOutOfScope });
-  const keyNavigatorPatchGuidance = keyNavigatorPrimaryLine(record, aliasOutOfScope);
-  const componentDataGapRule = buildComponentDataGapRule(aliasOutOfScope);
+  const keyNavigatorPatchGuidance = keyNavigatorPrimaryLine(record);
+  const componentDataGapRule = buildComponentDataGapRule();
 
   return {
     id: 'llm-audit-prompt',
-    title: 'Copy/paste LLM audit prompt',
+    title: 'Return Contract',
     level: 2,
     blocks: [
       {
         kind: 'paragraph',
-        text: `Paste this per-key doc into an LLM, then paste the prompt below. The first deliverable must be a strict JSON patch first, named ${fileName}, so the returned file can be imported directly into Field Studio settings.`,
+        text: `Return one strict JSON patch file first: ${fileName}. The returned file must be importable directly into Field Studio settings.`,
       },
       {
         kind: 'codeBlock',
@@ -891,7 +807,7 @@ function buildPerKeyLlmAuditPromptSection(record, category, navigatorOrdinal = '
 
 Use the per-key doc above as the source of truth. Your job is not to extract a product value. Your job is to improve this key's Field Studio setup: Mapping Studio settings and Key Navigator settings only. Audit the category key as if the human is configuring the key in Field Studio. Do not ask for concrete component database/entity row edits.
 
-Return a downloadable JSON file first named ${fileName}. If your interface supports file artifacts, create that file, verify it exists, and link it before any prose. If your interface cannot attach files, put the exact file contents in a fenced json block before any commentary. Do not return markdown, bullets, comments, trailing commas, or prose inside the JSON.
+Return one strict JSON patch file first named ${fileName}. If your interface supports file artifacts, create that file, verify it exists, and link it before any prose. If your interface cannot attach files, put the exact file contents in a fenced json block before any commentary. Do not return markdown, bullets, comments, trailing commas, or prose inside the JSON.
 
 The JSON must be strict and importable:
 - schema_version must be "field-studio-patch.v1".
@@ -936,8 +852,6 @@ Live validation:
 - Use model knowledge to form hypotheses, then validate this key with live public sources before finalizing enum values, examples, technical claims, component-source settings, search hints, evidence expectations, or difficulty.
 - Check 3-7 manufacturer, official documentation, standards, datasheet, credible lab, or authorized distributor sources.
 - Check 5-10 representative products/classes when the key has meaningful variants or filter-risk values.
-- Use benchmark data only to understand target shape and quality. Do not copy benchmark answers into the live prompt or treat benchmarks as public evidence.
-
 After the JSON file, include a short prose audit with: verdict, key risks, References spot-checked, example bank, and open questions.
 
 Rules:
@@ -1003,7 +917,7 @@ function buildComponentSourceMappingBlocks(record, componentSources) {
     { kind: 'subheading', level: 4, text: `Current component source mapping: ${c.type}` },
     {
       kind: 'paragraph',
-      text: 'This is the Mapping Studio row that declares the component type and property mappings. Component entity names, makers, aliases, and URLs are outside this Field Studio patch.',
+      text: 'This is the Mapping Studio row that declares the component type and property mappings. Component entity names, makers, aliases, and URLs are maintained in Component Review.',
     },
     {
       kind: 'table',
@@ -1068,7 +982,7 @@ function buildComponentSection(record, componentInventory, componentSources = []
     blocks.push({
       kind: 'note',
       tone: 'info',
-      text: `Existing component DB hint: \`${record.fieldKey}\` appears as a property in \`component_db/${componentGap.type}.json\`, but it is not currently mapped in \`component_sources.${componentGap.type}.roles.properties[]\`. Treat that as evidence to consider, not proof that this key must be component-backed. Concrete component entity values stay outside this Field Studio patch.`,
+      text: `Existing component DB hint: \`${record.fieldKey}\` appears as a property in \`component_db/${componentGap.type}.json\`, but it is not currently mapped in \`component_sources.${componentGap.type}.roles.properties[]\`. Treat that as evidence to consider, not proof that this key must be component-backed. Concrete component entity values stay in Component Review.`,
     });
   } else if (!c) {
     blocks.push({ kind: 'paragraph', text: 'Standalone \u2014 no component relation. This key is not an identity for any `component_db/<type>.json` and does not appear as a subfield on any component entity.' });
@@ -1222,25 +1136,8 @@ function buildSiblingsSection(record, siblingsInGroup) {
   };
 }
 
-function redactAliasPreviewText(text, aliasOutOfScope) {
-  const value = String(text || '');
-  if (!aliasOutOfScope) return value;
-  return value
-    .split(/\r?\n/)
-    .filter((line) => !/\balias/i.test(line))
-    .join('\n')
-    .trim();
-}
-
-function slotDescription(desc, aliasOutOfScope) {
-  if (!aliasOutOfScope || desc.slot !== 'PRIMARY_FIELD_CONTRACT') return desc.note;
-  return 'Type, shape, unit, rounding, list rules, enum values + policy, variance policy. Everything the LLM needs to emit a well-typed value.';
-}
-
-function buildFullPromptSection(preview, context = {}, record = null) {
+function buildFullPromptSection(preview) {
   if (!preview || preview.reserved || !preview.systemPrompt) return null;
-  const aliasOutOfScope = record ? isAliasOutOfScope(record, context) : false;
-  const promptText = redactAliasPreviewText(preview.systemPrompt, aliasOutOfScope);
   return {
     id: 'full-prompt',
     title: 'Full compiled preview prompt',
@@ -1250,14 +1147,13 @@ function buildFullPromptSection(preview, context = {}, record = null) {
         kind: 'paragraph',
         text: 'The exact text keyFinder would send for this key. Product identity is a placeholder (`<BRAND>` / `<MODEL>`) so the shape is visible without a real product. Runtime slots like `PRODUCT_COMPONENTS`, `PRODUCT_SCOPED_FACTS`, and `VARIANT_INVENTORY` render empty when the placeholder has no resolved context.',
       },
-      { kind: 'codeBlock', lang: 'text', text: promptText },
+      { kind: 'codeBlock', lang: 'text', text: preview.systemPrompt },
     ],
   };
 }
 
-function buildPerSlotSection(preview, context = {}, record = null) {
+function buildPerSlotSection(preview) {
   if (!preview || preview.reserved || !preview.slotRendering) return null;
-  const aliasOutOfScope = record ? isAliasOutOfScope(record, context) : false;
   const slot = preview.slotRendering;
   const blocks = [
     {
@@ -1266,9 +1162,9 @@ function buildPerSlotSection(preview, context = {}, record = null) {
     },
   ];
   for (const desc of SLOT_DESCRIPTIONS) {
-    const text = redactAliasPreviewText(slot[desc.previewKey], aliasOutOfScope);
+    const text = String(slot[desc.previewKey] || '').trim();
     blocks.push({ kind: 'subheading', level: 4, text: `\`{{${desc.slot}}}\`` });
-    blocks.push({ kind: 'paragraph', text: slotDescription(desc, aliasOutOfScope) });
+    blocks.push({ kind: 'paragraph', text: desc.note });
     if (text) {
       blocks.push({ kind: 'codeBlock', lang: 'text', text });
     } else {
@@ -1322,27 +1218,28 @@ export function buildPerKeyDocStructure(keyRecord, {
   componentSources = [],
   preview,
   navigatorOrdinal = '',
-  benchmark = null,
 }) {
   const context = { componentSources, allKeyRecords };
+  // WHY: category-key-map is wide neighbor context (80+ rows). It sits with the other
+  // neighbor-context sections (cross-field, siblings) so it doesn't interrupt the
+  // calibrate→author flow between authoring-checklist and contract-schema.
   const sections = [
     buildHeaderSection(keyRecord, category, generatedAt, preview),
     buildPurposeSection(keyRecord, preview, category),
-    buildSuccessBarSection(keyRecord, context),
-    buildBenchmarkDiffSection(keyRecord, benchmark),
+    buildSuccessBarSection(keyRecord),
     buildSearchRoutingSection(keyRecord, preview, category),
-    buildAuthoringChecklistSection(keyRecord, context),
-    buildCategoryKeyMapSection(keyRecord, allKeyRecords, groups),
-    buildContractSchemaSection(keyRecord, schemaCatalog, context),
-    buildConsumerSurfaceSection(keyRecord, context),
+    buildAuthoringChecklistSection(keyRecord),
+    buildContractSchemaSection(keyRecord, schemaCatalog),
+    buildConsumerSurfaceSection(keyRecord),
     buildEnumSection(keyRecord),
     buildComponentSection(keyRecord, componentInventory, componentSources),
     buildCrossFieldSection(keyRecord, allKeyRecords),
     buildSiblingsSection(keyRecord, siblingsInGroup),
+    buildCategoryKeyMapSection(keyRecord, allKeyRecords, groups),
     buildExampleBankSection(keyRecord, category),
     buildPerKeyLlmAuditPromptSection(keyRecord, category, navigatorOrdinal, componentSources, allKeyRecords),
-    buildFullPromptSection(preview, context, keyRecord),
-    buildPerSlotSection(preview, context, keyRecord),
+    buildFullPromptSection(preview),
+    buildPerSlotSection(preview),
     buildReservedOwnerSection(preview),
   ].filter(Boolean);
 

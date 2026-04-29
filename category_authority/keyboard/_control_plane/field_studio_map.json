@@ -9,7 +9,6 @@
         "keyboard"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -37,7 +36,6 @@
         "Topre 45g"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -58,7 +56,6 @@
         "Hybrid"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -81,7 +78,6 @@
         "Ducky"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -99,7 +95,6 @@
         "Silent Tactile"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -115,7 +110,6 @@
         "Analog"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -133,7 +127,6 @@
         "3-pin and 5-pin"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -152,7 +145,6 @@
         "Proprietary"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -172,7 +164,6 @@
         "Proprietary optical only"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -194,7 +185,6 @@
         "40%"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -214,7 +204,6 @@
         "Numpad"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -230,7 +219,6 @@
         "JIS"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -246,7 +234,6 @@
         "Detached"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -261,7 +248,6 @@
         "Yes"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -276,7 +262,6 @@
         "Yes"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -293,7 +278,6 @@
         "PC"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -314,7 +298,6 @@
         "Low Profile"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -333,7 +316,6 @@
         "Side-Printed"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -350,7 +332,6 @@
         "Partial"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -365,7 +346,6 @@
         "Yes"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -382,7 +362,6 @@
         "Hybrid"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -400,7 +379,6 @@
         "Attached USB-A"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -418,7 +396,6 @@
         "Bluetooth 5.3"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -437,7 +414,6 @@
         "5.4"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -454,7 +430,6 @@
         "4 devices"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -473,7 +448,6 @@
         "Attached USB-A"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -488,7 +462,6 @@
         "Yes"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -505,7 +478,6 @@
         "USB-C passthrough"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -521,7 +493,6 @@
         "NKRO"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -537,7 +508,6 @@
         "Full anti-ghosting"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -552,7 +522,6 @@
         "Yes"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -568,7 +537,6 @@
         "Controller Input"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -586,7 +554,6 @@
         "Snap Tap"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -603,7 +570,6 @@
         "0.4 mm"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -620,7 +586,6 @@
         "Per-key RGB"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -639,7 +604,6 @@
         "Per-key"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -654,7 +618,6 @@
         "Yes"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -675,7 +638,6 @@
         "QMK VIA"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -692,7 +654,6 @@
         "All keys programmable"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -710,7 +671,6 @@
         "Knob and keys"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -727,7 +687,6 @@
         "5 profiles"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -743,7 +702,6 @@
         "Dual knobs"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -760,7 +718,6 @@
         "QMK + VIA"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -777,7 +734,6 @@
         "Windows / Mac / Linux"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -796,7 +752,6 @@
         "Wood"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -815,7 +770,6 @@
         "POM"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -834,7 +788,6 @@
         "Sandwich Mount"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -850,7 +803,6 @@
         "Double Gasket"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -868,7 +820,6 @@
         "Case + Plate + PCB Foam"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -886,7 +837,6 @@
         "Costar"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -903,7 +853,6 @@
         "Plate-mount TPU"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -919,7 +868,6 @@
         "Factory lubed"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -934,7 +882,6 @@
         "Yes"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -950,7 +897,6 @@
         "3-stage"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -966,7 +912,6 @@
         "Loud"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -984,7 +929,6 @@
         "Bright"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1001,7 +945,6 @@
         "Heavy"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1018,7 +961,6 @@
         "AA batteries"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1033,7 +975,6 @@
         "Yes"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1054,7 +995,6 @@
         "Two-tone"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1075,7 +1015,6 @@
         "Dust cover"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1091,7 +1030,6 @@
         "Required for advanced features"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1110,7 +1048,6 @@
         "PlayStation"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1200,7 +1137,6 @@
         "yellow"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",

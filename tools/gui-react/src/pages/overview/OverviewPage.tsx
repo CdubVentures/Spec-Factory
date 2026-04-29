@@ -36,6 +36,7 @@ import {
   writeOverviewSortSessionState,
 } from './overviewSort.ts';
 import { usePersistedToggle } from '../../stores/collapseStore.ts';
+import { usePersistedJson } from '../../stores/tabStore.ts';
 import {
   useOverviewSelectionStore,
   useIsSelected,
@@ -140,6 +141,11 @@ const EMPTY_RUNNING_BY_PRODUCT: ReadonlyMap<string, readonly string[]> = new Map
 const INITIAL_FILTER_STATE: OverviewFilterState = Object.freeze({
   search: '',
 });
+
+function isOverviewFilterState(parsed: unknown): parsed is OverviewFilterState {
+  return Boolean(parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+    && typeof (parsed as { search?: unknown }).search === 'string');
+}
 
 interface OverviewSortViewState {
   category: string;
@@ -468,7 +474,11 @@ export function OverviewPage() {
     [colorRegistry],
   );
 
-  const [filterState, setFilterState] = useState<OverviewFilterState>(INITIAL_FILTER_STATE);
+  const [filterState, setFilterState] = usePersistedJson<OverviewFilterState>(
+    `overview:filter:${category}`,
+    INITIAL_FILTER_STATE,
+    isOverviewFilterState,
+  );
   // WHY: Single shared toggle drives both detail columns (Links + Last Run)
   // so they slide open/closed together — clicking either chevron flips both.
   const [detailColsOpen, toggleDetailCols] = usePersistedToggle('overview:detail-cols:open', false);

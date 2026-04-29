@@ -1,7 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { buildCompileValidation } from '../compileValidation.js';
+import { buildCompileValidation, buildParseTemplateCatalog } from '../compileValidation.js';
 
 function baseRule(key, enumBlock = {}) {
   return {
@@ -34,6 +34,18 @@ function openEnum(source) {
 }
 
 describe('buildCompileValidation enum policy/source contract', () => {
+  it('documents boolean parse templates as yes/no/n/a string tokens', () => {
+    const catalog = buildParseTemplateCatalog();
+
+    assert.match(catalog.boolean_yes_no_unk.description, /yes\/no\/n\/a/);
+    assert.deepEqual(catalog.boolean_yes_no_unk.tests, [
+      { raw: 'Yes', expected: 'yes' },
+      { raw: 'no', expected: 'no' },
+      { raw: 'n/a', expected: 'n/a' },
+      { raw: 'unk', expected: null },
+    ]);
+  });
+
   it('rejects open enum policy with a known-list source', () => {
     const { errors } = buildCompileValidation({
       fields: {

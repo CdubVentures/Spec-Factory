@@ -60,11 +60,14 @@ function convertUnit(value, fromUnit, toUnit) {
 
 function parseBoolean(value) {
   const token = String(value ?? '').trim().toLowerCase();
+  if (['n/a', 'na', 'not applicable'].includes(token)) {
+    return 'n/a';
+  }
   if (['true', '1', 'yes', 'y', 'on'].includes(token)) {
-    return true;
+    return 'yes';
   }
   if (['false', '0', 'no', 'n', 'off'].includes(token)) {
-    return false;
+    return 'no';
   }
   return null;
 }

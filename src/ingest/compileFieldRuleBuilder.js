@@ -144,7 +144,7 @@ export function sourceRefToString(source = null) {
 
 const KNOWN_ENUM_POLICIES = new Set(['closed', 'closed_with_curation', 'open_prefer_known']);
 
-export const BOOLEAN_ENUM_VALUES = Object.freeze(['yes', 'no']);
+export const BOOLEAN_ENUM_VALUES = Object.freeze(['yes', 'no', 'n/a']);
 
 export function createBooleanEnumSource() {
   return {
@@ -574,7 +574,7 @@ export function buildStudioFieldRule({
   const difficulty = normalizeToken(rule.difficulty || priorityBlock.difficulty || 'medium');
   const enumBlock = isObject(rule.enum) ? rule.enum : {};
   // WHY: contract.type/data_type are the authority. Boolean contracts are always
-  // closed yes/no, even if a stale map or override still carries open enum data.
+  // closed yes/no/n/a, even if a stale map or override still carries open enum data.
   const typeCandidates = [
     rule.contract?.type,
     rule.type,

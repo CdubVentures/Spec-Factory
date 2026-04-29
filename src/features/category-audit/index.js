@@ -14,6 +14,8 @@ export { generatePromptAuditReports } from './promptAuditReportBuilder.js';
 export { generateKeysOrderAuditReport } from './keysOrderReportBuilder.js';
 export { extractReportData } from './reportData.js';
 export { extractPromptAuditData } from './promptAuditData.js';
+export { buildPerKeyDocStructure } from './perKeyDocStructure.js';
+export { composePerKeyPromptPreview, detectReservedKey } from './perKeyPromptPreview.js';
 export {
   FIELD_STUDIO_PATCH_SCHEMA_VERSION,
   applyFieldStudioPatchDocument,

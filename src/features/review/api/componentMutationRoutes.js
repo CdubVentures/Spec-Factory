@@ -4,7 +4,6 @@ import path from 'node:path';
 import {
   createRouteResponder,
   ensureSeededSpecDb,
-  firstFiniteNumber,
   prepareMutationContextRequest,
   respondIfError,
   routeMatches,
@@ -14,6 +13,8 @@ import {
 import { clearPublishedField } from '../../publisher/publish/clearPublishedField.js';
 import { wipePublisherStateForUnpub } from '../../publisher/publish/wipePublisherStateForUnpub.js';
 import { defaultProductRoot } from '../../../core/config/runtimeArtifactRoots.js';
+import { renamePublishedComponentIdentityFields } from '../services/componentPublishedFields.js';
+import { mirrorComponentIdentityOverride } from '../services/componentOverrideMirror.js';
 
 import {
   validateComponentPropertyCandidate,
@@ -333,6 +334,7 @@ async function handleComponentOverrideEndpoint({
     normalizeLower,
     buildComponentIdentifier,
     cascadeComponentChange,
+    config,
     outputRoot,
     storage,
     specDbCache,
@@ -484,7 +486,12 @@ async function handleComponentOverrideEndpoint({
           if (respondMissingComponentIdentityId({ respond, componentIdentityId })) {
             return true;
           }
-          const { newComponentIdentifier } = runComponentIdentityUpdateTx({
+          const linkedProductsBeforeRename = runtimeSpecDb.getProductsForComponent?.(
+            componentType,
+            name,
+            componentMaker,
+          ) || [];
+          runComponentIdentityUpdateTx({
             runtimeSpecDb,
             buildComponentIdentifier,
             componentType,
@@ -494,6 +501,24 @@ async function handleComponentOverrideEndpoint({
             nextMaker: mutationPlan.nextMaker,
             componentIdentityId,
             selectedSource,
+          });
+          renamePublishedComponentIdentityFields({
+            productRoot: storage?.productRoot || defaultProductRoot(),
+            linkedProducts: linkedProductsBeforeRename,
+            oldName: name,
+            oldMaker: componentMaker,
+            nextName: mutationPlan.nextName,
+            nextMaker: mutationPlan.nextMaker,
+          });
+          await mirrorComponentIdentityOverride({
+            config,
+            category,
+            componentType,
+            oldName: name,
+            oldMaker: componentMaker,
+            nextName: mutationPlan.nextName,
+            nextMaker: mutationPlan.nextMaker,
+            source: selectedSource,
           });
           await cascadeComponentMutation({
             ...cascadeBase,
@@ -625,13 +650,6 @@ async function handleComponentKeyReviewConfirmEndpoint({
           message: 'No resolved value to confirm for this component property',
         });
       }
-      const resolvedCandidateId = requestedCandidateId;
-      const resolvedConfidence = firstFiniteNumber([
-        existingState?.confidence_score,
-        propertyRow?.confidence,
-        body?.candidateConfidence,
-      ], 1.0);
-      const nowIso = new Date().toISOString();
       const componentSlotId = componentCtx?.componentValueId ?? propertyRow?.id ?? null;
       const pendingCandidateIds = [];
       const confirmStatusOverride = pendingCandidateIds.length > 0 ? 'pending' : 'confirmed';

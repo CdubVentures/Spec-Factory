@@ -3,19 +3,19 @@
   "artifact_count": 10,
   "artifacts": [
     {
-      "bytes": 8368,
+      "bytes": 8485,
       "path": "component_db/encoders.json",
-      "sha256": "17441ea71394500d375d13e8275a0ac90e210155ebe27ce3761df06f0465ef15"
+      "sha256": "d296d1819c92bf8a421c19e1798d546bca2e45ac8335482c4d1766945dd8934d"
     },
     {
-      "bytes": 56282,
+      "bytes": 55839,
       "path": "component_db/sensors.json",
-      "sha256": "709543d8be9386c792de6267f098193da188aaef349e8a89d00ae855f18e15f4"
+      "sha256": "267666739a4d802a32d6a0897de59e80fad03989f3ceec242e2cdd1d3fa6c9dc"
     },
     {
-      "bytes": 34798,
+      "bytes": 34963,
       "path": "component_db/switches.json",
-      "sha256": "55cf59bf13c4e1db3434145986e7e589a4046efee8688e57eb0699b00c7665fa"
+      "sha256": "9e422053e06c80806e14cfdd34815bc401931b166d4339be242898fb200289f4"
     },
     {
       "bytes": 9017,
@@ -28,9 +28,9 @@
       "sha256": "ef598485de6295815e18841e240a1e1f075c45cd61006c5a32e4619cf50a0c38"
     },
     {
-      "bytes": 375408,
+      "bytes": 375416,
       "path": "field_rules.json",
-      "sha256": "f8b4e765056a01ab652237ad687167a2d8228475abd6ee6db87c4eeef2bb7222"
+      "sha256": "6e89291f745b40ac5c9ba7cfe7bfc6222ef4993bf010f0083334baf40f6103a3"
     },
     {
       "bytes": 201,
@@ -38,9 +38,9 @@
       "sha256": "f586186d31cee70ccb52f334fc38e4b83e4768abed23aab8b1e711cd73aeecf5"
     },
     {
-      "bytes": 6968,
+      "bytes": 5254,
       "path": "known_values.json",
-      "sha256": "ce2e23de434fca66e1c124aa119191d264cd313c78743dea78a9c4f4e66be9a5"
+      "sha256": "52f1ae61d369d66d61f8c578c876442ed268f77abbd97e0dd24e38e0a831b35f"
     },
     {
       "bytes": 41362,
@@ -48,13 +48,13 @@
       "sha256": "6c3659b905321e3e75811dddae7fb151d0d67a4d75f1f28e830c6b7466763b0d"
     },
     {
-      "bytes": 103392,
+      "bytes": 103389,
       "path": "ui_field_catalog.json",
-      "sha256": "f84f85aaa014923e8574bf8e5a2ad9f034d8c6fa1fbd8331728b67e18fcaaf97"
+      "sha256": "d969896f2967a8ddcd4a848466a5725d9273b1f5b20677954d91f88e383ed138"
     }
   ],
   "category": "mouse",
-  "generated_at": "2026-04-29T05:34:47.750Z",
-  "source_map_hash": "5ddb6bc6453abff55c3738933ba1fc0edb0f12c486f49f59a83e9c05fcc743b8",
+  "generated_at": "2026-04-29T08:00:53.040Z",
+  "source_map_hash": "f0e8d5283a91cc03a79a6e2f49decd7e4142432f0596a482dc094d721d525766",
   "version": 1
 }

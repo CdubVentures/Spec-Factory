@@ -221,6 +221,83 @@ test('component link lane is blank and candidates come only from published linke
   assert.equal(row.links_state.candidates[0].evidence.quote, 'sensor_link: https://pixart.example/paw3950');
 });
 
+test('linked product rows expose published candidate evidence counts by field', async (t) => {
+  const { config, specDb } = await createComponentRowHarness(t);
+  upsertComponentLane(specDb, {
+    componentType: 'sensor',
+    componentName: 'PAW3950',
+    componentMaker: 'PixArt',
+    propertyKey: 'dpi_max',
+    value: '35000',
+    confidence: 1,
+  });
+  linkProductToComponent(specDb, {
+    productId: 'mouse-support-a',
+    fieldKey: 'sensor',
+    componentType: 'sensor',
+    componentName: 'PAW3950',
+    componentMaker: 'PixArt',
+  });
+  insertProductFieldCandidate(specDb, {
+    productId: 'mouse-support-a',
+    fieldKey: 'sensor',
+    value: 'PAW3950',
+    status: 'resolved',
+    confidence: 95,
+  });
+  insertProductFieldCandidate(specDb, {
+    productId: 'mouse-support-a',
+    fieldKey: 'sensor',
+    value: 'PMW3395',
+    status: 'candidate',
+    confidence: 90,
+  });
+  insertProductFieldCandidate(specDb, {
+    productId: 'mouse-support-a',
+    fieldKey: 'sensor_brand',
+    value: 'PixArt',
+    status: 'resolved',
+    confidence: 95,
+  });
+
+  const sensorResolved = specDb.getFieldCandidate('mouse-support-a', 'sensor', 'PAW3950');
+  const sensorCandidate = specDb.getFieldCandidate('mouse-support-a', 'sensor', 'PMW3395');
+  const brandResolved = specDb.getFieldCandidate('mouse-support-a', 'sensor_brand', 'PixArt');
+  specDb.insertFieldCandidateEvidenceMany(sensorResolved.id, [
+    { url: 'https://evidence.example/sensor-a', tier: 'tier1', confidence: 95 },
+    { url: 'https://evidence.example/sensor-b', tier: 'tier1', confidence: 90 },
+  ]);
+  specDb.insertFieldCandidateEvidenceMany(sensorCandidate.id, [
+    { url: 'https://evidence.example/sensor-candidate', tier: 'tier2', confidence: 80 },
+  ]);
+  specDb.insertFieldCandidateEvidenceMany(brandResolved.id, [
+    { url: 'https://evidence.example/brand-a', tier: 'tier1', confidence: 95 },
+  ]);
+
+  const payload = await buildComponentReviewPayloads({
+    config,
+    category: CATEGORY,
+    componentType: 'sensor',
+    specDb,
+    fieldRules: buildComponentFieldRules(),
+  });
+  const row = payload.items.find((item) => item.name === 'PAW3950' && item.maker === 'PixArt');
+  const linkedProduct = row?.linked_products?.find((product) => product.product_id === 'mouse-support-a');
+
+  assert.ok(row, 'expected PixArt/Paw3950 component row');
+  assert.ok(linkedProduct, 'expected linked product row');
+  assert.deepEqual(linkedProduct.field_counts.sensor, {
+    published_count: 1,
+    candidate_count: 1,
+    evidence_count: 3,
+  });
+  assert.deepEqual(linkedProduct.field_counts.sensor_brand, {
+    published_count: 1,
+    candidate_count: 0,
+    evidence_count: 1,
+  });
+});
+
 test('component_only attributes stay as component review columns without published product candidates', async (t) => {
   const { config, specDb } = await createComponentRowHarness(t);
   upsertComponentLane(specDb, {

@@ -216,5 +216,13 @@ export function buildStudioPageActivePanelProps({
       onRunCompile,
       onRunValidate,
     },
+    docsTabProps: {
+      category,
+      selectedKey,
+      onSelectKey,
+      rules,
+      fieldOrder,
+      componentSources: normalizedComponentSources,
+    },
   };
 }

@@ -28,7 +28,6 @@
         "W-OLED"
       ],
       "mode": "scratch",
-      "normalize": "uppercase_first",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -49,7 +48,6 @@
         "AdaptiveSync"
       ],
       "mode": "scratch",
-      "normalize": "uppercase_first",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -75,7 +73,6 @@
         "VESA DisplayHDR True Black 600"
       ],
       "mode": "scratch",
-      "normalize": "uppercase_first",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -100,7 +97,6 @@
         "WLED"
       ],
       "mode": "scratch",
-      "normalize": "uppercase_first",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -121,7 +117,6 @@
         "Semi-glossy"
       ],
       "mode": "scratch",
-      "normalize": "uppercase_first",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -141,7 +136,6 @@
         "12-bit"
       ],
       "mode": "scratch",
-      "normalize": "lowercase",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -166,7 +160,6 @@
         "7680x4320 (8K)"
       ],
       "mode": "scratch",
-      "normalize": "lowercase",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -187,7 +180,6 @@
         "3:2"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -214,7 +206,6 @@
         "VRR + MBR"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -234,7 +225,6 @@
         "QD RGB"
       ],
       "mode": "scratch",
-      "normalize": "uppercase",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -254,7 +244,6 @@
         "400x400"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -273,7 +262,6 @@
         "Shuttle wheel"
       ],
       "mode": "scratch",
-      "normalize": "uppercase_first",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -290,7 +278,6 @@
         "None"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -310,7 +297,6 @@
         "USB-A to USB-B"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -331,7 +317,6 @@
         "DP to Mini-DP"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -345,7 +330,6 @@
         "monitor"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -368,7 +352,6 @@
         "Gunmetal"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -383,7 +366,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -398,7 +380,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -419,7 +400,6 @@
         "Flat"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -436,7 +416,6 @@
         "None"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -451,7 +430,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -468,7 +446,6 @@
         "3"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -488,7 +465,6 @@
         "G"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -503,7 +479,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -518,7 +493,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -533,7 +507,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -551,7 +524,6 @@
         "4"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -566,7 +538,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -581,7 +552,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -596,7 +566,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -614,7 +583,6 @@
         "ABS Plastic"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -637,7 +605,6 @@
         "Ultra"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -661,7 +628,6 @@
         "Chi Mei"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -679,7 +645,6 @@
         "Quad PbP"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -695,7 +660,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -713,7 +677,6 @@
         "Ultra-premium ($2000+)"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -745,7 +708,6 @@
         "1040 Hz"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -778,7 +740,6 @@
         "57\""
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -799,7 +760,6 @@
         "Built-in (wattage unspecified)"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -816,7 +776,6 @@
         "3"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -838,7 +797,6 @@
         "USB 3.2 Gen 2 (4-port)"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -853,7 +811,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -868,7 +825,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -886,7 +842,6 @@
         "5 years"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -901,7 +856,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -920,7 +874,6 @@
         "HDMI 2.1a"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -941,7 +894,6 @@
         "DisplayPort 2.1b"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -958,7 +910,6 @@
         "DSC 1.2a"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -975,7 +926,6 @@
         "3"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -992,7 +942,6 @@
         "Thunderbolt 5"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1010,7 +959,6 @@
         "10GbE"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1029,7 +977,6 @@
         "5MP"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1046,7 +993,6 @@
         "Beamforming microphone array"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1062,7 +1008,6 @@
         "1.07 billion"
       ],
       "mode": "scratch",
-      "normalize": "as_is",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1079,7 +1024,6 @@
         "Poor"
       ],
       "mode": "scratch",
-      "normalize": "uppercase_first",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1096,7 +1040,6 @@
         "Poor"
       ],
       "mode": "scratch",
-      "normalize": "uppercase_first",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1112,7 +1055,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "uppercase_first",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1128,7 +1070,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "uppercase_first",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1144,7 +1085,6 @@
         "No"
       ],
       "mode": "scratch",
-      "normalize": "uppercase_first",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",
@@ -1234,7 +1174,6 @@
         "yellow"
       ],
       "mode": "scratch",
-      "normalize": "lower_trim",
       "row_end": 0,
       "row_start": 2,
       "sheet": "",

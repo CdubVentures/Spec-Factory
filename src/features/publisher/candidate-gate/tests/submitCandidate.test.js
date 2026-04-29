@@ -542,6 +542,37 @@ describe('submitCandidate', async () => {
     assert.equal(lv, null);
   });
 
+  it('accepts boolean n/a through the yes_no source list', async () => {
+    ensureProductJson('mouse-bool-na');
+    const fieldRules = {
+      ...sampleFieldRules(),
+      wireless_charging: {
+        contract: { shape: 'scalar', type: 'boolean' },
+        parse: {},
+        enum: { policy: 'closed', source: 'yes_no' },
+        priority: {},
+      },
+    };
+
+    const result = await submitCandidate({
+      ...baseDeps(specDb),
+      fieldRules,
+      knownValues: {
+        enums: {
+          yes_no: { policy: 'closed', values: ['yes', 'no', 'n/a'] },
+        },
+      },
+      productId: 'mouse-bool-na',
+      fieldKey: 'wireless_charging',
+      value: 'n/a',
+      confidence: 80,
+      sourceMeta: { run_id: 'run-bool-na' },
+    });
+
+    assert.equal(result.status, 'accepted');
+    assert.equal(result.validationResult.value, 'n/a');
+  });
+
   // --- 11. Dual-write consistency (source-centric) ---
   it('DB row and JSON entry have identical data', async () => {
     ensureProductJson('mouse-dual');

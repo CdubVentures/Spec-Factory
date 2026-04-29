@@ -59,7 +59,7 @@ export function runComponentIdentityUpdateTx({
     runtimeSpecDb.updateComponentValuesByIdentity(componentType, currentName, currentMaker, nextName, nextMaker);
     runtimeSpecDb.updateItemComponentLinksByIdentity(componentType, currentName, currentMaker, nextName, nextMaker);
     if (oldComponentIdentifier !== newComponentIdentifier) {
-      runtimeSpecDb.updateKeyReviewComponentIdentifier(oldComponentIdentifier, newComponentIdentifier);
+      runtimeSpecDb.updateKeyReviewComponentIdentifier?.(oldComponentIdentifier, newComponentIdentifier);
     }
     return { merged: false };
   });

@@ -1,5 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import {
   CATEGORY,
@@ -83,4 +85,55 @@ test('component layout keeps contract-declared property columns when component v
 
   assert.ok(sensorType, 'expected sensor component type in layout');
   assert.deepEqual(sensorType.property_columns || [], ['dpi_max', 'ips']);
+});
+
+test('component layout keeps declared component tab after all component rows are deleted', async (t) => {
+  const { config, specDb } = await createComponentRowHarness(t);
+
+  const layout = await buildComponentReviewLayout({
+    config,
+    category: CATEGORY,
+    specDb,
+    fieldRules: buildSensorFieldRules(),
+  });
+  const sensorType = (layout.types || []).find((type) => type.type === 'sensor');
+
+  assert.ok(sensorType, 'expected declared sensor component tab with zero rows');
+  assert.deepEqual((layout.types || []).map((type) => type.type), ['sensor']);
+  assert.equal(sensorType.item_count, 0);
+  assert.deepEqual(sensorType.property_columns || [], ['dpi_max', 'ips']);
+});
+
+test('component layout reads declared component tabs from Mapping Studio file when SQL rows are empty', async (t) => {
+  const { config, specDb } = await createComponentRowHarness(t);
+  const mapPath = path.join(config.categoryAuthorityRoot, CATEGORY, '_control_plane', 'field_studio_map.json');
+  fs.mkdirSync(path.dirname(mapPath), { recursive: true });
+  fs.writeFileSync(
+    mapPath,
+    JSON.stringify({
+      component_sources: [
+        {
+          component_type: 'sensor',
+          roles: {
+            properties: [
+              { field_key: 'dpi_max' },
+              { field_key: 'ips' },
+            ],
+          },
+        },
+      ],
+    }, null, 2),
+  );
+
+  const layout = await buildComponentReviewLayout({
+    config,
+    category: CATEGORY,
+    specDb,
+    fieldRules: {},
+  });
+  const sensorType = (layout.types || []).find((type) => type.type === 'sensor');
+
+  assert.ok(sensorType, 'expected Mapping Studio-declared sensor component tab with zero rows');
+  assert.equal(sensorType.item_count, 0);
+  assert.deepEqual(sensorType.property_columns || [], []);
 });

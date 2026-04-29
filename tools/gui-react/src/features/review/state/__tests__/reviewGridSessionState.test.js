@@ -50,7 +50,7 @@ test('parseReviewGridSessionState sanitizes unknown mode values', async () => {
   });
 });
 
-test('read/write review grid session state round-trips via localStorage', async () => {
+test('read/write review grid session state round-trips via sessionStorage', async () => {
   const localStorage = createStorage({}, { trackCalls: false });
   const sessionStorage = createStorage({}, { trackCalls: false });
 
@@ -70,7 +70,7 @@ test('read/write review grid session state round-trips via localStorage', async 
   });
 
   const key = buildReviewGridSessionStorageKey('mouse');
-  const raw = localStorage.getItem(key);
+  const raw = sessionStorage.getItem(key);
   assert.ok(typeof raw === 'string' && raw.length > 0, 'review grid state should be persisted');
 
   const loaded = withWindowStub({ localStorage, sessionStorage }, () => readReviewGridSessionState('mouse'));

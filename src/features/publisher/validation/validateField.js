@@ -43,7 +43,9 @@ export function validateField({ fieldKey, value, fieldRule, knownValues, compone
   let current = value;
 
   // Step 0: Absence normalization
-  const absent = normalizeAbsence(current, shape);
+  const absent = shouldPreserveBooleanNotApplicable(current, type, shape)
+    ? current
+    : normalizeAbsence(current, shape);
   if (absent !== current) {
     repairs.push({ step: 'absence', before: current, after: absent, rule: 'absence_normalize' });
     current = absent;
@@ -210,4 +212,11 @@ function normalizeStringForPolicy(value, fieldRule, shouldPreserveEnumDisplay) {
     return normalizeValue(value, fieldRule);
   }
   return value.trim();
+}
+
+function shouldPreserveBooleanNotApplicable(value, type, shape) {
+  if (shape !== 'scalar' || type !== 'boolean' || typeof value !== 'string') {
+    return false;
+  }
+  return ['n/a', 'na', 'not applicable'].includes(value.trim().toLowerCase());
 }

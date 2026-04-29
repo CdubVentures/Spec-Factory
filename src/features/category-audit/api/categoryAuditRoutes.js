@@ -28,6 +28,10 @@ import { generatePerKeyDocs } from '../perKeyDocBuilder.js';
 import { generatePromptAuditReports } from '../promptAuditReportBuilder.js';
 import { generateKeysOrderAuditReport } from '../keysOrderReportBuilder.js';
 import { generateCategoryAuditReportPack } from '../reportPack.js';
+import { extractReportData } from '../reportData.js';
+import { composePerKeyPromptPreview, detectReservedKey } from '../perKeyPromptPreview.js';
+import { buildPerKeyDocStructure } from '../perKeyDocStructure.js';
+import { FIELD_RULE_SCHEMA } from '../contractSchemaCatalog.js';
 
 const RESOLVED_GLOBAL_FRAGMENT_KEYS = [
   'identityIntro',
@@ -309,6 +313,100 @@ export function registerCategoryAuditRoutes(ctx) {
       return jsonRes(res, 200, {
         category,
         ...keysOrderAuditResponse(result),
+      });
+    }
+
+    if (parts[1] && parts[2] === 'per-key-doc' && parts[3] && method === 'GET') {
+      const category = parts[1];
+      const fieldKey = parts[3];
+
+      let loadedRules;
+      try {
+        loadedRules = await loadFieldRules(category, { config });
+      } catch (err) {
+        const msg = String(err?.message || err);
+        if (msg.startsWith('missing_field_rules') || msg.includes('category')) {
+          return jsonRes(res, 400, { error: 'unknown_category', category, details: msg });
+        }
+        throw err;
+      }
+
+      const fieldGroupsPath = path.join(helperRoot, category, '_generated', 'field_groups.json');
+      const fieldGroups = (await readJsonIfExists(fieldGroupsPath)) || { group_index: {} };
+      const compileReportPath = path.join(helperRoot, category, '_generated', '_compile_report.json');
+      const compileSummary = await readJsonIfExists(compileReportPath);
+      const fieldKeyOrderPath = path.join(helperRoot, category, '_control_plane', 'field_key_order.json');
+      const fieldKeyOrderDoc = await readJsonIfExists(fieldKeyOrderPath);
+      const fieldKeyOrder = Array.isArray(fieldKeyOrderDoc?.order) ? fieldKeyOrderDoc.order : null;
+
+      const globalFragments = resolveAllFragments();
+      const tierBundles = parseTierBundles(config?.keyFinderTierSettingsJson);
+
+      const reportData = extractReportData({
+        category,
+        loadedRules,
+        fieldGroups,
+        globalFragments,
+        tierBundles,
+        compileSummary,
+        now: new Date(),
+      });
+
+      const recordByFieldKey = new Map((reportData.keys || []).map((rec) => [rec.fieldKey, rec]));
+      const record = recordByFieldKey.get(fieldKey);
+      const reserved = detectReservedKey(fieldKey);
+
+      if (!record && !reserved) {
+        return jsonRes(res, 404, { error: 'unknown_field_key', category, fieldKey });
+      }
+
+      const navigatorOrdinal = (() => {
+        if (!Array.isArray(fieldKeyOrder)) return '';
+        const onlyFields = fieldKeyOrder.filter(
+          (entry) => typeof entry === 'string' && !entry.startsWith('__grp::'),
+        );
+        const idx = onlyFields.indexOf(fieldKey);
+        if (idx < 0) return '';
+        const width = Math.max(2, String(onlyFields.length).length);
+        return String(idx + 1).padStart(width, '0');
+      })();
+
+      const previewRecord = record || {
+        fieldKey,
+        rawRule: {},
+        component: null,
+      };
+
+      const preview = composePerKeyPromptPreview(previewRecord.rawRule || {}, fieldKey, {
+        category,
+        tierBundles,
+        templateOverride: '',
+        componentRelation: previewRecord.component || null,
+        knownValues: loadedRules?.knownValues || null,
+      });
+
+      const groupRecords = record
+        ? (reportData.keys || []).filter((rec) => rec.group === record.group)
+        : [];
+
+      const structure = buildPerKeyDocStructure(record || previewRecord, {
+        category,
+        generatedAt: reportData.generatedAt,
+        schemaCatalog: FIELD_RULE_SCHEMA,
+        siblingsInGroup: groupRecords,
+        allKeyRecords: reportData.keys || [],
+        groups: reportData.groups || [],
+        componentInventory: reportData.components || [],
+        componentSources: reportData.componentSources || [],
+        preview,
+        navigatorOrdinal,
+      });
+
+      return jsonRes(res, 200, {
+        category,
+        fieldKey,
+        generatedAt: reportData.generatedAt,
+        structure,
       });
     }
 

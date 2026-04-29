@@ -20,7 +20,13 @@ import {
   type LinkedReviewProductFieldSnapshot,
 } from './componentReviewCache.ts';
 import { invalidateComponentImpactForCategory } from './componentImpactInvalidation.ts';
-import type { ComponentReviewItem, ComponentPropertyState, ComponentReviewPayload } from '../../types/componentReview.ts';
+import type {
+  ComponentReviewItem,
+  ComponentPropertyState,
+  ComponentReviewPayload,
+  LinkedProduct,
+  LinkedProductSupportCounts,
+} from '../../types/componentReview.ts';
 
 interface ComponentReviewDrawerProps {
   item: ComponentReviewItem;
@@ -121,6 +127,76 @@ function PropertyCard({
 
       <DrawerBadges badges={badges} />
     </DrawerCard>
+  );
+}
+
+const EMPTY_SUPPORT_COUNTS: LinkedProductSupportCounts = {
+  published_count: 0,
+  candidate_count: 0,
+  evidence_count: 0,
+};
+
+function getSupportCounts(product: LinkedProduct, fieldKey: string): LinkedProductSupportCounts {
+  return product.field_counts?.[fieldKey] ?? EMPTY_SUPPORT_COUNTS;
+}
+
+function sumSupportCounts(products: LinkedProduct[], fieldKey: string): LinkedProductSupportCounts {
+  return products.reduce<LinkedProductSupportCounts>((acc, product) => {
+    const counts = getSupportCounts(product, fieldKey);
+    return {
+      published_count: acc.published_count + counts.published_count,
+      candidate_count: acc.candidate_count + counts.candidate_count,
+      evidence_count: acc.evidence_count + counts.evidence_count,
+    };
+  }, EMPTY_SUPPORT_COUNTS);
+}
+
+function formatSupportCounts(counts: LinkedProductSupportCounts): string {
+  return `P${counts.published_count} C${counts.candidate_count} E${counts.evidence_count}`;
+}
+
+function AttachedItemsSection({
+  products,
+  fieldKey,
+}: {
+  products: LinkedProduct[];
+  fieldKey: string;
+}) {
+  const totals = sumSupportCounts(products, fieldKey);
+
+  return (
+    <DrawerSection
+      title={`Attached Items (${products.length})`}
+      meta={<span className="sf-text-micro sf-text-muted font-mono">{formatSupportCounts(totals)}</span>}
+    >
+      {products.length === 0 ? (
+        <div className="sf-text-caption sf-text-subtle px-1 py-2">
+          No published product values are linked to this component identity yet.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {products.map((product) => {
+            const counts = getSupportCounts(product, fieldKey);
+            return (
+              <DrawerCard key={`${product.product_id}-${product.field_key || fieldKey}`}>
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-sm flex-1 truncate" title={product.product_id}>
+                    {product.product_id}
+                  </span>
+                  <span className="sf-text-micro sf-text-muted font-mono flex-shrink-0">
+                    {formatSupportCounts(counts)}
+                  </span>
+                </div>
+                <div className="sf-text-nano sf-text-subtle flex items-center gap-2">
+                  <span>{product.field_key || fieldKey}</span>
+                  {product.match_type && <span>{product.match_type}</span>}
+                </div>
+              </DrawerCard>
+            );
+          })}
+        </div>
+      )}
+    </DrawerSection>
   );
 }
 
@@ -450,6 +526,8 @@ export function ComponentReviewDrawer({
 
   if (focusedProperty === '__name' || focusedProperty === '__maker') {
     const isName = focusedProperty === '__name';
+    const identityFieldKey = isName ? componentType : `${componentType}_brand`;
+    const linkedProducts = item.linked_products ?? [];
 
     return (
       <DrawerShell title={isName ? 'Name' : 'Brand'} subtitle={`${item.name} | ${item.maker || componentType}`} onClose={onClose}>
@@ -463,6 +541,7 @@ export function ComponentReviewDrawer({
             isPending={overrideMut.isPending}
           />
         </DrawerSection>
+        <AttachedItemsSection products={linkedProducts} fieldKey={identityFieldKey} />
       </DrawerShell>
     );
   }

@@ -166,6 +166,32 @@ test('component override failures surface component_override_specdb_write_failed
   assert.equal(calls.responses[0]?.body?.error, 'component_override_specdb_write_failed');
 });
 
+test('component key review confirm returns the public success envelope', async () => {
+  const needsReviewUpdates = [];
+  const runtimeSpecDb = makeSeededRuntimeSpecDb({
+    updateComponentValueNeedsReview: (componentSlotId, needsReview) => {
+      needsReviewUpdates.push({ componentSlotId, needsReview });
+    },
+  });
+  const { calls, context } = makeComponentRouteHarness({
+    readJsonBody: async () => ({ property: 'dpi', candidateId: 'ref_c1', componentValueId: 1 }),
+    getSpecDbReady: async () => runtimeSpecDb,
+  });
+
+  const handled = await handleReviewComponentMutationRoute({
+    parts: ['review-components', 'mouse', 'component-key-review-confirm'],
+    method: 'POST',
+    req: {},
+    res: {},
+    context,
+  });
+
+  assert.notEqual(handled, false);
+  assert.equal(calls.responses[0]?.status, 200);
+  assert.equal(calls.responses[0]?.body?.ok, true);
+  assert.deepEqual(needsReviewUpdates, [{ componentSlotId: 1, needsReview: false }]);
+});
+
 test('component key review confirm failures surface component_key_review_confirm_failed', async () => {
   const { calls, context } = makeComponentRouteHarness({
     readJsonBody: async () => ({ property: 'dpi', candidateId: 'ref_c1', componentValueId: 1 }),

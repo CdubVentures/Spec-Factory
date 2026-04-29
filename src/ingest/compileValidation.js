@@ -23,10 +23,11 @@ import { VALID_TYPES, VALID_SHAPES, validateTypeShapeCombo } from '../field-rule
 export function buildParseTemplateCatalog() {
   return {
     boolean_yes_no_unk: {
-      description: "Parse yes/no/true/false/1/0 tokens. Output boolean or null.",
+      description: "Parse yes/no/n/a/true/false/1/0 tokens. Output 'yes', 'no', 'n/a', or null.",
       tests: [
-        { raw: 'Yes', expected: true },
-        { raw: 'no', expected: false },
+        { raw: 'Yes', expected: 'yes' },
+        { raw: 'no', expected: 'no' },
+        { raw: 'n/a', expected: 'n/a' },
         { raw: 'unk', expected: null }
       ]
     },

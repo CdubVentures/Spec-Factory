@@ -2,7 +2,7 @@ import { FlagIcon } from '../icons/FlagIcon.tsx';
 import { DrawerSection, DrawerCard } from '../overlay/DrawerShell.tsx';
 import { getFlagInfo } from '../../../utils/flagDescriptions.ts';
 import { humanizeField } from '../../../utils/fieldNormalize.ts';
-import { usePersistedToggle } from '../../../hooks/useSessionPersistence.ts';
+import { usePersistedToggle } from '../../../stores/collapseStore.ts';
 
 interface FlagsSectionProps {
   reasonCodes: string[];

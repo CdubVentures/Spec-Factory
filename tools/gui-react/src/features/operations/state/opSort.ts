@@ -1,6 +1,6 @@
 import type { Operation } from './operationsStore.ts';
 
-// WHY: Three user-selectable sort modes, persisted in localStorage.
+// WHY: Three user-selectable sort modes, persisted in sessionStorage.
 //  - 'queue'   — order called (startedAt ASC). Oldest at top, newest at bottom.
 //  - 'recent'  — newest first (startedAt DESC). Flat list, no status grouping.
 //  - 'grouped' — status-first (running → error → cancelled → done),
@@ -54,7 +54,7 @@ export const SORT_MODE_STORAGE_KEY = 'ops-tracker:sort-mode';
 export function readSortMode(): OpSortMode {
   if (typeof window === 'undefined') return 'queue';
   try {
-    const raw = window.localStorage?.getItem(SORT_MODE_STORAGE_KEY);
+    const raw = window.sessionStorage?.getItem(SORT_MODE_STORAGE_KEY);
     if (raw === 'queue' || raw === 'recent' || raw === 'grouped') return raw;
   } catch { /* ignore storage errors */ }
   return 'queue';
@@ -62,5 +62,5 @@ export function readSortMode(): OpSortMode {
 
 export function writeSortMode(mode: OpSortMode): void {
   if (typeof window === 'undefined') return;
-  try { window.localStorage?.setItem(SORT_MODE_STORAGE_KEY, mode); } catch { /* ignore */ }
+  try { window.sessionStorage?.setItem(SORT_MODE_STORAGE_KEY, mode); } catch { /* ignore */ }
 }

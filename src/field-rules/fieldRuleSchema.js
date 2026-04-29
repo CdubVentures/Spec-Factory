@@ -98,7 +98,7 @@ export const FIELD_RULE_SCHEMA = Object.freeze([
     options: ['string', 'number', 'integer', 'boolean', 'date', 'url', 'range', 'mixed_number_range'],
     doc: 'Drives JSON primitive emission AND filter-UI control — numeric types render as range sliders, strings as toggle chips.',
     studioTipKey: 'data_type',
-    studioTip: 'Fundamental data type. string: text, number: decimal, integer: whole, boolean: yes/no, date, url, enum: from a fixed set, component_ref: links to component DB.',
+    studioTip: 'Fundamental data type. string: text, number: decimal, integer: whole, boolean: yes/no/n/a, date, url, enum: from a fixed set, component_ref: links to component DB.',
     studioControlId: 'contract_type',
     studioControlLabel: 'Data Type',
     studioWidget: 'select',

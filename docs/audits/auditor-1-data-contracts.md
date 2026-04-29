@@ -1,6 +1,6 @@
 # Auditor 1 - Data Contracts, Persistence, Rebuild, Codegen
 
-Date: 2026-04-28
+Date: 2026-04-29
 
 ## Ownership
 
@@ -18,31 +18,41 @@ Do not edit frontend UX components except test harnesses needed for contract pro
 
 ## Current Audit Snapshot
 
-Verification refreshed on 2026-04-28:
+Verification refreshed on 2026-04-29 against the current dirty workspace:
 
 | Command | Result |
 |---|---|
-| `npm test` | PASS: 12,613 tests, 12,613 passed, 0 failed. Log: `.tmp/npm-test-full-audit-all3-2026-04-28.log`. |
-| `npm run gui:check` | PASS. |
-| `node --test --test-force-exit ...` | PASS: 104 focused Auditor 1 continuation tests, 104 passed, 0 failed. Covers M19-M22 storage/run-summary/runtime artifact contracts. |
-| `node --test --test-force-exit tools\gui-react\src\features\data-change\__tests__\dataChangeInvalidationMap.test.js` | PASS: 29 passed, 0 failed. Covers M23 storage freshness invalidation contract. |
-| `cd tools\gui-react && npm exec -- tsc -b` | PASS. Rechecked after the earlier dirty-file syntax blocker; TypeScript build is no longer blocked. |
+| `npm test` | BLOCKED in Codex Windows sandbox before app assertions: Node test-runner child process spawn fails with `spawn EPERM`. Log: `.tmp/npm-test-full-audit-auditor1-2026-04-29.log`. |
+| `node --test --test-isolation=none --test-force-exit --experimental-test-module-mocks` | FAIL: 12,911 tests, 12,894 passed, 17 failed. This is the sandbox fallback, not release-equivalent isolated proof. Log: `.tmp/npm-test-isolation-none-audit-auditor1-2026-04-29.log`. |
+| `npm run gui:check` | PASS. Log: `.tmp/gui-check-audit-auditor1-2026-04-29.log`. |
+| Focused Auditor 1 direct proof stack | PASS: 341 tests, 341 passed, 0 failed. Covers event/data-change, run-summary/storage/runtime artifacts, catalog/codegen registry drift, prompt structural assertions, and cross-finder variant cascades. |
+| Targeted direct repros for red clusters | FAIL: CEF unknown-product route, review component ecosystem values, review component timestamps, field metadata shape, and component confidence color contracts reproduce outside the isolation-none full run. |
 
-Auditor 1 has no active critical or high-priority blockers after the refreshed full-suite audit. Remaining work is medium/low backlog only.
+Auditor 1 has an active red gate in the current workspace. The official full-suite command is sandbox-blocked, and the sandbox fallback exposes directly reproducible data-contract failures in CEF and component-review surfaces.
 
 ## Critical Priority
 
-No active critical Auditor 1 findings remain after this audit.
+| ID | Issue | Evidence | Required Next Step |
+|---|---|---|---|
+| C2-red | Current workspace is not audit-green | `node --test --test-isolation=none --test-force-exit --experimental-test-module-mocks` reports 17 failures, and the failing clusters reproduce with direct file execution. `npm test` remains sandbox-blocked by `spawn EPERM`, so a normal developer PowerShell full-suite pass is still required after fixes. | Resolve or intentionally re-contract the direct red clusters, then rerun focused repros and full `npm test` outside the Codex sandbox. |
 
 ## High Priority
 
-No active high-priority Auditor 1 findings remain after this audit.
+| ID | Issue | Primary Area | Evidence |
+|---|---|---|---|
+| H8-cef-404 | CEF unknown product route returns 200 instead of 404 | Color Edition Finder API contract | `node --experimental-test-module-mocks src\features\color-edition\api\tests\colorEditionFinderRoutes.test.js` fails 1/18: `returns 404 for unknown product`, actual `200`. |
+| H9-review-component-values | Component review ecosystem no longer projects seeded component reference/candidate values | Review component data projection | `node --experimental-test-module-mocks src\features\review\tests\reviewEcosystem.component.test.js` fails 9/14 with `unknown`/`null` values and missing component candidates for seeded sensor/material rows. |
+| H10-review-component-timestamps | Component property source timestamps are missing | Review component source timestamp contract | `node --experimental-test-module-mocks src\features\review\tests\reviewEcosystem.timestamps.test.js` fails 3/10; component property `source_timestamp` values are `null`. |
+| H11-review-field-meta-drift | Field metadata contract shape drifted with `component_only: false` | Review component field metadata | `componentReviewDataLaneState.fieldMetaEnumContracts.test.js` and `componentReviewDataLaneState.fieldMetaVarianceContracts.test.js` fail because returned metadata now includes `component_only: false`. Decide whether the public contract changed, then update consumers/tests or production shape consistently. |
+| H12-review-confidence-color | Component payload confidence color contract regressed | Review component payload semantics | `node --experimental-test-module-mocks src\features\review\domain\tests\componentReviewDataLaneState.varianceConfidenceColors.test.js` fails: expected `red`, actual `gray`. |
 
-## Closed Since Last Audit
+## Previously Closed Findings
+
+These rows are historical closure records from earlier audit passes. The 2026-04-29 critical/high findings above supersede any prior closure whose area has regressed in the current dirty workspace.
 
 | ID | Closed Finding | Proof |
 |---|---|---|
-| C1-green | Full-suite red gate | Current `npm test` is green: 12,613 passed, 0 failed. |
+| C1-green | Full-suite red gate | 2026-04-28 `npm test` was green: 12,613 passed, 0 failed. Superseded by C2-red for the current 2026-04-29 dirty workspace. |
 | H1-authority | Mouse source-authority host contract | Full suite now passes the mouse authority hostname contract. |
 | H2-prompt | Scalar finder prompt golden drift | Full suite now passes SKU and RDF prompt golden tests. |
 | H3-crawl-ledger | Crawl ledger cooldown upsert contract | Full suite now passes crawl ledger cooldown tests. |
@@ -76,10 +86,10 @@ No active high-priority Auditor 1 findings remain after this audit.
 
 | ID | Issue | Primary Area | Work Shape |
 |---|---|---|---|
-| M30 | No root regenerate-all codegen entry point | Codegen workflow | Add approved root codegen script only with explicit package-script approval. |
-| M31 | LLM phase generator is a super-generator | Codegen architecture | Document or split only when it becomes hard to maintain. |
-| M32 | Finder typegen has opt-in coverage | Finder generated types | Decide universal typegen vs documented opt-in criteria. |
-| M33 | Broader generated-code checks are still needed before closing Registry/O(1) stage work | Registry/O(1) closure | Run agreed codegen/check sequence and inspect generated diffs. |
+| M30 | No root regenerate-all codegen entry point | Codegen workflow | Fresh script inventory still shows no root `generate`/`regen`/`codegen` package script. Add only with explicit package-script approval. |
+| M31 | LLM phase generator is a super-generator | Codegen architecture | Fresh audit: `tools/gui-react/scripts/generateLlmPhaseRegistry.js` is 657 LOC / 34 KB and still emits multiple registry surfaces. Document or split only when it becomes hard to maintain. |
+| M32 | Finder typegen has opt-in coverage | Finder generated types | Fresh audit: `FINDER_MODULES` typegen coverage is 2/5 (`releaseDateFinder`, `skuFinder` only). Decide universal typegen vs documented opt-in criteria. |
+| M33 | Broader generated-code checks are still needed before closing Registry/O(1) stage work | Registry/O(1) closure | Fresh focused generator drift tests for finder types/hooks pass, but no root regenerate-all sequence exists and the broader generated-file inspection remains open. |
 
 ## Low Priority
 
@@ -105,6 +115,62 @@ No active high-priority Auditor 1 findings remain after this audit.
 | L39 | Negative invalidation-scope tests are sparse | Invalidation tests | Add small negative invariants for broad templates. |
 
 ## Work Log
+
+### 2026-04-29 - Fresh Auditor 1 Full Audit
+
+Ran a fresh Auditor 1 audit against the current dirty workspace. No production source changes were made in this pass; the update is audit evidence and backlog triage only.
+
+| Area | Result |
+|---|---|
+| Official full suite | `npm test` is blocked in the Codex Windows sandbox by Node test-runner `spawn EPERM` before app assertions execute. |
+| Sandbox fallback full suite | `node --test --test-isolation=none --test-force-exit --experimental-test-module-mocks` executes the suite but is red: 12,911 tests, 12,894 passed, 17 failed. |
+| GUI typecheck | `npm run gui:check` passes. |
+| Focused Auditor 1 proof | 341 focused tests pass across data-change/event contracts, run-summary/storage/runtime artifacts, catalog/codegen registry checks, prompt structural assertions, and cross-finder cascade behavior. |
+| Codegen audit | Root `package.json` still has no regenerate-all script; finder typegen remains opt-in at 2/5 finder modules; finder types/hooks drift tests pass. |
+
+Direct red repros:
+
+```text
+node --experimental-test-module-mocks src\features\color-edition\api\tests\colorEditionFinderRoutes.test.js
+node --experimental-test-module-mocks src\features\review\tests\reviewEcosystem.component.test.js
+node --experimental-test-module-mocks src\features\review\tests\reviewEcosystem.timestamps.test.js
+node --experimental-test-module-mocks src\features\review\domain\tests\componentReviewDataLaneState.fieldMetaEnumContracts.test.js
+node --experimental-test-module-mocks src\features\review\domain\tests\componentReviewDataLaneState.fieldMetaVarianceContracts.test.js
+node --experimental-test-module-mocks src\features\review\domain\tests\componentReviewDataLaneState.varianceConfidenceColors.test.js
+```
+
+Focused passing proof:
+
+```text
+npm run gui:check
+node --experimental-test-module-mocks tools\gui-react\src\features\data-change\__tests__\dataChangeInvalidationMap.test.js
+node --experimental-test-module-mocks src\core\events\tests\eventRegistryCoverage.test.js
+node --experimental-test-module-mocks src\core\events\tests\dataChangeContract.test.js
+node --experimental-test-module-mocks src\core\events\tests\dataChangeDomainParity.test.js
+node --experimental-test-module-mocks src\app\api\services\tests\compileProcessCompletion.test.js
+node --experimental-test-module-mocks src\features\indexing\api\contracts\tests\runSummaryContract.test.js
+node --experimental-test-module-mocks src\indexlab\tests\runSummarySerializer.test.js
+node --experimental-test-module-mocks src\indexlab\tests\runSummaryFinalize.test.js
+node --experimental-test-module-mocks src\features\indexing\api\builders\tests\readRunSummaryEventsCharacterization.test.js
+node --experimental-test-module-mocks src\features\indexing\api\tests\storageManagerRouteContract.test.js
+node --experimental-test-module-mocks src\features\indexing\api\tests\indexlabRoutes.test.js
+node --experimental-test-module-mocks src\db\stores\tests\artifactStore.test.js
+node --experimental-test-module-mocks src\features\indexing\api\tests\runtimeOpsRoutes.assets.test.js
+node --experimental-test-module-mocks src\app\api\tests\catalogHelpersSqlPath.test.js
+node --experimental-test-module-mocks src\app\api\tests\apiCatalogHelpersWiring.test.js
+node --experimental-test-module-mocks tools\gui-react\src\pages\overview\__tests__\overviewSort.test.ts
+node --experimental-test-module-mocks tools\gui-react\src\features\pipeline-settings\state\__tests__\finderSettingsRegistryContract.test.ts
+node --experimental-test-module-mocks tools\gui-react\scripts\tests\generateFinderTypes.test.js
+node --experimental-test-module-mocks tools\gui-react\scripts\tests\generateFinderHooks.test.js
+node --experimental-test-module-mocks src\features\release-date\tests\releaseDateLlmAdapter.test.js
+node --experimental-test-module-mocks src\features\sku\tests\skuLlmAdapter.test.js
+node --experimental-test-module-mocks src\features\color-edition\tests\variantLifecycle.crossFinderCascade.test.js
+node --experimental-test-module-mocks src\features\color-edition\tests\variantLifecycle.test.js
+node --experimental-test-module-mocks src\features\product-image\tests\variantPropagation.test.js
+node --check src\app\api\catalogHelpers.js
+node --check src\features\product-image\variantPropagation.js
+node --check tools\gui-react\scripts\generateLlmPhaseRegistry.js
+```
 
 ### 2026-04-28 - M29 Structural Prompt Assertions
 

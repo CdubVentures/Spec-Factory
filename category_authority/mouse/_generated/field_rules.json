@@ -3,7 +3,7 @@
   "publish_gate": "required_complete",
   "component_db_sources": {
     "encoder": {
-      "entity_count": 40,
+      "entity_count": 41,
       "roles": {
         "properties": [
           {
@@ -37,6 +37,7 @@
       },
       "sample_entities": [
         "Encoder",
+        "cf-(changfeng)-(gray)",
         "Encoder",
         "Black",
         "Brown",
@@ -44,13 +45,12 @@
         "Encoder",
         "Green",
         "Pink",
-        "Teal",
-        "Encoder"
+        "Teal"
       ],
       "type": "encoder"
     },
     "sensor": {
-      "entity_count": 116,
+      "entity_count": 115,
       "roles": {
         "properties": [
           {
@@ -88,21 +88,21 @@
         ]
       },
       "sample_entities": [
-        "Focus Pro 45K",
-        "HERO 2",
-        "PAW3950 Ti",
-        "PAW3950 Max",
         "AimPoint Pro (PixArt PAW3950)",
-        "XERO",
-        "Focus Pro Gen-2",
-        "MARKSMAN S",
-        "XS-1",
-        "BAMF 3.0"
+        "A3050",
+        "A3055",
+        "A3305",
+        "A3325",
+        "ADNS-3080",
+        "ADNS-3090",
+        "ADNS-3095",
+        "ADNS-3310",
+        "ADNS-A9800"
       ],
       "type": "sensor"
     },
     "switch": {
-      "entity_count": 106,
+      "entity_count": 107,
       "roles": {
         "properties": [
           {
@@ -144,14 +144,14 @@
       "sample_entities": [
         "ROG Micro Switch",
         "ROG Micro Switch II",
+        "ROG Optical Micro Switches",
         "Light Blade",
         "Optical Switches",
         "SwiftLight",
         "Blue Ghost Optical",
         "Fog Blue Optical",
         "Advanced Optical Switch",
-        "Black Shell White Dot",
-        "Mouse Switches"
+        "Black Shell White Dot"
       ],
       "type": "switch"
     }
@@ -419,7 +419,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Buttons & Wheel",
-        "guidance_md": "Boolean yes/no for user-adjustable or mode-switchable scroll-wheel feel/behavior. True covers ratchet/free-spin modes, configurable scroll tension/resistance/steps, Smart-Reel, MagSpeed, HyperScroll, or HyperScroll Pro. Do not count tilt/horizontal scrolling, OS/app scroll speed, scroll acceleration alone, or fixed step-count wheels.",
+        "guidance_md": "Boolean yes/no/n/a for user-adjustable or mode-switchable scroll-wheel feel/behavior. Yes covers ratchet/free-spin modes, configurable scroll tension/resistance/steps, Smart-Reel, MagSpeed, HyperScroll, or HyperScroll Pro. Do not count tilt/horizontal scrolling, OS/app scroll speed, scroll acceleration alone, or fixed step-count wheels.",
         "label": "Adjustable Scroll Wheel",
         "order": 72,
         "placeholder": "",
@@ -3649,7 +3649,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Sensor Identity",
-        "guidance_md": "Boolean yes/no only. Use true for exact-product or resolved-sensor evidence of 1:1/raw/flawless tracking, or zero/no smoothing, filtering, acceleration, prediction, angle snapping, or drift correction. Use false only for credible non-disableable tracking flaws. Omission or absence from curated lists is unknown, not false.",
+        "guidance_md": "Boolean yes/no/n/a. Use yes for exact-product or resolved-sensor evidence of 1:1/raw/flawless tracking, or zero/no smoothing, filtering, acceleration, prediction, angle snapping, or drift correction. Use no only for credible non-disableable tracking flaws. Omission or absence from curated lists is unknown, not no.",
         "label": "Flawless Sensor",
         "order": 40,
         "placeholder": "",
@@ -4692,7 +4692,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Switch Identity",
-        "guidance_md": "Boolean yes/no for mouse button micro-switch sockets. True requires exact-mouse evidence for hot-swappable/user-replaceable/push-fit/no-solder click switches. Do not count keyboard switches, batteries, shells, side plates, dongles, mouse feet, or generic spare switches.",
+        "guidance_md": "Boolean yes/no/n/a for mouse button micro-switch sockets. Yes requires exact-mouse evidence for hot-swappable/user-replaceable/push-fit/no-solder click switches. Do not count keyboard switches, batteries, shells, side plates, dongles, mouse feet, or generic spare switches.",
         "label": "Hot Swappable",
         "order": 60,
         "placeholder": "",
@@ -6653,7 +6653,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Buttons & Wheel",
-        "guidance_md": "Boolean yes/no only. Treat onboard memory/profile-storage phrases as aliases for extraction, not public enum chips. Do not infer false from silence.",
+        "guidance_md": "Boolean yes/no/n/a. Treat onboard memory/profile-storage phrases as aliases for extraction, not public enum chips. Do not infer no from silence.",
         "label": "Onboard Memory",
         "order": 73,
         "placeholder": "",
@@ -7329,7 +7329,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Buttons & Wheel",
-        "guidance_md": "Boolean yes/no only. Profile switching requires a user-visible profile switch/cycle/select action; DPI/CPI switching and software-only app profile switching do not count.",
+        "guidance_md": "Boolean yes/no/n/a. Profile switching requires a user-visible profile switch/cycle/select action; DPI/CPI switching and software-only app profile switching do not count.",
         "label": "Profile Switching",
         "order": 75,
         "placeholder": "",
@@ -9400,7 +9400,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Click Feel & Latency",
-        "guidance_md": "Boolean yes/no for intentionally quiet/silent click support. True requires exact-product silent/quiet/noiseless/mute click wording. False requires explicit negative evidence; absence is unknown.",
+        "guidance_md": "Boolean yes/no/n/a for intentionally quiet/silent click support. Yes requires exact-product silent/quiet/noiseless/mute click wording. No requires explicit negative evidence; absence is unknown.",
         "label": "Silent Clicks",
         "order": 67,
         "placeholder": "",
@@ -10435,7 +10435,7 @@
         "display_mode": "all",
         "examples": [],
         "group": "Buttons & Wheel",
-        "guidance_md": "Boolean yes/no for main scroll-wheel left/right tilt-click inputs. Do not count separate thumb/side wheels, horizontal scrolling without wheel tilt, free-spin/smart-shift mode, body tilt, or software-only horizontal scrolling.",
+        "guidance_md": "Boolean yes/no/n/a for main scroll-wheel left/right tilt-click inputs. Do not count separate thumb/side wheels, horizontal scrolling without wheel tilt, free-spin/smart-shift mode, body tilt, or software-only horizontal scrolling.",
         "label": "Tilt Scroll Wheel",
         "order": 71,
         "placeholder": "",
@@ -10856,7 +10856,7 @@
       }
     }
   },
-  "generated_at": "2026-04-29T04:41:27.116Z",
+  "generated_at": "2026-04-29T08:00:49.709Z",
   "key_range": "dataEntry!B9:B83",
   "notes": [
     "Generated by Field Rules Studio compiler.",

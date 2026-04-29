@@ -90,7 +90,16 @@ function buildItem() {
     properties: {
       dpi_max: propertyState(dpiCandidates),
     },
-    linked_products: [{ product_id: 'mouse-a', field_key: 'sensor', match_type: 'exact', match_score: 1 }],
+    linked_products: [{
+      product_id: 'mouse-a',
+      field_key: 'sensor',
+      match_type: 'exact',
+      match_score: 1,
+      field_counts: {
+        sensor: { published_count: 1, candidate_count: 2, evidence_count: 3 },
+        sensor_brand: { published_count: 1, candidate_count: 1, evidence_count: 2 },
+      },
+    }],
     review_status: 'pending',
     metrics: { confidence: 0, flags: 0, property_count: 1 },
   };
@@ -184,4 +193,20 @@ describe('ComponentReviewDrawer published value lanes', () => {
     assert.match(text, /No component review candidates found for this component attribute yet/);
   });
 
+  it('shows attached products and PCE support counts in identity drawers', async () => {
+    const { ComponentReviewDrawer } = await loadDrawerModule();
+    const tree = renderElement(ComponentReviewDrawer({
+      item: buildItem(),
+      componentType: 'sensor',
+      category: 'mouse',
+      onClose: () => {},
+      queryClient: {},
+      focusedProperty: '__name',
+    }));
+    const text = textContent(tree);
+
+    assert.match(text, /Attached Items \(1\)/);
+    assert.match(text, /P1 C2 E3/);
+    assert.match(text, /mouse-a/);
+  });
 });

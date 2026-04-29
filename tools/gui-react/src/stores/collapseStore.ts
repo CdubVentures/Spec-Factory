@@ -23,25 +23,10 @@ function getLocalStorage() {
   return window.localStorage;
 }
 
-function readStorageItem(name: string) {
-  if (typeof window === 'undefined') return null;
-  try {
-    const local = window.localStorage?.getItem(name) ?? null;
-    if (local) return local;
-    const session = window.sessionStorage?.getItem(name) ?? null;
-    if (session) {
-      window.localStorage?.setItem(name, session);
-      window.sessionStorage?.removeItem(name);
-    }
-    return session;
-  } catch {
-    return null;
-  }
-}
-
 function loadInitialValues(): Record<string, boolean> {
+  if (typeof window === 'undefined') return {};
   try {
-    const raw = readStorageItem(STORAGE_KEY);
+    const raw = window.localStorage?.getItem(STORAGE_KEY) ?? null;
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     if (parsed?.state?.values && typeof parsed.state.values === 'object') {

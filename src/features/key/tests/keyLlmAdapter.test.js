@@ -279,7 +279,7 @@ test('PRIMARY_FIELD_CONTRACT renders open_prefer_known as preferred values', () 
   assert.doesNotMatch(out, /Allowed values \(open_prefer_known\)/);
 });
 
-test('PRIMARY_FIELD_CONTRACT does not render yes_no enum policy for boolean fields', () => {
+test('PRIMARY_FIELD_CONTRACT renders boolean yes/no/n/a without enum policy noise', () => {
   const rule = {
     ...POLLING_RATE_RULE,
     field_key: 'rgb',
@@ -289,13 +289,13 @@ test('PRIMARY_FIELD_CONTRACT does not render yes_no enum policy for boolean fiel
   const out = renderPrimary('rgb', rule, {
     knownValues: {
       enums: {
-        yes_no: { policy: 'closed', values: ['yes', 'no'] },
+        yes_no: { policy: 'closed', values: ['yes', 'no', 'n/a'] },
       },
     },
   });
 
   assert.match(out, /Type: boolean/);
-  assert.doesNotMatch(out, /Allowed values/);
+  assert.match(out, /Boolean values: yes \| no \| n\/a/);
   assert.doesNotMatch(out, /Enum policy/);
 });
 
@@ -939,6 +939,23 @@ test('RETURN_JSON_SHAPE emits per-key value shape (array for list, number+unit f
   assert.match(out, /"polling_rate":\s*\{\s*"value": <number \(Hz\)>/);
   // trailing duplicate-list shape block is removed \u2014 inline shape is SSOT
   assert.doesNotMatch(out, /Per-key value shapes/);
+});
+
+test('RETURN_JSON_SHAPE emits boolean yes/no/n/a tokens', () => {
+  const booleanRule = {
+    field_key: 'wireless_charging',
+    contract: { type: 'boolean', shape: 'scalar' },
+    enum: { policy: 'closed', source: 'yes_no' },
+  };
+  const out = buildKeyFinderPrompt({
+    product: PRODUCT,
+    primary: { fieldKey: 'wireless_charging', fieldRule: booleanRule },
+    category: 'mouse',
+    variantCount: 1,
+    injectionKnobs: ALL_KNOBS_ON,
+  });
+
+  assert.match(out, /"wireless_charging":\s*\{\s*"value": <one of \[yes \| no \| n\/a\]>/);
 });
 
 test('RETURN_JSON_SHAPE keeps discovery_log at the run envelope only', () => {

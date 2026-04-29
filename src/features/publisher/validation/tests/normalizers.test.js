@@ -68,7 +68,6 @@ describe('normalizeBoolean', () => {
   const absent = [
     ['unk',       'unk token → null'],
     ['unknown',   'verbose unknown → null'],
-    ['n/a',       'not applicable → null'],
     ['',          'empty → null'],
     [null,        'null → null'],
     [undefined,   'undefined → null'],
@@ -77,6 +76,19 @@ describe('normalizeBoolean', () => {
   for (const [input, label] of absent) {
     it(`absent: ${label}`, () => {
       assert.strictEqual(normalizeBoolean(input), null);
+    });
+  }
+
+  const notApplicable = [
+    ['n/a', 'canonical n/a'],
+    ['N/A', 'case insensitive n/a'],
+    ['na', 'compact na'],
+    ['not applicable', 'phrase not applicable'],
+  ];
+
+  for (const [input, label] of notApplicable) {
+    it(`n/a: ${label}`, () => {
+      assert.strictEqual(normalizeBoolean(input), 'n/a');
     });
   }
 

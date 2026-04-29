@@ -6,23 +6,23 @@
     },
     "field_rules": {
       "changed": false,
-      "hash": "2dcd8e092eb15d4d50a934f0fceb1704cb4097e58b05dcb022bc0f16c74ec7d7",
+      "hash": "88ff9553081317b53ca3392e79d122ecb6b8eb1e39da2c78334e44ec57b2d202",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\field_rules.json"
     },
     "key_migrations": null,
     "known_values": {
-      "hash": "786d03304bf1ce45af875bcfe62e1e8590d09bb82daa5313d9f4865b6538406f",
+      "hash": "8f76c836fa807ccd139f3988c84eae499b6c7cce97691e074069ddea066e8989",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\known_values.json"
     },
     "ui_field_catalog": {
-      "hash": "cfda9337bf1ede0f0f20d2a864b9c70f7a4832849aceb31e6b962c87deb9104d",
+      "hash": "f394ae6ab5a0f107ca788e2f954eb49b6162ea9013cf22c93f6fa9ab70a9d9ad",
       "path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_generated\\ui_field_catalog.json"
     }
   },
   "category": "mouse",
   "compile_mode": "field_studio",
   "compiled": true,
-  "compiled_at": "2026-04-29T04:41:27.116Z",
+  "compiled_at": "2026-04-29T08:00:49.709Z",
   "counts": {
     "component_types": 3,
     "enums": 30,
@@ -32,7 +32,7 @@
   },
   "diff": {
     "changed": false,
-    "current_hash": "2dcd8e092eb15d4d50a934f0fceb1704cb4097e58b05dcb022bc0f16c74ec7d7",
+    "current_hash": "88ff9553081317b53ca3392e79d122ecb6b8eb1e39da2c78334e44ec57b2d202",
     "fields": {
       "added_count": 0,
       "added_keys": [],
@@ -41,14 +41,14 @@
       "removed_count": 0,
       "removed_keys": []
     },
-    "previous_hash": "2dcd8e092eb15d4d50a934f0fceb1704cb4097e58b05dcb022bc0f16c74ec7d7"
+    "previous_hash": "88ff9553081317b53ca3392e79d122ecb6b8eb1e39da2c78334e44ec57b2d202"
   },
   "errors": [],
-  "field_studio_map_hash": "5ddb6bc6453abff55c3738933ba1fc0edb0f12c486f49f59a83e9c05fcc743b8",
+  "field_studio_map_hash": "f0e8d5283a91cc03a79a6e2f49decd7e4142432f0596a482dc094d721d525766",
   "field_studio_map_path": "C:\\Users\\Chris\\Desktop\\Spec Factory\\category_authority\\mouse\\_control_plane\\field_studio_map.json",
   "field_studio_source_hash": null,
   "field_studio_source_path": "",
-  "generated_at": "2026-04-29T04:41:27.116Z",
+  "generated_at": "2026-04-29T08:00:49.709Z",
   "source_summary": {
     "component_sources": 3,
     "enum_lists": 0,
@@ -65,15 +65,19 @@
     "field middle_buttons: numeric type 'number' without unit declared",
     "field middle_buttons: enum_policy=open but parse_rules is empty",
     "field onboard_memory_value: enum_policy=open but parse_rules is empty",
-    "component_db.encoder: property \"encoder_steps\" coverage 38/40 (95%), missing 2; examples: Magnetic Encoder, Optical Encoder",
-    "component_db.sensor: property \"acceleration\" coverage 102/116 (87.9%), missing 14; examples: ADNS-3310, SDNS3988, 1855",
-    "component_db.sensor: property \"dpi\" coverage 108/116 (93.1%), missing 8; examples: Darkfield, VB010411, PAW3808(EK)",
-    "component_db.sensor: property \"ips\" coverage 102/116 (87.9%), missing 14; examples: SDNS3988, S9808, 1855",
-    "component_db.sensor: property \"sensor_type\" coverage 111/116 (95.7%), missing 5; examples: PAW3392, PMW3367, PAW3393",
-    "component_db.sensor: property \"flawless_sensor\" coverage 5/116 (4.3%), missing 111; examples: Focus Pro 45K, PAW3950 Ti, PAW3950 Max",
-    "component_db.sensor: property \"sensor_date\" coverage 28/116 (24.1%), missing 88; examples: Focus Pro 45K, PAW3950 Ti, PAW3950 Max",
-    "component_db.switch: property \"switch_life_span\" coverage 91/106 (85.8%), missing 15; examples: Light Blade, Optical Switches, Crispy Pink",
-    "component_db.switch: property \"click_force\" coverage 60/106 (56.6%), missing 46; examples: ROG Micro Switch, ROG Micro Switch II, Light Blade",
-    "component_db.switch: property \"releasing_force\" coverage 39/106 (36.8%), missing 67; examples: ROG Micro Switch, ROG Micro Switch II, Light Blade"
+    "component_db.encoder: property \"encoder_steps\" coverage 38/41 (92.7%), missing 3; examples: cf-(changfeng)-(gray), Magnetic Encoder, Optical Encoder",
+    "component_db.encoder: property \"encoder_type\" coverage 40/41 (97.6%), missing 1; examples: cf-(changfeng)-(gray)",
+    "component_db.encoder: \"cf-(changfeng)-(gray)\" has no properties (other entities have 2)",
+    "component_db.sensor: property \"acceleration\" coverage 101/115 (87.8%), missing 14; examples: A3055, A3305, ADNS-3310",
+    "component_db.sensor: property \"dpi\" coverage 107/115 (93%), missing 8; examples: Darkfield, VB010411, PAW3392",
+    "component_db.sensor: property \"ips\" coverage 101/115 (87.8%), missing 14; examples: A3055, A3305, S9808",
+    "component_db.sensor: property \"sensor_date\" coverage 28/115 (24.3%), missing 87; examples: A3050, A3055, A3305",
+    "component_db.sensor: property \"sensor_type\" coverage 110/115 (95.7%), missing 5; examples: PAW3392, PAW3393, PAW3519",
+    "component_db.sensor: property \"flawless_sensor\" coverage 5/115 (4.3%), missing 110; examples: AimPoint Pro (PixArt PAW3950), A3050, A3055",
+    "component_db.switch: property \"switch_life_span\" coverage 91/107 (85%), missing 16; examples: Light Blade, Optical Switches, Crispy Pink",
+    "component_db.switch: property \"switch_type\" coverage 106/107 (99.1%), missing 1; examples: optical-switches-with-alienware-exclusive-magnetic-force-keyplates",
+    "component_db.switch: property \"click_force\" coverage 60/107 (56.1%), missing 47; examples: ROG Micro Switch, ROG Micro Switch II, ROG Optical Micro Switches",
+    "component_db.switch: property \"releasing_force\" coverage 39/107 (36.4%), missing 68; examples: ROG Micro Switch, ROG Micro Switch II, ROG Optical Micro Switches",
+    "component_db.switch: \"optical-switches-with-alienware-exclusive-magnetic-force-keyplates\" has no properties (other entities have 4)"
   ]
 }

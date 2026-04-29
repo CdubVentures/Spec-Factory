@@ -29,6 +29,7 @@ const STUDIO_TABS: readonly StudioTabDescriptor[] = [
   { id: 'keys', label: '2) Key Navigator' },
   { id: 'contract', label: '3) Field Contract' },
   { id: 'reports', label: '4) Compile & Reports' },
+  { id: 'docs', label: '5) Per-Key Docs' },
 ];
 
 const STUDIO_ACTIONS: readonly SkeletonAction[] = [
@@ -454,10 +455,47 @@ function ReportsPanelSkeleton() {
   );
 }
 
+const DOCS_SECTION_TABS = Array.from({ length: 8 }, (_value, index) => `docs-section-${index}`);
+
+function DocsPanelSkeleton() {
+  return (
+    <div className="flex gap-4 min-h-[calc(100vh-350px)]" data-region="studio-loading-docs-panel">
+      <aside className="w-64 shrink-0 rounded border sf-border-default sf-surface-card p-3 space-y-2">
+        <div className={`${inputCls} w-full h-9 sf-shimmer`} aria-hidden="true" />
+        <div className="space-y-1.5">
+          {KEY_LIST_ROWS.map((row) => (
+            <KeyListRowSkeleton key={row} row={row} />
+          ))}
+        </div>
+      </aside>
+      <section className="flex-1 min-w-0 space-y-3">
+        <div className="flex flex-wrap gap-1 border-b sf-border-default pb-2">
+          {DOCS_SECTION_TABS.map((tab) => (
+            <span
+              key={tab}
+              className="sf-shimmer inline-block h-7 w-24 rounded-sm"
+              aria-hidden="true"
+            />
+          ))}
+        </div>
+        <div className={sectionCls}>
+          <SkeletonBlock className="sf-skel-bar-label" />
+          <div className="mt-3 space-y-2">
+            <SkeletonBlock className="sf-skel-bar" />
+            <SkeletonBlock className="sf-skel-bar" />
+            <SkeletonBlock className="sf-skel-bar" />
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function activePanelForTab(activeTab: StudioTabId) {
   if (activeTab === 'keys') return <KeysPanelSkeleton />;
   if (activeTab === 'contract') return <ContractPanelSkeleton />;
   if (activeTab === 'reports') return <ReportsPanelSkeleton />;
+  if (activeTab === 'docs') return <DocsPanelSkeleton />;
   return <MappingPanelSkeleton />;
 }
 

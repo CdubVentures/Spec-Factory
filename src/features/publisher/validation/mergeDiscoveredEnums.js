@@ -8,7 +8,7 @@
  * @returns {{ enums: Record<string, { policy: string, values: string[] }>, [key: string]: * }}
  */
 
-const BOOLEAN_ENUM_VALUES = ['yes', 'no'];
+const BOOLEAN_ENUM_VALUES = ['yes', 'no', 'n/a'];
 
 function normalizeToken(value) {
   return String(value || '').trim().toLowerCase();

@@ -60,22 +60,6 @@ function getLocalStorage() {
   return window.localStorage;
 }
 
-function readStorageItem(name: string) {
-  if (typeof window === 'undefined') return null;
-  try {
-    const local = window.localStorage?.getItem(name) ?? null;
-    if (local) return local;
-    const session = window.sessionStorage?.getItem(name) ?? null;
-    if (session) {
-      window.localStorage?.setItem(name, session);
-      window.sessionStorage?.removeItem(name);
-    }
-    return session;
-  } catch {
-    return null;
-  }
-}
-
 function sanitizeRecents(raw: unknown): PickerRecentSelection[] {
   if (!Array.isArray(raw)) return [];
   const valid: PickerRecentSelection[] = [];
@@ -103,8 +87,9 @@ function loadInitialPickerState(): PersistedPickerState {
     pickerRunId: '',
     recentSelections: [],
   };
+  if (typeof window === 'undefined') return defaults;
   try {
-    const raw = readStorageItem(STORAGE_KEY);
+    const raw = window.localStorage?.getItem(STORAGE_KEY) ?? null;
     if (!raw) return defaults;
     const parsed = JSON.parse(raw);
     const values = parsed?.state;

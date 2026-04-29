@@ -198,6 +198,14 @@ export async function createAdvancedEngineFixtureRoot() {
         enum_policy: 'open',
         contract: { type: 'string', shape: 'scalar' }
       },
+      wireless_charging: {
+        required_level: 'non_mandatory',
+        difficulty: 'easy',
+        availability: 'sometimes',
+        enum_policy: 'closed',
+        enum: { policy: 'closed', source: 'yes_no' },
+        contract: { type: 'boolean', shape: 'scalar' }
+      },
       lngth: {
         required_level: 'non_mandatory',
         difficulty: 'easy',
@@ -250,6 +258,10 @@ export async function createAdvancedEngineFixtureRoot() {
           { canonical: 'matte', aliases: ['matte finish'] },
           { canonical: 'glossy', aliases: ['gloss'] }
         ]
+      },
+      yes_no: {
+        policy: 'closed',
+        values: ['yes', 'no', 'n/a']
       }
     }
   });

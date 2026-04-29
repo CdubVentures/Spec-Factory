@@ -2,6 +2,7 @@ import { FieldRulesWorkbench } from '../workbench/FieldRulesWorkbench.tsx';
 import { CompileReportsTab } from '../tabs/CompileReportsTab.tsx';
 import { KeyNavigatorTab } from './KeyNavigatorTab.tsx';
 import { MappingStudioTab } from './MappingStudioTab.tsx';
+import { PerKeyDocsTab } from './PerKeyDocsTab.tsx';
 import type { StudioPageActivePanelProps } from './studioPagePanelContracts.ts';
 
 export function StudioPageActivePanel({
@@ -12,6 +13,7 @@ export function StudioPageActivePanel({
   keyNavigatorTabProps,
   contractTabProps,
   reportsTabProps,
+  docsTabProps,
 }: StudioPageActivePanelProps) {
   return (
     <>
@@ -41,6 +43,10 @@ export function StudioPageActivePanel({
 
       {activeTab === 'reports' ? (
         <CompileReportsTab {...reportsTabProps} />
+      ) : null}
+
+      {activeTab === 'docs' ? (
+        <PerKeyDocsTab {...docsTabProps} />
       ) : null}
     </>
   );

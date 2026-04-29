@@ -222,9 +222,10 @@ export function ComponentSubTab({
 }: ComponentSubTabProps) {
   const { getLabel } = useFieldLabels(category);
   const items = data.items;
+  const propertyColumns = data.property_columns;
   const propertyAggregates = useMemo(
-    () => buildPropertyAggregates(items, data.property_columns),
-    [items, data.property_columns],
+    () => buildPropertyAggregates(items, propertyColumns),
+    [items, propertyColumns],
   );
 
   const selectedEntity = useComponentReviewStore((s) => s.selectedEntity);
@@ -541,7 +542,7 @@ export function ComponentSubTab({
       },
     ];
 
-    for (const propKey of data.property_columns) {
+    for (const propKey of propertyColumns) {
       const aggregate = propertyAggregates.get(propKey);
       const varianceLabel = formatVarianceLabel(aggregate?.variancePolicy ?? null);
       const constraints = aggregate?.constraints ?? [];
@@ -611,7 +612,7 @@ export function ComponentSubTab({
   }, [
     cancelComponentEdit,
     cellEditMode,
-    data.property_columns,
+    propertyColumns,
     data.componentType,
     componentTypeDeleteMut.isPending,
     getLabel,
@@ -676,7 +677,7 @@ export function ComponentSubTab({
                 : undefined
             }
             rowIndex={selectedEntity?.rowIndex}
-            propertyColumns={data.property_columns}
+            propertyColumns={propertyColumns}
           />
         )}
         {componentDeleteModalTarget && (

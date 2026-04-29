@@ -1,7 +1,7 @@
 {
   "category": "mouse",
   "component_type": "switch",
-  "generated_at": "2026-04-29T04:41:27.116Z",
+  "generated_at": "2026-04-29T08:00:49.709Z",
   "items": [
     {
       "__variance_policies": {
@@ -29,6 +29,20 @@
       "properties": {
         "switch_life_span": "100",
         "switch_type": "mechanical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "aliases": [
+        "ROGOpticalMicroSwitches"
+      ],
+      "maker": "asus",
+      "name": "ROG Optical Micro Switches",
+      "properties": {
+        "switch_life_span": "100",
+        "switch_type": "optical"
       }
     },
     {
@@ -150,6 +164,21 @@
       "properties": {
         "switch_life_span": "100",
         "switch_type": "optical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "aliases": [
+        "BlackShellBlueDot"
+      ],
+      "maker": "huano",
+      "name": "Black Shell Blue Dot",
+      "properties": {
+        "click_force": 80,
+        "switch_life_span": "10",
+        "switch_type": "mechanical"
       }
     },
     {
@@ -369,6 +398,21 @@
         "click_force": "override_allowed"
       },
       "aliases": [
+        "TransparentCrystalShellWhiteDot"
+      ],
+      "maker": "huano",
+      "name": "Transparent Crystal Shell White Dot",
+      "properties": {
+        "click_force": 60,
+        "switch_life_span": "100",
+        "switch_type": "mechanical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "aliases": [
         "TransparentGreenShellWhiteDot"
       ],
       "maker": "huano",
@@ -496,6 +540,23 @@
         "click_force": "override_allowed"
       },
       "aliases": [
+        "GM 4 0",
+        "GM40"
+      ],
+      "maker": "kailh",
+      "name": "GM 4.0",
+      "properties": {
+        "click_force": 70,
+        "releasing_force": 25,
+        "switch_life_span": "60",
+        "switch_type": "mechanical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "aliases": [
         "GM 8 0",
         "GM80"
       ],
@@ -599,6 +660,40 @@
       "__variance_policies": {
         "click_force": "override_allowed"
       },
+      "maker": "lk",
+      "name": "Optical",
+      "properties": {
+        "switch_life_span": "70",
+        "switch_type": "optical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "aliases": [
+        "Opticalv2"
+      ],
+      "maker": "lk",
+      "name": "Optical v2",
+      "properties": {
+        "switch_type": "optical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "maker": "logitech",
+      "name": "LIGHTFORCE",
+      "properties": {
+        "switch_type": "optical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
       "maker": "logitech",
       "name": "SUPERSTRIKE",
       "properties": {
@@ -647,6 +742,40 @@
         "click_force": 75,
         "releasing_force": 5,
         "switch_life_span": "1",
+        "switch_type": "mechanical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "aliases": [
+        "D2FC F 7N",
+        "D2FCF7N"
+      ],
+      "maker": "omron",
+      "name": "D2FC -F-7N",
+      "properties": {
+        "click_force": 60,
+        "releasing_force": 24.5,
+        "switch_life_span": "5",
+        "switch_type": "mechanical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "aliases": [
+        "D2FC F 7N",
+        "D2FCF7N"
+      ],
+      "maker": "omron",
+      "name": "D2FC -F-7N",
+      "properties": {
+        "click_force": 60,
+        "releasing_force": 24.5,
+        "switch_life_span": "5",
         "switch_type": "mechanical"
       }
     },
@@ -709,6 +838,23 @@
         "click_force": "override_allowed"
       },
       "aliases": [
+        "D2FC F 7N 60M",
+        "D2FCF7N60M"
+      ],
+      "maker": "omron",
+      "name": "D2FC -F-7N(60M)",
+      "properties": {
+        "click_force": 60,
+        "releasing_force": 24.5,
+        "switch_life_span": "60",
+        "switch_type": "mechanical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "aliases": [
         "D2FC F 7N G",
         "D2FCF7NG"
       ],
@@ -743,6 +889,54 @@
         "click_force": "override_allowed"
       },
       "aliases": [
+        "D2FC F K 50M",
+        "D2FCFK50M"
+      ],
+      "maker": "omron",
+      "name": "D2FC -F-K(50M)",
+      "properties": {
+        "click_force": 75,
+        "releasing_force": 24.5,
+        "switch_life_span": "50",
+        "switch_type": "mechanical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "aliases": [
+        "D2FC F K 60M",
+        "D2FCFK60M"
+      ],
+      "maker": "omron",
+      "name": "D2FC -F-K(60M)",
+      "properties": {
+        "click_force": 75,
+        "releasing_force": 24.5,
+        "switch_life_span": "60",
+        "switch_type": "mechanical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "aliases": [
+        "D2FC F K",
+        "D2FCFK"
+      ],
+      "maker": "omron",
+      "name": "D2FC-F-K",
+      "properties": {
+        "switch_type": "optical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "aliases": [
         "D2LS 21 20M",
         "D2LS2120M"
       ],
@@ -767,6 +961,12 @@
         "switch_life_span": "70",
         "switch_type": "optical"
       }
+    },
+    {
+      "aliases": [],
+      "maker": "omron",
+      "name": "optical-switches-with-alienware-exclusive-magnetic-force-keyplates",
+      "properties": {}
     },
     {
       "__variance_policies": {
@@ -1093,6 +1293,31 @@
       "__variance_policies": {
         "click_force": "override_allowed"
       },
+      "maker": "ttc",
+      "name": "Optical",
+      "properties": {
+        "click_force": 60,
+        "switch_life_span": "100",
+        "switch_type": "optical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
+      "aliases": [
+        "OpticalMicroswitch"
+      ],
+      "maker": "ttc",
+      "name": "Optical Microswitch",
+      "properties": {
+        "switch_type": "optical"
+      }
+    },
+    {
+      "__variance_policies": {
+        "click_force": "override_allowed"
+      },
       "aliases": [
         "OpticalV2"
       ],
@@ -1318,225 +1543,6 @@
         "releasing_force": 21,
         "switch_life_span": "60",
         "switch_type": "mechanical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "aliases": [
-        "D2FC F K 60M",
-        "D2FCFK60M"
-      ],
-      "maker": "omron",
-      "name": "D2FC -F-K(60M)",
-      "properties": {
-        "click_force": 75,
-        "releasing_force": 24.5,
-        "switch_life_span": "60",
-        "switch_type": "mechanical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "aliases": [
-        "GM 4 0",
-        "GM40"
-      ],
-      "maker": "kailh",
-      "name": "GM 4.0",
-      "properties": {
-        "click_force": 70,
-        "releasing_force": 25,
-        "switch_life_span": "60",
-        "switch_type": "mechanical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "aliases": [
-        "D2FC F 7N",
-        "D2FCF7N"
-      ],
-      "maker": "omron",
-      "name": "D2FC -F-7N",
-      "properties": {
-        "click_force": 60,
-        "releasing_force": 24.5,
-        "switch_life_span": "5",
-        "switch_type": "mechanical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "maker": "lk",
-      "name": "Optical",
-      "properties": {
-        "switch_life_span": "70",
-        "switch_type": "optical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "maker": "ttc",
-      "name": "Optical",
-      "properties": {
-        "click_force": 60,
-        "switch_life_span": "100",
-        "switch_type": "optical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "aliases": [
-        "D2FC F 7N",
-        "D2FCF7N"
-      ],
-      "maker": "omron",
-      "name": "D2FC -F-7N",
-      "properties": {
-        "click_force": 60,
-        "releasing_force": 24.5,
-        "switch_life_span": "5",
-        "switch_type": "mechanical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "aliases": [
-        "D2FC F K 50M",
-        "D2FCFK50M"
-      ],
-      "maker": "omron",
-      "name": "D2FC -F-K(50M)",
-      "properties": {
-        "click_force": 75,
-        "releasing_force": 24.5,
-        "switch_life_span": "50",
-        "switch_type": "mechanical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "aliases": [
-        "D2FC F 7N 60M",
-        "D2FCF7N60M"
-      ],
-      "maker": "omron",
-      "name": "D2FC -F-7N(60M)",
-      "properties": {
-        "click_force": 60,
-        "releasing_force": 24.5,
-        "switch_life_span": "60",
-        "switch_type": "mechanical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "aliases": [
-        "BlackShellBlueDot"
-      ],
-      "maker": "huano",
-      "name": "Black Shell Blue Dot",
-      "properties": {
-        "click_force": 80,
-        "switch_life_span": "10",
-        "switch_type": "mechanical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "aliases": [
-        "TransparentCrystalShellWhiteDot"
-      ],
-      "maker": "huano",
-      "name": "Transparent Crystal Shell White Dot",
-      "properties": {
-        "click_force": 60,
-        "switch_life_span": "100",
-        "switch_type": "mechanical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "aliases": [
-        "ROGOpticalMicroSwitches"
-      ],
-      "maker": "asus",
-      "name": "ROG Optical Micro Switches",
-      "properties": {
-        "switch_life_span": "100",
-        "switch_type": "optical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "maker": "logitech",
-      "name": "LIGHTFORCE",
-      "properties": {
-        "switch_type": "optical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "aliases": [
-        "D2FC F K",
-        "D2FCFK"
-      ],
-      "maker": "omron",
-      "name": "D2FC-F-K",
-      "properties": {
-        "switch_type": "optical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "aliases": [
-        "Opticalv2"
-      ],
-      "maker": "lk",
-      "name": "Optical v2",
-      "properties": {
-        "switch_type": "optical"
-      }
-    },
-    {
-      "__variance_policies": {
-        "click_force": "override_allowed"
-      },
-      "aliases": [
-        "OpticalMicroswitch"
-      ],
-      "maker": "ttc",
-      "name": "Optical Microswitch",
-      "properties": {
-        "switch_type": "optical"
       }
     }
   ],

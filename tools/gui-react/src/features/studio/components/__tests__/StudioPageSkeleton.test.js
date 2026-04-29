@@ -69,7 +69,7 @@ describe('StudioPageSkeleton', () => {
     assert.match(classNameOf(firstByRegion(tree, 'studio-loading-tabs')), /flex border-b sf-border-default/);
     assert.deepEqual(
       findAll(tree, (node) => node.props?.['data-skeleton-tab']).map((node) => node.props['data-skeleton-tab']),
-      ['mapping', 'keys', 'contract', 'reports'],
+      ['mapping', 'keys', 'contract', 'reports', 'docs'],
     );
   });
 

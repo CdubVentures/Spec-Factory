@@ -451,7 +451,7 @@ export function EditableComponentSource({
                         : false;
                       const lockReason = inherited
                         ? inherited.isBool
-                          ? 'Boolean field \u2014 variance locked to authoritative (yes/no only)'
+                          ? 'Boolean field \u2014 variance locked to authoritative (yes/no/n/a)'
                           : isComponentDbEnum
                             ? `enum.db (${inherited.enumSource.replace(/^component_db\./, "")}) \u2014 variance locked to authoritative`
                             : isExternalEnum

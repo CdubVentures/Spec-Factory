@@ -25,11 +25,12 @@ export function parseList(value) {
 }
 
 // --- normalizeBoolean ---
-// WHY returns string tokens ('yes'/'no'/'unk'), NOT JS booleans:
-// boolean_yes_no_unk fields are type: string with values {yes, no, unk}.
+// WHY returns string tokens ('yes'/'no'/'n/a'), NOT JS booleans:
+// "unk" is the protocol unknown sentinel; "n/a" is a first-class boolean value.
 
 const YES_TOKENS = new Set(['yes', 'y', 'true', '1', 'on']);
 const NO_TOKENS = new Set(['no', 'n', 'false', '0', 'off']);
+const NOT_APPLICABLE_TOKENS = new Set(['n/a', 'na', 'not applicable']);
 
 export function normalizeBoolean(value) {
   if (value === true) return 'yes';
@@ -38,6 +39,7 @@ export function normalizeBoolean(value) {
   if (typeof value !== 'string') return null;
 
   const token = value.trim().toLowerCase();
+  if (NOT_APPLICABLE_TOKENS.has(token)) return 'n/a';
   if (token === '' || ABSENCE_TOKENS.has(token)) return null;
   if (YES_TOKENS.has(token)) return 'yes';
   if (NO_TOKENS.has(token)) return 'no';

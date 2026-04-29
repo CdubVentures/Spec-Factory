@@ -345,6 +345,17 @@ describe('buildReseedSurfaces', () => {
     assert.deepEqual(call.args[0], { specDb: fakeDb, productRoot: '/prod' });
   });
 
+  it('published_fields.execute calls deps.rebuildPublishedFieldsFromJson with product root', () => {
+    const { deps, calls } = makeStubReseedDeps();
+    const surfaces = buildReseedSurfaces(deps);
+    const entry = surfaces.find(s => s.key === 'published_fields');
+    const fakeDb = { name: 'testDb' };
+    entry.execute({ db: fakeDb, productRoot: '/prod', helperRoot: '/helpers' });
+    const call = calls.find(c => c.name === 'rebuildPublishedFieldsFromJson');
+    assert.ok(call);
+    assert.deepEqual(call.args[0], { specDb: fakeDb, productRoot: '/prod' });
+  });
+
   it('source_strategy.execute calls deps.rebuildSourceStrategyFromJson', () => {
     const { deps, calls } = makeStubReseedDeps();
     const surfaces = buildReseedSurfaces(deps);

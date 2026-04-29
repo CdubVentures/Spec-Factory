@@ -14,7 +14,7 @@ interface ScrollStoreState {
   clear: (key: string) => void;
 }
 
-/* ── Storage helpers (same pattern as collapseStore / tabStore) ───── */
+/* ── Storage helpers (sessionStorage — clears on browser close) ──── */
 
 const STORAGE_KEY = 'scroll-store';
 
@@ -24,32 +24,17 @@ const noopStorage: StateStorage = {
   removeItem: (_name) => {},
 };
 
-function getLocalStorage() {
-  if (typeof window === 'undefined' || !window.localStorage) {
+function getSessionStorage() {
+  if (typeof window === 'undefined' || !window.sessionStorage) {
     return noopStorage;
   }
-  return window.localStorage;
-}
-
-function readStorageItem(name: string) {
-  if (typeof window === 'undefined') return null;
-  try {
-    const local = window.localStorage?.getItem(name) ?? null;
-    if (local) return local;
-    const session = window.sessionStorage?.getItem(name) ?? null;
-    if (session) {
-      window.localStorage?.setItem(name, session);
-      window.sessionStorage?.removeItem(name);
-    }
-    return session;
-  } catch {
-    return null;
-  }
+  return window.sessionStorage;
 }
 
 function loadInitialValues(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
   try {
-    const raw = readStorageItem(STORAGE_KEY);
+    const raw = window.sessionStorage?.getItem(STORAGE_KEY) ?? null;
     if (!raw) return {};
     const parsed = JSON.parse(raw);
     if (parsed?.state?.values && typeof parsed.state.values === 'object') {
@@ -81,7 +66,7 @@ export function resolveScrollPosition(
 /* ── Store ──────────────────────────────────────────────────────────── */
 
 const initialValues = loadInitialValues();
-const storage = createJSONStorage(() => getLocalStorage());
+const storage = createJSONStorage(() => getSessionStorage());
 
 export const useScrollStore = create<ScrollStoreState>()(
   persist(

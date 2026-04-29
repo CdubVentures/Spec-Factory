@@ -140,6 +140,29 @@ test('normalizeCandidate accepts open enum values', async () => {
   }
 });
 
+test('normalizeCandidate accepts yes/no/n/a boolean tokens', async () => {
+  const fixture = await createAdvancedEngineFixtureRoot();
+  try {
+    const engine = await FieldRulesEngine.create('mouse', {
+      config: { categoryAuthorityRoot: fixture.helperRoot }
+    });
+
+    const yes = engine.normalizeCandidate('wireless_charging', true);
+    assert.equal(yes.ok, true);
+    assert.equal(yes.normalized, 'yes');
+
+    const no = engine.normalizeCandidate('wireless_charging', 'off');
+    assert.equal(no.ok, true);
+    assert.equal(no.normalized, 'no');
+
+    const notApplicable = engine.normalizeCandidate('wireless_charging', 'n/a');
+    assert.equal(notApplicable.ok, true);
+    assert.equal(notApplicable.normalized, 'n/a');
+  } finally {
+    await fs.rm(fixture.root, { recursive: true, force: true });
+  }
+});
+
 test('normalizeCandidate applies normalization_fn for polling list fields', async () => {
   const fixture = await createAdvancedEngineFixtureRoot();
   try {

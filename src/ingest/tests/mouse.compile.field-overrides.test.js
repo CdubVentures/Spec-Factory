@@ -182,7 +182,7 @@ test('compileCategoryFieldStudio forces boolean fields to closed yes_no even whe
     assert.equal(rule.enum.policy, 'closed');
     assert.equal(rule.enum.source, 'yes_no');
     assert.equal(rule.enum.new_value_policy, undefined);
-    assert.deepEqual(knownValues.enums.yes_no.values, ['no', 'yes']);
+    assert.deepEqual(knownValues.enums.yes_no.values, ['n/a', 'no', 'yes']);
     assert.equal(knownValues.enums.yes_no.policy, 'closed');
   } finally {
     await cleanup();
